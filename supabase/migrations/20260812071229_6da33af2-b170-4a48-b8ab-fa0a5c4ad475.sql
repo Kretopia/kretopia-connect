@@ -1,0 +1,18 @@
+-- Fixes a confirmed duplicate-send: `profiles` has had two independent
+-- AFTER INSERT triggers both bound to public.send_welcome_email() since
+-- 2025-10-05 — `on_profile_created` (this file) and `send_welcome_email_trigger`
+-- (20251003051702_...sql, recreated 20251020015834_...sql). At the time
+-- `on_profile_created` was last touched (20251005094830_...sql), the shared
+-- function was a deliberate no-op ("Welcome email functionality disabled
+-- until pg_net is configured") — so having two triggers bound to a no-op was
+-- harmless. It was never coordinated with `send_welcome_email_trigger` at
+-- that point. The function was later redefined (20260428000159_...sql) to
+-- actually enqueue a real welcome email via pgmq — and because
+-- `on_profile_created` was never dropped, every new profile row has fired
+-- the real welcome-email logic TWICE ever since, once per trigger.
+--
+-- `send_welcome_email_trigger` is the canonically-named, actively-maintained
+-- trigger (recreated most recently) and is kept. `on_profile_created` is
+-- purely vestigial at this point — dropping it removes the duplicate, not
+-- the feature.
+DROP TRIGGER IF EXISTS on_profile_created ON public.profiles;

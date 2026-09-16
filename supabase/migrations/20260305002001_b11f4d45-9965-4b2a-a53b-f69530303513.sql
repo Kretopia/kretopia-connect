@@ -1,0 +1,2 @@
+ALTER TABLE profiles DROP CONSTRAINT profiles_subscription_tier_check;
+ALTER TABLE profiles ADD CONSTRAINT profiles_subscription_tier_check CHECK (subscription_tier = ANY (ARRAY['free'::text, 'pro'::text, 'studio'::text, 'enterprise'::text, 'founder'::text]));

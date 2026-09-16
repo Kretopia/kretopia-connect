@@ -1,0 +1,152 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://kwmcocsitwssrtzkdojh.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "kretopia-mcp",
+      "version": "0.1.0",
+      "title": "Kretopia — Creative OS"
+    },
+    "tools": [
+      {
+        "name": "search_creators",
+        "title": "Search creators on Kretopia",
+        "description": "Search the Kretopia creative universe by name, role, skill, or location. Returns public Passport summaries.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Free-text search: name, role, skill, or city."
+            },
+            "limit": {
+              "description": "Max results (default 10).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 25
+            }
+          },
+          "required": [
+            "query"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_my_passport",
+        "title": "Get my Creative Passport",
+        "description": "Returns the signed-in user's Kretopia Creative Passport: identity, role, skills, socials, and standing.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_studios",
+        "title": "List my Studios",
+        "description": "List the signed-in user's Studios (projects) — active creative workspaces they own or created.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "status": {
+              "description": "Filter by status (default 'active').",
+              "type": "string",
+              "enum": [
+                "active",
+                "completed",
+                "archived",
+                "all"
+              ]
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_scouted_gigs",
+        "title": "List Scout opportunities",
+        "description": "Returns the signed-in user's most recent Scout opportunities (AI-scouted gigs across the web).",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": true
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Max gigs to return (default 15).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "min_fit_score": {
+              "description": "Only return gigs with fit_score >= this value.",
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_my_credits",
+        "title": "List my Stamps (credits)",
+        "description": "Returns the signed-in user's verified Kretopia Stamps — IMDb-style credits for creative work.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Max credits (default 25).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}

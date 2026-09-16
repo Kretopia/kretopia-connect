@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-vibe="midnight" class="dark" style="color-scheme: dark; background-color: #05070D;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="google-site-verification" content="Q9BsvA9vwgxyOg6XZDaZ-g9T-WyRjbSbIvBuGBZ8VLY" />
+    <meta name="google-site-verification" content="xb0QM2nJG4Yx2mopQywL9_ZjtHw1SPvZpG6vhF2sA84" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Satoshi is the one brand typeface (see --font-family-brand in
+         src/index.css); Inter below is a technical fallback only, loaded
+         so the stack degrades gracefully if Fontshare is unreachable, not
+         used as an intentional second family anywhere. Instrument Serif
+         was previously loaded here too but is unused — .font-serif in
+         index.css force-overrides it to Satoshi everywhere it's applied,
+         so the webfont itself was pure dead weight on every page load. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap" rel="stylesheet" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" id="meta-theme-color" content="#05070D" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Kretopia" />
+    <title>Kretopia — Where Creativity Lives. The Creative Economy OS.</title>
+    <meta name="description" content="Kretopia is the Creative Economy OS. Build your Creative Passport, find opportunities, meet collaborators, and get paid — with Kreto, your Executive Producer." />
+    <meta name="author" content="Kretopia" />
+    <meta name="keywords" content="Kretopia, Creative Economy OS, Creative Passport, verified credits, EPK, creator portfolio, creative collaboration, Executive Producer, Kreto, filmmakers, musicians, photographers, models, producers, dancers, designers" />
+
+    <meta property="og:title" content="Kretopia — Where Creativity Lives." />
+    <meta property="og:description" content="The Creative Economy OS. Build your Creative Passport, find opportunities, meet collaborators, and get paid." />
+    <meta property="og:site_name" content="Kretopia" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://www.kretopia.com/og-image.png" />
+    <!-- og:url and canonical are set per-route via react-helmet-async (see src/components/SEO.tsx) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Kretopia",
+        "alternateName": "Kretopia by Thrive Collective",
+        "parentOrganization": { "@type": "Organization", "name": "Thrive Collective" },
+        "url": "https://www.kretopia.com",
+        "logo": "https://www.kretopia.com/favicon.png",
+        "description": "Kretopia is the Creative Economy OS — a professional home for creators to build a Creative Passport, find opportunities, collaborate, and get paid.",
+        "founder": { "@type": "Person", "name": "Ethan Auguste" },
+        "sameAs": ["https://twitter.com/kretopia", "https://www.instagram.com/kretopia"]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Kretopia",
+        "url": "https://www.kretopia.com",
+        "applicationCategory": "BusinessApplication",
+        "applicationSubCategory": "SocialNetworkingApplication",
+        "operatingSystem": "Web, iOS, Android",
+        "description": "The Creative Economy OS for filmmakers, musicians, photographers, dancers, designers and producers. Creative Passport, Scout, Match, Studio, SoundStages, KrePay — guided by Kreto, your Executive Producer.",
+        "creator": { "@type": "Person", "name": "Ethan Auguste", "jobTitle": "Founder" },
+        "publisher": { "@type": "Organization", "name": "Thrive Collective" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "description": "Free tier available. Creator plans from $29/mo."
+        },
+        "featureList": [
+          "Creative Passport — verified creative identity and credits",
+          "Scout — opportunities, jobs, casting calls, brand collabs",
+          "Match — find collaborators, teams and mentors",
+          "Studio — projects, tasks, files, deliverables",
+          "SoundStages — live virtual collaboration rooms",
+          "KrePay — invoices, payment links and direct bank payouts",
+          "Kreto — your Executive Producer"
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Kretopia",
+        "url": "https://www.kretopia.com",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.kretopia.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <!-- Mirrors src/components/landing/FAQSection.tsx exactly — keep both in sync. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is Kretopia?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Kretopia is the Creative Economy OS — an all-in-one professional network, portfolio builder, and workspace for artists, musicians, filmmakers, producers, and models. It includes a verified credit registry for every creative industry, an auto-generated Industry EPK you can share with a link, Studio (a collaborative project workspace with tasks, files, chat, and calls), and KrePay for sending invoices and payment links."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does the creative credit tracking system work?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Search any production, album, campaign, event, or release in the registry, then claim your role on it. Collaborators co-sign your credit to verify authorship peer-to-peer, and Kretopia cross-references public records and platform data to issue a verified badge — a portable work history backed by real evidence, not just claims."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is an Industry EPK on Kretopia?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "An Industry EPK (Electronic Press Kit) is a professional, link-ready profile Kretopia generates automatically from your account — pulling in your verified credits, portfolio media, and reviews, always up to date, ready to share with clients, agents, labels, festivals, or casting directors."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How does KrePay help me get paid?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "KrePay is Kretopia's built-in payments tool: share a payment link or send an invoice, track every invoice and expense in one place, and get paid directly to your bank without managing a separate payments dashboard."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@kretopia" />
+    <meta name="twitter:title" content="Kretopia — Where Creativity Lives." />
+    <meta name="twitter:description" content="The Creative Economy OS. Build your Creative Passport, find opportunities, collaborate, and get paid." />
+    <meta name="twitter:image" content="https://www.kretopia.com/og-image.png" />
+    <script>
+      // Applies the user's saved Dark/Light choice before first paint, so
+      // there's no flash of the wrong theme once React mounts and
+      // VibeThemeSync (src/components/VibeThemeSync.tsx) takes over. Reads
+      // localStorage only -- it's the one theme source available this
+      // early; a signed-in user's profile-stored choice is reconciled by
+      // VibeThemeSync after mount, already applied at that point in a
+      // previous session so this still matches on the very next load.
+      // Only "daylight"/"midnight" are selectable (see VibePicker) -- any
+      // other stored value, including the retired "neon", falls back to
+      // Midnight, the product's default look.
+      (function () {
+        try {
+          var html = document.documentElement;
+          var stored = localStorage.getItem("ui_vibe");
+          var vibe = stored === "daylight" ? "daylight" : "midnight";
+          html.setAttribute("data-vibe", vibe);
+          var isLight = vibe === "daylight";
+          html.classList.toggle("dark", !isLight);
+          html.style.colorScheme = isLight ? "light" : "dark";
+          html.style.backgroundColor = isLight ? "#FAF8F5" : "#05070D";
+          var meta = document.getElementById("meta-theme-color");
+          if (meta) meta.setAttribute("content", isLight ? "#FAF8F5" : "#05070D");
+          localStorage.setItem("ui_vibe", vibe);
+        } catch (_) {}
+      })();
+    </script>
+  </head>
+
+  <body class="bg-background text-foreground">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

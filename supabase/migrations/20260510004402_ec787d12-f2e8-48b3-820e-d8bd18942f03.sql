@@ -1,0 +1,1 @@
+DELETE FROM public.scouted_gigs WHERE title ~* 'women only|for women|young women|women entrepreneurs|female only|black (creators|founders|artists|women|men)|students only|alumni only|under (18|21|25|30)';

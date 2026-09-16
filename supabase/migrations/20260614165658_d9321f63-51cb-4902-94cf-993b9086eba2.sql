@@ -1,0 +1,2 @@
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS track_as_credit boolean NOT NULL DEFAULT false;
+COMMENT ON COLUMN public.projects.track_as_credit IS 'Opt-in flag set at creation. When false, project is treated as private planning and no credit-tagging surfaces appear. When true, owner can tag collaborators and credits flow into profiles after confirmation.';

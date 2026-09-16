@@ -1,0 +1,58 @@
+-- ============================================================
+-- Studio Finding 4 remediation: public recap RLS broader than its
+-- own field allowlist
+--
+-- PREPARED, NOT APPLIED. Written in response to
+-- STUDIO_CURRENT_STATE_AUDIT.md §7 finding 4.
+--
+-- get_public_studio_recap(token) (20260612214115_25e73cb5-...sql:47-135)
+-- is a careful, correctly-scoped SECURITY DEFINER RPC -- it returns
+-- only an explicit allowlist of project/owner/collaborator/milestone/
+-- deliverable fields, with no financial data (no amount, no paid_to,
+-- no client_price/creative_payout/margin_*). It requires a valid
+-- recap_token to return anything at all.
+--
+-- But the SAME migration that created it also added this policy,
+-- directly on the projects table:
+--
+--   CREATE POLICY "Anyone can view published recaps"
+--   ON public.projects FOR SELECT TO anon, authenticated
+--   USING (recap_published = true);
+--   GRANT SELECT ON public.projects TO anon;
+--
+-- This grants SELECT on every column of the full projects row --
+-- including client_price, creative_payout, margin_type, margin_value
+-- (added later, 20260423202831_1f997883-...sql), client_user_id,
+-- agent_user_id, video_room_url, studio_folder_id, everything -- to
+-- ANYONE, unauthenticated, for ANY project with recap_published = true.
+-- No recap_token is required for this path; the boolean flag alone is
+-- sufficient. Since the Supabase anon key is necessarily public
+-- (embedded in the frontend bundle), any client can skip the
+-- token-gated RPC entirely and run
+-- `supabase.from('projects').select('*').eq('recap_published', true)`
+-- directly. The RPC's careful allowlist was never a security boundary
+-- on its own -- this policy made it optional.
+--
+-- Confirmed via grep before writing this: no other migration touches
+-- recap_published/recap_token, and StudioRecap.tsx (the only frontend
+-- consumer of published recaps) never queries `projects` directly --
+-- it only calls the RPC. Nothing legitimate depends on this policy or
+-- grant; removing them doesn't change what any real feature does,
+-- only what an anon-key holder can query directly.
+--
+-- Real project members are unaffected: Postgres RLS policies are OR'd
+-- together, and every other SELECT policy on `projects`
+-- (user_has_project_access-based) is untouched by this migration --
+-- this only removes the one policy that granted MORE access than a
+-- member's own project.
+-- ============================================================
+
+DROP POLICY IF EXISTS "Anyone can view published recaps" ON public.projects;
+
+REVOKE SELECT ON public.projects FROM anon;
+
+-- get_public_studio_recap remains fully functional: it is
+-- SECURITY DEFINER, so its own internal `SELECT * FROM public.projects`
+-- runs as the function's owner, not as the calling anon/authenticated
+-- role -- it was never relying on the policy or grant being removed
+-- here. Its own EXECUTE grant (to anon, authenticated) is untouched.

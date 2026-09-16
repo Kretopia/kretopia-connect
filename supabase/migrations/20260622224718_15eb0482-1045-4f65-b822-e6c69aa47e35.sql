@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS passport_profession text;
+COMMENT ON COLUMN public.profiles.passport_profession IS 'Passport layout archetype override. Null = inferred from role/sub_roles. Values: model, photographer, musician, filmmaker, designer, writer, creator, crew.';

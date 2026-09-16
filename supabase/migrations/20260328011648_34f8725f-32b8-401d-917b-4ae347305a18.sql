@@ -1,0 +1,1 @@
+ALTER TABLE public.spark_rooms ADD COLUMN IF NOT EXISTS welcome_message text DEFAULT null;
