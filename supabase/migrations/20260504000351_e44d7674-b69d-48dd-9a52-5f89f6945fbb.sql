@@ -1,0 +1,2 @@
+ALTER TABLE public.opportunities ADD COLUMN IF NOT EXISTS application_deadline DATE;
+CREATE INDEX IF NOT EXISTS idx_opportunities_application_deadline ON public.opportunities(application_deadline) WHERE application_deadline IS NOT NULL;

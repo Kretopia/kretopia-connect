@@ -1,0 +1,18 @@
+# Kretopia
+
+> Kretopia is the Creative Economy OS — the verified system of record and opportunity-execution layer for creative work. Creatives build a Creative Passport, claim verified credits, get matched to real opportunities with Scout, and act with Kreto, their AI Executive Producer.
+
+Kretopia is where creative careers get built, verified, and paid. Members maintain a Kretopia Creative Passport (verified career record), discover fitting opportunities through Scout, take approved action with Kreto (AI Executive Producer), run projects in Studio, and invoice through KrePay.
+
+## Core
+
+- [Home](/): Kretopia — Where creativity lives.
+- [Passport](/passport): Your verified Creative Passport and career record.
+- [Search](/search): Search the creative universe — people, projects, credits, opportunities.
+- [Scout](/scout): Opportunity intelligence — discovery, matching, explanation.
+- [Kreto](/kreto): Your AI Executive Producer.
+- [Perks](/perks): Membership benefits.
+
+## About
+
+Kretopia by Thrive Collective. Launch markets: Caribbean + Bali (Phase 1).

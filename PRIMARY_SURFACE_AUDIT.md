@@ -1,0 +1,17 @@
+# Primary Surface Audit
+
+First-viewport information hierarchy across the app's five main routes — does each answer "Where am I? What matters most? What do I do next?" with one primary surface, up to three secondary surfaces, and one unambiguous primary CTA.
+
+| Route | Primary surface | Secondary surfaces | Primary CTA | Redundant UI found | Replacement |
+|---|---|---|---|---|---|
+| **Studio** (`/desk`) | Hero header ("Studios" + active-project count) | Folder filter chips | **"New project"** — one dominant full-width button, already the loudest thing on the page | None | N/A — already correct, established in an earlier phase this session |
+| **Passport** (`/profile`) | None — no single dominant surface | 14+ stacked, equal-weight blocks before the tab bar even starts | None — no button is visually dominant over any other | **Share** offered independently in 3 places (`ProfileHero`, `PassportClaimHero`, `PassportCommandCenter`) opening the same dialog; credit/co-sign counts repeated across 4 components (`PassportClaimHero`, `PassportOverview`, `PassportCommandCenter`, the tab label); standing/level shown 3 times | Full redesign — see Phase 4 |
+| **Scout** (`/scout`) | Header + 4-way tab control | `SurfaceProactiveCards`, active tab's feed | Implicit ("pick a tab") — no standalone CTA button | A same-weight text link ("Looking for collaborators? Open Circle") sits right in the header, pulling attention toward a different route before the user has engaged with Scout at all; the 4th tab ("Hire Talent") isn't local content — it's a redirect to `/talent-finder`, but renders identically to the 3 real tabs | Demote the Circle link to a quieter, secondary treatment (e.g. inside an overflow/menu rather than inline in the header); visually distinguish "Hire Talent" as a navigation item, not a content tab (e.g. an icon-suffixed link styled apart from the segmented control) |
+| **Kreto** (`/kreto`) | None — 4 quick-action buttons at identical weight | Up to 3 more equal-weight context cards (Passport snapshot, Top Scout match, Recent actions) below | None — 4-way tie | Auto-opens the global Copilot Sheet on mount, which then visually competes with the page body underneath it; no action is prioritized over the other 6-7 | Pick one (e.g. "Draft a pitch" or whichever is most-used) as a visually dominant primary action; demote the rest to a secondary row |
+| **Co-Signs** | No dedicated surface — split between a request-inbox panel and a tab, both inside Passport | N/A (inherits Passport's problem) | None | No standalone landing surface at all — buried ~14 blocks deep in Passport's scroll; the token-based `/credit-verify` flow is for endorsers, not profile owners, and isn't a navigable page | Out of scope for a standalone fix here — resolved as part of the Passport redesign (Phase 4), which surfaces Co-Sign state earlier and more prominently |
+
+## What's fixed in this pass vs. deferred
+
+**Fixed here (Phase 3):** this audit document itself, plus the CTA-visibility intent from the original "CAT" (typo for CTA) request is now correctly routed to where it belongs — every route above has an explicit, named "what should the primary CTA be" recommendation instead of a vague ask.
+
+**Deferred to Phase 4:** the actual Passport redesign (the largest, most redundant surface found, and the charter gives it its own dedicated phase). Scout and Kreto's smaller redundancies are documented with concrete recommendations but not yet implemented in this pass — flagging honestly rather than claiming they're fixed.

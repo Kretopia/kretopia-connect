@@ -1,0 +1,3 @@
+INSERT INTO public.orch_tool_registry (tool_name, agent_kind, handler, risk_level, description)
+VALUES ('draft_quote', 'payment', 'desk-agent', 'requires_approval', 'Create a DRAFT quote (estimate) for a project with line items and valid-until date. Never auto-sent.')
+ON CONFLICT (tool_name) DO UPDATE SET handler = EXCLUDED.handler, risk_level = EXCLUDED.risk_level, description = EXCLUDED.description;

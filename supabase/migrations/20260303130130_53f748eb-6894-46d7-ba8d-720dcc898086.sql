@@ -1,0 +1,3 @@
+ALTER TABLE public.profiles 
+ADD COLUMN IF NOT EXISTS phone_otp TEXT,
+ADD COLUMN IF NOT EXISTS phone_otp_expires_at TIMESTAMPTZ;

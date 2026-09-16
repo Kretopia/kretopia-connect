@@ -1,0 +1,2 @@
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS spark_room_id UUID REFERENCES public.spark_rooms(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_projects_spark_room_id ON public.projects(spark_room_id);

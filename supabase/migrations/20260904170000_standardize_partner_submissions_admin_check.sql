@@ -1,0 +1,20 @@
+-- Warning flagged by the deep security scan: "Partner submission review
+-- policy bypasses standard role-check function."
+--
+-- "The 'Admins can view all submissions' policy on 'partner_submissions'
+-- queries user_roles directly instead of using the has_role() SECURITY
+-- DEFINER helper used elsewhere. While functionally equivalent today,
+-- this pattern is inconsistent and error-prone if user_roles RLS or
+-- schema changes later break inline subqueries silently."
+--
+-- Confirmed: this exact policy (created in 20251203124917) was never
+-- dropped by name in any later migration. A subsequent migration
+-- (20260127164738) added a second, overlapping SELECT policy --
+-- "Submitters and admins view own submissions" -- that already covers
+-- the same admin case correctly via has_role(). Since RLS policies OR
+-- together, the two have been functionally redundant ever since; this
+-- just removes the inconsistent one, leaving the standardized one as the
+-- sole admin-visibility path. UPDATE ("Admins can update submissions",
+-- from the original 20251003082910 migration) already used has_role()
+-- and is untouched.
+DROP POLICY IF EXISTS "Admins can view all submissions" ON public.partner_submissions;

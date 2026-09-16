@@ -1,0 +1,1 @@
+ALTER TABLE feed_posts ADD COLUMN IF NOT EXISTS is_ai_generated boolean DEFAULT false;

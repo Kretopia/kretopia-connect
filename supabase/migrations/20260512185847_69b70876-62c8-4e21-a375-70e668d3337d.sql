@@ -1,0 +1,2 @@
+ALTER TABLE public.call_transcripts DROP CONSTRAINT IF EXISTS call_transcripts_call_kind_check;
+ALTER TABLE public.call_transcripts ADD CONSTRAINT call_transcripts_call_kind_check CHECK (call_kind = ANY (ARRAY['project'::text, 'direct'::text, 'circle'::text, 'meeting'::text, 'event'::text]));

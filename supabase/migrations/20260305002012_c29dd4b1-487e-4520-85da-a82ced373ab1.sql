@@ -1,0 +1,1 @@
+UPDATE profiles SET subscription_tier = 'enterprise', subscription_status = 'active' WHERE user_id = 'ef429714-ea32-4f08-a4f9-ef0226f1804b';

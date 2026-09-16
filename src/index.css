@@ -1,0 +1,1397 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  /* ============================================================
+     LIGHT MODE — DEFAULT. Warm Minimal canvas.
+     Cream background · near-black ink · teal accent · spectrum signature.
+     Inspired by Read.cv / Cargo / Are.na. The user's WORK is the color.
+     ============================================================ */
+  :root {
+    /* Kretopia v1 — Satoshi is the ONE typeface for the entire product
+       (headings, body, labels, buttons, forms — everything). Inter is a
+       technical fallback only, used if Satoshi fails to load, never an
+       intentional second family. Every font-family declaration in this
+       file and every component should reference this token instead of
+       repeating the stack literally. */
+    --font-family-brand: 'Satoshi', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    /* Warm cream #FAF8F5 — softer than pure white, editorial feel */
+    --background: 36 27% 97%;
+    --foreground: 240 11% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 11% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 11% 8%;
+
+    /* Phase 2 ink-as-primary: structural color does buttons + links + highlights.
+       Spectrum (pink/amber/teal) is RESERVED for the brand mark, loader and badges. */
+    --primary: 240 11% 8%;
+    --primary-foreground: 36 27% 97%;
+
+    --secondary: 36 18% 93%;
+    --secondary-foreground: 240 11% 12%;
+
+    --muted: 36 16% 94%;
+    --muted-foreground: 240 6% 42%;
+
+    /* Warm cream alternate surface */
+    --cream: 36 30% 95%;
+    --cream-foreground: 240 11% 12%;
+
+    /* Quiet ink-tinted hover/selected */
+    --accent: 36 22% 92%;
+    --accent-foreground: 240 11% 8%;
+
+    /* .btn-glass system (index.css further down) -- the frosted-glass
+       button family used by every Button variant. Its neutral tint and
+       text used to hardcode white unconditionally (rgb(255,255,255) +
+       `color: #fff !important`), which read fine as a light-glass-on-dark
+       effect but left every button nearly invisible once Light mode
+       existed for real: white text on a white-tinted translucent surface
+       sitting on a cream backdrop. Light mode's glass tints dark instead. */
+    --btn-glass-text: 15, 15, 18;
+    --btn-glass-neutral-tint: 15, 15, 18;
+
+    /* Energy = Kretopia Magenta (primary highlight/CTA signal). */
+    --energy: 327 100% 59%;
+    --energy-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 52%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Hairline borders — barely visible, more whitespace */
+    --border: 36 15% 88%;
+    --input: 36 15% 88%;
+    --ring: 240 11% 8%;
+
+    --success: 152 55% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 90% 48%;
+    --warning-foreground: 30 50% 12%;
+
+    /* ============================================================
+       DESIGN SYSTEM RESET — single accent.
+       #FF2DA1 is the ONLY accent color in the product. It converts to
+       exactly hsl(327 100% 59%), which is what --energy already was —
+       this reset consolidates every other "brand color" name onto
+       that same value instead of introducing a new number. The old
+       Signal Triad (magenta/amber/violet per product area) and the
+       Kretopia brand-sheet gradient palette are retired: one accent,
+       used strategically, not a rainbow of section colors.
+       ============================================================ */
+    --signal-pink: 327 100% 59%;     /* retired triad member — now = accent */
+    --signal-amber: 327 100% 59%;    /* retired triad member — now = accent */
+    --signal-violet: 327 100% 59%;   /* retired triad member — now = accent */
+    --signal-teal: 327 100% 59%;     /* #FF2DA1 — kept as an alias name; hundreds of call sites reference it */
+
+    /* Product accent tokens — all product areas now share the one accent.
+       Passport/Scout/Match no longer get their own hue; --accent-pay
+       stays green because it's a functional money-state signal, not
+       decoration (see "preserve semantic colors" rule). */
+    --accent-passport: 327 100% 59%;
+    --accent-scout:    327 100% 59%;
+    --accent-match:    327 100% 59%;
+    --accent-pay:      141 71% 42%;   /* #1DB954 — Money only, functional */
+    --radius: 1rem;
+
+    /* Canonical reset tokens (requested names) — thin aliases over the
+       tokens above so existing call sites keep working unchanged while
+       new code can reach for these directly. */
+    --color-accent: 327 100% 59%;           /* #FF2DA1 */
+    --color-background: var(--background);
+    --color-surface: var(--card);
+    --color-surface-elevated: var(--secondary);
+    --color-text-primary: var(--foreground);
+    --color-text-secondary: var(--muted-foreground);
+
+    /* Gradient variables flattened to solid colors — no decorative
+       multi-hue gradients. --gradient-glass keeps a two-stop white-opacity
+       ramp since that's a material/glass highlight, not a brand-color
+       gradient (see Liquid Glass system). */
+    --gradient-primary: hsl(240 11% 8%);
+    --gradient-secondary: hsl(327 100% 59% / 0.06);
+    --gradient-accent: hsl(36 22% 95%);
+    --gradient-subtle: hsl(327 100% 59% / 0.03);
+    --gradient-glass: linear-gradient(135deg, hsl(0 0% 100% / 0.95), hsl(0 0% 100% / 0.85));
+    --gradient-gold: hsl(327 100% 59%);
+    --gradient-hero: hsl(327 100% 59% / 0.04);
+
+    /* Shadow system — softer, warm-tinted */
+    --shadow-xs: 0 1px 2px hsl(240 11% 8% / 0.03);
+    --shadow-sm: 0 1px 3px hsl(240 11% 8% / 0.04);
+    --shadow-md: 0 4px 12px hsl(240 11% 8% / 0.06);
+    --shadow-lg: 0 8px 24px hsl(240 11% 8% / 0.08);
+    --shadow-xl: 0 16px 48px hsl(240 11% 8% / 0.12);
+    --shadow-glow: 0 0 32px hsl(327 100% 59% / 0.22);
+    --shadow-glow-lime: 0 0 12px hsl(327 100% 59% / 0.18);
+    --shadow-card: 0 1px 2px hsl(240 11% 8% / 0.04), 0 2px 8px -2px hsl(240 11% 8% / 0.05);
+    --shadow-card-hover: 0 2px 4px hsl(240 11% 8% / 0.05), 0 6px 16px -4px hsl(240 11% 8% / 0.08);
+
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Mode accent tokens — one accent, no per-mode hue switching */
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 0 0% 100%;
+    --mode-glow: 0 0 32px hsl(327 100% 59% / 0.22);
+  }
+
+  /* Nav modes (Create/Work) no longer switch accent hue — same token
+     everywhere so routes share one design system, not a color per section. */
+  [data-nav-mode="create"],
+  [data-nav-mode="work"] {
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 0 0% 100%;
+    --mode-glow: 0 0 32px hsl(327 100% 59% / 0.22);
+  }
+
+
+  /* ============================================================
+     DARK MODE — DEFAULT = MIDNIGHT vibe (white ink, teal accent).
+     Lime/Neon vibe only applies when [data-vibe="neon"] is set explicitly.
+     ============================================================ */
+  .dark {
+    /* #05070D — the same cinematic surface FeaturePageHeader/
+       EditorialPageHero/landing already hardcode (31 files). Previously
+       this token was a close-but-different #0B0B10, creating a visible
+       seam at the exact boundary where a page's header ends and its
+       bg-background body begins. One token now, not two near-blacks. */
+    --background: 225 44.4444% 3.5294%; /* #05070D exactly — precise, not rounded, so it round-trips pixel-for-pixel */
+    --foreground: 0 0% 100%;         /* #FFFFFF  primary text     */
+
+    --card: 222 24% 9%;              /* #11141B  surface          */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 222 24% 9%;
+    --popover-foreground: 0 0% 100%;
+
+    /* Primary ink = white. Surface accents come from product tokens. */
+    --primary: 0 0% 100%;
+    --primary-foreground: 225 44% 4%;
+
+    --secondary: 222 22% 13%;        /* #1A1E28  elevated surface */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 222 22% 13%;
+    --muted-foreground: 222 16% 71%; /* #A8B0C0 */
+
+    --accent: 222 22% 13%;
+    --accent-foreground: 0 0% 100%;
+
+    /* .btn-glass system -- see the light-mode definition of these two for
+       the full explanation. Dark mode keeps the original white glass. */
+    --btn-glass-text: 255, 255, 255;
+    --btn-glass-neutral-tint: 255, 255, 255;
+
+    --cream: 38 35% 92%;
+    --cream-foreground: 225 44% 4%;
+
+    /* Energy = Kretopia Magenta credibility */
+    --energy: 327 100% 59%;
+    --energy-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 222 22% 13%;
+    --input: 222 22% 13%;
+    --ring: 0 0% 100%;
+
+    --success: 141 71% 42%;          /* #1DB954 */
+    --success-foreground: 0 0% 100%;
+    --warning: 33 100% 62%;          /* Kretopia Warm Orange */
+    --warning-foreground: 225 44% 4%;
+
+    /* Design system reset — flattened to the single accent, no
+       multi-hue brand gradients. See :root for the rationale. */
+    --gradient-primary: hsl(327 100% 59%);
+    --gradient-secondary: hsl(327 100% 59% / 0.14);
+    --gradient-accent: hsl(222 24% 9%);
+    --gradient-subtle: hsl(327 100% 59% / 0.05);
+    --gradient-glass: linear-gradient(135deg, hsl(222 24% 9% / 0.92), hsl(222 22% 13% / 0.78));
+    --gradient-gold: hsl(327 100% 59%);
+    --gradient-hero: hsl(327 100% 59% / 0.10);
+
+    /* ============================================================
+       KRETOPIA BRAND SHEET — retired. Every named swatch and every
+       signature gradient below now resolves to the single accent
+       (327 100% 59% / #FF2DA1) instead of the old blue→violet→
+       magenta→amber sweep. Names are kept as aliases so the ~7 files
+       consuming --kretopia-sunset / --k-grad-* / .bg-k-* / .text-k-*
+       don't need per-file edits — they now render solid pink.
+       ============================================================ */
+    --k-midnight:    240 18% 5%;     /* #0B0B10 */
+    --k-blue:        327 100% 59%;
+    --k-purple:      327 100% 59%;
+    --k-violet:      327 100% 59%;
+    --k-magenta:     327 100% 59%;
+    --k-pink:        327 100% 59%;
+    --k-amber:       327 100% 59%;
+    --k-sand:        36 21% 93%;     /* #F2EFEA soft sand — neutral, unaffected */
+
+    --k-grad-purple-dream:  hsl(327 100% 59%);
+    --k-grad-sunset-drive:  hsl(327 100% 59%);
+    --k-grad-creative-flow: hsl(327 100% 59%);
+    --k-grad-full:          hsl(327 100% 59%);
+
+    --kretopia-sunset: var(--k-grad-full);
+    --kretopia-sunset-soft: hsl(327 100% 59% / 0.16);
+    --kretopia-glow: 0 0 60px -10px hsl(327 100% 59% / 0.5), 0 0 120px -20px hsl(327 100% 59% / 0.3);
+
+    --shadow-xs: 0 1px 2px hsl(0 0% 0% / 0.5);
+    --shadow-sm: 0 2px 4px hsl(0 0% 0% / 0.55);
+    --shadow-md: 0 4px 12px hsl(0 0% 0% / 0.6);
+    --shadow-lg: 0 8px 24px hsl(0 0% 0% / 0.65);
+    --shadow-xl: 0 20px 60px hsl(0 0% 0% / 0.7);
+    --shadow-glow: 0 0 32px hsl(327 100% 59% / 0.35);
+    --shadow-glow-lime: 0 0 18px hsl(327 100% 59% / 0.25);
+    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.7);
+    --shadow-card-hover: 0 12px 40px -8px hsl(327 100% 59% / 0.22), 0 4px 20px -4px hsl(0 0% 0% / 0.7);
+
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 225 44% 4%;
+    --mode-glow: 0 0 32px hsl(327 100% 59% / 0.35);
+  }
+
+  .dark [data-nav-mode="create"] {
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 0 0% 100%;
+    --mode-glow: 0 0 40px hsl(327 100% 59% / 0.4);
+  }
+
+  .dark [data-nav-mode="work"] {
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 0 0% 100%;
+    --mode-glow: 0 0 40px hsl(327 100% 59% / 0.4);
+  }
+
+  /* ============================================================
+     VIBE: MIDNIGHT (default) — Brand System v1.0 canvas.
+     #05070D background, white ink, teal energy. Inherits .dark stack.
+     ============================================================ */
+  .dark[data-vibe="midnight"],
+  [data-vibe="midnight"].dark {
+    --primary: 0 0% 100%;
+    --primary-foreground: 225 44% 4%;
+    --accent: 222 22% 13%;
+    --accent-foreground: 0 0% 100%;
+    --energy: 327 100% 59%;
+    --energy-foreground: 0 0% 100%;
+    --ring: 0 0% 100%;
+    --gradient-secondary: hsl(327 100% 59% / 0.10);
+    --gradient-subtle: hsl(327 100% 59% / 0.05);
+    --gradient-hero: hsl(327 100% 59% / 0.08);
+    --shadow-glow: 0 0 32px hsl(327 100% 59% / 0.35);
+    --mode-accent: 327 100% 59%;
+    --mode-accent-foreground: 0 0% 100%;
+    --mode-glow: 0 0 32px hsl(327 100% 59% / 0.35);
+  }
+
+  /* ============================================================
+     VIBE: NEON — dark canvas, lime as the single bold accent.
+     Refined version of OG: drops magenta, keeps the energy.
+     ============================================================ */
+  .dark[data-vibe="neon"],
+  [data-vibe="neon"].dark {
+    --primary: 75 100% 50%;
+    --primary-foreground: 240 17% 7%;
+    --accent: 75 60% 18%;
+    --accent-foreground: 75 100% 70%;
+    --energy: 75 100% 50%;
+    --energy-foreground: 240 17% 7%;
+    --ring: 75 100% 50%;
+    --gradient-primary: hsl(75 100% 50%);
+    --gradient-secondary: hsl(75 100% 50% / 0.10);
+    --gradient-subtle: hsl(75 100% 50% / 0.05);
+    --gradient-hero: hsl(75 100% 50% / 0.08);
+    --shadow-glow: 0 0 32px hsl(75 100% 50% / 0.35);
+    --mode-accent: 75 100% 50%;
+    --mode-accent-foreground: 240 17% 7%;
+    --mode-glow: 0 0 32px hsl(75 100% 50% / 0.35);
+  }
+}
+
+/* Safe area utilities for mobile devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    /* Kretopia v1 — Satoshi is the OS typeface (Inter fallback) */
+    font-family: var(--font-family-brand);
+    font-feature-settings: 'rlig' 1, 'calt' 1, 'ss01' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Handle safe areas for mobile devices with notches */
+    padding-bottom: env(safe-area-inset-bottom);
+    /* Prevent pull-to-refresh on mobile */
+    overscroll-behavior-y: contain;
+    /* Smooth scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Improved touch handling */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  /*
+   * Must be a definite height (not min-height) so the app's own root
+   * div (.h-full.overflow-auto in AppContent) can actually inherit a
+   * real height and become the real scrolling container. Without this,
+   * the percentage-height chain breaks, the outer document scrolls
+   * instead, and Navbar's `sticky top-0` has nothing reliable to stick
+   * within — it drifts down on scroll/touch-drag instead of staying put.
+   * 100dvh (dynamic viewport height) overrides 100vh where supported,
+   * fixing the same issue against mobile browser chrome resizing.
+   */
+  #root {
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  h1, h2 {
+    @apply font-black tracking-[-0.03em];
+  }
+  h3, h4, h5, h6 {
+    @apply font-black tracking-tight;
+  }
+  /* Default bold weight nudge — across-the-board editorial feel */
+  .font-bold {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  /* Global focus-visible styles for better accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Remove focus ring for mouse users, keep for keyboard */
+  :focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: none;
+  }
+
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  /* Make focus ring visible when element is focused via keyboard */
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+}
+
+@layer utilities {
+  /* Magazine drop cap — first letter of first paragraph in an article */
+  .first-paragraph-dropcap > p:first-of-type::first-letter {
+    @apply float-left text-6xl sm:text-7xl font-sans font-black leading-[0.85] mr-2 mt-1 text-primary;
+  }
+
+  /* Formerly a pink→amber→teal text gradient. Design system reset: solid
+     accent color, no gradient text anywhere. */
+  .text-spectrum {
+    background-image: none;
+    color: hsl(var(--signal-teal));
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: hsl(var(--signal-teal));
+  }
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-secondary {
+    background: var(--gradient-secondary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  /* Brand text — solid primary, no gradient on wordmark */
+  .gradient-text {
+    color: hsl(var(--primary));
+    -webkit-text-fill-color: hsl(var(--primary));
+  }
+
+  /* Glass morphism effect */
+  /* ============================================================
+     LIQUID GLASS SYSTEM — restrained, Apple-inspired.
+     Translucent elevated surfaces with a soft blur, a hairline white
+     border, a faint inner top highlight, and a soft shadow. Solid
+     fallback when backdrop-filter isn't supported. Blur radius drops
+     on narrow (likely lower-powered) viewports to keep it cheap.
+     Do not use behind dense text or critical forms if it hurts
+     contrast — GlassInput intentionally uses a near-opaque surface.
+     ============================================================ */
+  .glass-surface {
+    background: hsl(var(--card) / 0.72);
+    border: 1px solid hsl(0 0% 100% / 0.08);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.06),
+      var(--shadow-card);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+  }
+
+  .glass-surface-elevated {
+    background: hsl(var(--secondary) / 0.78);
+    border: 1px solid hsl(0 0% 100% / 0.1);
+    box-shadow:
+      inset 0 1px 0 hsl(0 0% 100% / 0.08),
+      var(--shadow-lg);
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+  }
+
+  /* Narrower viewports (phones, likely lower-powered GPUs) get a
+     cheaper blur radius rather than the full desktop treatment. */
+  @media (max-width: 640px) {
+    .glass-surface {
+      backdrop-filter: blur(10px) saturate(120%);
+      -webkit-backdrop-filter: blur(10px) saturate(120%);
+    }
+    .glass-surface-elevated {
+      backdrop-filter: blur(14px) saturate(120%);
+      -webkit-backdrop-filter: blur(14px) saturate(120%);
+    }
+  }
+
+  /* Graceful degradation — solid dark fallback when backdrop-filter
+     isn't supported at all (old Firefox/Android WebView etc). */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass-surface {
+      background: hsl(var(--card) / 0.97);
+    }
+    .glass-surface-elevated {
+      background: hsl(var(--secondary) / 0.98);
+    }
+  }
+
+  /* Legacy names kept as aliases — existing callers unaffected. */
+  .glass {
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-strong {
+    background: hsl(var(--background) / 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .shadow-glow-lime {
+    box-shadow: var(--shadow-glow-lime, 0 0 18px hsl(75 100% 50% / 0.22));
+  }
+
+  /* Lime accent text + halo — for match %, highlights, key CTAs */
+  .text-energy {
+    color: hsl(var(--energy));
+  }
+  .bg-energy {
+    background-color: hsl(var(--energy));
+    color: hsl(var(--energy-foreground));
+  }
+  .border-energy {
+    border-color: hsl(var(--energy));
+  }
+  .text-energy-glow {
+    color: hsl(var(--energy));
+    text-shadow: 0 0 18px hsl(var(--energy) / 0.55), 0 0 4px hsl(var(--energy) / 0.4);
+  }
+
+  /* Brand eyebrow — uppercase status pill text */
+  .brand-eyebrow {
+    @apply text-[10px] font-black uppercase tracking-[0.18em] text-energy;
+  }
+
+  /* ============================================================
+     PRODUCT ACCENT UTILITIES — Brand System v1.0
+     One dominant accent per surface. Apply at the page/section root.
+     Subtle references to the other two colors should appear elsewhere
+     so the experience always feels like one Kretopia ecosystem.
+     ============================================================ */
+  .accent-passport { --surface-accent: var(--accent-passport); }
+  .accent-scout    { --surface-accent: var(--accent-scout); }
+  .accent-match    { --surface-accent: var(--accent-match); }
+  .accent-pay      { --surface-accent: var(--accent-pay); }
+  /* Studios = teal dominant with yellow nods (per Brand System v1.0) */
+  .accent-studios  { --surface-accent: var(--accent-passport); --surface-accent-alt: var(--accent-scout); }
+  .text-studios    { color: hsl(var(--accent-passport)); }
+  .bg-studios      { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
+  .border-studios  { border-color: hsl(var(--accent-passport)); }
+
+  .text-passport { color: hsl(var(--accent-passport)); }
+  .text-scout    { color: hsl(var(--accent-scout)); }
+  .text-match    { color: hsl(var(--accent-match)); }
+  .text-pay      { color: hsl(var(--accent-pay)); }
+
+  .bg-passport { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
+  .bg-scout    { background-color: hsl(var(--accent-scout));    color: hsl(225 44% 4%); }
+  .bg-match    { background-color: hsl(var(--accent-match));    color: hsl(0 0% 100%); }
+  .bg-pay      { background-color: hsl(var(--accent-pay));      color: hsl(0 0% 100%); }
+
+  .border-passport { border-color: hsl(var(--accent-passport)); }
+  .border-scout    { border-color: hsl(var(--accent-scout)); }
+  .border-match    { border-color: hsl(var(--accent-match)); }
+  .border-pay      { border-color: hsl(var(--accent-pay)); }
+
+  .ring-passport { --tw-ring-color: hsl(var(--accent-passport)); }
+  .ring-scout    { --tw-ring-color: hsl(var(--accent-scout)); }
+  .ring-match    { --tw-ring-color: hsl(var(--accent-match)); }
+  /* Editorial section header */
+  .section-title {
+    @apply text-2xl sm:text-3xl font-black tracking-[-0.03em];
+  }
+  /* Cinematic hero backdrop — soft spectrum wash (teal → amber) on canvas */
+  /* Formerly a dual radial-gradient wash. Design system reset: flat
+     surface, no decorative gradients — depth now comes from the Liquid
+     Glass system's blur/border/shadow instead of a color wash. */
+  .bg-cinematic {
+    background: hsl(var(--background));
+  }
+
+  /* Restrained technical grid texture for a feature page's first section —
+     subtle graph-paper lines, faded via a radial mask so it reads as
+     texture near the top and disappears toward the edges rather than
+     tiling flatly to infinity. Layers on top of .bg-cinematic's color;
+     never used alone. */
+  .bg-grid-quadrille {
+    background-image:
+      linear-gradient(to right, hsl(var(--foreground) / 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--foreground) / 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 25%, transparent 90%);
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 25%, transparent 90%);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-bounce {
+    transition: var(--transition-bounce);
+  }
+
+  .hover-lift {
+    @apply transition-smooth hover:scale-105 hover:shadow-card;
+  }
+
+  .hover-glow {
+    @apply transition-smooth hover:shadow-glow;
+  }
+
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  @keyframes glow {
+    from {
+      box-shadow: 0 0 20px hsl(var(--primary) / 0.2);
+    }
+    to {
+      box-shadow: 0 0 40px hsl(var(--primary) / 0.45);
+    }
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  @keyframes bounceIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-confetti {
+    animation: confetti-fall linear forwards;
+  }
+
+  @keyframes confetti-fall {
+    from {
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(100vh) rotate(720deg);
+    }
+  }
+}
+
+/* Static fallbacks for the transform-based entrance/exit utilities above --
+   land straight on each animation's end state instead of tweening through
+   translate/scale/rotate, which prefers-reduced-motion users have opted
+   out of. animate-fade-in is opacity-only (no transform) so it's left as
+   is -- that category isn't considered motion under the same guidance. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .animate-confetti {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: hsl(var(--muted));
+  font-family: inherit;
+  /* Create stacking context so leaflet panes don't escape over headers/sheets/dialogs */
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+/* Cap all leaflet internal panes/controls below shadcn overlays (sheet/dialog use z-50) */
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom,
+.leaflet-control {
+  z-index: auto !important;
+}
+
+.leaflet-control-zoom a,
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-color: hsl(var(--border));
+}
+
+.leaflet-control-zoom a {
+  border-bottom-color: hsl(var(--border));
+}
+
+.leaflet-bar {
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-card);
+}
+
+.leaflet-control-attribution {
+  background: hsl(var(--background) / 0.82);
+  color: hsl(var(--muted-foreground));
+}
+
+.leaflet-control-attribution a {
+  color: hsl(var(--primary));
+}
+
+.leaflet-popup-content {
+  margin: 10px 12px;
+}
+
+/* Native safe area utilities */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Hide platform nav when on creator site (username route) */
+body.creator-site-active nav,
+body.creator-site-active [data-bottom-nav] {
+  display: none !important;
+}
+
+/* ============================================================
+   LIGHT-MODE READABILITY OVERRIDES
+   ----------------------------------------------------------------
+   The codebase historically used hardcoded Tailwind colors
+   (text-white, text-gray-300, bg-black, etc.) which render
+   illegibly on the light editorial canvas. These overrides
+   remap the most common offenders to semantic tokens — but ONLY
+   in light mode, and ONLY outside of intentionally-dark surfaces.
+
+   Opt-out containers (keep their hardcoded dark styling):
+     .dark-surface              → wallet hero, pitch deck, creator
+                                   site templates, video players,
+                                   any element designed dark-on-dark.
+     [data-creator-site]        → public creator microsites.
+     .pitch-deck                → presentation slides.
+     .force-dark                → manual escape hatch.
+   ============================================================ */
+:root:not(.dark) {
+  /* Text colors: hardcoded white/light-gray → readable foreground */
+  body:not(.creator-site-active) :where(.text-white):not(.dark-surface *):not([data-creator-site] *):not(.pitch-deck *):not(.force-dark *):not(.dark-surface):not(.force-dark) {
+    color: hsl(var(--foreground));
+  }
+  body:not(.creator-site-active) :where(.text-gray-100, .text-gray-200, .text-gray-300, .text-gray-400, .text-zinc-100, .text-zinc-200, .text-zinc-300, .text-zinc-400, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-neutral-100, .text-neutral-200, .text-neutral-300, .text-neutral-400):not(.dark-surface *):not([data-creator-site] *):not(.pitch-deck *):not(.force-dark *):not(.dark-surface):not(.force-dark) {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* White text with opacity (text-white/70 etc.) → muted foreground */
+  body:not(.creator-site-active) :where([class*="text-white/"]):not(.dark-surface *):not([data-creator-site] *):not(.pitch-deck *):not(.force-dark *):not(.dark-surface):not(.force-dark) {
+    color: hsl(var(--muted-foreground));
+  }
+
+  /* Background black → card surface so content stays visible */
+  body:not(.creator-site-active) :where(.bg-black):not(.dark-surface *):not([data-creator-site] *):not(.pitch-deck *):not(.force-dark *):not(.dark-surface):not(.force-dark) {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+  }
+
+  /* Borders on white/10, white/5 etc. — make visible in light mode */
+  body:not(.creator-site-active) :where([class*="border-white/"]):not(.dark-surface *):not([data-creator-site] *):not(.pitch-deck *):not(.force-dark *):not(.dark-surface):not(.force-dark) {
+    border-color: hsl(var(--border));
+  }
+}
+
+/* In dark mode, the .dark-surface marker is a no-op — everything is already dark.
+   It exists purely as a light-mode opt-out signal. */
+
+/* Hide global FABs (e.g. SnapReceiptFAB) when a modal/sheet/drawer is open so
+   they don't bleed over a dialog and look like in-context actions. */
+body[data-scroll-locked] .snap-receipt-fab,
+body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
+  display: none !important;
+}
+
+/* Leaflet map: prevent black flash before tiles load. The container itself
+   paints its own background before tile <img>s arrive — give it a subtle
+   themed surface so the skeleton grid behind it shows through naturally. */
+.leaflet-container {
+  background: hsl(var(--muted) / 0.4) !important;
+}
+
+/* Sound Stages: animated gradient border for "Start Stage" CTA */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ============================================================
+   KRETOPIA v1 — gradient utility classes (from brand sheet)
+   Use these instead of hard-coding gradient strings in components.
+   ============================================================ */
+.bg-k-purple-dream  { background-image: var(--k-grad-purple-dream); }
+.bg-k-sunset-drive  { background-image: var(--k-grad-sunset-drive); }
+.bg-k-creative-flow { background-image: var(--k-grad-creative-flow); }
+.bg-k-full          { background-image: var(--k-grad-full); }
+
+.text-k-purple-dream,
+.text-k-sunset-drive,
+.text-k-creative-flow,
+.text-k-full {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.text-k-purple-dream  { background-image: var(--k-grad-purple-dream); }
+.text-k-sunset-drive  { background-image: var(--k-grad-sunset-drive); }
+.text-k-creative-flow { background-image: var(--k-grad-creative-flow); }
+.text-k-full          { background-image: var(--k-grad-full); }
+
+.ring-k-glow {
+  box-shadow:
+    0 0 60px -10px hsl(327 100% 59% / 0.5),
+    0 0 120px -20px hsl(327 100% 59% / 0.3);
+}
+
+.font-display { font-family: var(--font-family-brand); }
+
+/* Kretopia v1 — Satoshi is the OS typeface. Neutralize any leftover
+   `font-serif` usage so headlines don't render in Instrument Serif. */
+.font-serif {
+  font-family: var(--font-family-brand) !important;
+  font-style: normal !important;
+}
+
+/* Respect prefers-reduced-motion globally — collapses this codebase's
+   custom keyframe animations (glow/slide-up/fade-in/bounce-in/confetti)
+   and any transition (including Glass hover/open transitions) to
+   near-instant instead of turning them off ad hoc per component. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   LANDING TYPOGRAPHY SCALE
+   One family (Satoshi) for everything — headings, eyebrows and body —
+   so no text ever renders in a visibly different typeface from the
+   hero title. Size is what differentiates the hierarchy, not family.
+   ══════════════════════════════════════════════════════════════════ */
+.landing-eyebrow {
+  font-family: var(--font-family-brand);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  /* Pink by default -- most call sites want the brand accent here and
+     used to re-declare it inline one at a time. Sites that deliberately
+     want the neutral tone (AuthBrandingPanel's own inline overrides,
+     EditorialChapter/About's numbered kickers) set their own color and
+     take precedence over this default via normal cascade/specificity. */
+  color: hsl(var(--energy));
+}
+
+.landing-h1 {
+  font-family: var(--font-family-brand);
+  /* Floor tuned so each of the two intended lines (eg. "Prove what you've
+     done." / "Get found for what's next.") stays on one visual line down
+     to 375px — the main title must render as exactly two lines. */
+  font-size: clamp(1.35rem, 6vw, 4.75rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-h2 {
+  font-family: var(--font-family-brand);
+  font-size: clamp(1.75rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.landing-sub {
+  font-family: var(--font-family-brand);
+  font-size: clamp(0.9375rem, 1.4vw, 1.0625rem);
+  font-weight: 400;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* Subtle magenta emission on titles — static, low opacity, no halo. */
+.landing-glow {
+  text-shadow:
+    0 0 24px rgba(255, 45, 161, 0.18),
+    0 0 60px rgba(255, 45, 161, 0.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-glow { text-shadow: none; }
+}
+
+/* Smooth breathing brightness for pink accent text/words specifically (not
+   whole headings) — a slow, gentle intensity shift, not a flash or pulse.
+   4.5s so it never competes with reading pace. Falls back to the same
+   static emission as .landing-glow under reduced motion. */
+.pink-glow-breathe {
+  animation: pink-glow-breathe 4.5s ease-in-out infinite;
+}
+
+/* The one canonical pink accent word/phrase — identical to the hero's
+   "what's next" in "Prove what you've done. / Get found for what's next."
+   Use <span className="landing-accent">…</span> inside any landing-h1/h2. */
+.landing-accent {
+  color: #FF2DA1;
+  font-style: italic;
+  animation: pink-glow-breathe 4.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-accent {
+    animation: none;
+    text-shadow: 0 0 24px rgba(255, 45, 161, 0.18), 0 0 60px rgba(255, 45, 161, 0.08);
+  }
+}
+@keyframes pink-glow-breathe {
+  0%, 100% {
+    text-shadow: 0 0 18px rgba(255, 45, 161, 0.35), 0 0 42px rgba(255, 45, 161, 0.14);
+    filter: brightness(1);
+  }
+  50% {
+    text-shadow: 0 0 28px rgba(255, 45, 161, 0.6), 0 0 64px rgba(255, 45, 161, 0.26);
+    filter: brightness(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pink-glow-breathe {
+    animation: none;
+    text-shadow: 0 0 24px rgba(255, 45, 161, 0.18), 0 0 60px rgba(255, 45, 161, 0.08);
+  }
+}
+
+/* Slow orbiting ring — the "AI is active" visual around a tutorial step
+   icon. Deliberately slow (6s) so it reads as ambient presence, not a
+   loading spinner. */
+@keyframes ai-orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.ai-orbit-ring {
+  animation: ai-orbit-spin 6s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-orbit-ring { animation: none; }
+}
+
+/* Breathing ambient glow behind an AI surface — same slow, restrained
+   cadence as pink-glow-breathe, applied to opacity instead of text. */
+@keyframes ai-ambient-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+.ai-ambient-breathe {
+  animation: ai-ambient-breathe 4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-ambient-breathe { animation: none; opacity: 0.8; }
+}
+
+/* Continuous scan-line sweep along an AI surface's top edge — a thin
+   gradient bar drifting left to right, pausing, then repeating. Reads as
+   "actively scanning" without being a loud, attention-grabbing motion. */
+@keyframes ai-scan-sweep {
+  0% { transform: translateX(-120%); opacity: 0; }
+  8% { opacity: 1; }
+  45% { opacity: 1; }
+  55% { transform: translateX(220%); opacity: 0; }
+  100% { transform: translateX(220%); opacity: 0; }
+}
+.ai-scan-line {
+  animation: ai-scan-sweep 3.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-scan-line { display: none; }
+}
+
+/* ============================================================
+   BUTTON SYSTEM — glass card + scintillating border, one family
+   for every button in the app.
+
+   Directly modeled on VisualCardShell (src/components/landing/
+   kretopia/visualShell.tsx — the "Search preview / Illustrative —
+   not live data" card): the same translucent white-on-dark glass
+   fill, the same 1px hairline border, the same soft pink ambient
+   shadow, and the same traveling-light sweep the card runs along its
+   top edge (.ai-scan-line / @keyframes ai-scan-sweep) -- reused here
+   as a genuine animated GRADIENT BORDER (padding+mask-composite,
+   not an overlay on top of the fill) rather than a single edge, so
+   hovering a button reproduces the exact "scintillating pink border"
+   sensation the card has, on all four sides.
+
+   Replaces .btn-pink-gradient (a solid pink→grey fill) -- superseded
+   because the ask this pass is a consistent glass language across
+   EVERY button, not just the loudest CTAs.
+
+   Text is always white (color: #fff), per instruction, overriding
+   whatever text-* utility a call site or variant still carries --
+   this rule is unlayered (outside @layer) so it wins regardless.
+
+   One shared mechanism, several accent modifiers so variants stay
+   distinguishable from each other (same family, different emphasis)
+   rather than every button looking identical:
+     .btn-glass-primary  — pink accent (default, hero/lime, gradient CTAs)
+     .btn-glass-neutral  — white/grey accent (secondary, outline, glass)
+     .btn-glass-ghost    — invisible at rest, glass only appears on hover
+     .btn-glass-danger   — rose-red accent, NOT pink (destructive actions
+                            only -- a delete button glowing the same
+                            "delightful" pink as a primary CTA would be
+                            a real mislead risk, so this is the one
+                            deliberate deviation from "pink border
+                            everywhere")
+   ============================================================ */
+.btn-glass {
+  --btn-glass-accent: 255, 45, 161;
+  --btn-glass-bg-1: rgba(var(--btn-glass-neutral-tint), 0.07);
+  --btn-glass-bg-2: rgba(var(--btn-glass-neutral-tint), 0.02);
+  --btn-glass-border: rgba(var(--btn-glass-neutral-tint), 0.14);
+  position: relative;
+  isolation: isolate;
+  /* Clipped so the sheen can never spill past the button's own shape --
+     this is what used to produce the stray pink segment hanging off the
+     corners of wide CTAs. */
+  overflow: hidden;
+  color: rgb(var(--btn-glass-text));
+  background-image: linear-gradient(180deg, var(--btn-glass-bg-1), var(--btn-glass-bg-2));
+  border: 1px solid var(--btn-glass-border);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 16px 40px -28px rgba(var(--btn-glass-accent), 0.4);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease,
+              background-image 0.3s ease, transform 0.2s ease;
+}
+/* !important is deliberate here, not a shortcut: "text always matches the
+   glass system's own ink" is an explicit, universal requirement, and
+   .btn-glass is composed with variant strings (e.g. the link variant's
+   hover:text-[#FF2DA1]) that would otherwise still win in some build/HMR
+   orderings despite this block sitting unlayered at the end of the file --
+   confirmed empirically (computed style showed pink text on hover before
+   this was added), not assumed. --btn-glass-text itself now flips between
+   white (dark mode) and near-black (light mode, see :root/.dark above) --
+   it used to be a bare #fff, unreadable once Light mode's cream backdrop
+   showed through the same translucent glass a dark backdrop used to sit
+   behind. */
+.btn-glass,
+.btn-glass:hover,
+.btn-glass:focus,
+.btn-glass:active,
+.btn-glass:disabled {
+  color: rgb(var(--btn-glass-text)) !important;
+  text-decoration: none;
+}
+.btn-glass > * {
+  position: relative;
+  z-index: 2;
+}
+.btn-glass:hover {
+  border-color: rgba(var(--btn-glass-accent), 0.6);
+  background-image: linear-gradient(180deg, rgba(var(--btn-glass-neutral-tint), 0.1), rgba(var(--btn-glass-neutral-tint), 0.03));
+  box-shadow: 0 0 0 1px rgba(var(--btn-glass-accent), 0.25),
+              0 0 22px rgba(var(--btn-glass-accent), 0.35),
+              0 16px 40px -28px rgba(var(--btn-glass-accent), 0.5);
+  transform: translateY(-1px);
+}
+.btn-glass:focus-visible {
+  border-color: rgba(var(--btn-glass-accent), 0.7);
+  box-shadow: 0 0 0 2px rgba(var(--btn-glass-accent), 0.4), 0 0 22px rgba(var(--btn-glass-accent), 0.35);
+}
+.btn-glass:active {
+  transform: translateY(0) scale(0.98);
+}
+.btn-glass:disabled,
+.btn-glass[disabled] {
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* SHEEN — deliberately restrained.
+   Earlier revisions ran a light around the button's perimeter (first a
+   rotating conic ring, then a comet on offset-path). Both read as
+   erratic on real buttons: the arc length maps unevenly onto a wide
+   rounded rectangle, so the highlight bunched into a stray pink blob at
+   the corners and looked detached from the button. Replaced with a
+   single soft diagonal sheen that sweeps across the INSIDE of the
+   button once per hover, clipped by overflow:hidden. Nothing renders on
+   or outside the border, so there is no segment to go astray. */
+.btn-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(100deg,
+    transparent 38%,
+    rgba(var(--btn-glass-neutral-tint), 0.13) 50%,
+    transparent 62%);
+  transform: translateX(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+.btn-glass:hover::before {
+  animation: btn-glass-sheen 0.6s ease-out 1;
+}
+@keyframes btn-glass-sheen {
+  from { transform: translateX(-100%); opacity: 1; }
+  to   { transform: translateX(100%); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-glass:hover { transform: none; }
+  .btn-glass:hover::before { animation: none; opacity: 0; }
+}
+
+
+/* Accent modifiers -- same mechanics above, different signature color. */
+.btn-glass-primary {
+  --btn-glass-accent: 255, 45, 161; /* #FF2DA1 -- default/hero/gradient CTAs */
+  --btn-glass-bg-1: rgba(255, 45, 161, 0.10);
+  --btn-glass-bg-2: rgba(255, 45, 161, 0.03);
+  --btn-glass-border: rgba(255, 45, 161, 0.28);
+}
+/* Loudest CTA -- same accent as primary, turned up: stronger tint and
+   border at rest so it still reads as "the" call to action next to a
+   plain .btn-glass-primary button, even though both share one family. */
+.btn-glass-hero {
+  --btn-glass-bg-1: rgba(255, 45, 161, 0.18);
+  --btn-glass-bg-2: rgba(255, 45, 161, 0.06);
+  --btn-glass-border: rgba(255, 45, 161, 0.4);
+}
+.btn-glass-hero:hover {
+  box-shadow: 0 0 0 1px rgba(var(--btn-glass-accent), 0.35),
+              0 0 28px rgba(var(--btn-glass-accent), 0.45),
+              0 16px 40px -28px rgba(var(--btn-glass-accent), 0.6);
+}
+.btn-glass-neutral {
+  --btn-glass-accent: 255, 45, 161; /* hover shimmer is still pink -- only the REST state is neutral */
+  --btn-glass-bg-1: rgba(var(--btn-glass-neutral-tint), 0.06);
+  --btn-glass-bg-2: rgba(var(--btn-glass-neutral-tint), 0.015);
+  --btn-glass-border: rgba(var(--btn-glass-neutral-tint), 0.13);
+}
+.btn-glass-outline {
+  --btn-glass-accent: 255, 45, 161;
+  --btn-glass-bg-1: rgba(var(--btn-glass-neutral-tint), 0.02);
+  --btn-glass-bg-2: rgba(var(--btn-glass-neutral-tint), 0.00);
+  --btn-glass-border: rgba(var(--btn-glass-neutral-tint), 0.16);
+  box-shadow: none;
+}
+.btn-glass-ghost {
+  --btn-glass-accent: 255, 45, 161;
+  --btn-glass-bg-1: transparent;
+  --btn-glass-bg-2: transparent;
+  --btn-glass-border: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+.btn-glass-ghost:hover {
+  background-image: linear-gradient(180deg, rgba(var(--btn-glass-neutral-tint), 0.07), rgba(var(--btn-glass-neutral-tint), 0.02));
+}
+.btn-glass-danger {
+  --btn-glass-accent: 244, 63, 94; /* rose-500 -- destructive only, deliberately not pink */
+  --btn-glass-bg-1: rgba(244, 63, 94, 0.12);
+  --btn-glass-bg-2: rgba(244, 63, 94, 0.04);
+  --btn-glass-border: rgba(244, 63, 94, 0.32);
+}
+
+/* Shared vertical rhythm + horizontal padding for landing sections. */
+.landing-section {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  padding-top: clamp(4rem, 9vw, 7.5rem);
+  padding-bottom: clamp(4rem, 9vw, 7.5rem);
+}
+@media (min-width: 640px) {
+  .landing-section { padding-left: 2rem; padding-right: 2rem; }
+}
+@media (min-width: 1024px) {
+  .landing-section { padding-left: 3rem; padding-right: 3rem; }
+}
+
+/* ── NAVBAR ROLLBACK ────────────────────────────────────────────────
+   The glass-card + pink shimmer-border CTA system (f66b8e3) was meant
+   for CTA buttons, not navbar chrome. Buttons rendered inside the top
+   navbar opt out of it and go back to the plain shadcn treatment they
+   had before that sweep. Scoped strictly to [data-nav-chrome] so every
+   Studio / Landing CTA keeps the new system. */
+[data-nav-chrome] .btn-glass,
+.nav-btn-plain {
+  background-image: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+[data-nav-chrome] .btn-glass:hover,
+.nav-btn-plain:hover {
+  transform: none;
+  box-shadow: none;
+  background-image: none;
+}
+[data-nav-chrome] .btn-glass::before,
+[data-nav-chrome] .btn-glass::after,
+.nav-btn-plain::before,
+.nav-btn-plain::after {
+  display: none !important;
+  content: none !important;
+}
+[data-nav-chrome] .btn-glass,
+[data-nav-chrome] .btn-glass:hover,
+[data-nav-chrome] .btn-glass:focus,
+[data-nav-chrome] .btn-glass:active {
+  color: inherit !important;
+}
+[data-nav-chrome] .btn-glass-outline {
+  border-color: hsl(var(--border));
+}
+[data-nav-chrome] .btn-glass-ghost:hover,
+[data-nav-chrome] .btn-glass-outline:hover {
+  background-color: hsl(var(--accent) / 0.6);
+}
+/* The two navbar "Get Started" CTAs keep a solid primary fill, as they
+   had before the CTA sweep -- they must not inherit surrounding text
+   color from the rule above. */
+[data-nav-chrome] .nav-btn-plain,
+[data-nav-chrome] .nav-btn-plain:hover {
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* ── CANONICAL CTA ──────────────────────────────────────────────────
+   The global .btn-glass sweep layers a translucent gradient over every
+   Button, which washes out the solid primary fill the canonical CTA
+   depends on. <CtaButton> opts back into the flat, high-contrast fill. */
+.cta-solid {
+  background-image: none !important;
+  background-color: hsl(var(--primary)) !important;
+  border-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.cta-solid:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+.cta-solid,
+.cta-solid:hover,
+.cta-solid:focus-visible {
+  color: hsl(var(--primary-foreground)) !important;
+}
+.cta-solid::before { display: none !important; content: none !important; }
+
+/* Button's shared base class applies disabled:opacity-50 to the whole
+   element -- for a light-fill/dark-text CTA like this one, fading BOTH
+   ends of that high-contrast pair by the same amount drags them toward
+   the same mid-grey and the label/icon disappear entirely (measured:
+   ~1:1 contrast, effectively invisible). Dim only the fill instead of the
+   whole element, and keep the label at full opacity so a disabled CTA
+   still reads as "here, just not yet" rather than a blank grey box. */
+.cta-solid:disabled {
+  opacity: 1 !important;
+  background-color: hsl(var(--primary) / 0.4) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* ── LANDING PRIMARY CTA — grey-to-pink gradient ─────────────────────
+   The Landing conversion overhaul calls for a literal grey-to-pink
+   linear-gradient fill for its highest-weight CTAs (Hero, Claim
+   Passport, Closing) -- distinct from .btn-glass's translucent
+   glass-over-dark-background chrome above (built for secondary/tertiary
+   buttons layered over content) and from a flat hot-pink fill
+   (explicitly out per brand rules -- reads as a generic "buy now"
+   button, not Kretopia). Built entirely from existing semantic tokens:
+   the grey end is --secondary (the same dark elevated-surface tone
+   already used for cards), the pink end is --energy (the same brand
+   accent already used everywhere on Landing as a hardcoded #FF2DA1
+   literal) -- so this adds zero new raw color values to the codebase. */
+.btn-landing-primary {
+  position: relative;
+  isolation: isolate;
+  color: #fff;
+  background-image: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--energy)) 100%);
+  border: 1px solid hsl(var(--energy) / 0.3);
+  box-shadow: 0 10px 26px -18px hsl(var(--energy) / 0.35);
+  transition: box-shadow 0.3s ease, transform 0.2s ease, filter 0.3s ease;
+}
+.btn-landing-primary:hover {
+  filter: brightness(1.04);
+  box-shadow: 0 12px 30px -16px hsl(var(--energy) / 0.4);
+  transform: translateY(-1px);
+}
+.btn-landing-primary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--energy) / 0.5);
+}
+.btn-landing-primary:active {
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.96);
+}
+.btn-landing-primary:disabled,
+.btn-landing-primary[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-landing-primary:hover { transform: none; }
+}
+

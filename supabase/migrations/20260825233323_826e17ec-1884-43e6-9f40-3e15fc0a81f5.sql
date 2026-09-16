@@ -1,0 +1,1 @@
+ALTER TABLE public.credits ADD COLUMN IF NOT EXISTS source_url text;

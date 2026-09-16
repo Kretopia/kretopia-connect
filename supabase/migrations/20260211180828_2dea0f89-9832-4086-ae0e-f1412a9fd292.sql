@@ -1,0 +1,1 @@
+ALTER TABLE public.outreach_sequences ADD COLUMN recipient_email TEXT;

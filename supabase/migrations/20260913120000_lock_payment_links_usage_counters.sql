@@ -1,0 +1,26 @@
+-- Flagged in this session's security audit: payment_links' UPDATE policy
+-- ("Users manage their own payment links update", 20260602182007) has no
+-- WITH CHECK (Postgres reuses USING, so ownership is preserved) but no
+-- column restriction either, and the table carries a blanket
+-- `GRANT ... UPDATE ... ON public.payment_links TO authenticated`. That
+-- means use_count/last_paid_at -- fields that exist specifically to be
+-- server-incremented on a real successful payment
+-- (supabase/functions/stripe-marketplace-webhook/index.ts, the only
+-- other writer, confirmed via grep) -- are directly client-writable by
+-- the link's own owner via a raw PATCH. An owner could reset
+-- use_count to 0 to make a "single use" link reusable, or backdate/clear
+-- last_paid_at, silently defeating their own link's stated limits and
+-- corrupting a value other systems may reasonably trust as an accurate
+-- usage record.
+--
+-- Confirmed via grep: the only frontend write path
+-- (src/components/thrivepay/PaymentLinksSection.tsx:92) only ever
+-- updates `active` -- a legitimate owner setting, left untouched here.
+--
+-- Fix: narrow column-level REVOKE on just the two server-owned counters,
+-- same pattern as every other money-adjacent table in this repo. Every
+-- other column (title, description, mode, amounts, single_use, max_uses,
+-- active, cover_image_url, success_message) stays owner-writable exactly
+-- as today.
+
+REVOKE UPDATE (use_count, last_paid_at) ON public.payment_links FROM authenticated, anon;
