@@ -16,15 +16,33 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 const { hash: buildHash, plugin: versionJsonPlugin } = versionPlugin();
 
+// These values are public client configuration (they are embedded in every
+// browser bundle). Keep safe defaults so preview and production builds do not
+// crash when a local, gitignored .env file is unavailable.
+const PUBLIC_SUPABASE_DEFAULTS = {
+  url: "https://kwmcocsitwssrtzkdojh.supabase.co",
+  publishableKey:
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3bWNvY3NpdHdzc3J0emtkb2poIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkxNzA3MzYsImV4cCI6MjA3NDc0NjczNn0.ZiAk_MZuQkA0quxb7KABtlJ1cY1KUAyXw55OebmUT4c",
+  projectId: "kwmcocsitwssrtzkdojh",
+};
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  const supabaseUrl = env.VITE_SUPABASE_URL || PUBLIC_SUPABASE_DEFAULTS.url;
+  const supabasePublishableKey =
+    env.VITE_SUPABASE_PUBLISHABLE_KEY || PUBLIC_SUPABASE_DEFAULTS.publishableKey;
+  const supabaseProjectId =
+    env.VITE_SUPABASE_PROJECT_ID || PUBLIC_SUPABASE_DEFAULTS.projectId;
   const generateStaticSocialPages = env.VITE_GENERATE_STATIC_SOCIAL_PAGES === "true";
   const analyzeBundle = process.env.ANALYZE === "true";
 
   return {
     define: {
       __BUILD_VERSION__: JSON.stringify(buildHash),
+      "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
+      "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabasePublishableKey),
+      "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(supabaseProjectId),
     },
     server: {
       host: "::",
@@ -142,8 +160,8 @@ export default defineConfig(({ mode }) => {
       // risk that keeps those opt-in. No reason this one should ever go
       // stale on a normal production build.
       sitemapPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       // These plugins can emit hundreds/thousands of per-entity HTML files
@@ -151,33 +169,33 @@ export default defineConfig(({ mode }) => {
       // preview uploader can throttle when too many generated files are pushed
       // in one deploy, so keep them opt-in for dedicated SEO export builds.
       generateStaticSocialPages && magazineSharePagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       generateStaticSocialPages && profileSharePagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       generateStaticSocialPages && gigSharePagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       generateStaticSocialPages && eventSharePagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       generateStaticSocialPages && campaignSharePagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       generateStaticSocialPages && seoPagesPlugin({
-        projectUrl: env.VITE_SUPABASE_URL,
-        publishableKey: env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        projectUrl: supabaseUrl,
+        publishableKey: supabasePublishableKey,
         siteUrl: "https://www.kretopia.com",
       }),
       // Dev-tool only, opt-in via `ANALYZE=true npm run build` -- writes
