@@ -14,14 +14,14 @@ import { TodayMiniPassport } from "./TodayMiniPassport";
 
 const TODAY_TUTORIAL: TutorialStep[] = [
   { icon: Sparkles, title: "Tell Kreto what's next", body: "Type or speak what you're working on — Kreto routes it to a new workspace, a people search, a gig search, or a straight answer." },
-  { icon: ListChecks, title: "Your command center", body: "The one thing that matters most right now, plus how ready your Passport is — updated live, never guessed." },
+  { icon: ListChecks, title: "Your command center", body: "Your Passport, active work and the one thing that matters most right now — based on your actual information." },
   { icon: ChevronDown, title: "Momentum and Next moves", body: "What's actually moving this week, and everything worth doing next, organized by what matters most." },
 ];
 
 interface TodayCommandCenterProps {
   firstName?: string;
-  profile: ProfileRow | null;
-  creditCount: number;
+  profile?: ProfileRow | null;
+  creditCount?: number;
   signals: TodaySignals;
   onSignalsChanged: () => void;
 }
@@ -34,7 +34,7 @@ interface TodayCommandCenterProps {
  * table; at most two secondary quick actions (Draft outreach / Or just
  * chat) sit in the header, exactly as before.
  */
-export function TodayCommandCenter({ firstName, profile, creditCount, signals, onSignalsChanged }: TodayCommandCenterProps) {
+export function TodayCommandCenter({ firstName, profile, creditCount = 0, signals, onSignalsChanged }: TodayCommandCenterProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const reducedMotion = useReducedMotion();
@@ -108,7 +108,7 @@ export function TodayCommandCenter({ firstName, profile, creditCount, signals, o
             <Button
               type="button"
               onClick={openKretoChat}
-              variant="glassOutline"
+              variant="outline"
               className="gap-1.5 rounded-full"
             >
               <MessageCircle className="h-3.5 w-3.5" />
