@@ -25,8 +25,38 @@ import {
   Youtube,
 } from "lucide-react";
 
+interface PublicPassportProfile {
+  user_id: string;
+  full_name: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  profile_frame?: string | null;
+  cover_image_url?: string | null;
+  verification_status?: string | null;
+  job_title?: string | null;
+  role?: string | null;
+  location?: string | null;
+  availability_status?: string | null;
+  availability?: string | null;
+  availability_note?: string | null;
+  sub_roles?: string[] | null;
+  bio?: string | null;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  id_verified?: boolean;
+  payment_verified?: boolean;
+  professional_skills?: unknown;
+  instagram_url?: string | null;
+  linkedin_url?: string | null;
+  twitter_url?: string | null;
+  youtube_url?: string | null;
+  spotify_url?: string | null;
+  website?: string | null;
+  calendly_url?: string | null;
+}
+
 interface PublicPassportHeroProps {
-  profile: any;
+  profile: PublicPassportProfile;
   credits: Array<{ project_name?: string; title?: string; role: string; verification_status?: string; isVerified?: boolean }>;
   connectionStatus: "none" | "pending" | "connected";
   isOwner: boolean;
@@ -61,7 +91,15 @@ export function PublicPassportHero({
   const verifiedCredits = credits.filter((credit) => credit.isVerified || credit.verification_status === "verified");
   const strongestCredits = (verifiedCredits.length ? verifiedCredits : credits).slice(0, 2);
   const skills = Array.isArray(profile.professional_skills)
-    ? profile.professional_skills.map((skill: any) => typeof skill === "string" ? skill : skill?.skill || skill?.name).filter(Boolean).slice(0, 6)
+    ? profile.professional_skills.map((skill: unknown) => {
+        if (typeof skill === "string") return skill;
+        if (typeof skill === "object" && skill !== null) {
+          const value = skill as { skill?: unknown; name?: unknown };
+          if (typeof value.skill === "string") return value.skill;
+          if (typeof value.name === "string") return value.name;
+        }
+        return null;
+      }).filter((skill): skill is string => Boolean(skill)).slice(0, 6)
     : [];
   const socialLinks = [
     { url: profile.instagram_url, label: "Instagram", icon: Instagram },
@@ -177,7 +215,7 @@ export function PublicPassportHero({
           )}
 
           {isOwner && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
-          {(profile.website || profile.calendly_url) && <p className="sr-only"><ExternalLink />Public contact links</p>}
+          {(profile.website || profile.calendly_url) && <p className="sr-only"><ExternalLink aria-hidden="true" />Public contact links</p>}
         </div>
       </article>
     </HoloCard>
