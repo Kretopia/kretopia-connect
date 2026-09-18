@@ -298,7 +298,7 @@ export default function Onboarding() {
       toast({ title: "Pick your @handle first", description: "Your unique creative handle is needed before we search.", variant: "destructive" });
       return;
     }
-    await saveUsernameIfReady();
+    if (!(await saveUsernameIfReady())) return;
     if (!(await persistMilestone(2))) return;
     notifyMilestone(2);
     setSearching(true);
@@ -431,7 +431,7 @@ export default function Onboarding() {
   };
 
   const handleSkipToManual = async () => {
-    await saveUsernameIfReady();
+    if (!(await saveUsernameIfReady())) return;
     if (!(await persistMilestone(2))) return;
     notifyMilestone(2);
     if (!(await persistMilestone(3))) return;
