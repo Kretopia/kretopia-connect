@@ -64,7 +64,6 @@ const DemoAgent = lazy(() => import("./pages/DemoAgent"));
 
 const SubmitReview = lazy(() => import("./pages/SubmitReview"));
 const Profile = lazy(() => import("./pages/Profile"));
-const ViewProfile = lazy(() => import("./pages/ViewProfile"));
 const DisputeCredit = lazy(() => import("./pages/DisputeCredit"));
 const DisputeManage = lazy(() => import("./pages/DisputeManage"));
 
@@ -338,8 +337,8 @@ const AppContent = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             
-            {/* View other user's profile - Auth users get in-app view, public gets EPK */}
-            <Route path="/profile/:userId" element={<ViewProfile />} />
+            {/* Every public creator link resolves to the same Passport experience. */}
+            <Route path="/profile/:userId" element={<CreatorEPK />} />
             <Route path="/dispute/:creditId" element={<ProtectedRoute><DisputeCredit /></ProtectedRoute>} />
             <Route path="/dispute-manage/:disputeId" element={<ProtectedRoute><DisputeManage /></ProtectedRoute>} />
             <Route path="/epk/:userId" element={<CreatorEPK />} />
