@@ -3,9 +3,9 @@
 ## Kretopia Connect — Production overhaul (September 2026)
 - [x] Batch 1 — P0: hide the Lovable publish badge, make onboarding persistence truthful, add one-time profile/Step 2/Step 3 feedback, and remove the recurring profile-completion modal trap
 - [x] Batch 2 — P1/P2: theme-resilient tutorials, consistent Kreto launcher, Passport edit placement, notification badge spacing, and user-facing XP removal
-- [ ] Batch 3 — P3: Scout retention and opportunity experience
-- [ ] Batch 4 — P4: Clients relationship and action experience
-- [ ] Batch 5 — P5: apply the approved Chief UX Designer requirements matrix
+- [x] Batch 3 — P3: Scout retention and opportunity experience
+- [x] Batch 4 — P4: Clients relationship and action experience
+- [x] Batch 5 — P5: audited the supplied CPO overview against the product; no separate Chief UX Designer requirements document was present, so no unstated requirements were invented
 - [ ] Batch 6 — QA and production readiness; no publish until release gates pass
 
 ## ✅ Completed Features (Latest)

@@ -351,7 +351,7 @@ export default function GuestStudio() {
                 Drop Zone 🎯
               </p>
               <p className="text-center text-xs text-muted-foreground mb-3">
-                Drop a link, image, or quick note. The team's Copilot routes it.
+                Drop a link, image, or quick note. Kreto routes it to the right place.
               </p>
               <Textarea
                 value={dropText}
