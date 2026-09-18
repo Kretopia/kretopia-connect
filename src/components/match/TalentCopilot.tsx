@@ -166,7 +166,7 @@ export const TalentCopilot = () => {
             <Search className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">Talent Copilot</h3>
+            <h3 className="text-sm font-semibold">Kreto Talent Search</h3>
             <p className="text-xs text-muted-foreground">
               Describe who you need. We'll shortlist and draft the outreach.
             </p>

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageSquarePlus, Send, X, Loader2, Bot, User } from "lucide-react";
+import { Send, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { KretoAvatar } from "@/components/brand/KretoAvatar";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -36,7 +37,7 @@ export function FeedbackWidget() {
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "Hey! I'm here to hear your thoughts on Kretopia. Got a bug to report, a feature idea, or just general feedback? Let me know!",
+        content: "Kreto here. Share a bug, a feature idea, or anything that would make Kretopia work better for you.",
       }]);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -128,7 +129,7 @@ export function FeedbackWidget() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/30">
             <div className="flex items-center gap-2">
-              <Bot className="h-5 w-5 text-primary" />
+              <KretoAvatar size="xs" animated={false} />
               <span className="font-semibold text-sm">Feedback</span>
               {category && (
                 <Badge variant="secondary" className={`text-xs ${categoryColors[category] || ""}`}>
@@ -147,7 +148,7 @@ export function FeedbackWidget() {
               <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "assistant" && (
                   <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Bot className="h-3.5 w-3.5 text-primary" />
+                    <KretoAvatar size="xs" animated={false} />
                   </div>
                 )}
                 <div className={`rounded-2xl px-3 py-2 text-sm max-w-[240px] ${
@@ -167,10 +168,10 @@ export function FeedbackWidget() {
             {loading && (
               <div className="flex gap-2 items-center">
                 <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-3.5 w-3.5 text-primary" />
+                  <KretoAvatar size="xs" state="thinking" />
                 </div>
                 <div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Kreto is listening…</span>
                 </div>
               </div>
             )}

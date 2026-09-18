@@ -169,10 +169,10 @@ export function DailyGoals() {
           <h3 className="text-lg font-bold flex items-center gap-2">
             <Target className="h-5 w-5 text-primary" />
             Daily Goals
-            <TooltipHint content="Complete daily goals to earn Thrive Points and maintain your streak. Goals reset every day at midnight!" />
+            <TooltipHint content="Use these daily actions to keep your work and relationships moving. Goals reset every day at midnight." />
           </h3>
           <p className="text-sm text-muted-foreground">
-            {completedGoals}/{goals.length} completed • {totalXP} XP earned
+            {completedGoals}/{goals.length} completed today
           </p>
         </div>
         <Badge variant={completedGoals === goals.length ? "default" : "secondary"}>
@@ -204,9 +204,6 @@ export function DailyGoals() {
                 <p className={`text-sm font-medium ${goal.completed ? "line-through" : ""}`}>
                   {goal.title}
                 </p>
-                <Badge variant="outline" className="text-xs">
-                  +{goal.xpReward} XP
-                </Badge>
               </div>
               <p className="text-xs text-muted-foreground">{goal.description}</p>
               {!goal.completed && (

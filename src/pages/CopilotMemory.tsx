@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Trash2, Plus, ArrowLeft, Loader2 } from "lucide-react";
+import { Brain, Trash2, Plus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { SEO } from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type Memory = {
   id: string;
@@ -116,7 +117,7 @@ export default function CopilotMemory() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <SEO title="Copilot Memory · Kretopia" description="Manage what Kreto remembers about you." />
+      <SEO title="Kreto Memory · Kretopia" description="Manage what Kreto remembers about you." />
       <div className="mx-auto max-w-2xl px-4 py-6">
         <Button
           variant="ghost"
@@ -132,9 +133,9 @@ export default function CopilotMemory() {
             <Brain className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Copilot Memory</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Kreto Memory</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Things Kreto has learned about you. She uses these to give better,
+              Things Kreto has learned about you. Kreto uses these to give better,
               more personal answers across the platform. You're in control — edit or delete anything.
             </p>
           </div>
@@ -143,7 +144,7 @@ export default function CopilotMemory() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Plus className="h-4 w-4" /> Teach it something
+              <Plus className="h-4 w-4" /> Add a detail
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -176,7 +177,7 @@ export default function CopilotMemory() {
               disabled={!newContent.trim() || adding}
               size="sm"
             >
-              {adding ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {adding ? <LoadingSpinner size="sm" className="mr-1" /> : null}
               Save memory
             </Button>
           </CardContent>
@@ -190,14 +191,14 @@ export default function CopilotMemory() {
 
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <LoadingSpinner size="sm" text="Loading memories" />
           </div>
         ) : memories.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
               <Brain className="h-8 w-8 mx-auto mb-2 opacity-40" />
               No memories yet. Have a few real conversations with Kreto —
-              it'll learn the things that matter and they'll show up here.
+              Kreto will learn the things that matter and they'll show up here.
             </CardContent>
           </Card>
         ) : (

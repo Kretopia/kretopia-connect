@@ -27,6 +27,7 @@ const baseProfile: SwipeProfile = {
   role: "Photographer",
   bio: "Editorial and portrait photographer based in Los Angeles.",
   avatar_url: "https://example.com/ava.jpg",
+  cover_image_url: null,
   location: "Los Angeles, CA",
   level: 3,
   professional_skills: ["Lighting", "Retouching"],

@@ -10,7 +10,6 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(true);
   const [tier, setTier] = useState<string>("");
-  const [bonusXp, setBonusXp] = useState<number | null>(null);
   const isFounder = searchParams.get("type") === "founder";
 
   useEffect(() => {
@@ -37,9 +36,6 @@ export default function PaymentSuccess() {
               console.error('[PaymentSuccess] Founder verification error:', founderError);
             } else {
               console.log('[PaymentSuccess] Founder verified:', founderData);
-              if (founderData?.bonus_xp) {
-                setBonusXp(founderData.bonus_xp);
-              }
             }
           }
         } else {
@@ -131,7 +127,7 @@ export default function PaymentSuccess() {
                       <li>• ⭕ Exclusive Founder Circle badge</li>
                       <li>• ♾Lifetime Pro access</li>
                       <li>• 5% platform fees</li>
-                      <li>• 🎁 +{bonusXp || 5000} Bonus XP</li>
+                      <li>• Priority access to new creator tools</li>
                       <li>• 🎟Event access perks</li>
                       <li>• All Pro features unlocked</li>
                     </>

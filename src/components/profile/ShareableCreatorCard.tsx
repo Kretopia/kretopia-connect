@@ -253,22 +253,9 @@ export function ShareableCreatorCard({ open, onOpenChange, profile }: CreatorCar
                 </div>
               )}
 
-              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-white/10">
-                <div className="text-center">
-                  <p className="text-white font-bold text-sm">{profile.level || 1}</p>
-                  <p className="text-white/40 text-[9px]">LEVEL</p>
-                </div>
-                <div className="w-px h-6 bg-white/10" />
-                <div className="text-center">
-                  <p className="text-white font-bold text-sm">{profile.xp || 0}</p>
-                  <p className="text-white/40 text-[9px]">XP</p>
-                </div>
-                <div className="w-px h-6 bg-white/10" />
-                <div className="text-center">
-                  <p className="text-primary font-bold text-sm"></p>
-                  <p className="text-white/40 text-[9px]">CREATOR</p>
-                </div>
-              </div>
+              <p className="mt-4 pt-4 border-t border-white/10 text-center text-white/50 text-[9px] tracking-[0.2em] uppercase">
+                Kretopia Creator Passport
+              </p>
 
               <div className="mt-4 pt-3 border-t border-white/5">
                 <p className="text-white/30 text-[9px] tracking-widest">JOIN THE CREATIVE NETWORK</p>

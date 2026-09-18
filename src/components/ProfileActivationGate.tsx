@@ -1,5 +1,4 @@
 import { useState, ReactNode } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,9 +26,8 @@ const fieldIconMap: Record<string, React.ReactNode> = {
 };
 
 /**
- * Hard activation gate. Replaces the soft visibility banner.
- * The profile MUST meet discovery requirements to access the wrapped content.
- * Provides inline social-URL auto-import to lower friction.
+ * Non-blocking activation guidance. Discovery remains usable while the user
+ * completes the fields that make their Passport visible to other people.
  */
 export const ProfileActivationGate = ({
   isVisible,
@@ -55,7 +53,8 @@ export const ProfileActivationGate = ({
       if (lower.includes("linkedin.com")) profileUpdate.linkedin_url = importUrl;
       else if (lower.includes("imdb.com")) profileUpdate.imdb_url = importUrl;
       else profileUpdate.website = importUrl;
-      await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
+      const { error: profileError } = await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
+      if (profileError) throw profileError;
 
       // Step 2: scrape page directly for bio/skills/portfolio (analyze-profile-url)
       const { data: scrape, error: scrapeErr } = await supabase.functions.invoke("analyze-profile-url", {
@@ -83,7 +82,8 @@ export const ProfileActivationGate = ({
           updates.professional_skills = data.skills.slice(0, 12);
         }
         if (Object.keys(updates).length > 0) {
-          await supabase.from("profiles").update(updates).eq("user_id", user.id);
+          const { error: updateError } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
+          if (updateError) throw updateError;
         }
         // Insert portfolio items as credits (verified work)
         if (Array.isArray(data.portfolio_items) && data.portfolio_items.length > 0) {
@@ -98,7 +98,8 @@ export const ProfileActivationGate = ({
             source: "web_verified",
             verification_status: "pending_review",
           }));
-          await supabase.from("credits").insert(rows);
+          const { error: creditsError } = await supabase.from("credits").insert(rows);
+          if (creditsError) throw creditsError;
         }
       }
 
@@ -109,10 +110,10 @@ export const ProfileActivationGate = ({
 
       toast({
         title: "Profile imported",
-        description: "We pulled what we could verify. Refreshing…",
+        description: "We pulled what we could verify. Your discovery access will update automatically.",
       });
-      // Give the writes a moment to settle before re-checking gate
-      setTimeout(() => window.location.reload(), 1200);
+      window.dispatchEvent(new CustomEvent("kretopia:profile-updated"));
+      setImporting(false);
     } catch (e: any) {
       console.error("[ActivationGate] import failed:", e);
       toast({
@@ -125,33 +126,20 @@ export const ProfileActivationGate = ({
   };
 
   return (
-    <>
-      {/* Render a blurred peek of the content behind so users feel what they're missing */}
-      <div className="pointer-events-none select-none blur-md opacity-40 max-h-[60vh] overflow-hidden">
-        {children}
-      </div>
-
-      <Dialog open onOpenChange={() => {}}>
-        <DialogContent
-          className="max-w-md"
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
-          <DialogHeader>
-            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-6 w-6 text-primary" />
+    <div className="space-y-4">
+      <section className="rounded-lg border border-primary/20 bg-card p-4 sm:p-5" aria-labelledby="profile-activation-title">
+          <div className="flex items-start gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <Sparkles className="h-5 w-5 text-primary" />
             </div>
-            <DialogTitle className="text-center text-xl">
-              Unlock {surfaceLabel}
-            </DialogTitle>
-            <DialogDescription className="text-center">
-              Add a photo, bio, and one piece of work so other creators can find you.
-              Takes ~30 seconds.
-            </DialogDescription>
-          </DialogHeader>
+            <div>
+              <h2 id="profile-activation-title" className="text-lg font-semibold text-foreground">Strengthen your Passport for {surfaceLabel}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Add a photo, bio, and one piece of work so people can find you. You can still browse now.</p>
+            </div>
+          </div>
 
           {/* Missing checklist */}
-          <div className="space-y-2">
+          <div className="mt-4 space-y-2">
             {missingFields.map((field) => (
               <div
                 key={field}
@@ -166,7 +154,7 @@ export const ProfileActivationGate = ({
           </div>
 
           {/* Auto-import */}
-          <div className="space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="mt-4 space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
             <Label htmlFor="gate-import" className="text-xs font-semibold uppercase tracking-wide text-primary">
               Fast track: import from a link
             </Label>
@@ -195,14 +183,14 @@ export const ProfileActivationGate = ({
 
           <Button
             onClick={() => navigate("/profile")}
-            className="w-full"
+            className="mt-4 w-full sm:w-auto"
             variant="outline"
           >
             Complete profile manually
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
-        </DialogContent>
-      </Dialog>
-    </>
+      </section>
+      {children}
+    </div>
   );
 };

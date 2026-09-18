@@ -30,6 +30,7 @@ interface ProfileDialogsProps {
   onImportData: (data: any) => void;
   onCropComplete: (blob: Blob) => void;
   isUploadingAvatar: boolean;
+  onProfileUpdate: () => void;
 }
 
 export const ProfileDialogs = ({
@@ -54,6 +55,7 @@ export const ProfileDialogs = ({
   onImportData,
   onCropComplete,
   isUploadingAvatar,
+  onProfileUpdate,
 }: ProfileDialogsProps) => {
   return (
     <>
@@ -74,7 +76,7 @@ export const ProfileDialogs = ({
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
         profile={profile}
-        onProfileUpdate={() => { window.location.reload(); }}
+        onProfileUpdate={onProfileUpdate}
       />
 
       <PassportShareSheet

@@ -12,6 +12,7 @@ import { FirstTimeHint } from "@/components/ui/first-time-hint";
 import {
   Globe, Linkedin, Instagram, Sparkles, MapPin, ExternalLink,
   RefreshCw, Mail, Bookmark, X, Send, ShieldCheck, Briefcase, SlidersHorizontal,
+  CheckCircle2, Trophy,
 } from "lucide-react";
 import { ScoutPreferencesDialog } from "./ScoutPreferencesDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -131,6 +132,22 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     },
     enabled: !!user,
   });
+  const { data: progress = { saved: 0, applied: 0, won: 0 } } = useQuery({
+    queryKey: ["scout-progress", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("scouted_gig_actions")
+        .select("action, outcome")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return {
+        saved: data.filter((item) => item.action === "saved").length,
+        applied: data.filter((item) => item.action === "applied").length,
+        won: data.filter((item) => item.action === "applied" && item.outcome === "won").length,
+      };
+    },
+    enabled: !!user,
+  });
   const [scanning, setScanning] = useState(false);
   const [scanElapsed, setScanElapsed] = useState(0);
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -196,19 +213,29 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
 
   const dismiss = async (gigId: string) => {
     if (!user) return;
-    await supabase.from("scouted_gig_actions").upsert({ user_id: user.id, scouted_gig_id: gigId, action: "dismissed" });
+    const { error } = await supabase.from("scouted_gig_actions").upsert({ user_id: user.id, scouted_gig_id: gigId, action: "dismissed" });
+    if (error) {
+      toast({ title: "Couldn't dismiss this gig", description: "Your preference was not saved. Try again.", variant: "destructive" });
+      return;
+    }
     queryClient.setQueryData<ScoutedGig[]>(queryKey, (prev) => (prev ?? []).filter((g) => g.id !== gigId));
+    toast({ title: "Gig dismissed", description: "This choice helps refine what Scout shows you." });
   };
 
   const save = async (gigId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
-    await supabase.from("scouted_gig_actions").upsert({ user_id: user.id, scouted_gig_id: gigId, action: "saved" });
+    const { error } = await supabase.from("scouted_gig_actions").upsert({ user_id: user.id, scouted_gig_id: gigId, action: "saved" });
+    if (error) {
+      toast({ title: "Couldn't save this gig", variant: "destructive" });
+      return;
+    }
     // Shortlist lives in a separate query cache (ShortlistedGigs.tsx) —
     // without this, saving here can leave that tab showing a stale list
     // for up to its 5min staleTime if it was already visited this session.
     queryClient.invalidateQueries({ queryKey: ["shortlisted-gigs", user.id] });
-    toast({ title: "Saved" });
+    queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] });
+    toast({ title: "Saved to your shortlist", description: "Scout will use this signal to refine future matches." });
   };
 
   const openDetail = async (gig: ScoutedGig) => {
@@ -241,6 +268,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     const { data, error } = await supabase.functions.invoke("draft-gig-application", {
       body: { scouted_gig_id: openGig.id },
     });
+    queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] });
     setDrafting(false);
     if (error || !data?.cover_letter) {
       toast({ title: "Couldn't draft letter", variant: "destructive" });
@@ -273,6 +301,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     if (!user || !openGig) return;
     await supabase.from("scouted_gig_actions").update({ outcome })
       .eq("user_id", user.id).eq("scouted_gig_id", openGig.id).eq("action", "applied");
+    queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] });
     toast({ title: outcome === "won" ? "Congrats — booked!" : `Marked ${outcome}` });
     setOpenGig(null);
   };
@@ -398,6 +427,20 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         onOpenChange={setPrefsOpen}
         onSaved={() => { /* user can hit Scan now to re-run */ }}
       />
+
+      {(progress.saved > 0 || progress.applied > 0 || progress.won > 0) && (
+        <div className="flex flex-wrap gap-x-5 gap-y-2 border-y border-border/60 py-3" aria-label="Scout progress">
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Bookmark className="h-3.5 w-3.5 text-energy" /> <strong className="text-foreground">{progress.saved}</strong> shortlisted
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-3.5 w-3.5 text-energy" /> <strong className="text-foreground">{progress.applied}</strong> applied
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Trophy className="h-3.5 w-3.5 text-energy" /> <strong className="text-foreground">{progress.won}</strong> booked
+          </span>
+        </div>
+      )}
 
       {scanning && (
         <SmartWidget interactive={false} className="p-3">

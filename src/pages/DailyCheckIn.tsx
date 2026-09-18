@@ -19,7 +19,6 @@ const DailyCheckIn = () => {
   const [todayChecked, setTodayChecked] = useState(false);
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
-  const [xpEarned, setXpEarned] = useState(0);
   const [weekDays, setWeekDays] = useState<boolean[]>([false, false, false, false, false, false, false]);
 
   useEffect(() => {
@@ -32,18 +31,16 @@ const DailyCheckIn = () => {
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("current_streak, last_checkin_date, total_xp")
+        .select("current_streak, last_checkin_date")
         .eq("user_id", user.id)
         .maybeSingle();
 
       if (profile) {
         const currentStreak = (profile as any).current_streak || 0;
         const lastDate = (profile as any).last_checkin_date;
-        const totalXp = (profile as any).total_xp || 0;
         
         setStreak(currentStreak);
         setLastCheckIn(lastDate);
-        setXpEarned(totalXp);
 
         if (lastDate) {
           const last = new Date(lastDate);
@@ -89,8 +86,6 @@ const DailyCheckIn = () => {
         }
       }
 
-      const bonusXP = newStreak >= 7 ? 50 : newStreak >= 3 ? 25 : 10;
-
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -101,20 +96,13 @@ const DailyCheckIn = () => {
 
       if (error) throw error;
 
-      await supabase.rpc("award_xp" as any, {
-        p_user_id: user.id,
-        p_amount: bonusXP,
-        p_reason: "daily_check_in",
-      });
-
       setStreak(newStreak);
       setTodayChecked(true);
-      setXpEarned((prev) => prev + bonusXP);
       setLastCheckIn(today);
 
       toast({
         title: `Day ${newStreak} streak!`,
-        description: `+${bonusXP} XP earned. ${newStreak >= 7 ? "Weekly bonus activated!" : "Keep it going!"}`,
+        description: newStreak >= 7 ? "A full week of steady momentum." : "Keep your work moving.",
       });
     } catch (err) {
       console.error("Check-in error:", err);
@@ -133,7 +121,7 @@ const DailyCheckIn = () => {
     <div className="container mx-auto px-4 py-6 max-w-md pb-24 md:pb-6">
       <Helmet>
         <title>Daily Check-In | Kretopia</title>
-        <meta name="description" content="Check in daily to build your streak, earn XP, and unlock rewards." />
+        <meta name="description" content="Check in daily to maintain momentum across your creative work." />
       </Helmet>
 
       <div className="text-center mb-6">
@@ -141,7 +129,7 @@ const DailyCheckIn = () => {
           <Flame className={cn("h-8 w-8 transition-colors", streak > 0 ? "text-primary" : "text-muted-foreground")} />
         </div>
         <h1 className="text-2xl font-bold">Daily Check-In</h1>
-        <p className="text-sm text-muted-foreground mt-1">Show up, earn XP, build momentum</p>
+        <p className="text-sm text-muted-foreground mt-1">Show up and keep your creative work moving</p>
       </div>
 
       <Card className="mb-4 border-primary/20">
@@ -206,20 +194,20 @@ const DailyCheckIn = () => {
         <CardContent className="pt-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <Gift className="h-3.5 w-3.5" />
-            Streak Rewards
+            Momentum milestones
           </p>
           <div className="space-y-2 text-sm">
-            {[
-              { days: 3, xp: 25, label: "3-day streak" },
-              { days: 7, xp: 50, label: "7-day streak" },
-              { days: 14, xp: 100, label: "14-day streak" },
-              { days: 30, xp: 250, label: "30-day streak" },
-            ].map((tier) => (
+              {[
+                { days: 3, label: "3 days of momentum" },
+                { days: 7, label: "One consistent week" },
+                { days: 14, label: "Two weeks showing up" },
+                { days: 30, label: "One focused month" },
+              ].map((tier) => (
               <div key={tier.days} className="flex items-center justify-between">
                 <span className={cn(streak >= tier.days ? "text-foreground font-medium" : "text-muted-foreground")}>
                   {streak >= tier.days ? "" : ""} {tier.label}
                 </span>
-                <Badge variant="secondary" className="text-[10px]">+{tier.xp} XP</Badge>
+                <span className="text-xs text-muted-foreground">{streak >= tier.days ? "Reached" : `${tier.days - streak} days to go`}</span>
               </div>
             ))}
           </div>

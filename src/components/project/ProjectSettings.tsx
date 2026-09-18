@@ -295,24 +295,24 @@ export function ProjectSettings({ project, onUpdate, userRole }: ProjectSettings
               </div>
             )}
 
-            {/* Copilot / Agent Mode — visible to all collaborators (per-user setting) */}
+            {/* Kreto / Agent Mode — visible to all collaborators (per-user setting) */}
             <Separator />
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Project Copilot</h3>
+              <h3 className="text-sm font-semibold">Kreto for this project</h3>
               <AgentModeToggle
                 domain="agent_mode_projects"
                 title="Agent Mode for projects"
-                description="Let the Copilot watch this project and propose follow-ups, task nudges and recap drafts. Nothing is sent without your tap."
+                description="Let Kreto watch this project and propose follow-ups, task nudges and recap drafts. Nothing is sent without your tap."
               />
               <AgentModeToggle
                 domain="agent_mode_payments"
                 title="Auto close-out: Payments"
-                description="When a milestone is marked complete, the Copilot drafts an invoice card for you to tap-send."
+                description="When a milestone is marked complete, Kreto drafts an invoice card for you to review and send."
               />
               <AgentModeToggle
                 domain="agent_mode_credits"
                 title="Auto close-out: Credits & Vouches"
-                description="After the invoice is sent, the Copilot queues a credit and a vouch request — one tap each."
+                description="After the invoice is sent, Kreto queues a credit and a vouch request for your approval."
               />
             </div>
 

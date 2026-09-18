@@ -28,7 +28,7 @@ const TIERS = [
     features: [
       "💬 Kreto Talk — 2 hrs/day (chat + voice + memory)",
       "🛰️ Smart Gig Scout — daily, full feed + auto-drafted applications",
-      "🤝 Project Copilot proposals (accept on-tap)",
+      "Kreto project proposals — approve before action",
       "Unlimited swipes, invoicing & milestone payments",
       "Creator site + subdomain · EPK-to-PDF",
       "💸 Kretopia Fund — 3 campaigns/year",

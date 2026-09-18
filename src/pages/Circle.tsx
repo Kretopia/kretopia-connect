@@ -83,7 +83,7 @@ export default function Circle() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
+  const refreshProfileVisibility = useCallback(() => {
     if (!user?.id) return;
     supabase
       .from("profiles")
@@ -100,6 +100,16 @@ export default function Circle() {
         setProfileVisibility({ isVisible: missingFields.length === 0, missingFields });
       }, () => {});
   }, [user?.id]);
+
+  useEffect(() => {
+    refreshProfileVisibility();
+    window.addEventListener("focus", refreshProfileVisibility);
+    window.addEventListener("kretopia:profile-updated", refreshProfileVisibility);
+    return () => {
+      window.removeEventListener("focus", refreshProfileVisibility);
+      window.removeEventListener("kretopia:profile-updated", refreshProfileVisibility);
+    };
+  }, [refreshProfileVisibility]);
 
   const fetchConnections = useCallback(async () => {
     if (!user?.id) return;
