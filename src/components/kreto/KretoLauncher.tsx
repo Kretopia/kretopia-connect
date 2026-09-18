@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { KretoPresence } from "@/components/brand/KretoPresence";
 import { cn } from "@/lib/utils";
+import kretoComputer from "@/assets/kreto-executive-producer.png.asset.json";
 
 /**
  * KretoLauncher — the single, subtle "open Kreto" affordance on desktop.
@@ -53,10 +53,8 @@ export function KretoLauncher() {
       aria-label="Open Kreto"
       title="Open Kreto"
       className={cn(
-        "hidden lg:flex fixed z-40 items-center justify-center h-14 w-14 rounded-full",
-        "bg-background/90 border border-border backdrop-blur-sm",
-        "shadow-[0_10px_28px_-10px_rgba(0,0,0,0.7)]",
-        "hover:border-foreground/25 hover:scale-105 active:scale-95",
+        "group hidden lg:flex fixed z-40 items-end justify-center h-24 w-24",
+        "hover:scale-105 active:scale-95",
         "transition-transform duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       )}
@@ -65,7 +63,8 @@ export function KretoLauncher() {
         bottom: "max(1.25rem, env(safe-area-inset-bottom))",
       }}
     >
-      <KretoPresence size="compact" state="idle" />
+      <span className="absolute inset-x-2 bottom-0 h-5 rounded-full bg-primary/20 blur-lg transition-opacity group-hover:opacity-100" aria-hidden />
+      <img src={kretoComputer.url} alt="" className="relative h-24 w-24 object-contain drop-shadow-2xl" />
       <span className="sr-only">Open Kreto</span>
     </button>
   );
