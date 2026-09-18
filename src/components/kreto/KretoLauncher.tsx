@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import kretoComputer from "@/assets/kreto-executive-producer.png.asset.json";
+import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
 
 /**
  * KretoLauncher — the single, subtle "open Kreto" affordance on desktop.
@@ -64,7 +64,7 @@ export function KretoLauncher() {
       }}
     >
       <span className="absolute inset-x-2 bottom-0 h-5 rounded-full bg-primary/20 blur-lg transition-opacity group-hover:opacity-100" aria-hidden />
-      <img src={kretoComputer.url} alt="" className="relative h-24 w-24 object-contain drop-shadow-2xl" />
+      <img src={kretoProducer} alt="" className="relative h-24 w-24 object-contain drop-shadow-2xl" />
       <span className="sr-only">Open Kreto</span>
     </button>
   );
