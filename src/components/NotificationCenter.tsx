@@ -88,7 +88,7 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
             // is pointer-events-none so it never blocks the trigger tap.
             <Badge
               variant="destructive"
-              className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums pointer-events-none"
+              className="absolute -top-1 -right-1 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums pointer-events-none"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>
