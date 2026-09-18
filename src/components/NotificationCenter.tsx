@@ -79,20 +79,21 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
         >
           <span className="relative inline-flex h-5 w-5 items-center justify-center">
             <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              // Tight to the bell icon itself: the badge is positioned
+              // relative to this 20×20 icon wrapper so it hugs the top-right
+              // corner of the bell, not the button. overflow:visible on the
+              // button prevents the .btn-glass sheen clip from cutting the
+              // badge off. The badge is pointer-events-none so it never
+              // blocks the trigger tap.
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums pointer-events-none"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
           </span>
-          {unreadCount > 0 && (
-            // Tight to the bell icon itself: positioned relative to the
-            // icon's own box so the badge hugs the top-right of the bell,
-            // not the button corner. overflow:visible above prevents the
-            // .btn-glass sheen clip from cutting the badge off. The badge
-            // is pointer-events-none so it never blocks the trigger tap.
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums pointer-events-none"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md">
