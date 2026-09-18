@@ -151,7 +151,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
           ...m,
           {
             role: "assistant",
-            content: "I've got a suggested action ready — open the full Copilot (bottom nav) to review and approve it.",
+            content: "I've got a suggested action ready — open Kreto from the bottom navigation to review and approve it.",
           },
         ]);
       }

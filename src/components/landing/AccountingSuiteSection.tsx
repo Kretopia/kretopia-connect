@@ -30,7 +30,7 @@ const FINANCE_FEATURES = [
   },
   {
     icon: Bot,
-    title: "Money Copilot",
+    title: "Kreto for Money",
     description: "Personalized insights on spending patterns, cash flow health & tax optimization tips.",
   },
 ];

@@ -776,7 +776,7 @@ export const ThriveAgentFab = () => {
             size="sm"
             className={cn("h-7 gap-1 text-muted-foreground hover:text-foreground", showClose ? "w-7 px-0" : "px-2")}
             onClick={() => setCapsOpen(true)}
-            aria-label="What can Copilot do?"
+            aria-label="What can Kreto do?"
             title={showClose ? "What can I do?" : undefined}
           >
             <HelpCircle className="h-3.5 w-3.5" />

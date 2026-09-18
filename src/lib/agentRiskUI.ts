@@ -107,7 +107,7 @@ export function draftTrigger(
       };
     }
     case "manual":
-      return { label: "You drafted this", reason: "You started this draft from Copilot." };
+      return { label: "You drafted this", reason: "You started this draft with Kreto." };
     default:
       return {
         label: "Suggested by Thrive",
