@@ -4,4 +4,4 @@
 - [x] Define one shared public Passport UX and complete data/action contract
 - [x] Rebuild every public EPK on the shared Passport presentation
 - [x] Add collaboration and available contact paths with signed-in and guest states
-- [ ] Verify themes, accessibility, responsive layouts, tests, and production build
+- [x] Verify themes, accessibility, responsive layouts, tests, and production build
