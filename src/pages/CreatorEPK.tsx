@@ -192,7 +192,10 @@ const CreatorEPK = () => {
         // confirmed by reading each call site before making this change.
         const { data: profileData, error: profileError } = await supabase
           .from('public_profiles_safe')
-          .select('user_id, full_name, username, role, bio, location, avatar_url, website, calendly_url, linkedin_url, instagram_url, twitter_url, youtube_url, spotify_url, behance_url, imdb_url, soundcloud_url, verification_tier, verification_status, professional_skills, cover_image_url, rate_range, sub_roles, mother_agency, model_unions, model_categories, model_stats')
+          // Select the active safe-view shape instead of naming columns from a
+          // newer schema snapshot. This keeps public Passports available while
+          // production migrations propagate, without reading the base table.
+          .select('*')
           .eq('user_id', userId)
           .maybeSingle();
 
@@ -203,7 +206,7 @@ const CreatorEPK = () => {
           return;
         }
 
-        setProfile(profileData);
+        setProfile(profileData as Profile);
 
         // Fetch all data in parallel
         const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes] = await Promise.all([
