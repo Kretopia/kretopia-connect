@@ -70,23 +70,30 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" className={cn("relative h-8 w-8 sm:h-10 sm:w-10", triggerClassName)} aria-label="Open notifications">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            // Positioned inside the button's own edges (not overflowing past
-            // them via negative insets) -- the shared .btn-glass button
-            // styling clips overflow to contain its decorative sheen, which
-            // was silently cutting off part of this badge when it extended
-            // past the trigger's box, collapsing "1"/"9+" to an unreadable
-            // sliver. min-w instead of a fixed w- so two-character "9+"
-            // never gets squeezed narrower than its own text.
-            <Badge
-              variant="destructive"
-              className="absolute top-0 right-0 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums"
-            >
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </Badge>
-          )}
+        <Button
+          variant="ghost"
+          size="icon"
+          style={{ overflow: 'visible' }}
+          className={cn("relative h-8 w-8 sm:h-10 sm:w-10", triggerClassName)}
+          aria-label="Open notifications"
+        >
+          <span className="relative inline-flex h-5 w-5 items-center justify-center">
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              // Tight to the bell icon itself: the badge is positioned
+              // relative to this 20×20 icon wrapper so it hugs the top-right
+              // corner of the bell, not the button. overflow:visible on the
+              // button prevents the .btn-glass sheen clip from cutting the
+              // badge off. The badge is pointer-events-none so it never
+              // blocks the trigger tap.
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums pointer-events-none"
+              >
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </Badge>
+            )}
+          </span>
         </Button>
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md">
