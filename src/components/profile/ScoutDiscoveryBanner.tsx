@@ -37,19 +37,19 @@ export const ScoutDiscoveryBanner = ({ show }: ScoutDiscoveryBannerProps) => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm text-foreground">
-            Scout has already found opportunities for you.
+            Scout is ready to look for opportunities that fit you.
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Gigs matched to what's already on your Passport — no extra setup needed.
+            Scout uses what is already on your Passport and shows why each result may fit.
           </p>
 
           <div className="flex flex-wrap gap-2 mt-3">
             <Button
               size="sm"
               className="h-8 text-xs gap-1.5"
-              onClick={() => navigate("/opportunities")}
+              onClick={() => navigate("/scout")}
             >
-              See my opportunities <ArrowRight className="h-3 w-3" />
+              Open Scout <ArrowRight className="h-3 w-3" />
             </Button>
             <Button
               size="sm"

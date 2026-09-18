@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useClients, type Client } from "@/hooks/useClients";
 import { AIAddClientCard } from "@/components/clients/AIAddClientCard";
 import { Button } from "@/components/ui/button";
-import { Plus, Building2, Mail, Phone, ChevronRight, UserPlus, FolderKanban, ClipboardList } from "lucide-react";
+import { Plus, Building2, ChevronRight, UserPlus, FolderKanban, ClipboardList, Clock3 } from "lucide-react";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoTip } from "@/components/agent/KretoTip";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
+import { formatDistanceToNow } from "date-fns";
 
 const CLIENTS_TUTORIAL: TutorialStep[] = [
   { icon: UserPlus, title: "Add a client", body: "Save their name, company, and contact details in one place — takes a few seconds." },
@@ -60,7 +61,10 @@ const Clients = () => {
         </div>
       ) : (
         <div className="space-y-2">
-          {clients.map((c) => (
+          {clients.map((c) => {
+            const lastUpdated = formatDistanceToNow(new Date(c.updated_at), { addSuffix: true }).replace("about ", "");
+            const needsAttention = Date.now() - new Date(c.updated_at).getTime() > 1000 * 60 * 60 * 24 * 30;
+            return (
             <button
               key={c.id}
               type="button"
@@ -72,13 +76,18 @@ const Clients = () => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">{c.company_name || c.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {c.company_name ? c.name : c.contact_email || "No contact email"}
-                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                  <span className="truncate">{c.company_name ? c.name : c.contact_email || "No contact email"}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className={needsAttention ? "text-energy shrink-0" : "shrink-0"}>
+                    {needsAttention ? "Reconnect" : "Updated"} {lastUpdated}
+                  </span>
+                </div>
               </div>
+              {needsAttention && <Clock3 className="h-4 w-4 text-energy shrink-0" aria-label="Relationship may need attention" />}
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
-          ))}
+          );})}
         </div>
       )}
       </div>

@@ -2,13 +2,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useClient, useClientProjects, useClientContacts } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Plus, Mail, Phone, Globe, FolderKanban, Users, FileText, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, Mail, Phone, Globe, FolderKanban, Users, FileText, Send } from "lucide-react";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { StudioCardsGrid } from "@/components/project/studio/StudioCardsGrid";
 import { GuestStudioShareDialog } from "@/components/project/GuestStudioShareDialog";
 import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 
 const ClientDetail = () => {
@@ -64,7 +65,7 @@ const ClientDetail = () => {
   };
 
 
-  if (isLoading) return <div className="p-4">Loading…</div>;
+  if (isLoading) return <LoadingSpinner className="min-h-[50vh]" text="Loading client" />;
   if (!client) return <div className="p-4">Client not found.</div>;
 
   return (
@@ -156,7 +157,7 @@ const ClientDetail = () => {
                   title={!client.contact_email ? "Add a client email first" : "Email client a one-tap Studio link"}
                 >
                   {sendingEmail && emailingProjectId === p.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <LoadingSpinner size="sm" />
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}
@@ -191,9 +192,13 @@ const ClientDetail = () => {
           <Users className="h-3.5 w-3.5" /> People ({contacts.length})
         </h2>
         {contacts.length === 0 ? (
-          <p className="text-sm text-muted-foreground rounded-xl border border-dashed border-border/60 p-4 text-center">
-            Add team members or stakeholders from this client. Coming soon.
-          </p>
+          <div className="rounded-xl border border-dashed border-border/60 p-4 text-center">
+            <p className="text-sm font-medium">No additional people saved</p>
+            <p className="text-xs text-muted-foreground mt-1">Keep the primary contact details above current so they are ready when you need them.</p>
+            <Button size="sm" variant="ghost" className="mt-2" onClick={() => setEditing(true)}>
+              <Pencil className="h-3.5 w-3.5 mr-1.5" /> Update contact details
+            </Button>
+          </div>
         ) : (
           <div className="space-y-1.5">
             {contacts.map((c: any) => (

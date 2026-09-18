@@ -505,7 +505,7 @@ const AppContent = () => {
             <Route path="/soundstages" element={<SoundStages />} />
             <Route path="/sound-stages" element={<Navigate to="/soundstages" replace />} />
             <Route path="/opportunities" element={<Opportunities />} />
-            <Route path="/scout" element={<Scout />} />
+            <Route path="/scout" element={<ProtectedRoute><Scout /></ProtectedRoute>} />
 
             {/* Public Event Page */}
             <Route path="/event/:eventId" element={<EventPage />} />

@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Loader2, Sparkles, Plus } from "lucide-react";
+import { Sparkles, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { extractInvokeError } from "@/lib/extractInvokeError";
 import type { Client } from "@/hooks/useClients";
+import { KretoMark } from "@/components/brand/KretoMark";
 
 interface Props {
   /** null = start from a blank form. */
@@ -76,7 +77,7 @@ export function AIAddClientCard({ onDraft }: Props) {
           className="gap-1.5 rounded-full text-white"
           style={{ backgroundColor: "hsl(var(--energy))" }}
         >
-          {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</> : <><Sparkles className="h-4 w-4" /> Add with Kreto</>}
+          {busy ? <><KretoMark size="xs" state="active" /> Reading…</> : <><Sparkles className="h-4 w-4" /> Add with Kreto</>}
         </Button>
       </div>
     </div>
