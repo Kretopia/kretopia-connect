@@ -146,7 +146,6 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                   )}
                   {Icon && (
                     <Icon
-                      className="relative h-[18px] w-[18px]"
                       className={cn("relative h-[18px] w-[18px]", !(isActive || isPast) && "text-muted-foreground")}
                       style={isActive || isPast ? { color: ACCENT } : undefined}
                       aria-hidden

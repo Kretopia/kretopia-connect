@@ -130,7 +130,6 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
 
       {/* Header — just the step counter, no AI badge */}
       <div
-        className="relative flex items-center justify-end px-4 py-2.5 sm:px-5"
         className="relative flex items-center justify-end border-b border-border px-4 py-2.5 sm:px-5"
       >
         <span
