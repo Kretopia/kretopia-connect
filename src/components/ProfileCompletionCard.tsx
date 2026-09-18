@@ -137,7 +137,7 @@ export const ProfileCompletionCard = ({ completion }: ProfileCompletionCardProps
           variant="default"
         >
           <Sparkles className="mr-2 h-4 w-4" />
-          {t("profile.completeProfile")} (+50 XP)
+          {t("profile.completeProfile")}
         </Button>
       </div>
     </Card>

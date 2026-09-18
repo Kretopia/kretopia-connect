@@ -45,16 +45,10 @@ export const ConnectionRequestActions = ({
         connection_status: 'accepted'
       });
 
-      // Award XP to both users (server-side)
-      await Promise.all([
-        supabase.rpc('award_xp' as any, { p_user_id: user.id, p_amount: 20, p_reason: 'connection_accepted' }),
-        supabase.rpc('award_xp' as any, { p_user_id: connectionUserId, p_amount: 20, p_reason: 'connection_accepted' })
-      ]);
-
       onStatusChange('accepted');
       toast({
-        title: "Connection Accepted! +20 XP",
-        description: "You're now connected",
+        title: "Connection accepted",
+        description: "You can now message each other and build the relationship.",
       });
     } catch (error: any) {
       toast({

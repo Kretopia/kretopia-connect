@@ -54,7 +54,7 @@ export const EngagementNudge = () => {
         setNudge({
           type: "complete_profile",
           title: "Complete your profile",
-          description: "Unlock 50 XP and increase your visibility by 10x",
+          description: "Add the details that help the right people discover your work.",
           action: "Complete Now",
           route: "/profile",
           icon: Award,

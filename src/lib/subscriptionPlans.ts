@@ -8,7 +8,7 @@ import {
 
 const FOUNDER_FEATURES = [
   "Lifetime Creator access — never pay again",
-  "5,000 bonus XP on activation",
+  "Priority access to new creator tools",
   "Only 10% platform fees (vs 20% free / 15% Creator)",
   "Free & discounted event access",
 ];
