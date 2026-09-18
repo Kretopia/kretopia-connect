@@ -24,6 +24,9 @@ import { cn } from "@/lib/utils";
 import { WORKSPACE_CONFIGS, type WorkspaceType } from "@/lib/workspaceConfigs";
 import { compressImage } from "@/lib/extractBriefDocument";
 import { inferWorkspaceType } from "@/lib/inferWorkspaceType";
+import { deriveTargetDateFromDeliverables } from "@/lib/deriveTargetDateFromDeliverables";
+import { inferBudgetFromText } from "@/lib/inferBudgetFromText";
+import { parseTaskDueDate } from "@/lib/parseTaskDueDate";
 import { getNewRoomCautionReasons } from "@/lib/newRoomCaution";
 import { analytics } from "@/lib/analytics";
 
@@ -136,7 +139,15 @@ export const VoiceFirstCreateModal = ({
   const [workspaceType, setWorkspaceType] = useState<WorkspaceType>("general");
   const [rawInput, setRawInput] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
+  // Tracks whether the current deadline value is derived from the
+  // extracted deliverables' own due dates (deriveTargetDateFromDeliverables)
+  // versus the user's own manual pick, purely for the review screen's
+  // helper copy.
+  const [deadlineInferred, setDeadlineInferred] = useState(false);
   const [budget, setBudget] = useState<string>("");
+  // Tracks whether the current budget value came from inferBudgetFromText
+  // versus the user's own typing -- same purpose as deadlineInferred.
+  const [budgetInferred, setBudgetInferred] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -160,6 +171,11 @@ export const VoiceFirstCreateModal = ({
 
   const mediaRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
+  // Distinguishes "Stop" (process what was captured) from "Cancel"
+  // (discard it) inside the shared MediaRecorder.onstop handler -- both
+  // paths stop the same recorder, only this flag decides whether the
+  // captured audio goes on to extract-brief or is simply thrown away.
+  const recordingCancelledRef = useRef(false);
   const tickRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -190,7 +206,9 @@ export const VoiceFirstCreateModal = ({
       setWorkspaceType("general");
       setRawInput("");
       setDeadline("");
+      setDeadlineInferred(false);
       setBudget("");
+      setBudgetInferred(false);
       setShowLinkInput(false);
       setLinkUrl("");
       setUploadingFile(false);
@@ -278,16 +296,41 @@ export const VoiceFirstCreateModal = ({
     tickRef.current = null;
   };
 
+  /** Applies deriveTargetDateFromDeliverables' result, if any, and marks it
+   *  as derived for the review screen's helper copy. No real due date across
+   *  the extracted deliverables leaves Target date genuinely unset, same as
+   *  before this existed. */
+  const applyDerivedDeadline = (deliverables: ExtractedBrief["deliverables"]) => {
+    const derived = deriveTargetDateFromDeliverables(deliverables);
+    if (derived !== null) {
+      setDeadline(derived);
+      setDeadlineInferred(true);
+    }
+  };
+
+  /** Applies inferBudgetFromText's result, if any, and marks it as a guess
+   *  for the review screen's helper copy. No `$`-prefixed amount in the
+   *  text leaves Budget genuinely unset, same as before this existed. */
+  const applyInferredBudget = (text: string) => {
+    const guess = inferBudgetFromText(text);
+    if (guess !== null) {
+      setBudget(guess);
+      setBudgetInferred(true);
+    }
+  };
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new MediaRecorder(stream, { mimeType: "audio/webm" });
       chunksRef.current = [];
+      recordingCancelledRef.current = false;
       rec.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
       };
       rec.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        if (recordingCancelledRef.current) return;
         const blob = new Blob(chunksRef.current, { type: "audio/webm" });
         await processAudio(blob);
       };
@@ -313,6 +356,23 @@ export const VoiceFirstCreateModal = ({
       mediaRef.current.stop();
     }
     setMode("thinking");
+  };
+
+  /** Discards whatever was captured instead of sending it to extract-brief
+   *  -- previously the only way to leave recording mode was Stop, which
+   *  always processed the audio even for an accidental or changed-mind
+   *  recording. Reuses the same MediaRecorder.onstop teardown (releases the
+   *  mic stream) via the cancelled flag, so there's no separate cleanup
+   *  path to keep in sync. */
+  const cancelRecording = () => {
+    stopTimer();
+    analytics.newRoomVoiceCancelled(seconds);
+    recordingCancelledRef.current = true;
+    if (mediaRef.current && mediaRef.current.state !== "inactive") {
+      mediaRef.current.stop();
+    }
+    chunksRef.current = [];
+    setMode("prompt");
   };
 
   /** supabase-js's functions.invoke() error only ever says "Edge Function
@@ -362,6 +422,8 @@ export const VoiceFirstCreateModal = ({
       if (workspaceType === "general") {
         setWorkspaceType(inferWorkspaceType(`${result.project.title} ${result.project.summary}`));
       }
+      applyDerivedDeadline(result.deliverables);
+      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
       analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
       setMode("review");
     } catch (err: any) {
@@ -402,6 +464,8 @@ export const VoiceFirstCreateModal = ({
         : result;
       setBrief(finalBrief);
       setSelected(new Set((finalBrief.deliverables ?? []).slice(0, 8).map((_, i) => i)));
+      applyDerivedDeadline(finalBrief.deliverables);
+      applyInferredBudget(`${trimmed} ${finalBrief.project.summary}`);
       analytics.newRoomDraftReady(typeForCall, (finalBrief.deliverables ?? []).length);
       setMode("review");
     } catch (err: any) {
@@ -466,6 +530,8 @@ export const VoiceFirstCreateModal = ({
       if (workspaceType === "general") {
         setWorkspaceType(inferWorkspaceType(`${result.project.title} ${result.project.summary}`));
       }
+      applyDerivedDeadline(result.deliverables);
+      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
       analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
       setMode("review");
     } catch (err: any) {
@@ -506,6 +572,8 @@ export const VoiceFirstCreateModal = ({
       if (!result?.project?.title) throw new Error("Couldn't read that sheet");
       setBrief(result);
       setSelected(new Set((result.deliverables ?? []).slice(0, 8).map((_, i) => i)));
+      applyDerivedDeadline(result.deliverables);
+      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
       analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
       setMode("review");
     } catch (err: any) {
@@ -580,6 +648,7 @@ export const VoiceFirstCreateModal = ({
           description: d.description ?? null,
           status: "todo",
           created_by: user.id,
+          due_date: parseTaskDueDate(d.due_date),
         }));
         try {
           await supabase.from("project_tasks").insert(rows);
@@ -978,6 +1047,16 @@ export const VoiceFirstCreateModal = ({
             </div>
             <p className="text-2xl font-mono tabular-nums">{fmtSec(seconds)}</p>
             <p className="text-sm text-muted-foreground mt-2">Tap to stop when you're done</p>
+            {/* Discard-without-processing escape hatch -- previously the
+                only way out of recording mode was Stop, which always sent
+                the audio to Kreto even for a "wait, wrong button" tap. */}
+            <button
+              type="button"
+              onClick={cancelRecording}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors mt-4"
+            >
+              Cancel — discard this recording
+            </button>
           </>
         )}
 
@@ -1147,123 +1226,156 @@ export const VoiceFirstCreateModal = ({
               </div>
             )}
 
-            {/* Workspace type — drives which Studio modules mount */}
-            <div className="rounded-lg border border-border p-3 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Room type
+            {/* Project details — Room type, Money involved?, Track as
+                credit?, and Target date/Budget used to be four separately
+                floating rounded-lg boxes (three of them boxed, the fourth
+                a bare grid, inconsistently) reading as a stack of
+                unrelated cards. They're all the same kind of thing --
+                settings on the project being created -- so they're one
+                bordered panel now, with internal dividers instead of
+                repeated borders. No handler, state, or condition below
+                changed; only the wrapping structure did. */}
+            <div className="rounded-lg border border-border divide-y divide-border/60">
+              <p className="px-3 pt-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Project details
               </p>
-              <p className="text-xs text-muted-foreground">
-                {WORKSPACE_CONFIGS[workspaceType].description} Tap to change.
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {(Object.keys(WORKSPACE_CONFIGS) as WorkspaceType[]).map((t) => {
-                  const cfg = WORKSPACE_CONFIGS[t];
-                  const Icon = cfg.icon;
-                  const active = workspaceType === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setWorkspaceType(t)}
-                      className={cn(
-                        "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border-2 transition-colors",
-                        active
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted-foreground hover:border-primary/40"
-                      )}
-                    >
-                      <Icon className="h-3 w-3" />
-                      {cfg.label}
-                    </button>
-                  );
-                })}
+
+              {/* Workspace type — drives which Studio modules mount */}
+              <div className="p-3 space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Room type
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {WORKSPACE_CONFIGS[workspaceType].description} Tap to change.
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Object.keys(WORKSPACE_CONFIGS) as WorkspaceType[]).map((t) => {
+                    const cfg = WORKSPACE_CONFIGS[t];
+                    const Icon = cfg.icon;
+                    const active = workspaceType === t;
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setWorkspaceType(t)}
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border-2 transition-colors",
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground hover:border-primary/40"
+                        )}
+                      >
+                        <Icon className="h-3 w-3" />
+                        {cfg.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            {/* Payments involved? gate */}
-            <div className="rounded-lg border border-border p-3 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Money involved?
-              </p>
-              <p className="text-xs text-muted-foreground">
-                If yes, we'll wire KrePay into the room — quotes, invoices, escrow.
-                If no, we keep it clean.
-              </p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPaymentsInvolved(true)}
-                  className={cn(
-                    "flex-1 px-3 py-2 rounded-md text-sm font-bold border-2 transition-colors",
-                    paymentsInvolved === true
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  Yes — paid work
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaymentsInvolved(false)}
-                  className={cn(
-                    "flex-1 px-3 py-2 rounded-md text-sm font-bold border-2 transition-colors",
-                    paymentsInvolved === false
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40"
-                  )}
-                >
-                  No — personal/passion
-                </button>
+              {/* Payments involved? gate */}
+              <div className="p-3 space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Money involved?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  If yes, we'll wire KrePay into the room — quotes, invoices, escrow.
+                  If no, we keep it clean.
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentsInvolved(true)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-bold border-2 transition-colors",
+                      paymentsInvolved === true
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    Yes — paid work
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentsInvolved(false)}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded-md text-sm font-bold border-2 transition-colors",
+                      paymentsInvolved === false
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    No — personal/passion
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* Track as credit — opt-in */}
-            <div className="rounded-lg border border-border p-3 space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Track as a credit?
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Turn on if this work is shareable — collaborators can be tagged
-                and the project flows into your Stamps when finished. Leave off
-                for private planning or personal notes.
-              </p>
-              <label className="flex items-center gap-2 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={trackAsCredit}
-                  onChange={(e) => setTrackAsCredit(e.target.checked)}
-                  className="h-4 w-4 accent-primary"
-                />
-                <span className="text-sm font-medium">
-                  Yes — this is shareable work
-                </span>
-              </label>
-            </div>
-
-            {/* Target date + budget — optional, both real project fields */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Target date
+              {/* Track as credit — opt-in */}
+              <div className="p-3 space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Track as a credit?
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Turn on if this work is shareable — collaborators can be tagged
+                  and the project flows into your Stamps when finished. Leave off
+                  for private planning or personal notes.
+                </p>
+                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                  <input
+                    type="checkbox"
+                    checked={trackAsCredit}
+                    onChange={(e) => setTrackAsCredit(e.target.checked)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="text-sm font-medium">
+                    Yes — this is shareable work
+                  </span>
                 </label>
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm"
-                />
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Budget (optional)
-                </label>
-                <input
-                  type="text"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  placeholder="e.g. $2,000"
-                  className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm"
-                />
+
+              {/* Target date + budget — optional, both real project fields */}
+              <div className="p-3 grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Target date
+                  </label>
+                  <input
+                    type="date"
+                    value={deadline}
+                    onChange={(e) => { setDeadline(e.target.value); setDeadlineInferred(false); }}
+                    className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm"
+                  />
+                  {/* Latest due date across Kreto's own extracted deliverables,
+                      still fully editable above -- not a decision, just a
+                      head start from data already sitting in the brief. */}
+                  {deadlineInferred && deadline && (
+                    <p className="text-[11px] flex items-center gap-1" style={{ color: "hsl(var(--energy))" }}>
+                      <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
+                      From the latest starter task's due date.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Budget (optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={budget}
+                    onChange={(e) => { setBudget(e.target.value); setBudgetInferred(false); }}
+                    placeholder="e.g. $2,000"
+                    className="w-full rounded-md border border-border bg-background px-2.5 py-2 text-sm"
+                  />
+                  {/* A `$`-prefixed amount Kreto spotted in what was said,
+                      still fully editable above -- same pattern as the
+                      Target date guess. */}
+                  {budgetInferred && budget && (
+                    <p className="text-[11px] flex items-center gap-1" style={{ color: "hsl(var(--energy))" }}>
+                      <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
+                      Kreto's guess from what you said.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1280,6 +1392,10 @@ export const VoiceFirstCreateModal = ({
               analytics.newRoomDraftCancelled();
               setBrief(null);
               setSelected(new Set());
+              setDeadline("");
+              setDeadlineInferred(false);
+              setBudget("");
+              setBudgetInferred(false);
               setMode("prompt");
               clearDraft();
             }}
