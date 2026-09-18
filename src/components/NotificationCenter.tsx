@@ -82,7 +82,7 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
             // never gets squeezed narrower than its own text.
             <Badge
               variant="destructive"
-              className="absolute top-0.5 right-0.5 min-w-[16px] h-4 flex items-center justify-center px-0.5 text-[9px] leading-none"
+              className="absolute top-0 right-0 min-w-[17px] h-[17px] flex items-center justify-center px-1 text-[9px] leading-none tabular-nums"
             >
               {unreadCount > 9 ? '9+' : unreadCount}
             </Badge>

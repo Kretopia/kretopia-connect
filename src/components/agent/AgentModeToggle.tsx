@@ -26,7 +26,7 @@ interface Props {
 export function AgentModeToggle({
   domain = "agent_mode_projects",
   title = "Agent Mode",
-  description = "Let the Copilot draft follow-ups, nudges and recaps. You always approve before anything is sent.",
+  description = "Let Kreto draft follow-ups, nudges and recaps. You always approve before anything is sent.",
 }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -70,7 +70,7 @@ export function AgentModeToggle({
       toast({
         title: next ? "Agent Mode on" : "Agent Mode off",
         description: next
-          ? "The Copilot will start proposing helpful follow-ups."
+          ? "Kreto will start proposing helpful follow-ups."
           : "Auto-proposals are paused for this area.",
       });
     } catch (e) {

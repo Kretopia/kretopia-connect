@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send, Bot, User, Loader2 } from "lucide-react";
+import { MessageCircle, Send, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { KretoAvatar } from "@/components/brand/KretoAvatar";
 
 interface Message {
   id: string;
@@ -96,7 +97,7 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
       setTicketId(data.id);
 
       // Add initial AI greeting
-      const greeting = "Hi! I'm your support Copilot. I'm here to help with any issues, questions, or feedback about the platform. What can I help you with today?";
+      const greeting = "Hi, Kreto here. Tell me what went wrong or what you need help with. If needed, I’ll pass it to the Kretopia team.";
       
       await supabase.from('support_messages').insert({
         ticket_id: data.id,
@@ -208,7 +209,7 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
       <DialogContent className="sm:max-w-[600px] h-[600px] flex flex-col">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Support Assistant</DialogTitle>
+            <DialogTitle>Kreto Support</DialogTitle>
             {category && (
               <Badge variant={getCategoryColor(category)}>
                 {category.replace('-', ' ')}
@@ -216,7 +217,7 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
             )}
           </div>
           <DialogDescription>
-            Get instant help from our support assistant. Complex issues will be escalated to our team.
+            Get immediate guidance from Kreto. Complex issues will be escalated to the Kretopia team.
           </DialogDescription>
         </DialogHeader>
 
@@ -237,7 +238,7 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
                   {message.sender_type === 'user' ? (
                     <User className="h-4 w-4 text-primary-foreground" />
                   ) : (
-                    <Bot className="h-4 w-4 text-secondary-foreground" />
+                    <KretoAvatar size="xs" animated={false} />
                   )}
                 </div>
                 <div
@@ -257,10 +258,10 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
             {isLoading && (
               <div className="flex gap-3">
                 <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-secondary">
-                  <Bot className="h-4 w-4 text-secondary-foreground" />
+                  <KretoAvatar size="xs" state="thinking" />
                 </div>
                 <div className="flex-1 p-3 rounded-lg bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">Kreto is checking…</span>
                 </div>
               </div>
             )}

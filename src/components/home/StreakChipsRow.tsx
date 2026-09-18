@@ -17,7 +17,7 @@ interface Props {
 }
 
 /**
- * Duolingo-style daily streak chips: Login · Copilot · Profile · Money.
+ * Daily activity chips: Login · Kreto · Profile · Money.
  * Shows even when 0 — the empty state is the nudge.
  */
 export function StreakChipsRow({ className }: Props) {
@@ -43,7 +43,7 @@ export function StreakChipsRow({ className }: Props) {
 
         setChips([
           { key: "login", label: "Daily", value: liveStreakValue(s.login), icon: Flame },
-          { key: "copilot", label: "Copilot", value: liveStreakValue(s.copilot), icon: MessageSquare },
+          { key: "copilot", label: "Kreto", value: liveStreakValue(s.copilot), icon: MessageSquare },
           { key: "profile", label: "Profile", value: liveStreakValue(s.profile_update), icon: UserCircle2 },
           { key: "money", label: "Money", value: moneyVal, icon: Banknote },
         ]);

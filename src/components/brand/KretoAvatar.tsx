@@ -3,11 +3,11 @@
  * Kretopia's Executive Producer. Use everywhere Kreto appears
  * (landing, FAB, agent drawer, proactive cards, doc-engine headers).
  *
- * Visual: silhouette portrait + animated sunset halo.
- * NOT a robot, NOT a sparkle icon, NOT a chatbot bubble.
+ * Visual: official Kreto Executive Producer robot + animated sunset halo.
+ * Never replace with a generic robot, sparkle icon, or chatbot bubble.
  */
 import { motion } from "framer-motion";
-import kretoSrc from "@/assets/kreto-avatar.png";
+import kretoSrc from "@/assets/kreto-executive-producer.png.asset.json";
 import { cn } from "@/lib/utils";
 
 type Size = "xs" | "sm" | "md" | "lg" | "xl";
@@ -130,14 +130,14 @@ export const KretoAvatar = ({
         />
       )}
 
-      <span className={cn("relative rounded-full overflow-hidden bg-[#0B0B10] ring-1 ring-white/10", s.box)}>
+      <span className={cn("relative rounded-full overflow-hidden bg-card ring-1 ring-border", s.box)}>
         <img
-          src={kretoSrc}
+          src={kretoSrc.url}
           alt="Kreto, your Executive Producer"
           width={256}
           height={256}
           loading="lazy"
-          className="h-full w-full object-cover object-top scale-110"
+          className="h-full w-full object-cover object-center"
           draggable={false}
         />
       </span>
