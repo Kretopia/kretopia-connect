@@ -28,7 +28,7 @@ interface FeatureAITutorialProps {
 /**
  * Shared "AI tutorial" affordance mounted on every overhauled feature page.
  * Reuses the actual landing-page TutorialStepper (not a re-implementation)
- * inside a forced-dark panel.
+ * inside a theme-aware panel.
  *
  * Auto-open policy: ONLY genuinely new users get the tour pushed at them
  * (useFirstTimeUser — young account / low XP). Everyone else just gets the
@@ -109,18 +109,17 @@ export function FeatureAITutorial({
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : dismiss())}>
         <DialogContent
-          className="dark max-w-lg p-0 overflow-hidden border-white/10"
-          style={{ backgroundColor: "#05070D" }}
+          className="max-w-lg overflow-hidden border-border bg-background p-0 text-foreground"
         >
           <DialogTitle className="sr-only">{label}</DialogTitle>
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(60% 50% at 50% 0%, rgba(255,45,161,0.12), transparent 65%)" }}
+            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--energy) / 0.12), transparent 65%)" }}
           />
           <div className="relative p-6">
             <p className="landing-eyebrow mb-1">AI-guided tour</p>
-            <h2 className="landing-h2 landing-glow text-2xl mb-5">
+            <h2 className="mb-5 text-2xl font-semibold text-foreground">
               {label}
               <span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span>
             </h2>

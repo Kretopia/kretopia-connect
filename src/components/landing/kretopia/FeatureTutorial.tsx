@@ -23,7 +23,7 @@ import type { LucideIcon } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))";
 const SWIPE_THRESHOLD_PX = 40;
 const THINKING_MS = 360;
 
@@ -108,11 +108,8 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
       onKeyDown={onKeyDown}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-      className="relative rounded-2xl overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+      className="relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       style={{
-        background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015))",
-        border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "0 30px 80px -40px rgba(255,45,161,0.35)",
         outlineColor: ACCENT,
       }}
     >
@@ -120,25 +117,25 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-        style={{ background: "radial-gradient(60% 80% at 15% 0%, rgba(255,45,161,0.14), transparent 65%)" }}
+        style={{ background: "radial-gradient(60% 80% at 15% 0%, hsl(var(--energy) / 0.14), transparent 65%)" }}
       />
 
       {/* Continuous scan-line sweep along the top edge */}
       <div aria-hidden className="pointer-events-none absolute top-0 left-0 right-0 h-px overflow-hidden">
         <div
           className="ai-scan-line h-full w-1/3"
-          style={{ background: "linear-gradient(90deg, transparent, rgba(255,45,161,0.9), transparent)" }}
+          style={{ background: "linear-gradient(90deg, transparent, hsl(var(--energy) / 0.9), transparent)" }}
         />
       </div>
 
       {/* Header — just the step counter, no AI badge */}
       <div
         className="relative flex items-center justify-end px-4 py-2.5 sm:px-5"
-        style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+        className="relative flex items-center justify-end border-b border-border px-4 py-2.5 sm:px-5"
       >
         <span
-          className="text-[10px] font-medium tabular-nums"
-          style={{ color: "rgba(255,255,255,0.35)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          className="text-[10px] font-medium tabular-nums text-muted-foreground"
+          style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
         >
           {String(index + 1).padStart(2, "0")} / {String(steps.length).padStart(2, "0")}
         </span>
@@ -188,29 +185,28 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
                     className="absolute inset-0 rounded-full ai-orbit-ring"
                     style={{
                       background:
-                        "conic-gradient(from 0deg, transparent 0%, rgba(255,45,161,0.95) 12%, transparent 32%, transparent 58%, rgba(255,45,161,0.75) 74%, transparent 94%)",
+                          "conic-gradient(from 0deg, transparent 0%, hsl(var(--energy) / 0.95) 12%, transparent 32%, transparent 58%, hsl(var(--energy) / 0.75) 74%, transparent 94%)",
                     }}
                   />
                   {/* Breathing halo behind the ring */}
                   <div
                     aria-hidden
                     className="absolute -inset-1.5 rounded-full ai-ambient-breathe"
-                    style={{ background: "radial-gradient(circle, rgba(255,45,161,0.28), transparent 70%)" }}
+                    style={{ background: "radial-gradient(circle, hsl(var(--energy) / 0.28), transparent 70%)" }}
                   />
                   {/* Icon box, inset so the ring peeks out around its edge */}
                   <span
-                    className="absolute inset-[3px] flex items-center justify-center rounded-full"
-                    style={{ backgroundColor: "#0b0e16", border: "1px solid rgba(255,45,161,0.3)" }}
+                    className="absolute inset-[3px] flex items-center justify-center rounded-full border border-energy/30 bg-card"
                   >
                     <Icon className="h-[18px] w-[18px]" style={{ color: ACCENT }} aria-hidden />
                   </span>
                 </motion.div>
               )}
               <div className="min-w-0 pt-1.5">
-                <h3 className="text-base sm:text-lg font-semibold text-white" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                <h3 className="text-base font-semibold text-foreground sm:text-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
                   {step.title}
                 </h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-white/60" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
                   {step.body}
                 </p>
               </div>
@@ -220,8 +216,7 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
       </div>
 
       <div
-        className="relative flex items-center justify-between gap-3 px-5 py-3.5 sm:px-6"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}
+        className="relative flex items-center justify-between gap-3 border-t border-border px-5 py-3.5 sm:px-6"
       >
         <button
           type="button"
@@ -231,7 +226,7 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
           className="btn-glass btn-glass-outline flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2"
           style={{ outlineColor: ACCENT }}
         >
-          <ChevronLeft className="h-4 w-4 text-white/80" aria-hidden />
+          <ChevronLeft className="h-4 w-4 text-foreground/80" aria-hidden />
         </button>
 
         {/* Clickable step pills — the progress indicator doubles as jump nav */}
@@ -250,8 +245,8 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
               )}
               style={{
                 width: i === index ? "22px" : "6px",
-                backgroundColor: i <= index ? ACCENT : "rgba(255,255,255,0.18)",
-                boxShadow: i === index ? "0 0 8px rgba(255,45,161,0.65)" : "none",
+                 backgroundColor: i <= index ? ACCENT : "hsl(var(--muted-foreground) / 0.25)",
+                 boxShadow: i === index ? "0 0 8px hsl(var(--energy) / 0.65)" : "none",
                 outlineColor: ACCENT,
               }}
             />
@@ -266,7 +261,7 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
           className="btn-glass btn-glass-outline flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2"
           style={{ outlineColor: ACCENT }}
         >
-          <ChevronRight className="h-4 w-4 text-white/80" aria-hidden />
+          <ChevronRight className="h-4 w-4 text-foreground/80" aria-hidden />
         </button>
       </div>
     </div>

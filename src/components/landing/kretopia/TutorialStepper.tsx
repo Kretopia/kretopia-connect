@@ -12,7 +12,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
 import type { TutorialStep } from "./FeatureTutorial";
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))";
 const AUTOPLAY_INTERVAL_MS = 4500;
 
 // Rows cascade in top-to-bottom, one after another, the first time the list
@@ -121,7 +121,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
               className="group relative flex w-full items-start gap-4 rounded-xl px-3 py-3.5 sm:px-4 text-left transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2"
               style={{
                 outlineColor: ACCENT,
-                backgroundColor: isActive ? "rgba(255,45,161,0.07)" : "transparent",
+                backgroundColor: isActive ? "hsl(var(--energy) / 0.07)" : "transparent",
               }}
             >
               {/* icon + connecting roadmap line */}
@@ -129,9 +129,9 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                 <span
                   className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300"
                   style={{
-                    backgroundColor: isActive ? "rgba(255,45,161,0.16)" : "rgba(255,255,255,0.04)",
-                    border: isActive || isPast ? `1px solid ${ACCENT}` : "1px solid rgba(255,255,255,0.14)",
-                    boxShadow: isActive ? "0 0 0 4px rgba(255,45,161,0.10)" : "none",
+                    backgroundColor: isActive ? "hsl(var(--energy) / 0.16)" : "hsl(var(--muted) / 0.7)",
+                    border: isActive || isPast ? `1px solid ${ACCENT}` : "1px solid hsl(var(--border))",
+                    boxShadow: isActive ? "0 0 0 4px hsl(var(--energy) / 0.10)" : "none",
                   }}
                 >
                   {isActive && (
@@ -140,14 +140,15 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                       className="absolute inset-0 rounded-full ai-orbit-ring"
                       style={{
                         background:
-                          "conic-gradient(from 0deg, transparent 0%, rgba(255,45,161,0.85) 12%, transparent 32%, transparent 58%, rgba(255,45,161,0.65) 74%, transparent 94%)",
+                          "conic-gradient(from 0deg, transparent 0%, hsl(var(--energy) / 0.85) 12%, transparent 32%, transparent 58%, hsl(var(--energy) / 0.65) 74%, transparent 94%)",
                       }}
                     />
                   )}
                   {Icon && (
                     <Icon
                       className="relative h-[18px] w-[18px]"
-                      style={{ color: isActive || isPast ? ACCENT : "rgba(255,255,255,0.45)" }}
+                      className={cn("relative h-[18px] w-[18px]", !(isActive || isPast) && "text-muted-foreground")}
+                      style={isActive || isPast ? { color: ACCENT } : undefined}
                       aria-hidden
                     />
                   )}
@@ -156,7 +157,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                   <span
                     aria-hidden
                     className="mt-1 w-px flex-1 transition-colors duration-500"
-                    style={{ backgroundColor: isPast ? ACCENT : "rgba(255,255,255,0.12)", minHeight: "18px" }}
+                    style={{ backgroundColor: isPast ? ACCENT : "hsl(var(--border))", minHeight: "18px" }}
                   />
                 )}
               </span>
@@ -164,13 +165,13 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
               <div className="min-w-0 flex-1 pt-1.5 pb-1">
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={cn("text-[10px] font-medium tabular-nums", isActive && "pink-glow-breathe")}
-                    style={{ color: isActive ? ACCENT : "rgba(255,255,255,0.5)" }}
+                    className={cn("text-[10px] font-medium tabular-nums", isActive ? "pink-glow-breathe" : "text-muted-foreground")}
+                    style={isActive ? { color: ACCENT } : undefined}
                   >
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <h3
-                    className={cn("font-semibold transition-colors duration-300", isActive ? "text-white" : "text-white/55 group-hover:text-white/75")}
+                    className={cn("font-semibold transition-colors duration-300", isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground")}
                     style={{ fontFamily: "'Satoshi', 'Inter', sans-serif", fontSize: isActive ? "1.0625rem" : "0.9375rem" }}
                   >
                     {step.title}
@@ -189,7 +190,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                       transition={{ duration: 0.3, ease: [0.2, 0.65, 0.3, 0.95] }}
                       className="overflow-hidden"
                     >
-                      <p className="mt-2 pr-2 text-sm leading-relaxed text-white/60" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                      <p className="mt-2 pr-2 text-sm leading-relaxed text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
                         {step.body}
                       </p>
                       {!isLast && (
