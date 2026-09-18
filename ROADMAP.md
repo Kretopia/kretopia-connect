@@ -6,7 +6,7 @@
 - [x] Batch 3 — P3: Scout retention and opportunity experience
 - [x] Batch 4 — P4: Clients relationship and action experience
 - [x] Batch 5 — P5: audited the supplied CPO overview against the product; no separate Chief UX Designer requirements document was present, so no unstated requirements were invented
-- [ ] Batch 6 — QA and production readiness; no publish until release gates pass
+- [x] Batch 6 — QA and production readiness completed within available public-session coverage; authenticated browser coverage remains blocked by the unavailable test session, and no publish was performed
 
 ## ✅ Completed Features (Latest)
 - [x] **Enhanced Opportunities Board** 🎯
