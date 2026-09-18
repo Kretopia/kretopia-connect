@@ -66,14 +66,14 @@ describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout cont
 
   it("renders a single search input with the expected accessible name", () => {
     renderHeroSearch();
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i });
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i });
     expect(input).toBeInTheDocument();
     expect(input).toHaveAttribute("placeholder", "Search your name or stage name");
   });
 
   it("input width class is a static w-full, never a focus-conditional width", () => {
     renderHeroSearch();
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i });
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i });
     // A regression here (e.g. a focus-within:w-* class reintroduced from the
     // navbar's own search input) would change this string -- the hero input
     // must always fill its fixed-width parent, never grow past it.
@@ -83,7 +83,7 @@ describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout cont
 
   it("click/focus does not change the input's width or height class, and opens no overlay below 2 characters", () => {
     renderHeroSearch();
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
     const classBefore = input.className;
 
     fireEvent.click(input);
@@ -95,7 +95,7 @@ describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout cont
 
   it("typing 2+ characters opens the results overlay (aria-expanded), and closing it never touches the input's own class", async () => {
     renderHeroSearch();
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
     const classBefore = input.className;
 
     input.focus();
@@ -120,7 +120,7 @@ describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout cont
     // NOT how this closes, and shouldn't be treated as a regression if it
     // doesn't. Simulate the real trigger: a mousedown outside the wrapper.
     renderHeroSearch();
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i }) as HTMLInputElement;
 
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "Sound" } });
@@ -133,7 +133,7 @@ describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout cont
   it("submitting the query calls onQuerySubmit exactly once, without navigating away from the current geometry-owning tree", () => {
     const onQuerySubmit = vi.fn();
     renderHeroSearch({ onQuerySubmit });
-    const input = screen.getByRole("textbox", { name: /search a name, project or opportunity/i });
+    const input = screen.getByRole("combobox", { name: /search a name, project or opportunity/i });
 
     fireEvent.change(input, { target: { value: "Maya Solano" } });
     fireEvent.submit(input.closest("form")!);
