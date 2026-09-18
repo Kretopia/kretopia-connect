@@ -645,6 +645,7 @@ const ProfileContent = () => {
         onImportData={handleImportData}
         onCropComplete={handleCropComplete}
         isUploadingAvatar={isUploadingAvatar}
+        onProfileUpdate={fetchData}
       />
 
       {/* EPK PDF Editor */}

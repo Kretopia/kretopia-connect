@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import { Camera, Upload, Loader2, CheckCircle2, ArrowRight, Mail, X, Sparkles, Search, Globe, Link2, Edit3, AlertCircle, IdCard } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { SEO } from "@/components/SEO";
@@ -20,7 +21,6 @@ import { ROLE_OPTIONS } from "@/components/profile/ProfileEditDialog";
 import { LOCATION_HIERARCHY } from "@/lib/locationGroups";
 import { IntentPicker } from "@/components/intent/IntentPicker";
 import { FunnelStepper, type StepKey } from "@/components/onboarding/FunnelStepper";
-import { OnboardingXPCounter } from "@/components/onboarding/OnboardingXPCounter";
 import { BRAND } from "@/lib/brandLexicon";
 
 // Wave 1 reframe: Find your work → Confirm credits → Launch profile
@@ -43,7 +43,10 @@ export default function Onboarding() {
 
   const [phase, setPhase] = useState<OnboardingPhase>("discover");
   const [loading, setLoading] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "error">("idle");
   const [userId, setUserId] = useState<string>("");
+  const persistedStepRef = useRef(0);
+  const notifiedStepsRef = useRef(new Set<number>());
 
   // Discover phase
   const [fullName, setFullName] = useState("");
@@ -124,7 +127,7 @@ export default function Onboarding() {
 
     const { data: profileData } = await supabase
       .from("profiles")
-      .select("full_name, role, location, avatar_url, bio, username, onboarding_completed, onboarding_started_at")
+      .select("full_name, role, location, avatar_url, bio, username, onboarding_completed, onboarding_started_at, onboarding_step")
       .eq("user_id", user.id)
       .single();
 
@@ -132,6 +135,8 @@ export default function Onboarding() {
       setUsername(profileData.username);
       setUsernameStatus("yours");
     }
+
+    persistedStepRef.current = profileData?.onboarding_step || 0;
 
     if (profileData?.onboarding_completed) { navigate("/circle"); return; }
 
@@ -242,6 +247,46 @@ export default function Onboarding() {
     }
   };
 
+  const persistMilestone = async (step: 2 | 3) => {
+    if (!user || persistedStepRef.current >= step) return true;
+    const { error } = await supabase
+      .from("profiles")
+      .update({ onboarding_step: step })
+      .eq("user_id", user.id);
+    if (error) {
+      console.error(`[Onboarding] Failed to persist step ${step}:`, error);
+      toast({
+        title: "Progress not saved yet",
+        description: "Try again before continuing.",
+        variant: "destructive",
+      });
+      return false;
+    }
+    persistedStepRef.current = step;
+    return true;
+  };
+
+  const notifyMilestone = (step: 2 | 3) => {
+    if (notifiedStepsRef.current.has(step)) return;
+    notifiedStepsRef.current.add(step);
+    if (step === 2) {
+      toast({
+        title: "Your creative direction is set.",
+        description: "Now add the details that help Kreto find the right people and Calls.",
+      });
+      return;
+    }
+    toast({
+      title: "You’re in.",
+      description: "Your Passport is ready to grow — Kreto has a few next moves for you.",
+      action: (
+        <ToastAction altText="View my Passport" onClick={() => navigate("/profile")}>
+          View Passport
+        </ToastAction>
+      ),
+    });
+  };
+
 
   // ─── AI DISCOVERY ───
   const handleDiscoverProfile = async () => {
@@ -254,6 +299,8 @@ export default function Onboarding() {
       return;
     }
     await saveUsernameIfReady();
+    if (!(await persistMilestone(2))) return;
+    notifyMilestone(2);
     setSearching(true);
     setSearchAttempted(true);
     setNotFound(false);
@@ -347,6 +394,8 @@ export default function Onboarding() {
             analytics.onboardingStep(3, "first_stamp_revealed");
           } catch {}
         } else {
+          if (!(await persistMilestone(3))) return;
+          notifyMilestone(3);
           toast({ title: `Your ${BRAND.passport} is taking shape`, description: "Review your details below and make any changes." });
           setPhase("review");
           try {
@@ -355,6 +404,8 @@ export default function Onboarding() {
           } catch {}
         }
       } else {
+        if (!(await persistMilestone(3))) return;
+        notifyMilestone(3);
         setEnteredEmpty(true);
         setPhase("review");
         try {
@@ -364,8 +415,12 @@ export default function Onboarding() {
       }
     } catch (e) {
       console.error("Discovery error:", e);
-      setEnteredEmpty(true);
-      setPhase("review");
+      const persisted = await persistMilestone(3);
+      if (persisted) {
+        notifyMilestone(3);
+        setEnteredEmpty(true);
+        setPhase("review");
+      }
       try {
         const { analytics } = await import("@/lib/analytics");
         analytics.onboardingStep(3, "review_phase_entered_empty_error");
@@ -377,6 +432,10 @@ export default function Onboarding() {
 
   const handleSkipToManual = async () => {
     await saveUsernameIfReady();
+    if (!(await persistMilestone(2))) return;
+    notifyMilestone(2);
+    if (!(await persistMilestone(3))) return;
+    notifyMilestone(3);
     setPhase("review");
     import("@/lib/analytics").then(({ analytics }) =>
       analytics.onboardingStep(3, "review_phase_entered_via_skip")
@@ -467,6 +526,7 @@ export default function Onboarding() {
     }
 
     setLoading(true);
+    setSaveStatus("saving");
     try {
       // Step 4: user submitted profile save
       try {
@@ -482,7 +542,7 @@ export default function Onboarding() {
         d.setDate(d.getDate() - day + 1);
         return d.toISOString().slice(0, 10);
       })();
-      await supabase.from("profiles").update({
+      const { error: profileSaveError } = await supabase.from("profiles").update({
         full_name: fullName.trim(),
         role: role.trim(),
         location: location || null,
@@ -497,6 +557,19 @@ export default function Onboarding() {
           intent_week_start: weekStart,
         } : {}),
       } as any).eq("user_id", user.id);
+
+      if (profileSaveError) throw profileSaveError;
+      persistedStepRef.current = 6;
+
+      toast({
+        title: "Your Creative Passport is live.",
+        description: "Let’s make it recognisable.",
+        action: (
+          <ToastAction altText="View my Passport" onClick={() => navigate("/profile")}>
+            View Passport
+          </ToastAction>
+        ),
+      });
 
       // Profile is durably saved now — the draft's job is done.
       try { sessionStorage.removeItem(`onboarding_draft:${user.id}`); } catch (e) { console.error("Clear onboarding draft:", e); }
@@ -604,9 +677,11 @@ export default function Onboarding() {
       }
     } catch (error) {
       console.error("Onboarding error:", error);
-      toast({ title: "Error", description: "Failed to save. Please try again.", variant: "destructive" });
+      setSaveStatus("error");
+      toast({ title: "Profile not saved yet.", description: "Try again.", variant: "destructive" });
     } finally {
       setLoading(false);
+      setSaveStatus((current) => current === "error" ? "error" : "idle");
     }
   };
 
@@ -695,22 +770,14 @@ export default function Onboarding() {
         <HoloCard className="w-full max-w-lg relative z-10">
         <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-xl shadow-primary/5">
 
-          {/* Unified funnel header — stepper + live XP counter */}
+          {/* Unified funnel header */}
           {phase !== "verify" && (() => {
             const stepperPhase: StepKey = phase === "discover" ? "discover" : "review";
-            const xp =
-              (avatarUrl ? 10 : 0) +
-              (bio && bio.length >= 20 ? 10 : 0) +
-              (skills.length >= 3 ? 10 : 0) +
-              (selectedCredits.size >= 1 ? 15 : 0) +
-              (role ? 5 : 0) +
-              (location ? 5 : 0);
             return (
-              <div className="px-6 pt-6 pb-3 flex items-start justify-between gap-3 border-b border-border/40 bg-gradient-to-b from-primary/[0.03] to-transparent">
+              <div className="px-6 pt-6 pb-3 border-b border-border/40 bg-gradient-to-b from-primary/[0.03] to-transparent">
                 <div className="flex-1 min-w-0">
                   <FunnelStepper current={stepperPhase} />
                 </div>
-                <OnboardingXPCounter xp={xp} className="mt-0.5 shrink-0" />
               </div>
             );
           })()}
@@ -1138,6 +1205,10 @@ export default function Onboarding() {
                     <>Launch my {BRAND.passport} <ArrowRight className="h-4 w-4" /></>
                   )}
                 </Button>
+                <p className="min-h-5 text-center text-xs text-muted-foreground" role="status" aria-live="polite">
+                  {saveStatus === "saving" && "Saving your profile…"}
+                  {saveStatus === "error" && "Profile not saved yet. Try again."}
+                </p>
 
                 {/* Back */}
                 <button onClick={() => setPhase("discover")} className="block w-full text-center text-xs text-white/60 hover:text-primary transition-colors py-1">

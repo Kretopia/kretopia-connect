@@ -420,7 +420,6 @@ export function ProfileEditDialog({
 
       onProfileUpdate();
       onOpenChange(false);
-      hasShownToastRef.current = false;
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
