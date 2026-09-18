@@ -822,6 +822,12 @@ export const VoiceFirstCreateModal = ({
       : "describe";
 
   return (
+    <>
+    {/* Hidden once createdProject is set -- otherwise this stays mounted at
+        z-[60] (intentionally, so callers flipping `open` false right after
+        onCreated() doesn't unmount NewRoomLaunchScreen along with it) and
+        visually covers that celebration Dialog, which only reaches z-50. */}
+    {!createdProject && (
     <div
       ref={modalRef}
       className="fixed inset-0 z-[60] overflow-y-auto bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
@@ -1475,6 +1481,8 @@ export const VoiceFirstCreateModal = ({
       )}
         </div>
       </HoloCard>
+    </div>
+    )}
 
       {createdProject && (
         <NewRoomLaunchScreen
@@ -1487,6 +1495,6 @@ export const VoiceFirstCreateModal = ({
           onOpenRoom={handleLaunchRoom}
         />
       )}
-    </div>
+    </>
   );
 };

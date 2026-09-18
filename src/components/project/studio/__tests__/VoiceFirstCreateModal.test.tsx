@@ -393,6 +393,21 @@ describe("VoiceFirstCreateModal", () => {
       // first -- navigation only fires once the user actually leaves it.
       const openRoomButton = await screen.findByText("Open the room");
       expect(mocks.navigate).not.toHaveBeenCalled();
+
+      // Regression: the covering review-screen dialog (still mounted
+      // intentionally, so onCreated()/onOpenChange(false) firing from a
+      // caller doesn't unmount NewRoomLaunchScreen along with it) used to
+      // stay rendered at z-[60], visually covering this z-50 celebration
+      // Dialog in a real browser even though both existed in the DOM.
+      // Role-based queries can't catch this: Radix Dialog marks background
+      // content aria-hidden once open, which getByRole already excludes
+      // regardless of this bug, so the assertion has to be text-based
+      // (which, unlike role queries, does not filter by aria-hidden) to
+      // actually distinguish the covering dialog being gone from merely
+      // being accessibility-hidden behind the celebration.
+      expect(screen.queryByText("Create all & open")).not.toBeInTheDocument();
+      expect(screen.queryByText("New Room")).not.toBeInTheDocument();
+
       fireEvent.click(openRoomButton);
 
       await waitFor(() => expect(mocks.navigate).toHaveBeenCalled(), { timeout: 1000 });
