@@ -73,9 +73,9 @@ export function KretopiaFeatureTutorial({ steps, featureName }: KretopiaFeatureT
         <TooltipContent side="top">Open how {featureName} works</TooltipContent>
       </Tooltip>
 
-      <DialogContent className="max-w-lg border-white/10 bg-[#0b0e16] p-0 overflow-hidden sm:rounded-2xl">
+      <DialogContent className="max-w-lg overflow-hidden border-border bg-background p-0 text-foreground sm:rounded-2xl">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="text-white" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <DialogTitle className="text-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
             How {featureName} works
           </DialogTitle>
         </DialogHeader>
