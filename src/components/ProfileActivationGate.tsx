@@ -26,9 +26,8 @@ const fieldIconMap: Record<string, React.ReactNode> = {
 };
 
 /**
- * Hard activation gate. Replaces the soft visibility banner.
- * The profile MUST meet discovery requirements to access the wrapped content.
- * Provides inline social-URL auto-import to lower friction.
+ * Non-blocking activation guidance. Discovery remains usable while the user
+ * completes the fields that make their Passport visible to other people.
  */
 export const ProfileActivationGate = ({
   isVisible,

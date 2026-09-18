@@ -475,15 +475,18 @@ export default function Onboarding() {
   }, [username, user?.id]);
 
   const saveUsernameIfReady = async () => {
-    if (!user) return;
-    if (!isHandleValid(username)) return;
-    if (usernameStatus === "taken" || usernameStatus === "invalid") return;
-    if (usernameStatus === "yours") return;
+    if (!user || !isHandleValid(username) || usernameStatus === "taken" || usernameStatus === "invalid") return false;
+    if (usernameStatus === "yours") return true;
     const { error } = await supabase
       .from("profiles")
       .update({ username })
       .eq("user_id", user.id);
-    if (!error) setUsernameStatus("yours");
+    if (error) {
+      toast({ title: "Handle not saved yet", description: "Try again before continuing.", variant: "destructive" });
+      return false;
+    }
+    setUsernameStatus("yours");
+    return true;
   };
 
   // ─── AVATAR ───
@@ -535,6 +538,7 @@ export default function Onboarding() {
       } catch {}
 
       // Save profile
+      const effectiveRole = role.trim() || "Creator";
       const skillObjects = skills.map(skill => ({ skill, level: 3, category: "General" }));
       const weekStart = (() => {
         const d = new Date();
@@ -544,7 +548,7 @@ export default function Onboarding() {
       })();
       const { error: profileSaveError } = await supabase.from("profiles").update({
         full_name: fullName.trim(),
-        role: role.trim(),
+        role: effectiveRole,
         location: location || null,
         bio: bio || null,
         professional_skills: skillObjects.length > 0 ? skillObjects as any : null,
@@ -592,7 +596,7 @@ export default function Onboarding() {
       }
 
       // Auto-join circles based on role
-      try { await supabase.rpc("auto_join_circles_for_role", { p_user_id: user.id, p_role: role }); }
+      try { await supabase.rpc("auto_join_circles_for_role", { p_user_id: user.id, p_role: effectiveRole }); }
       catch (e) { console.error("[Onboarding] Auto-join circles:", e); }
 
       // Process pending connections

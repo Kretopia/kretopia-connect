@@ -84,9 +84,8 @@ export function BrowseCreators() {
   const [visibility, setVisibility] = useState<{ isVisible: boolean; missingFields: string[] }>({ isVisible: true, missingFields: [] });
   const [visibilityChecked, setVisibilityChecked] = useState(false);
 
-  // Gate: enforce same discovery requirements as Circle/Nearby
-  useEffect(() => {
-    const check = async () => {
+  // Keep visibility guidance current after profile edits without blocking browsing.
+  const checkVisibility = useCallback(async () => {
       if (!user?.id) { setVisibilityChecked(true); return; }
       try {
         const { data: profile } = await supabase
@@ -98,9 +97,17 @@ export function BrowseCreators() {
           setVisibility({ isVisible: missing.length === 0, missingFields: missing });
         }
       } finally { setVisibilityChecked(true); }
-    };
-    check();
   }, [user?.id]);
+
+  useEffect(() => {
+    checkVisibility();
+    window.addEventListener("focus", checkVisibility);
+    window.addEventListener("kretopia:profile-updated", checkVisibility);
+    return () => {
+      window.removeEventListener("focus", checkVisibility);
+      window.removeEventListener("kretopia:profile-updated", checkVisibility);
+    };
+  }, [checkVisibility]);
   const loadSaved = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
