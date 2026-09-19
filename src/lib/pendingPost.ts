@@ -20,7 +20,7 @@ export async function processPendingPost(userId: string): Promise<string | null>
           budget: formData.budget || null,
           created_by: userId,
           status: "active",
-        })
+        } as any)
         .select("id")
         .single();
 
@@ -51,7 +51,7 @@ export async function processPendingPost(userId: string): Promise<string | null>
         created_by: userId,
         category: "general",
         ends_at: new Date(new Date(startTime).getTime() + 3 * 3600000).toISOString(),
-      })
+      } as any)
       .select("id")
       .single();
 
