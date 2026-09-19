@@ -235,7 +235,7 @@ export const SparkWall = () => {
     if (post.has_reacted) {
       await supabase.from("feed_reactions").delete().eq("post_id", postId).eq("user_id", user.id);
     } else {
-      await supabase.from("feed_reactions").insert({ post_id: postId, user_id: user.id, reaction_type: "fire" });
+      await supabase.from("feed_reactions").insert({ post_id: postId, user_id: user.id, reaction_type: "fire" } as any);
     }
     setPosts(prev => prev.map(p => p.id === post.id ? {
       ...p,

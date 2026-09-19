@@ -131,7 +131,7 @@ const ProfileContent = () => {
     if (bio) update.bio = bio;
     if (skills.length > 0) update.professional_skills = mergedSkills;
     if (Object.keys(update).length > 0) {
-      const { error } = await supabase.from("profiles").update(update).eq("user_id", profile.user_id);
+      const { error } = await supabase.from("profiles").update(update as any).eq("user_id", profile.user_id);
       if (error) {
         toast({ title: "Couldn't save Passport", description: error.message, variant: "destructive" });
       } else {

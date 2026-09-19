@@ -2,14 +2,11 @@
 // To take ownership, delete this banner line; the plugin then leaves the file alone.
 // supabase function: mcp
 // Bundled from src/lib/mcp/index.ts by @lovable.dev/mcp-js.
-// <define:import.meta.env>
-var define_import_meta_env_default = { MODE: "production", BASE_URL: "/", DEV: false, PROD: true, SSR: false };
-
 // src/lib/mcp/index.ts
 import { auth, defineMcp } from "npm:@lovable.dev/mcp-js@0.20.0";
 
 // src/lib/mcp/tools/search-creators.ts
-import { createClient } from "npm:@supabase/supabase-js@^2.58.0";
+import { createClient } from "npm:@supabase/supabase-js@^2.116.0";
 import { defineTool } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z } from "npm:zod@^4.4.3";
 function supabaseForUser(ctx) {
@@ -48,7 +45,7 @@ var search_creators_default = defineTool({
 });
 
 // src/lib/mcp/tools/get-my-passport.ts
-import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.58.0";
+import { createClient as createClient2 } from "npm:@supabase/supabase-js@^2.116.0";
 import { defineTool as defineTool2 } from "npm:@lovable.dev/mcp-js@0.20.0";
 function supabaseForUser2(ctx) {
   return createClient2(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
@@ -79,7 +76,7 @@ var get_my_passport_default = defineTool2({
 });
 
 // src/lib/mcp/tools/list-my-studios.ts
-import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.58.0";
+import { createClient as createClient3 } from "npm:@supabase/supabase-js@^2.116.0";
 import { defineTool as defineTool3 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z2 } from "npm:zod@^4.4.3";
 function supabaseForUser3(ctx) {
@@ -115,7 +112,7 @@ var list_my_studios_default = defineTool3({
 });
 
 // src/lib/mcp/tools/list-scouted-gigs.ts
-import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.58.0";
+import { createClient as createClient4 } from "npm:@supabase/supabase-js@^2.116.0";
 import { defineTool as defineTool4 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z3 } from "npm:zod@^4.4.3";
 function supabaseForUser4(ctx) {
@@ -152,7 +149,7 @@ var list_scouted_gigs_default = defineTool4({
 });
 
 // src/lib/mcp/tools/list-my-credits.ts
-import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.58.0";
+import { createClient as createClient5 } from "npm:@supabase/supabase-js@^2.116.0";
 import { defineTool as defineTool5 } from "npm:@lovable.dev/mcp-js@0.20.0";
 import { z as z4 } from "npm:zod@^4.4.3";
 function supabaseForUser5(ctx) {
@@ -186,7 +183,7 @@ var list_my_credits_default = defineTool5({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = define_import_meta_env_default.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
+var projectRef = "czpucbhnmcudggydwxlg";
 var mcp_default = defineMcp({
   name: "kretopia-mcp",
   title: "Kretopia \u2014 Creative OS",

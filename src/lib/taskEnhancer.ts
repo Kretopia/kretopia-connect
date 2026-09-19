@@ -61,7 +61,7 @@ export async function enhanceTaskInBackground(input: EnhanceTaskInput): Promise<
     if (!input.dryRun) {
       const { error: updErr } = await supabase
         .from("project_tasks")
-        .update(patch)
+        .update(patch as any)
         .eq("id", input.taskId);
       if (updErr) return { ok: false, error: updErr.message };
     }

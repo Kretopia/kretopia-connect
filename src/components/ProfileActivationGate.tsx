@@ -53,7 +53,7 @@ export const ProfileActivationGate = ({
       if (lower.includes("linkedin.com")) profileUpdate.linkedin_url = importUrl;
       else if (lower.includes("imdb.com")) profileUpdate.imdb_url = importUrl;
       else profileUpdate.website = importUrl;
-      const { error: profileError } = await supabase.from("profiles").update(profileUpdate).eq("user_id", user.id);
+      const { error: profileError } = await supabase.from("profiles").update(profileUpdate as any).eq("user_id", user.id);
       if (profileError) throw profileError;
 
       // Step 2: scrape page directly for bio/skills/portfolio (analyze-profile-url)
@@ -82,7 +82,7 @@ export const ProfileActivationGate = ({
           updates.professional_skills = data.skills.slice(0, 12);
         }
         if (Object.keys(updates).length > 0) {
-          const { error: updateError } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
+          const { error: updateError } = await supabase.from("profiles").update(updates as any).eq("user_id", user.id);
           if (updateError) throw updateError;
         }
         // Insert portfolio items as credits (verified work)

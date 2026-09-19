@@ -49,7 +49,7 @@ export const CrossPlatformImport = ({ currentUserId, onImported }: CrossPlatform
 
       if (urlField) {
         await supabase.from('profiles')
-          .update({ [urlField]: url.trim() })
+          .update({ [urlField]: url.trim() } as any)
           .eq('user_id', currentUserId);
       }
 

@@ -251,7 +251,7 @@ export const SkillsSection = ({
       ? source.filter((s) => s.skill !== skillName)
       : source.map((s) => (s.skill === skillName ? { ...s, source: "confirmed" as const } : s));
     const column = type === "professional" ? "professional_skills" : "passion_skills";
-    const { error } = await supabase.from('profiles').update({ [column]: updated as any }).eq('user_id', user.id);
+    const { error } = await supabase.from('profiles').update({ [column]: updated as any } as any).eq('user_id', user.id);
     if (error) {
       toast({ title: "Error", description: "Failed to update skill", variant: "destructive" });
     } else {

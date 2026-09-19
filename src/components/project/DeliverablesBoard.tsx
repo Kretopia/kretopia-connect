@@ -548,7 +548,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
         prev.map((d) => (d.id === activeIdStr ? { ...d, status: toStatus, sort_order: insertIdx } : d)),
       );
 
-      await supabase.from("project_deliverables").update(patch).eq("id", activeIdStr).then(({ error }) => {
+      await supabase.from("project_deliverables").update(patch as any).eq("id", activeIdStr).then(({ error }) => {
         if (error) toast({ title: "Move failed", description: error.message, variant: "destructive" });
       });
 
@@ -766,7 +766,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
     }
     const { error } = await supabase
       .from("project_deliverables")
-      .update(patch)
+      .update(patch as any)
       .eq("id", selected.id);
     setUpdating(false);
     if (error) {

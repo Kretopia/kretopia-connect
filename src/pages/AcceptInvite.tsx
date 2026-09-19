@@ -154,7 +154,7 @@ const AcceptInvite = () => {
                 message: `${joiner?.full_name || "Your invitee"} joined "${projectRow?.title || "your Studio"}".`,
                 action_url: `/desk/${projectId}`,
                 metadata: { project_id: projectId, joined_user_id: user.id },
-              }).then(() => {}, () => {});
+              } as any).then(() => {}, () => {});
             }
 
             toast({

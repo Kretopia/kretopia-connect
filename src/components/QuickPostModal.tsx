@@ -67,7 +67,7 @@ export function QuickPostModal({ open, onOpenChange, type }: QuickPostModalProps
       created_by: userId,
       category: "general",
       ends_at: new Date(new Date(startTime).getTime() + 3 * 3600000).toISOString(),
-    }).select("id").single();
+    } as any).select("id").single();
 
     if (error) throw error;
     return data.id;

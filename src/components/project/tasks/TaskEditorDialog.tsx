@@ -89,7 +89,7 @@ export const TaskEditorDialog = ({
           if (res.patched.description && !userHadDescription) safe.description = res.patched.description;
           if (res.patched.due_date && !userHadDueDate) safe.due_date = res.patched.due_date;
           if (Object.keys(safe).length > 0) {
-            await supabase.from("project_tasks").update(safe).eq("id", inserted.id);
+            await supabase.from("project_tasks").update(safe as any).eq("id", inserted.id);
             onSaved();
           }
         });

@@ -298,7 +298,7 @@ async function upsertSplitRow(
     .maybeSingle();
 
   if (existing) {
-    const { error } = await fromSplit(table).update(payload).eq("user_id", userId);
+    const { error } = await fromSplit(table).update(payload as any).eq("user_id", userId);
     if (error) throw error;
     return;
   }
