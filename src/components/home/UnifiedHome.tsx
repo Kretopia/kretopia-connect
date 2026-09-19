@@ -355,7 +355,7 @@ export const UnifiedHome = () => {
   // Uses the canonical matchmaker (get-onboarding-matches) so reasons + scores
   // are consistent with Match. Falls back silently to the relevance-ranked list above.
   useEffect(() => {
-    if (!user || !authProfileLoaded || !profile) return;
+    if (!user || !authProfileLoaded || profile?.user_id !== user.id) return;
     let cancelled = false;
     supabase.functions
       .invoke("get-onboarding-matches")
