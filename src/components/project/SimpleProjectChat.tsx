@@ -246,7 +246,7 @@ export const SimpleProjectChat = ({ projectId, messages, currentUserId, onMessag
         message: `${inviterProfile?.full_name || "A teammate"} mentioned you in "${project?.title || "a Studio"}".`,
         action_url: `/accept-invite/${projectId}`,
         metadata: { project_id: projectId, invited_by: currentUserId },
-      }).then(() => {}, () => {});
+      } as any).then(() => {}, () => {});
 
       toast({ title: `${collab.full_name} invited`, description: "They'll see the invite in their inbox." });
       insertMention(collab);

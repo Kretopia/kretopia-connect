@@ -73,7 +73,7 @@ export const VibeHeader = ({
   const due = project.deadline ? new Date(project.deadline) : null;
 
   const updateProject = async (patch: Record<string, any>) => {
-    const { error } = await supabase.from("projects").update(patch).eq("id", project.id);
+    const { error } = await supabase.from("projects").update(patch as any).eq("id", project.id);
     if (error) {
       toast({ title: "Couldn't save", description: error.message, variant: "destructive" });
       return false;

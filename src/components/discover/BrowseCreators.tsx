@@ -139,7 +139,7 @@ export function BrowseCreators() {
 
       if (filters.role) q = q.ilike("role", `%${filters.role}%`);
       if (filters.location) q = q.ilike("location", `%${filters.location}%`);
-      if (filters.verifiedOnly) q = q.neq("verification_tier", "none").not("verification_tier", "is", null);
+      if (filters.verifiedOnly) q = (q as any).neq("verification_tier", "none").not("verification_tier", "is", null);
       if (filters.minRating > 0) q = q.gte("average_rating", filters.minRating);
       if (query.trim()) {
         const likeQ = escapePostgrestValue(`%${query}%`);

@@ -98,7 +98,7 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
         user_id: user.id,
         ...newCredit,
         thumbnail_url: extractedThumb,
-      }).select().single();
+      } as any).select().single();
 
       if (error) throw error;
 

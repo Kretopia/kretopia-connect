@@ -117,7 +117,7 @@ const Intel = () => {
 
   const applyEpk = async (s: any) => {
     const field = s.kind === "bio" ? "bio" : s.kind === "headline" ? "headline" : null;
-    if (field) await supabase.from("profiles").update({ [field]: s.suggested_value }).eq("user_id", user!.id);
+    if (field) await supabase.from("profiles").update({ [field]: s.suggested_value } as any).eq("user_id", user!.id);
     await supabase.from("epk_refresh_suggestions").update({ status: "applied", applied_at: new Date().toISOString() }).eq("id", s.id);
     setEpk((prev) => prev.filter((p) => p.id !== s.id));
     toast.success("Applied to your profile");
