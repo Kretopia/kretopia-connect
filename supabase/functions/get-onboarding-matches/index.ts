@@ -35,19 +35,24 @@ serve(async (req) => {
       );
     }
 
-    // Get new user's profile
-    const { data: myProfile } = await supabase
+    // Get new user's profile. During onboarding the row may not exist yet, and
+    // .single() errors on zero rows -- use maybeSingle() and fall back to a
+    // minimal profile so this never 404s and blanks the caller's screen.
+    const { data: existingProfile } = await supabase
       .from("profiles")
       .select("*")
       .eq("user_id", user.id)
-      .single();
+      .maybeSingle();
 
-    if (!myProfile) {
-      return new Response(
-        JSON.stringify({ error: "Profile not found" }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const myProfile: Record<string, any> = existingProfile ?? {
+      full_name: user.user_metadata?.full_name ?? "New member",
+      role: "Creator",
+      bio: null,
+      location: null,
+      professional_skills: null,
+      passion_skills: null,
+      account_type: "individual",
+    };
 
     // Get 5-10 diverse, active profiles to show
     const { data: potentialMatches } = await supabase
