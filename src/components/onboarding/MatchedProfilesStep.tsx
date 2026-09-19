@@ -39,6 +39,44 @@ export const MatchedProfilesStep = ({ onComplete }: MatchedProfilesStepProps) =>
 
   const fetchMatches = async () => {
     try {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      const currentUser = authData.user;
+      if (authError || !currentUser) {
+        setMatches([]);
+        return;
+      }
+
+      const { data: existingProfile, error: profileLookupError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (profileLookupError) throw profileLookupError;
+
+      if (!existingProfile) {
+        const metadata = currentUser.user_metadata as Record<string, unknown> | undefined;
+        const metadataName = typeof metadata?.full_name === "string" ? metadata.full_name.trim() : "";
+        const emailName = currentUser.email?.split("@")[0]?.trim() || "";
+        const { error: createProfileError } = await supabase.from("profiles").upsert(
+          {
+            user_id: currentUser.id,
+            full_name: metadataName || emailName || "New User",
+            role: "Creator",
+            onboarding_completed: false,
+            is_claimed: true,
+            account_type: metadata?.account_type === "company" ? "company" : "individual",
+          },
+          { onConflict: "user_id" },
+        );
+
+        if (createProfileError) {
+          console.warn("Could not prepare profile for suggestions:", createProfileError.message);
+          setMatches([]);
+          return;
+        }
+      }
+
       // Add 15 second timeout to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Request timeout')), 15000)
@@ -48,7 +86,14 @@ export const MatchedProfilesStep = ({ onComplete }: MatchedProfilesStepProps) =>
 
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
-      if (error) throw error;
+      if (error) {
+        const message = typeof error.message === "string" ? error.message : "";
+        if (message.includes("Profile not found")) {
+          setMatches([]);
+          return;
+        }
+        throw error;
+      }
       
       setMatches(data?.matches || []);
     } catch (error) {

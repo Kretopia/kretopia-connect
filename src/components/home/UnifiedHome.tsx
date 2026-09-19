@@ -123,6 +123,7 @@ export const UnifiedHome = () => {
   // Auth-only data
   const [profile, setProfile] = useState<any>(null);
   const [profileFull, setProfileFull] = useState<any>(null);
+  const [authProfileLoaded, setAuthProfileLoaded] = useState(false);
   const [myCredits, setMyCredits] = useState(0);
   const [myConnections, setMyConnections] = useState(0);
 
@@ -354,7 +355,7 @@ export const UnifiedHome = () => {
   // Uses the canonical matchmaker (get-onboarding-matches) so reasons + scores
   // are consistent with Match. Falls back silently to the relevance-ranked list above.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !authProfileLoaded || !profile) return;
     let cancelled = false;
     supabase.functions
       .invoke("get-onboarding-matches")
@@ -367,7 +368,7 @@ export const UnifiedHome = () => {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [user?.id]);
+  }, [user?.id, authProfileLoaded, profile?.user_id]);
 
   // Live activity ticker
   useEffect(() => {
@@ -384,26 +385,34 @@ export const UnifiedHome = () => {
 
   // Fetch auth-specific data
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setAuthProfileLoaded(false);
+      return;
+    }
+    setAuthProfileLoaded(false);
     const fetchAuth = async () => {
-      const [profileFullRes, creditsCount, connectionsCount] = await Promise.all([
-        supabase.from("profiles").select(PROFILE_SELECT).eq("user_id", user.id).maybeSingle(),
-        supabase.from("credits").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("connections").select("id", { count: "exact", head: true }).or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`).eq("status", "accepted"),
-      ]);
-      // PROFILE_SELECT is a superset of the narrower field list this used to
-      // fetch separately — one query covers both `profile` and `profileFull`.
-      setProfile(profileFullRes.data);
-      setProfileFull(profileFullRes.data);
-      setMyCredits(creditsCount.count || 0);
-      setMyConnections(connectionsCount.count || 0);
+      try {
+        const [profileFullRes, creditsCount, connectionsCount] = await Promise.all([
+          supabase.from("profiles").select(PROFILE_SELECT).eq("user_id", user.id).maybeSingle(),
+          supabase.from("credits").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+          supabase.from("connections").select("id", { count: "exact", head: true }).or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`).eq("status", "accepted"),
+        ]);
+        // PROFILE_SELECT is a superset of the narrower field list this used to
+        // fetch separately — one query covers both `profile` and `profileFull`.
+        setProfile(profileFullRes.data);
+        setProfileFull(profileFullRes.data);
+        setMyCredits(creditsCount.count || 0);
+        setMyConnections(connectionsCount.count || 0);
 
-      // First-Win one-shot — fresh accounts that haven't seen it
-      const seen = localStorage.getItem(`first_win_seen_${user.id}`);
-      const created = profileFullRes.data?.created_at ? new Date(profileFullRes.data.created_at).getTime() : 0;
-      const ageHrs = (Date.now() - created) / 3_600_000;
-      if (!seen && ageHrs < 24 && profileFullRes.data?.onboarding_completed) {
-        setTimeout(() => setShowFirstWin(true), 600);
+        // First-Win one-shot — fresh accounts that haven't seen it
+        const seen = localStorage.getItem(`first_win_seen_${user.id}`);
+        const created = profileFullRes.data?.created_at ? new Date(profileFullRes.data.created_at).getTime() : 0;
+        const ageHrs = (Date.now() - created) / 3_600_000;
+        if (!seen && ageHrs < 24 && profileFullRes.data?.onboarding_completed) {
+          setTimeout(() => setShowFirstWin(true), 600);
+        }
+      } finally {
+        setAuthProfileLoaded(true);
       }
     };
     fetchAuth();
