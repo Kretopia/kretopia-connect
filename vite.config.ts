@@ -26,14 +26,25 @@ const PUBLIC_SUPABASE_DEFAULTS = {
   projectId: "kwmcocsitwssrtzkdojh",
 };
 
+// TEMPORARY: force the legacy production backend (with all live data) while
+// the new empty Lovable Cloud backend is being migrated. The auto-generated
+// .env now points at the new backend, so it would otherwise win over the
+// public defaults above. Flip this to false to switch back to the .env /
+// new-backend values once migrations are complete.
+const FORCE_LEGACY_BACKEND = true;
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const supabaseUrl = env.VITE_SUPABASE_URL || PUBLIC_SUPABASE_DEFAULTS.url;
-  const supabasePublishableKey =
-    env.VITE_SUPABASE_PUBLISHABLE_KEY || PUBLIC_SUPABASE_DEFAULTS.publishableKey;
-  const supabaseProjectId =
-    env.VITE_SUPABASE_PROJECT_ID || PUBLIC_SUPABASE_DEFAULTS.projectId;
+  const supabaseUrl = FORCE_LEGACY_BACKEND
+    ? PUBLIC_SUPABASE_DEFAULTS.url
+    : env.VITE_SUPABASE_URL || PUBLIC_SUPABASE_DEFAULTS.url;
+  const supabasePublishableKey = FORCE_LEGACY_BACKEND
+    ? PUBLIC_SUPABASE_DEFAULTS.publishableKey
+    : env.VITE_SUPABASE_PUBLISHABLE_KEY || PUBLIC_SUPABASE_DEFAULTS.publishableKey;
+  const supabaseProjectId = FORCE_LEGACY_BACKEND
+    ? PUBLIC_SUPABASE_DEFAULTS.projectId
+    : env.VITE_SUPABASE_PROJECT_ID || PUBLIC_SUPABASE_DEFAULTS.projectId;
   const generateStaticSocialPages = env.VITE_GENERATE_STATIC_SOCIAL_PAGES === "true";
   const analyzeBundle = process.env.ANALYZE === "true";
 
