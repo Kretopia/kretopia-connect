@@ -34,9 +34,14 @@ export const useNotifications = () => {
 
     fetchNotifications();
 
-    // Set up realtime subscription
+    // Set up realtime subscription.
+    // NOTE: the topic must be unique per hook instance — supabase-js returns the
+    // existing channel object for a duplicate topic, and calling .on() on that
+    // already-subscribed channel throws "cannot add postgres_changes callbacks
+    // after subscribe()". This hook is used by Navbar, NotificationCenter,
+    // Notifications and Inbox, which can be mounted at the same time.
     const channel = supabase
-      .channel('notifications-channel')
+      .channel(`notifications-channel-${user.id}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
