@@ -276,7 +276,8 @@ export function UnifiedSearchDropdown({
         }
 
         // Add web visual results
-        const visualResults: SearchResult[] = (uData.external?.visual_results || []).slice(0, 6).map((r: any, i: number) => ({
+        type VisualResult = { title: string; subtitle?: string; year?: string | number; platform?: string; image_url?: string | null; url?: string };
+        const visualResults: SearchResult[] = ((uData.external?.visual_results || []) as VisualResult[]).slice(0, 6).map((r, i) => ({
           type: "web" as const,
           id: `web-${i}`,
           title: r.title,
