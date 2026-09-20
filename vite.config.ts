@@ -26,11 +26,14 @@ const PUBLIC_SUPABASE_DEFAULTS = {
   projectId: "kwmcocsitwssrtzkdojh",
 };
 
-// TEMPORARY: force the legacy production backend (with all live data) while
-// the new empty Lovable Cloud backend is being migrated. The auto-generated
-// .env now points at the new backend, so it would otherwise win over the
-// public defaults above. Flip this to false to switch back to the .env /
-// new-backend values once migrations are complete.
+// PERMANENT: the real production backend is this one (all live users,
+// profiles, credits, payments, storage). Lovable Cloud's own backend for
+// this project was activated by mistake and is empty -- schema migrations
+// alone can't populate it with real data/auth.users/storage, so cutting
+// over to it was decided against (2026-09-20). The auto-generated .env
+// points at that empty Cloud backend, so it would otherwise win over the
+// public defaults above; this override is what keeps the app on the real
+// one. Do not flip this to false -- there is no migrated data behind it.
 const FORCE_LEGACY_BACKEND = true;
 
 // https://vitejs.dev/config/
