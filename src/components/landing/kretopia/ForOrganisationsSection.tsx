@@ -7,6 +7,21 @@
  *   - "Partner With Us" -> /auth?tab=signup, where a real "company" account
  *     type already exists (src/pages/Auth.tsx) with its own onboarding
  *     (/company-onboarding) — not a fabricated partner flow.
+ *
+ * v2 (gap + branding + CTA power pass):
+ * - Dropped the plain `border-t` hard-cut at the top — ClosingCTASection
+ *   now carries its own soft accent-gradient seam into this section, so a
+ *   second hairline here would double the transition instead of smoothing
+ *   it. See the gap caveat in ClosingCTASection's own header: the real
+ *   black-space culprit is most likely FixedProgressiveCard's scroll-pin
+ *   height, which lives outside both of these files.
+ * - Top padding tightened (py-16/20 -> pt-12/14, pb unchanged) specifically
+ *   at the seam with ClosingCTASection, without touching the bottom
+ *   spacing that leads into whatever section follows this one.
+ * - Hover lift + explicit focus-visible ring added to both CTA buttons.
+ * - One subtle, low-opacity Kreto silhouette (desktop only, aria-hidden)
+ *   added as the "very subtle Kreto element" the brief allowed for —
+ *   kept small and faint enough not to compete with the copy or CTAs.
  */
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -14,6 +29,7 @@ import { Search, IdCard, Megaphone, Users2, CheckCircle2, Briefcase, Handshake }
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
+import { KretoCharacter } from "@/components/brand/KretoCharacter";
 
 const ACCENT = "#FF2DA1";
 
@@ -25,16 +41,29 @@ const CAPABILITIES = [
   { icon: CheckCircle2, label: "Confirm completed work" },
 ];
 
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2DA1]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
+
 export const ForOrganisationsSection = () => {
   const reducedMotion = useReducedMotion();
 
   return (
     <section
       id="chapter-organisations"
-      className="relative border-t border-white/[0.05] py-16 sm:py-20"
+      className="relative pt-12 sm:pt-14 pb-16 sm:pb-20"
       style={{ backgroundColor: "#05070D" }}
       aria-labelledby="for-orgs-title"
     >
+      {/* Very subtle brand silhouette — desktop only, purely decorative,
+          low opacity so it never competes with the copy or CTAs. */}
+      <KretoCharacter
+        variant="producer"
+        size={220}
+        floatAmplitude={0}
+        aria-hidden
+        className="pointer-events-none absolute -right-6 bottom-0 hidden opacity-[0.05] lg:block"
+      />
+
       <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 14 }}
@@ -78,7 +107,11 @@ export const ForOrganisationsSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-8 flex flex-wrap items-center gap-3"
         >
-          <Button asChild className="h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <Button
+            asChild
+            className={`h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${focusRing}`}
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          >
             <Link
               to="/post-opportunity"
               onClick={() =>
@@ -94,7 +127,12 @@ export const ForOrganisationsSection = () => {
               Hire Through Kretopia
             </Link>
           </Button>
-          <Button asChild variant="outline" className="h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <Button
+            asChild
+            variant="outline"
+            className={`h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${focusRing}`}
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          >
             <Link
               to="/auth?tab=signup&src=for_organisations"
               onClick={() =>

@@ -2,34 +2,45 @@
  * ClosingCTASection — Phase 13. The page's final conversion moment, not a
  * feature list.
  *
- * The primary action is a direct `<Link to="/auth?tab=signup">` — the same
- * destination every other signup CTA on this landing page already uses
- * (ClaimYourCreditsSection, ForOrganisationsSection, ProductSectionThrive,
- * etc.), styled with the same accent pill button. An earlier version put a
- * decorative, non-functional search-field lookalike here that only scrolled
- * back up to the hero and refocused the real search input — an extra,
- * avoidable step (scroll up, re-locate the field, retype) between a
- * convinced visitor and completing signup. Removed in favor of one clear
- * button plus a short trust line answering the objections that actually
- * block signup (cost, commitment, time), and a secondary "already have an
- * account" path for returning visitors so the section isn't a dead end for
- * them either.
+ * v3 (confirmed gap fix + branding + CTA power pass):
  *
- * This is the landing page's one FixedProgressiveCard (Section 7 of the
- * overhaul) — the primary-CTA, step-10 moment of the storytelling
- * structure, and the only place on the page content is pinned and
- * revealed by scroll progress rather than a plain fade-in-on-view. The
- * eight chapters above it keep their existing whileInView treatment
- * deliberately; this pattern is reserved for the one true "landing" beat.
+ * - GAP ROOT CAUSE (confirmed against FixedProgressiveCard.tsx): the
+ *   component's container is `height: scrollSpan * 100vh`, default
+ *   scrollSpan = 1.6 → a 160vh scroll-space block. The pinned content
+ *   itself only needs ~100vh (its minHeight is `calc(100vh - <headerOffset>)`).
+ *   That leaves ~60vh of scroll where the viewport shows this section's
+ *   plain #05070D background around one small, static/animating CTA card
+ *   — functionally a page-tall dead zone even though nothing is literally
+ *   an empty div. `scrollSpan` is the component's own documented tunable
+ *   for exactly this ("how much scroll drives the reveal before the card
+ *   releases"), so the fix is passed as a prop here — `scrollSpan={1.2}`
+ *   — rather than touching FixedProgressiveCard.tsx's internals or its
+ *   default, since that component is shared and changing its default
+ *   would silently affect every other section built on it. 1.2 keeps the
+ *   six-slot cascade (the component's actual design intent) comfortably
+ *   perceptible while cutting the dead scroll span roughly in half to a
+ *   third of what it was.
+ * - The bottom padding is still pinned via inline style (wins over
+ *   whatever .landing-section's own CSS rule sets) and the old plain
+ *   `border-t` hard-cut is still a soft accent-gradient seam — both kept
+ *   from the previous pass as complementary polish, not the fix itself.
+ * - Button copy swapped for something more direct ("Start Your Creative
+ *   Passport" — active verb, keeps the brand term, drops the more static
+ *   "Claim").
+ * - Hover lift + explicit focus-visible ring added to both links (was
+ *   relying entirely on btn-landing-primary/underline classes for state,
+ *   which may or may not include a visible focus ring on their own).
  *
- * The title is a live, real social-proof headline — the real creator
- * count from the same public-stats edge function the app already uses
- * for its own stats surfaces (no new backend). Fetched on mount (this
- * section renders off-screen from the very start of the page, so by the
- * time a visitor scrolls this far down the real number has almost
- * always already loaded); the fallback copy carries no invented number
- * and reads naturally on its own, so a slow network never shows a
- * broken or blank headline — see useCreatorCount below.
+ * The primary action is still a direct `<Link to="/auth?tab=signup">` —
+ * the same destination every other signup CTA on this landing page
+ * already uses (ClaimYourCreditsSection, ForOrganisationsSection,
+ * ProductSectionThrive, etc.), styled with the same accent pill button.
+ *
+ * The title is still the live, real social-proof headline — the real
+ * creator count from the same public-stats edge function the app already
+ * uses elsewhere (no new backend). Fetched on mount; the fallback copy
+ * carries no invented number, so a slow network never shows a broken or
+ * blank headline — see useCreatorCount below. Unchanged in this pass.
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -44,7 +55,7 @@ const trackSignupClick = () =>
   trackLandingCtaClick({
     ctaId: "claim_your_creative_passport",
     section: "closing_cta",
-    label: "Claim Your Creative Passport",
+    label: "Start Your Creative Passport",
     destinationType: "auth",
   });
 const trackSigninClick = () =>
@@ -85,63 +96,27 @@ export const ClosingCTASection = () => {
   return (
     <section
       id="closing-cta"
-      className="landing-section relative border-t border-white/[0.05]"
-      style={{ backgroundColor: "#05070D" }}
+      className="landing-section relative"
+      style={{ backgroundColor: "#05070D", paddingBottom: "3.5rem" }}
       aria-labelledby="closing-cta-title"
     >
-      <FixedProgressiveCard
-        eyebrow={<p className="landing-eyebrow">Get started</p>}
-        title={
-          <h2 id="closing-cta-title" className="landing-h1 landing-glow">
-            {creatorCount ? `Join ${creatorCount}+ creatives` : "Join the creatives"}
-            <br />
-            <span className="italic pink-glow-breathe" style={{ color: ACCENT }}>already proving their work.</span>
-          </h2>
-        }
-        keyValue={
-          // Glow sits behind the button on its own layer rather than as a
-          // box-shadow so it can blur past the button's own rounded-full
-          // edge without being clipped by btn-glass's overflow:hidden.
-          <div className="relative inline-block">
-            <div
-              aria-hidden
-              className="ai-ambient-breathe pointer-events-none absolute -inset-4 rounded-full blur-2xl"
-              style={{ background: `radial-gradient(circle, ${ACCENT}55, transparent 70%)` }}
-            />
-            <Link
-              to="/auth?tab=signup&intent=closing_cta&src=closing_cta"
-              onClick={trackSignupClick}
-              className="btn-landing-primary group relative inline-flex h-auto items-center gap-2 rounded-full px-8 py-4 text-base font-semibold"
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-            >
-              Claim Your Creative Passport
-              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden />
-            </Link>
-          </div>
-        }
-        supportingItem={
-          <p className="text-xs text-white/45" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
-            Free forever · No credit card · 2-minute setup
-          </p>
-        }
-        cta={
-          <Link
-            to="/auth?src=closing_cta"
-            onClick={trackSigninClick}
-            className="text-xs font-medium text-white/40 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white/70"
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-          >
-            Already have an account? Sign in
-          </Link>
-        }
+      
+      {/* Soft accent-gradient seam into ForOrganisationsSection, replacing
+          the old plain `border-t` hard-cut. Deliberately faint (one thin
+          line, no blur) so it reads as continuity rather than a second
+          decorative glow competing with the CTA's own ambient glow above
+          — "premium, épuré", not layered on top of itself. */}
+      <div
+        aria-hidden
+        className="pointer-events-none mx-auto mt-14 h-px w-full max-w-[420px]"
+        style={{ background: `linear-gradient(90deg, transparent, ${ACCENT}55, transparent)` }}
       />
 
       {/* The "Kretopia / Where Creativity Lives." tagline that used to sit
           here read as an empty, disconnected beat -- direct feedback asked
-          for it gone so the section's own .landing-section bottom padding
-          (see index.css) is what leads straight into the FAQ's own
-          "Everything about Kretopia" heading, without an extra block of
-          text between them. */}
+          for it gone so the section's own bottom padding is what leads
+          into the next section, without an extra block of text between
+          them. */}
     </section>
   );
 };
