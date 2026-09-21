@@ -317,7 +317,7 @@ export const KretopiaHero = () => {
                       )}
                       aria-label="Dismiss no results message"
                     >
-                      <X className="h-4 w-4" aria-hidden="true" />
+                      <X className="h-4 w-4 " aria-hidden="true" />
                     </button>
                   </div>
 

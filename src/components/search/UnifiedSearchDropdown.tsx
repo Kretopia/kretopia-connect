@@ -898,21 +898,7 @@ export function UnifiedSearchDropdown({
               )}
             />
 
-            {query ? (
-              <button
-                type="button"
-                onClick={clearSearch}
-                className={cn(
-                  "absolute top-1/2 z-20 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                  isHero ? "right-12 sm:right-14" : "right-8",
-                )}
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" aria-hidden="true" />
-              </button>
-            ) : null}
-
+            
             {voice.status === "recording" ||
             voice.status === "processing" ||
             voice.status === "requesting" ? (
