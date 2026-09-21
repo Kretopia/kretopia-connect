@@ -208,19 +208,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
           <BrandLogo size="md" showBeta linkToHome="/landing" onDark={isDarkChromeRoute} />
         </div>
 
-        {/* Global search — reachable from every route, including the guest
-            landing page now that its own Hero no longer carries a search
-            bar (Landing conversion overhaul). Genuinely readable at rest
-            (not an icon-only trigger), still expands a bit further on
-            focus (focus-within) without shifting neighboring nav items —
-            the results dropdown itself is absolutely positioned so it
-            never pushes layout regardless of the input's width. */}
-        <div className="hidden lg:block w-72 focus-within:w-80 xl:w-80 xl:focus-within:w-96 mx-3 shrink-0 transition-[width] duration-200 ease-out motion-reduce:transition-none">
-          <UnifiedSearchDropdown
-            variant="navbar"
-            placeholder="Search users, work and opportunities"
-          />
-        </div>
+     
 
         {/* ═══ GUEST INLINE NAV (desktop) ═══
             lg:, matching the authenticated desktop nav's own breakpoint below —

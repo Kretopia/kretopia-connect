@@ -1,46 +1,75 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  type CSSProperties,
+  type FormEvent,
+  type KeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Globe, ExternalLink, Mic, Square } from "lucide-react";
+import {
+  ArrowRight,
+  Briefcase,
+  Database,
+  Loader2,
+  Mic,
+  Search,
+  SearchX,
+  Square,
+  User,
+  X,
+} from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { VoiceWaveform } from "@/components/search/VoiceWaveform";
-import { escapePostgrestValue } from "@/lib/postgrestFilter";
+
+type ResultType = "creator" | "credit" | "gig";
 
 interface SearchResult {
-  type: "creator" | "credit" | "gig" | "web";
+  type: ResultType;
   id: string;
   title: string;
-  subtitle?: string;
-  avatar?: string | null;
-  bio?: string;
-  credits?: { project: string; role: string }[];
-  platform?: string;
-  is_claimed?: boolean;
-  url?: string;
+  subtitle: string;
+  imageUrl: string | null;
 }
 
-interface KnowledgeCard {
-  type: string;
-  name: string;
-  description: string;
-  image_url?: string | null;
-  known_for?: string[];
-  industry?: string;
-  platforms?: string[];
-  social_links?: Record<string, string>;
-  claim_prompt?: string;
+interface ProfileRow {
+  user_id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: string | null;
+  location: string | null;
 }
 
-interface AlternativeMatch {
-  name: string;
-  description: string;
-  image_url?: string | null;
-  industry?: string;
-  location?: string;
-  known_for?: string[];
+interface CreditRow {
+  id: string;
+  project_name: string | null;
+  role: string | null;
+  year: number | null;
+  project_type: string | null;
+  thumbnail_url: string | null;
+}
+
+interface OpportunityRow {
+  id: string;
+  title: string;
+  type: string | null;
+  compensation: string | null;
+  location: string | null;
 }
 
 interface UnifiedSearchDropdownProps {
@@ -55,28 +84,65 @@ interface UnifiedSearchDropdownProps {
   onQuerySubmit?: (query: string) => void;
 }
 
-const TYPE_META = {
-  creator: { label: "Creator", icon: User, color: "text-primary" },
-  credit: { label: "Credit", icon: Database, color: "text-accent" },
-  gig: { label: "Gig", icon: Briefcase, color: "text-emerald-500" },
-  web: { label: "Discovered", icon: Sparkles, color: "text-amber-500" },
+const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 320;
+
+const getInitial = (value: string | null | undefined) =>
+  value?.trim().charAt(0).toUpperCase() || "K";
+
+const getResultLabel = (type: ResultType) => {
+  if (type === "creator") return "Creator";
+  if (type === "credit") return "Creative Work";
+  return "Opportunity";
 };
 
-// Group headers for the mixed results list — "Users", "Creative Work" and
-// "Opportunities" are the three canonical groups; "web" results are
-// literally raw web discoveries, not formal project records, so they keep
-// their own honest "Discovered" heading rather than being folded into
-// "Creative Work" (which would overclaim their provenance).
-const RESULT_GROUP_LABEL: Record<SearchResult["type"], string> = {
-  creator: "Users",
-  credit: "Creative Work",
-  gig: "Opportunities",
-  web: "Discovered",
+const getResultIcon = (type: ResultType) => {
+  if (type === "creator") return User;
+  if (type === "credit") return Database;
+  return Briefcase;
+};
+
+const getResultIconClass = (type: ResultType) => {
+  if (type === "creator") return "text-primary";
+  if (type === "credit") return "text-accent";
+  return "text-emerald-500";
+};
+
+const buildFuzzyProfileFilter = (query: string) => {
+  const variants = new Set<string>([query]);
+
+  const swaps: Array<[string, string]> = [
+    ["i", "y"],
+    ["y", "i"],
+    ["z", "s"],
+    ["s", "z"],
+    ["c", "k"],
+    ["k", "c"],
+    ["ph", "f"],
+    ["f", "ph"],
+  ];
+
+  for (const [from, to] of swaps) {
+    if (query.toLowerCase().includes(from)) {
+      variants.add(query.toLowerCase().replace(new RegExp(from, "gi"), to));
+    }
+  }
+
+  return Array.from(variants)
+    .flatMap((variant) => {
+      const escaped = escapePostgrestValue(`%${variant}%`);
+
+      return [
+        `full_name.ilike.${escaped}`,
+        `role.ilike.${escaped}`,
+      ];
+    })
+    .join(",");
 };
 
 export function UnifiedSearchDropdown({
   variant = "navbar",
-  placeholder = "Search users, work and opportunities",
+  placeholder = "Search people, work and opportunities…",
   value,
   onValueChange,
   autoFocus = false,
@@ -86,918 +152,834 @@ export function UnifiedSearchDropdown({
   onQuerySubmit,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
+  const listboxId = useId();
+
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [webLoading, setWebLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [highlightedCreator, setHighlightedCreator] = useState<SearchResult | null>(null);
-  const [knowledgeCard, setKnowledgeCard] = useState<KnowledgeCard | null>(null);
-  const [alternativeMatches, setAlternativeMatches] = useState<AlternativeMatch[]>([]);
-  const [error, setError] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const resultsRef = useRef<HTMLDivElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
-  // Escape should close and stay closed — without this, refocusing the
-  // input (to return focus after Escape) would immediately reopen the
-  // dropdown via onFocus, since the query text is still present.
-  const suppressReopenRef = useRef(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasTechnicalError, setHasTechnicalError] = useState(false);
+  const [portalStyle, setPortalStyle] = useState<CSSProperties | null>(null);
+
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const requestVersionRef = useRef(0);
+  const suppressFocusOpenRef = useRef(false);
+
   const query = value ?? internalQuery;
-  const listboxId = useRef(`search-results-${Math.random().toString(36).slice(2)}`).current;
-
-  const setQuery = useCallback((nextValue: string) => {
-    if (value === undefined) setInternalQuery(nextValue);
-    onValueChange?.(nextValue);
-  }, [onValueChange, value]);
-
-  // Close on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        onOpenChange?.(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onOpenChange]);
-
-  // Debounced search
-  useEffect(() => {
-    const trimmedQuery = query.trim();
-    if (trimmedQuery.length < 2) {
-      setOpen(false);
-      onOpenChange?.(false);
-      setResults([]);
-      setError(false);
-      setHighlightedCreator(null);
-      setKnowledgeCard(null);
-      setAlternativeMatches([]);
-      return;
-    }
-    setOpen(true);
-    onOpenChange?.(true);
-    const timer = setTimeout(() => doSearch(trimmedQuery), 350);
-    return () => clearTimeout(timer);
-  }, [query]);
-
-  const doSearch = useCallback(async (q: string) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-    setWebLoading(true);
-    setError(false);
-    setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
-
-    try {
-      const likeQ = `%${q}%`;
-      const likeQEscaped = escapePostgrestValue(likeQ);
-
-      // Generate fuzzy variants (swap common letter pairs: i/y, z/s, etc.)
-      const fuzzyVariants = new Set<string>([q]);
-      const swaps: [string, string][] = [['i', 'y'], ['y', 'i'], ['z', 's'], ['s', 'z'], ['c', 'k'], ['k', 'c'], ['ph', 'f'], ['f', 'ph']];
-      for (const [from, to] of swaps) {
-        if (q.toLowerCase().includes(from)) {
-          fuzzyVariants.add(q.toLowerCase().replace(new RegExp(from, 'gi'), to));
-        }
-      }
-
-      const fuzzyFilters = Array.from(fuzzyVariants)
-        .map(v => {
-          const ev = escapePostgrestValue(`%${v}%`);
-          return `full_name.ilike.${ev},role.ilike.${ev}`;
-        })
-        .join(',');
-
-      // Fast DB queries for instant results
-      const dbPromise = Promise.all([
-        supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url, role, bio, location, is_claimed")
-          .or(fuzzyFilters)
-          .or("onboarding_completed.eq.true,is_claimed.eq.false")
-          .limit(8),
-        supabase
-          .from("credits")
-          .select("id, project_name, role, year, project_type, thumbnail_url")
-          .or(`project_name.ilike.${likeQEscaped},role.ilike.${likeQEscaped}`)
-          .limit(5),
-        supabase
-          .from("opportunities")
-          .select("id, title, type, compensation, location")
-          .eq("status", "active")
-          .ilike("title", likeQ)
-          .limit(3),
-      ]);
-
-      // Universal search in parallel (includes web + AI knowledge card) with 20s timeout
-      const universalPromise = Promise.race([
-        supabase.functions.invoke("universal-search", { body: { query: q } }).catch(() => ({ data: null })),
-        new Promise<{ data: null }>((resolve) => setTimeout(() => resolve({ data: null }), 20000)),
-      ]);
-
-      // Show DB results first (fast)
-      const [profiles, credits, opps] = await dbPromise;
-      if (controller.signal.aborted) return;
-
-      const dbResults: SearchResult[] = [];
-
-      for (const p of profiles.data || []) {
-        dbResults.push({
-          type: "creator",
-          id: p.user_id,
-          title: p.full_name || "Creator",
-          subtitle: [p.role, p.location].filter(Boolean).join(" · "),
-          avatar: p.avatar_url,
-          bio: p.bio || undefined,
-          is_claimed: p.is_claimed !== false,
-        });
-      }
-
-      for (const c of credits.data || []) {
-        dbResults.push({
-          type: "credit",
-          id: c.id,
-          title: c.project_name,
-          subtitle: [c.role, c.year].filter(Boolean).join(" · "),
-          avatar: c.thumbnail_url,
-        });
-      }
-
-      for (const o of opps.data || []) {
-        dbResults.push({
-          type: "gig",
-          id: o.id,
-          title: o.title,
-          subtitle: [o.type, o.compensation, o.location].filter(Boolean).join(" · "),
-        });
-      }
-
-      setResults(dbResults);
-      setLoading(false);
-
-      // Highlight first creator
-      const firstCreator = dbResults.find((r) => r.type === "creator");
-      if (firstCreator) {
-        const { data: creatorCredits } = await supabase
-          .from("credits")
-          .select("project_name, role")
-          .eq("user_id", firstCreator.id)
-          .order("year", { ascending: false })
-          .limit(4);
-
-        if (!controller.signal.aborted) {
-          firstCreator.credits = (creatorCredits || []).map((c) => ({
-            project: c.project_name,
-            role: c.role,
-          }));
-          setHighlightedCreator(firstCreator);
-        }
-      }
-
-      // Now await universal search (web + AI)
-      const universalResponse = await universalPromise;
-      if (controller.signal.aborted) return;
-
-      const uData = universalResponse?.data;
-
-      if (uData) {
-        // Extract knowledge card & alternatives
-        if (uData.external?.knowledge_card) {
-          setKnowledgeCard(uData.external.knowledge_card);
-        }
-        if (Array.isArray(uData.external?.alternative_matches) && uData.external.alternative_matches.length > 0) {
-          setAlternativeMatches(uData.external.alternative_matches);
-        }
-
-        // Add web visual results
-        type VisualResult = { title: string; subtitle?: string; year?: string | number; platform?: string; image_url?: string | null; url?: string };
-        const visualResults: SearchResult[] = ((uData.external?.visual_results || []) as VisualResult[]).slice(0, 6).map((r, i) => ({
-          type: "web" as const,
-          id: `web-${i}`,
-          title: r.title,
-          subtitle: [r.subtitle, r.year, r.platform].filter(Boolean).join(" · "),
-          avatar: r.image_url || null,
-          platform: r.platform,
-          url: r.url,
-        }));
-
-        if (visualResults.length > 0) {
-          setResults((prev) => [...prev, ...visualResults]);
-        }
-      }
-
-      setWebLoading(false);
-    } catch (err) {
-      if (!controller.signal.aborted) {
-        console.error("Search error:", err);
-        setResults([]);
-        setError(true);
-        setLoading(false);
-        setWebLoading(false);
-      }
-    }
-  }, []);
-
-  const handleSelect = (r: SearchResult) => {
-    setOpen(false);
-    setQuery("");
-    setResults([]);
-    setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
-    onOpenChange?.(false);
-
-    if (onSelect) {
-      onSelect(r);
-      return;
-    }
-
-    if (r.type === "creator") navigate(`/profile/${r.id}`);
-    else if (r.type === "gig") navigate(`/opportunity/${r.id}`);
-    else if (r.type === "credit") navigate(`/production?name=${encodeURIComponent(r.title)}`);
-    else if (r.url) window.open(r.url, "_blank");
-    else navigate(`/search?q=${encodeURIComponent(r.title)}`);
-  };
-
-  const submitQuery = useCallback((rawQuery: string) => {
-    const trimmedQuery = rawQuery.trim();
-    if (!trimmedQuery) return;
-
-    setOpen(false);
-    onOpenChange?.(false);
-
-    if (onQuerySubmit) {
-      onQuerySubmit(trimmedQuery);
-      return;
-    }
-
-    setQuery("");
-    navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    submitQuery(query);
-  };
-
-  const handleClear = () => {
-    setQuery("");
-    setResults([]);
-    setError(false);
-    setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
-    inputRef.current?.focus();
-  };
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") {
-      if (open) {
-        e.stopPropagation();
-        setOpen(false);
-        onOpenChange?.(false);
-      } else if (query) {
-        handleClear();
-      }
-      return;
-    }
-    if ((e.key === "ArrowDown" || e.key === "ArrowUp") && open) {
-      e.preventDefault();
-      const focusable = resultsRef.current?.querySelectorAll<HTMLButtonElement>("button[data-search-result]");
-      if (!focusable || focusable.length === 0) return;
-      if (e.key === "ArrowDown") focusable[0].focus();
-      else focusable[focusable.length - 1].focus();
-    }
-  };
-
-  const handleResultKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "Escape") {
-      setOpen(false);
-      onOpenChange?.(false);
-      suppressReopenRef.current = true;
-      inputRef.current?.focus();
-      return;
-    }
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-    e.preventDefault();
-    const focusable = Array.from(
-      resultsRef.current?.querySelectorAll<HTMLButtonElement>("button[data-search-result]") ?? [],
-    );
-    const currentIndex = focusable.indexOf(e.currentTarget);
-    if (currentIndex === -1) return;
-    const nextIndex = e.key === "ArrowDown" ? currentIndex + 1 : currentIndex - 1;
-    if (nextIndex < 0) {
-      inputRef.current?.focus();
-    } else if (nextIndex < focusable.length) {
-      focusable[nextIndex].focus();
-    }
-  };
-
+  const trimmedQuery = query.trim();
+  const canSearch = trimmedQuery.length >= MIN_QUERY_LENGTH;
   const isHero = variant === "hero";
   const isNavbar = variant === "navbar";
 
-  const voice = useVoiceSearch({
-    onTranscript: (text) => {
-      setQuery(text);
-      setOpen(true);
-      onOpenChange?.(true);
+  const setQuery = useCallback(
+    (nextValue: string) => {
+      if (value === undefined) {
+        setInternalQuery(nextValue);
+      }
+
+      onValueChange?.(nextValue);
+    },
+    [onValueChange, value],
+  );
+
+  const setOpen = useCallback(
+    (nextOpen: boolean) => {
+      setIsOpen(nextOpen);
+      onOpenChange?.(nextOpen);
+    },
+    [onOpenChange],
+  );
+
+  const clearSearch = useCallback(() => {
+    abortControllerRef.current?.abort();
+    requestVersionRef.current += 1;
+
+    setQuery("");
+    setResults([]);
+    setIsLoading(false);
+    setHasTechnicalError(false);
+    setOpen(false);
+
+    window.requestAnimationFrame(() => {
       inputRef.current?.focus();
+    });
+  }, [setOpen, setQuery]);
+
+  const updatePortalPosition = useCallback(() => {
+    const element = wrapperRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const gutter = 12;
+    const maxWidth = window.innerWidth - gutter * 2;
+
+    setPortalStyle({
+      position: "fixed",
+      top: rect.bottom + 10,
+      left: Math.max(gutter, rect.left),
+      width: Math.min(rect.width, maxWidth),
+      zIndex: 9999,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!isOpen || !canSearch) {
+      setPortalStyle(null);
+      return;
+    }
+
+    updatePortalPosition();
+
+    const handleViewportChange = () => {
+      updatePortalPosition();
+    };
+
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [canSearch, isOpen, updatePortalPosition]);
+
+  const executeSearch = useCallback(
+    async (rawQuery: string) => {
+      const searchQuery = rawQuery.trim();
+
+      if (searchQuery.length < MIN_QUERY_LENGTH) {
+        return;
+      }
+
+      abortControllerRef.current?.abort();
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      const requestVersion = requestVersionRef.current + 1;
+      requestVersionRef.current = requestVersion;
+
+      setIsLoading(true);
+      setHasTechnicalError(false);
+      setResults([]);
+
+      const likeQuery = `%${searchQuery}%`;
+      const escapedLikeQuery = escapePostgrestValue(likeQuery);
+      const fuzzyProfileFilter = buildFuzzyProfileFilter(searchQuery);
+
+      try {
+        const [profilesResponse, creditsResponse, opportunitiesResponse] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("user_id, full_name, avatar_url, role, location")
+              .or(fuzzyProfileFilter)
+              .limit(8),
+
+            supabase
+              .from("credits")
+              .select(
+                "id, project_name, role, year, project_type, thumbnail_url",
+              )
+              .or(
+                `project_name.ilike.${escapedLikeQuery},role.ilike.${escapedLikeQuery}`,
+              )
+              .limit(6),
+
+            supabase
+              .from("opportunities")
+              .select("id, title, type, compensation, location")
+              .eq("status", "active")
+              .ilike("title", likeQuery)
+              .limit(6),
+          ]);
+
+        if (
+          controller.signal.aborted ||
+          requestVersionRef.current !== requestVersion
+        ) {
+          return;
+        }
+
+        if (
+          profilesResponse.error ||
+          creditsResponse.error ||
+          opportunitiesResponse.error
+        ) {
+          throw (
+            profilesResponse.error ||
+            creditsResponse.error ||
+            opportunitiesResponse.error
+          );
+        }
+
+        const nextResults: SearchResult[] = [];
+
+        for (const profile of (profilesResponse.data ?? []) as ProfileRow[]) {
+          nextResults.push({
+            type: "creator",
+            id: profile.user_id,
+            title: profile.full_name || "Creator",
+            subtitle: [profile.role, profile.location]
+              .filter(Boolean)
+              .join(" · "),
+            imageUrl: profile.avatar_url,
+          });
+        }
+
+        const seenProductions = new Set<string>();
+
+        for (const credit of (creditsResponse.data ?? []) as CreditRow[]) {
+          const projectName = credit.project_name?.trim();
+
+          if (!projectName) {
+            continue;
+          }
+
+          const dedupeKey = projectName.toLocaleLowerCase();
+
+          if (seenProductions.has(dedupeKey)) {
+            continue;
+          }
+
+          seenProductions.add(dedupeKey);
+
+          nextResults.push({
+            type: "credit",
+            id: credit.id,
+            title: projectName,
+            subtitle: [credit.role, credit.year, credit.project_type]
+              .filter(Boolean)
+              .join(" · "),
+            imageUrl: credit.thumbnail_url,
+          });
+        }
+
+        for (const opportunity of (opportunitiesResponse.data ??
+          []) as OpportunityRow[]) {
+          nextResults.push({
+            type: "gig",
+            id: opportunity.id,
+            title: opportunity.title,
+            subtitle: [
+              opportunity.type,
+              opportunity.compensation,
+              opportunity.location,
+            ]
+              .filter(Boolean)
+              .join(" · "),
+            imageUrl: null,
+          });
+        }
+
+        setResults(nextResults);
+      } catch (error) {
+        if (
+          controller.signal.aborted ||
+          requestVersionRef.current !== requestVersion
+        ) {
+          return;
+        }
+
+        console.error("Kretopia unified search error:", error);
+        setResults([]);
+        setHasTechnicalError(true);
+      } finally {
+        if (
+          !controller.signal.aborted &&
+          requestVersionRef.current === requestVersion
+        ) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!canSearch) {
+      abortControllerRef.current?.abort();
+      requestVersionRef.current += 1;
+
+      setResults([]);
+      setIsLoading(false);
+      setHasTechnicalError(false);
+      setOpen(false);
+
+      return;
+    }
+
+    if (!suppressFocusOpenRef.current) {
+      setOpen(true);
+    }
+
+    const timer = window.setTimeout(() => {
+      void executeSearch(trimmedQuery);
+    }, DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [canSearch, executeSearch, setOpen, trimmedQuery]);
+
+  useEffect(() => {
+    const handleOutsidePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      const clickedInputArea = wrapperRef.current?.contains(target);
+      const clickedDropdown = dropdownRef.current?.contains(target);
+
+      if (!clickedInputArea && !clickedDropdown) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsidePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsidePointerDown);
+    };
+  }, [setOpen]);
+
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  const groupedResults = useMemo(() => {
+    return [
+      {
+        type: "creator" as const,
+        label: "People",
+        items: results.filter((result) => result.type === "creator"),
+      },
+      {
+        type: "credit" as const,
+        label: "Creative Work",
+        items: results.filter((result) => result.type === "credit"),
+      },
+      {
+        type: "gig" as const,
+        label: "Opportunities",
+        items: results.filter((result) => result.type === "gig"),
+      },
+    ].filter((group) => group.items.length > 0);
+  }, [results]);
+
+  const selectResult = useCallback(
+    (result: SearchResult) => {
+      setOpen(false);
+      setResults([]);
+
+      onSelect?.(result);
+
+      if (onSelect) {
+        return;
+      }
+
+      if (result.type === "creator") {
+        navigate(`/profile/${result.id}`);
+        return;
+      }
+
+      if (result.type === "credit") {
+        navigate(`/production?name=${encodeURIComponent(result.title)}`);
+        return;
+      }
+
+      navigate(`/opportunity/${result.id}`);
+    },
+    [navigate, onSelect, setOpen],
+  );
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    /*
+     * Important:
+     * Enter does NOT redirect when no real data exists.
+     *
+     * It only selects the first actual fetched result. Otherwise, the
+     * dropdown remains open and displays the “not found” state locally.
+     */
+    if (!canSearch || isLoading) {
+      return;
+    }
+
+    if (results.length > 0) {
+      selectResult(results[0]);
+      return;
+    }
+
+    setOpen(true);
+    onQuerySubmit?.(trimmedQuery);
+  };
+
+  const handleInputKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (event.key === "Escape") {
+      suppressFocusOpenRef.current = true;
+      setOpen(false);
+      return;
+    }
+
+    if (event.key !== "ArrowDown") {
+      return;
+    }
+
+    const firstResult = dropdownRef.current?.querySelector<HTMLButtonElement>(
+      "button[data-search-result]",
+    );
+
+    if (!firstResult) {
+      return;
+    }
+
+    event.preventDefault();
+    firstResult.focus();
+  };
+
+  const handleResultKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+  ) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      suppressFocusOpenRef.current = true;
+      setOpen(false);
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+      return;
+    }
+
+    const buttons = Array.from(
+      dropdownRef.current?.querySelectorAll<HTMLButtonElement>(
+        "button[data-search-result]",
+      ) ?? [],
+    );
+
+    const currentIndex = buttons.indexOf(event.currentTarget);
+
+    if (currentIndex < 0) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextIndex =
+      event.key === "ArrowDown" ? currentIndex + 1 : currentIndex - 1;
+
+    if (nextIndex < 0) {
+      inputRef.current?.focus();
+      return;
+    }
+
+    if (nextIndex >= buttons.length) {
+      buttons[0]?.focus();
+      return;
+    }
+
+    buttons[nextIndex]?.focus();
+  };
+
+  const voice = useVoiceSearch({
+    onTranscript: (transcript) => {
+      const spokenQuery = transcript.trim();
+
+      if (!spokenQuery) {
+        return;
+      }
+
+      suppressFocusOpenRef.current = false;
+      setQuery(spokenQuery);
+      setOpen(true);
+
+      window.requestAnimationFrame(() => {
+        inputRef.current?.focus();
+      });
     },
   });
 
-  // Transient permission/error messages clear themselves — they're a
-  // toast-style note, not a persistent blocker; typed search keeps working
-  // the whole time regardless of voice state.
-  useEffect(() => {
-    if (voice.status !== "denied" && voice.status !== "error") return;
-    const t = setTimeout(voice.dismissError, 5000);
-    return () => clearTimeout(t);
-  }, [voice.status, voice.dismissError]);
+  const handleInputChange = (nextValue: string) => {
+    suppressFocusOpenRef.current = false;
+    setQuery(nextValue);
 
-  return (
-    <div ref={wrapperRef} className={cn("relative", className)}>
-      <form onSubmit={handleSubmit}>
-        <div className="relative">
-          <Search
-            className={cn(
-              "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
-              isHero ? "left-4 h-5 w-5" : "left-3 h-4 w-4"
-            )}
-          />
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setOpen(true);
-              onOpenChange?.(true);
-            }}
-            onFocus={() => {
-              if (suppressReopenRef.current) {
-                suppressReopenRef.current = false;
-                return;
-              }
-              if (query.trim().length >= 2) {
-                setOpen(true);
-                onOpenChange?.(true);
-              }
-            }}
-            onKeyDown={handleInputKeyDown}
-            placeholder={placeholder}
-            autoFocus={autoFocus}
-            role="combobox"
-            aria-label="Search a name, project or opportunity"
-            aria-expanded={open}
-            aria-controls={listboxId}
-            className={cn(
-              "w-full border text-foreground transition-all placeholder:text-muted-foreground/50 focus:outline-none",
-              isHero
-                ? "h-12 sm:h-14 rounded-2xl border-border/60 bg-card/80 backdrop-blur-sm pl-12 pr-20 text-sm shadow-lg focus:border-primary focus:shadow-[var(--shadow-glow)]"
-                : isNavbar
-                ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
-                : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
-            )}
-          />
-          {(voice.status === "recording" || voice.status === "processing") ? (
-            <div
-              className={cn(
-                "absolute top-1/2 -translate-y-1/2 right-1.5 flex items-center gap-1.5 rounded-full glass-surface pl-2.5 pr-1 py-1",
-              )}
-            >
-              {voice.status === "recording" ? (
-                <>
-                  <VoiceWaveform level={voice.level} className="w-8" />
-                  <button
-                    type="button"
-                    onClick={voice.stop}
-                    aria-label="Stop and use this recording"
-                    title="Stop"
-                    className="h-6 w-6 shrink-0 rounded-full bg-[hsl(var(--color-accent))] text-white flex items-center justify-center hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
-                  >
-                    <Square className="h-2.5 w-2.5 fill-current" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={voice.cancel}
-                    aria-label="Cancel recording"
-                    title="Cancel"
-                    className="h-6 w-6 shrink-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </>
-              ) : (
-                <span className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Transcribing…
-                </span>
-              )}
-            </div>
-          ) : (
-            <>
-              {query ? (
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  aria-label="Clear search"
-                  className={cn(
-                    "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? "right-14" : "right-8"
-                  )}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              ) : voice.supported ? (
-                <button
-                  type="button"
-                  onClick={voice.start}
-                  disabled={voice.status === "requesting"}
-                  aria-label="Search by voice"
-                  title="Search by voice"
-                  className={cn(
-                    "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[hsl(var(--color-accent))] transition-colors disabled:opacity-50 before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? "right-14" : "right-8"
-                  )}
-                >
-                  {voice.status === "requesting" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Mic className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              ) : null}
-              <button
-                type="submit"
-                aria-label="Search"
-                className={cn(
-                  "absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors",
-                  isHero
-                    ? "right-2.5 h-9 w-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
-                    : "right-1.5 h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/80"
-                )}
-              >
-                {isHero ? <ArrowRight className="h-4 w-4" /> : <ArrowRight className="h-3.5 w-3.5" />}
-              </button>
-            </>
-          )}
-        </div>
+    if (nextValue.trim().length >= MIN_QUERY_LENGTH) {
+      setOpen(true);
+    }
+  };
 
-        {/* Voice permission/error note — transient, self-dismissing, never
-            blocks typed search which keeps working throughout. */}
-        {(voice.status === "denied" || voice.status === "error") && voice.errorMessage && (
-          <div
-            role="status"
-            className="mt-1.5 flex items-center justify-between gap-2 rounded-lg glass-surface px-2.5 py-1.5 text-[11px] text-muted-foreground"
-          >
-            <span>{voice.errorMessage}</span>
-            <button
-              type="button"
-              onClick={voice.dismissError}
-              aria-label="Dismiss"
-              className="shrink-0 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          </div>
-        )}
-      </form>
+  const handleInputFocus = () => {
+    if (suppressFocusOpenRef.current) {
+      suppressFocusOpenRef.current = false;
+      return;
+    }
 
-      {/* ═══ DROPDOWN ═══ */}
-      {open && query.trim().length >= 2 && (
+    if (query.trim().length >= MIN_QUERY_LENGTH) {
+      setOpen(true);
+    }
+  };
+
+  const showDropdown = isOpen && canSearch && portalStyle;
+  const showLoading = showDropdown && isLoading;
+  const showNotFound =
+    showDropdown &&
+    !isLoading &&
+    !hasTechnicalError &&
+    results.length === 0;
+  const showTechnicalError =
+    showDropdown && !isLoading && hasTechnicalError;
+
+  const dropdown = showDropdown
+    ? createPortal(
         <div
+          ref={dropdownRef}
           id={listboxId}
           role="region"
-          aria-label="Search results"
+          aria-label="Creative Work search results"
+          style={portalStyle}
           className={cn(
-            "absolute left-0 right-0 mt-2 rounded-xl glass-surface-elevated shadow-xl z-[100] overflow-hidden",
-            isNavbar ? "max-h-[70vh]" : "max-h-[60vh]"
+            "overflow-hidden rounded-2xl border border-border/80",
+            "bg-popover text-popover-foreground shadow-2xl",
+            "ring-1 ring-black/5 dark:ring-white/10",
+            isHero ? "max-h-[min(68vh,42rem)]" : "max-h-[min(62vh,34rem)]",
           )}
         >
-          <div ref={resultsRef} className="overflow-y-auto max-h-[inherit]">
-            {/* Loading state — show when either loading or webLoading with no results yet */}
-            {(loading || (webLoading && results.length === 0 && !knowledgeCard)) && (
-              <div className="px-4 py-6 flex flex-col items-center gap-3">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                    <Search className="h-4 w-4 text-primary animate-pulse" />
-                  </div>
-                  <Loader2 className="h-10 w-10 animate-spin text-primary/60 absolute inset-0" />
+          <div className="max-h-[inherit] overflow-y-auto overscroll-contain">
+            {showLoading ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="flex flex-col items-center gap-3 px-5 py-8 text-center"
+              >
+                <div className="relative flex h-11 w-11 items-center justify-center rounded-full border border-primary/20 bg-primary/10">
+                  <Search
+                    className="h-4 w-4 text-primary"
+                    aria-hidden="true"
+                  />
+                  <Loader2
+                    className="absolute inset-0 h-11 w-11 animate-spin text-primary/55"
+                    aria-hidden="true"
+                  />
                 </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Searching the creative universe</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    {loading ? "Checking creators, credits, gigs & the web..." : "Scanning the web for matches..."}
+
+                <div>
+                  <p className="text-sm font-semibold text-foreground">
+                    Searching Kretopia
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Looking through people, creative work, and opportunities.
                   </p>
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {/* ═══ KNOWLEDGE CARD (from AI) ═══ */}
-            {knowledgeCard && !highlightedCreator && (
-              <div className="border-b border-border bg-primary/[0.03]">
+            {showTechnicalError ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="px-5 py-7 text-center"
+              >
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-amber-500/25 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <SearchX className="h-5 w-5" aria-hidden="true" />
+                </div>
+
+                <p className="mt-3 text-sm font-semibold text-foreground">
+                  Search is temporarily unavailable.
+                </p>
+
+                <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
+                  Kretopia could not check its records right now. Try again in
+                  a moment.
+                </p>
+
                 <button
                   type="button"
-                  data-search-result
-                  onKeyDown={handleResultKeyDown}
-                  onClick={() => {
-                    setOpen(false);
-                    setQuery("");
-                    onOpenChange?.(false);
-                    submitQuery(knowledgeCard.name);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    {knowledgeCard.image_url ? (
-                      <Avatar className="h-11 w-11 shrink-0 ring-2 ring-primary/20">
-                        <AvatarImage src={knowledgeCard.image_url} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                          {(knowledgeCard.name || "?")[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 ring-2 ring-primary/20">
-                        <Globe className="h-5 w-5 text-primary" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-foreground truncate">{knowledgeCard.name}</p>
-                        <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                          {knowledgeCard.industry || knowledgeCard.type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{knowledgeCard.description}</p>
-                      {knowledgeCard.known_for && knowledgeCard.known_for.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {knowledgeCard.known_for.slice(0, 3).map((item, i) => (
-                            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {knowledgeCard.platforms && knowledgeCard.platforms.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">
-                          Found on: {knowledgeCard.platforms.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-                {knowledgeCard.claim_prompt && (
-                  <div className="px-4 pb-2 flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground/60">{knowledgeCard.claim_prompt}</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpen(false);
-                        setQuery("");
-                        onOpenChange?.(false);
-                        submitQuery(knowledgeCard.name);
-                      }}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-lg bg-energy text-energy-foreground hover:brightness-110 shadow-glow-lime transition-all shrink-0"
-                    >
-                      <UserCheck className="h-3 w-3" />
-                      Claim Profile
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Highlighted creator card (from DB) */}
-            {highlightedCreator && (
-              <div className="border-b border-border">
-                <button
-                  data-search-result
-                  onKeyDown={handleResultKeyDown}
-                  onClick={() => handleSelect(highlightedCreator)}
-                  className="w-full text-left px-4 py-3 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-11 w-11 shrink-0 ring-2 ring-primary/20">
-                      <AvatarImage src={highlightedCreator.avatar || ""} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                        {(highlightedCreator.title || "?")[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-foreground truncate">
-                          {highlightedCreator.title}
-                        </p>
-                        {highlightedCreator.is_claimed === false ? (
-                          <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10 shrink-0">
-                            Unclaimed
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                            Creator
-                          </Badge>
-                        )}
-                      </div>
-                      {highlightedCreator.subtitle && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{highlightedCreator.subtitle}</p>
-                      )}
-                      {highlightedCreator.bio && (
-                        <p className="text-xs text-muted-foreground/80 mt-1 line-clamp-2 italic">
-                          "{highlightedCreator.bio}"
-                        </p>
-                      )}
-                      {highlightedCreator.credits && highlightedCreator.credits.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {highlightedCreator.credits.slice(0, 3).map((c, i) => (
-                            <span key={i} className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
-                              {c.project} — {c.role}
-                            </span>
-                          ))}
-                          {highlightedCreator.credits.length > 3 && (
-                            <span className="text-[10px] text-muted-foreground px-1">
-                              +{highlightedCreator.credits.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </button>
-
-                <div className="px-4 pb-2 space-y-1.5">
-                  {highlightedCreator.is_claimed === false && (
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] text-muted-foreground/60">
-                        Is this you? Verify your identity to claim.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOpen(false);
-                          setQuery("");
-                          onOpenChange?.(false);
-                          navigate(`/profile/${highlightedCreator.id}?showClaim=true`);
-                        }}
-                        className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-lg bg-energy text-energy-foreground hover:brightness-110 shadow-glow-lime transition-all shrink-0"
-                      >
-                        <UserCheck className="h-3 w-3" />
-                        Claim Profile
-                      </button>
-                    </div>
-                  )}
-                  <p className="text-[10px] text-muted-foreground/60">
-                    Not who you're looking for?{" "}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setHighlightedCreator(null);
-                        inputRef.current?.focus();
-                      }}
-                      className="text-primary/70 hover:text-primary underline underline-offset-2"
-                    >
-                      See all results
-                    </button>
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* ═══ ALTERNATIVE MATCHES from AI ═══ */}
-            {alternativeMatches.length > 0 && (
-              <div className="border-b border-border">
-                <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {highlightedCreator || knowledgeCard ? "Other people with this name" : "People found on the web"}
-                </p>
-                {alternativeMatches.slice(0, 4).map((alt, i) => (
-                  <button
-                    key={`alt-match-${i}`}
-                    data-search-result
-                    onKeyDown={handleResultKeyDown}
-                    onClick={() => {
-                      setOpen(false);
-                      setQuery("");
-                      onOpenChange?.(false);
-                      submitQuery(alt.name);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors text-left"
-                  >
-                    {alt.image_url ? (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src={alt.image_url} />
-                        <AvatarFallback className="text-xs bg-accent/10 text-accent">
-                          {(alt.name || "?")[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="h-3.5 w-3.5 text-accent" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{alt.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {[alt.industry, alt.location].filter(Boolean).join(" · ") || alt.description}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-[9px] text-accent border-accent/30 shrink-0">
-                      Web
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Other DB creator matches */}
-            {highlightedCreator && (() => {
-              const otherCreators = results.filter(
-                (r) => r.type === "creator" && r.id !== highlightedCreator.id
-              );
-              if (otherCreators.length === 0) return null;
-              return (
-                <div className="border-b border-border">
-                  <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    Other potential matches
-                  </p>
-                  {otherCreators.slice(0, 3).map((r, i) => (
-                    <button
-                      key={`alt-${r.id}-${i}`}
-                      data-search-result
-                      onKeyDown={handleResultKeyDown}
-                      onClick={() => handleSelect(r)}
-                      className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors text-left"
-                    >
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src={r.avatar || ""} />
-                        <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                          {(r.title || "?")[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                        {r.subtitle && (
-                          <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
-                        )}
-                      </div>
-                      {r.is_claimed === false ? (
-                        <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10 shrink-0">
-                          Unclaimed
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                          Creator
-                        </Badge>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* Rest of results — grouped under labeled headers (Creative
-                Records / Opportunities / Discovered) rather than one mixed
-                list, so it reads as an AI-organized answer, not a grep dump. */}
-            {(["creator", "credit", "gig", "web"] as const).map((groupType) => {
-              const items = results.filter((r) => {
-                if (r.type !== groupType) return false;
-                if (!highlightedCreator) return true;
-                // Creator-type results are already covered by the
-                // highlighted-creator card and "Other potential matches"
-                // above once a highlightedCreator exists — avoid duplicates.
-                return r.id !== highlightedCreator.id && r.type !== "creator";
-              });
-              if (items.length === 0) return null;
-              return (
-                <div key={groupType} className="border-b border-border last:border-b-0">
-                  <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {RESULT_GROUP_LABEL[groupType]}
-                  </p>
-                  {items.map((r, i) => {
-                    const meta = TYPE_META[r.type];
-                    return (
-                      <button
-                        key={`${r.type}-${r.id}-${i}`}
-                        data-search-result
-                        onKeyDown={handleResultKeyDown}
-                        onClick={() => handleSelect(r)}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors text-left"
-                      >
-                        {r.avatar ? (
-                          <Avatar className="h-8 w-8 shrink-0">
-                            <AvatarImage src={r.avatar} />
-                            <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                              {(r.title || "?")[0]}
-                            </AvatarFallback>
-                          </Avatar>
-                        ) : (
-                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                            <meta.icon className={cn("h-3.5 w-3.5", meta.color)} />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{r.title}</p>
-                          {r.subtitle && (
-                            <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
-                          )}
-                        </div>
-                        {r.type === "web" && r.url ? (
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                        ) : r.type === "creator" && r.is_claimed === false ? (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10">
-                              Unclaimed
-                            </Badge>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setOpen(false);
-                                setQuery("");
-                                onOpenChange?.(false);
-                                navigate(`/profile/${r.id}?showClaim=true`);
-                              }}
-                              className="inline-flex items-center gap-0.5 text-[10px] font-medium px-2 py-0.5 rounded-md bg-[hsl(var(--color-accent))] text-white"
-                            >
-                              <UserCheck className="h-2.5 w-2.5" />
-                              Claim
-                            </button>
-                          </div>
-                        ) : (
-                          <Badge
-                            variant="outline"
-                            className={cn("text-[9px] shrink-0", meta.color)}
-                          >
-                            {meta.label}
-                          </Badge>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
-
-            {/* Background web search indicator */}
-            {webLoading && results.length > 0 && (
-              <div className="px-4 py-2 flex items-center justify-center gap-2 text-xs text-muted-foreground/60 border-t border-border/50">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Checking the web for more matches...</span>
-              </div>
-            )}
-
-            {/* Error state — distinct from "no results" so a failed search
-                isn't mistaken for a genuinely empty result set. */}
-            {!loading && !webLoading && error && (
-              <div className="px-4 py-4 text-center">
-                <p className="text-sm text-destructive">Search failed</p>
-                <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Something went wrong reaching search — check your connection and try again.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => doSearch(query.trim())}
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-[hsl(var(--color-accent))] hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))] rounded"
+                  onClick={() => void executeSearch(trimmedQuery)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
                   Try again
+                  <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               </div>
-            )}
+            ) : null}
 
-            {/* Empty state */}
-            {!loading && !webLoading && !error && results.length === 0 && !knowledgeCard && query.trim().length >= 2 && (
-              <div className="px-4 py-4 text-center">
-                <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
-                <p className="text-sm text-muted-foreground">No results found</p>
-                <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Try a different name or project
-                </p>
+            {showNotFound ? (
+              <div
+                role="status"
+                aria-live="polite"
+                className="relative overflow-hidden px-5 py-7 text-center sm:px-6"
+              >
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/80 to-transparent"
+                />
+
+                <div className="relative mx-auto max-w-md">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary shadow-[0_0_28px_hsl(var(--primary)/0.16)]">
+                    <SearchX className="h-5 w-5" aria-hidden="true" />
+                  </div>
+
+                  <p className="mt-4 text-sm font-semibold text-foreground">
+                    Nothing public matched “{trimmedQuery}” yet.
+                  </p>
+
+                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                    No creator, project, creative work, or active opportunity
+                    matched this search. Try another name, role, skill, or
+                    spelling.
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    {[
+                      "Graphic Designer",
+                      "Creative Producer",
+                      "Music video",
+                    ].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => handleInputChange(suggestion)}
+                        className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-medium text-foreground transition-colors hover:border-primary/35 hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        <Search
+                          className="mr-1.5 inline-block h-3 w-3 text-primary"
+                          aria-hidden="true"
+                        />
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+
+                  <p className="mt-5 text-[11px] text-muted-foreground/80">
+                    No page was opened. You can refine your search here.
+                  </p>
+                </div>
               </div>
-            )}
+            ) : null}
 
-            {/* Deep search footer */}
-            {(results.length > 0 || knowledgeCard) && (
+            {!showLoading && !showTechnicalError && !showNotFound ? (
+              <>
+                {groupedResults.map((group) => (
+                  <section
+                    key={group.type}
+                    aria-label={group.label}
+                    className="border-b border-border last:border-b-0"
+                  >
+                    <div className="sticky top-0 z-10 border-b border-border/70 bg-popover/98 px-4 py-2 backdrop-blur">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                        {group.label}
+                      </p>
+                    </div>
+
+                    <div className="p-2">
+                      {group.items.map((result) => {
+                        const Icon = getResultIcon(result.type);
+
+                        return (
+                          <button
+                            key={`${result.type}-${result.id}`}
+                            type="button"
+                            data-search-result
+                            onKeyDown={handleResultKeyDown}
+                            onClick={() => selectResult(result)}
+                            className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/55 focus-visible:bg-muted/55 focus-visible:outline-none"
+                          >
+                            {result.type === "creator" ? (
+                              <Avatar className="h-9 w-9 shrink-0 border border-border">
+                                <AvatarImage src={result.imageUrl || ""} alt="" />
+                                <AvatarFallback className="bg-primary/10 text-xs font-semibold text-primary">
+                                  {getInitial(result.title)}
+                                </AvatarFallback>
+                              </Avatar>
+                            ) : result.imageUrl ? (
+                              <img
+                                src={result.imageUrl}
+                                alt=""
+                                className="h-9 w-9 shrink-0 rounded-lg border border-border object-cover"
+                              />
+                            ) : (
+                              <div
+                                className={cn(
+                                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-muted/45",
+                                  getResultIconClass(result.type),
+                                )}
+                              >
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                              </div>
+                            )}
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex min-w-0 items-center gap-2">
+                                <p className="truncate text-sm font-medium text-foreground">
+                                  {result.title}
+                                </p>
+
+                                <span
+                                  className={cn(
+                                    "shrink-0 text-[10px] font-semibold",
+                                    getResultIconClass(result.type),
+                                  )}
+                                >
+                                  {getResultLabel(result.type)}
+                                </span>
+                              </div>
+
+                              {result.subtitle ? (
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                  {result.subtitle}
+                                </p>
+                              ) : null}
+                            </div>
+
+                            <ArrowRight
+                              className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary"
+                              aria-hidden="true"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ))}
+              </>
+            ) : null}
+          </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <>
+      <div ref={wrapperRef} className={cn("relative w-full", className)}>
+        <form onSubmit={handleSubmit} role="search">
+          <div className="relative">
+            <Search
+              className={cn(
+                "pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 text-muted-foreground",
+                isHero ? "left-4 h-5 w-5" : "left-3 h-4 w-4",
+              )}
+              aria-hidden="true"
+            />
+
+            <input
+              ref={inputRef}
+              type="search"
+              value={query}
+              onChange={(event) => handleInputChange(event.target.value)}
+              onFocus={handleInputFocus}
+              onKeyDown={handleInputKeyDown}
+              placeholder={placeholder}
+              autoFocus={autoFocus}
+              autoComplete="off"
+              role="combobox"
+              aria-label="Search people, projects, creative work and opportunities"
+              aria-expanded={Boolean(showDropdown)}
+              aria-controls={listboxId}
+              aria-autocomplete="list"
+              className={cn(
+                "w-full border text-foreground transition-all placeholder:text-muted-foreground/70 focus:outline-none",
+                isHero
+                  ? "h-12 rounded-2xl border-border/60 bg-card/95 pl-12 pr-24 text-sm shadow-xl backdrop-blur-xl focus:border-primary focus:shadow-[0_0_28px_hsl(var(--primary)/0.2)] sm:h-14 sm:text-base"
+                  : isNavbar
+                    ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-18 text-sm focus:border-primary/50 focus:bg-card"
+                    : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-18 text-sm focus:border-primary/50 focus:bg-card",
+              )}
+            />
+
+            {query ? (
               <button
                 type="button"
-                data-search-result
-                onKeyDown={handleResultKeyDown}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => submitQuery(query)}
-                className="w-full px-4 py-2.5 text-sm text-primary font-medium hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors border-t border-border flex items-center justify-center gap-2"
+                onClick={clearSearch}
+                className={cn(
+                  "absolute top-1/2 z-20 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  isHero ? "right-12 sm:right-14" : "right-8",
+                )}
+                aria-label="Clear search"
               >
-                <Sparkles className="h-3.5 w-3.5" />
-                Deep search for "{query}"
+                <X className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
-            )}
+            ) : null}
+
+            {voice.status === "recording" ||
+            voice.status === "processing" ||
+            voice.status === "requesting" ? (
+              <div
+                className={cn(
+                  "absolute top-1/2 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full border border-border/70 bg-background/95 py-1 pl-2.5 pr-1 shadow-sm backdrop-blur",
+                  isHero ? "right-2" : "right-1.5",
+                )}
+              >
+                {voice.status === "recording" ? (
+                  <>
+                    <VoiceWaveform level={voice.level} className="w-8" />
+
+                    <button
+                      type="button"
+                      onClick={voice.stop}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label="Stop recording and search"
+                    >
+                      <Square className="h-2.5 w-2.5 fill-current" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Loader2
+                      className="h-3.5 w-3.5 animate-spin text-primary"
+                      aria-hidden="true"
+                    />
+                    <span className="px-1 text-[11px] text-muted-foreground">
+                      {voice.status === "requesting"
+                        ? "Starting…"
+                        : "Listening…"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={voice.cancel}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label="Cancel voice search"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : voice.supported ? (
+              <button
+                type="button"
+                onClick={voice.start}
+                disabled={voice.status === "requesting"}
+                className={cn(
+                  "absolute top-1/2 z-20 -translate-y-1/2 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  isHero ? "right-2" : "right-1",
+                )}
+                aria-label="Search by voice"
+                title="Search by voice"
+              >
+                <Mic className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : null}
           </div>
-        </div>
-      )}
-    </div>
+        </form>
+      </div>
+
+      {dropdown}
+    </>
   );
 }
+
+export default UnifiedSearchDropdown;

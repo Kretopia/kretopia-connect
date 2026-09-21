@@ -14,7 +14,7 @@ import {
   ArrowLeft, ShieldCheck, MapPin, CalendarDays, Building2,
   ExternalLink, Users, UserPlus, Loader2, Globe, Music, Film,
   CheckCircle2, Sparkles, Database, Link2, Plus, Camera, Palette,
-  Megaphone, PartyPopper, ChevronDown, ChevronUp, Play,
+  Megaphone, PartyPopper, ChevronDown, ChevronUp, Play, Handshake,
 } from "lucide-react";
 import { getShareUrl } from "@/lib/constants";
 import { AuthPrompt, useAuthPrompt } from "@/components/AuthPrompt";
@@ -235,6 +235,7 @@ const ProductionPage = () => {
   }
 
   const totalClaimed = platformRoles.length;
+  const totalUnclaimed = Math.max(production.total_roles - totalClaimed, 0);
 
   return (
     <>
@@ -357,9 +358,43 @@ const ProductionPage = () => {
             </div>
             <Separator orientation="vertical" className="h-8 bg-border" />
             <div className="text-center">
-              <p className="font-bold text-lg text-primary">{production.total_roles - totalClaimed}</p>
+              <p className="font-bold text-lg text-primary">{totalUnclaimed}</p>
               <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Unclaimed</p>
             </div>
+          </div>
+        </div>
+
+        {/* "Work on this production" — the direct-collab entry point the
+            brief asked for. Deliberately doesn't invent an "Apply" or
+            "Join the team" flow with no confirmed destination: the two
+            real actions on this page are claiming a role yourself (scrolls
+            to the existing add-role control below) and reaching out to a
+            credited collaborator directly (their avatar/name below already
+            link to their EPK, which now has its own "Work with [Name]"
+            block). This banner just makes both far more visible near the
+            top instead of leaving them to be discovered by scrolling. */}
+        <div className="container mx-auto max-w-3xl px-4 pt-6">
+          <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Handshake className="h-4 w-4 text-primary" aria-hidden />
+              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Work on this production</p>
+            </div>
+            <p className="text-sm text-muted-foreground mb-3">
+              {totalUnclaimed > 0
+                ? `${totalUnclaimed} of ${production.total_roles} roles are still unclaimed. Worked on ${projectName}? Claim your credit below — or reach out to a collaborator already listed to team up.`
+                : `Every listed role on ${projectName} has been claimed. Reach out to a collaborator below to team up on what's next.`}
+            </p>
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                setAddingRole(true);
+                document.getElementById("production-add-role")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Claim Your Role
+            </Button>
           </div>
         </div>
 
@@ -520,7 +555,7 @@ const ProductionPage = () => {
           </div>
 
           {/* Add your role CTA */}
-          <div className="mt-4">
+          <div id="production-add-role" className="mt-4">
             {addingRole ? (
               <div className="flex gap-2">
                 <input
