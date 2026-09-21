@@ -16,6 +16,7 @@
   - [x] Portfolio performance
   - [x] Engagement rate analysis
   - [x] Responsive charts and visualizations
+  - [ ] Engagement
 
 ## ✅ Completed Features
 - [x] User authentication and profiles
