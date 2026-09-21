@@ -23,7 +23,7 @@
  *   added as the "very subtle Kreto element" the brief allowed for —
  *   kept small and faint enough not to compete with the copy or CTAs.
  */
-import { motion } from "framer-motion";
+import { color, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Search, IdCard, Megaphone, Users2, CheckCircle2, Briefcase, Handshake } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -123,7 +123,7 @@ export const ForOrganisationsSection = () => {
                 })
               }
             >
-              <Briefcase className="h-4 w-4" aria-hidden />
+              <Briefcase className="h-4 w-4" aria-hidden/>
               Hire Through Kretopia
             </Link>
           </Button>
@@ -131,7 +131,7 @@ export const ForOrganisationsSection = () => {
             asChild
             variant="outline"
             className={`h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${focusRing}`}
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif", borderColor: ACCENT, color: ACCENT }}
           >
             <Link
               to="/auth?tab=signup&src=for_organisations"

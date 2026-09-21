@@ -100,53 +100,7 @@ export const ClosingCTASection = () => {
       style={{ backgroundColor: "#05070D", paddingBottom: "3.5rem" }}
       aria-labelledby="closing-cta-title"
     >
-      <FixedProgressiveCard
-        scrollSpan={1.2}
-        eyebrow={<p className="landing-eyebrow">Get started</p>}
-        title={
-          <h2 id="closing-cta-title" className="landing-h1 landing-glow">
-            {creatorCount ? `Join ${creatorCount}+ creatives` : "Join the creatives"}
-            <br />
-            <span className="italic pink-glow-breathe" style={{ color: ACCENT }}>already proving their work.</span>
-          </h2>
-        }
-        keyValue={
-          // Glow sits behind the button on its own layer rather than as a
-          // box-shadow so it can blur past the button's own rounded-full
-          // edge without being clipped by btn-glass's overflow:hidden.
-          <div className="relative inline-block">
-            <div
-              aria-hidden
-              className="ai-ambient-breathe pointer-events-none absolute -inset-4 rounded-full blur-2xl"
-              style={{ background: `radial-gradient(circle, ${ACCENT}55, transparent 70%)` }}
-            />
-            <Link
-              to="/auth?tab=signup&intent=closing_cta&src=closing_cta"
-              onClick={trackSignupClick}
-              className="btn-landing-primary group relative inline-flex h-auto items-center gap-2 rounded-full px-8 py-4 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2DA1]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]"
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-            >
-              Start Your Creative Passport
-              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-1" aria-hidden />
-            </Link>
-          </div>
-        }
-        supportingItem={
-          <p className="text-xs text-white/45" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
-            Free forever · No credit card · 2-minute setup
-          </p>
-        }
-        cta={
-          <Link
-            to="/auth?src=closing_cta"
-            onClick={trackSigninClick}
-            className="rounded text-xs font-medium text-white/40 underline decoration-white/20 underline-offset-4 transition-colors hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2DA1]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]"
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-          >
-            Already have an account? Sign in
-          </Link>
-        }
-      />
+    
 
       {/* Soft accent-gradient seam into ForOrganisationsSection, replacing
           the old plain `border-t` hard-cut. Deliberately faint (one thin
