@@ -557,7 +557,7 @@ const EventPage = () => {
                     <Check className="h-4 w-4 mr-1.5" /> Ticket Secured
                   </Badge>
                 ) : (
-                  <Button variant="gradient" onClick={handleJoinOrSignup} disabled={joining || isFull}>
+                  <Button variant={isFull ? "outline" : "gradient"} onClick={handleJoinOrSignup} disabled={joining || isFull}>
                     {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : (
                       <>
                         {!isAuthenticated ? "Sign Up & Get Ticket" : isFull ? "Sold Out" : hasExternalTicket ? (
@@ -659,10 +659,10 @@ const EventPage = () => {
                   </Button>
                 </div>
               ) : participation ? null : !isTicketed ? (
-                <Button variant="gradient" className="w-full py-6 text-lg" onClick={handleJoinOrSignup} disabled={joining || isFull}>
+                <Button variant={isFull ? "outline" : "gradient"} className="w-full py-6 text-lg" onClick={handleJoinOrSignup} disabled={joining || isFull}>
                   {joining ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? (
                     <>Save my spot <ArrowRight className="h-5 w-5 ml-2" /></>
-                  ) : isFull ? "All spots taken" : (
+                  ) : isFull ? "Sold Out" : (
                     <>Save my spot</>
                   )}
                 </Button>

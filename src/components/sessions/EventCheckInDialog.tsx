@@ -481,7 +481,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
                       )}
                     </div>
                     {a.checked_in_at ? (
-                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs shrink-0 hover:bg-emerald-100">
+                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-xs shrink-0 hover:bg-green-500/10">
                         <CheckCircle className="h-3 w-3 mr-1" /> In
                       </Badge>
                     ) : (

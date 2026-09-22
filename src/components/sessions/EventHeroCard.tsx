@@ -343,7 +343,7 @@ export function EventHeroCard({
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Who's coming</p>
               <p className="font-medium">{participantCount}{capacity ? ` of ${capacity}` : ''} going</p>
-              {isFull && <p className="text-xs text-destructive">This one's full — try the waitlist</p>}
+              {isFull && <p className="text-xs text-amber-500">This one's full — try the waitlist</p>}
             </div>
           </div>
         </div>

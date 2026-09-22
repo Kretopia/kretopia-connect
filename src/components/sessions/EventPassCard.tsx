@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 const ENERGY = "#FF2DA1";
-const MIDNIGHT = "#0B0B10";
+const MIDNIGHT = "#05070D";
 
 interface EventPassCardProps {
   eventTitle: string;
