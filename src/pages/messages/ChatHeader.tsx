@@ -92,7 +92,7 @@ export const ChatHeader = ({ otherUser, isOnline, onBack, onViewProfile, onStart
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={onViewProfile}>View Profile</DropdownMenuItem>
+          <DropdownMenuItem onClick={onViewProfile}>View Passport</DropdownMenuItem>
           <DropdownMenuItem onClick={onStartProject} className="sm:hidden">
             <Briefcase className="h-4 w-4 mr-2" />
             Start Project Together

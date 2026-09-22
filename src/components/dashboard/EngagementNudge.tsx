@@ -53,7 +53,7 @@ export const EngagementNudge = () => {
       if (!profileComplete) {
         setNudge({
           type: "complete_profile",
-          title: "Complete your profile",
+          title: "Complete your Passport",
           description: "Add the details that help the right people discover your work.",
           action: "Complete Now",
           route: "/profile",

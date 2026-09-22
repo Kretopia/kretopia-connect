@@ -25,7 +25,7 @@ export const EmptyChatState = ({ otherUser, isOnline, onViewProfile, onStartProj
     <h3 className="text-lg font-semibold mb-1">{otherUser?.name || 'Unknown'}</h3>
     {otherUser?.role && <Badge variant="secondary" className="mb-3 text-xs">{otherUser.role}</Badge>}
     <div className="flex gap-2 mb-4">
-      <Button onClick={onViewProfile} variant="outline" size="sm" className="rounded-full text-xs">View Profile</Button>
+      <Button onClick={onViewProfile} variant="outline" size="sm" className="rounded-full text-xs">View Passport</Button>
       <Button onClick={onStartProject} variant="outline" size="sm" className="rounded-full text-xs gap-1">
         <Briefcase className="h-3 w-3" /> Start Project
       </Button>

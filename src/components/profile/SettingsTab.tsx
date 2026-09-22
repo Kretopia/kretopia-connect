@@ -371,15 +371,15 @@ export const SettingsTab = () => {
             Privacy & Visibility
           </CardTitle>
           <CardDescription>
-            Control who can see your profile and contact you
+            Control who can see your Passport and contact you
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Public Profile</Label>
+              <Label>Public Passport</Label>
               <p className="text-sm text-muted-foreground">
-                Allow others to view your profile
+                Allow others to view your Passport
               </p>
             </div>
             <Switch

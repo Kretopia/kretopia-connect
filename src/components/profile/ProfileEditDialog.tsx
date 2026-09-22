@@ -309,7 +309,7 @@ export function ProfileEditDialog({
       if (completion.missingFields.length > 0 && !hasShownToastRef.current) {
         hasShownToastRef.current = true;
         toast({
-          title: "Complete your profile",
+          title: "Complete your Passport",
           description: `${completion.missingFields.length} field${completion.missingFields.length > 1 ? 's' : ''} need${completion.missingFields.length === 1 ? 's' : ''} attention`,
           variant: "default",
         });

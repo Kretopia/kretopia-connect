@@ -181,7 +181,7 @@ export default function KretoTab() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{passport.full_name || "Your profile"}</p>
+                    <p className="text-sm font-medium truncate">{passport.full_name || "Your Passport"}</p>
                     <p className="text-xs text-foreground/50 truncate">{passport.role || "Open your Passport"}</p>
                   </div>
                   <ArrowUpRight className="h-3.5 w-3.5 text-foreground/30 ml-auto shrink-0" />
