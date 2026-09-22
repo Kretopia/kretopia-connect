@@ -100,6 +100,14 @@ export const ClosingCTASection = () => {
       </div>
 
       <FixedProgressiveCard
+        // Default scrollSpan (1.6 viewport-heights) left a real, visible
+        // gap of solid #05070D background between this card's pin release
+        // and the FAQ section starting right below it -- the six reveal
+        // slots finish their cascade by scroll fraction 0.9 regardless of
+        // the container's total height, so the extra 0.6 viewport-heights
+        // was pure dead scroll, not part of the reveal. Tightened to just
+        // enough headroom for a smooth pin-release, not a black void.
+        scrollSpan={1.15}
         eyebrow={<p className="landing-eyebrow">Get started</p>}
         title={
           <h2 id="closing-cta-title" className="landing-h1 landing-glow">

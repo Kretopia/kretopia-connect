@@ -88,7 +88,7 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
   return (
     <div className="dark-surface relative" style={{ backgroundColor: "#05070D" }}>
       {/* I. Hero — critical path */}
-      <KretopiaHero onSearchSubmit={onSearchSubmit} />
+      <KretopiaHero />
 
       <div ref={sentinelRef} aria-hidden className="h-px w-full" />
 
