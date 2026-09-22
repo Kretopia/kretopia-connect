@@ -146,14 +146,12 @@ export const ClosingCTASection = () => {
         }
       />
 
-      <p
-        className="relative pb-16 sm:pb-20 text-center text-[10px] font-semibold uppercase tracking-[0.32em] text-white/50"
-        style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-      >
-        Kretopia
-        <br />
-        Where Creativity Lives.
-      </p>
+      {/* The "Kretopia / Where Creativity Lives." tagline that used to sit
+          here read as an empty, disconnected beat -- direct feedback asked
+          for it gone so the section's own .landing-section bottom padding
+          (see index.css) is what leads straight into the FAQ's own
+          "Everything about Kretopia" heading, without an extra block of
+          text between them. */}
     </section>
   );
 };
