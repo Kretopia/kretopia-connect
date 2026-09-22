@@ -15,7 +15,7 @@ import { trackLandingCta } from "@/lib/landingFunnel";
 export const InlineSignupBar = () => (
   <section
     id="inline-signup"
-    className="relative border-t border-white/[0.05]"
+    className="relative"
     style={{ backgroundColor: "#05070D" }}
     aria-labelledby="inline-signup-title"
   >

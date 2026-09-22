@@ -143,16 +143,6 @@ export const ProductLoopSection = () => {
             {STAGES[active].body}
           </p>
         </div>
-
-        <motion.p
-          initial={reducedMotion ? false : { opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-60px" }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-8 text-center text-sm font-semibold italic text-white/80"
-        >
-          Every project strengthens what comes next.
-        </motion.p>
       </div>
     </section>
   );
