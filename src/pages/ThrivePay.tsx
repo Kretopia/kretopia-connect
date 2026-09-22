@@ -222,11 +222,11 @@ export default function ThrivePay() {
       if (error) throw error;
       if (data?.url) {
         window.open(data.url, "_blank");
-        toast({ title: "Opening Stripe Connect", description: "Complete the onboarding in the new tab" });
+        toast({ title: "Opening payout setup", description: "Complete the onboarding in the new tab" });
       }
     } catch (error) {
       console.error("Error connecting account:", error);
-      toast({ title: "Connection Failed", description: "Unable to connect Stripe account.", variant: "destructive" });
+      toast({ title: "Connection Failed", description: "Couldn't connect your payout account. Try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -241,7 +241,7 @@ export default function ThrivePay() {
       }
     } catch (error) {
       console.error("Error creating login link:", error);
-      toast({ title: "Error", description: "Failed to open Stripe dashboard", variant: "destructive" });
+      toast({ title: "Error", description: "Couldn't open your payout dashboard. Try again.", variant: "destructive" });
     }
   };
 
