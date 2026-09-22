@@ -42,7 +42,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
 
   if (!result) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b0b0f] text-white gap-3">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#05070D] text-white gap-3">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
         <p className="text-sm text-white/70">Checking your device…</p>
       </div>
@@ -68,7 +68,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#0b0b0f] text-white">
+    <div className="absolute inset-0 flex flex-col bg-[#05070D] text-white">
       <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
         <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 font-semibold">
           Can't start the call here

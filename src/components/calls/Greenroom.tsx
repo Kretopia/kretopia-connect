@@ -134,7 +134,7 @@ export const Greenroom = ({
   }, [joining, needsName, guestName]);
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#0b0b0f] text-white">
+    <div className="absolute inset-0 flex flex-col bg-[#05070D] text-white">
       {/* Header */}
       <header className="px-4 pt-4 pb-2 shrink-0">
         <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80 font-semibold">
@@ -148,7 +148,7 @@ export const Greenroom = ({
 
       {/* Preview */}
       <div className="flex-1 min-h-0 flex items-center justify-center px-4 py-3">
-        <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-video rounded-2xl overflow-hidden bg-[#111] ring-1 ring-white/10 shadow-2xl">
+        <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-video rounded-2xl overflow-hidden bg-[#05070D] ring-1 ring-white/10 shadow-2xl">
           {cam && !permError ? (
             <video
               ref={videoRef}

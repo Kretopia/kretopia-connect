@@ -299,7 +299,7 @@ const ThriveDesk = () => {
             instance across every tab, including rolling back to an
             earlier one, instead of only existing on the "today" tab and
             vanishing the moment its own markers navigate you elsewhere. */}
-        <div className="bg-background/95 backdrop-blur-xl border-b border-border/60 shrink-0">
+        <div className="bg-background/95 border-b border-border/60 shrink-0">
           <StudioPhaseRail
             flow={flow}
             onPhaseClick={goToTabWithIntent}

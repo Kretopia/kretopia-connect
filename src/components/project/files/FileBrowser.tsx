@@ -460,8 +460,8 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
       {filtered.folders.length === 0 && filtered.files.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-border rounded-xl">
           <Folder className="h-10 w-10 text-muted-foreground mb-3" />
-          <p className="font-medium">This folder is empty</p>
-          <p className="text-sm text-muted-foreground mb-4">Upload files, paste a link, or create a folder to organize your work.</p>
+          <p className="font-medium">Nothing here yet</p>
+          <p className="text-sm text-muted-foreground mb-4">Drop a file in, paste a link, or start a folder to keep this organized.</p>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setNewFolderOpen(true)}>
               <FolderPlus className="h-4 w-4 mr-2" /> New folder

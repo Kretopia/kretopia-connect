@@ -110,7 +110,7 @@ export const AdmitQueue = ({ call, isHost }: Props) => {
             onClick={() => setOpen(false)}
           />
           <div
-            className="absolute inset-x-0 bottom-0 pointer-events-auto bg-[#111] text-white rounded-t-2xl ring-1 ring-white/10 shadow-2xl"
+            className="absolute inset-x-0 bottom-0 pointer-events-auto bg-[#05070D] text-white rounded-t-2xl ring-1 ring-white/10 shadow-2xl"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
           >
             <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-white/5">

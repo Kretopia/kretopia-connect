@@ -120,7 +120,7 @@ export function WorkspaceQuickPanel({ tasks, files, collaborators, projectId, cu
             <p className="text-xs text-muted-foreground text-center py-2">All tasks complete!</p>
           )}
           {tasks.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-3">No tasks yet</p>
+            <p className="text-xs text-muted-foreground text-center py-3">Nothing on the list yet — add your first task.</p>
           )}
         </div>
       </div>
@@ -156,7 +156,7 @@ export function WorkspaceQuickPanel({ tasks, files, collaborators, projectId, cu
             </div>
           ))}
           {files.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center py-3">No files yet</p>
+            <p className="text-xs text-muted-foreground text-center py-3">Nothing uploaded yet — drop a file in the Vault.</p>
           )}
         </div>
       </div>
