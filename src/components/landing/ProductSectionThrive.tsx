@@ -33,7 +33,7 @@ export const ProductSectionThrive = () => (
                 <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-black uppercase tracking-wider text-energy mb-0.5">Scouted a gig · 1h ago</p>
                   <p className="text-sm font-bold text-foreground leading-tight">Editorial DP · Vogue Africa shoot</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Lagos · 4 days · matches your day rate. <span className="text-primary font-bold">Apply now?</span></p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Lagos · 4 days · matches your day rate. <span className="text-primary font-bold">Put Forward now?</span></p>
                 </div>
               </li>
 

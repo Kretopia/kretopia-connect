@@ -204,7 +204,7 @@ export const ApplyToOpportunityDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Apply to {opportunityTitle}</DialogTitle>
+          <DialogTitle>Put Forward: {opportunityTitle}</DialogTitle>
           <DialogDescription>
             Tell them why you're the perfect fit for this opportunity
           </DialogDescription>

@@ -78,7 +78,7 @@ export const NewMemberStarterCard = ({ className = "" }: { className?: string })
         // Default (no intent) — generic starter
         let built: StarterStep[] = [
           { id: "profile", label: "Add bio + photo", href: "/profile/edit", done: profileDone },
-          { id: "apply", label: "Apply to your first gig", href: "/opportunities", done: appliedDone },
+          { id: "apply", label: "Put Forward for your first gig", href: "/opportunities", done: appliedDone },
           { id: "message", label: "Send your first message", href: "/circle", done: msgDone },
           { id: "event", label: "Join an event near you", href: "/nearby", done: eventDone },
         ];
@@ -94,7 +94,7 @@ export const NewMemberStarterCard = ({ className = "" }: { className?: string })
           built = [
             { id: "profile", label: "Polish your profile (bio + photo)", href: "/profile/edit", done: profileDone },
             { id: "browse-gigs", label: "Browse open opportunities", href: "/opportunities", done: false },
-            { id: "apply", label: "Apply to your first gig", href: "/opportunities", done: appliedDone },
+            { id: "apply", label: "Put Forward for your first gig", href: "/opportunities", done: appliedDone },
             { id: "message", label: "DM a creator you'd hire", href: "/circle", done: msgDone },
           ];
         } else if (userIntent === "fund") {

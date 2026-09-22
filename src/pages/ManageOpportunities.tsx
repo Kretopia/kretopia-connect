@@ -388,7 +388,7 @@ const ManageOpportunities = () => {
               <EmptyState
                 icon={Sparkles}
                 eyebrow="Nothing in flight"
-                title="Apply to your first gig"
+                title="Put Forward for your first gig"
                 description="The fastest way to land work is to send 3 strong applications today. We'll notify you the moment a poster responds."
                 action={{ label: "Browse Gigs", icon: ArrowRight, onClick: () => navigate("/opportunities") }}
               />

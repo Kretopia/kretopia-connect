@@ -244,7 +244,7 @@ export const ScoutVisual = ({ activeStep, inView }: { activeStep: number; inView
                   <p className="text-xs text-white/55 leading-snug line-clamp-2">"Hi — I produced three beach festivals in Bali last year, most recently..."</p>
                 </div>
                 <div className="flex gap-2.5">
-                  <span className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-white" style={{ backgroundColor: ACCENT }}>Apply</span>
+                  <span className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold text-white" style={{ backgroundColor: ACCENT }}>Put Forward</span>
                   <span className="flex items-center gap-1.5 rounded-xl border border-white/15 px-4 py-2.5 text-sm text-white/70"><Bookmark className="h-3.5 w-3.5" aria-hidden />Save</span>
                 </div>
               </motion.div>

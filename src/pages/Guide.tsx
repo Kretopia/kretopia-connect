@@ -116,8 +116,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       },
       {
         emoji: "",
-        title: "Apply with context",
-        description: "When you apply, include a cover letter and relevant portfolio links. Show why YOU are the perfect fit."
+        title: "Put Forward with context",
+        description: "When you put yourself forward, include a cover letter and relevant portfolio links. Show why YOU are the perfect fit."
       },
       {
         emoji: "",

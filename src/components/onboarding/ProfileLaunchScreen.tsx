@@ -303,7 +303,7 @@ export function ProfileLaunchScreen({
             >
               <Briefcase className="h-4 w-4 mb-1.5" style={{ color: ACCENT }} />
               <p className="text-xs font-semibold text-foreground">Browse gigs</p>
-              <p className="text-[10px] text-foreground/50">Apply with one tap</p>
+              <p className="text-[10px] text-foreground/50">Put Forward with one tap</p>
             </button>
           </div>
 
