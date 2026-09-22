@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 
 export interface GigOpportunity {
   id: string;
@@ -101,9 +102,16 @@ interface GigCardProps {
    *  computeOpportunityMatch(). Omit or pass null when there's no real
    *  signal; the badge is hidden rather than showing a fabricated number. */
   matchScore?: number | null;
+  /** Kreto's own words on why this opportunity fits the viewer's Passport
+   *  ("Why this fits you"). Same discipline as matchScore: omit or pass
+   *  null rather than fabricating copy -- the slot only renders when both
+   *  a real explanation is provided AND enableFitExplanationPreview is on
+   *  (see kretopiaV1.ts), so this is a no-op for every caller today. */
+  fitExplanation?: string | null;
 }
 
-const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null }: GigCardProps) => {
+const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null, fitExplanation = null }: GigCardProps) => {
+  const showFitExplanation = PREVIEW_FLAGS.enableFitExplanationPreview && !!fitExplanation;
   const navigate = useNavigate();
   const config = TYPE_CONFIG[opp.type] || TYPE_CONFIG.job;
   const TypeIcon = config.icon;
@@ -286,6 +294,19 @@ const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null
         {formatUsageRights(opp) && (
           <div className="mt-3">
             <UsageRightsChip opp={opp} variant="muted" />
+          </div>
+        )}
+
+        {/* "Why this fits you" -- Kreto's fit explanation slot. Hidden
+            unless enableFitExplanationPreview is on AND a real
+            explanation was passed in; see fitExplanation prop doc. */}
+        {showFitExplanation && (
+          <div className="mt-3 flex items-start gap-1.5 rounded-lg border border-primary/15 bg-primary/[0.04] px-3 py-2">
+            <Sparkles className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+            <p className="text-[11px] leading-relaxed text-foreground/80">
+              <span className="font-semibold text-primary">Why this fits you — </span>
+              {fitExplanation}
+            </p>
           </div>
         )}
 

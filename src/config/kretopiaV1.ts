@@ -62,3 +62,16 @@ export function isInV1Nav(key: V1Key): boolean {
 export function isHidden(key: HiddenKey): boolean {
   return HIDDEN_V1[key] ?? false;
 }
+
+/**
+ * Preview-only flags for in-progress surfaces (Phase 5.4 — HoloCard +
+ * Scout fit explanations). Both default to false: the props/slots they
+ * gate already exist on the relevant cards, but the features themselves
+ * (holographic rendering, AI-generated fit copy) aren't built yet.
+ * Flip individually once each is ready to show, without needing to
+ * touch every call site again.
+ */
+export const PREVIEW_FLAGS = {
+  enableHoloPreview: false,
+  enableFitExplanationPreview: false,
+} as const;

@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
+import { HoloCard } from "@/components/passport/HoloCard";
+import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 
 interface PassportPreviewCardProps {
   userId: string;
@@ -13,6 +15,12 @@ interface PassportPreviewCardProps {
   subRoles?: string[] | null;
   matchScore?: number | null;
   reason?: string | null;
+  /** "holo" wraps the card in HoloCard (pointer-tracked 3D tilt +
+   *  holographic sheen, see HoloCard.tsx) instead of the plain flat
+   *  card below. Only takes effect when enableHoloPreview is also on
+   *  (see kretopiaV1.ts) -- omitting this prop, or leaving the flag
+   *  off, renders exactly the current flat card. */
+  variant?: "flat" | "holo";
 }
 
 /** Same gray -> Kretopia pink treatment as PassportHero's banner/strength
@@ -34,9 +42,12 @@ export function PassportPreviewCard({
   subRoles,
   matchScore,
   reason,
+  variant = "flat",
 }: PassportPreviewCardProps) {
   const banner = coverImageUrl || avatarUrl;
-  return (
+  const useHolo = variant === "holo" && PREVIEW_FLAGS.enableHoloPreview;
+
+  const card = (
     <Link
       to={`/profile/${userId}`}
       className="group flex w-44 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10"
@@ -77,6 +88,8 @@ export function PassportPreviewCard({
       </div>
     </Link>
   );
+
+  return useHolo ? <HoloCard className="w-44 shrink-0 rounded-2xl">{card}</HoloCard> : card;
 }
 
 export default PassportPreviewCard;
