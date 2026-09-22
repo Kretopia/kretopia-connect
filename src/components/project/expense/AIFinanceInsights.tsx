@@ -67,7 +67,7 @@ export function AIFinanceInsights({ expenses, invoices }: AIFinanceInsightsProps
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h3 className="font-semibold text-sm">Finance Copilot</h3>
+            <h3 className="font-semibold text-sm">Kreto's Finance Insights</h3>
             <p className="text-xs text-muted-foreground mt-1">
               Get personalized insights on spending, tax deductions, and cash flow optimization
             </p>

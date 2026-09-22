@@ -112,7 +112,7 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
   );
 
   return (
-    <TodaySectionShell icon={<LayoutGrid className="h-4 w-4" />} eyebrow="AI-powered creator radar" title="Your work, in focus">
+    <TodaySectionShell icon={<LayoutGrid className="h-4 w-4" />} eyebrow="Kreto's creator radar" title="Your work, in focus">
       <div className="mb-4 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl border border-border bg-background/60">
         <div className="px-2 py-3 text-center">
           <CircleCheckBig className="mx-auto h-4 w-4 text-primary" />

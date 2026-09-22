@@ -767,7 +767,7 @@ const OpportunityDetail = () => {
                 }}
               >
                 <UserPlus className="h-4 w-4" />
-                Sign Up to Apply — Free
+                Sign Up to Put Forward — Free
               </Button>
             ) : myApplication ? (
               <div className="space-y-2">
@@ -784,7 +784,7 @@ const OpportunityDetail = () => {
                       <p className="text-xs text-muted-foreground truncate">
                         {myApplication.status === 'pending' && 'The poster will review your application shortly.'}
                         {myApplication.status === 'shortlisted' && 'Stay tuned — they may reach out soon.'}
-                        {myApplication.status === 'accepted' && 'Open Messages or your project workspace.'}
+                        {myApplication.status === 'accepted' && 'Open Messages or your Studio.'}
                         {myApplication.status === 'rejected' && 'Plenty more gigs await — keep applying.'}
                       </p>
                     </div>
@@ -812,7 +812,7 @@ const OpportunityDetail = () => {
               </div>
             ) : (
               <Button size="lg" className="w-full" onClick={handleApply}>
-                Apply Now
+                Put Forward
               </Button>
             )
           ) : (

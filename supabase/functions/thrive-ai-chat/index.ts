@@ -15,7 +15,7 @@ const corsHeaders = {
 
 const SURFACE_TONE: Record<string, string> = {
   desk:
-    "You are speaking from inside their project workspace. Bias toward concrete next steps " +
+    "You are speaking from inside their Studio. Bias toward concrete next steps " +
     "(tasks, milestones, kickoff messages, video calls). When they reference 'this project', " +
     "use the surface_context.project_id.",
   pay:
@@ -33,7 +33,7 @@ const SURFACE_TONE: Record<string, string> = {
     "You are on Home — the user's daily landing page. Be a quick orienting force: what's the " +
     "single most useful next move right now? Be brief.",
   profile:
-    "You are inside their Profile / EPK editor. Bias toward strengthening their public " +
+    "You are inside their Creative Passport editor. Bias toward strengthening their public " +
     "presence — bio, credits, rate cards, work samples, missing fields.",
   credit:
     "You are inside Credits (their IMDb-style resume). Bias toward verifying credits, " +
