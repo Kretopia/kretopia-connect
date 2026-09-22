@@ -17,7 +17,7 @@ import { getMediaThumbnail } from "@/lib/mediaUtils";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
 import { StartProjectFromMatchDialog } from "@/components/project/StartProjectFromMatchDialog";
 import { InviteToProjectDialog } from "@/components/project/InviteToProjectDialog";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { PassportLoader } from "@/components/passport/PassportLoader";
 import { notifyUser } from "@/lib/notifyUser";
 import { toast } from "sonner";
 import {
@@ -389,7 +389,7 @@ const CreatorEPK = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
-        <LoadingSpinner text="Opening creative Passport" />
+        <PassportLoader />
       </div>
     );
   }
