@@ -344,9 +344,11 @@ const ManageOpportunities = () => {
                 </div>
 
                 {filteredGigs.length === 0 ? (
-                  <div className="text-center py-10 text-sm text-muted-foreground">
-                    No gigs match these filters.
-                  </div>
+                  <EmptyState
+                    icon={Filter}
+                    title="No gigs match these filters"
+                    description="Try a different status or clear your filters to see everything you've posted."
+                  />
                 ) : (
                   <>
                     {activeGigs.length > 0 && (
@@ -512,7 +514,7 @@ const GigCard = ({
             {config.label}
           </span>
           {hasPending && (
-            <Badge className="h-5 text-[10px] font-bold bg-amber-500 text-white border-0 shrink-0 shadow-sm">
+            <Badge className="h-5 text-[10px] font-bold bg-amber-500/15 text-amber-500 border-amber-500/30 shrink-0">
               {gig.pending_count} new
             </Badge>
           )}

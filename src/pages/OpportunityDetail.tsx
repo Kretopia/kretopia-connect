@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, ArrowLeft, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, Loader2, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone } from "lucide-react";
+import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, ArrowLeft, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, Loader2, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone, Sparkles } from "lucide-react";
+import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Helmet } from "react-helmet-async";
@@ -56,6 +57,9 @@ const OpportunityDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [opportunity, setOpportunity] = useState<Opportunity | null>(null);
+  // No live source wired up yet -- kept null so the "Why this fits you" slot
+  // below stays a true no-op until a real per-user explanation is computed.
+  const fitExplanation: string | null = null;
   const [loading, setLoading] = useState(true);
   const [showApplyDialog, setShowApplyDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -749,6 +753,20 @@ const OpportunityDetail = () => {
             </div>
           )}
 
+          {/* "Why this fits you" — reserved slot, same discipline as GigCard's
+              fitExplanation prop: gated on PREVIEW_FLAGS.enableFitExplanationPreview
+              AND a real explanation, so this renders nothing until both a live
+              source for fitExplanation is wired up here and the flag is flipped. */}
+          {PREVIEW_FLAGS.enableFitExplanationPreview && fitExplanation && (
+            <div className="mb-6 flex items-start gap-2 rounded-xl border border-primary/15 bg-primary/[0.04] px-4 py-3">
+              <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+              <p className="text-sm leading-relaxed text-foreground/80">
+                <span className="font-semibold text-primary">Why this fits you — </span>
+                {fitExplanation}
+              </p>
+            </div>
+          )}
+
           {/* Apply / Status block */}
           {isOwner ? (
             <Button size="lg" variant="outline" className="w-full" onClick={() => navigate(`/opportunity-dashboard?opportunity=${opportunity.id}`)}>
@@ -799,7 +817,7 @@ const OpportunityDetail = () => {
                     Message Poster
                   </Button>
                   {(myApplication.status === 'pending' || myApplication.status === 'shortlisted') ? (
-                    <Button variant="outline" className="w-full text-destructive hover:text-destructive" onClick={() => setShowWithdrawConfirm(true)}>
+                    <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 hover:border-destructive/40" onClick={() => setShowWithdrawConfirm(true)}>
                       <XCircle className="h-4 w-4 mr-2" />
                       Withdraw
                     </Button>
@@ -811,7 +829,7 @@ const OpportunityDetail = () => {
                 </div>
               </div>
             ) : (
-              <Button size="lg" className="w-full" onClick={handleApply}>
+              <Button size="lg" variant="gradient" className="w-full" onClick={handleApply}>
                 Put Forward
               </Button>
             )
