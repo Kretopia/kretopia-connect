@@ -889,14 +889,21 @@ export const VoiceFirstCreateModal = ({
           {/* Body */}
           <div className={cn(
             "relative z-10 flex-1 flex flex-col items-center px-6 text-center overflow-y-auto overscroll-contain",
-            mode === "review" ? "justify-start py-6 pb-32" : "justify-center py-10"
+            // "prompt" mode's headline + subtext + trust copy + tutorial +
+            // the two "more ways to start" cards routinely run taller than
+            // the modal on shorter viewports -- justify-center on an
+            // overflowing scroll container clips whatever's above the
+            // midpoint (the Kreto character, here) out of the initial
+            // scroll position. justify-start keeps the top, including the
+            // character, always the first thing in view.
+            mode === "review" ? "justify-start py-6 pb-32" : mode === "prompt" ? "justify-start py-8" : "justify-center py-10"
           )}>
 
 
         {mode === "prompt" && (
           <>
             <KretoCharacter
-              size={96}
+              size={64}
               className="mb-4"
               state={isOffline ? "offline" : composerFocused || showLinkInput ? "attentive" : "idle"}
             />
