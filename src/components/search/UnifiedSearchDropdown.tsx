@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Globe, ExternalLink, Mic, Square } from "lucide-react";
+import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Mic, Square } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -10,37 +10,14 @@ import { VoiceWaveform } from "@/components/search/VoiceWaveform";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 
 interface SearchResult {
-  type: "creator" | "credit" | "gig" | "web";
+  type: "creator" | "credit" | "gig";
   id: string;
   title: string;
   subtitle?: string;
   avatar?: string | null;
   bio?: string;
   credits?: { project: string; role: string }[];
-  platform?: string;
   is_claimed?: boolean;
-  url?: string;
-}
-
-interface KnowledgeCard {
-  type: string;
-  name: string;
-  description: string;
-  image_url?: string | null;
-  known_for?: string[];
-  industry?: string;
-  platforms?: string[];
-  social_links?: Record<string, string>;
-  claim_prompt?: string;
-}
-
-interface AlternativeMatch {
-  name: string;
-  description: string;
-  image_url?: string | null;
-  industry?: string;
-  location?: string;
-  known_for?: string[];
 }
 
 interface UnifiedSearchDropdownProps {
@@ -59,19 +36,16 @@ const TYPE_META = {
   creator: { label: "Creator", icon: User, color: "text-primary" },
   credit: { label: "Credit", icon: Database, color: "text-accent" },
   gig: { label: "Gig", icon: Briefcase, color: "text-emerald-500" },
-  web: { label: "Discovered", icon: Sparkles, color: "text-amber-500" },
 };
 
 // Group headers for the mixed results list — "Users", "Creative Work" and
-// "Opportunities" are the three canonical groups; "web" results are
-// literally raw web discoveries, not formal project records, so they keep
-// their own honest "Discovered" heading rather than being folded into
-// "Creative Work" (which would overclaim their provenance).
+// "Opportunities" are the three canonical groups. Only real, existing
+// database records are ever shown here — no AI-guessed or web-sourced
+// suggestions when a name doesn't match anything real.
 const RESULT_GROUP_LABEL: Record<SearchResult["type"], string> = {
   creator: "Users",
   credit: "Creative Work",
   gig: "Opportunities",
-  web: "Discovered",
 };
 
 export function UnifiedSearchDropdown({
@@ -89,11 +63,8 @@ export function UnifiedSearchDropdown({
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [webLoading, setWebLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [highlightedCreator, setHighlightedCreator] = useState<SearchResult | null>(null);
-  const [knowledgeCard, setKnowledgeCard] = useState<KnowledgeCard | null>(null);
-  const [alternativeMatches, setAlternativeMatches] = useState<AlternativeMatch[]>([]);
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -132,8 +103,6 @@ export function UnifiedSearchDropdown({
       setResults([]);
       setError(false);
       setHighlightedCreator(null);
-      setKnowledgeCard(null);
-      setAlternativeMatches([]);
       return;
     }
     setOpen(true);
@@ -148,11 +117,8 @@ export function UnifiedSearchDropdown({
     abortRef.current = controller;
 
     setLoading(true);
-    setWebLoading(true);
     setError(false);
     setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
 
     try {
       const likeQ = `%${q}%`;
@@ -174,8 +140,9 @@ export function UnifiedSearchDropdown({
         })
         .join(',');
 
-      // Fast DB queries for instant results
-      const dbPromise = Promise.all([
+      // Real DB records only — creators, credits and gigs that actually
+      // exist. No web/AI-guessed suggestions when nothing matches.
+      const [profiles, credits, opps] = await Promise.all([
         supabase
           .from("profiles")
           .select("user_id, full_name, avatar_url, role, bio, location, is_claimed")
@@ -194,15 +161,6 @@ export function UnifiedSearchDropdown({
           .ilike("title", likeQ)
           .limit(3),
       ]);
-
-      // Universal search in parallel (includes web + AI knowledge card) with 20s timeout
-      const universalPromise = Promise.race([
-        supabase.functions.invoke("universal-search", { body: { query: q } }).catch(() => ({ data: null })),
-        new Promise<{ data: null }>((resolve) => setTimeout(() => resolve({ data: null }), 20000)),
-      ]);
-
-      // Show DB results first (fast)
-      const [profiles, credits, opps] = await dbPromise;
       if (controller.signal.aborted) return;
 
       const dbResults: SearchResult[] = [];
@@ -259,46 +217,12 @@ export function UnifiedSearchDropdown({
           setHighlightedCreator(firstCreator);
         }
       }
-
-      // Now await universal search (web + AI)
-      const universalResponse = await universalPromise;
-      if (controller.signal.aborted) return;
-
-      const uData = universalResponse?.data;
-
-      if (uData) {
-        // Extract knowledge card & alternatives
-        if (uData.external?.knowledge_card) {
-          setKnowledgeCard(uData.external.knowledge_card);
-        }
-        if (Array.isArray(uData.external?.alternative_matches) && uData.external.alternative_matches.length > 0) {
-          setAlternativeMatches(uData.external.alternative_matches);
-        }
-
-        // Add web visual results
-        const visualResults: SearchResult[] = (uData.external?.visual_results || []).slice(0, 6).map((r: any, i: number) => ({
-          type: "web" as const,
-          id: `web-${i}`,
-          title: r.title,
-          subtitle: [r.subtitle, r.year, r.platform].filter(Boolean).join(" · "),
-          avatar: r.image_url || null,
-          platform: r.platform,
-          url: r.url,
-        }));
-
-        if (visualResults.length > 0) {
-          setResults((prev) => [...prev, ...visualResults]);
-        }
-      }
-
-      setWebLoading(false);
     } catch (err) {
       if (!controller.signal.aborted) {
         console.error("Search error:", err);
         setResults([]);
         setError(true);
         setLoading(false);
-        setWebLoading(false);
       }
     }
   }, []);
@@ -308,8 +232,6 @@ export function UnifiedSearchDropdown({
     setQuery("");
     setResults([]);
     setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
     onOpenChange?.(false);
 
     if (onSelect) {
@@ -319,9 +241,7 @@ export function UnifiedSearchDropdown({
 
     if (r.type === "creator") navigate(`/profile/${r.id}`);
     else if (r.type === "gig") navigate(`/opportunity/${r.id}`);
-    else if (r.type === "credit") navigate(`/production?name=${encodeURIComponent(r.title)}`);
-    else if (r.url) window.open(r.url, "_blank");
-    else navigate(`/search?q=${encodeURIComponent(r.title)}`);
+    else navigate(`/production?name=${encodeURIComponent(r.title)}`);
   };
 
   const submitQuery = useCallback((rawQuery: string) => {
@@ -350,8 +270,6 @@ export function UnifiedSearchDropdown({
     setResults([]);
     setError(false);
     setHighlightedCreator(null);
-    setKnowledgeCard(null);
-    setAlternativeMatches([]);
     inputRef.current?.focus();
   };
 
@@ -586,8 +504,8 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="overflow-y-auto max-h-[inherit]">
-            {/* Loading state — show when either loading or webLoading with no results yet */}
-            {(loading || (webLoading && results.length === 0 && !knowledgeCard)) && (
+            {/* Loading state */}
+            {loading && (
               <div className="px-4 py-6 flex flex-col items-center gap-3">
                 <div className="relative">
                   <div className="h-10 w-10 rounded-full border-2 border-primary/20 flex items-center justify-center">
@@ -596,86 +514,11 @@ export function UnifiedSearchDropdown({
                   <Loader2 className="h-10 w-10 animate-spin text-primary/60 absolute inset-0" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Searching the creative universe</p>
+                  <p className="text-sm font-medium text-foreground">Searching Kretopia</p>
                   <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    {loading ? "Checking creators, credits, gigs & the web..." : "Scanning the web for matches..."}
+                    Checking creators, credits & gigs...
                   </p>
                 </div>
-              </div>
-            )}
-
-            {/* ═══ KNOWLEDGE CARD (from AI) ═══ */}
-            {knowledgeCard && !highlightedCreator && (
-              <div className="border-b border-border bg-primary/[0.03]">
-                <button
-                  type="button"
-                  data-search-result
-                  onKeyDown={handleResultKeyDown}
-                  onClick={() => {
-                    setOpen(false);
-                    setQuery("");
-                    onOpenChange?.(false);
-                    submitQuery(knowledgeCard.name);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors"
-                >
-                  <div className="flex items-start gap-3">
-                    {knowledgeCard.image_url ? (
-                      <Avatar className="h-11 w-11 shrink-0 ring-2 ring-primary/20">
-                        <AvatarImage src={knowledgeCard.image_url} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
-                          {(knowledgeCard.name || "?")[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center shrink-0 ring-2 ring-primary/20">
-                        <Globe className="h-5 w-5 text-primary" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-bold text-foreground truncate">{knowledgeCard.name}</p>
-                        <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                          {knowledgeCard.industry || knowledgeCard.type}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{knowledgeCard.description}</p>
-                      {knowledgeCard.known_for && knowledgeCard.known_for.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {knowledgeCard.known_for.slice(0, 3).map((item, i) => (
-                            <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 text-primary/80 border border-primary/10">
-                              {item}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {knowledgeCard.platforms && knowledgeCard.platforms.length > 0 && (
-                        <p className="text-[10px] text-muted-foreground/60 mt-1">
-                          Found on: {knowledgeCard.platforms.join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </button>
-                {knowledgeCard.claim_prompt && (
-                  <div className="px-4 pb-2 flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground/60">{knowledgeCard.claim_prompt}</p>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setOpen(false);
-                        setQuery("");
-                        onOpenChange?.(false);
-                        submitQuery(knowledgeCard.name);
-                      }}
-                      className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-lg bg-energy text-energy-foreground hover:brightness-110 shadow-glow-lime transition-all shrink-0"
-                    >
-                      <UserCheck className="h-3 w-3" />
-                      Claim Profile
-                    </button>
-                  </div>
-                )}
               </div>
             )}
 
@@ -775,51 +618,6 @@ export function UnifiedSearchDropdown({
               </div>
             )}
 
-            {/* ═══ ALTERNATIVE MATCHES from AI ═══ */}
-            {alternativeMatches.length > 0 && (
-              <div className="border-b border-border">
-                <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {highlightedCreator || knowledgeCard ? "Other people with this name" : "People found on the web"}
-                </p>
-                {alternativeMatches.slice(0, 4).map((alt, i) => (
-                  <button
-                    key={`alt-match-${i}`}
-                    data-search-result
-                    onKeyDown={handleResultKeyDown}
-                    onClick={() => {
-                      setOpen(false);
-                      setQuery("");
-                      onOpenChange?.(false);
-                      submitQuery(alt.name);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2 hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors text-left"
-                  >
-                    {alt.image_url ? (
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarImage src={alt.image_url} />
-                        <AvatarFallback className="text-xs bg-accent/10 text-accent">
-                          {(alt.name || "?")[0]}
-                        </AvatarFallback>
-                      </Avatar>
-                    ) : (
-                      <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-                        <Sparkles className="h-3.5 w-3.5 text-accent" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground truncate">{alt.name}</p>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {[alt.industry, alt.location].filter(Boolean).join(" · ") || alt.description}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-[9px] text-accent border-accent/30 shrink-0">
-                      Web
-                    </Badge>
-                  </button>
-                ))}
-              </div>
-            )}
-
             {/* Other DB creator matches */}
             {highlightedCreator && (() => {
               const otherCreators = results.filter(
@@ -866,10 +664,9 @@ export function UnifiedSearchDropdown({
               );
             })()}
 
-            {/* Rest of results — grouped under labeled headers (Creative
-                Records / Opportunities / Discovered) rather than one mixed
-                list, so it reads as an AI-organized answer, not a grep dump. */}
-            {(["creator", "credit", "gig", "web"] as const).map((groupType) => {
+            {/* Rest of results — grouped under labeled headers (Users /
+                Creative Work / Opportunities), all real database records. */}
+            {(["creator", "credit", "gig"] as const).map((groupType) => {
               const items = results.filter((r) => {
                 if (r.type !== groupType) return false;
                 if (!highlightedCreator) return true;
@@ -912,9 +709,7 @@ export function UnifiedSearchDropdown({
                             <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
                           )}
                         </div>
-                        {r.type === "web" && r.url ? (
-                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/50 shrink-0" />
-                        ) : r.type === "creator" && r.is_claimed === false ? (
+                        {r.type === "creator" && r.is_claimed === false ? (
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10">
                               Unclaimed
@@ -949,17 +744,9 @@ export function UnifiedSearchDropdown({
               );
             })}
 
-            {/* Background web search indicator */}
-            {webLoading && results.length > 0 && (
-              <div className="px-4 py-2 flex items-center justify-center gap-2 text-xs text-muted-foreground/60 border-t border-border/50">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                <span>Checking the web for more matches...</span>
-              </div>
-            )}
-
             {/* Error state — distinct from "no results" so a failed search
                 isn't mistaken for a genuinely empty result set. */}
-            {!loading && !webLoading && error && (
+            {!loading && error && (
               <div className="px-4 py-4 text-center">
                 <p className="text-sm text-destructive">Search failed</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
@@ -975,8 +762,9 @@ export function UnifiedSearchDropdown({
               </div>
             )}
 
-            {/* Empty state */}
-            {!loading && !webLoading && !error && results.length === 0 && !knowledgeCard && query.trim().length >= 2 && (
+            {/* Empty state — no fallback suggestions, no navigation anywhere.
+                If nothing real matches, we say so and stop. */}
+            {!loading && !error && results.length === 0 && query.trim().length >= 2 && (
               <div className="px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">No results found</p>
@@ -984,21 +772,6 @@ export function UnifiedSearchDropdown({
                   Try a different name or project
                 </p>
               </div>
-            )}
-
-            {/* Deep search footer */}
-            {(results.length > 0 || knowledgeCard) && (
-              <button
-                type="button"
-                data-search-result
-                onKeyDown={handleResultKeyDown}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => submitQuery(query)}
-                className="w-full px-4 py-2.5 text-sm text-primary font-medium hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none transition-colors border-t border-border flex items-center justify-center gap-2"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                Deep search for "{query}"
-              </button>
             )}
           </div>
         </div>
