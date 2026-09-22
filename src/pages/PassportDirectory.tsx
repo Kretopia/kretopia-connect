@@ -107,8 +107,18 @@ const PassportDirectory = () => {
               <BrandLoader />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16 text-muted-foreground text-sm">
-              No Passports match that search yet.
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <SearchIcon className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">No Passports match that search yet.</p>
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded"
+                >
+                  Clear search
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -122,7 +132,7 @@ const PassportDirectory = () => {
                   <Link
                     key={p.user_id}
                     to={handle ? `/${handle}` : `/profile/${p.user_id}`}
-                    className="group"
+                    className="group rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--signal-teal))]"
                   >
                     <Card className="p-4 h-full hover:border-[hsl(var(--signal-teal))]/40 transition-colors">
                       <div className="flex items-start gap-3">

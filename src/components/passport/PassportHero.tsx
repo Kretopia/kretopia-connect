@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 /** Shared gray -> Kretopia pink treatment for the Passport's one banner and
  *  one progress bar (see RoleStamp/PassportHero redesign) -- everywhere
  *  else on the card keeps the single accent token unchanged. */
-const GRAY_PINK_GRADIENT = "linear-gradient(90deg, #6B7280 0%, #FF2DA1 100%)";
+const GRAY_PINK_GRADIENT = "linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, #FF2DA1 100%)";
 
 interface HeroCredit {
   project_name: string;

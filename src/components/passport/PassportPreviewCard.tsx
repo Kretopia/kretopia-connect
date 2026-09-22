@@ -25,7 +25,7 @@ interface PassportPreviewCardProps {
 
 /** Same gray -> Kretopia pink treatment as PassportHero's banner/strength
  *  bar, so a preview card visibly belongs to the same Passport family. */
-const GRAY_PINK_GRADIENT = "linear-gradient(90deg, #6B7280 0%, #FF2DA1 100%)";
+const GRAY_PINK_GRADIENT = "linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, #FF2DA1 100%)";
 
 /**
  * Compact Passport preview -- the card "People for you" (Today) and any
@@ -50,7 +50,7 @@ export function PassportPreviewCard({
   const card = (
     <Link
       to={`/profile/${userId}`}
-      className="group flex w-44 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10"
+      className="group flex w-44 shrink-0 flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
       {/* Passport "spine" -- the same accent used on the full Passport's
           banner/strength bar, echoed here as a thin top strip so this

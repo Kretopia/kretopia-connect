@@ -557,7 +557,7 @@ const CreatorEPK = () => {
 
         {/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
-          <div className="mb-6">
+          <div className="mb-8">
             <VideoIntroSection
               videoUrl={profile.video_intro_url || null}
               isOwnProfile={isOwner}
@@ -584,8 +584,8 @@ const CreatorEPK = () => {
           const body = profile.headline
             || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
           return (
-            <div className="mb-6 p-5 rounded-xl border-l-4 border-primary bg-primary/5">
-              <h3 className="text-[11px] font-semibold text-primary uppercase tracking-wider mb-2">
+            <div className="mb-8 p-5 rounded-xl border-l-4 border-primary bg-primary/5">
+              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
                 Why work with me
               </h3>
               <p className="text-base leading-relaxed text-foreground whitespace-pre-line">
@@ -607,7 +607,7 @@ const CreatorEPK = () => {
 
         {/* Unclaimed Profile Banner */}
         {profile.is_claimed === false && (
-          <div className="mb-6 p-4 rounded-xl bg-scout/10 border border-scout/30">
+          <div className="mb-8 p-4 rounded-xl bg-scout/10 border border-scout/30">
             <div className="flex items-center gap-2 text-scout mb-2">
               <Sparkles className="h-4 w-4" />
               <span className="font-semibold">Is this you?</span>
@@ -638,7 +638,7 @@ const CreatorEPK = () => {
 
         {/* Professional Skills */}
         {profile.professional_skills && Array.isArray(profile.professional_skills) && profile.professional_skills.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-8">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Professional Skills
             </h3>
@@ -654,7 +654,7 @@ const CreatorEPK = () => {
 
         {/* Passion Skills / Other Expertise */}
         {profile.passion_skills && Array.isArray(profile.passion_skills) && profile.passion_skills.length > 0 && (
-          <div className="mb-6">
+          <div className="mb-8">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Also Skilled In
             </h3>
@@ -670,7 +670,7 @@ const CreatorEPK = () => {
 
         {/* Collaboration Info */}
         {(profile.collab_intent || profile.rate_range) && (
-          <div className="mb-6 p-4 rounded-lg bg-muted/50">
+          <div className="mb-8 p-4 rounded-lg bg-muted/50">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
               Availability
             </h3>
@@ -755,7 +755,7 @@ const CreatorEPK = () => {
                           </div>
                           {/* Verification badge overlay */}
                           {tierConfig.label && (
-                            <Badge variant="outline" className={cn("absolute top-1.5 right-1.5 text-[7px] h-3.5 px-1 backdrop-blur-sm", tierConfig.className)}>
+                            <Badge variant="outline" className={cn("absolute top-1.5 right-1.5 text-[7px] h-3.5 px-1", tierConfig.className)}>
                               {tierConfig.label}
                             </Badge>
                           )}
@@ -781,8 +781,10 @@ const CreatorEPK = () => {
                 return (
                   <div
                     key={credit.id}
+                    role="button"
+                    tabIndex={0}
                     className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors",
+                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                       credit.isVerified
                         ? "bg-primary/5 border border-primary/10"
                         : "bg-muted/50"
@@ -790,6 +792,13 @@ const CreatorEPK = () => {
                     onClick={() => {
                       const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
                       navigate(`/production?name=${name}`);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
+                        navigate(`/production?name=${name}`);
+                      }
                     }}
                   >
                     {/* Thumbnail */}

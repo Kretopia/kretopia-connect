@@ -195,7 +195,7 @@ const NearbyCreators = () => {
               </div>
               <h1 className="text-xl font-black tracking-[-0.03em] truncate">Discover</h1>
               {userLocation && discoverMode === 'nearby' && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border backdrop-blur-sm bg-[hsl(var(--energy)/0.15)] text-[hsl(var(--energy))] border-[hsl(var(--energy)/0.35)] whitespace-nowrap">
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-[hsl(var(--energy)/0.15)] text-[hsl(var(--energy))] border-[hsl(var(--energy)/0.35)] whitespace-nowrap">
                   <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--energy))]" />
                   {totalResults} nearby
                 </span>
@@ -263,7 +263,7 @@ const NearbyCreators = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search creators, events, studios..."
-                  className="pl-9 h-9 text-xs rounded-2xl border-border/60 bg-card/80 backdrop-blur-sm focus-visible:border-primary"
+                  className="pl-9 h-9 text-xs rounded-2xl border-border/60 bg-card/80 focus-visible:border-primary"
                 />
               </div>
               <div className="overflow-x-auto -mx-3 px-3 scrollbar-hide">
