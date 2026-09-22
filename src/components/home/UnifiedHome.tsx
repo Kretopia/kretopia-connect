@@ -486,7 +486,7 @@ export const UnifiedHome = () => {
           data and skeleton, so gating the whole hub on `profile` left
           mobile blank for ~500ms+ on slow nets. */}
       {user && (
-        <StudioFeatureShell>
+        <StudioFeatureShell className="pt-0">
           <TodayDashboard
             firstName={firstName}
             peopleForYou={peopleForYouNode}
