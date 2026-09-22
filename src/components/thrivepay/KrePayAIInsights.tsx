@@ -72,7 +72,7 @@ export function KrePayAIInsights() {
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold">Kreto's take</h3>
-          <Badge variant="secondary" className="text-[10px] h-5">AI-generated</Badge>
+          <Badge variant="secondary" className="text-[10px] h-5">By Kreto</Badge>
           <Button
             variant="ghost"
             size="icon"
