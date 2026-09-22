@@ -184,7 +184,7 @@ const NearbyCreators = () => {
   return (
     <div className="min-h-screen pb-24 md:pb-6">
       {/* Clean sticky header */}
-      <div className="sticky top-0 z-20 bg-background/90 backdrop-blur-sm border-b border-border/60">
+      <div className="sticky top-0 z-20 bg-background/95 border-b border-border/60">
         <div className="px-3 py-2.5 sm:px-4 space-y-2">
           {/* Title row */}
           <div className="flex items-center justify-between gap-2">

@@ -734,7 +734,7 @@ const PostOpportunity = () => {
               </div>
 
               {/* Sticky submit footer */}
-              <div className="sticky bottom-0 z-10 p-5 sm:p-8 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+              <div className="sticky bottom-0 z-10 p-5 sm:p-8 border-t border-border bg-background/95">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                   <Button type="submit" size="lg" className="flex-1 gap-2 h-12 text-base" disabled={posting}>
                     {posting ? (

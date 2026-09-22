@@ -111,7 +111,7 @@ export default function Discover() {
       </div>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="w-full">
-        <div className="sticky top-0 z-20 bg-background/90 backdrop-blur-sm border-b border-border/60 px-2 py-2 mt-3">
+        <div className="sticky top-0 z-20 bg-background/95 border-b border-border/60 px-2 py-2 mt-3">
           <TabsList className="w-full grid grid-cols-4 h-10">
             <TabsTrigger value="people" className="gap-1 text-[11px]">
               <Users className="h-3.5 w-3.5" /> People
