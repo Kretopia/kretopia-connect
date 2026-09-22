@@ -36,7 +36,9 @@ import {
   ArrowRight,
   Package,
   Download,
-  Database
+  Database,
+  MessageCircle,
+  UserPlus2,
 } from "lucide-react";
 import { Fingerprint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -421,6 +423,7 @@ const CreatorEPK = () => {
 
   const verificationBadge = getVerificationBadge();
   const isOwner = currentUserId === userId;
+  const firstName = profile.full_name?.split(' ')[0] || 'this creator';
   const allSkills = [
     ...(Array.isArray(profile.professional_skills) 
       ? profile.professional_skills.map((s: any) => typeof s === 'string' ? s : s?.skill || s?.name).filter(Boolean)
@@ -477,6 +480,57 @@ const CreatorEPK = () => {
             onJoin={() => navigate(`/auth?connect=${userId}`)}
           />
         </div>
+
+        {/* "Work with [Name]" — the direct-collab entry point the brief
+            asked for, right under the hero so it's the first real decision
+            a visitor makes. Orchestrates the connect/message/collaborate
+            dialogs that already exist below rather than adding new ones —
+            connect-first gating kept exactly as-is (confirmed): a visitor
+            still has to connect before Message/Start a Project/Invite
+            unlock, this block just makes that path far more visible and
+            explains what happens at each state instead of relying on
+            PublicPassportHero's own (smaller) CTA alone. */}
+        {!isOwner && (
+          <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-1">
+              Work with {firstName}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {connectionStatus === 'connected'
+                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
+                : connectionStatus === 'pending'
+                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
+                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {connectionStatus === 'connected' ? (
+                <>
+                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Message
+                  </Button>
+                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Start a Project
+                  </Button>
+                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
+                    <UserPlus2 className="h-4 w-4" />
+                    Invite to Project
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  disabled={isConnecting || connectionStatus === 'pending'}
+                  className="gap-2"
+                >
+                  <UserPlus2 className="h-4 w-4" />
+                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Owner Share Toolbar */}
         {isOwner && (

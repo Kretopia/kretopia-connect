@@ -8,5 +8,5 @@ import { SearchV2 } from "@/components/search/SearchV2";
 export default function SearchResults() {
   const [params] = useSearchParams();
   const q = params.get("q") ?? "";
-  return <SearchV2 key={q} initialQuery={q} />;
+  return 
 }
