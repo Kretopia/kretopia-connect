@@ -238,17 +238,23 @@ export const KretopiaHero = (_props: KretopiaHeroProps) => {
           >
             <span className="block">
               {LINE_1.map((word, wi) => (
-                <motion.span key={wi} className="inline-block" variants={wordVariants(reducedMotion)}>
+                <motion.span
+                  key={wi}
+                  className={`inline-block${wi < LINE_1.length - 1 ? " mr-[0.28em]" : ""}`}
+                  variants={wordVariants(reducedMotion)}
+                >
                   {word}
-                  {wi < LINE_1.length - 1 ? " " : ""}
                 </motion.span>
               ))}
             </span>
             <span className="landing-accent block">
               {LINE_2.map((word, wi) => (
-                <motion.span key={wi} className="inline-block" variants={wordVariants(reducedMotion)}>
+                <motion.span
+                  key={wi}
+                  className={`inline-block${wi < LINE_2.length - 1 ? " mr-[0.28em]" : ""}`}
+                  variants={wordVariants(reducedMotion)}
+                >
                   {word}
-                  {wi < LINE_2.length - 1 ? " " : ""}
                 </motion.span>
               ))}
             </span>

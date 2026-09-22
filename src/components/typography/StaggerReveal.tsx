@@ -38,12 +38,18 @@ export function renderStaggerWords(node: ReactNode, keyPrefix: string, reducedMo
   }
   const words = node.split(" ");
   return words.map((word, i) => (
-    // Non-breaking space, not a plain " " -- a trailing plain space can
-    // get collapsed at an inline-block's content edge in some browsers,
-    // same reason the landing hero's own version of this pattern uses one.
-    <motion.span key={`${keyPrefix}-${i}`} className="inline-block" variants={variants}>
+    // A real CSS margin, not a space character inside the box -- a
+    // trailing space (plain or non-breaking, confirmed live: this used
+    // a non-breaking one already) at an inline-block's content edge gets
+    // its glyph advance eaten by the page's own negative letter-spacing,
+    // rendering words with zero visible gap between them. A margin sits
+    // outside the text run, so letter-spacing can't touch it.
+    <motion.span
+      key={`${keyPrefix}-${i}`}
+      className={`inline-block${i < words.length - 1 ? " mr-[0.28em]" : ""}`}
+      variants={variants}
+    >
       {word}
-      {i < words.length - 1 ? " " : ""}
     </motion.span>
   ));
 }

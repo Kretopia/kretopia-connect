@@ -379,13 +379,21 @@ serve(async (req) => {
 
           if (managerStripeAccountId) {
             try {
+              // Idempotency key scoped to the one commission this milestone
+              // can ever produce -- defense in depth alongside the event-ID
+              // dedup above (stripe_webhook_events insert): that already
+              // stops a redelivered checkout.session.completed from
+              // re-entering this handler, but a stable key here means this
+              // specific call is also safe if it's ever retried outside
+              // that path (e.g. a manual replay after clearing the dedup
+              // table for an unrelated incident).
               const transfer = await stripe.transfers.create({
                 amount: Math.round(managerCommission * 100),
                 currency: "usd",
                 destination: managerStripeAccountId,
                 description: `Manager commission for milestone: ${milestone.title}`,
                 metadata: { milestone_id: milestoneId, project_id: milestone.project_id, manager_table_id: managerTableId },
-              });
+              }, { idempotencyKey: `commission-transfer:${milestoneId}:${managerTableId}` });
               logStep("Commission transferred to manager", { transferId: transfer.id, amount: managerCommission });
               await supabaseAdmin.rpc("increment_manager_earnings" as any, {
                 manager_id_input: managerTableId,
