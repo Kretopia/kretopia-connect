@@ -17,6 +17,28 @@ interface Props {
 
 type Phase = "drafting" | "review" | "sent" | "error";
 
+// send-invoice-chase (see supabase/functions/send-invoice-chase/index.ts)
+// returns a handful of actionable messages worth showing as-is, plus a mix
+// of internal ones (AI gateway/credits state, raw DB/exception text) that
+// aren't -- only the actionable ones pass through, everything else falls
+// back to a generic message rather than a guessed rewrite of the rest.
+function draftErrorCopy(rawMessage: string | undefined): string {
+  const msg = (rawMessage || "").toLowerCase();
+  if (msg === "invoice not found") return "Invoice not found.";
+  return "Couldn't draft a reminder right now. Try again in a moment.";
+}
+
+// send-outreach-draft (see supabase/functions/send-outreach-draft/index.ts)
+// -- same discipline: pass through only the messages it wrote specifically
+// for a human reader, generic fallback for everything else.
+function sendErrorCopy(rawMessage: string | undefined): string {
+  const msg = (rawMessage || "").toLowerCase();
+  if (msg === "draft not found") return "This draft no longer exists — try drafting a new one.";
+  if (msg.includes("no recipient email")) return "No recipient email on this invoice — add one, then retry.";
+  if (msg.includes("connect your gmail")) return "Connect your Gmail in Outreach settings first.";
+  return "Couldn't send that reminder right now. Try again.";
+}
+
 /**
  * AI-drafted payment reminder: draft -> user reviews/edits -> user confirms
  * send -> system executes (send-outreach-draft) only on that explicit
@@ -57,7 +79,7 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
       setGeneratedAt(new Date());
       setPhase("review");
     } catch (e: any) {
-      setErrorMsg(e.message || "Couldn't draft a reminder");
+      setErrorMsg(draftErrorCopy(e.message));
       setPhase("error");
     }
   };
@@ -84,7 +106,7 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
     } catch (e: any) {
       toast({
         title: "Couldn't send",
-        description: e.message || "Something went wrong sending the reminder.",
+        description: sendErrorCopy(e.message),
         variant: "destructive",
       });
     } finally {
@@ -122,7 +144,7 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="gap-1 text-[10px]">
-                <Sparkles className="h-3 w-3" /> AI-generated
+                <Sparkles className="h-3 w-3" /> By Kreto
               </Badge>
               {generatedAt && (
                 <span className="text-[10px] text-muted-foreground">

@@ -16,6 +16,16 @@ interface Props {
   onPaidOut?: () => void;
 }
 
+// wallet-payout (see supabase/functions/wallet-payout/index.ts) writes one
+// genuinely actionable message worth showing as-is; its 401/400 validation
+// strings shouldn't normally reach a user who got this far in the sheet,
+// and its catch-all 500 can carry a raw Stripe/DB error -- both fall back
+// to a generic message instead.
+function payoutErrorCopy(rawMessage: string | undefined): string {
+  if (rawMessage === "Wallet not ready. Add a bank account first.") return rawMessage;
+  return "Couldn't process that cash-out right now. Try again.";
+}
+
 export function WalletPayoutSheet({ open, onOpenChange, currency, availableCents, defaultMethodLabel, onPaidOut }: Props) {
   const { toast } = useToast();
   const [amount, setAmount] = useState("");
@@ -49,7 +59,7 @@ export function WalletPayoutSheet({ open, onOpenChange, currency, availableCents
       onOpenChange(false);
       setAmount("");
     } catch (e: any) {
-      toast({ title: "Couldn't cash out", description: e.message, variant: "destructive" });
+      toast({ title: "Couldn't cash out", description: payoutErrorCopy(e.message), variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,17 @@ interface WalletTransferDialogProps {
   onTransferComplete: () => void;
 }
 
+// wallet-transfer (see supabase/functions/wallet-transfer/index.ts) already
+// writes every error as a clean, human-readable new Error(...) -- "Cannot
+// transfer to yourself", "Recipient not found", "Insufficient balance", the
+// per-tx/daily/monthly limit reasons with real numbers, etc. -- so they're
+// safe to show as-is. The one exception is the auth-guard message, which
+// reads more like a log line than something meant for this dialog.
+function transferErrorCopy(rawMessage: string | undefined): string {
+  if (rawMessage === "User not authenticated") return "Your session expired — sign in again to send this.";
+  return rawMessage || "Transfer failed";
+}
+
 export function WalletTransferDialog({ open, onOpenChange, walletBalance, onTransferComplete }: WalletTransferDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -112,7 +123,7 @@ export function WalletTransferDialog({ open, onOpenChange, walletBalance, onTran
       onTransferComplete();
       onOpenChange(false);
     } catch (err: any) {
-      setError(err.message || "Transfer failed");
+      setError(transferErrorCopy(err.message));
     } finally {
       setLoading(false);
     }

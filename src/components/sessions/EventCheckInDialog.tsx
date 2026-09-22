@@ -9,6 +9,24 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, CameraOff, CheckCircle, Search, Users, Loader2, Ticket, Radio } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+// check_in_guest_by_token (see supabase/migrations/20260512154211_...sql)
+// only ever raises exactly these three messages -- anything else reaching
+// here is an unexpected error (network, RLS on a different table, etc.)
+// and gets the generic fallback rather than a guessed explanation.
+function checkInErrorCopy(rawMessage: string | undefined): { title: string; description: string } {
+  const msg = (rawMessage || "").toLowerCase();
+  if (msg.includes("no matching")) {
+    return { title: "Invalid pass", description: "This QR doesn't match anyone for this event." };
+  }
+  if (msg.includes("only the event host")) {
+    return { title: "Host only", description: "Only the event host can check in guests." };
+  }
+  if (msg.includes("not authenticated")) {
+    return { title: "Session expired", description: "Sign in again to keep checking guests in." };
+  }
+  return { title: "Couldn't check in", description: "Something went wrong — try again." };
+}
+
 interface Attendee {
   id: string;
   kind: "participant" | "guest";
@@ -274,14 +292,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
         p_token: token,
       });
       if (error) {
-        const msg = (error.message || "").toLowerCase();
-        if (msg.includes("no matching")) {
-          toast({ title: "Invalid pass", description: "This QR doesn't match anyone for this event.", variant: "destructive" });
-        } else if (msg.includes("only the event host")) {
-          toast({ title: "Host only", description: "Only the event host can check in guests.", variant: "destructive" });
-        } else {
-          toast({ title: "Couldn't check in", description: error.message || "Try again.", variant: "destructive" });
-        }
+        toast({ ...checkInErrorCopy(error.message), variant: "destructive" });
         return;
       }
       const row = Array.isArray(data) ? data[0] : data;
@@ -295,7 +306,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
         toast({ title: "Guest checked in", description: `${row.guest_name || 'Guest'} (${row.guest_email}) is in.` });
       }
     } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Failed to check in. Please try again.", variant: "destructive" });
+      toast({ ...checkInErrorCopy(err?.message), variant: "destructive" });
     } finally {
       setCheckingIn(null);
       setManualToken("");
@@ -330,7 +341,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
       );
       toast({ title: "Checked in", description: `${att.display_name} is now checked in.` });
     } catch (err: any) {
-      toast({ title: "Error", description: err?.message || "Failed to check in.", variant: "destructive" });
+      toast({ ...checkInErrorCopy(err?.message), variant: "destructive" });
     } finally {
       setCheckingIn(null);
     }
