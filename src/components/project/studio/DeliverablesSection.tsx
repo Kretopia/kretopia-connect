@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, MessageCircle, RefreshCw, Loader2, Eye } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -12,6 +13,10 @@ interface DeliverablesSectionProps {
   projectId: string;
   currentUserId: string;
   isOwner: boolean;
+  /** Resolves reviewed_by to a name for the "Approved by X" line below --
+   *  optional so existing callers that don't have this handy keep working
+   *  exactly as before (the line just doesn't render without it). */
+  collaborators?: Array<{ id: string; full_name: string }>;
 }
 
 interface Deliverable {
@@ -23,6 +28,14 @@ interface Deliverable {
   submitted_by: string | null;
   updated_at: string;
   comment_count?: number;
+  // CPO Studio spec: "Approval identifies the reviewer and exact version."
+  // These columns already exist on project_deliverables and are already
+  // written by updateStatus() below -- they just weren't being fetched or
+  // shown. version is real but currently static (see the Phase 2 flag in
+  // this file's commit message: nothing increments it on file replace yet).
+  version: number;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
 }
 
 const STATUS_PILL: Record<
@@ -52,7 +65,10 @@ export const DeliverablesSection = ({
   projectId,
   currentUserId,
   isOwner,
+  collaborators,
 }: DeliverablesSectionProps) => {
+  const reviewerName = (id: string | null) =>
+    id ? collaborators?.find((c) => c.id === id)?.full_name ?? null : null;
   const { toast } = useToast();
   const [items, setItems] = useState<Deliverable[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +78,7 @@ export const DeliverablesSection = ({
   const load = async () => {
     const { data, error } = await supabase
       .from("project_deliverables")
-      .select("id, title, status, thumbnail_url, file_url, submitted_by, updated_at")
+      .select("id, title, status, thumbnail_url, file_url, submitted_by, updated_at, version, reviewed_by, reviewed_at")
       .eq("project_id", projectId)
       .neq("status", "draft")
       .order("updated_at", { ascending: false })
@@ -227,14 +243,24 @@ export const DeliverablesSection = ({
                           {d.title}
                         </h3>
                       </div>
-                      <span
-                        className={cn(
-                          "inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ring-1",
-                          pill.tone,
-                        )}
-                      >
-                        {pill.label}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={cn(
+                            "inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ring-1",
+                            pill.tone,
+                          )}
+                        >
+                          {pill.label}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">v{d.version}</span>
+                        {(d.status === "approved" || d.status === "changes_requested") &&
+                          d.reviewed_at && (
+                            <span className="text-[10px] text-muted-foreground">
+                              {reviewerName(d.reviewed_by) ? `by ${reviewerName(d.reviewed_by)} · ` : ""}
+                              {formatDistanceToNow(new Date(d.reviewed_at), { addSuffix: true })}
+                            </span>
+                          )}
+                      </div>
 
                       {/* Action row */}
                       <div className="flex items-center gap-1.5 pt-1">

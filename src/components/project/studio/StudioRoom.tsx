@@ -258,7 +258,7 @@ export const StudioRoom = ({
     <div className="divide-y divide-border/60">
       {includeBrief && briefBlock}
       {/* Pulse merged into the single Drop Zone at the top of the room. */}
-      <DeliverablesSection projectId={project.id} currentUserId={currentUserId} isOwner={isOwner} />
+      <DeliverablesSection projectId={project.id} currentUserId={currentUserId} isOwner={isOwner} collaborators={people} />
       {/* ThriveGenerateCard retired — folded into StudioOutcomeComposer at top of room. */}
       <PadPreviewSection projectId={project.id} onOpen={() => onNavigateToTab("notes")} />
       {showPrep && (
@@ -312,7 +312,7 @@ export const StudioRoom = ({
     switch (id) {
       case "brief": return wrap(<BriefSection project={project} files={files} isOwner={isOwner} onUpdated={onUpdated} onAddReference={handleAddReference} currentUserId={currentUserId} />);
       case "pulse": return null; // retired — Drop Zone now lives above the layout
-      case "deliverables": return wrap(<DeliverablesSection projectId={project.id} currentUserId={currentUserId} isOwner={isOwner} />);
+      case "deliverables": return wrap(<DeliverablesSection projectId={project.id} currentUserId={currentUserId} isOwner={isOwner} collaborators={people} />);
       case "pad": return wrap(<PadPreviewSection projectId={project.id} onOpen={() => onNavigateToTab("notes")} />);
       case "prep": return showPrep ? wrap(<ProductionPrepSection project={project} tasks={tasks} currentUserId={currentUserId} onOpenTool={(tab) => onNavigateToTab(tab)} onUpdated={onUpdated} />) : null;
       case "work": return wrap(<WorkSection tasks={tasks} projectId={project.id} currentUserId={currentUserId} collaborators={people} onUpdated={onUpdated} />);
