@@ -135,9 +135,16 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
             (r) => r.full_name?.trim() && r.role?.trim() && r.avatar_url && !(r.is_claimed === false && r.badge !== "odos"),
           );
         } else {
+          // No sub_roles here -- confirmed via a direct REST call that the
+          // live public_profiles_safe view doesn't actually have that
+          // column despite the generated types.ts listing it (stale
+          // types, a known recurring issue on this project). Harmless to
+          // omit: computeMatchScore/subRoles is only ever reached in the
+          // myContext branch above, which requires a signed-in userId --
+          // unreachable from this anonymous branch.
           const { data } = await supabase
             .from("public_profiles_safe")
-            .select("user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, professional_skills, badge, level")
+            .select("user_id, full_name, avatar_url, cover_image_url, role, location, professional_skills, badge, level")
             .eq("onboarding_completed", true)
             .not("full_name", "is", null)
             .not("avatar_url", "is", null)
