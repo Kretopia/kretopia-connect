@@ -58,6 +58,28 @@ describe("inferWorkspaceType", () => {
     expect(inferWorkspaceType("RUNWAY SHOW WITH MODEL LINEUP")).toBe("fashion_show");
   });
 
+  // CEO hotfix (23/09/2026 onboarding): a French brief silently fell
+  // through to "general" because the keyword lists were English-only.
+  it("infers event_production from French event language, accents included", () => {
+    expect(inferWorkspaceType("Soirée de lancement pour notre nouvel événement")).toBe("event_production");
+  });
+
+  it("infers fashion_show from French runway language", () => {
+    expect(inferWorkspaceType("Défilé de mode avec les mannequins confirmés")).toBe("fashion_show");
+  });
+
+  it("infers music_project from French release language", () => {
+    expect(inferWorkspaceType("Sortie de l'album, cinq morceaux, tournée prévue")).toBe("music_project");
+  });
+
+  it("infers photo_shoot from French shoot language", () => {
+    expect(inferWorkspaceType("Séance shooting photo en studio, portrait en lumière naturelle")).toBe("photo_shoot");
+  });
+
+  it("falls back to general for unrecognized French input", () => {
+    expect(inferWorkspaceType("Quelque chose sans rapport avec une catégorie")).toBe("general");
+  });
+
   it("every non-general branch returns a real WorkspaceType key from workspaceConfigs", async () => {
     const { WORKSPACE_CONFIGS } = await import("@/lib/workspaceConfigs");
     const samples = [
