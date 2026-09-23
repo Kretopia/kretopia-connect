@@ -27,7 +27,12 @@ interface CreatorSuggestion {
   role: string | null;
   sub_roles: string[] | null;
   location: string | null;
-  average_rating: number | null;
+  /** Only present for the signed-in path (real `profiles` read) -- the
+   *  anonymous path reads public_profiles_safe, which doesn't expose it. */
+  average_rating?: number | null;
+  /** Only present for the anonymous path -- used as its ranking signal
+   *  in place of average_rating. */
+  level?: number | null;
   match_score?: number;
   match_reason?: string;
 }
@@ -105,22 +110,41 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
           creatorLookup = Object.fromEntries((gprofiles || []).map((p) => [p.user_id, p]));
         }
 
-        let q = supabase
-          .from("profiles")
-          .select(
-            "user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, professional_skills, average_rating, is_claimed, badge",
-          )
-          .eq("onboarding_completed", true)
-          .not("full_name", "is", null)
-          .not("avatar_url", "is", null)
-          .neq("avatar_url", "")
-          .limit(60);
-        if (userId) q = q.neq("user_id", userId);
-        const { data: creatorRowsRaw } = await q;
-
-        let creatorRows = ((creatorRowsRaw || []) as any[]).filter(
-          (r) => r.full_name?.trim() && r.role?.trim() && r.avatar_url && !(r.is_claimed === false && r.badge !== "odos"),
-        );
+        // `profiles` RLS has no broad anonymous-read policy -- an anon
+        // request against it returns 200 with an empty array, not an
+        // error, so this was silently dropping the whole creators section
+        // for signed-out visitors. public_profiles_safe is the same view
+        // CreatorOrbitLoader already uses for anonymous-safe discovery;
+        // it's missing average_rating/is_claimed, so the ranking and
+        // ghost-profile filter both adapt to what's actually available.
+        let creatorRows: any[];
+        if (userId) {
+          let q = supabase
+            .from("profiles")
+            .select(
+              "user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, professional_skills, average_rating, is_claimed, badge",
+            )
+            .eq("onboarding_completed", true)
+            .not("full_name", "is", null)
+            .not("avatar_url", "is", null)
+            .neq("avatar_url", "")
+            .neq("user_id", userId)
+            .limit(60);
+          const { data } = await q;
+          creatorRows = ((data || []) as any[]).filter(
+            (r) => r.full_name?.trim() && r.role?.trim() && r.avatar_url && !(r.is_claimed === false && r.badge !== "odos"),
+          );
+        } else {
+          const { data } = await supabase
+            .from("public_profiles_safe")
+            .select("user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, professional_skills, badge, level")
+            .eq("onboarding_completed", true)
+            .not("full_name", "is", null)
+            .not("avatar_url", "is", null)
+            .neq("avatar_url", "")
+            .limit(60);
+          creatorRows = ((data || []) as any[]).filter((r) => r.full_name?.trim() && r.role?.trim() && r.avatar_url && r.user_id);
+        }
 
         if (myContext) {
           creatorRows = creatorRows
@@ -144,8 +168,12 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
               return { ...r, match_score: Math.round(score), match_reason: reason };
             })
             .sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-        } else {
+        } else if (userId) {
           creatorRows = creatorRows.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
+        } else {
+          // No average_rating in the safe view -- level is the closest
+          // real "notable on Kretopia" signal available to an anon reader.
+          creatorRows = creatorRows.sort((a, b) => (b.level || 0) - (a.level || 0));
         }
 
         if (!cancelled) {
