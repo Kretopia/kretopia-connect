@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { CheckCircle2, MessageCircle, RefreshCw, Loader2, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,13 @@ export const DeliverablesSection = ({
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [openCommentsFor, setOpenCommentsFor] = useState<Deliverable | null>(null);
+  // StudioRoom mounts a mobile column (lg:hidden) and a desktop widget grid
+  // (hidden lg:grid) at the same time -- both render this component for the
+  // same projectId, so a channel name scoped only to projectId still gets
+  // two live .subscribe() calls on one page load. useId() is stable for
+  // this component instance's whole lifetime and unique per instance,
+  // closing that without needing a page-wide channel-naming rework.
+  const instanceId = useId();
 
   const load = async () => {
     const { data, error } = await supabase
@@ -113,7 +120,7 @@ export const DeliverablesSection = ({
     void load().catch(() => setLoading(false));
 
     const channel = supabase
-      .channel(`deliverables-section:${projectId}`)
+      .channel(`deliverables-section:${projectId}:${instanceId}`)
       .on(
         "postgres_changes",
         {

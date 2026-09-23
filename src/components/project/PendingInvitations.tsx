@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -19,10 +19,16 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  // See the channel-naming comment below -- this closes a second, distinct
+  // collision: StudioRoom itself mounts a PeopleSection (which renders this
+  // component) in BOTH its mobile column and its desktop widget grid at
+  // the same time, so the projectId-scoped name alone still gets two live
+  // .subscribe() calls for one project on a single page load.
+  const instanceId = useId();
 
   useEffect(() => {
     fetchInvitations();
-    
+
     // Real-time subscription -- scoped to this instance (project id, or
     // "all" for the cross-project list view). Found via a real production
     // crash: this channel name used to be one hardcoded literal shared by
@@ -34,7 +40,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
     // per-widget error boundary since it fires from an effect, not
     // render, and took down the whole page.
     const channel = supabase
-      .channel(`project-invitations-changes:${projectId ?? "all"}`)
+      .channel(`project-invitations-changes:${projectId ?? "all"}:${instanceId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

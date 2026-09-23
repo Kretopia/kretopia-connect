@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Pin, Sparkles, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,6 +35,12 @@ export function PadPreviewSection({ projectId, onOpen }: PadPreviewSectionProps)
   const [pins, setPins] = useState<PadPin[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  // StudioRoom mounts a mobile column (lg:hidden) and a desktop widget grid
+  // (hidden lg:grid) at the same time, both rendering this component for the
+  // same projectId -- a channel scoped only to projectId still gets two
+  // live .subscribe() calls on one page load. useId() is unique and stable
+  // per component instance for exactly this case.
+  const instanceId = useId();
 
   useEffect(() => {
     let active = true;
@@ -54,7 +60,7 @@ export function PadPreviewSection({ projectId, onOpen }: PadPreviewSectionProps)
     })().catch((e) => console.warn("[pad-preview] load failed", e));
 
     const channel = supabase
-      .channel(`pad-preview:${projectId}`)
+      .channel(`pad-preview:${projectId}:${instanceId}`)
       .on(
         "postgres_changes",
         {
