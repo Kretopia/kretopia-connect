@@ -23,9 +23,18 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
   useEffect(() => {
     fetchInvitations();
     
-    // Real-time subscription
+    // Real-time subscription -- scoped to this instance (project id, or
+    // "all" for the cross-project list view). Found via a real production
+    // crash: this channel name used to be one hardcoded literal shared by
+    // every mounted instance, so navigating from the cross-project list
+    // (ProjectsList.tsx) straight into a project's own People widget
+    // raced the old instance's async unsubscribe against the new one's
+    // subscribe on the *same* channel name, throwing "cannot add
+    // postgres_changes callbacks... after subscribe()" -- uncaught by the
+    // per-widget error boundary since it fires from an effect, not
+    // render, and took down the whole page.
     const channel = supabase
-      .channel('project-invitations-changes')
+      .channel(`project-invitations-changes:${projectId ?? "all"}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
