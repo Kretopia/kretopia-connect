@@ -198,15 +198,24 @@ export function useProjectData(projectId: string | undefined) {
           supabase.from("project_tasks").select("*").eq("project_id", projectId).order("created_at", { ascending: false }),
           // amount/paid_to/paid_at/escrow_status/payment_intent_id are no
           // longer selectable directly as of
-          // 20260825100000_studio_role_based_money_rls.sql -- select("*")
-          // here now silently omits them for everyone. They're merged back
-          // in below from get_project_milestone_financials, which is the
-          // only remaining read path and enforces the same
+          // 20260825100000_studio_role_based_money_rls.sql. CEO hotfix
+          // (24/09/2026): select("*") does NOT silently omit a revoked
+          // column the way row-level RLS silently omits a row -- Postgres
+          // expands "*" to the full column list and then checks privilege
+          // on every one of them, so this threw a hard 42501/403 on every
+          // single Studio page load (this hook backs both StudioRoom and
+          // ThriveDesk), for every user, regardless of role. Listing only
+          // the still-granted columns fixes the 403; the financial fields
+          // are unaffected -- they were already being merged back in below
+          // from get_project_milestone_financials, which is the only
+          // remaining read path and enforces the same
           // owner/creative/collaborator-only rule (not client/guest) that
           // the Money section's own UI already tries to apply -- so a
-          // client/guest collaborator now gets the real enforcement this
+          // client/guest collaborator gets the real enforcement this
           // hook's data represents, not just a UI hint.
-          supabase.from("milestones").select("*").eq("project_id", projectId).order("created_at", { ascending: true }),
+          supabase.from("milestones")
+            .select("id, project_id, title, description, status, due_date, created_by, requested_by, created_at, updated_at, external_id, external_url, import_job_id, imported_at, source_provider")
+            .eq("project_id", projectId).order("created_at", { ascending: true }),
           supabase.rpc("get_project_milestone_financials" as any, { _project_id: projectId }),
         ]);
         if (isStale()) return;
