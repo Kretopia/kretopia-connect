@@ -107,7 +107,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { project_id, file_id } = await req.json();
+    // suggest_only (Drop Zone, CPO Studio spec §11): "suggest a destination,
+    // never silently broaden/apply it" -- default false so the existing
+    // caller (FileBrowser.tsx's post-upload auto-file) is untouched; the
+    // new Drop Zone confirmation flow passes true and applies the pick
+    // itself only after the user accepts it.
+    const { project_id, file_id, suggest_only } = await req.json();
     if (!project_id || !file_id) {
       return new Response(JSON.stringify({ error: "project_id and file_id required" }), {
         status: 400,
@@ -157,7 +162,7 @@ Deno.serve(async (req) => {
     }
 
     const target = folderRows.find((f) => f.name === chosenName) || null;
-    if (target) {
+    if (target && !suggest_only) {
       await admin.from("project_files").update({ folder_id: target.id }).eq("id", file_id);
     }
 

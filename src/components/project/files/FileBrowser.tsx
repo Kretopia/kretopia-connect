@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDeskIntent } from "@/hooks/useDeskIntent";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -175,8 +176,17 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
     return trail;
   }, [currentFolder, folders]);
 
-  const visibleFolders = folders.filter((f) => f.parent_id === currentFolder);
-  const visibleFiles = files.filter((f) => (f.folder_id ?? null) === currentFolder);
+  // "To organise" (CPO Studio spec §11): unsorted captures stay visible as
+  // their own collection rather than just whatever happens to sit at
+  // Vault root -- same underlying data (folder_id null), a dedicated,
+  // always-reachable view of it regardless of which folder you're browsing.
+  const [showUnfiled, setShowUnfiled] = useState(false);
+  const unfiledCount = useMemo(() => files.filter((f) => !f.folder_id).length, [files]);
+
+  const visibleFolders = showUnfiled ? [] : folders.filter((f) => f.parent_id === currentFolder);
+  const visibleFiles = showUnfiled
+    ? files.filter((f) => !f.folder_id)
+    : files.filter((f) => (f.folder_id ?? null) === currentFolder);
 
   const filtered = useMemo(() => {
     const s = search.trim().toLowerCase();
@@ -187,13 +197,66 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
     };
   }, [search, visibleFolders, visibleFiles]);
 
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const list = event.target.files;
-    if (!list?.length) return;
+  // Drop Zone confirmation (CPO Studio spec §11): a file dropped at the
+  // Vault root without an explicit folder gets a *suggested* destination,
+  // never a silently-applied one -- route-vault-file's suggest_only mode
+  // returns the same real classification it always computed, it just no
+  // longer writes folder_id itself. One toast per upload with Move/Dismiss;
+  // dismissing (or ignoring it) leaves the file exactly where "To organise"
+  // already surfaces it, per the same spec section.
+  const suggestDestination = async (fileId: string, fileName: string) => {
+    try {
+      const { data } = await supabase.functions.invoke("route-vault-file", {
+        body: { project_id: projectId, file_id: fileId, suggest_only: true },
+      });
+      const folderId = data?.folder_id as string | undefined;
+      const folderName = data?.folder_name as string | undefined;
+      if (!folderId || !folderName) return;
+      sonnerToast(`"${fileName}" looks like it belongs in ${folderName}`, {
+        duration: 10000,
+        action: {
+          label: `Move to ${folderName}`,
+          onClick: () => moveFile(fileId, folderId),
+        },
+      });
+    } catch (e) {
+      console.warn("route-vault-file suggestion failed (non-fatal)", e);
+    }
+  };
+
+  // targetFolderId defaults to whatever folder is currently open -- an
+  // explicit param rather than always reading currentFolder, since a
+  // caller that just called setCurrentFolder() can't rely on that state
+  // update having landed yet (React batches it; this function would
+  // otherwise see the pre-update value via closure).
+  const enqueueFiles = async (list: FileList | File[], targetFolderId: string | null = currentFolder) => {
+    const fileArray = Array.from(list);
+    if (!fileArray.length) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({ title: "Not signed in", variant: "destructive" });
       return;
+    }
+
+    // Duplicate detection (CPO Studio spec §11): same name already filed
+    // in the same destination -- offer reuse instead of silently
+    // duplicating. Checked against the files already loaded for this
+    // view, so no extra query.
+    const folderAtEnqueue = targetFolderId;
+    const existingNames = new Set(
+      files.filter((f) => (f.folder_id ?? null) === folderAtEnqueue).map((f) => f.file_name),
+    );
+    const duplicates = fileArray.filter((f) => existingNames.has(f.name));
+    if (duplicates.length > 0) {
+      const names = duplicates.map((f) => f.name).join(", ");
+      const proceed = confirm(
+        `${duplicates.length > 1 ? "These files already exist" : "A file with this name already exists"} here: ${names}\n\nUpload ${duplicates.length > 1 ? "them" : "it"} again anyway?`,
+      );
+      if (!proceed) {
+        const skip = new Set(duplicates);
+        // eslint-disable-next-line no-param-reassign
+        list = fileArray.filter((f) => !skip.has(f));
+      }
     }
 
     const accepted: UploadJob[] = [];
@@ -209,7 +272,6 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
       const rawExt = nameParts.length > 1 ? nameParts.pop() : "bin";
       const ext = (rawExt || "bin").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 10) || "bin";
       const path = `${projectId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const folderAtEnqueue = currentFolder;
       accepted.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         file,
@@ -230,13 +292,8 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
             .select("id")
             .single();
           if (dbErr) throw new Error(dbErr.message);
-          // If the user dropped the file at the Vault root (no folder), let AI sort it.
           if (!folderAtEnqueue && inserted?.id) {
-            supabase.functions
-              .invoke("route-vault-file", {
-                body: { project_id: projectId, file_id: inserted.id },
-              })
-              .catch((e) => console.warn("route-vault-file failed (non-fatal)", e));
+            void suggestDestination(inserted.id, file.name);
           }
           onFileUploaded();
         },
@@ -246,6 +303,11 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
       setUploadJobs((prev) => [...prev, ...accepted]);
       setUploading(true);
     }
+  };
+
+  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const list = event.target.files;
+    if (list?.length) await enqueueFiles(list);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -347,8 +409,44 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
   const onDropFolder = (e: React.DragEvent, folderId: string | null) => {
     e.preventDefault();
     setDragOverFolder(null);
+    // Real OS files dropped directly on a folder tile/breadcrumb -- upload
+    // straight into that destination, same Drop Zone path as everywhere
+    // else (suggestion only kicks in for root, since this already IS an
+    // explicit destination choice). Passed explicitly rather than via
+    // setCurrentFolder + closure, which wouldn't be updated yet here.
+    if (e.dataTransfer.files?.length) {
+      void enqueueFiles(e.dataTransfer.files, folderId);
+      return;
+    }
     const fileId = e.dataTransfer.getData("application/x-file-id");
     if (fileId) moveFile(fileId, folderId);
+  };
+
+  // Real OS files dropped anywhere else on the browser -- Drop Zone entry
+  // point (CPO Studio spec §11): "capture first, organise ensuite."
+  const [isDraggingFiles, setIsDraggingFiles] = useState(false);
+  const dragDepthRef = useRef(0);
+  const onPageDragEnter = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setIsDraggingFiles(true);
+  };
+  const onPageDragOver = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+  };
+  const onPageDragLeave = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDraggingFiles(false);
+  };
+  const onPageDrop = (e: React.DragEvent) => {
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragDepthRef.current = 0;
+    setIsDraggingFiles(false);
+    if (e.dataTransfer.files?.length) void enqueueFiles(e.dataTransfer.files);
   };
 
   const startRename = (type: "folder" | "file", id: string, name: string) => {
@@ -365,7 +463,24 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
   };
 
   return (
-    <div className="space-y-3">
+    <div
+      className="relative space-y-3"
+      onDragEnter={onPageDragEnter}
+      onDragOver={onPageDragOver}
+      onDragLeave={onPageDragLeave}
+      onDrop={onPageDrop}
+    >
+      {isDraggingFiles && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-primary bg-background/90">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <Upload className="h-8 w-8 text-primary" />
+            <p className="text-sm font-semibold text-foreground">Drop to upload</p>
+            <p className="text-xs text-muted-foreground">
+              {currentFolder ? `Into ${breadcrumb[breadcrumb.length - 1]?.name ?? "this folder"}` : "Kreto will suggest where it belongs"}
+            </p>
+          </div>
+        </div>
+      )}
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-2">
         {/* Breadcrumbs */}
@@ -393,6 +508,17 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          {unfiledCount > 0 && (
+            <Button
+              variant={showUnfiled ? "secondary" : "outline"}
+              size="sm"
+              className="h-9 gap-1.5"
+              onClick={() => setShowUnfiled((v) => !v)}
+            >
+              To organise
+              <Badge variant="outline" className="h-4 px-1 text-[10px] leading-none">{unfiledCount}</Badge>
+            </Button>
+          )}
           <div className="relative">
             <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
             <Input

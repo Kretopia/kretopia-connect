@@ -3,7 +3,7 @@ import { startResumableUpload, type ResumableUploadHandle } from "@/lib/resumabl
 import { formatBytes } from "@/lib/fileSizeLimits";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Pause, Play, X, CheckCircle2, AlertCircle, FileUp } from "lucide-react";
+import { Pause, Play, X, CheckCircle2, AlertCircle, FileUp, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type UploadJobStatus = "uploading" | "paused" | "done" | "error";
@@ -35,42 +35,51 @@ export function ResumableUploadList({ jobs, onJobFinished, onJobRemoved }: Props
   const [states, setStates] = useState<Record<string, JobState>>({});
   const startedRef = useRef<Set<string>>(new Set());
 
+  const startJob = (job: UploadJob) => {
+    startedRef.current.add(job.id);
+    setStates((s) => ({ ...s, [job.id]: { uploaded: 0, total: job.file.size, status: "uploading" } }));
+
+    startResumableUpload({
+      bucket: job.bucket,
+      path: job.path,
+      file: job.file,
+      onProgress: (uploaded, total) => {
+        setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { status: "uploading" as UploadJobStatus }), uploaded, total } }));
+      },
+      onError: (err) => {
+        setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size }), status: "error", error: err.message } }));
+      },
+      onSuccess: async () => {
+        try {
+          await job.onComplete(job);
+          setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: job.file.size, total: job.file.size }), uploaded: job.file.size, status: "done" } }));
+          onJobFinished(job.id);
+        } catch (e: any) {
+          setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size }), status: "error", error: e?.message || "Save failed" } }));
+        }
+      },
+    })
+      .then((handle) => {
+        setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size, status: "uploading" }), handle } }));
+      })
+      .catch((err) => {
+        setStates((s) => ({ ...s, [job.id]: { uploaded: 0, total: job.file.size, status: "error", error: err.message } }));
+      });
+  };
+
   // Kick off any new jobs.
   useEffect(() => {
     jobs.forEach((job) => {
       if (startedRef.current.has(job.id)) return;
-      startedRef.current.add(job.id);
-
-      setStates((s) => ({ ...s, [job.id]: { uploaded: 0, total: job.file.size, status: "uploading" } }));
-
-      startResumableUpload({
-        bucket: job.bucket,
-        path: job.path,
-        file: job.file,
-        onProgress: (uploaded, total) => {
-          setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { status: "uploading" as UploadJobStatus }), uploaded, total } }));
-        },
-        onError: (err) => {
-          setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size }), status: "error", error: err.message } }));
-        },
-        onSuccess: async () => {
-          try {
-            await job.onComplete(job);
-            setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: job.file.size, total: job.file.size }), uploaded: job.file.size, status: "done" } }));
-            onJobFinished(job.id);
-          } catch (e: any) {
-            setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size }), status: "error", error: e?.message || "Save failed" } }));
-          }
-        },
-      })
-        .then((handle) => {
-          setStates((s) => ({ ...s, [job.id]: { ...(s[job.id] || { uploaded: 0, total: job.file.size, status: "uploading" }), handle } }));
-        })
-        .catch((err) => {
-          setStates((s) => ({ ...s, [job.id]: { uploaded: 0, total: job.file.size, status: "error", error: err.message } }));
-        });
+      startJob(job);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs, onJobFinished]);
+
+  // A failed job's id stays in startedRef so the effect above won't
+  // re-trigger it on its own -- retry re-enters the same upload path
+  // directly instead, same bucket/path/file, no new job or duplicate row.
+  const retryJob = (job: UploadJob) => startJob(job);
 
   if (jobs.length === 0) return null;
 
@@ -107,6 +116,11 @@ export function ResumableUploadList({ jobs, onJobFinished, onJobRemoved }: Props
                 {st.status === "paused" && (
                   <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { st.handle?.resume(); setStates((s) => ({ ...s, [job.id]: { ...st, status: "uploading" } })); }}>
                     <Play className="h-3 w-3" />
+                  </Button>
+                )}
+                {st.status === "error" && (
+                  <Button variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" onClick={() => retryJob(job)}>
+                    <RotateCcw className="h-3 w-3" /> Retry
                   </Button>
                 )}
                 {(st.status === "done" || st.status === "error") && (
