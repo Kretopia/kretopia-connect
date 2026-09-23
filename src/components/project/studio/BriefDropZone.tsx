@@ -339,8 +339,19 @@ export const BriefDropZone = ({
       if (!me) throw new Error("Not signed in");
       const { brief, tasks, deliverables, runOfShow, suppliers, talent } = pendingElevation;
 
+      // Each write below used to swallow its own error silently (a
+      // .then(() => {}, () => {}) no-op), then this function ALWAYS showed
+      // "Added to your Project" regardless of what actually landed --
+      // exactly the CEO's "it didn't work lol" report: a false success
+      // toast while, say, an RLS-blocked insert dropped everything in that
+      // category on the floor with zero indication. Tracking failures here
+      // doesn't change what's allowed to write (no RLS/schema touched) --
+      // it just stops lying about the outcome.
+      const failures: string[] = [];
+
       const briefText = [brief.summary, "", `Audience: ${brief.audience}`, `Tone: ${brief.tone}`].filter(Boolean).join("\n");
-      await supabase.from("projects").update({ description: briefText.slice(0, 4000) }).eq("id", projectId);
+      const { error: descErr } = await supabase.from("projects").update({ description: briefText.slice(0, 4000) }).eq("id", projectId);
+      if (descErr) failures.push("brief summary");
 
       if (tasks.length) {
         const rows = tasks.filter((t) => t.title?.trim()).map((t) => ({
@@ -356,7 +367,10 @@ export const BriefDropZone = ({
             : null,
           labels: ["smart-brief"],
         }));
-        if (rows.length) await supabase.from("project_tasks").insert(rows as never).then(() => {}, () => {});
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("project_tasks").insert(rows as never);
+          if (insErr) failures.push("tasks");
+        }
       }
       if (deliverables.length) {
         const rows = deliverables.filter((d) => d.title?.trim()).map((d, i) => ({
@@ -373,7 +387,10 @@ export const BriefDropZone = ({
           assignee_id: d.suggested_assignee_id || null,
           moodboard: [] as never,
         }));
-        if (rows.length) await supabase.from("project_deliverables").insert(rows as never).then(() => {}, () => {});
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("project_deliverables").insert(rows as never);
+          if (insErr) failures.push("deliverables");
+        }
       }
       if (runOfShow.length) {
         const rows = runOfShow.filter((r) => r.segment_title?.trim()).map((r, i) => ({
@@ -385,7 +402,10 @@ export const BriefDropZone = ({
           notes: r.notes ?? null,
           position: i,
         }));
-        if (rows.length) await supabase.from("project_run_of_show").insert(rows as never).then(() => {}, () => {});
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("project_run_of_show").insert(rows as never);
+          if (insErr) failures.push("run of show");
+        }
       }
       if (suppliers.length) {
         const rows = suppliers.filter((s) => s.name?.trim()).map((s) => ({
@@ -396,7 +416,10 @@ export const BriefDropZone = ({
           notes: s.notes ?? null,
           status: "lead",
         }));
-        if (rows.length) await supabase.from("event_suppliers").insert(rows as never).then(() => {}, () => {});
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("event_suppliers").insert(rows as never);
+          if (insErr) failures.push("suppliers");
+        }
       }
       if (talent.length) {
         const rows = talent.filter((t) => t.name?.trim()).map((t) => ({
@@ -407,9 +430,12 @@ export const BriefDropZone = ({
           notes: t.notes ?? null,
           status: "invited",
         }));
-        if (rows.length) await supabase.from("event_talent").insert(rows as never).then(() => {}, () => {});
+        if (rows.length) {
+          const { error: insErr } = await supabase.from("event_talent").insert(rows as never);
+          if (insErr) failures.push("talent");
+        }
       }
-      await supabase.from("project_notes").insert({
+      const { error: noteErr } = await supabase.from("project_notes").insert({
         project_id: projectId,
         created_by: me,
         title: `Brief: ${brief.title}`,
@@ -418,12 +444,21 @@ export const BriefDropZone = ({
           `**Audience**\n${brief.audience}`,
           `**Tone**\n${brief.tone}`,
         ].filter(Boolean).join("\n\n"),
-      } as never).then(() => {}, () => {});
+      } as never);
+      if (noteErr) failures.push("brief note");
 
-      toast({
-        title: "Added to your Project",
-        description: `${tasks.length} tasks · ${deliverables.length} deliverables`,
-      });
+      if (failures.length) {
+        toast({
+          title: "Added with some gaps",
+          description: `Saved to your Project, but ${failures.join(", ")} didn't save — add them manually inside the room if needed.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Added to your Project",
+          description: `${tasks.length} tasks · ${deliverables.length} deliverables`,
+        });
+      }
       setPendingElevation(null);
       onIngested();
       // Only advance the queue on a real success -- on failure below,
@@ -493,28 +528,35 @@ export const BriefDropZone = ({
         hint: "User-typed thought dropped into the Studio.",
       });
       // Also drop it into the Pad so it's visible, not just in the Brain.
+      // filedToPad tracks whether this actually landed -- the toast below
+      // used to unconditionally claim "Filed to the Pad" even when this
+      // insert silently failed (another instance of the CEO's "it didn't
+      // work lol" report: a false success message with no real feedback).
+      let filedToPad = false;
       try {
         const { data: userRes } = await supabase.auth.getUser();
         const me = userRes?.user?.id;
         if (me) {
-          await supabase.from("project_notes").insert({
+          const { error: noteErr } = await supabase.from("project_notes").insert({
             project_id: projectId,
             created_by: me,
             title: trimmed.slice(0, 60),
             content: trimmed,
-          } as never).then(() => {}, () => {});
+          } as never);
+          filedToPad = !noteErr;
         }
-      } catch { /* noop */ }
+      } catch { /* noop -- filedToPad stays false */ }
       setSummary({
         fileName: "Thought",
         tasks: 0, deliverables: 0, runOfShow: 0, suppliers: 0, talent: 0,
         facts: brainRes.facts ?? 0,
         entities: brainRes.entities ?? 0,
       });
-      toast({
-        title: "Got it",
-        description: `Filed to the Pad · Brain +${brainRes.facts ?? 0} facts`,
-      });
+      toast(
+        filedToPad
+          ? { title: "Got it", description: `Filed to the Pad · Brain +${brainRes.facts ?? 0} facts` }
+          : { title: "Remembered, but not filed", description: `Brain +${brainRes.facts ?? 0} facts — couldn't add it to the Pad, try again from there.`, variant: "destructive" }
+      );
       onIngested();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Couldn't save thought";
