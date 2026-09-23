@@ -282,6 +282,8 @@ const ThriveDesk = () => {
             project={project}
             collaborators={collaborators}
             onCollaboratorsChanged={fetchProjectData}
+            tasks={tasks}
+            milestones={milestones}
             compact
           />
           <ProjectSettingsMenu

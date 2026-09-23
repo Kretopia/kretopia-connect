@@ -9,6 +9,7 @@ import {
   MessageSquare, CheckSquare, FolderOpen, LayoutGrid, CheckCircle2, Wallet,
   FileSignature, StickyNote, Image as ImageIcon, ListChecks, ClipboardList, Wand2,
   Clock, UserCheck, ArrowRightLeft, RotateCcw, Shield, ClipboardCheck,
+  CalendarClock,
   type LucideIcon,
 } from "lucide-react";
 
@@ -40,7 +41,9 @@ export type DeskTabKey =
   // new workflow-specific (built in turn 3)
   | "call_sheet" | "run_of_show" | "roll_call" | "split_sheet" | "exchange" | "revisions"
   // Brief Hub + Visual Deliverables Board
-  | "brief";
+  | "brief"
+  // CPO Studio spec's 5th primary destination (Phase 1 restructure)
+  | "schedule";
 
 export interface WorkspaceConfig {
   id: WorkspaceType;
@@ -73,7 +76,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Photo",
     description: "Editorial, commercial, lifestyle, lookbooks",
     icon: Camera,
-    tabs: ["today", "messages", "brief", "call_sheet", "roll_call", "tasks", "board", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "call_sheet", "roll_call", "tasks", "board", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Shot List",
     aiPersonaPrompt: "You're producing a photo shoot. Help with call sheets, shot lists, lighting notes, model/talent coordination, and post-production milestones.",
@@ -87,7 +90,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Video",
     description: "Music videos, short films, commercials, docs",
     icon: Video,
-    tabs: ["today", "messages", "brief", "call_sheet", "run_of_show", "roll_call", "tasks", "board", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "call_sheet", "run_of_show", "roll_call", "tasks", "board", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Shot List",
     aiPersonaPrompt: "You're producing a video/film shoot. Help with call sheets, shot lists, scene breakdowns, equipment lists, talent releases, and edit milestones.",
@@ -101,7 +104,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Music",
     description: "Singles, EPs, albums, productions, sessions",
     icon: Music,
-    tabs: ["today", "messages", "brief", "tasks", "split_sheet", "files", "assets", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "split_sheet", "files", "assets", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Session Plan",
     aiPersonaPrompt: "You're producing a music project. Help with session planning, split sheets, mix/master revision rounds, sync licensing, and release milestones.",
@@ -115,7 +118,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Fashion",
     description: "Runway, lookbook drops, stylist projects",
     icon: Shirt,
-    tabs: ["today", "messages", "brief", "run_of_show", "roll_call", "call_sheet", "tasks", "board", "assets", "files", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "run_of_show", "roll_call", "call_sheet", "tasks", "board", "assets", "files", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Looks & Tasks",
     aiPersonaPrompt: "You're producing a fashion show. Help with run of show, model lineup, looks/changes, backstage roll call, and vendor coordination.",
@@ -129,7 +132,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Event",
     description: "Concerts, launches, festivals, activations",
     icon: Calendar,
-    tabs: ["today", "messages", "brief", "run_of_show", "roll_call", "call_sheet", "tasks", "files", "approvals", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "run_of_show", "roll_call", "call_sheet", "tasks", "files", "approvals", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Production Tasks",
     aiPersonaPrompt: "You're producing a live event. Help with run of show, vendor lineup, roll call, load-in/out, and budget tracking.",
@@ -143,7 +146,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Art",
     description: "Illustration, design, painting, custom work",
     icon: Palette,
-    tabs: ["today", "messages", "brief", "tasks", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Stages",
     aiPersonaPrompt: "You're managing a commissioned art piece. Help with concept rounds, milestone deliverables, revision tracking, and final handoff.",
@@ -157,7 +160,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Brand",
     description: "Sponsored content, paid posts, UGC",
     icon: Megaphone,
-    tabs: ["today", "messages", "brief", "tasks", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "assets", "files", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Deliverables",
     aiPersonaPrompt: "You're managing a brand collaboration. Help with deliverable tracking, brief alignment, approval rounds, usage rights, and payment milestones.",
@@ -171,7 +174,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Gig",
     description: "Club nights, weddings, residencies, live sets",
     icon: Disc3,
-    tabs: ["today", "messages", "brief", "run_of_show", "tasks", "files", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "run_of_show", "tasks", "files", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Setlist & Tasks",
     aiPersonaPrompt: "You're managing a DJ/live performance gig. Help with setlist, tech rider, load-in time, payment terms, and rider requirements.",
@@ -185,7 +188,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Edit",
     description: "Photo retouch, video edit, audio mix",
     icon: Scissors,
-    tabs: ["today", "messages", "brief", "tasks", "files", "assets", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "files", "assets", "approvals", "revisions", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Edit Tasks",
     aiPersonaPrompt: "You're managing an editing job. Help with version control, revision rounds, raw asset organization, and final delivery.",
@@ -199,7 +202,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "Content",
     description: "Podcast, YouTube series, IG/TikTok content",
     icon: FileText,
-    tabs: ["today", "messages", "brief", "tasks", "board", "assets", "files", "approvals", "contracts", "finance", "notes", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "board", "assets", "files", "approvals", "contracts", "finance", "notes", "ai"],
     defaultTab: "today",
     tasksLabel: "Episodes & Tasks",
     aiPersonaPrompt: "You're producing a content series. Help with episode planning, content calendar, asset tracking, and publishing schedule.",
@@ -213,7 +216,7 @@ export const WORKSPACE_CONFIGS: Record<WorkspaceType, WorkspaceConfig> = {
     shortLabel: "General",
     description: "Custom — all tools available",
     icon: Briefcase,
-    tabs: ["today", "messages", "brief", "tasks", "files", "approvals", "assets", "board", "contracts", "scope", "finance", "notes", "templates", "ai"],
+    tabs: ["today", "messages", "brief", "schedule", "tasks", "files", "approvals", "assets", "board", "contracts", "scope", "finance", "notes", "templates", "ai"],
     defaultTab: "today",
     aiPersonaPrompt: "You're managing a creative project. Adapt to whatever the user is working on.",
     accent: "primary",
@@ -344,7 +347,12 @@ export function getDealConfig(dealType: string | null | undefined): DealConfig {
 export interface TabMeta { label: string; icon: LucideIcon; }
 
 export const TAB_META: Record<DeskTabKey, TabMeta> = {
-  today:        { label: "Today",       icon: Sparkles },
+  // Label only -- CPO Studio spec calls this zone "Overview" (current
+  // goal/scope, deliverables, decisions, money summary for ONE Work
+  // Room), distinct from the app-wide "Today" attention surface on Home.
+  // The internal key stays "today": ThriveDesk.tsx's isStudioRoom check,
+  // URL/event wiring and StudioRoom.tsx all key off this exact string.
+  today:        { label: "Overview",    icon: Sparkles },
   messages:     { label: "Chat",        icon: MessageSquare },
   tasks:        { label: "Tasks",       icon: CheckSquare },
   files:        { label: "Files",       icon: FolderOpen },
@@ -364,6 +372,7 @@ export const TAB_META: Record<DeskTabKey, TabMeta> = {
   exchange:     { label: "Exchange",    icon: ArrowRightLeft },
   revisions:    { label: "Revisions",   icon: RotateCcw },
   brief:        { label: "Brief",       icon: ClipboardCheck },
+  schedule:     { label: "Schedule",    icon: CalendarClock },
 };
 
 /** Get the workspace-specific label for a tab (e.g. "Shot List" instead of "Tasks"). */

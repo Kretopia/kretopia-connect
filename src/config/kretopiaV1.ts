@@ -74,4 +74,20 @@ export function isHidden(key: HiddenKey): boolean {
 export const PREVIEW_FLAGS = {
   enableHoloPreview: false,
   enableFitExplanationPreview: false,
+  /** Studio Work Room "Preview as client" (CPO Studio Blueprint + UX
+   *  Spec v0.1 §14-15) -- shows what a scoped client/guest would see
+   *  before a link is sent. Off until the underlying guest-access scope
+   *  is tightened: today's review/guest-token RPCs (list_share_link_files,
+   *  get_guest_files) return every project file regardless of what's
+   *  "shared," so a real preview would currently show more than the
+   *  client actually gets. See STUDIO_OVERHAUL findings -- flagged, not
+   *  guessed. */
+  enableClientPreview: false,
+  /** Studio versioned approvals (CPO spec §13) -- approval bound to an
+   *  exact deliverable version + reviewer + timestamp. The schema for
+   *  this (deliverable_versions) already exists but has zero real
+   *  callers; today's Approve action writes reviewed_by/reviewed_at onto
+   *  the mutable deliverable row itself, not a version id. Off until
+   *  that wiring is built and validated. */
+  enableVersionedApprovals: false,
 } as const;

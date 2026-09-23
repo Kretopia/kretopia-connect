@@ -17,6 +17,14 @@ import {
   type DeskTabKey,
 } from "@/lib/workspaceConfigs";
 
+// CPO Studio spec's 5 primary Work Room destinations, in spec order.
+// "today" carries the "Overview" label (see workspaceConfigs.ts) but
+// keeps its internal key -- ThriveDesk.tsx's isStudioRoom check and the
+// StudioRoom render path both key off the literal string "today".
+// Everything else in a workspace's tab list is a specialist tool
+// reachable from "More tools" rather than force-fit into one of the 5.
+const PRIMARY_TAB_ORDER: DeskTabKey[] = ["today", "tasks", "files", "messages", "schedule"];
+
 interface StudioToolBarProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
@@ -39,10 +47,16 @@ export function StudioToolBar({
   taskCount,
   messageCount,
 }: StudioToolBarProps) {
-  const tabs = resolveTabs(
+  const allTabs = resolveTabs(
     (workspaceType ?? "general") as WorkspaceType,
     (dealType ?? "paid") as DealType,
   ).filter((t) => t !== "today");
+
+  // "today"/Overview itself isn't listed (the "Studio" back-button above
+  // already returns there) -- the other 4 primaries plus a "More tools"
+  // group for every specialist tab this workspace type enables.
+  const primaryTabs = PRIMARY_TAB_ORDER.filter((t) => t !== "today" && allTabs.includes(t));
+  const moreTabs = allTabs.filter((t) => !PRIMARY_TAB_ORDER.includes(t));
 
   const meta = TAB_META[activeTab as DeskTabKey];
   const Icon = meta?.icon;
@@ -78,10 +92,10 @@ export function StudioToolBar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-56 max-h-[70vh] overflow-y-auto">
           <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Switch tool
+            Work Room
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {tabs.map((id) => {
+          {primaryTabs.map((id) => {
             const m = TAB_META[id];
             if (!m) return null;
             const ItemIcon = m.icon;
@@ -105,6 +119,32 @@ export function StudioToolBar({
               </DropdownMenuItem>
             );
           })}
+          {moreTabs.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                More tools
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {moreTabs.map((id) => {
+                const m = TAB_META[id];
+                if (!m) return null;
+                const ItemIcon = m.icon;
+                const label = getTabLabel(id, (workspaceType ?? "general") as WorkspaceType);
+                const active = activeTab === id;
+                return (
+                  <DropdownMenuItem
+                    key={id}
+                    onClick={() => onTabChange(id)}
+                    className={active ? "bg-accent text-accent-foreground" : ""}
+                  >
+                    <ItemIcon className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="flex-1">{label}</span>
+                  </DropdownMenuItem>
+                );
+              })}
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>

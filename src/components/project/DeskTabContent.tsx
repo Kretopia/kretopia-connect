@@ -5,6 +5,7 @@ import { VaultTab } from "@/components/project/studio/VaultTab";
 import { WorkflowShell } from "@/components/project/studio/WorkflowShell";
 import { StickyNote, Clapperboard, ListChecks, UserCheck, Music2, History } from "lucide-react";
 import { TasksWorkspace } from "@/components/project/tasks/TasksWorkspace";
+import { ScheduleWorkspace } from "@/components/project/schedule/ScheduleWorkspace";
 import { SimpleProjectChat } from "@/components/project/SimpleProjectChat";
 import { FinanceHub } from "@/components/project/finance/FinanceHub";
 import { AgentFinanceSummary } from "@/components/project/finance/AgentFinanceSummary";
@@ -109,6 +110,10 @@ export const DeskTabContent = memo(({
               currentUserId={currentUserId}
             />
           </>
+        )}
+
+        {activeTab === "schedule" && (
+          <ScheduleWorkspace tasks={tasks} milestones={milestones} onNavigateToTab={setTab} />
         )}
 
         {activeTab === "files" && (

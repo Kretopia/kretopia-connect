@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowLeft, UserPlus, X, Crown, Video, Loader2, ChevronDown, Link as LinkIcon } from "lucide-react";
+import { Users, ArrowLeft, UserPlus, X, Crown, Video, Loader2, ChevronDown, Link as LinkIcon, Clock, Sparkles } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { InviteCollaboratorDialog } from "./InviteCollaboratorDialog";
 import { VideoCallSheet } from "./VideoCallSheet";
@@ -50,9 +51,14 @@ interface SimpleProjectHeaderProps {
   }>;
   onCollaboratorsChanged?: () => void;
   compact?: boolean;
+  /** Next commitment indicator (CPO Studio spec, header zone) -- soonest
+   *  upcoming due task/milestone across the Work Room. Optional: omitting
+   *  these simply hides the indicator rather than guessing a date. */
+  tasks?: Array<{ id: string; title: string; due_date: string | null; status: string | null }>;
+  milestones?: Array<{ id: string; title: string; due_date: string | null; status: string | null }>;
 }
 
-export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsChanged, compact }: SimpleProjectHeaderProps) => {
+export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsChanged, compact, tasks, milestones }: SimpleProjectHeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -69,6 +75,14 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
   const [callId, setCallId] = useState<string | null>(null);
 
   const isOwner = user?.id === project.created_by;
+
+  // Next commitment (CPO Studio spec header requirement) -- the soonest
+  // upcoming due date across this Work Room's own tasks and milestones,
+  // undated/completed items excluded. Real data only: renders nothing
+  // when there's no genuine upcoming date, never a fabricated one.
+  const nextCommitment = [...(tasks ?? []), ...(milestones ?? [])]
+    .filter((item) => item.due_date && item.status !== "done" && item.status !== "completed" && item.status !== "paid")
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0];
 
   const myName =
     collaborators.find((c) => c.id === user?.id)?.full_name ||
@@ -331,16 +345,33 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
               <span className="text-[10px] text-muted-foreground capitalize truncate">
                 {project.status || "active"}
               </span>
+              {nextCommitment && (
+                <>
+                  <span className="text-muted-foreground/40">·</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground truncate" title={nextCommitment.title}>
+                    <Clock className="h-2.5 w-2.5 shrink-0" />
+                    {formatDistanceToNow(new Date(nextCommitment.due_date!), { addSuffix: true })}
+                  </span>
+                </>
+              )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex -space-x-1.5">
             {collaborators.slice(0, 3).map((collab) => (
-              <Avatar key={collab.id} className="h-6 w-6 border-2 border-background">
-                <AvatarImage src={collab.avatar_url || undefined} />
-                <AvatarFallback className="text-[9px]">{collab.full_name.charAt(0)}</AvatarFallback>
-              </Avatar>
+              <div key={collab.id} className="relative">
+                <Avatar className="h-6 w-6 border-2 border-background">
+                  <AvatarImage src={collab.avatar_url || undefined} />
+                  <AvatarFallback className="text-[9px]">{collab.full_name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                {collab.id === project.created_by && (
+                  <Crown
+                    className="absolute -top-1 -right-1 h-2.5 w-2.5 text-amber-400 fill-amber-400"
+                    aria-label="Owner"
+                  />
+                )}
+              </div>
             ))}
             {collaborators.length > 3 && (
               <div className="h-6 w-6 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-medium">
@@ -349,6 +380,17 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
             )}
           </div>
           <div className="flex items-center">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: { projectId: project.id } }))}
+              aria-label="Ask Kreto about this Work Room"
+              title="Ask Kreto"
+            >
+              <Sparkles className="h-4 w-4 text-primary" />
+            </Button>
             <Button
               type="button"
               size="icon"
