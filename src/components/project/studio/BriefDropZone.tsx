@@ -74,6 +74,12 @@ export const BriefDropZone = ({
   const [showLink, setShowLink] = useState(false);
   const [open, setOpen] = useState(false);
   const [draftText, setDraftText] = useState("");
+  // Multi-drop queue (CEO hotfix: Drop Zone only ever took one file). Files
+  // process one at a time via ingestFile below -- NOT in parallel -- because
+  // a text doc can stage a `pendingElevation` review gate that must be
+  // resolved (Add to Project / Discard) before the next file starts, so a
+  // second file's draft never silently overwrites the first's unreviewed one.
+  const [fileQueue, setFileQueue] = useState<File[]>([]);
 
   if (!isOwner) return null;
 
@@ -99,11 +105,32 @@ export const BriefDropZone = ({
     return data ?? { facts: 0, entities: 0 };
   };
 
+  // Advances the queue -- called once a file's outcome is either final
+  // (summary shown) or an error, never while a pendingElevation is still
+  // awaiting the user's own Add/Discard decision.
+  const processNextInQueue = () => {
+    setFileQueue((q) => {
+      if (q.length === 0) return q;
+      const [next, ...rest] = q;
+      void ingestFile(next);
+      return rest;
+    });
+  };
+
+  const ingestFiles = (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    const [first, ...rest] = list;
+    if (rest.length) setFileQueue((q) => [...q, ...rest]);
+    void ingestFile(first);
+  };
+
   const ingestFile = async (file: File | null) => {
     if (!file) return;
     setError(null);
     setSummary(null);
     setBusy(true);
+    let elevationStaged = false;
     try {
       if (file.size > 25 * 1024 * 1024) throw new Error("File too large (max 25 MB)");
 
@@ -270,6 +297,7 @@ export const BriefDropZone = ({
 
       if (stagedElevation) {
         // Hold the review gate instead of the auto-confirmed summary panel.
+        elevationStaged = true;
         setPendingElevation(stagedElevation);
         toast({ title: "Kreto drafted a brief", description: "Review it below before it's added to your Project." });
       } else {
@@ -292,6 +320,9 @@ export const BriefDropZone = ({
       toast({ title: "Drop failed", description: msg, variant: "destructive" });
     } finally {
       setBusy(false);
+      // Don't auto-advance while a review gate is up -- resumed from
+      // applyElevation/discardElevation once the user resolves it.
+      if (!elevationStaged) processNextInQueue();
     }
   };
 
@@ -395,6 +426,11 @@ export const BriefDropZone = ({
       });
       setPendingElevation(null);
       onIngested();
+      // Only advance the queue on a real success -- on failure below,
+      // pendingElevation stays set so the review gate stays up and the
+      // user can retry, instead of a queued file's busy screen silently
+      // covering it and then overwriting this still-unreviewed draft.
+      processNextInQueue();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Couldn't apply those changes";
       toast({ title: "Couldn't apply", description: msg, variant: "destructive" });
@@ -406,6 +442,7 @@ export const BriefDropZone = ({
   const discardElevation = () => {
     setPendingElevation(null);
     toast({ title: "Discarded", description: "Nothing was added to your Project." });
+    processNextInQueue();
   };
 
   const ingestLink = async () => {
@@ -495,6 +532,7 @@ export const BriefDropZone = ({
         <StudioComingAliveLoader />
         <p className="text-xs text-center text-muted-foreground mt-2">
           Reading and remembering for the Studio Brain…
+          {fileQueue.length > 0 && ` · ${fileQueue.length} more queued`}
         </p>
       </div>
     );
@@ -632,9 +670,13 @@ export const BriefDropZone = ({
           <input
             ref={inputRef}
             type="file"
+            multiple
             accept="application/pdf,text/*,image/*,audio/*,.csv,.tsv,.md,.json,.yaml,.yml,.docx"
             className="hidden"
-            onChange={(e) => ingestFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              if (e.target.files?.length) ingestFiles(e.target.files);
+              e.target.value = "";
+            }}
           />
         </div>
       </div>
@@ -660,10 +702,11 @@ export const BriefDropZone = ({
       <input
         ref={inputRef}
         type="file"
+        multiple
         accept="application/pdf,text/*,image/*,audio/*,.csv,.tsv,.md,.json,.yaml,.yml,.docx"
         className="hidden"
         onChange={(e) => {
-          ingestFile(e.target.files?.[0] ?? null);
+          if (e.target.files?.length) ingestFiles(e.target.files);
           if (inputRef.current) inputRef.current.value = "";
         }}
       />
@@ -684,8 +727,7 @@ export const BriefDropZone = ({
           onDrop={(e) => {
             e.preventDefault();
             setDragOver(false);
-            const f = e.dataTransfer.files?.[0];
-            if (f) ingestFile(f);
+            if (e.dataTransfer.files?.length) ingestFiles(e.dataTransfer.files);
           }}
           className={cn(
             "glass-surface relative w-full rounded-2xl p-4 cursor-pointer transition-all",
