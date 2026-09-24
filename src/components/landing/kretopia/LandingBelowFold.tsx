@@ -36,6 +36,16 @@ import matchImg       from "@/assets/kretopia/chapter-match.jpg";
 import studioImg      from "@/assets/kretopia/chapter-studio.jpg";
 import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
 
+// HD chapter videos — landing overhaul (24/09/2026). Served from /public
+// (not imported) since Vite would otherwise inline/hash large binaries
+// through the JS module graph; a plain absolute path is the standard way
+// to reference public/ assets. The matching *Img above is kept as each
+// <video>'s poster, so a slow connection still shows something on first
+// paint instead of a blank frame.
+const studioVideo = "/videos/kretovideo1.mp4";
+const soundstagesVideo = "/videos/kretovideo.mp4";
+const scoutVideo = "/videos/kretovideo2.mp4";
+
 export const LandingBelowFold = () => {
   return (
     <>
@@ -102,6 +112,8 @@ export const LandingBelowFold = () => {
         body="Scout searches gigs, briefs, castings, commissions and opportunities across the web, then surfaces the ones that fit your Passport. Kreto can help you prepare the next move. You stay in control."
         caption="Scout"
         image={scoutImg}
+        video={scoutVideo}
+        gradientTitle
         accent="#FF2DA1"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
@@ -151,6 +163,8 @@ export const LandingBelowFold = () => {
         body="Bring the brief, collaborators, tasks, files, milestones, communication and payments together around the work."
         caption="Studio"
         image={studioImg}
+        video={studioVideo}
+        gradientTitle
         accent="#FF2DA1"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
@@ -181,6 +195,8 @@ export const LandingBelowFold = () => {
         body="Meet collaborators, join live conversations, take part in SoundStages, industry sessions, auditions and creative events built around real connection and opportunity. Online when it works. In real life when it matters."
         caption="Community"
         image={soundstagesImg}
+        video={soundstagesVideo}
+        gradientTitle
         accent="#FF2DA1"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"

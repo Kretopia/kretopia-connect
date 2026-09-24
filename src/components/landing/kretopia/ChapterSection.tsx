@@ -5,7 +5,7 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
-import type { ComponentType } from "react";
+import { useEffect, useRef, type ComponentType } from "react";
 import type { TutorialStep } from "./FeatureTutorial";
 import { FeatureTutorialPanel } from "./FeatureTutorialPanel";
 import { KretopiaFeatureTutorial } from "./KretopiaFeatureTutorial";
@@ -21,6 +21,14 @@ export interface ChapterProps {
   body: string;
   caption: string;
   image: string;
+  /** Optional HD video, same frame/aspect as the image -- the image is
+   *  kept as the <video>'s poster (first paint + graceful fallback) and
+   *  as the alt experience with reduced motion. Autoplays muted/looped. */
+  video?: string;
+  /** Landing overhaul: gradient is intentionally selective, one title per
+   *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
+   *  omit (the default) to keep this title plain white like the rest. */
+  gradientTitle?: boolean;
   accent: string;       // hex
   href: string;
   reverse?: boolean;    // flip layout
@@ -53,11 +61,42 @@ export interface ChapterProps {
 }
 
 export const ChapterSection = ({
-  index, kicker, title, body, caption, image, accent, href, reverse, id, tutorialSteps, tutorialVisual,
-  ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant,
+  index, kicker, title, body, caption, image, video, accent, href, reverse, id, tutorialSteps, tutorialVisual,
+  ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
 }: ChapterProps) => {
   const reducedMotion = useReducedMotion();
   const sectionId = (id ?? kicker.toLowerCase()) as LandingSectionId;
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Autoplay needs two real fixes beyond the `autoplay` attribute alone:
+  // (1) React sets `muted` as a JS property, not an HTML attribute
+  // (github.com/facebook/react/issues/10389) -- some autoplay-policy
+  // checks look for the attribute itself. (2) Chrome pauses an
+  // autoplaying video the moment it scrolls off-screen "to save power",
+  // but does NOT resume it automatically when it scrolls back into view
+  // -- that resume has to be driven explicitly, same IntersectionObserver
+  // pattern HoloCard.tsx already uses for its own ambient animation.
+  // Rejections are swallowed throughout: blocked autoplay just leaves the
+  // poster frame showing, never a broken page.
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!video || !el) return;
+    el.setAttribute("muted", "");
+    el.muted = true;
+    if (typeof IntersectionObserver === "undefined") {
+      el.play().catch(() => {});
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) el.play().catch(() => {});
+        else el.pause();
+      },
+      { threshold: 0.25 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [video]);
   return (
     <section
       id={id}
@@ -76,14 +115,29 @@ export const ChapterSection = ({
             className="lg:col-span-7 relative"
           >
             <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
-              <img
-                src={image}
-                alt={caption}
-                width={1536}
-                height={1920}
-                loading="lazy"
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              {video ? (
+                <video
+                  ref={videoRef}
+                  src={video}
+                  poster={image}
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  aria-label={caption}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={image}
+                  alt={caption}
+                  width={1536}
+                  height={1920}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
               {/* grain */}
               <div
                 aria-hidden
@@ -148,9 +202,11 @@ export const ChapterSection = ({
               </span>
             </div>
 
-            <h2 className="landing-h2 landing-glow">
+            <h2 className={`landing-h2 landing-glow${gradientTitle ? " k-gradient-title" : ""}`}>
               {title}
-              <span className="pink-glow-breathe" style={{ color: accent }}>.</span>
+              {!gradientTitle && (
+                <span className="pink-glow-breathe" style={{ color: accent }}>.</span>
+              )}
             </h2>
 
             <p className="landing-sub mt-7 max-w-md">
