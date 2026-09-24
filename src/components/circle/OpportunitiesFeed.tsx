@@ -17,7 +17,7 @@ import { computeOpportunityMatch, type ViewerProfileForMatch } from "@/lib/oppor
 import { 
   Briefcase, Handshake, ArrowRightLeft,
   Plus, Sparkles, Zap, Target, GraduationCap, X,
-  Search, MapPin, SlidersHorizontal, DollarSign,
+  Search, MapPin, SlidersHorizontal, DollarSign, Calendar,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useNavigate } from "react-router-dom";
@@ -80,6 +80,7 @@ export const OpportunitiesFeed = () => {
   const [postDialogOpen, setPostDialogOpen] = useState(false);
   const [locationFilter, setLocationFilter] = useState("all");
   const [compensationFilter, setCompensationFilter] = useState("all");
+  const [datePostedFilter, setDatePostedFilter] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [viewerProfile, setViewerProfile] = useState<ViewerProfileForMatch | null>(null);
 
@@ -102,10 +103,10 @@ export const OpportunitiesFeed = () => {
     return () => { cancelled = true; };
   }, [user]);
 
-  const activeFilterCount = [activeFilter !== "all", selectedSkill !== "all", locationFilter !== "all", compensationFilter !== "all"].filter(Boolean).length;
+  const activeFilterCount = [activeFilter !== "all", selectedSkill !== "all", locationFilter !== "all", compensationFilter !== "all", datePostedFilter !== "all"].filter(Boolean).length;
 
   const { data, isLoading: loading, refetch: fetchOpportunities } = useQuery({
-    queryKey: ["opportunities-feed", activeFilter, searchQuery, selectedSkill, locationFilter],
+    queryKey: ["opportunities-feed", activeFilter, searchQuery, selectedSkill, locationFilter, compensationFilter, datePostedFilter],
     queryFn: async () => {
       let query = supabase
         .from("opportunities")
@@ -132,6 +133,29 @@ export const OpportunitiesFeed = () => {
 
       if (locationFilter !== "all") {
         query = query.ilike("location", `%${locationFilter}%`);
+      }
+
+      // CEO overhaul: this filter's UI (Select + active badge + clear-all)
+      // already existed but was never actually applied to the query --
+      // picking "Paid Only" changed nothing about the results. compensation
+      // is free text (no structured paid/unpaid/barter column), so "barter"
+      // goes through the real `type` field; "volunteer" and "paid" use the
+      // most honest signal free text allows -- inclusive ilike matching for
+      // volunteer/unpaid phrasing, and "has a real compensation value and
+      // isn't a barter listing" for paid, rather than a fragile "$"-pattern
+      // guess that would silently hide gigs phrased differently.
+      if (compensationFilter === "barter") {
+        query = query.eq("type", "barter");
+      } else if (compensationFilter === "volunteer") {
+        query = query.or("compensation.ilike.%volunteer%,compensation.ilike.%unpaid%,compensation.is.null");
+      } else if (compensationFilter === "paid") {
+        query = query.not("compensation", "is", null).neq("type", "barter");
+      }
+
+      if (datePostedFilter !== "all") {
+        const hours = datePostedFilter === "24h" ? 24 : datePostedFilter === "7d" ? 24 * 7 : 24 * 30;
+        const since = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        query = query.gte("created_at", since);
       }
 
       const { data: rows, error } = await query;
@@ -314,6 +338,25 @@ export const OpportunitiesFeed = () => {
                 </Select>
               </div>
 
+              {/* Date Posted Filter */}
+              <div>
+                <label className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                  <Calendar className="h-3.5 w-3.5 text-primary" />
+                  Date posted
+                </label>
+                <Select value={datePostedFilter} onValueChange={setDatePostedFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Any time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Any time</SelectItem>
+                    <SelectItem value="24h">Last 24 hours</SelectItem>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -323,6 +366,7 @@ export const OpportunitiesFeed = () => {
                     setSelectedSkill("all");
                     setLocationFilter("all");
                     setCompensationFilter("all");
+                    setDatePostedFilter("all");
                   }}
                 >
                   Clear All
@@ -337,7 +381,7 @@ export const OpportunitiesFeed = () => {
       </div>
 
       {/* Active filter badges */}
-      {(searchQuery || activeFilter !== "all" || selectedSkill !== "all" || locationFilter !== "all" || compensationFilter !== "all") && (
+      {(searchQuery || activeFilter !== "all" || selectedSkill !== "all" || locationFilter !== "all" || compensationFilter !== "all" || datePostedFilter !== "all") && (
         <div className="flex gap-2 flex-wrap">
           {activeFilter !== "all" && (
             <Badge variant="secondary" className="gap-1">
@@ -369,6 +413,12 @@ export const OpportunitiesFeed = () => {
               <X className="h-3 w-3 cursor-pointer" onClick={() => setCompensationFilter("all")} />
             </Badge>
           )}
+          {datePostedFilter !== "all" && (
+            <Badge variant="secondary" className="gap-1">
+              {datePostedFilter === "24h" ? "Last 24 hours" : datePostedFilter === "7d" ? "Last 7 days" : "Last 30 days"}
+              <X className="h-3 w-3 cursor-pointer" onClick={() => setDatePostedFilter("all")} />
+            </Badge>
+          )}
         </div>
       )}
 
@@ -386,8 +436,8 @@ export const OpportunitiesFeed = () => {
 
       {/* Empty */}
       {!loading && opportunities.length === 0 && (() => {
-        const hasFilters = activeFilter !== "all" || !!searchQuery || selectedSkill !== "all" || locationFilter !== "all" || compensationFilter !== "all";
-        const clearAll = () => { setActiveFilter("all"); setSearchQuery(""); setSelectedSkill("all"); setLocationFilter("all"); setCompensationFilter("all"); };
+        const hasFilters = activeFilter !== "all" || !!searchQuery || selectedSkill !== "all" || locationFilter !== "all" || compensationFilter !== "all" || datePostedFilter !== "all";
+        const clearAll = () => { setActiveFilter("all"); setSearchQuery(""); setSelectedSkill("all"); setLocationFilter("all"); setCompensationFilter("all"); setDatePostedFilter("all"); };
         return (
           <EmptyState
             icon={hasFilters ? Search : Briefcase}
