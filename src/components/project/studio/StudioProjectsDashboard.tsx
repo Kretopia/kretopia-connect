@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNowStrict } from "date-fns";
+import { formatDistanceToNowStrict, format } from "date-fns";
 import {
-  Search, ChevronRight, AlertTriangle, FolderInput, Plus,
+  Search, AlertTriangle, FolderInput, Plus, Calendar, Users, Video, Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,8 @@ import { MoveToFolderSheet } from "./MoveToFolderSheet";
 import { StudioOverflowToggle } from "./StudioOverflowToggle";
 import { prioritizeProjects, defaultVisibleProjectCount } from "./studioHome.selectors";
 import type { StudioFolder } from "./studioHome.types";
+import { HoloCard } from "@/components/passport/HoloCard";
+import { WORKSPACE_CONFIGS, type WorkspaceType } from "@/lib/workspaceConfigs";
 
 type PayState = "paid" | "invoiced" | "unsent";
 type StatusFilter = "all" | "active" | "needs_invoice" | "awaiting_payment" | "delivered";
@@ -36,6 +38,10 @@ interface StudioProjectsDashboardProps {
    * an id missing from it is treated as NOT visible (fail closed), not as
    * visible by default. */
   moneyVisibleByProject?: Record<string, boolean>;
+  /** Accepted-collaborator count per project, for the card's "N people"
+   *  line. Missing entries render as no count (never fabricated as 0 vs
+   *  "unknown" -- see StudioProjectsDashboard's Holo Card body). */
+  participantsByProject?: Record<string, number>;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -58,6 +64,7 @@ export const StudioProjectsDashboard = ({
   invoicesByProject = {},
   canSeeMoney = true,
   moneyVisibleByProject,
+  participantsByProject = {},
   loading = false,
   error = null,
   onRetry,
@@ -267,58 +274,121 @@ export const StudioProjectsDashboard = ({
           </button>
         </div>
       ) : (
-        <ul id="studio-projects-list" className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+        <ul id="studio-projects-list" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {visibleRows.map((p) => {
             const pill = STATUS_PILL[p.status ?? "active"] ?? STATUS_PILL.planning;
             const state = pay(p.id);
+            const accent = moodAccent(p.mood);
+            const workspaceLabel = p.workspace_type
+              ? WORKSPACE_CONFIGS[p.workspace_type as WorkspaceType]?.label
+              : null;
+            const participants = participantsByProject[p.id] ?? 0;
             return (
-              <li key={p.id} className="group relative flex items-center gap-3 p-3 sm:p-4 hover:bg-accent/40">
-                <span
-                  aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-black text-black"
-                  style={{ background: moodAccent(p.mood) }}
-                >
-                  {monogram(p.title)}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => navigate(`/desk/${p.id}`)}
-                  className="min-w-0 flex-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-md"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-bold">{p.title}</span>
-                    <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold", pill.tone)}>
-                      {pill.label}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                    {p.client_name || p.description || "No client set"}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                    <span>Updated {formatDistanceToNowStrict(new Date(p.updated_at))} ago</span>
-                    {moneyVisible(p.id) && (
-                      <span className="inline-flex items-center gap-1.5">
-                        <span className={cn("h-1.5 w-1.5 rounded-full", PAY_DOT[state])} aria-hidden />
-                        {PAY_LABEL[state]}
-                      </span>
-                    )}
-                    <span className="font-semibold text-foreground/80">Next: {nextAction(p)}</span>
-                  </div>
-                </button>
-
-                {onMoveToFolder && folders.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 shrink-0"
-                    aria-label={`Move ${p.title} to a folder`}
-                    onClick={() => setMoveTarget(p)}
+              <li key={p.id} className="group relative">
+                <HoloCard className="h-full">
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/desk/${p.id}`)}
+                    className="block w-full bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                   >
-                    <FolderInput className="h-4 w-4" />
-                  </Button>
-                )}
-                <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                    <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                      {p.cover_url ? (
+                        <img
+                          src={p.cover_url}
+                          alt=""
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        // Placeholder for a Project without a cover -- existing
+                        // Projects predate the required-image rule, so this
+                        // fills the same visual slot rather than an empty gap.
+                        <div
+                          className="flex h-full w-full items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, ${accent}33, transparent)` }}
+                          aria-hidden
+                        >
+                          <span className="text-2xl font-black tracking-tight" style={{ color: accent }}>
+                            {monogram(p.title)}
+                          </span>
+                        </div>
+                      )}
+                      <span className={cn("absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm", pill.tone)}>
+                        {pill.label}
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="truncate text-sm font-bold">{p.title}</span>
+                        {workspaceLabel && (
+                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {workspaceLabel}
+                          </span>
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {p.client_name || p.description || "No client set"}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                        <span>Updated {formatDistanceToNowStrict(new Date(p.updated_at))} ago</span>
+                        {p.deadline && (
+                          <span className="inline-flex items-center gap-1">
+                            <Calendar className="h-3 w-3" aria-hidden />
+                            {format(new Date(p.deadline), "MMM d")}
+                          </span>
+                        )}
+                        {participants > 0 && (
+                          <span className="inline-flex items-center gap-1">
+                            <Users className="h-3 w-3" aria-hidden />
+                            {participants}
+                          </span>
+                        )}
+                        {moneyVisible(p.id) && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <span className={cn("h-1.5 w-1.5 rounded-full", PAY_DOT[state])} aria-hidden />
+                            {PAY_LABEL[state]}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-semibold text-foreground/80">Next: {nextAction(p)}</p>
+                    </div>
+                  </button>
+
+                  <div className="flex items-center gap-1 border-t border-border/60 bg-card p-2">
+                    <Button variant="ghost" size="sm" className="h-7 flex-1 gap-1 text-xs" onClick={() => navigate(`/desk/${p.id}`)}>
+                      Open
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 flex-1 gap-1 text-xs"
+                      onClick={() => navigate(`/desk/${p.id}?joinCall=1`)}
+                    >
+                      <Video className="h-3 w-3" aria-hidden /> Call
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 flex-1 gap-1 text-xs"
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: { projectId: p.id } }))
+                      }
+                    >
+                      <Sparkles className="h-3 w-3" aria-hidden /> Ask Kreto
+                    </Button>
+                    {onMoveToFolder && folders.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0"
+                        aria-label={`Move ${p.title} to a folder`}
+                        onClick={() => setMoveTarget(p)}
+                      >
+                        <FolderInput className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                </HoloCard>
               </li>
             );
           })}

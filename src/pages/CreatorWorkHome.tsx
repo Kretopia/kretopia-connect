@@ -55,6 +55,10 @@ export const CreatorWorkHome = () => {
   const [recentCollaborators, setRecentCollaborators] = useState<
     { id: string; full_name: string; avatar_url: string | null; role: string | null }[]
   >([]);
+  // Per-project accepted-collaborator count for the Holo Cards' "N people"
+  // line. A single tally query over every visible project id -- same shape
+  // as invoicesByProject just above -- rather than one RPC call per card.
+  const [participantsByProject, setParticipantsByProject] = useState<Record<string, number>>({});
 
   const fetchFolders = async () => {
     if (!user) return;
@@ -174,6 +178,26 @@ export const CreatorWorkHome = () => {
       if (cancelled) return;
       const checked = Object.fromEntries(results);
       setMoneyVisibleByProject({ ...owned, ...checked });
+    })();
+    return () => { cancelled = true; };
+  }, [user, projects]);
+
+  useEffect(() => {
+    if (!user || projects.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      const ids = projects.map((p) => p.id);
+      const { data } = await supabase
+        .from("project_collaborators")
+        .select("project_id")
+        .in("project_id", ids)
+        .eq("status", "accepted");
+      if (cancelled) return;
+      const counts: Record<string, number> = {};
+      for (const row of data || []) {
+        counts[row.project_id] = (counts[row.project_id] ?? 0) + 1;
+      }
+      setParticipantsByProject(counts);
     })();
     return () => { cancelled = true; };
   }, [user, projects]);
@@ -322,6 +346,7 @@ export const CreatorWorkHome = () => {
               projects={(hasFolders ? unfiledProjects : projects) as any}
               invoicesByProject={invoicesByProject}
               moneyVisibleByProject={moneyVisibleByProject}
+              participantsByProject={participantsByProject}
               onCreate={openCreateProject}
               folders={folders}
               onMoveToFolder={moveProject}

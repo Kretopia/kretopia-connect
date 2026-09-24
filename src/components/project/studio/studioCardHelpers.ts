@@ -28,6 +28,8 @@ export interface StudioProject {
   description?: string | null;
   pinned_stage?: string | null;
   studio_folder_id?: string | null;
+  workspace_type?: string | null;
+  deadline?: string | null;
   updated_at: string;
 }
 
