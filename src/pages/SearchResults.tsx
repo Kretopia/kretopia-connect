@@ -109,14 +109,14 @@ export default function SearchResults() {
   const hasResults = creators.length + credits.length + gigs.length > 0;
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <SEO
         title={q ? `"${q}" — Search — Kretopia` : "Search — Kretopia"}
         description="Search creators, credits and opportunities on Kretopia."
       />
       <SearchV2 initialQuery={q} />
 
-      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="relative z-0 mx-auto max-w-5xl bg-background px-4 py-10 sm:px-6 lg:px-8">
         {q.length < 2 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             Search creators, credits and opportunities across Kretopia.

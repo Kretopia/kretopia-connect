@@ -19,6 +19,8 @@ interface FeaturePageHeaderProps {
   oneLine?: boolean;
   /** Tighter top padding -- see CinematicHeaderPlate's own doc. Default false. */
   compact?: boolean;
+  /** Allow interactive footer content such as search results to extend over the page below. */
+  allowOverflow?: boolean;
 }
 
 /**
@@ -31,10 +33,10 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = true, compact = false }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = true, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
   return (
     <div
-      className="relative overflow-hidden pt-[env(safe-area-inset-top)]"
+      className={`relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
       {/* aurora — same plate as the landing chapters / EditorialPageHero */}
