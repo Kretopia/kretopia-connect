@@ -22,6 +22,7 @@ import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { SmartWidget } from "@/components/ui/smart-widget";
+import { HoloCard } from "@/components/passport/HoloCard";
 
 interface ScoutedGig {
   id: string;
@@ -308,14 +309,19 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
 
   const renderGigCard = (g: ScoutedGig) => {
     const Icon = SOURCE_ICON[g.source] || Globe;
+    // CEO overhaul: Holo Card treatment (same 3D tilt/sheen wrapper as
+    // PassportHero/Passport Directory), around this card's existing
+    // content/logic unchanged -- it already had a real HD image, fit
+    // score and "why this fits you" reasoning, just no HoloCard wrapper.
     return (
+      <HoloCard className="h-full">
       <div
         onClick={() => openDetail(g)}
         role="button"
         tabIndex={0}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(g); } }}
         aria-label={`View brief for ${g.title}`}
-        className="group relative h-full flex flex-col rounded-2xl overflow-hidden border border-border bg-card cursor-pointer transition-all hover:border-energy/40 hover:shadow-2xl hover:shadow-energy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
+        className="group relative h-full flex flex-col rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
       >
         <div className="relative aspect-[16/9] overflow-hidden shrink-0">
           {g.image_url ? (
@@ -385,6 +391,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           </div>
         </div>
       </div>
+      </HoloCard>
     );
   };
 
@@ -484,13 +491,14 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         <>
         {/* One strongest opportunity first — gigs are already ordered by fit_score desc. */}
         {gigs[0] && (
+          <HoloCard>
           <div
             onClick={() => openDetail(gigs[0])}
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(gigs[0]); } }}
             aria-label={`View brief for ${gigs[0].title}, your strongest match`}
-            className="group relative rounded-2xl overflow-hidden border border-energy/30 bg-card cursor-pointer transition-all hover:border-energy/50 hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
+            className="group relative rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
           >
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-64 shrink-0 overflow-hidden">
               {gigs[0].image_url ? (
@@ -551,6 +559,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               </div>
             </div>
           </div>
+          </HoloCard>
         )}
 
         {/* Everything else — carousel, not a card wall. */}

@@ -5,6 +5,7 @@ import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards"
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
+import { DiscoverCreativesRail } from "@/components/opportunity/DiscoverCreativesRail";
 import { Radar, Store, UserSearch, ArrowRight, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -14,10 +15,11 @@ import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 
 type Tab = "scouted" | "shortlist" | "marketplace";
 
+// CEO overhaul: "Open Gigs" first (was third) -- the brief's explicit ask.
 const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
+  { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
   { id: "scouted", label: "For You", icon: Radar, hint: "Real gigs scouted from across the web" },
   { id: "shortlist", label: "Shortlist", icon: Bookmark, hint: "Gigs you saved for later" },
-  { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
 ];
 
 /**
@@ -27,7 +29,7 @@ const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
 const Scout = () => {
   const [params, setParams] = useSearchParams();
   const requestedTab = params.get("tab");
-  const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "scouted";
+  const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "marketplace";
   const contextQuery = params.get("q") || "";
   const [tab, setTab] = useState<Tab>(initial);
 
@@ -124,6 +126,10 @@ const Scout = () => {
         {tab === "scouted" && <ScoutedGigsSection />}
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
+        {/* People-discovery still lives primarily in /circle (Scout's own
+            header link above says so) -- this is a small cross-tab taste of
+            it, not a duplicate directory, and doesn't replace that link. */}
+        <DiscoverCreativesRail />
         <SurfaceProactiveCards surface="scout" className="px-0" />
         <KretoTip compact />
       </StudioFeatureShell>
