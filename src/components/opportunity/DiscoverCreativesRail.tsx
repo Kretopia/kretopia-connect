@@ -8,6 +8,7 @@ import { HoloCard } from "@/components/passport/HoloCard";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
 import { ShieldCheck, MapPin, Star, MessageCircle, Handshake } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.png";
 
 interface CreativeRow {
   user_id: string | null;
@@ -41,6 +42,12 @@ export function DiscoverCreativesRail() {
   const [creditsByUser, setCreditsByUser] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [messageTarget, setMessageTarget] = useState<CreativeRow | null>(null);
+  // Same fallback as Passport Directory's cards -- most Passports here have
+  // no cover_image_url yet, and the old fallback was a near-invisible
+  // gradient with no icon at all.
+  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
+  const markCoverBroken = (id: string) =>
+    setBrokenCoverIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
 
   useEffect(() => {
     let cancelled = false;
@@ -109,10 +116,18 @@ export function DiscoverCreativesRail() {
                     className="rounded-2xl bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal-teal))]"
                   >
                     <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-muted">
-                      {p.cover_image_url ? (
-                        <img src={p.cover_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      {p.cover_image_url && !brokenCoverIds.has(p.user_id!) ? (
+                        <img
+                          src={p.cover_image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={() => markCoverBroken(p.user_id!)}
+                        />
                       ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/15 to-transparent" />
+                        <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-transparent flex items-center justify-center">
+                          <img src={kretoConnector} alt="" className="h-16 w-16 object-contain opacity-90" />
+                        </div>
                       )}
                       {standing && (
                         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--signal-teal))] backdrop-blur-sm">

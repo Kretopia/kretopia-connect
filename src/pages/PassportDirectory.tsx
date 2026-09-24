@@ -13,6 +13,7 @@ import { StaggerHeading } from "@/components/typography/StaggerReveal";
 import { APP_URL } from "@/lib/constants";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
+import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.png";
 
 interface PassportRow {
   user_id: string | null;
@@ -46,6 +47,14 @@ const PassportDirectory = () => {
   const [creditsByUser, setCreditsByUser] = useState<Record<string, number>>({});
   const [cosignsByUser, setCosignsByUser] = useState<Record<string, number>>({});
   const [messageTarget, setMessageTarget] = useState<PassportRow | null>(null);
+  // Most Passports here have no cover_image_url set yet -- the old fallback
+  // (a bare 15%-opacity gradient div, no icon) read as an almost-invisible
+  // black box against the dark theme, not a real placeholder. Every card
+  // now gets a real picture: the real cover if it loads, a branded Kreto
+  // illustration if there isn't one or it fails to load.
+  const [brokenCoverIds, setBrokenCoverIds] = useState<Set<string>>(new Set());
+  const markCoverBroken = (id: string) =>
+    setBrokenCoverIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
 
   useEffect(() => {
     let cancelled = false;
@@ -236,10 +245,18 @@ const PassportDirectory = () => {
                       className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--signal-teal))]"
                     >
                       <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-muted">
-                        {p.cover_image_url ? (
-                          <img src={p.cover_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                        {p.cover_image_url && !brokenCoverIds.has(p.user_id) ? (
+                          <img
+                            src={p.cover_image_url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                            loading="lazy"
+                            onError={() => markCoverBroken(p.user_id!)}
+                          />
                         ) : (
-                          <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/15 to-transparent" />
+                          <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-transparent flex items-center justify-center">
+                            <img src={kretoConnector} alt="" className="h-20 w-20 object-contain opacity-90" />
+                          </div>
                         )}
                         {standing && (
                           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--signal-teal))] backdrop-blur-sm">
