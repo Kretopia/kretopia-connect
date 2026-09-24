@@ -64,6 +64,14 @@ vi.mock("@/integrations/supabase/client", () => ({
     // passed -- without it, every event fired during these tests (e.g. the
     // real new_room_opened call on mount) logs a swallowed-but-noisy error.
     auth: { getUser: () => Promise.resolve({ data: { user: { id: "test-user-id" } }, error: null }) },
+    // Cover image upload (CEO hotfix: required before Create) -- a fixed
+    // public URL is enough here, the actual storage path isn't asserted.
+    storage: {
+      from: () => ({
+        upload: vi.fn(() => Promise.resolve({ data: {}, error: null })),
+        getPublicUrl: () => ({ data: { publicUrl: "https://example.com/cover.jpg" } }),
+      }),
+    },
   },
 }));
 
@@ -143,6 +151,16 @@ function renderModal(props: Partial<React.ComponentProps<typeof VoiceFirstCreate
     </MemoryRouter>,
   );
   return { ...utils, onOpenChange, onCreated };
+}
+
+// Cover image is required before Create (CEO hotfix) -- every test that
+// reaches the review screen and needs to actually confirm creation must
+// drive this real input first, same as a user would.
+async function uploadCoverImage() {
+  const input = screen.getByLabelText("Upload a cover image");
+  const file = new File(["fake-image"], "cover.jpg", { type: "image/jpeg" });
+  fireEvent.change(input, { target: { files: [file] } });
+  await screen.findByText("Tap to change");
 }
 
 describe("VoiceFirstCreateModal", () => {
@@ -236,6 +254,7 @@ describe("VoiceFirstCreateModal", () => {
     // The "Money involved?" gate is required -- both Create buttons stay
     // disabled until it's answered, same as in the real app.
     fireEvent.click(screen.getByText("No — personal/passion"));
+    await uploadCoverImage();
 
     const createButton = screen.getByText("Create all & open");
 
@@ -387,6 +406,7 @@ describe("VoiceFirstCreateModal", () => {
       fireEvent.click(screen.getByLabelText("Send to Kreto"));
       await screen.findByText("Kreto structured your project — review and edit");
       fireEvent.click(screen.getByText("No — personal/passion"));
+      await uploadCoverImage();
       fireEvent.click(screen.getByText("Create all & open"));
 
       // NewRoomLaunchScreen (the "your room is live" celebration) shows

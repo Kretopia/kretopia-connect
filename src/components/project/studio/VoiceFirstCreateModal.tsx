@@ -146,6 +146,13 @@ export const VoiceFirstCreateModal = ({
   const [paymentsInvolvedInferred, setPaymentsInvolvedInferred] = useState(false);
   const [trackAsCredit, setTrackAsCredit] = useState<boolean>(false);
   const [workspaceType, setWorkspaceType] = useState<WorkspaceType>("general");
+  // CEO hotfix (24/09/2026): "every project must have an image on Studio
+  // view" -- required before Create, enforced in createProject() below.
+  // uploadingCover separately gates the Create button so a still-in-flight
+  // upload can't race an early click into saving a null cover_url.
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [rawInput, setRawInput] = useState<string>("");
   const [deadline, setDeadline] = useState<string>("");
   // Tracks whether the current deadline value is derived from the
@@ -187,6 +194,7 @@ export const VoiceFirstCreateModal = ({
   const recordingCancelledRef = useRef(false);
   const tickRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const coverInputRef = useRef<HTMLInputElement | null>(null);
 
   // A review-step draft (title/summary/type/deadline/budget/payments/credit)
   // survives a refresh or an accidental close — nothing here is saved to the
@@ -214,6 +222,9 @@ export const VoiceFirstCreateModal = ({
       setPaymentsInvolvedInferred(false);
       setTrackAsCredit(false);
       setWorkspaceType("general");
+      setCoverUrl(null);
+      setUploadingCover(false);
+      setCoverError(null);
       setRawInput("");
       setDeadline("");
       setDeadlineInferred(false);
@@ -227,6 +238,7 @@ export const VoiceFirstCreateModal = ({
       setCreationError(null);
       setDraftDegraded(false);
       setCreatedProject(null);
+      launchedRef.current = false;
       hydratedRef.current = false;
       return;
     }
@@ -240,6 +252,7 @@ export const VoiceFirstCreateModal = ({
           setBrief(draft.brief);
           setSelected(new Set(draft.selected ?? []));
           setWorkspaceType(draft.workspaceType ?? "general");
+          setCoverUrl(draft.coverUrl ?? null);
           setPaymentsInvolved(draft.paymentsInvolved ?? null);
           setTrackAsCredit(!!draft.trackAsCredit);
           setDeadline(draft.deadline ?? "");
@@ -259,11 +272,11 @@ export const VoiceFirstCreateModal = ({
     try {
       sessionStorage.setItem(draftKey, JSON.stringify({
         ts: Date.now(),
-        brief, selected: Array.from(selected), workspaceType,
+        brief, selected: Array.from(selected), workspaceType, coverUrl,
         paymentsInvolved, trackAsCredit, deadline, budget,
       }));
     } catch { /* sessionStorage unavailable — draft just won't persist */ }
-  }, [draftKey, mode, brief, selected, workspaceType, paymentsInvolved, trackAsCredit, deadline, budget]);
+  }, [draftKey, mode, brief, selected, workspaceType, coverUrl, paymentsInvolved, trackAsCredit, deadline, budget]);
 
   const clearDraft = useCallback(() => {
     if (draftKey) { try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ } }
@@ -338,6 +351,43 @@ export const VoiceFirstCreateModal = ({
     if (guess !== null) {
       setBudget(guess);
       setBudgetInferred(true);
+    }
+  };
+
+  /** Same storage bucket + compress-before-upload pattern already proven
+   *  for Circle cover images (CirclesTab.tsx's handleCoverUpload) --
+   *  reused rather than a new bucket or upload path. */
+  const handleCoverUpload = async (file: File) => {
+    if (!user) return;
+    setCoverError(null);
+    if (file.size > 8 * 1024 * 1024) {
+      setCoverError("Image too large — try one under 8MB.");
+      return;
+    }
+    setUploadingCover(true);
+    try {
+      const { base64, mime } = await compressImage(file);
+      const ext = mime.split("/")[1] || "jpg";
+      const path = `project-covers/${user.id}/${Date.now()}.${ext}`;
+      // Decode base64 -> Blob directly (atob + Uint8Array) instead of
+      // fetch("data:...") -- fetch support for the data: scheme isn't
+      // consistent across every runtime this code can execute in.
+      const bytes = atob(base64);
+      const buffer = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) buffer[i] = bytes.charCodeAt(i);
+      const blob = new Blob([buffer], { type: mime });
+      const { error } = await supabase.storage.from("media").upload(path, blob, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: mime,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("media").getPublicUrl(path);
+      setCoverUrl(data.publicUrl);
+    } catch (err: any) {
+      setCoverError(err?.message || "Upload failed — try again.");
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -620,6 +670,13 @@ export const VoiceFirstCreateModal = ({
   const createProject = async (mode: "all" | "selected" | "none" = "all") => {
     if (!user || !brief) return;
     if (creatingRef.current) return;
+    // CEO hotfix: "every project must have an image on Studio view" --
+    // blocks here, not just at the button's disabled state, since a few
+    // callers can reach createProject() directly (e.g. Enter-to-submit).
+    if (!coverUrl) {
+      setCoverError("Please add an image for your project.");
+      return;
+    }
     creatingRef.current = true;
     setCreationError(null);
     analytics.newRoomProjectConfirmed(workspaceType);
@@ -633,6 +690,7 @@ export const VoiceFirstCreateModal = ({
           created_by: user.id,
           status: "active",
           workspace_type: workspaceType,
+          cover_url: coverUrl,
           deal_type: paymentsInvolved ? "paid" : "personal",
           track_as_credit: trackAsCredit,
           deadline: deadline || null,
@@ -730,10 +788,15 @@ export const VoiceFirstCreateModal = ({
   };
 
   /** The only exit from the celebration screen -- clicking "Open the room",
-   * dismissing the dialog (Escape/overlay click), all funnel to the same
-   * real navigation, since the project already exists at this point either way. */
+   * dismissing the dialog (Escape/overlay click), or the auto-advance timer
+   * below all funnel to the same real navigation, since the project already
+   * exists at this point either way. launchedRef guards against the timer
+   * and a manual click both firing (e.g. user clicks right as the timer
+   * elapses) -- navigate()/onCreated() must only ever run once per room. */
+  const launchedRef = useRef(false);
   const handleLaunchRoom = () => {
-    if (!createdProject) return;
+    if (!createdProject || launchedRef.current) return;
+    launchedRef.current = true;
     const id = createdProject.id;
     onCreated();
     onOpenChange(false);
@@ -744,6 +807,18 @@ export const VoiceFirstCreateModal = ({
     // succeeded.
     navigate(`/desk/${id}`, { state: { kretoJustCreated: true } });
   };
+
+  // CEO hotfix (24/09/2026): "after creating a project, should land
+  // directly on that project page" -- the celebration screen itself stays
+  // (it's the one place the room's title/task count actually register
+  // before the page swaps), but no longer waits on a click. 1.5s is enough
+  // to read "Studio room ready" without feeling like a dead click target.
+  useEffect(() => {
+    if (!createdProject) return;
+    const t = window.setTimeout(() => handleLaunchRoom(), 1500);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdProject]);
 
   // This is a full-screen custom overlay, not a Radix Dialog, so Escape
   // handling, a focus trap and focus return -- all free with Dialog --
@@ -1280,6 +1355,53 @@ export const VoiceFirstCreateModal = ({
                 Project details
               </p>
 
+              {/* Cover image — required (CEO hotfix: every Project needs
+                  one, shown wherever the Studio surfaces it, e.g. the
+                  Projects Holo Cards). First in the panel since it now
+                  gates Create. */}
+              <div className="p-3 space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Cover image <span className="text-destructive">*</span>
+                </p>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/*"
+                  aria-label="Upload a cover image"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void handleCoverUpload(f);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  disabled={uploadingCover}
+                  className={cn(
+                    "flex items-center gap-3 w-full rounded-lg border-2 border-dashed p-2.5 text-left transition-colors",
+                    coverError ? "border-destructive/50" : "border-border hover:border-primary/40",
+                  )}
+                >
+                  <div className="h-14 w-14 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center">
+                    {uploadingCover ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : coverUrl ? (
+                      <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Upload className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {uploadingCover ? "Uploading…" : coverUrl ? "Tap to change" : "Add a cover image for this project"}
+                  </span>
+                </button>
+                {coverError && (
+                  <p className="text-xs text-destructive">{coverError}</p>
+                )}
+              </div>
+
               {/* Workspace type — drives which Studio modules mount */}
               <div className="p-3 space-y-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -1461,7 +1583,7 @@ export const VoiceFirstCreateModal = ({
                 variant="outline"
                 size="sm"
                 onClick={() => createProject("selected")}
-                disabled={creating || !brief.project.title.trim() || selected.size === 0 || paymentsInvolved === null}
+                disabled={creating || uploadingCover || !coverUrl || !brief.project.title.trim() || selected.size === 0 || paymentsInvolved === null}
                 className="gap-1"
               >
                 Create {selected.size} selected
@@ -1477,7 +1599,7 @@ export const VoiceFirstCreateModal = ({
                 standalone card slot, not a shared flex bar. */}
             <CtaButton
               onClick={() => createProject(brief.deliverables?.length ? "all" : "none")}
-              disabled={creating || !brief.project.title.trim() || paymentsInvolved === null}
+              disabled={creating || uploadingCover || !coverUrl || !brief.project.title.trim() || paymentsInvolved === null}
               className="w-auto gap-1.5 px-6"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
