@@ -1,16 +1,18 @@
 import { useEffect, useState, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { BrandLoader } from "@/components/brand/BrandDots";
-import { ShieldCheck, MapPin, Search as SearchIcon, Fingerprint } from "lucide-react";
+import { ShieldCheck, MapPin, Search as SearchIcon, Fingerprint, Star, Users2, MessageCircle } from "lucide-react";
 import { BRAND } from "@/lib/brandLexicon";
 import { StaggerHeading } from "@/components/typography/StaggerReveal";
 import { APP_URL } from "@/lib/constants";
+import { HoloCard } from "@/components/passport/HoloCard";
+import { DirectMessageDialog } from "@/components/DirectMessageDialog";
 
 interface PassportRow {
   user_id: string | null;
@@ -18,49 +20,107 @@ interface PassportRow {
   full_name: string | null;
   role: string | null;
   avatar_url: string | null;
+  cover_image_url: string | null;
   location: string | null;
   verification_tier: string | null;
   level: number | null;
 }
 
+const STANDING_LABEL: Record<string, string> = {
+  elite: "Elite Verified",
+  industry: "Industry Verified",
+  verified: "Verified",
+};
+
 const passportIdFor = (userId: string) =>
   `THR-${userId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
 
 const PassportDirectory = () => {
+  const navigate = useNavigate();
   const [rows, setRows] = useState<PassportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [professionFilter, setProfessionFilter] = useState<string>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
+  const [standingFilter, setStandingFilter] = useState<string>("all");
+  const [creditsByUser, setCreditsByUser] = useState<Record<string, number>>({});
+  const [cosignsByUser, setCosignsByUser] = useState<Record<string, number>>({});
+  const [messageTarget, setMessageTarget] = useState<PassportRow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("public_profiles_safe")
-        .select("user_id,username,full_name,role,avatar_url,location,verification_tier,level")
+        .select("user_id,username,full_name,role,avatar_url,cover_image_url,location,verification_tier,level")
         .not("username", "is", null)
         .order("level", { ascending: false, nullsFirst: false })
         .limit(120);
-      if (!cancelled) {
-        setRows((data as PassportRow[]) || []);
-        setLoading(false);
+      if (cancelled) return;
+      const list = (data as PassportRow[]) || [];
+      setRows(list);
+      setLoading(false);
+
+      // Real credits + co-sign counts for the Holo Cards -- one tally query
+      // each over every visible user_id, same batched-count pattern used
+      // for StudioProjectsDashboard's participantsByProject, rather than a
+      // per-card query for up to 120 cards.
+      const ids = list.map((r) => r.user_id).filter((id): id is string => !!id);
+      if (ids.length === 0) return;
+      const [creditsRes, reviewsRes] = await Promise.all([
+        supabase.from("credits").select("user_id").in("user_id", ids),
+        supabase.from("company_reviews").select("company_id").in("company_id", ids).eq("status", "approved"),
+      ]);
+      if (cancelled) return;
+      const creditsTally: Record<string, number> = {};
+      for (const row of creditsRes.data || []) {
+        creditsTally[row.user_id] = (creditsTally[row.user_id] ?? 0) + 1;
       }
+      setCreditsByUser(creditsTally);
+      const cosignsTally: Record<string, number> = {};
+      for (const row of reviewsRes.data || []) {
+        cosignsTally[row.company_id] = (cosignsTally[row.company_id] ?? 0) + 1;
+      }
+      setCosignsByUser(cosignsTally);
     })().catch(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Filter option lists -- derived from the real fetched rows, never a
+  // guessed/hardcoded taxonomy (this directory spans every discipline on
+  // Kretopia, not a fixed enum).
+  const professionOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.role).filter((r): r is string => !!r))).sort(),
+    [rows],
+  );
+  const locationOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.location).filter((l): l is string => !!l))).sort(),
+    [rows],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter(
+    const base = rows.filter((r) => {
+      if (professionFilter !== "all" && r.role !== professionFilter) return false;
+      if (locationFilter !== "all" && r.location !== locationFilter) return false;
+      if (standingFilter !== "all") {
+        const tier = r.verification_tier?.toLowerCase();
+        if (standingFilter === "verified" && !(tier === "verified" || tier === "industry" || tier === "elite")) return false;
+        if (standingFilter === "working" && (tier === "verified" || tier === "industry" || tier === "elite")) return false;
+      }
+      return true;
+    });
+    if (!q) return base;
+    return base.filter(
       (r) =>
         r.username?.toLowerCase().includes(q) ||
         r.full_name?.toLowerCase().includes(q) ||
         r.role?.toLowerCase().includes(q) ||
         r.location?.toLowerCase().includes(q)
     );
-  }, [rows, query]);
+  }, [rows, query, professionFilter, locationFilter, standingFilter]);
 
   return (
     <div className="accent-passport min-h-screen bg-background pb-24">
@@ -100,6 +160,44 @@ const PassportDirectory = () => {
           />
         </div>
 
+        {/* Filters -- options derived from the real fetched rows, not a
+            guessed taxonomy. */}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Select value={professionFilter} onValueChange={setProfessionFilter}>
+            <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs"><SelectValue placeholder="Profession" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Every profession</SelectItem>
+              {professionOptions.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={locationFilter} onValueChange={setLocationFilter}>
+            <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs"><SelectValue placeholder="Location" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Everywhere</SelectItem>
+              {locationOptions.map((l) => <SelectItem key={l} value={l}>{l}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={standingFilter} onValueChange={setStandingFilter}>
+            <SelectTrigger className="w-auto min-w-[140px] h-9 text-xs"><SelectValue placeholder="Standing" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Every standing</SelectItem>
+              <SelectItem value="verified">Verified</SelectItem>
+              <SelectItem value="working">Working Creative</SelectItem>
+            </SelectContent>
+          </Select>
+          {(professionFilter !== "all" || locationFilter !== "all" || standingFilter !== "all") && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-9 text-xs text-muted-foreground"
+              onClick={() => { setProfessionFilter("all"); setLocationFilter("all"); setStandingFilter("all"); }}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
+
         {/* Grid */}
         <div className="mt-8">
           {loading ? (
@@ -121,65 +219,93 @@ const PassportDirectory = () => {
               )}
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map((p) => {
                 if (!p.user_id) return null;
                 const handle = p.username ? `@${p.username.replace(/^@/, "")}` : null;
+                const profileHref = handle ? `/${handle}` : `/profile/${p.user_id}`;
                 const tid = passportIdFor(p.user_id);
                 const tier = p.verification_tier?.toLowerCase();
-                const isVerified = tier === "verified" || tier === "industry" || tier === "elite";
+                const standing = tier ? STANDING_LABEL[tier] : null;
+                const credits = creditsByUser[p.user_id] ?? 0;
+                const cosigns = cosignsByUser[p.user_id] ?? 0;
                 return (
-                  <Link
-                    key={p.user_id}
-                    to={handle ? `/${handle}` : `/profile/${p.user_id}`}
-                    className="group rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--signal-teal))]"
-                  >
-                    <Card className="p-4 h-full hover:border-[hsl(var(--signal-teal))]/40 transition-colors">
-                      <div className="flex items-start gap-3">
-                        <Avatar className="h-12 w-12 ring-1 ring-border">
-                          <AvatarImage src={p.avatar_url ?? undefined} />
-                          <AvatarFallback>
-                            {(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <p className="font-semibold text-foreground truncate">
-                              {p.full_name || p.username}
-                            </p>
-                            {isVerified && (
-                              <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--signal-teal))] shrink-0" />
-                            )}
-                          </div>
-                          {handle && (
-                            <p className="text-xs text-muted-foreground truncate">{handle}</p>
-                          )}
-                          <p className="text-[10px] font-mono text-muted-foreground/70 mt-0.5">
-                            {tid}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        {p.role && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            {p.role}
-                          </Badge>
+                  <HoloCard key={p.user_id} className="h-full">
+                    <Link
+                      to={profileHref}
+                      className="block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--signal-teal))]"
+                    >
+                      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-muted">
+                        {p.cover_image_url ? (
+                          <img src={p.cover_image_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/15 to-transparent" />
                         )}
-                        {p.location && (
-                          <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                            <MapPin className="h-3 w-3" />
-                            {p.location}
+                        {standing && (
+                          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--signal-teal))] backdrop-blur-sm">
+                            <ShieldCheck className="h-3 w-3" />
+                            {standing}
                           </span>
                         )}
+                        <Avatar className="absolute -bottom-6 left-4 h-14 w-14 ring-2 ring-card">
+                          <AvatarImage src={p.avatar_url ?? undefined} />
+                          <AvatarFallback>{(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
                       </div>
-                    </Card>
-                  </Link>
+                      <div className="rounded-b-2xl bg-card p-4 pt-8 space-y-2">
+                        <p className="font-semibold text-foreground truncate">{p.full_name || p.username}</p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                          {p.role && <span>{p.role}</span>}
+                          {p.location && (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {p.location}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] font-mono text-muted-foreground/70">{tid}</p>
+                        <div className="flex items-center gap-3 pt-1 text-[11px] text-muted-foreground">
+                          <span className="inline-flex items-center gap-1">
+                            <Star className="h-3 w-3 text-[hsl(var(--signal-teal))]" />
+                            {credits} credit{credits === 1 ? "" : "s"}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Users2 className="h-3 w-3 text-[hsl(var(--signal-teal))]" />
+                            {cosigns} co-sign{cosigns === 1 ? "" : "s"}
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                    <div className="flex items-center gap-1.5 border-t border-border/60 bg-card p-2 rounded-b-2xl">
+                      <Button size="sm" variant="ghost" className="h-7 flex-1 text-xs" onClick={() => navigate(profileHref)}>
+                        View Passport
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 flex-1 gap-1 text-xs"
+                        onClick={() => setMessageTarget(p)}
+                      >
+                        <MessageCircle className="h-3 w-3" /> Message
+                      </Button>
+                    </div>
+                  </HoloCard>
                 );
               })}
             </div>
           )}
         </div>
       </div>
+
+      {messageTarget?.user_id && (
+        <DirectMessageDialog
+          open={!!messageTarget}
+          onOpenChange={(o) => !o && setMessageTarget(null)}
+          recipientId={messageTarget.user_id}
+          recipientName={messageTarget.full_name || messageTarget.username || "this creator"}
+          recipientAvatar={messageTarget.avatar_url}
+        />
+      )}
     </div>
   );
 };
