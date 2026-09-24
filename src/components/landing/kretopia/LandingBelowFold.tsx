@@ -19,7 +19,6 @@ import { ProductLoopSection } from "@/components/landing/kretopia/ProductLoopSec
 import { MeetKretoSection } from "@/components/landing/kretopia/MeetKretoSection";
 import { ForOrganisationsSection } from "@/components/landing/kretopia/ForOrganisationsSection";
 import { FAQSection } from "@/components/landing/FAQSection";
-import { ClosingCTASection } from "@/components/landing/kretopia/ClosingCTASection";
 import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
 import { chapterRoman } from "@/components/landing/kretopia/chapterRegistry";
 import {
@@ -192,9 +191,6 @@ export const LandingBelowFold = () => {
 
       {/* For Organisations — shorter than the creator journey, never competes with the hero */}
       <ForOrganisationsSection />
-
-      {/* Closing CTA — back to the hero's core wedge */}
-      <ClosingCTASection />
 
       {/* FAQ — crawlable, text-based answers for AI-search citation and
           Google FAQ rich results, mirrored in index.html's FAQPage JSON-LD */}

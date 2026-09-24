@@ -70,7 +70,8 @@ export function SearchV2({ initialQuery = "" }: SearchV2Props = {}) {
                 onValueChange={handleQueryChange}
                 autoFocus
                 className="relative z-[70] text-left"
-                style={{ backgroundColor: 'transparent' }} 
+                style={{ backgroundColor: 'transparent' }}
+                showEmptyState={false}
               />
             </div>
 
