@@ -45,7 +45,14 @@ const fmtDur = (s: number | null) => {
  * that pipeline's query shape and components as-is rather than a new
  * recap UI. Self-hides entirely when there's nothing yet.
  */
-export const RecentRecordingsRail = () => {
+interface RecentRecordingsRailProps {
+  /** Reports the fetched count -- same shape as SoundStagesRail's own
+   *  onLoad, for callers (StudioActivitySummary) that need to know
+   *  whether this rail has anything without duplicating its fetch. */
+  onLoad?: (count: number) => void;
+}
+
+export const RecentRecordingsRail = ({ onLoad }: RecentRecordingsRailProps = {}) => {
   const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,13 +70,16 @@ export const RecentRecordingsRail = () => {
         .order("created_at", { ascending: false })
         .limit(8);
       if (!cancelled) {
-        setRows((data as Row[]) ?? []);
+        const list = (data as Row[]) ?? [];
+        setRows(list);
         setLoading(false);
+        onLoad?.(list.length);
       }
     })().catch(() => {
       if (!cancelled) setLoading(false);
     });
     return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   if (loading || rows.length === 0) return null;

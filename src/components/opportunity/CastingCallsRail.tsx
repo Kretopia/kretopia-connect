@@ -9,7 +9,15 @@ import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { CarouselApi } from "@/components/ui/carousel";
 
-export const CastingCallsRail = ({ limit = 12 }: { limit?: number }) => {
+interface CastingCallsRailProps {
+  limit?: number;
+  /** Reports the fetched count -- same shape as SoundStagesRail's own
+   *  onLoad, for callers (StudioActivitySummary) that need to know
+   *  whether this rail has anything without duplicating its fetch. */
+  onLoad?: (count: number) => void;
+}
+
+export const CastingCallsRail = ({ limit = 12, onLoad }: CastingCallsRailProps) => {
   const [calls, setCalls] = useState<GigOpportunity[]>([]);
   const [loading, setLoading] = useState(true);
   const [api, setApi] = useState<CarouselApi>();
@@ -23,9 +31,11 @@ export const CastingCallsRail = ({ limit = 12 }: { limit?: number }) => {
       .in("status", ["active", "open"])
       .order("created_at", { ascending: false })
       .limit(limit);
-    setCalls((data || []) as unknown as GigOpportunity[]);
+    const rows = (data || []) as unknown as GigOpportunity[];
+    setCalls(rows);
     setLoading(false);
-  }, [limit]);
+    onLoad?.(rows.length);
+  }, [limit, onLoad]);
 
   useEffect(() => {
     fetchCalls().catch(() => setLoading(false));
