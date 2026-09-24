@@ -1,4 +1,5 @@
-import { useCallback, useState, type ComponentType, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Radio, UsersRound, Camera, FileVideo, ChevronRight, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ interface StudioActivitySummaryProps {
 }
 
 interface RowProps {
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: LucideIcon;
   label: string;
   status: string;
   action?: string;

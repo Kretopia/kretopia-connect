@@ -1,24 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowRight, Search, Sparkles } from "lucide-react";
 
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { analytics } from "@/lib/analytics";
-import { cn } from "@/lib/utils";
 
 interface SearchV2Props {
   initialQuery?: string;
 }
 
 export function SearchV2({ initialQuery = "" }: SearchV2Props = {}) {
-  const navigate = useNavigate();
   const [query, setQuery] = useState(initialQuery);
   const startedRef = useRef(false);
 
   const trimmedQuery = query.trim();
-  const hasQuery = trimmedQuery.length > 0;
   const canTrackSearch = trimmedQuery.length >= 2;
 
   useEffect(() => {
@@ -49,41 +44,31 @@ export function SearchV2({ initialQuery = "" }: SearchV2Props = {}) {
 
 
   return (
-    <div className="relative z-[60]">
+    <div className="relative z-[100] bg-background">
       <SEO
         title="Creative Work Search — Kretopia"
         description="Search public creators, creative work, productions, and opportunities on Kretopia."
       />
 
-<FeaturePageHeader
+      <FeaturePageHeader
         eyebrow="Creative Work"
         title="Find the work"
         accentTitle="that moves you."
         subtitle="Search creators, roles, productions, and real opportunities across Kretopia."
+        allowOverflow
         tabs={
-          
-            <div className="relative z-[700]">
+            <div className="relative z-[1000]">
               <UnifiedSearchDropdown
                 variant="hero"
                 placeholder="Search people, roles, projects, or opportunities…"
                 value={query}
                 onValueChange={handleQueryChange}
                 autoFocus
-                className="relative z-[70] text-left"
-                style={{ backgroundColor: 'transparent' }}
-                showEmptyState={false}
+                className="relative z-[1000] text-left"
               />
             </div>
-
-         
-
-
         }
       />
-
-       
- 
- 
     </div>
   );
 }
