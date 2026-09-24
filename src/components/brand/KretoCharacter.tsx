@@ -46,8 +46,9 @@ import kretoProducer from "@/assets/brand/kreto/kreto-producer-cutout.png";
 import kretoPublicist from "@/assets/brand/kreto/kreto-publicist-cutout.png";
 import kretoDirector from "@/assets/brand/kreto/kreto-director-mic.png";
 import kretoDetective from "@/assets/brand/kreto/kreto-detective-scout.png";
+import kretoHeroWave from "@/assets/brand/kreto/kreto-mascot-hero-wave.png";
 
-export type KretoCharacterVariant = "main" | "scout" | "connector" | "producer" | "publicist" | "director" | "detective";
+export type KretoCharacterVariant = "main" | "scout" | "connector" | "producer" | "publicist" | "director" | "detective" | "hero-wave";
 export type KretoCharacterState =
   | "idle"
   | "attentive"
@@ -67,6 +68,7 @@ const VARIANT_SRC: Record<KretoCharacterVariant, string> = {
   publicist: kretoPublicist,
   director: kretoDirector,
   detective: kretoDetective,
+  "hero-wave": kretoHeroWave,
 };
 
 const VARIANT_LABEL: Record<KretoCharacterVariant, string> = {
@@ -77,6 +79,7 @@ const VARIANT_LABEL: Record<KretoCharacterVariant, string> = {
   publicist: "Kreto — Publicist",
   director: "Kreto — Director",
   detective: "Kreto — Detective",
+  "hero-wave": "Kreto",
 };
 
 /** Every variant is a real alpha-channel cutout (background removed) --
@@ -86,7 +89,7 @@ const VARIANT_LABEL: Record<KretoCharacterVariant, string> = {
  *  treatment by default instead of silently rendering a raw rectangular
  *  photo with no mask. */
 const CUTOUT_VARIANTS = new Set<KretoCharacterVariant>([
-  "main", "scout", "connector", "producer", "publicist", "director", "detective",
+  "main", "scout", "connector", "producer", "publicist", "director", "detective", "hero-wave",
 ]);
 
 /** Same wording as KretoPresence's STATE_LABEL, kept in sync deliberately
