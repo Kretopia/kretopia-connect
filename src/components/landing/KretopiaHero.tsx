@@ -191,7 +191,7 @@ export const KretopiaHero = () => {
                 </motion.span>
               ))}
             </span>
-            <span className="landing-accent block">
+            <span className="k-gradient-title block">
               {LINE_2.map((word, wi) => (
                 <motion.span
                   key={wi}
@@ -263,12 +263,12 @@ export const KretopiaHero = () => {
         </motion.div>
       </div>
 
-      {/* Big main Kreto figure — unchanged. */}
+      {/* Big main Kreto figure — HD wave render, landing overhaul (24/09/2026). */}
       <div className="pointer-events-none absolute bottom-4 right-6 hidden lg:block min-[1440px]:hidden opacity-95">
-        <KretoCharacter variant="main" size={180} floatAmplitude={0} />
+        <KretoCharacter variant="hero-wave" size={180} floatAmplitude={0} />
       </div>
       <div className="pointer-events-none absolute bottom-4 right-16 hidden min-[1440px]:block opacity-95">
-        <KretoCharacter variant="main" size={300} floatAmplitude={0} />
+        <KretoCharacter variant="hero-wave" size={300} floatAmplitude={0} />
       </div>
 
       {/* bottom dissolve to next section */}

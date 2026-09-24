@@ -1012,6 +1012,29 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
     filter: brightness(1.12);
   }
 }
+
+/* The full Kretopia brand gradient (same stops as the logo mark),
+   reserved for a small, deliberate set of emphasis moments — the hero's
+   own headline, one section title per landing chapter, the footer
+   wordmark — never for body copy, buttons, badges or UI chrome, which
+   keep using .landing-accent's single pink instead. Landing overhaul
+   (24/09/2026): "the gradient should stay selective... product stays
+   calmer and more neutral." */
+.k-gradient-title {
+  background: linear-gradient(
+    160deg,
+    #2A0FD9 0%,
+    #4812F5 22%,
+    #9413D2 52%,
+    #E0179C 78%,
+    #FF3D7A 90%,
+    #FEA61A 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
 @media (prefers-reduced-motion: reduce) {
   .pink-glow-breathe {
     animation: none;

@@ -1,10 +1,73 @@
 /**
- * EditorialFooter — masthead-style closing line for Kretopia.
- * Monocle-coded: thin rules, all caps micro-type, generous whitespace.
+ * EditorialFooter — Landing overhaul (24/09/2026), rebuilt to match the
+ * "kretopianewfooter" reference: a real 4-column link footer (Product /
+ * For / Explore / Legal) instead of the previous 3-column masthead
+ * strip. Every link below points at a route that already exists in
+ * App.tsx (grep-verified) -- "Pricing" reuses the same /pricing path
+ * every other CTA in the app already links to (StorageMeter,
+ * QuotaExceededDialog, GroupChatPanel), and "Contact" is a mailto to
+ * support@kretopia.com (the real address used across Terms/Privacy)
+ * since there's no dedicated /contact route to link to instead.
  */
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
-import { BRAND } from "@/lib/brandLexicon";
+
+interface FooterLink {
+  label: string;
+  to: string;
+  external?: boolean;
+}
+
+interface FooterColumn {
+  heading: string;
+  /** Underline accent under the column heading — one segment of the
+   *  brand gradient per column, same idea as the reference image. */
+  accent: string;
+  links: FooterLink[];
+}
+
+const COLUMNS: FooterColumn[] = [
+  {
+    heading: "Product",
+    accent: "linear-gradient(90deg, #4812F5, #2A0FD9)",
+    links: [
+      { label: "Creative Passport", to: "/passport" },
+      { label: "Scout", to: "/scout" },
+      { label: "Studio", to: "/desk" },
+      { label: "Kreto", to: "/kreto" },
+      { label: "KrePay", to: "/thrivepay" },
+    ],
+  },
+  {
+    heading: "For",
+    accent: "linear-gradient(90deg, #E0179C, #9413D2)",
+    links: [
+      { label: "For creatives", to: "/auth?tab=signup&src=footer" },
+      { label: "For companies", to: "/post-opportunity" },
+      { label: "Pricing", to: "/pricing" },
+    ],
+  },
+  {
+    heading: "Explore",
+    accent: "linear-gradient(90deg, #FEA61A, #FF3D7A)",
+    links: [
+      { label: "Talent Search", to: "/search" },
+      { label: "Match", to: "/match" },
+      { label: "Events", to: "/events" },
+      { label: "SoundStages", to: "/circle?tab=live" },
+    ],
+  },
+  {
+    heading: "Legal",
+    accent: "linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.1))",
+    links: [
+      { label: "About", to: "/about" },
+      { label: "Contact", to: "mailto:support@kretopia.com", external: true },
+      { label: "Legal", to: "/terms" },
+      { label: "Privacy", to: "/privacy" },
+    ],
+  },
+];
 
 export const EditorialFooter = () => {
   return (
@@ -12,49 +75,80 @@ export const EditorialFooter = () => {
       className="relative border-t border-white/[0.08]"
       style={{ backgroundColor: "#05070D" }}
     >
-      <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-6 sm:pb-8">
-        <div className="grid sm:grid-cols-3 gap-10 sm:gap-6 items-start">
-          <div>
+      <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-8">
+        <div className="grid gap-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,auto))] lg:gap-x-16">
+          <div className="max-w-xs">
             <BrandLogo size="md" showBeta linkToHome />
             <p
-              className="mt-3 text-[10px] font-medium uppercase tracking-[0.32em] text-white/50"
+              className="mt-6 text-xl sm:text-2xl font-semibold text-white leading-snug"
               style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
             >
-              {BRAND.parentLine}
+              Creative work should lead somewhere.
+            </p>
+            <p
+              className="mt-4 text-sm text-white/50 leading-relaxed"
+              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+            >
+              Kretopia connects creative identity, work, opportunity and professional continuity.
             </p>
           </div>
 
-          <div
-            className="text-[11px] sm:text-center text-white/55 leading-relaxed"
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-          >
-            <span className="text-white">Kretopia</span> — the platform.{" "}
-            <span className="block mt-1">
-              <span className="text-white">Kretopia</span> — community, events, magazine.
-            </span>
-            <span className="block mt-1">
-              <span className="text-white">Kreto</span> — Executive Producer.
-            </span>
-          </div>
-
-          <nav
-            className="flex flex-wrap sm:justify-end gap-x-5 gap-y-2 text-[11px] text-white/50"
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-          >
-            <Link to="/about" className="hover:text-white transition-colors">About</Link>
-            <Link to="/pricing" className="hover:text-white transition-colors">Pricing</Link>
-            <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
-            <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link to="/community-guidelines" className="hover:text-white transition-colors">Guidelines</Link>
-          </nav>
+          {COLUMNS.map((col) => (
+            <nav key={col.heading} aria-label={col.heading}>
+              <p
+                className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/60"
+                style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+              >
+                {col.heading}
+              </p>
+              <span
+                aria-hidden
+                className="mt-2 block h-[3px] w-6 rounded-full"
+                style={{ background: col.accent }}
+              />
+              <ul className="mt-5 space-y-3">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    {link.external ? (
+                      <a
+                        href={link.to}
+                        className="text-sm text-white/55 hover:text-white transition-colors"
+                        style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        to={link.to}
+                        className="text-sm text-white/55 hover:text-white transition-colors"
+                        style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                      >
+                        {link.label}
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
 
-        <div className="mt-12 pt-6 border-t border-white/[0.05] flex flex-wrap items-center justify-between gap-3">
+        {/* Full-width brand gradient seam — same stops as the logo/.k-gradient-title. */}
+        <div
+          aria-hidden
+          className="mt-14 h-px w-full"
+          style={{
+            background:
+              "linear-gradient(90deg, #2A0FD9, #4812F5, #9413D2, #E0179C, #FF3D7A, #FEA61A)",
+          }}
+        />
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <p
-            className="text-[10px] uppercase tracking-[0.28em] text-white/50"
+            className="text-xs text-white/50"
             style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
           >
-            © {new Date().getFullYear()} Thrive Collective · All rights reserved
+            © {new Date().getFullYear()} Kretopia
           </p>
           <p
             className="text-[10px] uppercase tracking-[0.28em] text-white/50"
