@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { CtaButton } from "@/components/ui/cta-button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -8,7 +9,6 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { EPKReviews } from "@/components/epk/EPKReviews";
-import { EPKFooterCTA } from "@/components/epk/EPKFooterCTA";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
 import { ModelStrip } from "@/components/passport/model/ModelStrip";
 import { VideoIntroSection } from "@/components/profile/VideoIntroSection";
@@ -460,9 +460,15 @@ const CreatorEPK = () => {
         }}
       />
 
-      {/* Main Content - Mobile-first vertical layout */}
-      <div className="max-w-lg mx-auto px-4 pt-6 pb-32">
+      {/* Horizontal on desktop: identity + primary collaboration CTA pinned
+          in a sticky left column, full Passport detail scrolling on the
+          right -- CEO overhaul (24/09/2026), confirmed layout direction.
+          Stacks back to the original single vertical column on mobile
+          (lg: breakpoint only), so nothing below this point needed to
+          change -- each block just moved into one column or the other. */}
+      <div className="max-w-lg lg:max-w-6xl mx-auto px-4 pt-6 pb-16 lg:grid lg:grid-cols-[380px_1fr] lg:gap-8 lg:items-start">
 
+      <div className="lg:sticky lg:top-6 lg:self-start">
         {/* Public Passport — same dominant identity treatment as the owner Passport. */}
         <div className="mb-8">
           <PublicPassportHero
@@ -519,16 +525,34 @@ const CreatorEPK = () => {
                   </Button>
                 </>
               ) : (
-                <Button
+                // Priority #1 CTA (CEO overhaul): the same canonical
+                // primary-CTA treatment New Room/Studio home use for their
+                // single most important action, not a plain default Button
+                // indistinguishable from a secondary one.
+                <CtaButton
                   onClick={handleConnect}
                   disabled={isConnecting || connectionStatus === 'pending'}
-                  className="gap-2"
+                  className="w-full gap-2"
                 >
                   <UserPlus2 className="h-4 w-4" />
                   {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </Button>
+                </CtaButton>
               )}
             </div>
+            {/* The removed fixed footer's one function with no inline
+                equivalent elsewhere: a distinct entry point for a brand
+                (not this specific visitor) wanting to browse more
+                creators, not just connect with this one. */}
+            {!currentUserId && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/auth?type=brand')}
+                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
+              >
+                I'm a brand — find creators like {firstName}
+              </Button>
+            )}
           </div>
         )}
 
@@ -554,7 +578,11 @@ const CreatorEPK = () => {
             />
           </div>
         )}
+      </div>
 
+      {/* Right column: the rest of the Passport, scrolls independently of
+          the sticky identity/CTA column above on desktop. */}
+      <div>
         {/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
           <div className="mb-8">
@@ -1006,21 +1034,20 @@ const CreatorEPK = () => {
         )}
 
       </div>
+      {/* closes right column */}
+      </div>
+      {/* closes lg:grid outer container */}
 
-      {/* Fixed Footer */}
-      <EPKFooterCTA
-        isOwner={isOwner}
-        isUnclaimed={profile.is_claimed === false}
-        profileName={profile.full_name}
-        onClaimClick={() => setShowClaimDialog(true)}
-        onShareClick={() => shareRef.current?.scrollIntoView({ behavior: 'smooth' })}
-        isSignedIn={Boolean(currentUserId)}
-        isConnected={connectionStatus === 'connected'}
-        isPending={connectionStatus === 'pending'}
-        onConnect={handleConnect}
-        onMessage={() => setMessageOpen(true)}
-        onCollaborate={() => setCollaborateOpen(true)}
-      />
+      {/* CEO overhaul: the fixed bottom EPKFooterCTA bar is gone -- every
+          state it handled already has a real inline equivalent above, now
+          that collaboration is a primary CTA rather than living only in a
+          persistent floating bar: Owner -> EPKShareToolbar (left column),
+          Unclaimed -> the "Is this you? Claim This Profile" banner (right
+          column), signed-in visitor -> the "Work with X" block (left
+          column). Only the footer's brand-discovery link ("I'm a Brand —
+          Find Creators Like X") had no inline equivalent; it's preserved
+          as a secondary link in "Work with X" below instead of a whole
+          separate persistent bar. */}
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (
         <StartProjectFromMatchDialog open={collaborateOpen} onOpenChange={setCollaborateOpen} matchedUser={{ id: profile.user_id, name: profile.full_name, role: profile.role, avatar: profile.avatar_url }} />
