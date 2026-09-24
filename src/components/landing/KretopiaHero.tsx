@@ -102,51 +102,57 @@ export const KretopiaHero = () => {
   return (
     <section
       id="kretopia-hero"
-      className="relative flex min-h-[calc(100svh-4rem)] items-center overflow-hidden sm:min-h-[calc(100svh-5rem)]"
+      className="relative flex min-h-[calc(100svh-4rem)] items-center sm:min-h-[calc(100svh-5rem)]"
       style={{ backgroundColor: "#05070D" }}
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
-      {/* warm vignette — barely there */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 80% at 80% 20%, rgba(120, 70, 40, 0.14), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.6), transparent 60%)",
-        }}
-      />
-
-      {/* Verified Creative Signal Field — unchanged. aria-hidden --
-          purely decorative, no live data implied. */}
-      <motion.div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center"
-        style={{ x: fieldX, y: fieldY }}
-      >
+      {/* Decorative background layer only -- overflow-hidden moved here
+          (off the section root) so it still clips the vignette/blur/grid to
+          the hero's bounds, but no longer also clips UnifiedSearchDropdown's
+          absolutely-positioned results panel below when it's taller than
+          the remaining hero height. z-index on that panel was already
+          z-[100], plenty high -- this was a clipping bug, not a stacking
+          one, so raising it further wouldn't have fixed anything. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        {/* warm vignette — barely there */}
         <div
-          className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
+          className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(circle, hsl(var(--secondary) / 0.55) 0%, hsl(var(--energy) / 0.22) 42%, transparent 72%)",
+              "radial-gradient(120% 80% at 80% 20%, rgba(120, 70, 40, 0.14), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.6), transparent 60%)",
           }}
         />
-      </motion.div>
 
-      {/* Faint signal grid, masked to fade out — the "machine" layer */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.16]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)",
-          backgroundSize: "64px 64px",
-          maskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
-          WebkitMaskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
-        }}
-      />
+        {/* Verified Creative Signal Field — unchanged. aria-hidden --
+            purely decorative, no live data implied. */}
+        <motion.div
+          className="absolute inset-0 flex items-center justify-center"
+          style={{ x: fieldX, y: fieldY }}
+        >
+          <div
+            className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
+            style={{
+              background:
+                "radial-gradient(circle, hsl(var(--secondary) / 0.55) 0%, hsl(var(--energy) / 0.22) 42%, transparent 72%)",
+            }}
+          />
+        </motion.div>
 
-      <div className="relative mx-auto flex w-full max-w-[900px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
+        {/* Faint signal grid, masked to fade out — the "machine" layer */}
+        <div
+          className="absolute inset-0 opacity-[0.16]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
+            maskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
+            WebkitMaskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-[1] mx-auto flex w-full max-w-[900px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
