@@ -33,6 +33,8 @@ import { NewsletterPopup } from "./components/NewsletterPopup";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 import UnifiedHome from "./components/home/UnifiedHome";
 import { GlobalIncomingCall } from "./components/calls/GlobalIncomingCall";
+import { GlobalVideoCallHost } from "./components/calls/GlobalVideoCallHost";
+import { VideoCallProvider } from "./contexts/VideoCallContext";
 import { RoomKnockToast } from "./components/calls/RoomKnockToast";
 import { ThriveAgentFab } from "./components/desk/ThriveAgentFab";
 import { KretoLauncher } from "./components/kreto/KretoLauncher";
@@ -294,6 +296,7 @@ const AppContent = () => {
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}
       {user && <GlobalIncomingCall />}
       {user && <RoomKnockToast />}
+      <GlobalVideoCallHost />
       {!user && <NewsletterPopup />}
       <PWAInstallPrompt />
       <main
@@ -572,7 +575,9 @@ const App = () => {
                 <BrowserRouter>
                   <InteractiveOnboarding />
                   <FeedbackWidget />
-                  <AppContent />
+                  <VideoCallProvider>
+                    <AppContent />
+                  </VideoCallProvider>
                 </BrowserRouter>
               </TooltipProvider>
             </AuthProvider>
