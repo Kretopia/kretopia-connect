@@ -284,7 +284,7 @@ export const StudioProjectsDashboard = ({
               : null;
             const participants = participantsByProject[p.id] ?? 0;
             return (
-              <li key={p.id} className="group relative">
+              <li key={p.id} className="group relative animate-fade-in">
                 <HoloCard className="h-full">
                   <button
                     type="button"
