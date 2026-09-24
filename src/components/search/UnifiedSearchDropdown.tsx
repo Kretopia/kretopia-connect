@@ -30,6 +30,14 @@ interface UnifiedSearchDropdownProps {
   className?: string;
   onSelect?: (result: SearchResult) => void;
   onQuerySubmit?: (query: string) => void;
+  /** Whether to show this dropdown's own "No results found" panel when a
+   *  query matches nothing. Defaults to true (the dropdown IS the whole
+   *  results experience for the navbar/landing-hero usages). Pass false
+   *  when this search bar sits on a page that already renders its own
+   *  full "no results" experience below (e.g. SearchV2 on /search) --
+   *  otherwise this floating solid-bg panel duplicates that page's own
+   *  suggestions and visually sits on top of them. */
+  showEmptyState?: boolean;
 }
 
 const TYPE_META = {
@@ -58,6 +66,7 @@ export function UnifiedSearchDropdown({
   className,
   onSelect,
   onQuerySubmit,
+  showEmptyState = true,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
   const [internalQuery, setInternalQuery] = useState("");
@@ -487,7 +496,7 @@ export function UnifiedSearchDropdown({
       </form>
 
       {/* ═══ DROPDOWN ═══ */}
-      {open && query.trim().length >= 2 && (
+      {open && query.trim().length >= 2 && (showEmptyState || loading || error || !!highlightedCreator || results.length > 0) && (
         <div
           id={listboxId}
           role="region"
@@ -764,7 +773,7 @@ export function UnifiedSearchDropdown({
 
             {/* Empty state — no fallback suggestions, no navigation anywhere.
                 If nothing real matches, we say so and stop. */}
-            {!loading && !error && results.length === 0 && query.trim().length >= 2 && (
+            {showEmptyState && !loading && !error && results.length === 0 && query.trim().length >= 2 && (
               <div className="px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">No results found</p>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import GigCard, { type GigOpportunity, type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { PassportPreviewCard } from "@/components/passport/PassportPreviewCard";
+import { HoloCard } from "@/components/passport/HoloCard";
 import {
   buildMyMatchContext,
   computeMatchScore,
@@ -228,19 +229,27 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
 
       {opportunities.length > 0 && (
         <section className="mb-10">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            {personalized ? "Opportunities that fit you" : "Active opportunities"}
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mb-5">
+            <h2 className="flex items-center gap-2 text-lg font-bold text-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              {personalized ? "Opportunities that fit you" : "Active opportunities"}
+            </h2>
+            {personalized && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Ranked against your Passport — role, skills and location.
+              </p>
+            )}
+          </div>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {opportunities.map(({ opp, score }) => (
-              <GigCard
-                key={opp.id}
-                opportunity={opp}
-                creator={oppCreators[opp.created_by || ""] || null}
-                matchScore={score}
-                compact
-              />
+              <HoloCard key={opp.id} className="h-full">
+                <GigCard
+                  opportunity={opp}
+                  creator={oppCreators[opp.created_by || ""] || null}
+                  matchScore={score}
+                  compact
+                />
+              </HoloCard>
             ))}
           </div>
         </section>
