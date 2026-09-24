@@ -23,6 +23,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
+import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.png";
 
 interface ScoutedGig {
   id: string;
@@ -110,6 +111,15 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Chasing down real 404s: image_url values can go stale (source page
+  // took the image down, hotlink blocked, etc.) after a gig was already
+  // scouted -- the old onError handler just hid the broken <img> outright,
+  // leaving a blank gap and a console error with no visible fix. Every
+  // scouted gig now gets a real picture: the source image if it loads, a
+  // branded Kreto Scout illustration if it never had one or failed to load.
+  const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(new Set());
+  const markImageBroken = (id: string) =>
+    setBrokenImageIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const queryKey = ["scouted-gigs", user?.id];
   const { data: gigs = [], isLoading: loading } = useQuery({
     queryKey,
@@ -324,17 +334,17 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         className="group relative h-full flex flex-col rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
       >
         <div className="relative aspect-[16/9] overflow-hidden shrink-0">
-          {g.image_url ? (
+          {g.image_url && !brokenImageIds.has(g.id) ? (
             <img
               src={g.image_url}
               alt={g.title}
               loading="lazy"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              onError={() => markImageBroken(g.id)}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
-              <Icon className="h-14 w-14 text-foreground/15" strokeWidth={1.5} />
+              <img src={kretoScout} alt="" className="h-20 w-20 object-contain opacity-90" />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -501,17 +511,17 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             className="group relative rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
           >
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-64 shrink-0 overflow-hidden">
-              {gigs[0].image_url ? (
+              {gigs[0].image_url && !brokenImageIds.has(gigs[0].id) ? (
                 <img
                   src={gigs[0].image_url}
                   alt={gigs[0].title}
                   loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  onError={() => markImageBroken(gigs[0].id)}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
-                  {(() => { const Icon = SOURCE_ICON[gigs[0].source] || Globe; return <Icon className="h-14 w-14 text-foreground/15" strokeWidth={1.5} />; })()}
+                  <img src={kretoScout} alt="" className="h-16 w-16 object-contain opacity-90" />
                 </div>
               )}
               <div className="absolute top-2.5 left-2.5">
@@ -590,10 +600,15 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               <DialogHeader className="p-4 pb-3 border-b border-border">
                 <div className="flex items-start gap-3">
                   <div className="h-11 w-11 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
-                    {openGig.image_url ? (
-                      <img src={openGig.image_url} alt={openGig.title} className="h-full w-full object-cover" />
+                    {openGig.image_url && !brokenImageIds.has(openGig.id) ? (
+                      <img
+                        src={openGig.image_url}
+                        alt={openGig.title}
+                        className="h-full w-full object-cover"
+                        onError={() => markImageBroken(openGig.id)}
+                      />
                     ) : (
-                      <Briefcase className="h-5 w-5 text-foreground/30" />
+                      <img src={kretoScout} alt="" className="h-7 w-7 object-contain opacity-90" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-left">
