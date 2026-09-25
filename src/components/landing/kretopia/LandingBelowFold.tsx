@@ -113,7 +113,6 @@ export const LandingBelowFold = () => {
         caption="Scout"
         image={scoutImg}
         video={scoutVideo}
-        gradientTitle
         accent="#FF2DA1"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
@@ -164,7 +163,6 @@ export const LandingBelowFold = () => {
         caption="Studio"
         image={studioImg}
         video={studioVideo}
-        gradientTitle
         accent="#FF2DA1"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
@@ -196,7 +194,6 @@ export const LandingBelowFold = () => {
         caption="Community"
         image={soundstagesImg}
         video={soundstagesVideo}
-        gradientTitle
         accent="#FF2DA1"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"

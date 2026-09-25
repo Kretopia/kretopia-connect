@@ -172,8 +172,14 @@ export const KretopiaHero = () => {
         </motion.p>
 
         {/* Headline — words spaced with a margin on each span, not a
-            trailing space character, so spacing can't collapse. */}
-        <h1 className="landing-h1 landing-glow max-w-full mx-auto">
+            trailing space character, so spacing can't collapse.
+            .landing-h1's shared line-height (1.08) is tuned for wrapping,
+            not descender clearance -- too tight for this hero's larger
+            font-size, clipping "y" in "what you do." against the line
+            below. Overridden inline (wins regardless of stylesheet
+            cascade order) rather than touching the shared rule, which 5
+            other pages also use. */}
+        <h1 className="landing-h1 landing-glow max-w-full mx-auto" style={{ lineHeight: 1.25 }}>
           <motion.span
             className="block"
             initial="hidden"
@@ -191,7 +197,7 @@ export const KretopiaHero = () => {
                 </motion.span>
               ))}
             </span>
-            <span className="k-gradient-title block">
+            <span className="k-gradient-title k-gradient-title--wide block">
               {LINE_2.map((word, wi) => (
                 <motion.span
                   key={wi}

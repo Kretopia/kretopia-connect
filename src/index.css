@@ -1035,6 +1035,23 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   -webkit-text-fill-color: transparent;
   color: transparent;
 }
+/* This gradient's 160deg angle was tuned against the logo mark, which is
+   roughly square -- on a short, wide single line of text (the hero
+   headline), a CSS angled gradient's line length is dominated by the
+   box's height, not its width, so the same 6 stops compress into barely
+   the blue/purple/pink third of the spectrum and the intended orange
+   tail never shows. Shrinking the gradient image's own virtual height
+   (background-size, well below the box's real height) stretches that
+   same line-length calculation to lean on width instead, spreading the
+   full spectrum across the visible text -- same colors/order/angle,
+   just not naively sized 1:1 to a box the gradient wasn't designed for.
+   Scoped to this one modifier (not the base .k-gradient-title) since
+   chapter titles' taller, less extreme boxes don't have this problem. */
+.k-gradient-title--wide {
+  background-size: 100% 55%;
+  background-position: center;
+  background-repeat: no-repeat;
+}
 @media (prefers-reduced-motion: reduce) {
   .pink-glow-breathe {
     animation: none;
