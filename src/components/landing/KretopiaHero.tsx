@@ -1,46 +1,33 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
- * v5: three changes.
+ * v6: hero-scoped logo-accurate gradient + gradient-text clipping fix.
  *
- * 1. VERTICAL CENTERING — the content block was pinned near the top by a
- *    large, asymmetric pt-16/24/28 (pushing it down from the top) paired
- *    with an even larger pb-20/28, which read as "everything sitting too
- *    low". The section now uses `min-h-[calc(100svh-4rem)]
- *    sm:min-h-[calc(100svh-5rem)]` + `flex items-center` so the whole
- *    block is genuinely centered in the viewport space actually available
- *    below the sticky navbar — 4rem/5rem (64px/80px) match the exact
- *    mobile/desktop header-height constants Navbar.tsx and
- *    FixedProgressiveCard.tsx already use elsewhere (their own `top`
- *    offset), not a guessed number. Inner vertical padding is now a
- *    modest, symmetric py-12/16 safety margin, not the thing doing the
- *    positioning.
+ * GRADIENT — sampled directly from the actual Kretopia "K" logo (pixel
+ * samples, not eyeballed): blue #4012F8 at the top of the vertical stroke,
+ * through purple #A516C5, to pink/magenta #F62489, to orange #FFA722 at
+ * the diagonal's tip. KRETO_LOGO_GRADIENT below is that exact 4-stop
+ * gradient at 135deg (matches the logo's own top-left-to-bottom-right
+ * flow). It's defined and applied ONLY inside this file — not written
+ * into any shared class/token — so it can't leak onto ClosingCTASection,
+ * ForOrganisationsSection, or anywhere else that reuses
+ * .btn-landing-primary/.landing-glow. Applied to: the accent headline
+ * line, both CTA buttons (primary as a fill, secondary as a gradient
+ * border so it still reads as secondary), and the signal field. Small
+ * utility text (eyebrow labels, the "Free to start" line) stays plain —
+ * gradient-filled text at that size reads as muddy, not on-brand.
  *
- * 2. CTA BALANCE — both buttons are now equal-width (`w-full sm:w-auto`,
- *    capped at max-w-xs on mobile so they don't stretch edge-to-edge),
- *    share the same hover-lift + focus-visible ring treatment now used
- *    across the other landing sections (ClosingCTASection,
- *    ForOrganisationsSection) for visual consistency site-wide.
- *
- * 3. SEARCH — no longer a bespoke input + custom fetch/debounce/dropdown
- *    against a guessed endpoint. Navbar.tsx already renders the app's
- *    real search component, `UnifiedSearchDropdown` from
- *    "@/components/search/UnifiedSearchDropdown", with a `variant="hero"`
- *    it already supports (used in Navbar's own mobile search sheet) — so
- *    the hero now renders that exact component instead of reimplementing
- *    it. Same component, same fetch, same data, same navigation behavior
- *    as the navbar's search, by construction — not a parallel
- *    implementation that happens to match. This removes the
- *    WorkOpportunity type, searchWorkOpportunities, highlightMatch, and
- *    all of the search-related state/handlers from v4; `onSearchSubmit`
- *    is gone from the props too since UnifiedSearchDropdown owns its own
- *    submit/navigate behavior the same way it already does in Navbar
- *    (no override passed there either). If anything upstream still passes
- *    `onSearchSubmit` to <KretopiaHero>, that prop is now a no-op and can
- *    be removed at the call site.
- *
- * Background: "Verified Creative Signal Field" — unchanged (see
- * LANDING_HERO_SIGNAL_FIELD_AUDIT.md).
+ * CLIPPING FIX ("what you do." cut in half) — this is the classic
+ * `background-clip: text` artifact: WebKit/Blink clip gradient text
+ * tighter than normal glyph rendering, so ascenders/descenders get cut
+ * unless the element carries its own extra vertical padding on top of
+ * line-height. The earlier lineHeight:1.25 on the H1 wasn't enough
+ * because it's a container-level fix for a per-line clipping problem.
+ * Fixed at the source instead: the gradient span itself now carries
+ * lineHeight:1.3 + paddingTop/paddingBottom, self-contained regardless of
+ * the H1's own shared line-height, and no longer depends on the external
+ * .k-gradient-title/.k-gradient-title--wide classes (unknown, so
+ * unverifiable) for the fill itself.
  */
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -58,6 +45,10 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
  *  line's last, not a text-node space (which is what was collapsing). */
 const LINE_1 = ["Find", "work", "that", "fits"];
 const LINE_2 = ["what", "you", "do."];
+
+// Sampled from /logokretopia-removebg-preview.png — see file header.
+const KRETO_LOGO_GRADIENT =
+  "linear-gradient(135deg, #4012F8 0%, #A516C5 35%, #F62489 65%, #FFA722 100%)";
 
 const ctaFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
@@ -107,13 +98,11 @@ export const KretopiaHero = () => {
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
-      {/* Decorative background layer only -- overflow-hidden moved here
-          (off the section root) so it still clips the vignette/blur/grid to
-          the hero's bounds, but no longer also clips UnifiedSearchDropdown's
-          absolutely-positioned results panel below when it's taller than
-          the remaining hero height. z-index on that panel was already
-          z-[100], plenty high -- this was a clipping bug, not a stacking
-          one, so raising it further wouldn't have fixed anything. */}
+      {/* Decorative background layer only -- overflow-hidden stays scoped
+          here so it clips the vignette/blur/grid to the hero's bounds
+          without also clipping UnifiedSearchDropdown's results panel
+          below (z-[100], already high enough — this was a clipping bug,
+          not a stacking one). */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         {/* warm vignette — barely there */}
         <div
@@ -124,8 +113,10 @@ export const KretopiaHero = () => {
           }}
         />
 
-        {/* Verified Creative Signal Field — unchanged. aria-hidden --
-            purely decorative, no live data implied. */}
+        {/* Verified Creative Signal Field — now the exact logo gradient
+            (see file header), heavily blurred and dimmed via opacity so
+            it still reads as an ambient glow, not a literal logo replica
+            plastered across the background. */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center"
           style={{ x: fieldX, y: fieldY }}
@@ -134,7 +125,8 @@ export const KretopiaHero = () => {
             className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
             style={{
               background:
-                "radial-gradient(circle, hsl(var(--secondary) / 0.55) 0%, hsl(var(--energy) / 0.22) 42%, transparent 72%)",
+                "radial-gradient(circle, #4012F8 0%, #A516C5 30%, #F62489 60%, #FFA722 85%, transparent 100%)",
+              opacity: 0.32,
             }}
           />
         </motion.div>
@@ -171,14 +163,11 @@ export const KretopiaHero = () => {
           For creative professionals
         </motion.p>
 
-        {/* Headline — words spaced with a margin on each span, not a
-            trailing space character, so spacing can't collapse.
-            .landing-h1's shared line-height (1.08) is tuned for wrapping,
-            not descender clearance -- too tight for this hero's larger
-            font-size, clipping "y" in "what you do." against the line
-            below. Overridden inline (wins regardless of stylesheet
-            cascade order) rather than touching the shared rule, which 5
-            other pages also use. */}
+        {/* Headline — line 2 is the exact logo gradient, self-contained
+            (own lineHeight + vertical padding) so it can't be clipped by
+            the H1's own shared line-height or by whatever the unknown
+            .k-gradient-title class does. Words still spaced with a
+            margin on each span, not a trailing space character. */}
         <h1 className="landing-h1 landing-glow max-w-full mx-auto" style={{ lineHeight: 1.25 }}>
           <motion.span
             className="block"
@@ -197,7 +186,18 @@ export const KretopiaHero = () => {
                 </motion.span>
               ))}
             </span>
-            <span className="k-gradient-title k-gradient-title--wide block">
+            <span
+              className="block"
+              style={{
+                backgroundImage: KRETO_LOGO_GRADIENT,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+                lineHeight: 1.3,
+                paddingTop: "0.05em",
+                paddingBottom: "0.2em",
+              }}
+            >
               {LINE_2.map((word, wi) => (
                 <motion.span
                   key={wi}
@@ -211,9 +211,9 @@ export const KretopiaHero = () => {
           </motion.span>
         </h1>
 
-        {/* "Works" search — the app's real UnifiedSearchDropdown (same
-            component and "hero" variant Navbar.tsx already uses in its
-            own mobile search sheet), not a bespoke reimplementation. */}
+        {/* "Works" search — the app's real UnifiedSearchDropdown,
+            untouched internally; its own focus-ring color isn't
+            overridden here (see note below on why). */}
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -224,8 +224,12 @@ export const KretopiaHero = () => {
           <UnifiedSearchDropdown variant="hero" placeholder="Search by role, skill, location, type of work…" />
         </motion.div>
 
-        {/* CTA pair — equal width, same hover-lift + focus-ring treatment
-            used across the other landing sections for balance/consistency. */}
+        {/* CTA pair — primary is a solid fill of the logo gradient;
+            secondary is a gradient BORDER (two-layer background-image
+            trick: an opaque padding-box fill + the gradient on the
+            border-box) so it still reads as secondary rather than
+            competing with the primary button. Both hero-scoped inline
+            overrides, nothing shared touched. */}
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -241,8 +245,12 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className={`btn-landing-primary group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${ctaFocusRing} focus-visible:ring-[hsl(var(--energy))]/70`}
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+              className={`btn-landing-primary group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${ctaFocusRing} focus-visible:ring-[#F62489]/70`}
+              style={{
+                fontFamily: "'Satoshi', 'Inter', sans-serif",
+                backgroundImage: KRETO_LOGO_GRADIENT,
+                boxShadow: "0 10px 28px -10px rgba(246, 36, 137, 0.5)",
+              }}
             >
               Build My Passport
               <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
@@ -256,8 +264,14 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className={`btn-glass btn-glass-outline inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${ctaFocusRing} focus-visible:ring-white/40`}
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white/90 transition-transform duration-200 hover:-translate-y-0.5 hover:text-white ${ctaFocusRing} focus-visible:ring-[#F62489]/70`}
+              style={{
+                fontFamily: "'Satoshi', 'Inter', sans-serif",
+                border: "1.5px solid transparent",
+                backgroundImage: `linear-gradient(#05070D, #05070D), ${KRETO_LOGO_GRADIENT}`,
+                backgroundOrigin: "border-box",
+                backgroundClip: "padding-box, border-box",
+              }}
             >
               Explore Opportunities
             </Link>
@@ -269,7 +283,7 @@ export const KretopiaHero = () => {
         </motion.div>
       </div>
 
-      {/* Big main Kreto figure — HD wave render, landing overhaul (24/09/2026). */}
+      {/* Big main Kreto figure — unchanged. */}
       <div className="pointer-events-none absolute bottom-4 right-6 hidden lg:block min-[1440px]:hidden opacity-95">
         <KretoCharacter variant="hero-wave" size={180} floatAmplitude={0} />
       </div>

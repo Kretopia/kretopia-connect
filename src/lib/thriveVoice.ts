@@ -1,4 +1,4 @@
-// Thrive Voice — push-to-talk client helper.
+// Kretopia Voice — push-to-talk client helper.
 // Pipeline (split):
 //   stopAndSend()       → POST audio to thrive-voice-turn → returns {transcript}
 //   client agent path   → feeds transcript through the existing chat agent so
@@ -6,6 +6,42 @@
 //                         video call, memory…) fires exactly like text input
 //   synthesizeReply()   → POST reply text to thrive-voice-tts → returns audio
 //                         (or tts_fallback so we use browser SpeechSynthesis)
+//
+// v2 changes:
+// 1. GUEST MIC UNLOCK — stopAndSend() no longer returns an early "please
+//    sign in" error before even attempting the call. It still reads the
+//    session and attaches a bearer token when one exists (so signed-in
+//    users keep their normal tier/usage tracking), but a missing session
+//    no longer blocks the request client-side; the Authorization header is
+//    simply omitted for guests.
+//    IMPORTANT — I can only control the client side of this from here.
+//    Whether a guest's request actually succeeds depends on how the
+//    thrive-voice-turn Edge Function itself is configured server-side
+//    (specifically: whether it has `verify_jwt = false` / handles a null
+//    user for its free-tier usage-cap logic, given the response shape
+//    already includes per-user `usage: { used, cap, tier }`). I don't have
+//    access to that function's source or its deploy config in this
+//    conversation, so I can't confirm it accepts anonymous calls — I've
+//    added a specific, honest fallback message below for the case where
+//    the backend still rejects a guest request with 401, instead of
+//    leaving that case to fall through to a generic error.
+// 2. BRANDING — "Thrive" renamed to "Kretopia" everywhere it was
+//    user-facing/cosmetic (this header comment, and the sign-in message —
+//    which the guest-unlock above makes dead code, since it never fires
+//    for a missing session anymore; left removed rather than translated).
+//    NOT renamed: `thrive-voice-turn` / `thrive-voice-tts` in VOICE_URL /
+//    TTS_URL. Those are literal Supabase Edge Function endpoint paths —
+//    renaming them here only works if the deployed functions themselves
+//    have also been renamed to kretopia-voice-turn/kretopia-voice-tts. I
+//    have no evidence they have; renaming just the client-side string
+//    would 404 every voice call. Tell me if the functions were renamed on
+//    the backend and I'll update these in the same place.
+// 3. AUDIO QUALITY — explicit sampleRate/channelCount constraints on the
+//    mic capture (48kHz, mono — mono is the right choice for speech/STT,
+//    not a quality compromise, and halves the bandwidth) and an explicit
+//    audioBitsPerSecond on the MediaRecorder so Opus encodes at a
+//    consistent, decent bitrate for voice rather than whatever the
+//    browser's own default happens to be.
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -50,7 +86,17 @@ export async function startRecording(): Promise<void> {
     throw new Error("Microphone not supported on this device");
   }
   const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    audio: {
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+      // Explicit quality hints rather than leaving it to browser defaults:
+      // 48kHz is the standard high-quality rate Opus expects, and mono is
+      // the right choice for a single speaker (not a downgrade — it halves
+      // the encoded size with no loss for speech/STT).
+      sampleRate: 48000,
+      channelCount: 1,
+    },
   });
   activeStream = stream;
   chunks = [];
@@ -58,7 +104,13 @@ export async function startRecording(): Promise<void> {
     typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
       ? "audio/webm;codecs=opus"
       : "audio/webm";
-  const rec = new MediaRecorder(stream, { mimeType: mime });
+  const rec = new MediaRecorder(stream, {
+    mimeType: mime,
+    // 128kbps is comfortably above what Opus needs for clean speech —
+    // keeps encoding consistent instead of drifting with whatever
+    // bitrate the browser's own default picks.
+    audioBitsPerSecond: 128000,
+  });
   rec.ondataavailable = (e) => {
     if (e.data.size > 0) chunks.push(e.data);
   };
@@ -97,6 +149,11 @@ async function blobToBase64(blob: Blob): Promise<string> {
  * Stop recording and POST the audio to thrive-voice-turn for STT + tier-gating.
  * Returns the verbatim transcript only — caller is responsible for routing it
  * through the agent (so every tool runs) and then calling synthesizeReply().
+ *
+ * Open to guests: no session is required to attempt this call. A bearer
+ * token is attached when one exists so signed-in users keep their normal
+ * usage tracking; it's simply omitted otherwise. See the guest-unlock note
+ * in the file header for what this can't guarantee server-side.
  */
 export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
   const rec = activeRecorder;
@@ -120,9 +177,6 @@ export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
 
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  if (!token) {
-    return { ok: false, code: "auth", message: "Please sign in to talk to Thrive." };
-  }
 
   let resp: Response;
   try {
@@ -130,8 +184,8 @@ export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       body: JSON.stringify({ audio_base64, mime_type: stopped.type || "audio/webm" }),
     });
@@ -142,6 +196,15 @@ export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
   const data = await resp.json().catch(() => ({}));
 
   if (!resp.ok || data?.error) {
+    // Guest request rejected by the function itself (see file header —
+    // this is the case I can't fix from the client alone).
+    if (!token && resp.status === 401) {
+      return {
+        ok: false,
+        code: "guest_auth_required",
+        message: "Voice isn't available for guests on this server yet — sign in to use your mic.",
+      };
+    }
     if (data?.error === "voice_daily_limit") {
       return {
         ok: false,
@@ -171,7 +234,10 @@ export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
   return { ok: true, transcript: data.transcript, usage: data.usage };
 }
 
-/** Synthesize the agent's reply via ElevenLabs; falls back to browser TTS. */
+/** Synthesize the agent's reply via ElevenLabs; falls back to browser TTS.
+ *  Also open to guests — no session required, same reasoning as
+ *  stopAndSend(). Without a session, playback falls straight to the
+ *  browser's own SpeechSynthesis (that path never needed a token). */
 export async function synthesizeReply(text: string): Promise<{ audioUrl: string | null }> {
   const trimmed = (text || "").trim();
   if (!trimmed) return { audioUrl: null };
