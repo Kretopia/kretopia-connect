@@ -1059,6 +1059,30 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   }
 }
 
+/* Search-bar mic button — plain white, no flat hover tint (unlike most
+   icon buttons in this app, which just recolor on hover). Hovering, or
+   being the active "stop recording" button, swaps in the same Kretopia
+   logo gradient as .k-gradient-title (plain background here, not
+   clipped to text) — the mic becomes the one moment this gradient shows
+   up outside the landing page, precisely because it's the one live/
+   active-AI interaction happening in the search bar itself. */
+.k-mic-button {
+  color: #ffffff;
+}
+.k-mic-button:hover:not(:disabled),
+.k-mic-button.is-active {
+  background: linear-gradient(
+    160deg,
+    #2A0FD9 0%,
+    #4812F5 22%,
+    #9413D2 52%,
+    #E0179C 78%,
+    #FF3D7A 90%,
+    #FEA61A 100%
+  );
+  color: #ffffff;
+}
+
 /* Slow orbiting ring — the "AI is active" visual around a tutorial step
    icon. Deliberately slow (6s) so it reads as ambient presence, not a
    loading spinner. */

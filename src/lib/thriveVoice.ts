@@ -1,4 +1,14 @@
-// Kretopia Voice — push-to-talk client helper.
+// Kretopia Voice — push-to-talk client helper for the "Talk to Kreto"
+// agent (ThriveAgentFab.tsx). The search bar's own mic (useVoiceSearch.ts)
+// used to route through this same file but now runs entirely client-side
+// via the browser's SpeechRecognition API instead — no server round-trip,
+// so it works instantly for anonymous visitors without depending on
+// whether thrive-voice-turn accepts guest calls (see the "GUEST MIC
+// UNLOCK" note below: that's still an open question server-side, and this
+// file's stopAndSend()/synthesizeReply() still matter for the full agent,
+// which does legitimately want a session for its per-account usage/credit
+// tracking). Don't wire search back through this module — see
+// useVoiceSearch.ts's own header comment for the full reasoning.
 // Pipeline (split):
 //   stopAndSend()       → POST audio to thrive-voice-turn → returns {transcript}
 //   client agent path   → feeds transcript through the existing chat agent so
@@ -71,13 +81,6 @@ let currentAudio: HTMLAudioElement | null = null;
 
 export function isRecording() {
   return activeRecorder?.state === "recording";
-}
-
-/** The live MediaStream while recording — for callers that want to attach
- *  their own AnalyserNode for a real audio-level visualization (see
- *  useVoiceSearch.ts). Null when not recording. */
-export function getActiveStream(): MediaStream | null {
-  return activeStream;
 }
 
 export async function startRecording(): Promise<void> {

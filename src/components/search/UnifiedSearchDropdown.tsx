@@ -405,7 +405,7 @@ export function UnifiedSearchDropdown({
                     onClick={voice.stop}
                     aria-label="Stop and use this recording"
                     title="Stop"
-                    className="h-6 w-6 shrink-0 rounded-full bg-[hsl(var(--color-accent))] text-white flex items-center justify-center hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
+                    className="k-mic-button is-active h-6 w-6 shrink-0 rounded-full flex items-center justify-center hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
                   >
                     <Square className="h-2.5 w-2.5 fill-current" />
                   </button>
@@ -448,8 +448,8 @@ export function UnifiedSearchDropdown({
                   aria-label="Search by voice"
                   title="Search by voice"
                   className={cn(
-                    "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[hsl(var(--color-accent))] transition-colors disabled:opacity-50 before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? "right-14" : "right-8"
+                    "k-mic-button absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full flex items-center justify-center transition-all disabled:opacity-50 before:absolute before:-inset-1.5 before:content-['']",
+                    isHero ? "right-12" : "right-6"
                   )}
                 >
                   {voice.status === "requesting" ? (
