@@ -991,25 +991,16 @@ export const VoiceFirstCreateModal = ({
               </p>
             )}
             <p className="landing-sub max-w-sm mb-3 text-sm">
-              Share what you're working on — voice, text, a file or a link. Kreto drafts the
-              brief, starter tasks and room type for you to review.
+              Share what you're working on :<br></br> voice, text, a file or a link. 
             </p>
 
             {/* Trust copy — required up front, not buried in a tooltip */}
-            <p className="text-[11px] text-muted-foreground/80 max-w-md mb-4 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground/80 max-w-md mb-4 mt-4 leading-relaxed">
               Nothing becomes a Project until you confirm the draft. Kreto will not invite
               collaborators, send messages or emails, or trigger payments without your approval.
             </p>
 
-            {/* How this works — same shared AI-tutorial engine every other
-                overhauled feature page uses (Studio, Perks, Manage
-                Opportunities, Creative Circle), not a bespoke disclosure. */}
-            <FeatureAITutorial
-              featureKey="new-room"
-              label="How New Room works"
-              steps={TUTORIAL_STEPS}
-              className="mb-6"
-            />
+       
 
             {showLinkInput ? (
               <div className="w-full max-w-md space-y-3">
@@ -1056,11 +1047,7 @@ export const VoiceFirstCreateModal = ({
                     (the app's own canonical search bar) instead of a
                     bespoke shape. */}
                 <div className="relative">
-                  <Sparkles
-                    aria-hidden
-                    className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-                    style={{ color: "hsl(var(--energy))" }}
-                  />
+                 
                   <input
                     type="text"
                     autoFocus
