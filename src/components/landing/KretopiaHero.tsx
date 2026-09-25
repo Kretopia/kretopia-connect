@@ -238,7 +238,7 @@ export const KretopiaHero = () => {
         >
           <div className="flex w-full max-w-xs flex-col items-center justify-center gap-3 sm:max-w-none sm:w-auto sm:flex-row">
             <Link
-              to="/auth?tab=signup&src=hero_passport"
+              to="/passport"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
                   label: "Build My Passport",

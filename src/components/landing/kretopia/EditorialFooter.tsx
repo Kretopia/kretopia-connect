@@ -8,6 +8,14 @@
  * QuotaExceededDialog, GroupChatPanel), and "Contact" is a mailto to
  * support@kretopia.com (the real address used across Terms/Privacy)
  * since there's no dedicated /contact route to link to instead.
+ *
+ * v2: dropped the small per-column underline accent (the 3px gradient
+ * bar under each heading) — that also retired the `accent` field on
+ * FooterColumn/COLUMNS entirely, since the underline was its only use.
+ * The full-width brand-gradient seam near the bottom is toned down
+ * (opacity 0.45) — six fully-saturated stops side by side on a dark
+ * background was reading as a bright glowing band rather than a quiet
+ * seam; same gradient, just dialed back.
  */
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -20,16 +28,12 @@ interface FooterLink {
 
 interface FooterColumn {
   heading: string;
-  /** Underline accent under the column heading — one segment of the
-   *  brand gradient per column, same idea as the reference image. */
-  accent: string;
   links: FooterLink[];
 }
 
 const COLUMNS: FooterColumn[] = [
   {
     heading: "Product",
-    accent: "linear-gradient(90deg, #4812F5, #2A0FD9)",
     links: [
       { label: "Creative Passport", to: "/passport" },
       { label: "Scout", to: "/scout" },
@@ -40,7 +44,6 @@ const COLUMNS: FooterColumn[] = [
   },
   {
     heading: "For",
-    accent: "linear-gradient(90deg, #E0179C, #9413D2)",
     links: [
       { label: "For creatives", to: "/auth?tab=signup&src=footer" },
       { label: "For companies", to: "/post-opportunity" },
@@ -49,7 +52,6 @@ const COLUMNS: FooterColumn[] = [
   },
   {
     heading: "Explore",
-    accent: "linear-gradient(90deg, #FEA61A, #FF3D7A)",
     links: [
       { label: "Talent Search", to: "/search" },
       { label: "Match", to: "/match" },
@@ -59,7 +61,6 @@ const COLUMNS: FooterColumn[] = [
   },
   {
     heading: "Legal",
-    accent: "linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.1))",
     links: [
       { label: "About", to: "/about" },
       { label: "Contact", to: "mailto:support@kretopia.com", external: true },
@@ -101,11 +102,6 @@ export const EditorialFooter = () => {
               >
                 {col.heading}
               </p>
-              <span
-                aria-hidden
-                className="mt-2 block h-[3px] w-6 rounded-full"
-                style={{ background: col.accent }}
-              />
               <ul className="mt-5 space-y-3">
                 {col.links.map((link) => (
                   <li key={link.label}>
@@ -133,13 +129,15 @@ export const EditorialFooter = () => {
           ))}
         </div>
 
-        {/* Full-width brand gradient seam — same stops as the logo/.k-gradient-title. */}
+        {/* Full-width brand gradient seam — same stops as the logo, opacity
+            dialed back so it reads as a quiet seam, not a glowing band. */}
         <div
           aria-hidden
           className="mt-14 h-px w-full"
           style={{
             background:
               "linear-gradient(90deg, #2A0FD9, #4812F5, #9413D2, #E0179C, #FF3D7A, #FEA61A)",
+            opacity: 0.45,
           }}
         />
 
