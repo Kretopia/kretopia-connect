@@ -183,7 +183,7 @@ var list_my_credits_default = defineTool5({
 });
 
 // src/lib/mcp/index.ts
-var projectRef = "kwmcocsitwssrtzkdojh";
+var projectRef = define_import_meta_env_default.VITE_SUPABASE_PROJECT_ID ?? "project-ref-unset";
 var mcp_default = defineMcp({
   name: "kretopia-mcp",
   title: "Kretopia \u2014 Creative OS",
