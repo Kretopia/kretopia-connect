@@ -1,9 +1,10 @@
-import { AlarmClock, ArrowRight, Check, Clock, MapPin, MessageCircle, Sparkles, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { AlarmClock, ArrowRight, Check, Clock, MessageCircle, Sparkles, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
+import { HoloCard } from "@/components/passport/HoloCard";
 import { CtaButton } from "@/components/ui/cta-button";
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -51,8 +52,7 @@ interface PassportKretoCardProps {
   creditCount: number;
   completion: number;
   firstName?: string;
-  reducedMotion: boolean;
-  onOpenPassport: () => void;
+  signals: TodaySignals;
   onKreto: () => void;
 }
 
@@ -69,7 +69,7 @@ interface TodayPriorityCardProps {
  *
  * 1. Passport + Kreto:
  *    The Passport is the only place from which the user can edit their profile.
- *    The entire card is clickable and opens /passport.
+ *    Passport and Kreto have their own accessible actions within one card.
  *
  * 2. Today's priority:
  *    One contextual action based on real signals.
@@ -107,15 +107,14 @@ export function TodayCommandCenter({
             creditCount={creditCount}
             completion={signals.passport.percentage}
             firstName={firstName}
-            reducedMotion={reducedMotion}
-            onOpenPassport={() => {
-              window.location.assign("/passport");
-            }}
+            signals={signals}
             onKreto={openKretoChat}
           />
         ) : null}
 
-        <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        {(signals.priority.kind !== "none" || signals.primaryCta.label !== "Ask Kreto") && (
+          <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        )}
       </div>
     </div>
   );
@@ -124,151 +123,60 @@ export function TodayCommandCenter({
 /**
  * Passport + Kreto
  *
- * The whole card is the single Passport interaction.
- * There is deliberately no separate edit button.
+ * The shared card keeps Passport and Kreto together with distinct actions.
  */
 function PassportKretoCard({
   profile,
   creditCount,
   completion,
   firstName,
-  reducedMotion,
-  onOpenPassport,
+  signals,
   onKreto,
 }: PassportKretoCardProps) {
   const displayName = profile.full_name || profile.username || firstName || "Your Passport";
-
   const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
-
-  const location = profile.location || "";
-
   const avatarUrl = profile.avatar_url || "";
-
   const safeCompletion = Math.max(0, Math.min(100, completion));
 
   return (
-    <section
-      aria-label="Creative Passport and Kreto"
-      className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(300px,0.85fr)]"
-    >
-      <button
-        type="button"
-        onClick={onOpenPassport}
-        aria-label="Open and edit your Creative Passport"
-        className="group relative min-h-[220px] overflow-hidden rounded-3xl border border-border bg-card text-left transition-all duration-300 hover:border-primary/50 hover:bg-card/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      >
-        <div
-          className="pointer-events-none absolute inset-0 opacity-80"
-          aria-hidden
-          style={{
-            background:
-              "radial-gradient(circle at 80% 25%, hsl(var(--primary) / 0.18), transparent 38%), radial-gradient(circle at 15% 100%, hsl(var(--energy) / 0.08), transparent 42%)",
-          }}
-        />
-
-        <div className="relative flex h-full min-h-[220px] flex-col justify-between p-5 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-border bg-muted">
-                {avatarUrl ? (
-                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-lg font-bold text-muted-foreground">
-                    {getInitials(displayName)}
-                  </div>
-                )}
+    <HoloCard maxTilt={3}>
+      <section aria-label="Creative Passport and Kreto" className="relative overflow-hidden rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
+        <div className="relative z-10 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-7">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
+            <div className="mt-3 flex min-w-0 items-center gap-3">
+              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-energy/30 bg-muted">
+                {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{getInitials(displayName)}</span>}
               </div>
-
               <div className="min-w-0">
-                <p className="truncate text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  My Creative Passport
-                </p>
-                <h2 className="mt-1 truncate text-xl font-black tracking-tight text-foreground sm:text-2xl">
-                  {displayName}
-                </h2>
-                <p className="mt-0.5 truncate text-sm text-muted-foreground">{profession}</p>
+                <h2 className="truncate text-lg font-bold text-foreground">{displayName}</h2>
+                <p className="truncate text-xs text-muted-foreground">{profession}</p>
               </div>
             </div>
-
-            <ArrowRight
-              className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-foreground"
-              aria-hidden
-            />
-          </div>
-
-          <div className="mt-8 space-y-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-              {location ? (
-                <span className="inline-flex min-w-0 items-center gap-1.5">
-                  <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  <span className="truncate">{location}</span>
-                </span>
-              ) : null}
-
-              <span>
-                {creditCount} {creditCount === 1 ? "credit" : "credits"}
-              </span>
-
-              <span>Open to collaboration</span>
+            <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+              <span className="text-muted-foreground">Passport · {creditCount} credit{creditCount === 1 ? "" : "s"}</span>
+              <span className="font-bold text-energy">{safeCompletion}%</span>
             </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3 text-xs">
-                <span className="text-muted-foreground">Passport progress</span>
-                <span className="font-bold text-foreground">{safeCompletion}% complete</span>
-              </div>
-
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <motion.div
-                  initial={reducedMotion ? false : { width: 0 }}
-                  animate={{ width: `${safeCompletion}%` }}
-                  transition={{ duration: 0.65, ease: "easeOut" }}
-                  className="h-full rounded-full bg-primary"
-                />
-              </div>
+            <div role="progressbar" aria-label="Passport completion" aria-valuenow={safeCompletion} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${safeCompletion}%` }} />
             </div>
-
-            <p className="text-[11px] text-muted-foreground transition-colors group-hover:text-foreground/80">
-              Tap or click your Passport to view or edit it.
-            </p>
+            <Link to="/passport" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+              Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+            </Link>
+          </div>
+          <div className="flex min-w-0 items-center gap-3 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Kreto · Creator intelligence</p>
+              <p className="mt-2 text-sm leading-relaxed text-foreground">{creatorIntelligenceCopy(signals)}</p>
+              <Button type="button" variant="outline" size="sm" onClick={onKreto} className="mt-3 gap-2">
+                <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto
+              </Button>
+            </div>
+            <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={80} floatAmplitude={1} floatDuration={8} /></div>
           </div>
         </div>
-      </button>
-
-      <div className="relative min-h-[220px] overflow-hidden rounded-3xl border border-primary/25 bg-primary/[0.035] p-5 sm:p-6">
-        <div
-          className="pointer-events-none absolute inset-0"
-          aria-hidden
-          style={{
-            background: "radial-gradient(circle at 90% 10%, hsl(var(--primary) / 0.12), transparent 40%)",
-          }}
-        />
-
-        <div className="pointer-events-none absolute bottom-0 right-0 hidden opacity-75 sm:block" aria-hidden>
-          <KretoCharacter variant="main" size={132} floatAmplitude={2} floatDuration={8} />
-        </div>
-
-        <div className="relative z-10 flex h-full flex-col justify-between sm:pr-24">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
-              Kreto · Creator intelligence
-            </p>
-            <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-              Based on your Passport, active work and current signals.
-            </p>
-          </div>
-
-          <div className="mt-8">
-            <p className="text-sm font-semibold text-foreground">{creatorIntelligenceCopy(completion)}</p>
-
-            <Button type="button" variant="outline" size="sm" onClick={onKreto} className="mt-4 gap-2">
-              <MessageCircle className="h-3.5 w-3.5" aria-hidden />
-              Ask Kreto
-            </Button>
-          </div>
-        </div>
-      </div>
-    </section>
+      </section>
+    </HoloCard>
   );
 }
 
@@ -508,36 +416,15 @@ function getInitials(value: string) {
     .join("");
 }
 
-function creatorIntelligenceCopy(completion: number) {
-  if (completion < 40) {
-    return "Your Passport has room to grow. A few details now will make future opportunities more relevant.";
-  }
-
-  if (completion < 80) {
-    return "Your Passport is taking shape. Adding one strong credit or collaborator could improve your next match.";
-  }
-
-  return "Your Passport is ready to do more work for you. Keep it current as your projects move forward.";
+function creatorIntelligenceCopy(signals: TodaySignals) {
+  if (signals.unreadMessages > 0) return `${signals.unreadMessages} unread message${signals.unreadMessages === 1 ? "" : "s"} waiting for you.`;
+  if (signals.stamps?.waitingForCoSign) return `${signals.stamps.waitingForCoSign} credit${signals.stamps.waitingForCoSign === 1 ? "" : "s"} waiting for a co-sign.`;
+  if (signals.priority.kind !== "none") return "Your next move is below.";
+  return "No pressing updates right now.";
 }
 
 function priorityLine(signals: TodaySignals): string {
-  const { passport, stamps, priority } = signals;
-
-  if (passport && !passport.isComplete && passport.percentage > 0 && passport.percentage < 80) {
-    return `Your Passport is ${passport.percentage}% ready. Complete it when you're ready.`;
-  }
-
-  if (stamps && stamps.waitingForCoSign > 0) {
-    return `${stamps.waitingForCoSign} credit${stamps.waitingForCoSign === 1 ? "" : "s"} still need${
-      stamps.waitingForCoSign === 1 ? "s" : ""
-    } a co-sign.`;
-  }
-
-  if (priority.kind === "task" && priority.task.overdue) {
-    return `"${priority.task.title}" is overdue on ${priority.task.projectTitle}.`;
-  }
-
-  return "Your Passport, your work and your next move in one calm view.";
+  return signals.priority.kind === "none" ? "Your work at a glance." : "One next move, grounded in your work.";
 }
 
 export default TodayCommandCenter;
