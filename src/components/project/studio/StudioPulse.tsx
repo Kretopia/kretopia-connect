@@ -1,4 +1,5 @@
-import { Radio } from "lucide-react";
+import { Radio, FolderOpen, ChevronRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { SpeedTonightCard } from "@/components/home/SpeedTonightCard";
 import { TodayStrip } from "@/components/desk/TodayStrip";
 import { MyPendingInvitations } from "@/components/project/MyPendingInvitations";
@@ -13,6 +14,9 @@ interface Collaborator {
 
 interface StudioPulseProps {
   recentCollaborators: Collaborator[];
+  folderCount?: number;
+  projectCount?: number;
+  folderControls?: ReactNode;
   onVoice: () => void;
   onCommandPalette: () => void;
   onWrapWeek: () => void;
@@ -27,9 +31,9 @@ interface StudioPulseProps {
  * pending invitations and the contextual quick-actions strip are unrelated
  * to that verbosity report and are unchanged below.
  */
-export function StudioPulse({ recentCollaborators, onVoice, onCommandPalette, onWrapWeek }: StudioPulseProps) {
+export function StudioPulse({ recentCollaborators, folderCount = 0, projectCount = 0, folderControls, onVoice, onCommandPalette, onWrapWeek }: StudioPulseProps) {
   return (
-    <section aria-labelledby="studio-pulse-title" className="rounded-2xl border border-border bg-card p-4 sm:p-5 space-y-5">
+    <section aria-labelledby="studio-pulse-title" className="overflow-hidden rounded-lg border border-border bg-card px-4 py-3 sm:px-5">
       <div className="flex items-center gap-2">
         <Radio className="h-4 w-4 text-[hsl(var(--energy))]" aria-hidden />
         <h2 id="studio-pulse-title" className="text-[13px] font-semibold tracking-wide uppercase text-muted-foreground">
@@ -37,21 +41,34 @@ export function StudioPulse({ recentCollaborators, onVoice, onCommandPalette, on
         </h2>
       </div>
 
-      <SpeedTonightCard />
+      <div className="mt-2"><SpeedTonightCard /></div>
 
-      <div className="border-t border-border pt-2">
+      <div className="mt-2 border-t border-border/70">
         <StudioActivitySummary recentCollaborators={recentCollaborators} />
       </div>
 
-      {/* Recent activity */}
-      <div className="space-y-3 border-t border-border pt-4">
-        <MyPendingInvitations />
+      <div className="border-t border-border/70">
+        <MyPendingInvitations compact />
       </div>
 
-      {/* Contextual action */}
-      <div className="border-t border-border pt-4">
-        <TodayStrip onVoice={onVoice} onCommandPalette={onCommandPalette} onWrapWeek={onWrapWeek} />
-      </div>
+      <details className="group border-t border-border/70">
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <FolderOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span className="font-semibold">Folders</span>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{folderCount} folders · {projectCount} projects</span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+        </summary>
+        {folderControls && <div className="pb-3 pt-1">{folderControls}</div>}
+      </details>
+
+      <details className="group border-t border-border/70">
+        <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <Radio className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+          <span className="min-w-0 flex-1 font-semibold">Quick actions</span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
+        </summary>
+        <div className="pb-2"><TodayStrip onVoice={onVoice} onCommandPalette={onCommandPalette} onWrapWeek={onWrapWeek} /></div>
+      </details>
     </section>
   );
 }

@@ -234,10 +234,8 @@ export const CreatorWorkHome = () => {
     fetchProjects();
   };
 
-  const hasFolders = folders.length > 0;
   const atRoot = folderFilter === "all";
   const currentFolder = folders.find((f) => f.id === folderFilter);
-  const unfiledProjects = projects.filter((p) => !(p as any).studio_folder_id);
 
   return (
     <PageTransition>
@@ -274,6 +272,17 @@ export const CreatorWorkHome = () => {
             Collaborators" SectionCards. */}
         <StudioPulse
           recentCollaborators={recentCollaborators}
+          folderCount={folders.length}
+          projectCount={projects.length}
+          folderControls={user ? <StudioFoldersBar
+            userId={user.id}
+            folders={folders}
+            counts={folderCounts}
+            selected={folderFilter}
+            onSelect={setFolderFilter}
+            onChanged={() => { fetchFolders(); fetchProjects(); }}
+            onDropProject={moveProject}
+          /> : undefined}
           onVoice={openVoiceCommand}
           onCommandPalette={openPalette}
           onWrapWeek={openWrapWeek}
@@ -327,23 +336,9 @@ export const CreatorWorkHome = () => {
         ) : (
           // ── ROOT — folders grid + Projects dashboard below ──
           <>
-            {user && (projects.length > 0 || hasFolders) && (
-              <StudioFoldersBar
-                userId={user.id}
-                folders={folders}
-                counts={folderCounts}
-                selected={folderFilter}
-                onSelect={setFolderFilter}
-                onChanged={() => { fetchFolders(); fetchProjects(); }}
-                onDropProject={moveProject}
-              />
-            )}
-
-            {/* One Projects dashboard for every root view. When folders
-                exist we scope it to the unfiled Projects (previously
-                labeled "Loose projects" — copy only, no data change). */}
+            {/* Keep every project visible on the root shelf, including projects in folders. */}
             <StudioProjectsDashboard
-              projects={(hasFolders ? unfiledProjects : projects) as any}
+              projects={projects as any}
               invoicesByProject={invoicesByProject}
               moneyVisibleByProject={moneyVisibleByProject}
               participantsByProject={participantsByProject}
