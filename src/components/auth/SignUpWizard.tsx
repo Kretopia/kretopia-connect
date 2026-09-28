@@ -23,6 +23,9 @@ interface SignUpWizardProps {
   onSubmit: (e: React.FormEvent) => void;
   onGoogleSignIn: () => void;
   googleLoading: boolean;
+  // Temporarily hides the social buttons while the OAuth secret is missing
+  // on the backend (see OAUTH_TEMPORARILY_DISABLED in Auth.tsx).
+  hideOAuth?: boolean;
 }
 
 export const SignUpWizard = ({
