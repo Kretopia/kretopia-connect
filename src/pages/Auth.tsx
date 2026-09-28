@@ -734,6 +734,7 @@ const Auth = () => {
                   onForgotPassword={() => setShowForgotPassword(true)}
                   onGoogleSignIn={() => handleOAuthSignIn("google")}
                   googleLoading={googleLoading}
+                  hideOAuth={OAUTH_TEMPORARILY_DISABLED}
                 />
 
                 <button
