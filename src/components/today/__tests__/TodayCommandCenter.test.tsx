@@ -96,7 +96,7 @@ describe("TodayCommandCenter", () => {
     expect(screen.getByText(/Send co-sign requests/)).toBeInTheDocument();
   });
 
-  it("combines Passport and Kreto in one branded card with a real signal", () => {
+  it("keeps Passport and Kreto together beside equally structured Today and activity cards", () => {
     const signals = baseSignals({
       passport: { percentage: 72, missingFields: ["Bio"], isComplete: false },
       unreadMessages: 2,
@@ -108,11 +108,15 @@ describe("TodayCommandCenter", () => {
     const card = screen.getByRole("region", { name: "Creative Passport and Kreto" });
     expect(card).toHaveTextContent("My Creative Passport");
     expect(card).toHaveTextContent("Kreto · Creator intelligence");
-    expect(card).toHaveTextContent("2 unread messages");
-    expect(card).toHaveTextContent("1 due in the next 7 days");
-    expect(card).toHaveTextContent("1 Kreto suggestion to review");
-    expect(card).toHaveTextContent("3 completed this week");
-    expect(card).toHaveTextContent("Next milestone: Finish deck");
+    const activity = screen.getByRole("region", { name: "Your activity" });
+    expect(activity).toHaveTextContent("2 unread messages");
+    expect(activity).toHaveTextContent("1 due in the next 7 days");
+    expect(activity).toHaveTextContent("1 Kreto suggestion to review");
+    expect(activity).toHaveTextContent("3 completed this week");
+    expect(activity).toHaveTextContent("Next milestone: Finish deck");
+    expect(screen.getByRole("region", { name: "Today's next action" })).toBeInTheDocument();
+    expect(card.className).toContain("min-h-[320px]");
+    expect(activity.className).toContain("min-h-[320px]");
     expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
     expect(screen.getByRole("link", { name: /Open Passport/ })).toHaveAttribute("href", "/passport");
   });
