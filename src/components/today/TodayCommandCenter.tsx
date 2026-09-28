@@ -436,10 +436,11 @@ function getInitials(value: string) {
 }
 
 function creatorIntelligenceCopy(signals: TodaySignals) {
-  if (signals.unreadMessages > 0) return `${signals.unreadMessages} unread message${signals.unreadMessages === 1 ? "" : "s"} waiting for you.`;
+  if (signals.priority.kind === "task") return signals.priority.task.overdue ? "An overdue task needs your attention below." : "A task due today is your next move below.";
+  if (signals.priority.kind === "approval") return "A Kreto suggestion is ready for your review below.";
+  if (signals.priority.kind === "gig") return "A new call matched to you is ready below.";
   if (signals.stamps?.waitingForCoSign) return `${signals.stamps.waitingForCoSign} credit${signals.stamps.waitingForCoSign === 1 ? "" : "s"} waiting for a co-sign.`;
-  if (signals.priority.kind !== "none") return "Your next move is below.";
-  return "No pressing updates right now.";
+  return "No urgent action right now. Your latest activity is below.";
 }
 
 function priorityLine(signals: TodaySignals): string {
