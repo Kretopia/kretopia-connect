@@ -255,7 +255,7 @@ export const CreatorWorkHome = () => {
       />
 
       {/* Wider on desktop, capped for readability */}
-      <div className="max-w-6xl mx-auto px-4 pt-4 pb-36 md:pb-12 space-y-5">
+      <div className="max-w-6xl mx-auto px-4 pt-4 pb-8 md:pb-10 space-y-5">
         <KretoTip compact />
 
         {/* Creation-first hero — the promise, then one dominant CTA using

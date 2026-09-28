@@ -197,7 +197,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
 
       <div className="relative flex items-start gap-3 sm:gap-4">
         {tip.eyebrow === "Studio" ? (
-          <img src={kretoProducer} alt="" aria-hidden="true" className={cn("shrink-0 object-contain drop-shadow-lg", compact ? "h-10 w-10" : "h-[72px] w-[72px]")} />
+          <img src={kretoProducer} alt="" aria-hidden="true" className={cn("shrink-0 object-contain drop-shadow-lg", compact ? "h-16 w-16 sm:h-20 sm:w-20" : "h-20 w-20 sm:h-24 sm:w-24")} />
         ) : usesPresence ? (
           <KretoPresence size={compact ? "compact" : "card"} state="idle" />
         ) : (

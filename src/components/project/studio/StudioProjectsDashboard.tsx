@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import {
@@ -18,6 +18,7 @@ import {
   FileText,
   MessageSquare,
   ChevronRight,
+  ChevronLeft,
   Target,
   Briefcase,
   CheckSquare,
@@ -45,8 +46,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { moodAccent, monogram, STATUS_PILL, PAY_DOT, PAY_LABEL, type StudioProject } from "./studioCardHelpers";
 import { MoveToFolderSheet } from "./MoveToFolderSheet";
-import { StudioOverflowToggle } from "./StudioOverflowToggle";
-import { prioritizeProjects, defaultVisibleProjectCount } from "./studioHome.selectors";
+import { prioritizeProjects } from "./studioHome.selectors";
 import type { StudioFolder } from "./studioHome.types";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { WORKSPACE_CONFIGS, type WorkspaceType } from "@/lib/workspaceConfigs";
@@ -159,16 +159,11 @@ export const StudioProjectsDashboard = ({
   const [filter, setFilter] = useState<StatusFilter>("all");
   const [sort, setSort] = useState<SortKey>("recent");
   const [moveTarget, setMoveTarget] = useState<StudioProject | null>(null);
-  const [expanded, setExpanded] = useState(false);
-  const [viewportWidth, setViewportWidth] = useState(() => (typeof window === "undefined" ? 1024 : window.innerWidth));
+  const carouselRef = useRef<HTMLUListElement>(null);
+  const [carouselPosition, setCarouselPosition] = useState(0);
+  const [canScrollForward, setCanScrollForward] = useState(false);
   const [activeTab, setActiveTab] = useState<OverviewTab>("overview");
   const [boardView, setBoardView] = useState<BoardView>("board");
-
-  useEffect(() => {
-    const onResize = () => setViewportWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   const pay = (id: string): PayState => invoicesByProject[id] ?? "unsent";
 
@@ -211,9 +206,36 @@ export const StudioProjectsDashboard = ({
     return list;
   }, [projects, invoicesByProject, moneyVisibleByProject, query, filter, sort]);
 
-  const visibleCount = expanded ? rows.length : Math.min(rows.length, defaultVisibleProjectCount(viewportWidth));
-  const visibleRows = rows.slice(0, visibleCount);
-  const hiddenRowCount = rows.length - visibleRows.length;
+  const syncCarousel = () => {
+    const list = carouselRef.current;
+    if (!list) return;
+    const firstCard = list.querySelector("li");
+    const step = firstCard ? firstCard.getBoundingClientRect().width + 12 : 1;
+    setCarouselPosition(Math.min(rows.length - 1, Math.max(0, Math.round(list.scrollLeft / step))));
+    setCanScrollForward(list.scrollLeft + list.clientWidth < list.scrollWidth - 2);
+  };
+
+  useEffect(() => {
+    const list = carouselRef.current;
+    if (!list) return;
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(syncCarousel);
+    observer.observe(list);
+    syncCarousel();
+    return () => observer.disconnect();
+  }, [rows]);
+
+  const moveCarousel = (direction: -1 | 1) => {
+    const list = carouselRef.current;
+    const firstCard = list?.querySelector("li");
+    if (!list || !firstCard) return;
+    list.scrollBy({ left: direction * (firstCard.getBoundingClientRect().width + 12), behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (carouselRef.current) carouselRef.current.scrollLeft = 0;
+    setCarouselPosition(0);
+  }, [query, filter, sort]);
 
   const nextAction = (p: StudioProject) => {
     if (!isDelivered(p.status)) {
@@ -803,14 +825,14 @@ export const StudioProjectsDashboard = ({
   }
 
   return (
-    <section aria-labelledby="studio-projects-title" className="space-y-4">
+    <section aria-labelledby="studio-projects-title" className="space-y-3">
       {/* Header */}
       <div className="flex items-end justify-between gap-3">
         <h2 id="studio-projects-title" className="text-base font-bold">
-          Studios
+          Kretopia Projects
         </h2>
         <span className="text-xs text-muted-foreground">
-          {visibleRows.length} of {projects.length} shown
+          {rows.length} {rows.length === 1 ? "project" : "projects"}
         </span>
       </div>
 
@@ -864,7 +886,7 @@ export const StudioProjectsDashboard = ({
         </Button>
       </div>
 
-      {/* Projects grid */}
+      {/* One continuous, keyboard-scrollable shelf: every matching project remains available. */}
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           No Projects match this view.{" "}
@@ -880,8 +902,15 @@ export const StudioProjectsDashboard = ({
           </button>
         </div>
       ) : (
-        <ul id="studio-projects-list" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleRows.map((p) => {
+        <ul
+          id="studio-projects-list"
+          ref={carouselRef}
+          onScroll={syncCarousel}
+          aria-label="Studio projects"
+          tabIndex={0}
+          className="flex gap-3 overflow-x-auto overscroll-x-contain scroll-smooth snap-x snap-mandatory pb-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary [scrollbar-width:thin] motion-reduce:scroll-auto"
+        >
+          {rows.map((p) => {
             const pill = STATUS_PILL[p.status ?? "active"] ?? STATUS_PILL.planning;
             const state = pay(p.id);
             const accent = moodAccent(p.mood);
@@ -898,7 +927,7 @@ export const StudioProjectsDashboard = ({
                   : 50;
 
             return (
-              <li key={p.id} className="group relative animate-fade-in">
+              <li key={p.id} className="group relative w-[min(82vw,300px)] shrink-0 snap-start sm:w-[300px]">
                 <HoloCard className="h-full overflow-hidden">
                   <button
                     type="button"
@@ -1038,17 +1067,17 @@ export const StudioProjectsDashboard = ({
         </ul>
       )}
 
-      {/* Overflow */}
-      {(hiddenRowCount > 0 || expanded) && rows.length > 0 && (
-        <div className="flex justify-center">
-          <StudioOverflowToggle
-            expanded={expanded}
-            onToggle={() => setExpanded((v) => !v)}
-            itemLabel="project"
-            expandLabel={expanded ? undefined : `See all ${rows.length} projects`}
-            collapseLabel="Show fewer"
-            controlsId="studio-projects-list"
-          />
+      {rows.length > 1 && (
+        <div className="flex items-center justify-between gap-3" aria-label="Project carousel controls">
+          <span className="text-xs tabular-nums text-muted-foreground">{carouselPosition + 1} / {rows.length}</span>
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => moveCarousel(-1)} disabled={carouselPosition === 0} aria-label="Previous project">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => moveCarousel(1)} disabled={!canScrollForward} aria-label="Next project">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       )}
 
