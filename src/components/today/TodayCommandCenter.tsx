@@ -112,7 +112,9 @@ export function TodayCommandCenter({
           />
         ) : null}
 
-        <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        {(signals.priority.kind !== "none" || signals.primaryCta.label !== "Ask Kreto") && (
+          <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        )}
       </div>
     </div>
   );
