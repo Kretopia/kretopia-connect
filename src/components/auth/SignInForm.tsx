@@ -235,30 +235,34 @@ export const SignInForm = ({
         </Button>
       )}
 
-      {/* OR divider */}
-      <div className="relative py-1">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center">
-          <span className="bg-background px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            {oauthOnlyProvider ? "Continue with" : "Or continue with"}
-          </span>
-        </div>
-      </div>
+      {/* OR divider + Google button */}
+      {!hideOAuth && (
+        <>
+          <div className="relative py-1">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                {oauthOnlyProvider ? "Continue with" : "Or continue with"}
+              </span>
+            </div>
+          </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="lg"
-        className={`w-full h-12 gap-2 bg-card hover:bg-muted/40 ${oauthOnlyProvider === "google" ? "ring-2 ring-primary" : ""}`}
-        onClick={() => handleOAuthClick("google", onGoogleSignIn)}
-        disabled={googleLoading}
-      >
-        {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Chrome className="h-4 w-4" />}
-        Google
-        {lastMethod === "google" && <LastUsedPill />}
-      </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className={`w-full h-12 gap-2 bg-card hover:bg-muted/40 ${oauthOnlyProvider === "google" ? "ring-2 ring-primary" : ""}`}
+            onClick={() => handleOAuthClick("google", onGoogleSignIn)}
+            disabled={googleLoading}
+          >
+            {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Chrome className="h-4 w-4" />}
+            Google
+            {lastMethod === "google" && <LastUsedPill />}
+          </Button>
+        </>
+      )}
 
       {/* Magic link fallback */}
       {!oauthOnlyProvider && (
