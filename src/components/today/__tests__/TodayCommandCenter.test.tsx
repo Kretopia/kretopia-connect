@@ -109,7 +109,7 @@ describe("TodayCommandCenter", () => {
     expect(card).toHaveTextContent("My Creative Passport");
     expect(card).toHaveTextContent("Kreto · Creator intelligence");
     expect(card).toHaveTextContent("2 unread messages");
-    expect(card).toHaveTextContent("1 due this week");
+    expect(card).toHaveTextContent("1 due in the next 7 days");
     expect(card).toHaveTextContent("1 Kreto suggestion to review");
     expect(card).toHaveTextContent("3 completed this week");
     expect(card).toHaveTextContent("Next milestone: Finish deck");
