@@ -24,6 +24,9 @@ interface SignInFormProps {
   onForgotPassword: () => void;
   onGoogleSignIn: () => void;
   googleLoading: boolean;
+  // Temporarily hides the Google button while the OAuth secret is missing
+  // on the backend (see OAUTH_TEMPORARILY_DISABLED in Auth.tsx).
+  hideOAuth?: boolean;
 }
 
 const LastUsedPill = () => (
