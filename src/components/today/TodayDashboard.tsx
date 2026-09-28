@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -27,6 +27,19 @@ export function TodayDashboard({ firstName, peopleForYou, profile, profileFull, 
   const effectiveProfile = profileFull || profile || null;
   const signals = useTodaySignals(user?.id, effectiveProfile, myCredits);
   const refresh = signals.reload;
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const refreshWhenVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    const timer = window.setInterval(refreshWhenVisible, 60_000);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    window.addEventListener("focus", refreshWhenVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+      window.removeEventListener("focus", refreshWhenVisible);
+    };
+  }, [user?.id, refresh]);
 
   if (!user) return null;
 

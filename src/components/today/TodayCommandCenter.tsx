@@ -416,11 +416,9 @@ function getInitials(value: string) {
 }
 
 function creatorIntelligenceCopy(signals: TodaySignals) {
-  if (signals.priority.kind === "task") return `Next: ${signals.priority.task.title} · ${signals.priority.task.projectTitle}`;
-  if (signals.priority.kind === "approval") return `${signals.approvalCount} suggestion${signals.approvalCount === 1 ? "" : "s"} waiting for your review.`;
   if (signals.unreadMessages > 0) return `${signals.unreadMessages} unread message${signals.unreadMessages === 1 ? "" : "s"} waiting for you.`;
   if (signals.stamps?.waitingForCoSign) return `${signals.stamps.waitingForCoSign} credit${signals.stamps.waitingForCoSign === 1 ? "" : "s"} waiting for a co-sign.`;
-  if (signals.priority.kind === "gig") return `A call is available: ${signals.priority.gig.title}.`;
+  if (signals.priority.kind !== "none") return "Your next move is below.";
   return "No pressing updates right now.";
 }
 
