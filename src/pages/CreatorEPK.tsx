@@ -512,186 +512,6 @@ const CreatorEPK = () => {
             </section>
           )}
           {profile.availability_status && <p className="border-t border-border pt-4 text-sm text-muted-foreground">Availability · <span className="capitalize text-foreground">{profile.availability_status.replace(/_/g, ' ')}</span>{profile.availability_note && ` · ${profile.availability_note}`}</p>}
-        {/* Owner Share Toolbar */}
-        {isOwner && (
-          <div ref={shareRef}>
-            <EPKShareToolbar
-              profileName={profile.full_name}
-              profileRole={profile.role || 'Creator'}
-              userId={userId || ''}
-              epkPdfData={{
-                profile,
-                credits,
-                awards,
-                pressLinks,
-                industryStats,
-                reviews: reviews.map((r: any) => ({
-                  reviewer_name: r.reviewer_name || r.reviewer?.full_name,
-                  rating: r.rating,
-                  review_text: r.review_text,
-                })),
-              }}
-            />
-          </div>
-        )}
-      </div>
-
-        <div className="order-1 min-w-0 lg:order-2">
-          <PublicPassportHero
-            profile={profile}
-            credits={credits}
-            connectionStatus={connectionStatus}
-            isOwner={isOwner}
-            isSignedIn={Boolean(currentUserId)}
-            isConnecting={isConnecting}
-            onConnect={handleConnect}
-            onMessage={() => setMessageOpen(true)}
-            onCollaborate={() => setCollaborateOpen(true)}
-            onAddToProject={() => setInviteOpen(true)}
-            onShare={handleShare}
-            onJoin={() => navigate(`/auth?connect=${userId}`)}
-            showBio={false}
-            showActions={false}
-          >
-        {/* Collaboration uses the same existing gated actions. */}
-        {!isOwner && (
-          <div className="border-b border-border pb-5">
-            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
-              Work with {firstName}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {connectionStatus === 'connected'
-                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
-                : connectionStatus === 'pending'
-                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
-                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Start a Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
-                    <UserPlus2 className="h-4 w-4" />
-                    Invite to Project
-                  </Button>
-                </>
-              ) : (
-                <CtaButton
-                  onClick={handleConnect}
-                  disabled={isConnecting || connectionStatus === 'pending'}
-                  className="w-full gap-2"
-                >
-                  <UserPlus2 className="h-4 w-4" />
-                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </CtaButton>
-              )}
-            </div>
-            {!currentUserId && (
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate('/auth?type=brand')}
-                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
-              >
-                I'm a brand — find creators like {firstName}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
-        {(profile.headline || profile.bio) && (() => {
-          const longBio = profile.bio && profile.bio.length > 280;
-          const body = profile.headline
-            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
-          return (
-            <div className="rounded-md border border-border bg-secondary p-5">
-              <h3 className="text-sm font-semibold text-energy uppercase mb-2">
-                Why work with me
-              </h3>
-              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
-                {body}
-              </p>
-              {!profile.headline && longBio && (
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => setBioExpanded((v) => !v)}
-                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
-                >
-                  {bioExpanded ? "Show less" : "Read more"}
-                </Button>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Press & Awards Combined */}
-        {(pressLinks.length > 0 || awards.length > 0) && (
-          <div className="space-y-5">
-            {pressLinks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured In
-                </h3>
-                <div className="space-y-2">
-                  {pressLinks.slice(0, 4).map((press) => (
-                    <a
-                      key={press.id}
-                      href={press.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      {press.image_url ? (
-                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
-                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
-                        <p className="text-xs text-muted-foreground">{press.publication}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {awards.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Awards
-                </h3>
-                <div className="space-y-2">
-                  {awards.slice(0, 3).map((award) => (
-                    <div
-                      key={award.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
-                    >
-                      <Award className="h-4 w-4 text-energy shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{award.title}</p>
-                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-          </PublicPassportHero>
 {/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
           <div className="mb-8">
@@ -978,20 +798,191 @@ const CreatorEPK = () => {
         )}
 
       </div>
-      {/* closes right column */}
-      </div>
-      {/* closes lg:grid outer container */}
 
-      {/* CEO overhaul: the fixed bottom EPKFooterCTA bar is gone -- every
-          state it handled already has a real inline equivalent above, now
-          that collaboration is a primary CTA rather than living only in a
-          persistent floating bar: Owner -> EPKShareToolbar (left column),
-          Unclaimed -> the "Is this you? Claim This Profile" banner (right
-          column), signed-in visitor -> the "Work with X" block (left
-          column). Only the footer's brand-discovery link ("I'm a Brand —
-          Find Creators Like X") had no inline equivalent; it's preserved
-          as a secondary link in "Work with X" below instead of a whole
-          separate persistent bar. */}
+        {/* Owner Share Toolbar */}
+        {isOwner && (
+          <div ref={shareRef}>
+            <EPKShareToolbar
+              profileName={profile.full_name}
+              profileRole={profile.role || 'Creator'}
+              userId={userId || ''}
+              epkPdfData={{
+                profile,
+                credits,
+                awards,
+                pressLinks,
+                industryStats,
+                reviews: reviews.map((r: any) => ({
+                  reviewer_name: r.reviewer_name || r.reviewer?.full_name,
+                  rating: r.rating,
+                  review_text: r.review_text,
+                })),
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+        <div className="order-1 min-w-0 lg:order-2">
+          <PublicPassportHero
+            profile={profile}
+            credits={credits}
+            connectionStatus={connectionStatus}
+            isOwner={isOwner}
+            isSignedIn={Boolean(currentUserId)}
+            isConnecting={isConnecting}
+            onConnect={handleConnect}
+            onMessage={() => setMessageOpen(true)}
+            onCollaborate={() => setCollaborateOpen(true)}
+            onAddToProject={() => setInviteOpen(true)}
+            onShare={handleShare}
+            onJoin={() => navigate(`/auth?connect=${userId}`)}
+            showBio={false}
+            showActions={false}
+          >
+        {/* Collaboration uses the same existing gated actions. */}
+        {!isOwner && (
+          <div className="border-b border-border pb-5">
+            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
+              Work with {firstName}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {connectionStatus === 'connected'
+                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
+                : connectionStatus === 'pending'
+                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
+                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {connectionStatus === 'connected' ? (
+                <>
+                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Message
+                  </Button>
+                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Start a Project
+                  </Button>
+                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
+                    <UserPlus2 className="h-4 w-4" />
+                    Invite to Project
+                  </Button>
+                </>
+              ) : (
+                <CtaButton
+                  onClick={handleConnect}
+                  disabled={isConnecting || connectionStatus === 'pending'}
+                  className="w-full gap-2"
+                >
+                  <UserPlus2 className="h-4 w-4" />
+                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
+                </CtaButton>
+              )}
+            </div>
+            {!currentUserId && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/auth?type=brand')}
+                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
+              >
+                I'm a brand — find creators like {firstName}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
+        {(profile.headline || profile.bio) && (() => {
+          const longBio = profile.bio && profile.bio.length > 280;
+          const body = profile.headline
+            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
+          return (
+            <div className="rounded-md border border-border bg-secondary p-5">
+              <h3 className="text-sm font-semibold text-energy uppercase mb-2">
+                Why work with me
+              </h3>
+              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
+                {body}
+              </p>
+              {!profile.headline && longBio && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => setBioExpanded((v) => !v)}
+                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                </Button>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* Press & Awards Combined */}
+        {(pressLinks.length > 0 || awards.length > 0) && (
+          <div className="space-y-5">
+            {pressLinks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Featured In
+                </h3>
+                <div className="space-y-2">
+                  {pressLinks.slice(0, 4).map((press) => (
+                    <a
+                      key={press.id}
+                      href={press.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      {press.image_url ? (
+                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
+                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
+                        <p className="text-xs text-muted-foreground">{press.publication}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {awards.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Awards
+                </h3>
+                <div className="space-y-2">
+                  {awards.slice(0, 3).map((award) => (
+                    <div
+                      key={award.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
+                    >
+                      <Award className="h-4 w-4 text-energy shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{award.title}</p>
+                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+          </PublicPassportHero>
+      {/* closes Passport card column */}
+      </div>
+      {/* closes profile grid */}
+
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (
         <StartProjectFromMatchDialog open={collaborateOpen} onOpenChange={setCollaborateOpen} matchedUser={{ id: profile.user_id, name: profile.full_name, role: profile.role, avatar: profile.avatar_url }} />
