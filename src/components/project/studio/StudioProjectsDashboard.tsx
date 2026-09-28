@@ -233,7 +233,7 @@ export const StudioProjectsDashboard = ({
   };
 
   useEffect(() => {
-    carouselRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    if (carouselRef.current) carouselRef.current.scrollLeft = 0;
     setCarouselPosition(0);
   }, [query, filter, sort]);
 
