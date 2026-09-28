@@ -14,11 +14,6 @@ import { SocialStatsInline } from "@/components/profile/SocialStatsInline";
 import type { Standing } from "@/lib/passport/standing";
 import { cn } from "@/lib/utils";
 
-/** Shared gray -> Kretopia pink treatment for the Passport's one banner and
- *  one progress bar (see RoleStamp/PassportHero redesign) -- everywhere
- *  else on the card keeps the single accent token unchanged. */
-const GRAY_PINK_GRADIENT = "linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, #FF2DA1 100%)";
-
 interface HeroCredit {
   project_name: string;
   role: string;
@@ -107,12 +102,12 @@ export function PassportHero({
 
   return (
     <HoloCard>
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="relative overflow-hidden rounded-lg border border-energy/30 bg-card shadow-lg">
         {/* Cover */}
         <div
           className={cn(
             "relative aspect-[3/1] sm:aspect-[4/1] overflow-hidden",
-            !profile.cover_image_url && "bg-muted/60",
+             !profile.cover_image_url && "passport-cover bg-muted/60",
           )}
         >
           {profile.cover_image_url ? (
@@ -122,33 +117,24 @@ export function PassportHero({
               className="h-full w-full object-cover"
               loading="lazy"
             />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground">
-              Add a cover image to make your Passport pop
-            </div>
-          )}
+          ) : null}
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
                 variant="secondary"
-                className="absolute top-2 right-2 h-9 w-9 rounded-full shadow-md opacity-90 hover:opacity-100 focus-visible:opacity-100"
+                className="absolute right-3 top-3 z-10 h-10 w-10 rounded-md border border-energy/40 bg-card/90 text-energy shadow-md backdrop-blur-md hover:bg-card focus-visible:ring-energy"
                 onClick={onEdit}
                 aria-label="Edit profile"
               >
-                <PencilLine className="h-4 w-4" />
+                 <PencilLine className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
               <p className="text-sm">Edit profile</p>
             </TooltipContent>
           </Tooltip>
-          <div
-            className="absolute top-2 left-2 px-2.5 py-1 text-white text-[10px] font-bold uppercase tracking-[0.15em] rounded-full"
-            style={{ background: GRAY_PINK_GRADIENT }}
-          >
-            Creative Passport
-          </div>
         </div>
 
         <div className="relative px-5 pb-5 -mt-8 space-y-4">
@@ -304,8 +290,8 @@ export function PassportHero({
             </div>
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${Math.min(strength, 100)}%`, background: GRAY_PINK_GRADIENT }}
+                className="h-full rounded-full bg-energy transition-all"
+                style={{ width: `${Math.min(strength, 100)}%` }}
               />
             </div>
           </div>
@@ -316,7 +302,7 @@ export function PassportHero({
             <Button
               onClick={onShare}
               variant="outline"
-              className="glass-surface flex-1 h-10 gap-1.5 border-white/10 text-foreground transition-colors hover:border-[#FF2DA1]/50 hover:text-[#FF2DA1] focus-visible:ring-[#FF2DA1] active:text-[#FF2DA1]"
+               className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-energy/50 hover:text-energy focus-visible:ring-energy active:text-energy"
             >
               <Share2 className="h-4 w-4" />
               Share Passport
@@ -329,28 +315,7 @@ export function PassportHero({
             </Button>
           </div>
 
-          {/* One intelligent next action — goes to the action's real deeplink,
-              not a generic scroll, since different actions lead different places. */}
-          {nextAction && (
-            <Link
-              to={nextAction.deeplink}
-              className="w-full flex items-center gap-2.5 rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3 text-left hover:border-[hsl(var(--signal-teal))]/40 transition-colors"
-            >
-              <ShieldCheck className="h-4 w-4 text-[hsl(var(--signal-teal))] shrink-0" />
-              <span className="text-xs font-medium flex-1 min-w-0 truncate">{nextAction.label}</span>
-              <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            </Link>
-          )}
-
-          <SocialStatsInline
-            youtubeSubscribers={profile.youtube_subscribers}
-            instagramFollowers={profile.instagram_followers}
-            tiktokFollowers={profile.tiktok_followers}
-            spotifyListeners={profile.spotify_listeners}
-            twitterFollowers={profile.twitter_followers}
-            linkedinConnections={profile.linkedin_connections}
-            verifiedMetrics={profile.verified_metrics}
-          />
+           {profile.user_id && <SocialStatsInline userId={profile.user_id} />}
         </div>
       </div>
     </HoloCard>
