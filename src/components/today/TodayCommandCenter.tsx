@@ -137,6 +137,9 @@ function PassportKretoCard({
   const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
   const avatarUrl = profile.avatar_url || "";
   const safeCompletion = Math.max(0, Math.min(100, completion));
+  const upcomingCount = signals.deadlines.filter((task) => !task.overdue).length;
+  const completedThisWeek = signals.momentum?.completedThisWeek;
+  const nextMilestone = signals.momentum?.nextMilestone;
 
   return (
     <HoloCard maxTilt={3}>
@@ -175,6 +178,22 @@ function PassportKretoCard({
             <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={80} floatAmplitude={1} floatDuration={8} /></div>
           </div>
         </div>
+        {(upcomingCount > 0 || signals.approvalCount > 0 || signals.unreadMessages > 0 || (completedThisWeek ?? 0) > 0 || nextMilestone) && (
+          <div className="relative z-10 mt-5 border-t border-border pt-4">
+            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Your activity</p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs">
+              {upcomingCount > 0 && <Link to="/desk" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{upcomingCount}</span> due in the next 7 days <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
+              {signals.approvalCount > 0 && <span className="text-foreground"><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</span>}
+              {signals.unreadMessages > 0 && <Link to="/messages" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{signals.unreadMessages}</span> unread message{signals.unreadMessages === 1 ? "" : "s"} <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
+              {(completedThisWeek ?? 0) > 0 && <span className="text-foreground"><span className="font-bold text-energy">{completedThisWeek}</span> completed this week</span>}
+            </div>
+            {nextMilestone && (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              </p>
+            )}
+          </div>
+        )}
       </section>
     </HoloCard>
   );
@@ -417,10 +436,11 @@ function getInitials(value: string) {
 }
 
 function creatorIntelligenceCopy(signals: TodaySignals) {
-  if (signals.unreadMessages > 0) return `${signals.unreadMessages} unread message${signals.unreadMessages === 1 ? "" : "s"} waiting for you.`;
+  if (signals.priority.kind === "task") return signals.priority.task.overdue ? "An overdue task needs your attention below." : "A task due today is your next move below.";
+  if (signals.priority.kind === "approval") return "A Kreto suggestion is ready for your review below.";
+  if (signals.priority.kind === "gig") return "A new call matched to you is ready below.";
   if (signals.stamps?.waitingForCoSign) return `${signals.stamps.waitingForCoSign} credit${signals.stamps.waitingForCoSign === 1 ? "" : "s"} waiting for a co-sign.`;
-  if (signals.priority.kind !== "none") return "Your next move is below.";
-  return "No pressing updates right now.";
+  return "No urgent action right now. Your latest activity is below.";
 }
 
 function priorityLine(signals: TodaySignals): string {
