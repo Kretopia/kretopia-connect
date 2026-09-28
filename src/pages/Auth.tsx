@@ -711,11 +711,8 @@ const Auth = () => {
                 <div className="mb-5 space-y-2">
                   <div className="grid grid-cols-2 gap-2">
                     <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                    <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
-                    <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
                   </div>
                 </div>
 
@@ -804,11 +801,8 @@ const Auth = () => {
                     />
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                      <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
                     </div>
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
-                      <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
                     </div>
                     <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
                       <ShieldCheck className="h-3.5 w-3.5" />
@@ -842,11 +836,8 @@ const Auth = () => {
                     <div className="mb-5 space-y-2">
                       <div className="grid grid-cols-2 gap-2">
                         <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                        <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
-                        <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
                       </div>
                     </div>
                     <div className="mb-5 flex items-center gap-2">
