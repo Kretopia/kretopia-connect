@@ -17,6 +17,12 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "paths": {
+      "@/integrations/supabase/client": [
+        "./src/integrations/supabase/legacyClient.ts"
+      ],
+      "@/integrations/supabase/types": [
+        "./src/integrations/supabase/legacyTypes.ts"
+      ],
       "@/*": [
         "./src/*"
       ]

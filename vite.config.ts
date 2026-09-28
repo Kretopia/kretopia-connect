@@ -223,6 +223,8 @@ export default defineConfig(({ mode }) => {
     ].filter(Boolean),
     resolve: {
       alias: {
+        "@/integrations/supabase/client": path.resolve(__dirname, "./src/integrations/supabase/legacyClient.ts"),
+        "@/integrations/supabase/types": path.resolve(__dirname, "./src/integrations/supabase/legacyTypes.ts"),
         "@": path.resolve(__dirname, "./src"),
         // Deduplicate React to prevent multiple instances
         react: path.resolve(__dirname, "./node_modules/react"),
