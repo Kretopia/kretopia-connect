@@ -87,8 +87,11 @@ export const MatchedProfilesStep = ({ onComplete }: MatchedProfilesStepProps) =>
       const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
       
       if (error) {
+        // The SDK's message is generic; the real status lives on error.context.
+        // A 404 ("Profile not found") is a recoverable empty state, not a crash.
+        const status = (error as { context?: Response })?.context?.status;
         const message = typeof error.message === "string" ? error.message : "";
-        if (message.includes("Profile not found")) {
+        if (status === 404 || message.includes("Profile not found")) {
           setMatches([]);
           return;
         }
