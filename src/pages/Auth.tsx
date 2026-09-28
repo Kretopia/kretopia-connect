@@ -794,26 +794,28 @@ const Auth = () => {
                         first. Search stays one scroll away for anyone who
                         wants Kreto to pull in their existing credits instead
                         of starting blank. */}
-                    <p className="text-center text-sm font-semibold text-foreground mb-0.5">
-                      Get in fast with Google
-                    </p>
-                    <p className="text-center text-xs text-muted-foreground mb-4">
-                      Create your Kretopia Passport in seconds.
-                    </p>
-                    <OAuthQuickButtons
-                      onGoogle={() => handleOAuthSignIn("google")}
-                      googleLoading={googleLoading}
-                      label=""
-                    />
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                    </div>
-                    <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Secure OAuth — your provider password never reaches Kretopia.
-                    </div>
+                    {!OAUTH_TEMPORARILY_DISABLED && (
+                      <>
+                        <p className="text-center text-sm font-semibold text-foreground mb-0.5">
+                          Get in fast with Google
+                        </p>
+                        <p className="text-center text-xs text-muted-foreground mb-4">
+                          Create your Kretopia Passport in seconds.
+                        </p>
+                        <OAuthQuickButtons
+                          onGoogle={() => handleOAuthSignIn("google")}
+                          googleLoading={googleLoading}
+                          label=""
+                        />
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                        </div>
+                        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Secure OAuth — your provider password never reaches Kretopia.
+                        </div>
+                      </>
+                    )}
                     <div className="my-5 flex items-center gap-2">
                       <div className="flex-1 h-px bg-border" />
                       <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
