@@ -861,6 +861,7 @@ const Auth = () => {
                       loading={loading} onSubmit={handleSignUp}
                       onGoogleSignIn={() => handleOAuthSignIn("google")}
                       googleLoading={googleLoading}
+                      hideOAuth={OAUTH_TEMPORARILY_DISABLED}
                     />
                     <p className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
                       <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
