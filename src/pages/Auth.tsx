@@ -1,3 +1,4 @@
+import { createDirectMatch } from "@/lib/createDirectMatch";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -291,7 +292,7 @@ const Auth = () => {
       });
       if (connectionError) throw connectionError;
 
-      await supabase.rpc('create_direct_match' as any, { _other_user_id: targetUserId });
+      await createDirectMatch(targetUserId);
 
       await supabase.from('notifications').insert([
         { user_id: user.id, type: 'connection', title: `Connected with ${targetProfile?.full_name || 'a creator'}!`, message: `You're now connected via QR code. Start collaborating!`, link: `/profile/${targetUserId}?from=match`, action_url: `/messages?user=${targetUserId}`, action_text: 'Send Message', image_url: targetProfile?.avatar_url },
