@@ -24,9 +24,10 @@ const since30d = () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOStri
 
 interface PassportMomentumProps {
   userId?: string; // when provided, render public momentum for that user
+  compact?: boolean;
 }
 
-export function PassportMomentum({ userId }: PassportMomentumProps = {}) {
+export function PassportMomentum({ userId, compact = false }: PassportMomentumProps = {}) {
   const { user } = useAuth();
   const targetId = userId || user?.id;
   const [m, setM] = useState<Momentum | null>(null);
@@ -89,7 +90,7 @@ export function PassportMomentum({ userId }: PassportMomentumProps = {}) {
   ];
 
   return (
-    <Card className="p-4 bg-card/60 border-border/60">
+    <Card className={compact ? "border-0 bg-transparent p-0 shadow-none" : "p-4 bg-card/60 border-border/60"}>
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="h-3.5 w-3.5 text-[hsl(var(--signal-teal))]" />
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
