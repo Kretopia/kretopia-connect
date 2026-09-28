@@ -101,11 +101,16 @@ export function TodayCommandCenter({
             onKreto={openKretoChat}
           />
         ) : (
-          <div className="h-full min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
-            <p className="mt-4 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
-            <Button type="button" variant="outline" size="sm" onClick={openKretoChat} className="mt-4 gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
-          </div>
+          <HoloCard maxTilt={3} className="h-full min-w-0">
+            <section aria-label="Creative Passport and Kreto" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
+              <p className="mt-4 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
+              <div className="mt-auto flex flex-wrap gap-3 pt-4">
+                <Link to="/passport" className="inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline">Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
+                <Button type="button" variant="outline" size="sm" onClick={openKretoChat} className="gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
+              </div>
+            </section>
+          </HoloCard>
         )}
         <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
         <TodayActivityCard signals={signals} />
@@ -288,6 +293,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
   };
 
   return (
+    <HoloCard maxTilt={3} className="h-full min-w-0">
     <section aria-label="Today's next action" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -404,6 +410,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
         </CtaButton>
       ) : null}
     </section>
+    </HoloCard>
   );
 }
 
