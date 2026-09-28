@@ -232,6 +232,11 @@ export const StudioProjectsDashboard = ({
     list.scrollBy({ left: direction * (firstCard.getBoundingClientRect().width + 12), behavior: "smooth" });
   };
 
+  useEffect(() => {
+    carouselRef.current?.scrollTo({ left: 0, behavior: "instant" });
+    setCarouselPosition(0);
+  }, [query, filter, sort]);
+
   const nextAction = (p: StudioProject) => {
     if (!isDelivered(p.status)) {
       if (p.status === "wrapping") return "Wrap it up";
