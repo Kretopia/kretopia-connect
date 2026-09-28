@@ -1,3 +1,4 @@
+import { createDirectMatch } from "@/lib/createDirectMatch";
 import { supabase } from "@/integrations/supabase/client";
 
 // Founder account - all new users connect with this account automatically
@@ -61,7 +62,7 @@ async function createBidirectionalConnection(userId1: string, userId2: string) {
   // allows swipe-verified matches (see
   // 20260912120000_gate_matches_direct_insert.sql), so a direct insert
   // here would be rejected.
-  await supabase.rpc('create_direct_match' as any, { _other_user_id: userId2 });
+  await createDirectMatch(userId2);
 
   // Send welcome notification to new user with proper action links
   const { data: founderProfile } = await supabase
