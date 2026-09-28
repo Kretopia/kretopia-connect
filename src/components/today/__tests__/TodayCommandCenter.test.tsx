@@ -100,12 +100,19 @@ describe("TodayCommandCenter", () => {
     const signals = baseSignals({
       passport: { percentage: 72, missingFields: ["Bio"], isComplete: false },
       unreadMessages: 2,
+      approvalCount: 1,
+      deadlines: [{ id: "t2", title: "Finish deck", projectId: "p2", projectTitle: "Film", dueDate: "2026-09-30", overdue: false }],
+      momentum: { completedThisWeek: 3, activeProjects: [], nextMilestone: { title: "Finish deck", projectTitle: "Film", dueDate: "2026-09-30" }, signals: [] },
     });
     renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
     const card = screen.getByRole("region", { name: "Creative Passport and Kreto" });
     expect(card).toHaveTextContent("My Creative Passport");
     expect(card).toHaveTextContent("Kreto · Creator intelligence");
     expect(card).toHaveTextContent("2 unread messages");
+    expect(card).toHaveTextContent("1 due this week");
+    expect(card).toHaveTextContent("1 Kreto suggestion to review");
+    expect(card).toHaveTextContent("3 completed this week");
+    expect(card).toHaveTextContent("Next milestone: Finish deck");
     expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
     expect(screen.getByRole("link", { name: /Open Passport/ })).toHaveAttribute("href", "/passport");
   });
