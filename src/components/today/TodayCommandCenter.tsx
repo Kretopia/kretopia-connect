@@ -157,7 +157,7 @@ function PassportKretoCard({
               <span className="font-bold text-energy">{Math.max(0, Math.min(100, completion))}%</span>
             </div>
             <div role="progressbar" aria-label="Passport completion" aria-valuenow={Math.max(0, Math.min(100, completion))} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-energy" style={{ width: `${Math.max(0, Math.min(100, completion))}%` }} />
+              <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, completion))}%` }} />
             </div>
             <Link to="/passport" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden />

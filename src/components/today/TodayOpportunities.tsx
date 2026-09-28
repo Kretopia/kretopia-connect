@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Bell, Calendar, Check, LayoutGrid, MessageSquare } from "lucide-react";
+import { ArrowRight, Bell, Calendar, Check, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +32,7 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
   const reducedMotion = useReducedMotion();
   const [tab, setTab] = useState<OpportunityTab>("for-you");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const { deadlines, unreadMessages } = signals;
+  const { deadlines } = signals;
 
   const tabs: Array<{ key: OpportunityTab; label: string; count?: number }> = [
     { key: "for-you", label: "For you" },
