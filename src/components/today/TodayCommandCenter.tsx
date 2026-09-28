@@ -328,7 +328,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
              <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">Due {new Date(`${priority.task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
 
              <PriorityActions>
-              <Button type="button" size="sm" onClick={handleComplete} className="gap-1.5">
+               <Button type="button" onClick={handleComplete} className="w-full justify-between gap-1.5">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Complete
               </Button>
@@ -364,7 +364,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{priority.approval.body}</p>
 
             <PriorityActions>
-              <Button type="button" size="sm" onClick={handleAccept} className="gap-1.5">
+               <Button type="button" onClick={handleAccept} className="w-full justify-between gap-1.5">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Review
               </Button>
@@ -390,7 +390,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             {priority.gig.company ? <p className="mt-1 text-sm text-muted-foreground">{priority.gig.company}</p> : null}
 
             <PriorityActions>
-              <CtaButton type="button" onClick={() => navigate("/scout")} className="gap-1.5">
+               <CtaButton type="button" onClick={() => navigate("/scout")} className="w-full justify-between gap-1.5">
                 View Call
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </CtaButton>
@@ -436,7 +436,7 @@ function PriorityLabel({ overdue }: { overdue?: boolean }) {
 }
 
 function PriorityActions({ children }: { children: React.ReactNode }) {
-  return <div className="mt-auto flex flex-wrap items-center gap-2 pt-6 [&>button:first-child]:min-w-[7rem]">{children}</div>;
+  return <div className="mt-auto flex flex-wrap items-center gap-2 pt-6">{children}</div>;
 }
 
 function getInitials(value: string) {
