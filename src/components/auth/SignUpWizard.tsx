@@ -117,7 +117,7 @@ export const SignUpWizard = ({
               : "Hire creators, run campaigns, manage briefs."}
           </p>
 
-          <SocialLoginButtons onGoogleSignIn={onGoogleSignIn} googleLoading={googleLoading} />
+          {!hideOAuth && <SocialLoginButtons onGoogleSignIn={onGoogleSignIn} googleLoading={googleLoading} />}
           <OrDivider text="or sign up with email" />
 
           <div className="space-y-2">
