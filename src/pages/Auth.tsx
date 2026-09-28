@@ -31,6 +31,10 @@ import {
 } from "@/lib/landingMetrics";
 
 type OAuthProvider = "google" | "apple" | "github" | "azure" | "discord" | "facebook";
+// Legacy backend (kwmcocsitwssrtzkdojh) has Google/Apple enabled without their
+// OAuth secrets -> "Unsupported provider: missing OAuth secret" on click.
+// Temporarily hide the buttons until the secrets are configured.
+const OAUTH_TEMPORARILY_DISABLED = true;
 
 const PASSWORD_MIN_LENGTH = 12;
 
