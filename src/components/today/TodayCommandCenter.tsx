@@ -1,4 +1,4 @@
-import { AlarmClock, ArrowRight, Check, Clock, FolderKanban, MessageCircle, Sparkles, X } from "lucide-react";
+import { AlarmClock, ArrowRight, Check, Clock, MessageCircle, Sparkles, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -51,6 +51,7 @@ interface PassportKretoCardProps {
   profile: ProfileRow;
   creditCount: number;
   completion: number;
+  missingFields: string[];
   firstName?: string;
   onKreto: () => void;
 }
@@ -133,7 +134,7 @@ function PassportKretoCard({
   firstName,
   onKreto,
   missingFields,
-}: PassportKretoCardProps & { missingFields: string[] }) {
+}: PassportKretoCardProps) {
   const displayName = profile.full_name || profile.username || firstName || "Your Passport";
   const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
   const avatarUrl = profile.avatar_url || "";
@@ -317,7 +318,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-             className="mt-7"
+             className="mt-7 flex flex-1 flex-col"
           >
             <PriorityLabel overdue={priority.task.overdue} />
 
@@ -326,7 +327,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             <p className="mt-1 text-sm text-muted-foreground">{priority.task.projectTitle}</p>
              <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">Due {new Date(`${priority.task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
 
-            <PriorityActions>
+             <PriorityActions>
               <Button type="button" size="sm" onClick={handleComplete} className="gap-1.5">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Complete
@@ -354,7 +355,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-             className="mt-7"
+             className="mt-7 flex flex-1 flex-col"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Kreto suggests</p>
 
@@ -380,7 +381,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-             className="mt-7"
+             className="mt-7 flex flex-1 flex-col"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Fresh Call</p>
 
@@ -435,7 +436,7 @@ function PriorityLabel({ overdue }: { overdue?: boolean }) {
 }
 
 function PriorityActions({ children }: { children: React.ReactNode }) {
-  return <div className="mt-4 flex flex-wrap items-center gap-2">{children}</div>;
+  return <div className="mt-auto flex flex-wrap items-center gap-2 pt-6 [&>button:first-child]:min-w-[7rem]">{children}</div>;
 }
 
 function getInitials(value: string) {
