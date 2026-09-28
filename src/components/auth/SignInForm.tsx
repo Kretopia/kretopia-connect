@@ -38,7 +38,7 @@ const LastUsedPill = () => (
 export const SignInForm = ({
   email, setEmail, password, setPassword,
   loading, onSubmit, onForgotPassword,
-  onGoogleSignIn, googleLoading,
+  onGoogleSignIn, googleLoading, hideOAuth = false,
 }: SignInFormProps) => {
   const { toast } = useToast();
   const [emailError, setEmailError] = useState("");
