@@ -101,8 +101,8 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
       setInvitations((previous) => previous.filter((invitation) => invitation.id !== invitationId));
       setCurrentIndex((index) => Math.min(index, invitations.length - 2 < 0 ? 0 : invitations.length - 2));
       
-      // Navigate to the project
-      navigate(`/desk/${projectId}`);
+      // In Studio, keep the user in the queue so the next invitation can be reviewed.
+      if (!compact) navigate(`/desk/${projectId}`);
     } catch (error: any) {
       toast({
         title: "Error",
