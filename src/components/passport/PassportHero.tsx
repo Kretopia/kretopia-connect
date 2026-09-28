@@ -74,7 +74,7 @@ export function PassportHero({
 }: PassportHeroProps) {
   const displayName = profile.full_name;
   const passportId = useMemo(
-    () => (profile.user_id ? `THR-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "THR-—"),
+    () => (profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—"),
     [profile.user_id],
   );
 

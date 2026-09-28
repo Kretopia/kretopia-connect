@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
@@ -68,6 +68,9 @@ interface PublicPassportHeroProps {
   onAddToProject: () => void;
   onShare: () => void;
   onJoin: () => void;
+  children?: ReactNode;
+  showBio?: boolean;
+  showActions?: boolean;
 }
 
 export function PublicPassportHero({
@@ -83,9 +86,12 @@ export function PublicPassportHero({
   onAddToProject,
   onShare,
   onJoin,
+  children,
+  showBio = true,
+  showActions = true,
 }: PublicPassportHeroProps) {
   const passportId = useMemo(
-    () => profile.user_id ? `THR-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "THR-—",
+    () => profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—",
     [profile.user_id],
   );
   const verifiedCredits = credits.filter((credit) => credit.isVerified || credit.verification_status === "verified");
@@ -160,7 +166,7 @@ export function PublicPassportHero({
             )}
           </div>
 
-          {profile.bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{profile.bio}</p>}
+           {showBio && profile.bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{profile.bio}</p>}
 
           <TrustSignals emailVerified={profile.email_verified} phoneVerified={profile.phone_verified} idVerified={profile.id_verified} paymentVerified={profile.payment_verified} isOwnProfile={false} compact />
 
@@ -196,7 +202,7 @@ export function PublicPassportHero({
             </div>
           )}
 
-          {!isOwner && (
+           {showActions && !isOwner && (
             <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-4">
               {!isSignedIn ? (
                 <Button onClick={onJoin} className="col-span-2 gap-2"><UserPlus className="h-4 w-4" />Connect with {profile.full_name?.split(" ")[0] || "this creator"}</Button>
@@ -214,7 +220,8 @@ export function PublicPassportHero({
             </div>
           )}
 
-          {isOwner && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
+           {showActions && isOwner && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
+           {children && <div className="space-y-5 border-t border-border pt-5">{children}</div>}
           {(profile.website || profile.calendly_url) && <p className="sr-only"><ExternalLink aria-hidden="true" />Public contact links</p>}
         </div>
       </article>
