@@ -1,11 +1,10 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
 import {
-  Camera, PencilLine, MapPin, ShieldCheck, Share2, QrCode, FileDown, ArrowRight, Star, Gauge, Fingerprint,
+  Camera, PencilLine, MapPin, ShieldCheck, Share2, QrCode, FileDown, Gauge, Fingerprint,
 } from "lucide-react";
 import { HoloCard } from "./HoloCard";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
@@ -96,7 +95,6 @@ export function PassportHero({
         .slice(0, 6)
     : [];
 
-  const nextAction = standing.nextActions?.[0];
   const hasTrust = profile.email_verified || profile.phone_verified || profile.id_verified || profile.payment_verified;
   const isVerifiedPro = standing.level >= 3;
 
@@ -107,7 +105,7 @@ export function PassportHero({
         <div
           className={cn(
             "relative aspect-[3/1] sm:aspect-[4/1] overflow-hidden",
-             !profile.cover_image_url && "passport-cover bg-muted/60",
+             !profile.cover_image_url && "bg-gradient-to-br from-card via-muted/80 to-energy/15",
           )}
         >
           {profile.cover_image_url ? (
@@ -118,6 +116,13 @@ export function PassportHero({
               loading="lazy"
             />
           ) : null}
+          {!profile.cover_image_url && (
+            <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
+              <div className="absolute -right-8 -top-20 h-56 w-56 rotate-45 border border-energy/30 sm:h-72 sm:w-72" />
+              <div className="absolute right-5 -top-24 h-56 w-56 rotate-45 border border-energy/15 sm:h-72 sm:w-72" />
+              <Fingerprint className="h-20 w-20 text-energy/20 sm:h-28 sm:w-28" strokeWidth={0.8} />
+            </div>
+          )}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
           <Tooltip>
             <TooltipTrigger asChild>
@@ -262,15 +267,6 @@ export function PassportHero({
               </div>
             </div>
           )}
-
-          {/* Stamps + skills, single trust line */}
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <Star className="h-3 w-3 text-[hsl(var(--signal-teal))]" />
-            <span>
-              {totalCredits} stamp{totalCredits === 1 ? "" : "s"} ({verifiedCredits} verified)
-              {" · "}{cosigns} co-sign{cosigns === 1 ? "" : "s"}
-            </span>
-          </div>
 
           {topSkills.length > 0 && (
             <div className="flex items-center gap-1 flex-wrap">
