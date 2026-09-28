@@ -3,9 +3,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { BrandLoader } from "@/components/brand/BrandDots";
-import { checkProfileCompletion } from "@/lib/profileCompletion";
 import { TodayCommandCenter } from "./TodayCommandCenter";
-import { TodayOpportunities } from "./TodayOpportunities";
 import { useTodaySignals } from "./today.selectors";
 import type { ProfileRow } from "./today.types";
 
@@ -18,10 +16,10 @@ interface TodayDashboardProps {
 }
 
 /**
- * Today keeps the Passport/Kreto overview, one priority and optional next steps.
+ * Today keeps the Passport/Kreto overview and one priority.
  * Deep Passport metrics and tools remain on the Passport itself.
  */
-export function TodayDashboard({ firstName, peopleForYou, profile, profileFull, myCredits = 0 }: TodayDashboardProps) {
+export function TodayDashboard({ firstName, profile, profileFull, myCredits = 0 }: TodayDashboardProps) {
   const { user } = useAuth();
   const reducedMotion = useReducedMotion();
   const effectiveProfile = profileFull || profile || null;
@@ -42,9 +40,6 @@ export function TodayDashboard({ firstName, peopleForYou, profile, profileFull, 
   }, [user?.id, refresh]);
 
   if (!user) return null;
-
-  const showOnboardingChecklist =
-    !!effectiveProfile && checkProfileCompletion(effectiveProfile, myCredits).percentage < 50;
 
   return (
     // pb-28 matches UnifiedHome.tsx's own footer-wrapper convention for
@@ -70,19 +65,6 @@ export function TodayDashboard({ firstName, peopleForYou, profile, profileFull, 
             transition={reducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
           >
             <TodayCommandCenter firstName={firstName} profile={effectiveProfile} creditCount={myCredits} signals={signals} onSignalsChanged={refresh} />
-          </motion.div>
-
-          <motion.div
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.4, delay: 0.06, ease: [0.2, 0.65, 0.3, 0.95] }}
-          >
-            <TodayOpportunities
-              signals={signals}
-              onSignalsChanged={refresh}
-              peopleForYou={peopleForYou}
-              showOnboardingChecklist={showOnboardingChecklist}
-            />
           </motion.div>
 
         </>
