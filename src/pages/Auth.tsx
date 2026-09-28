@@ -841,13 +841,13 @@ const Auth = () => {
                   </>
                 ) : (
                   <>
-                    <div className="mb-5 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                    {!OAUTH_TEMPORARILY_DISABLED && (
+                      <div className="mb-5 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                      </div>
-                    </div>
+                    )}
                     <div className="mb-5 flex items-center gap-2">
                       <div className="h-px flex-1 bg-border" />
                       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">or email + password</span>
