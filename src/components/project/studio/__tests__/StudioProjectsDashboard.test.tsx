@@ -102,7 +102,7 @@ describe("StudioProjectsDashboard", () => {
   });
 });
 
-describe("StudioProjectsDashboard scalability (default subset + expand/collapse)", () => {
+describe("StudioProjectsDashboard carousel", () => {
   afterEach(() => {
     mocks.navigate.mockClear();
     // Restore jsdom's default viewport between tests.
@@ -118,7 +118,7 @@ describe("StudioProjectsDashboard scalability (default subset + expand/collapse)
       client_name: null,
     }));
 
-  it("caps the default list to defaultVisibleProjectCount for the current viewport, not every matching row", () => {
+  it("keeps every project in a single scrollable row", () => {
     Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 1024 });
     const list = manyProjects(9);
     render(
@@ -130,12 +130,12 @@ describe("StudioProjectsDashboard scalability (default subset + expand/collapse)
         />
       </MemoryRouter>,
     );
-    // Desktop default is 6 -- summary line and rendered rows must agree.
-    expect(screen.getByText("6 of 9 shown")).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem").length).toBe(6);
+    expect(screen.getByText("9 projects")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").length).toBe(9);
+    expect(screen.getByRole("list", { name: "Studio projects" })).toHaveClass("overflow-x-auto", "flex");
   });
 
-  it("shows a narrower default subset on a mobile-width viewport", () => {
+  it("keeps all projects accessible on a mobile-width viewport", () => {
     Object.defineProperty(window, "innerWidth", { writable: true, configurable: true, value: 375 });
     const list = manyProjects(9);
     render(
@@ -143,13 +143,11 @@ describe("StudioProjectsDashboard scalability (default subset + expand/collapse)
         <StudioProjectsDashboard projects={list as any} onCreate={vi.fn()} />
       </MemoryRouter>,
     );
-    expect(screen.getByText("3 of 9 shown")).toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").length).toBe(9);
   });
 
   it("prioritizes the money-actionable project into the default subset even when it's the oldest row", () => {
-    // p0 is "completed" + unsent invoice (tier 0, needs an invoice) but has
-    // the OLDEST updated_at of the set -- a plain recency sort would push
-    // it past the default cap of 6 out of 9; real prioritization must not.
+    // p0 is "completed" + unsent invoice but has the oldest updated_at.
     const list = manyProjects(9);
     render(
       <MemoryRouter>
@@ -163,7 +161,7 @@ describe("StudioProjectsDashboard scalability (default subset + expand/collapse)
     expect(screen.getByText("Project 0")).toBeInTheDocument();
   });
 
-  it("shows 'See all N projects' only when rows are actually hidden, not for a short list", () => {
+  it("does not display a See all toggle", () => {
     render(
       <MemoryRouter>
         <StudioProjectsDashboard projects={projects as any} onCreate={vi.fn()} />
@@ -172,22 +170,15 @@ describe("StudioProjectsDashboard scalability (default subset + expand/collapse)
     expect(screen.queryByText(/See all/)).not.toBeInTheDocument();
   });
 
-  it("expand reveals every row and collapse (Show fewer) returns to the default subset", () => {
+  it("provides labelled carousel navigation without collapsing the cards", () => {
     const list = manyProjects(9);
     render(
       <MemoryRouter>
         <StudioProjectsDashboard projects={list as any} onCreate={vi.fn()} />
       </MemoryRouter>,
     );
-    const toggle = screen.getByRole("button", { name: "See all 9 projects" });
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(toggle);
     expect(screen.getAllByRole("listitem").length).toBe(9);
-    const collapse = screen.getByRole("button", { name: "Show fewer" });
-    expect(collapse).toHaveAttribute("aria-expanded", "true");
-
-    fireEvent.click(collapse);
-    expect(screen.getAllByRole("listitem").length).toBe(6);
+    expect(screen.getByRole("button", { name: "Previous project" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Next project" })).toBeInTheDocument();
   });
 });
