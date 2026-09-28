@@ -23,14 +23,8 @@ interface TodayOpportunitiesProps {
 
 /**
  * TodayOpportunities — "what happens next", as one unified stream behind a
- * compact segmented control (For you / Calls / People / Studio) instead of
- * four separate pages. "For you" is a real priority merge (time-sensitive
- * work > money > Studio > discovery), not just a re-list of everything;
- * the other three tabs are focused, single-purpose views onto the same
- * underlying data Momentum already fetched -- no new queries here beyond
- * the widgets that already owned their own data (ScoutedGigsSection,
- * MoneyBrief, etc.), which this component composes rather than
- * reimplements.
+ * compact segmented control (For you / Calls / People / Studio).
+ * The primary action is owned by TodayCommandCenter, so it is not repeated here.
  */
 export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, showOnboardingChecklist }: TodayOpportunitiesProps) {
   const navigate = useNavigate();
@@ -125,7 +119,6 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
       <div className="space-y-3">
         {tab === "for-you" && (
           <>
-            <MoneyBrief variant="compact" />
             {showOnboardingChecklist && <GetStartedChecklist />}
             {signals.momentum?.nextMilestone && (
               <Link to="/desk" className="flex items-center justify-between gap-3 text-sm text-foreground hover:text-energy">
