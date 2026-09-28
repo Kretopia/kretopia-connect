@@ -52,7 +52,6 @@ interface PassportKretoCardProps {
   creditCount: number;
   completion: number;
   firstName?: string;
-  signals: TodaySignals;
   onKreto: () => void;
 }
 
@@ -289,7 +288,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
   };
 
   return (
-    <section aria-label="Today's next action" className="rounded-3xl border border-border bg-card p-5 sm:p-6">
+    <section aria-label="Today's next action" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Today</p>
@@ -399,7 +398,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
       </AnimatePresence>
 
       {priority.kind !== "task" && priority.kind !== "approval" && priority.kind !== "gig" ? (
-        <CtaButton type="button" onClick={runPrimaryCta} className="mt-5 w-full gap-1.5 sm:w-fit">
+        <CtaButton type="button" onClick={runPrimaryCta} className="mt-auto w-full gap-1.5 pt-4 sm:w-fit">
           {primaryCta.label}
           <ArrowRight className="h-4 w-4" aria-hidden />
         </CtaButton>
@@ -432,14 +431,6 @@ function getInitials(value: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
-}
-
-function creatorIntelligenceCopy(signals: TodaySignals) {
-  if (signals.priority.kind === "task") return signals.priority.task.overdue ? "An overdue task needs your attention below." : "A task due today is your next move below.";
-  if (signals.priority.kind === "approval") return "A Kreto suggestion is ready for your review below.";
-  if (signals.priority.kind === "gig") return "A new call matched to you is ready below.";
-  if (signals.stamps?.waitingForCoSign) return `${signals.stamps.waitingForCoSign} credit${signals.stamps.waitingForCoSign === 1 ? "" : "s"} waiting for a co-sign.`;
-  return "No urgent action right now. Your latest activity is below.";
 }
 
 function priorityLine(signals: TodaySignals): string {
