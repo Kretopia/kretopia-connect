@@ -2,16 +2,26 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNowStrict, format } from "date-fns";
 import {
-  Search, AlertTriangle, FolderInput, Plus, Calendar, Users, Video, Sparkles,
+  Search,
+  AlertTriangle,
+  FolderInput,
+  Plus,
+  Calendar,
+  Users,
+  Video,
+  Sparkles,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  MoreVertical,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
 import { BrandLoader } from "@/components/brand/BrandDots";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { moodAccent, monogram, STATUS_PILL, PAY_DOT, PAY_LABEL, type StudioProject } from "./studioCardHelpers";
 import { MoveToFolderSheet } from "./MoveToFolderSheet";
 import { StudioOverflowToggle } from "./StudioOverflowToggle";
@@ -19,28 +29,18 @@ import { prioritizeProjects, defaultVisibleProjectCount } from "./studioHome.sel
 import type { StudioFolder } from "./studioHome.types";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { WORKSPACE_CONFIGS, type WorkspaceType } from "@/lib/workspaceConfigs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 
 type PayState = "paid" | "invoiced" | "unsent";
-type StatusFilter = "all" | "active" | "needs_invoice" | "awaiting_payment" | "delivered";
+type StatusFilter = "all" | "active" | "completed";
 type SortKey = "recent" | "title" | "status";
 
 interface StudioProjectsDashboardProps {
   projects: StudioProject[];
-  /** Invoice state per project. Owner-scoped: only pass this when the viewer may see money. */
   invoicesByProject?: Record<string, PayState>;
-  /** Global fallback used only when moneyVisibleByProject isn't provided
-   * (existing callers that haven't opted into per-row role checks). */
   canSeeMoney?: boolean;
-  /** Per-project role check (from can_see_milestone_money): owner/creative/
-   * collaborator see money, client/guest don't. This list mixes Projects
-   * across different roles for the same viewer, so a single global
-   * canSeeMoney flag can't correctly gate it -- when this map is provided,
-   * an id missing from it is treated as NOT visible (fail closed), not as
-   * visible by default. */
   moneyVisibleByProject?: Record<string, boolean>;
-  /** Accepted-collaborator count per project, for the card's "N people"
-   *  line. Missing entries render as no count (never fabricated as 0 vs
-   *  "unknown" -- see StudioProjectsDashboard's Holo Card body). */
   participantsByProject?: Record<string, number>;
   loading?: boolean;
   error?: string | null;
@@ -50,14 +50,20 @@ interface StudioProjectsDashboardProps {
   onMoveToFolder?: (projectId: string, folderId: string | null) => void;
 }
 
-const STATUS_RANK: Record<string, number> = { active: 0, planning: 1, wrapping: 2, completed: 3, archived: 4 };
+const STATUS_RANK: Record<string, number> = {
+  active: 0,
+  planning: 1,
+  wrapping: 2,
+  completed: 3,
+  archived: 4,
+};
+
 const isDelivered = (s?: string | null) => s === "completed" || s === "archived";
 
 /**
- * Projects dashboard — one prioritized list with a summary strip,
- * search, filter and sort. Replaces the previous card wall. Every number
- * here is computed from data already loaded on this page (projects rows +
- * the invoice-status map); nothing is estimated or invented.
+ * Projects dashboard — wireframe-aligned with CDO specs
+ * Desktop: 3-column grid, compact cards, right rail context
+ * Mobile: stacked cards, simplified actions
  */
 export const StudioProjectsDashboard = ({
   projects,
@@ -79,6 +85,7 @@ export const StudioProjectsDashboard = ({
   const [moveTarget, setMoveTarget] = useState<StudioProject | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [viewportWidth, setViewportWidth] = useState(() => (typeof window === "undefined" ? 1024 : window.innerWidth));
+
   useEffect(() => {
     const onResize = () => setViewportWidth(window.innerWidth);
     window.addEventListener("resize", onResize);
@@ -86,36 +93,33 @@ export const StudioProjectsDashboard = ({
   }, []);
 
   const pay = (id: string): PayState => invoicesByProject[id] ?? "unsent";
-  // Per-project gate: prefer the role-checked map when the caller opted
-  // in; otherwise fall back to the single global flag for every row.
+
   const moneyVisible = (id: string): boolean =>
     moneyVisibleByProject ? (moneyVisibleByProject[id] ?? false) : canSeeMoney;
-  const anyMoneyVisible = moneyVisibleByProject
-    ? Object.values(moneyVisibleByProject).some(Boolean)
-    : canSeeMoney;
+
+  const anyMoneyVisible = moneyVisibleByProject ? Object.values(moneyVisibleByProject).some(Boolean) : canSeeMoney;
 
   const counts = useMemo(() => {
+    const all = projects.length;
     const active = projects.filter((p) => !isDelivered(p.status)).length;
-    const delivered = projects.filter((p) => isDelivered(p.status)).length;
-    const moneyProjects = projects.filter((p) => moneyVisible(p.id));
-    const needsInvoice = moneyProjects.filter((p) => isDelivered(p.status) && pay(p.id) === "unsent").length;
-    const awaitingPayment = moneyProjects.filter((p) => pay(p.id) === "invoiced").length;
-    return { active, delivered, needsInvoice, awaitingPayment };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects, invoicesByProject, moneyVisibleByProject, canSeeMoney]);
+    const completed = projects.filter((p) => isDelivered(p.status)).length;
+    return { all, active, completed };
+  }, [projects]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = projects.filter((p) => {
       if (q && !`${p.title} ${p.client_name ?? ""}`.toLowerCase().includes(q)) return false;
       switch (filter) {
-        case "active": return !isDelivered(p.status);
-        case "delivered": return isDelivered(p.status);
-        case "needs_invoice": return isDelivered(p.status) && pay(p.id) === "unsent";
-        case "awaiting_payment": return pay(p.id) === "invoiced";
-        default: return true;
+        case "active":
+          return !isDelivered(p.status);
+        case "completed":
+          return isDelivered(p.status);
+        default:
+          return true;
       }
     });
+
     if (sort === "title") {
       list = [...list].sort((a, b) => a.title.localeCompare(b.title));
     } else if (sort === "status") {
@@ -124,21 +128,16 @@ export const StudioProjectsDashboard = ({
         return d !== 0 ? d : new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
       });
     } else {
-      // "recent" -- the default -- is real prioritization, not just
-      // most-recently-updated: money-actionable and in-progress work
-      // outranks delivered/archived, centralized in studioHome.selectors
-      // so this ordering isn't duplicated anywhere else on Studio home.
       list = prioritizeProjects(list, invoicesByProject, moneyVisibleByProject);
     }
     return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projects, invoicesByProject, moneyVisibleByProject, query, filter, sort]);
 
   const visibleCount = expanded ? rows.length : Math.min(rows.length, defaultVisibleProjectCount(viewportWidth));
   const visibleRows = rows.slice(0, visibleCount);
   const hiddenRowCount = rows.length - visibleRows.length;
 
-  /** Next action — derived only from status + invoice state, both real fields. */
+  /** Next action — derived from status + invoice state */
   const nextAction = (p: StudioProject) => {
     if (!isDelivered(p.status)) {
       if (p.status === "wrapping") return "Wrap it up";
@@ -152,11 +151,10 @@ export const StudioProjectsDashboard = ({
     return "Log the credits";
   };
 
-  const TILES: { key: StatusFilter; label: string; value: number; money?: boolean }[] = [
-    { key: "active", label: "In progress", value: counts.active },
-    { key: "needs_invoice", label: "Needs an invoice", value: counts.needsInvoice, money: true },
-    { key: "awaiting_payment", label: "Awaiting payment", value: counts.awaitingPayment, money: true },
-    { key: "delivered", label: "Delivered", value: counts.delivered },
+  const TILES = [
+    { key: "all", label: "All", value: counts.all },
+    { key: "active", label: "Active", value: counts.active },
+    { key: "completed", label: "Completed", value: counts.completed },
   ];
 
   if (loading) {
@@ -171,11 +169,13 @@ export const StudioProjectsDashboard = ({
   if (error) {
     return (
       <div role="alert" className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6 text-center">
-        <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive" aria-hidden />
+        <AlertTriangle className="mx-auto mb-2 h-5 w-5 text-destructive" />
         <p className="text-sm font-semibold">We couldn't load your Projects.</p>
         <p className="mt-1 text-xs text-muted-foreground">{error}</p>
         {onRetry && (
-          <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>Try again</Button>
+          <Button variant="outline" size="sm" className="mt-4" onClick={onRetry}>
+            Try again
+          </Button>
         )}
       </div>
     );
@@ -186,12 +186,12 @@ export const StudioProjectsDashboard = ({
       <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8 text-center">
         <h3 className="text-base font-bold">No Projects yet</h3>
         <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-          A Project keeps the brief, the work, the people and the proof of what happened in
-          one place. Start with what you're making.
+          A Project keeps the brief, the work, the people and the proof of what happened in one place. Start with what
+          you're making.
         </p>
         <div className="mt-5 flex justify-center">
           <CtaButton onClick={onCreate}>
-            <Plus className="mr-2 h-4 w-4" aria-hidden />
+            <Plus className="mr-2 h-4 w-4" />
             Create your first Project
           </CtaButton>
         </div>
@@ -201,23 +201,25 @@ export const StudioProjectsDashboard = ({
 
   return (
     <section aria-labelledby="studio-projects-title" className="space-y-4">
+      {/* Header */}
       <div className="flex items-end justify-between gap-3">
-        <h2 id="studio-projects-title" className="text-base font-bold">Projects</h2>
+        <h2 id="studio-projects-title" className="text-base font-bold">
+          Projects
+        </h2>
         <span className="text-xs text-muted-foreground">
           {visibleRows.length} of {projects.length} shown
         </span>
       </div>
 
-      {/* Summary strip — clicking a tile filters the list below. */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {TILES.filter((t) => anyMoneyVisible || !t.money).map((t) => {
+      {/* Summary strip — wireframe: "All Active Completed" */}
+      <div className="grid grid-cols-3 gap-2">
+        {TILES.map((t) => {
           const active = filter === t.key;
           return (
             <button
               key={t.key}
               type="button"
               aria-pressed={active}
-              aria-label={`Filter by ${t.label}`}
               onClick={() => setFilter(active ? "all" : t.key)}
               className={cn(
                 "rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -225,18 +227,16 @@ export const StudioProjectsDashboard = ({
               )}
             >
               <p className="text-2xl font-black tabular-nums leading-none">{t.value}</p>
-              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                {t.label}
-              </p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t.label}</p>
             </button>
           );
         })}
       </div>
 
-      {/* Toolbar */}
+      {/* Toolbar — Search + Sort */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -250,25 +250,28 @@ export const StudioProjectsDashboard = ({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="recent">Latest activity</SelectItem>
-            <SelectItem value="status">Status</SelectItem>
+            <SelectItem value="recent">Recent</SelectItem>
             <SelectItem value="title">Name</SelectItem>
+            <SelectItem value="status">Status</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="outline" size="sm" onClick={onCreate}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create
+        </Button>
       </div>
 
-      {/* Priority list -- capped to a curated top slice by default
-          (defaultVisibleProjectCount, viewport-aware) rather than every
-          matching row; "See N more" reveals the rest without a second
-          fetch, since `rows` already holds the full prioritized/filtered
-          set in memory. */}
+      {/* Projects grid */}
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
           No Projects match this view.{" "}
           <button
             type="button"
             className="font-semibold text-primary underline-offset-2 hover:underline"
-            onClick={() => { setFilter("all"); setQuery(""); }}
+            onClick={() => {
+              setFilter("all");
+              setQuery("");
+            }}
           >
             Clear filters
           </button>
@@ -283,14 +286,23 @@ export const StudioProjectsDashboard = ({
               ? WORKSPACE_CONFIGS[p.workspace_type as WorkspaceType]?.label
               : null;
             const participants = participantsByProject[p.id] ?? 0;
+            const progress = isDelivered(p.status)
+              ? 100
+              : p.status === "wrapping"
+                ? 75
+                : p.status === "planning"
+                  ? 25
+                  : 50;
+
             return (
               <li key={p.id} className="group relative animate-fade-in">
-                <HoloCard className="h-full">
+                <HoloCard className="h-full overflow-hidden">
                   <button
                     type="button"
                     onClick={() => navigate(`/desk/${p.id}`)}
                     className="block w-full bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                   >
+                    {/* Cover image */}
                     <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
                       {p.cover_url ? (
                         <img
@@ -299,25 +311,31 @@ export const StudioProjectsDashboard = ({
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        // Placeholder for a Project without a cover -- existing
-                        // Projects predate the required-image rule, so this
-                        // fills the same visual slot rather than an empty gap.
                         <div
                           className="flex h-full w-full items-center justify-center"
-                          style={{ background: `linear-gradient(135deg, ${accent}33, transparent)` }}
-                          aria-hidden
+                          style={{
+                            background: `linear-gradient(135deg, ${accent}33, transparent)`,
+                          }}
                         >
                           <span className="text-2xl font-black tracking-tight" style={{ color: accent }}>
                             {monogram(p.title)}
                           </span>
                         </div>
                       )}
-                      <span className={cn("absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm", pill.tone)}>
+                      {/* Status pill */}
+                      <span
+                        className={cn(
+                          "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm",
+                          pill.tone,
+                        )}
+                      >
                         {pill.label}
                       </span>
                     </div>
 
-                    <div className="space-y-1.5 p-3">
+                    {/* Card body — wireframe aligned */}
+                    <div className="space-y-2 p-3">
+                      {/* Title + workspace */}
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate text-sm font-bold">{p.title}</span>
                         {workspaceLabel && (
@@ -326,36 +344,62 @@ export const StudioProjectsDashboard = ({
                           </span>
                         )}
                       </div>
+
+                      {/* Client / description */}
                       <p className="truncate text-xs text-muted-foreground">
                         {p.client_name || p.description || "No client set"}
                       </p>
+
+                      {/* Progress bar — wireframe: "14% COMPLETE" */}
+                      <div className="space-y-1">
+                        <Progress value={progress} className="h-1" />
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>{progress}% complete</span>
+                          <span className="inline-flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            Updated {formatDistanceToNowStrict(new Date(p.updated_at))} ago
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Next action — wireframe: "Next up" */}
+                      <div className="flex items-center gap-2 rounded-lg bg-muted/40 p-2">
+                        <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                        <p className="text-[11px] font-semibold text-foreground/80">{nextAction(p)}</p>
+                      </div>
+
+                      {/* Meta: deadline, participants, money */}
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                        <span>Updated {formatDistanceToNowStrict(new Date(p.updated_at))} ago</span>
                         {p.deadline && (
                           <span className="inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3" aria-hidden />
+                            <Calendar className="h-3 w-3" />
                             {format(new Date(p.deadline), "MMM d")}
                           </span>
                         )}
                         {participants > 0 && (
                           <span className="inline-flex items-center gap-1">
-                            <Users className="h-3 w-3" aria-hidden />
+                            <Users className="h-3 w-3" />
                             {participants}
                           </span>
                         )}
                         {moneyVisible(p.id) && (
                           <span className="inline-flex items-center gap-1.5">
-                            <span className={cn("h-1.5 w-1.5 rounded-full", PAY_DOT[state])} aria-hidden />
+                            <span className={cn("h-1.5 w-1.5 rounded-full", PAY_DOT[state])} />
                             {PAY_LABEL[state]}
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] font-semibold text-foreground/80">Next: {nextAction(p)}</p>
                     </div>
                   </button>
 
+                  {/* Card actions — wireframe: "Open | Call | Ask Kreto" */}
                   <div className="flex items-center gap-1 border-t border-border/60 bg-card p-2">
-                    <Button variant="ghost" size="sm" className="h-7 flex-1 gap-1 text-xs" onClick={() => navigate(`/desk/${p.id}`)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 flex-1 gap-1 text-xs"
+                      onClick={() => navigate(`/desk/${p.id}`)}
+                    >
                       Open
                     </Button>
                     <Button
@@ -364,17 +408,23 @@ export const StudioProjectsDashboard = ({
                       className="h-7 flex-1 gap-1 text-xs"
                       onClick={() => navigate(`/desk/${p.id}?joinCall=1`)}
                     >
-                      <Video className="h-3 w-3" aria-hidden /> Call
+                      <Video className="h-3 w-3" />
+                      Call
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-7 flex-1 gap-1 text-xs"
                       onClick={() =>
-                        window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: { projectId: p.id } }))
+                        window.dispatchEvent(
+                          new CustomEvent("thrive-copilot:open", {
+                            detail: { projectId: p.id },
+                          }),
+                        )
                       }
                     >
-                      <Sparkles className="h-3 w-3" aria-hidden /> Ask Kreto
+                      <Sparkles className="h-3 w-3" />
+                      Ask
                     </Button>
                     {onMoveToFolder && folders.length > 0 && (
                       <Button
@@ -395,6 +445,7 @@ export const StudioProjectsDashboard = ({
         </ul>
       )}
 
+      {/* Overflow toggle */}
       {(hiddenRowCount > 0 || expanded) && rows.length > 0 && (
         <div className="flex justify-center">
           <StudioOverflowToggle
@@ -408,6 +459,7 @@ export const StudioProjectsDashboard = ({
         </div>
       )}
 
+      {/* Move to folder sheet */}
       {onMoveToFolder && (
         <MoveToFolderSheet
           open={!!moveTarget}
