@@ -136,13 +136,13 @@ function PassportKretoCard({
   onOpenPassport,
   onKreto,
 }: PassportKretoCardProps) {
-  const displayName = profile.full_name || profile.username || profile.handle || firstName || "Your Passport";
+  const displayName = profile.full_name || profile.username || firstName || "Your Passport";
 
-  const profession = profile.profession || profile.profession_title || profile.role || "Creative professional";
+  const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
 
-  const location = [profile.city, profile.country].filter(Boolean).join(", ");
+  const location = profile.location || "";
 
-  const avatarUrl = profile.avatar_url || profile.profile_image_url || profile.photo_url || "";
+  const avatarUrl = profile.avatar_url || "";
 
   const safeCompletion = Math.max(0, Math.min(100, completion));
 
