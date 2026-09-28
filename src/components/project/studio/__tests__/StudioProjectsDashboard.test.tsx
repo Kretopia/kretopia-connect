@@ -29,9 +29,10 @@ const renderDash = (props: Partial<React.ComponentProps<typeof StudioProjectsDas
   );
 
 describe("StudioProjectsDashboard", () => {
-  it("uses Projects terminology and never says 'Loose'", () => {
+  it("removes the redundant projects heading and keeps the carousel", () => {
     const { container } = renderDash();
-    expect(screen.getByRole("heading", { name: "Kretopia Projects" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Kretopia Projects" })).not.toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "Studio projects" })).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toContain("loose");
   });
 
@@ -43,9 +44,9 @@ describe("StudioProjectsDashboard", () => {
     expect(screen.getByText("Draft the invoice")).toBeInTheDocument();
   });
 
-  it("filters via the summary tiles", () => {
+  it("filters via the compact status controls", () => {
     renderDash();
-    fireEvent.click(screen.getByRole("button", { name: "1 Active" }));
+    fireEvent.click(screen.getByRole("button", { name: /Active 1/i }));
     expect(screen.getByText("Carnival Film")).toBeInTheDocument();
     expect(screen.queryByText("Album Rollout")).not.toBeInTheDocument();
   });

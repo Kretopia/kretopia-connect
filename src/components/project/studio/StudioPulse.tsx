@@ -41,7 +41,7 @@ export function StudioPulse({ recentCollaborators, folderCount = 0, projectCount
         </h2>
       </div>
 
-      <div className="mt-2"><SpeedTonightCard /></div>
+      <div className="mt-2"><SpeedTonightCard compact /></div>
 
       <div className="mt-2 border-t border-border/70">
         <StudioActivitySummary recentCollaborators={recentCollaborators} />
@@ -51,15 +51,12 @@ export function StudioPulse({ recentCollaborators, folderCount = 0, projectCount
         <MyPendingInvitations compact />
       </div>
 
-      <details className="group border-t border-border/70">
-        <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      <div className="flex min-w-0 items-center gap-2 border-t border-border/70 py-2 text-sm">
           <FolderOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden />
           <span className="font-semibold">Folders</span>
-          <span className="min-w-0 flex-1 truncate text-muted-foreground">{folderCount} folders · {projectCount} projects</span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" aria-hidden />
-        </summary>
-        {folderControls && <div className="pb-3 pt-1">{folderControls}</div>}
-      </details>
+          <span className="min-w-0 flex-1 truncate text-muted-foreground">{folderCount} · {projectCount} projects</span>
+          {folderControls}
+      </div>
 
       <details className="group border-t border-border/70">
         <summary className="flex cursor-pointer list-none items-center gap-2 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">

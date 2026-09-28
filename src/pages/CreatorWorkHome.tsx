@@ -1,19 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ChevronLeft, Folder, Inbox,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { useStudioGlobalModals } from "@/components/project/studio/useStudioGlobalModals";
-import { StudioCardsGrid } from "@/components/project/studio/StudioCardsGrid";
 import { StudioProjectsDashboard } from "@/components/project/studio/StudioProjectsDashboard";
 import { StudioCreateHero } from "@/components/project/studio/StudioCreateHero";
-import { StudioFoldersBar, type StudioFolder } from "@/components/project/studio/StudioFoldersBar";
+import type { StudioFolder } from "@/components/project/studio/studioHome.types";
 import { StudioPulse } from "@/components/project/studio/StudioPulse";
-import { computeFolderCounts } from "@/components/project/studio/studioHome.selectors";
 import { PageTransition } from "@/components/PageTransition";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoTip } from "@/components/agent/KretoTip";
@@ -208,8 +203,6 @@ export const CreatorWorkHome = () => {
 
   const activeProjects = projects.filter(p => p.status === "active");
 
-  const folderCounts = computeFolderCounts(projects);
-
   const visibleProjects = projects.filter((p) => {
     if (folderFilter === "all") return true;
     if (folderFilter === "unfiled") return !(p as any).studio_folder_id;
@@ -234,8 +227,6 @@ export const CreatorWorkHome = () => {
     fetchProjects();
   };
 
-  const atRoot = folderFilter === "all";
-  const currentFolder = folders.find((f) => f.id === folderFilter);
 
   return (
     <PageTransition>
@@ -274,71 +265,23 @@ export const CreatorWorkHome = () => {
           recentCollaborators={recentCollaborators}
           folderCount={folders.length}
           projectCount={projects.length}
-          folderControls={user ? <StudioFoldersBar
-            userId={user.id}
-            folders={folders}
-            counts={folderCounts}
-            selected={folderFilter}
-            onSelect={setFolderFilter}
-            onChanged={() => { fetchFolders(); fetchProjects(); }}
-            onDropProject={moveProject}
-          /> : undefined}
+          folderControls={folders.length > 0 ? (
+            <Select value={folderFilter} onValueChange={setFolderFilter}>
+              <SelectTrigger aria-label="Filter projects by folder" className="h-8 w-36 shrink-0 text-xs sm:w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All projects</SelectItem>
+                <SelectItem value="unfiled">Unfiled</SelectItem>
+                {folders.map((folder) => <SelectItem value={folder.id} key={folder.id}>{folder.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : undefined}
           onVoice={openVoiceCommand}
           onCommandPalette={openPalette}
           onWrapWeek={openWrapWeek}
         />
 
-        {!atRoot && projects.length > 0 ? (
-          // ── INSIDE A FOLDER (Drive-style detail view) ──
-          (() => {
-            const folderName =
-              folderFilter === "unfiled" ? "Unfiled" : currentFolder?.name ?? "Folder";
-            const FolderIcon = folderFilter === "unfiled" ? Inbox : Folder;
-            return (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFolderFilter("all")}
-                    className="h-9 -ml-2 gap-1 rounded-full text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    Folders
-                  </Button>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="h-11 w-11 rounded-2xl bg-muted grid place-items-center">
-                    <FolderIcon className="h-5 w-5 text-foreground/80" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <h2 className="text-xl font-black tracking-[-0.02em] truncate">
-                      {folderName}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {visibleProjects.length}{" "}
-                      {visibleProjects.length === 1 ? "project" : "projects"}
-                    </p>
-                  </div>
-                </div>
-                <StudioCardsGrid
-                  projects={visibleProjects as any}
-                  invoicesByProject={invoicesByProject}
-                  moneyVisibleByProject={moneyVisibleByProject}
-                  onNewProject={openCreateProject}
-                  folders={folders}
-                  onMoveToFolder={moveProject}
-                  hideHero
-                />
-              </div>
-            );
-          })()
-        ) : (
-          // ── ROOT — folders grid + Projects dashboard below ──
-          <>
-            {/* Keep every project visible on the root shelf, including projects in folders. */}
-            <StudioProjectsDashboard
-              projects={projects as any}
+        <StudioProjectsDashboard
+              projects={visibleProjects as any}
               invoicesByProject={invoicesByProject}
               moneyVisibleByProject={moneyVisibleByProject}
               participantsByProject={participantsByProject}
@@ -346,8 +289,6 @@ export const CreatorWorkHome = () => {
               folders={folders}
               onMoveToFolder={moveProject}
             />
-          </>
-        )}
       </div>
 
       {modals}

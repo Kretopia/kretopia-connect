@@ -99,7 +99,7 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
         description: "You've joined the project",
       });
       setInvitations((previous) => previous.filter((invitation) => invitation.id !== invitationId));
-      setCurrentIndex((index) => Math.max(0, index - 1));
+      setCurrentIndex((index) => Math.min(index, invitations.length - 2 < 0 ? 0 : invitations.length - 2));
       
       // Navigate to the project
       navigate(`/desk/${projectId}`);
@@ -130,7 +130,7 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
       });
       
       setInvitations((previous) => previous.filter((invitation) => invitation.id !== invitationId));
-      setCurrentIndex((index) => Math.max(0, index - 1));
+      setCurrentIndex((index) => Math.min(index, invitations.length - 2 < 0 ? 0 : invitations.length - 2));
     } catch (error: any) {
       toast({
         title: "Error",
