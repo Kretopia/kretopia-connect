@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Bell, Calendar, Check, LayoutGrid, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -121,10 +121,9 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
           <>
             {showOnboardingChecklist && <GetStartedChecklist />}
             {signals.momentum?.nextMilestone && (
-              <Link to="/desk" className="flex items-center justify-between gap-3 text-sm text-foreground hover:text-energy">
+              <p className="text-sm text-foreground">
                 <span className="min-w-0 truncate">Next: {signals.momentum.nextMilestone.title} · {signals.momentum.nextMilestone.projectTitle}</span>
-                <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
-              </Link>
+              </p>
             )}
             {!showOnboardingChecklist && !signals.momentum?.nextMilestone && <p className="text-sm text-muted-foreground">Nothing else needs your attention right now.</p>}
           </>
@@ -154,19 +153,6 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
             )}
             <UpcomingSessionsCard />
           </section>
-        )}
-
-        {unreadMessages > 0 && (
-          <button
-            onClick={() => navigate("/messages")}
-            className="w-full flex items-center gap-2.5 rounded-2xl border border-border bg-background/60 px-3.5 py-3 text-left hover:border-primary/40 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-sm font-medium flex-1">
-              {unreadMessages} unread message{unreadMessages === 1 ? "" : "s"}
-            </span>
-            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
         )}
 
         <DuplicateAccountBanner />
