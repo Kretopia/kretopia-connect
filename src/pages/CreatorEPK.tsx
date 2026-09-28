@@ -797,8 +797,6 @@ const CreatorEPK = () => {
           </div>
         )}
 
-      </div>
-
         {/* Owner Share Toolbar */}
         {isOwner && (
           <div ref={shareRef}>
@@ -979,9 +977,8 @@ const CreatorEPK = () => {
         )}
 
           </PublicPassportHero>
-      {/* closes Passport card column */}
+        </div>
       </div>
-      {/* closes profile grid */}
 
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (
