@@ -8,10 +8,13 @@ import { supabase } from "@/integrations/supabase/client";
  */
 const SS_KEY = (id: string) => `thrive:watch:${id}`;
 const CLIENT_THROTTLE_MS = 15 * 60 * 1000;
+// This optional function is not deployed against the production legacy backend.
+// Keep the watcher dormant instead of generating a handled 404 on every Studio visit.
+const DESK_AGENT_WATCH_ENABLED = false;
 
 export function useDeskAgentWatch(projectId?: string | null) {
   useEffect(() => {
-    if (!projectId) return;
+    if (!DESK_AGENT_WATCH_ENABLED || !projectId) return;
 
     const run = async () => {
       try {
