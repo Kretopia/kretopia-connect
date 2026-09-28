@@ -351,24 +351,9 @@ export const UnifiedHome = () => {
     fetchPublic();
   }, [user, currentGeo?.country]);
 
-  // Real AI-matched creators for the "Creators For You" rail (signed-in only).
-  // Uses the canonical matchmaker (get-onboarding-matches) so reasons + scores
-  // are consistent with Match. Falls back silently to the relevance-ranked list above.
-  useEffect(() => {
-    if (!user || !authProfileLoaded || profile?.user_id !== user.id) return;
-    let cancelled = false;
-    supabase.functions
-      .invoke("get-onboarding-matches")
-      .then(({ data, error }) => {
-        if (cancelled || error) return;
-        const matches = (data as any)?.matches;
-        if (Array.isArray(matches) && matches.length > 0) {
-          setFeaturedCreators(matches);
-        }
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [user?.id, authProfileLoaded, profile?.user_id]);
+  // get-onboarding-matches is disabled: the legacy backend returns 404
+  // ("Profile not found"), surfaced as a blank-screen crash. The
+  // relevance-ranked list above is used for "Creators For You".
 
   // Live activity ticker
   useEffect(() => {
