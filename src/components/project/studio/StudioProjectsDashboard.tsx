@@ -220,7 +220,7 @@ export const StudioProjectsDashboard = ({
               key={t.key}
               type="button"
               aria-pressed={active}
-              onClick={() => setFilter(active ? "all" : t.key)}
+              onClick={() => setFilter((active ? "all" : t.key) as StatusFilter)}
               className={cn(
                 "rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 active ? "border-primary/60 bg-primary/10" : "border-border bg-card hover:border-primary/30",
