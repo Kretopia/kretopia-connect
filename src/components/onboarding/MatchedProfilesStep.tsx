@@ -77,28 +77,31 @@ export const MatchedProfilesStep = ({ onComplete }: MatchedProfilesStepProps) =>
         }
       }
 
-      // Add 15 second timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Request timeout')), 15000)
+      // The legacy backend's get-onboarding-matches service answers 404
+      // ("Profile not found") even for valid profiles, which the preview
+      // reports as a blank-screen crash. Query suggested creators directly.
+      const { data: suggestions, error: suggestionsError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, role, avatar_url, bio")
+        .neq("user_id", currentUser.id)
+        .eq("onboarding_completed", true)
+        .not("avatar_url", "is", null)
+        .limit(6);
+
+      if (suggestionsError) throw suggestionsError;
+
+      setMatches(
+        (suggestions || []).map((p: any) => ({
+          user_id: p.user_id,
+          full_name: p.full_name || "Creator",
+          role: p.role || "Creator",
+          avatar_url: p.avatar_url,
+          bio: p.bio,
+          match_score: 0,
+          reason: "Active creator on Kretopia",
+          collab_idea: "",
+        })),
       );
-
-      const fetchPromise = supabase.functions.invoke("get-onboarding-matches");
-
-      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]) as any;
-      
-      if (error) {
-        // The SDK's message is generic; the real status lives on error.context.
-        // A 404 ("Profile not found") is a recoverable empty state, not a crash.
-        const status = (error as { context?: Response })?.context?.status;
-        const message = typeof error.message === "string" ? error.message : "";
-        if (status === 404 || message.includes("Profile not found")) {
-          setMatches([]);
-          return;
-        }
-        throw error;
-      }
-      
-      setMatches(data?.matches || []);
     } catch (error) {
       console.error("Error fetching matches:", error);
       toast({
