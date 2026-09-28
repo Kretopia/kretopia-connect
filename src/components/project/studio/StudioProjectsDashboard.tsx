@@ -250,12 +250,6 @@ export const StudioProjectsDashboard = ({
     return "Log the credits";
   };
 
-  const TILES = [
-    { key: "all", label: "All", value: counts.all },
-    { key: "active", label: "Active", value: counts.active },
-    { key: "completed", label: "Completed", value: counts.completed },
-  ];
-
   // Mock data for Project Room Overview
   const currentProject = projects.find((p) => p.id === currentProjectId);
   const mockTasks: Task[] = currentProjectId
@@ -825,53 +819,29 @@ export const StudioProjectsDashboard = ({
   }
 
   return (
-    <section aria-labelledby="studio-projects-title" className="space-y-3">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-3">
-        <h2 id="studio-projects-title" className="text-base font-bold">
-          Kretopia Projects
-        </h2>
-        <span className="text-xs text-muted-foreground">
-          {rows.length} {rows.length === 1 ? "project" : "projects"}
-        </span>
-      </div>
-
-      {/* Summary strip */}
-      <div className="grid grid-cols-3 gap-2">
-        {TILES.map((t) => {
-          const active = filter === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setFilter((active ? "all" : t.key) as StatusFilter)}
-              className={cn(
-                "rounded-2xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                active ? "border-primary/60 bg-primary/10" : "border-border bg-card hover:border-primary/30",
-              )}
-            >
-              <p className="text-2xl font-black tabular-nums leading-none">{t.value}</p>
-              <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t.label}</p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
+    <section aria-label="Studio projects" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-auto shrink-0 text-xs font-semibold text-muted-foreground">{rows.length} {rows.length === 1 ? "project" : "projects"}</span>
+        <div className="relative min-w-36 flex-1 sm:max-w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search Projects"
             aria-label="Search Projects"
-            className="pl-9"
+            className="h-9 pl-9"
           />
         </div>
+        <Select value={filter} onValueChange={(value) => setFilter(value as StatusFilter)}>
+          <SelectTrigger className="w-28" aria-label="Project status"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-          <SelectTrigger className="sm:w-44" aria-label="Sort Projects">
+          <SelectTrigger className="w-32" aria-label="Sort Projects">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
