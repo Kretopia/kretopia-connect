@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { Lock, Sparkles, User, Briefcase } from "lucide-react";
+import { Lock, Sparkles, User, Briefcase, Github, Mail, ShieldCheck } from "lucide-react";
 import { WaitlistForm } from "@/components/landing/WaitlistForm";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -29,6 +29,72 @@ import {
   trackSigninAttempt, trackSigninSuccess, trackSigninError,
 } from "@/lib/landingMetrics";
 
+type OAuthProvider = "google" | "apple" | "github" | "azure" | "discord" | "facebook";
+
+const PASSWORD_MIN_LENGTH = 12;
+
+const getAuthRedirectUrl = () => {
+  if (typeof window === "undefined") return undefined;
+  const url = new URL(window.location.href);
+  url.pathname = "/auth";
+  url.hash = "";
+  return url.toString();
+};
+
+const validatePassword = (value: string) => {
+  if (value.length < PASSWORD_MIN_LENGTH) {
+    return `Use at least ${PASSWORD_MIN_LENGTH} characters.`;
+  }
+  if (value.length > 128) {
+    return "Use a password of 128 characters or fewer.";
+  }
+  if (/^\s|\s$/.test(value)) {
+    return "Avoid spaces at the beginning or end of your password.";
+  }
+  if (!/[a-z]/.test(value)) return "Add a lowercase letter.";
+  if (!/[A-Z]/.test(value)) return "Add an uppercase letter.";
+  if (!/[0-9]/.test(value)) return "Add a number.";
+  if (!/[^A-Za-z0-9]/.test(value)) return "Add a symbol.";
+  return null;
+};
+
+const OAuthButton = ({
+  provider,
+  label,
+  onClick,
+  loading,
+}: {
+  provider: OAuthProvider;
+  label: string;
+  onClick: () => void;
+  loading: boolean;
+}) => {
+  const icon = provider === "github"
+    ? <Github className="h-4 w-4" aria-hidden />
+    : provider === "google"
+      ? <span className="text-sm font-bold" aria-hidden>G</span>
+      : provider === "apple"
+        ? <span className="text-sm font-semibold" aria-hidden></span>
+        : provider === "discord"
+          ? <span className="text-xs font-black" aria-hidden>DC</span>
+          : provider === "facebook"
+            ? <span className="text-sm font-bold" aria-hidden>f</span>
+            : <span className="text-xs font-bold" aria-hidden>MS</span>;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      aria-label={`Continue with ${label}`}
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}
+      <span>{loading ? "Connecting…" : label}</span>
+    </button>
+  );
+};
+
 const Auth = () => {
   const reducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<string>("signin");
@@ -42,6 +108,8 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showWaitlistForm, setShowWaitlistForm] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState<OAuthProvider | null>(null);
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string | null>(null);
 
   const navigate = useNavigate();
@@ -314,53 +382,124 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handleOAuthSignIn = async (provider: "google") => {
-    setGoogleLoading(true);
+  const handleOAuthSignIn = async (provider: OAuthProvider) => {
+    setOauthLoading(provider);
+    if (provider === "google") setGoogleLoading(true);
 
     const { analytics } = await import("@/lib/analytics");
-    analytics.featureUsed(`${provider}_signin_attempt`);
+    analytics.featureUsed(`${provider}_auth_attempt`);
     const isSignupIntent = activeTab === "signup";
     if (isSignupIntent) trackSignupAttempt(authEntrySource, provider);
     else trackSigninAttempt(authEntrySource, provider);
 
     try {
-      // Supabase's own OAuth, not Lovable's broker -- Lovable's provider
-      // config lives behind "Lovable Cloud", a separate paid backend layer
-      // this project doesn't use (it runs on its own external Supabase
-      // project already). Calling Supabase directly needs no Lovable
-      // credits and no second backend; Google just needs to be enabled
-      // with real client credentials in Supabase's own (free)
-      // Authentication > Providers page.
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: window.location.origin },
+        options: {
+          // Supabase performs the provider exchange; no provider secret belongs
+          // in this browser bundle. The current auth URL is preserved so the
+          // existing post-auth routing can continue through Auth.tsx.
+          redirectTo: getAuthRedirectUrl(),
+        },
       });
 
-      // No popup, no iframe, no "cancelled" state to detect here: unlike
-      // Lovable's broker, supabase-js just assigns window.location.href
-      // itself on success, so the only thing left to handle is an error
-      // returned before that navigation ever starts (e.g. the provider
-      // isn't enabled yet). The old "redirected: true" early return and
-      // its sibling success branch (toast + tracking) never actually ran
-      // for a real visitor either -- that only fired inside Lovable's own
-      // preview iframe, not on a real window.location redirect -- so
-      // nothing observable changes for real users here.
       if (error) {
-        analytics.errorOccurred(`${provider}_signin`, error.message, "auth");
+        analytics.errorOccurred(`${provider}_auth`, error.message, "auth");
         if (isSignupIntent) trackSignupError(authEntrySource, provider, categorizeAuthError(error));
         else trackSigninError(authEntrySource, provider, categorizeAuthError(error));
-        toast({ title: "Google Sign-In Failed", description: error.message, variant: "destructive" });
-        setGoogleLoading(false);
+
+        toast({
+          title: `${provider[0].toUpperCase()}${provider.slice(1)} sign-in failed`,
+          description: error.message || "This sign-in provider is not configured yet.",
+          variant: "destructive",
+        });
       }
     } catch (err: any) {
-      console.error(`${provider} sign-in error:`, err);
-      toast({ title: "Error", description: "Failed to sign in with Google. Please try again.", variant: "destructive" });
+      console.error(`[Auth] ${provider} OAuth error:`, err);
+      toast({
+        title: "Authentication error",
+        description: "Unable to start secure sign-in. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setOauthLoading(null);
       setGoogleLoading(false);
     }
   };
 
+  const handleMagicLink = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      toast({
+        title: "Enter your email",
+        description: "Use a valid email address to receive your secure sign-in link.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMagicLinkLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          shouldCreateUser: false,
+          emailRedirectTo: getAuthRedirectUrl(),
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Check your email",
+        description: "We sent you a secure, single-use sign-in link.",
+      });
+    } catch (error: any) {
+      console.error("[Auth] Magic-link error:", error);
+      toast({
+        title: "Could not send sign-in link",
+        description: error?.message || "Please check your email and try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setMagicLinkLoading(false);
+    }
+  };
+
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const passwordError = validatePassword(password);
+
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (passwordError) {
+      toast({
+        title: "Choose a stronger password",
+        description: passwordError,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        description: "Enter the same password twice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     const { trackEvent, EventCategory } = await import("@/lib/analytics");
@@ -368,7 +507,7 @@ const Auth = () => {
     trackSignupAttempt(authEntrySource, "email");
 
     const { data: signUpData, error } = await supabase.auth.signUp({
-      email, password,
+      email: normalizedEmail, password,
       options: {
         // Land verified users directly in onboarding so the profile setup picks up where they left off.
         // window.location.origin handles preview, custom-domain, and prod automatically.
@@ -393,7 +532,13 @@ const Auth = () => {
         toast({ title: "Account Exists", description: "This email is already registered. Switching to sign in.", variant: "destructive" });
         setActiveTab("signin");
       } else if (msg.toLowerCase().includes("password")) {
-        toast({ title: "Password too weak", description: "Use at least 8 characters with a mix of letters and numbers.", variant: "destructive" });
+        // Do not claim the client can override Supabase's server-side policy.
+        // This can also mean the password was found in a breached-password list.
+        toast({
+          title: "Password rejected by security policy",
+          description: "Try a new 12+ character password with upper/lowercase, a number and a symbol. If it still fails, choose a completely different password.",
+          variant: "destructive",
+        });
       } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
         toast({ title: "Connection Error", description: "Please check your internet and try again.", variant: "destructive" });
       } else {
@@ -416,7 +561,7 @@ const Auth = () => {
 
       if (signUpData?.user && inviteCode) {
         try {
-          await supabase.rpc('use_invite_code', { code: inviteCode.trim(), user_email: email, new_user_id: signUpData.user.id });
+          await supabase.rpc('use_invite_code', { code: inviteCode.trim(), user_email: normalizedEmail, new_user_id: signUpData.user.id });
         } catch (inviteErr) { console.error('Error using invite code:', inviteErr); }
       }
 
@@ -425,7 +570,7 @@ const Auth = () => {
       // If email confirmation is required, Supabase returns a user with no session.
       // Don't navigate to /onboarding (it would bounce back to /auth) — show a "check your email" screen instead.
       if (!signUpData?.session) {
-        setPendingVerificationEmail(email);
+        setPendingVerificationEmail(normalizedEmail);
         toast({ title: "Check your email", description: "We sent you a verification link to finish signing up." });
         setLoading(false);
         return;
@@ -563,6 +708,23 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="signin">
+                <div className="mb-5 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                    <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
+                    <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
+                  </div>
+                </div>
+
+                <div className="mb-5 flex items-center gap-2">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">or email</span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+
                 <SignInForm
                   email={email} setEmail={setEmail}
                   password={password} setPassword={setPassword}
@@ -571,6 +733,16 @@ const Auth = () => {
                   onGoogleSignIn={() => handleOAuthSignIn("google")}
                   googleLoading={googleLoading}
                 />
+
+                <button
+                  type="button"
+                  onClick={handleMagicLink}
+                  disabled={loading || magicLinkLoading}
+                  className="mt-3 flex w-full items-center justify-center gap-2 text-xs font-semibold text-muted-foreground transition hover:text-foreground disabled:opacity-60"
+                >
+                  <Mail className="h-3.5 w-3.5" />
+                  {magicLinkLoading ? "Sending secure link…" : "Email me a sign-in link instead"}
+                </button>
               </TabsContent>
 
               <TabsContent value="signup">
@@ -630,6 +802,18 @@ const Auth = () => {
                       googleLoading={googleLoading}
                       label=""
                     />
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                      <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
+                      <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
+                    </div>
+                    <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      Secure OAuth — your provider password never reaches Kretopia.
+                    </div>
                     <div className="my-5 flex items-center gap-2">
                       <div className="flex-1 h-px bg-border" />
                       <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
@@ -655,6 +839,21 @@ const Auth = () => {
                   </>
                 ) : (
                   <>
+                    <div className="mb-5 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                        <OAuthButton provider="github" label="GitHub" onClick={() => handleOAuthSignIn("github")} loading={oauthLoading === "github"} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <OAuthButton provider="azure" label="Microsoft" onClick={() => handleOAuthSignIn("azure")} loading={oauthLoading === "azure"} />
+                        <OAuthButton provider="discord" label="Discord" onClick={() => handleOAuthSignIn("discord")} loading={oauthLoading === "discord"} />
+                      </div>
+                    </div>
+                    <div className="mb-5 flex items-center gap-2">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">or email + password</span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
                     <SignUpWizard
                       email={email} setEmail={setEmail}
                       password={password} setPassword={setPassword}
@@ -664,6 +863,10 @@ const Auth = () => {
                       onGoogleSignIn={() => handleOAuthSignIn("google")}
                       googleLoading={googleLoading}
                     />
+                    <p className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
+                      <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      Passwords are validated locally and by Supabase. Use 12+ characters, upper/lowercase, a number and a symbol; breached passwords can still be rejected server-side.
+                    </p>
                     <div className="mt-4 text-center">
                       <button
                         type="button"
