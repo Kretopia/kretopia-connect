@@ -11,6 +11,7 @@ interface ProfileQRDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   userName: string;
+  userAvatar?: string;
 }
 
 export const ProfileQRDialog = ({
