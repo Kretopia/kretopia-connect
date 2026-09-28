@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Pencil, Eye, EyeOff, BadgeCheck } from "lucide-react";
 import { DashboardPanel } from "./CreditsPrimitives";
+import { displayPassportId } from "@/lib/passportId";
 
 export interface IdentityProfile {
   full_name: string | null;
@@ -70,7 +71,7 @@ export function CreditsIdentityPanel({ profile, index }: { profile: IdentityProf
             )}
             {profile?.icdb_creator_id && (
               <span className="rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                {profile.icdb_creator_id}
+                {displayPassportId(profile.icdb_creator_id)}
               </span>
             )}
           </div>

@@ -1,3 +1,4 @@
+import { displayPassportId } from "@/lib/passportId";
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -198,7 +199,7 @@ export const ProfileHubCard = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-mono font-bold text-sm text-foreground tracking-wide truncate">
-                    {profile.icdb_creator_id}
+                    {displayPassportId(profile.icdb_creator_id)}
                   </p>
                   <p className="text-[10px] text-muted-foreground leading-tight">
                     Your verified ID — unique to you, embed anywhere.
