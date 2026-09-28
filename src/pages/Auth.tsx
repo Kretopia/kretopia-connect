@@ -436,7 +436,7 @@ const Auth = () => {
 
   const handleMagicLink = async () => {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       toast({
         title: "Enter your email",
         description: "Use a valid email address to receive your secure sign-in link.",
@@ -480,7 +480,7 @@ const Auth = () => {
     const normalizedEmail = email.trim().toLowerCase();
     const passwordError = validatePassword(password);
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       toast({
         title: "Invalid email",
         description: "Enter a valid email address.",
