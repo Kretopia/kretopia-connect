@@ -31,6 +31,10 @@ import {
 } from "@/lib/landingMetrics";
 
 type OAuthProvider = "google" | "apple" | "github" | "azure" | "discord" | "facebook";
+// Legacy backend (kwmcocsitwssrtzkdojh) has Google/Apple enabled without their
+// OAuth secrets -> "Unsupported provider: missing OAuth secret" on click.
+// Temporarily hide the buttons until the secrets are configured.
+const OAUTH_TEMPORARILY_DISABLED = true;
 
 const PASSWORD_MIN_LENGTH = 12;
 
@@ -709,15 +713,15 @@ const Auth = () => {
               </TabsList>
 
               <TabsContent value="signin">
-                <div className="mb-5 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                  </div>
-                </div>
+                  {!OAUTH_TEMPORARILY_DISABLED && (
+                    <div className="mb-5 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                      </div>
+                    </div>
+                  )}
 
-                <div className="mb-5 flex items-center gap-2">
+                  <div className="mb-5 flex items-center gap-2">
                   <div className="h-px flex-1 bg-border" />
                   <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">or email</span>
                   <div className="h-px flex-1 bg-border" />
@@ -730,6 +734,7 @@ const Auth = () => {
                   onForgotPassword={() => setShowForgotPassword(true)}
                   onGoogleSignIn={() => handleOAuthSignIn("google")}
                   googleLoading={googleLoading}
+                  hideOAuth={OAUTH_TEMPORARILY_DISABLED}
                 />
 
                 <button
@@ -789,30 +794,32 @@ const Auth = () => {
                         first. Search stays one scroll away for anyone who
                         wants Kreto to pull in their existing credits instead
                         of starting blank. */}
-                    <p className="text-center text-sm font-semibold text-foreground mb-0.5">
-                      Get in fast with Google
-                    </p>
-                    <p className="text-center text-xs text-muted-foreground mb-4">
-                      Create your Kretopia Passport in seconds.
-                    </p>
-                    <OAuthQuickButtons
-                      onGoogle={() => handleOAuthSignIn("google")}
-                      googleLoading={googleLoading}
-                      label=""
-                    />
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                    </div>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                    </div>
-                    <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5" />
-                      Secure OAuth — your provider password never reaches Kretopia.
-                    </div>
+                    {!OAUTH_TEMPORARILY_DISABLED && (
+                      <>
+                        <p className="text-center text-sm font-semibold text-foreground mb-0.5">
+                          Get in fast with Google
+                        </p>
+                        <p className="text-center text-xs text-muted-foreground mb-4">
+                          Create your Kretopia Passport in seconds.
+                        </p>
+                        <OAuthQuickButtons
+                          onGoogle={() => handleOAuthSignIn("google")}
+                          googleLoading={googleLoading}
+                          label=""
+                        />
+                        <div className="mt-2 grid grid-cols-2 gap-2">
+                          <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                        </div>
+                        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Secure OAuth — your provider password never reaches Kretopia.
+                        </div>
+                      </>
+                    )}
                     <div className="my-5 flex items-center gap-2">
                       <div className="flex-1 h-px bg-border" />
                       <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
-                        Or search for yourself
+                        {OAUTH_TEMPORARILY_DISABLED ? "Search for yourself" : "Or search for yourself"}
                       </span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
@@ -834,13 +841,13 @@ const Auth = () => {
                   </>
                 ) : (
                   <>
-                    <div className="mb-5 space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                    {!OAUTH_TEMPORARILY_DISABLED && (
+                      <div className="mb-5 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
-                      </div>
-                    </div>
+                    )}
                     <div className="mb-5 flex items-center gap-2">
                       <div className="h-px flex-1 bg-border" />
                       <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">or email + password</span>
@@ -854,6 +861,7 @@ const Auth = () => {
                       loading={loading} onSubmit={handleSignUp}
                       onGoogleSignIn={() => handleOAuthSignIn("google")}
                       googleLoading={googleLoading}
+                      hideOAuth={OAUTH_TEMPORARILY_DISABLED}
                     />
                     <p className="mt-3 flex items-start gap-2 text-[11px] leading-relaxed text-muted-foreground">
                       <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />
