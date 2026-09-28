@@ -31,7 +31,7 @@ const renderDash = (props: Partial<React.ComponentProps<typeof StudioProjectsDas
 describe("StudioProjectsDashboard", () => {
   it("uses Projects terminology and never says 'Loose'", () => {
     const { container } = renderDash();
-    expect(screen.getByRole("heading", { name: "Projects" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Kretopia Projects" })).toBeInTheDocument();
     expect(container.textContent?.toLowerCase()).not.toContain("loose");
   });
 
@@ -39,12 +39,13 @@ describe("StudioProjectsDashboard", () => {
     renderDash();
     expect(screen.getByText("Carnival Film")).toBeInTheDocument();
     expect(screen.getByText("Album Rollout")).toBeInTheDocument();
-    expect(screen.getAllByText(/^Next:/).length).toBe(2);
+    expect(screen.getByText("Open the work feed")).toBeInTheDocument();
+    expect(screen.getByText("Draft the invoice")).toBeInTheDocument();
   });
 
   it("filters via the summary tiles", () => {
     renderDash();
-    fireEvent.click(screen.getByRole("button", { name: "Filter by In progress" }));
+    fireEvent.click(screen.getByRole("button", { name: "1 Active" }));
     expect(screen.getByText("Carnival Film")).toBeInTheDocument();
     expect(screen.queryByText("Album Rollout")).not.toBeInTheDocument();
   });
