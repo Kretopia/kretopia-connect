@@ -107,7 +107,7 @@ export function TodayCommandCenter({
             creditCount={creditCount}
             completion={signals.passport.percentage}
             firstName={firstName}
-             signals={signals}
+            signals={signals}
             onKreto={openKretoChat}
           />
         ) : null}
@@ -121,8 +121,7 @@ export function TodayCommandCenter({
 /**
  * Passport + Kreto
  *
- * The whole card is the single Passport interaction.
- * There is deliberately no separate edit button.
+ * The shared card keeps Passport and Kreto together with distinct actions.
  */
 function PassportKretoCard({
   profile,
@@ -154,10 +153,10 @@ function PassportKretoCard({
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 text-xs">
               <span className="text-muted-foreground">Passport · {creditCount} credit{creditCount === 1 ? "" : "s"}</span>
-              <span className="font-bold text-energy">{Math.max(0, Math.min(100, completion))}%</span>
+              <span className="font-bold text-energy">{safeCompletion}%</span>
             </div>
-            <div role="progressbar" aria-label="Passport completion" aria-valuenow={Math.max(0, Math.min(100, completion))} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${Math.max(0, Math.min(100, completion))}%` }} />
+            <div role="progressbar" aria-label="Passport completion" aria-valuenow={safeCompletion} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${safeCompletion}%` }} />
             </div>
             <Link to="/passport" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden />

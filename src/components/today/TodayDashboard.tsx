@@ -42,12 +42,7 @@ export function TodayDashboard({ firstName, profile, profileFull, myCredits = 0 
   if (!user) return null;
 
   return (
-    // pb-28 matches UnifiedHome.tsx's own footer-wrapper convention for
-    // the fixed bottom chrome (composer bar + bottom nav) -- without it,
-    // whichever card happens to land at the viewport's natural bottom edge
-    // on first load (often the priority action's Complete/Snooze row) is
-    // partially covered until the user scrolls. Verified visually at
-    // 375px width: Complete/Snooze fully clear the composer bar with this.
+    // Leave room for the fixed bottom composer and navigation.
     <div className="space-y-4 pb-28">
       {signals.loading ? (
         <div className="flex items-center justify-center py-16" aria-busy="true">
@@ -58,16 +53,13 @@ export function TodayDashboard({ firstName, profile, profileFull, myCredits = 0 
           Couldn't load today's dashboard. <button onClick={refresh} className="font-semibold text-primary underline underline-offset-2">Try again</button>
         </div>
       ) : (
-        <>
-          <motion.div
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={reducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
-          >
-            <TodayCommandCenter firstName={firstName} profile={effectiveProfile} creditCount={myCredits} signals={signals} onSignalsChanged={refresh} />
-          </motion.div>
-
-        </>
+        <motion.div
+          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={reducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
+        >
+          <TodayCommandCenter firstName={firstName} profile={effectiveProfile} creditCount={myCredits} signals={signals} onSignalsChanged={refresh} />
+        </motion.div>
       )}
     </div>
   );

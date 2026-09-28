@@ -5,7 +5,7 @@ import { TodayDashboard } from "../TodayDashboard";
 import type { ProfileRow } from "../today.types";
 
 /**
- * Today keeps only the command center and a focused next-steps surface.
+ * Today keeps only the command center without a second Passport dashboard.
  */
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
@@ -27,19 +27,18 @@ vi.mock("../today.selectors", () => ({
   }),
 }));
 vi.mock("../TodayCommandCenter", () => ({ TodayCommandCenter: () => <div data-testid="command-center" /> }));
-vi.mock("../TodayOpportunities", () => ({ TodayOpportunities: () => <div data-testid="opportunities" /> }));
 
 const profile = { user_id: "u1", full_name: "Maya" } as unknown as ProfileRow;
 
 describe("TodayDashboard — focused overview", () => {
-  it("renders the command center and next steps without a second Passport dashboard", () => {
+  it("renders the command center without secondary dashboards", () => {
     render(
       <MemoryRouter>
         <TodayDashboard profileFull={profile} />
       </MemoryRouter>,
     );
     expect(screen.getByTestId("command-center")).toBeInTheDocument();
-    expect(screen.getByTestId("opportunities")).toBeInTheDocument();
+    expect(screen.queryByTestId("opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText("Your Passport dashboard")).not.toBeInTheDocument();
     expect(screen.queryByTestId("metrics-dashboard")).not.toBeInTheDocument();
   });
