@@ -536,7 +536,7 @@ const CreatorEPK = () => {
         )}
       </div>
 
-              <div className="order-1 min-w-0 lg:order-2">
+        <div className="order-1 min-w-0 lg:order-2">
           <PublicPassportHero
             profile={profile}
             credits={credits}
@@ -553,15 +553,7 @@ const CreatorEPK = () => {
             showBio={false}
             showActions={false}
           >
-        {/* "Work with [Name]" — the direct-collab entry point the brief
-            asked for, right under the hero so it's the first real decision
-            a visitor makes. Orchestrates the connect/message/collaborate
-            dialogs that already exist below rather than adding new ones —
-            connect-first gating kept exactly as-is (confirmed): a visitor
-            still has to connect before Message/Start a Project/Invite
-            unlock, this block just makes that path far more visible and
-            explains what happens at each state instead of relying on
-            PublicPassportHero's own (smaller) CTA alone. */}
+        {/* Collaboration uses the same existing gated actions. */}
         {!isOwner && (
           <div className="border-b border-border pb-5">
             <h2 className="text-sm font-semibold text-energy uppercase mb-1">
@@ -591,10 +583,6 @@ const CreatorEPK = () => {
                   </Button>
                 </>
               ) : (
-                // Priority #1 CTA (CEO overhaul): the same canonical
-                // primary-CTA treatment New Room/Studio home use for their
-                // single most important action, not a plain default Button
-                // indistinguishable from a secondary one.
                 <CtaButton
                   onClick={handleConnect}
                   disabled={isConnecting || connectionStatus === 'pending'}
@@ -605,10 +593,6 @@ const CreatorEPK = () => {
                 </CtaButton>
               )}
             </div>
-            {/* The removed fixed footer's one function with no inline
-                equivalent elsewhere: a distinct entry point for a brand
-                (not this specific visitor) wanting to browse more
-                creators, not just connect with this one. */}
             {!currentUserId && (
               <Button
                 type="button"
@@ -622,7 +606,7 @@ const CreatorEPK = () => {
           </div>
         )}
 
-        {/* Why work with me — leads the press kit with positioning. */}
+        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
         {(profile.headline || profile.bio) && (() => {
           const longBio = profile.bio && profile.bio.length > 280;
           const body = profile.headline
@@ -632,7 +616,7 @@ const CreatorEPK = () => {
               <h3 className="text-sm font-semibold text-energy uppercase mb-2">
                 Why work with me
               </h3>
-              <p className="text-base leading-relaxed text-foreground whitespace-pre-line">
+              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
                 {body}
               </p>
               {!profile.headline && longBio && (
