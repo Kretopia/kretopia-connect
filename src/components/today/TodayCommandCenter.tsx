@@ -30,7 +30,7 @@ const TODAY_TUTORIAL: TutorialStep[] = [
   {
     icon: ArrowRight,
     title: "Your Passport and next move",
-    body: "Your Creative Passport and the most useful action for today live together in one place.",
+    body: "Your Passport, today's next move and your activity each have a clear place.",
   },
   {
     icon: Check,
@@ -65,16 +65,8 @@ interface TodayPriorityCardProps {
 /**
  * TodayCommandCenter
  *
- * The Today page intentionally exposes only two clear areas:
- *
- * 1. Passport + Kreto:
- *    The Passport is the only place from which the user can edit their profile.
- *    Passport and Kreto have their own accessible actions within one card.
- *
- * 2. Today's priority:
- *    One contextual action based on real signals.
- *
- * This prevents duplicated Passport actions, excessive CTAs and mobile overload.
+  * Three equally sized surfaces: Passport with Kreto, one next action, and
+  * supporting activity drawn from the same live signals.
  */
 export function TodayCommandCenter({
   firstName,
@@ -100,21 +92,24 @@ export function TodayCommandCenter({
         compact
       />
 
-      <div className="space-y-4">
+      <div className="grid auto-rows-fr gap-4 lg:grid-cols-3">
         {profile && signals.passport ? (
           <PassportKretoCard
             profile={profile}
             creditCount={creditCount}
             completion={signals.passport.percentage}
             firstName={firstName}
-            signals={signals}
             onKreto={openKretoChat}
           />
-        ) : null}
-
-        {(signals.priority.kind !== "none" || signals.primaryCta.label !== "Ask Kreto") && (
-          <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        ) : (
+          <div className="h-full min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
+            <p className="mt-4 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
+            <Button type="button" variant="outline" size="sm" onClick={openKretoChat} className="mt-4 gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
+          </div>
         )}
+        <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        <TodayActivityCard signals={signals} />
       </div>
     </div>
   );
@@ -130,21 +125,15 @@ function PassportKretoCard({
   creditCount,
   completion,
   firstName,
-  signals,
   onKreto,
 }: PassportKretoCardProps) {
   const displayName = profile.full_name || profile.username || firstName || "Your Passport";
   const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
   const avatarUrl = profile.avatar_url || "";
   const safeCompletion = Math.max(0, Math.min(100, completion));
-  const upcomingCount = signals.deadlines.filter((task) => !task.overdue).length;
-  const completedThisWeek = signals.momentum?.completedThisWeek;
-  const nextMilestone = signals.momentum?.nextMilestone;
-
   return (
-    <HoloCard maxTilt={3}>
-      <section aria-label="Creative Passport and Kreto" className="relative overflow-hidden rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
-        <div className="relative z-10 grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-7">
+    <HoloCard maxTilt={3} className="h-full min-w-0">
+      <section aria-label="Creative Passport and Kreto" className="relative flex h-full min-h-[320px] min-w-0 flex-col overflow-hidden rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
             <div className="mt-3 flex min-w-0 items-center gap-3">
@@ -163,37 +152,47 @@ function PassportKretoCard({
             <div role="progressbar" aria-label="Passport completion" aria-valuenow={safeCompletion} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${safeCompletion}%` }} />
             </div>
-            <Link to="/passport" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-              Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
           </div>
-          <div className="flex min-w-0 items-center gap-3 border-t border-border pt-4 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+          <div className="mt-4 flex min-w-0 items-center gap-2 border-t border-border pt-4">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Kreto · Creator intelligence</p>
-              <p className="mt-2 text-sm leading-relaxed text-foreground">{creatorIntelligenceCopy(signals)}</p>
-              <Button type="button" variant="outline" size="sm" onClick={onKreto} className="mt-3 gap-2">
-                <MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto
-              </Button>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
             </div>
-            <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={80} floatAmplitude={1} floatDuration={8} /></div>
+            <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={56} floatAmplitude={1} floatDuration={8} /></div>
           </div>
-        </div>
-        {(upcomingCount > 0 || signals.approvalCount > 0 || signals.unreadMessages > 0 || (completedThisWeek ?? 0) > 0 || nextMilestone) && (
-          <div className="relative z-10 mt-5 border-t border-border pt-4">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Your activity</p>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 text-xs">
-              {upcomingCount > 0 && <Link to="/desk" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{upcomingCount}</span> due in the next 7 days <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
-              {signals.approvalCount > 0 && <span className="text-foreground"><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</span>}
-              {signals.unreadMessages > 0 && <Link to="/messages" className="inline-flex items-center gap-1.5 text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{signals.unreadMessages}</span> unread message{signals.unreadMessages === 1 ? "" : "s"} <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
-              {(completedThisWeek ?? 0) > 0 && <span className="text-foreground"><span className="font-bold text-energy">{completedThisWeek}</span> completed this week</span>}
-            </div>
-            {nextMilestone && (
-              <p className="mt-3 text-xs text-muted-foreground">
-                Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-              </p>
-            )}
+          <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
+            <Link to="/passport" className="inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
+            <Button type="button" variant="outline" size="sm" onClick={onKreto} className="gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
           </div>
-        )}
+      </section>
+    </HoloCard>
+  );
+}
+
+function TodayActivityCard({ signals }: { signals: TodaySignals }) {
+  const upcomingCount = signals.deadlines.filter((task) => !task.overdue).length;
+  const completedThisWeek = signals.momentum?.completedThisWeek ?? 0;
+  const activeProjects = signals.momentum?.activeProjects.length ?? 0;
+  const nextMilestone = signals.momentum?.nextMilestone;
+  const hasActivity = upcomingCount > 0 || completedThisWeek > 0 || activeProjects > 0 || signals.approvalCount > 0 || signals.unreadMessages > 0 || !!nextMilestone || !!signals.stamps?.waitingForCoSign;
+
+  return (
+    <HoloCard maxTilt={3} className="h-full min-w-0">
+      <section aria-label="Your activity" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Your activity</p>
+        <h2 className="mt-1 text-base font-bold text-foreground">Moving forward</h2>
+        {hasActivity ? (
+          <div className="mt-4 space-y-2 text-sm text-foreground">
+            {activeProjects > 0 && <p><span className="font-bold text-energy">{activeProjects}</span> active project{activeProjects === 1 ? "" : "s"}</p>}
+            {upcomingCount > 0 && <p><span className="font-bold text-energy">{upcomingCount}</span> due in the next 7 days</p>}
+            {completedThisWeek > 0 && <p><span className="font-bold text-energy">{completedThisWeek}</span> completed this week</p>}
+            {signals.approvalCount > 0 && <p><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</p>}
+            {signals.unreadMessages > 0 && <Link to="/messages" className="inline-flex items-center gap-1 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{signals.unreadMessages}</span> unread message{signals.unreadMessages === 1 ? "" : "s"} <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
+            {(signals.stamps?.waitingForCoSign ?? 0) > 0 && <p><span className="font-bold text-energy">{signals.stamps?.waitingForCoSign}</span> credit{signals.stamps?.waitingForCoSign === 1 ? "" : "s"} awaiting co-sign</p>}
+          </div>
+        ) : <p className="mt-4 text-sm text-muted-foreground">No recent activity yet.</p>}
+        {nextMilestone && <p className="mt-3 text-xs text-muted-foreground">Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>}
+        <Link to="/desk" className="mt-auto inline-flex items-center gap-1 self-start pt-4 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Studio <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
       </section>
     </HoloCard>
   );
