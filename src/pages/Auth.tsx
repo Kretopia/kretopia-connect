@@ -819,7 +819,7 @@ const Auth = () => {
                     <div className="my-5 flex items-center gap-2">
                       <div className="flex-1 h-px bg-border" />
                       <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
-                        Or search for yourself
+                        {OAUTH_TEMPORARILY_DISABLED ? "Search for yourself" : "Or search for yourself"}
                       </span>
                       <div className="flex-1 h-px bg-border" />
                     </div>
