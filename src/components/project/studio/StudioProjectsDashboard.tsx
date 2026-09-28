@@ -218,6 +218,7 @@ export const StudioProjectsDashboard = ({
   useEffect(() => {
     const list = carouselRef.current;
     if (!list) return;
+    if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(syncCarousel);
     observer.observe(list);
     syncCarousel();
@@ -823,7 +824,7 @@ export const StudioProjectsDashboard = ({
       {/* Header */}
       <div className="flex items-end justify-between gap-3">
         <h2 id="studio-projects-title" className="text-base font-bold">
-          Kretopia Studios
+          Kretopia Projects
         </h2>
         <span className="text-xs text-muted-foreground">
           {rows.length} {rows.length === 1 ? "project" : "projects"}
