@@ -132,7 +132,7 @@ export default function SearchResults() {
             {creators.length > 0 && (
               <section>
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Users</h2>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                   {creators.map((c) => (
                     <Link
                       key={c.user_id}
@@ -158,7 +158,7 @@ export default function SearchResults() {
             {credits.length > 0 && (
               <section>
                 <h2 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Projects</h2>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                   {credits.map((c) => (
                     <Link
                       key={c.id}
