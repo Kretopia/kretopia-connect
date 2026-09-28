@@ -2,15 +2,14 @@ import { useEffect, useRef } from "react";
 import QRCodeStyling from "qr-code-styling";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
-const ENERGY = "#FF2DA1";
-const MIDNIGHT = "#0B0B10";
-
 interface KretopiaQRCodeProps {
   /** The URL (or any string payload) the code should resolve to. */
   data: string;
   /** Pixel width/height — the code is always square. */
   size?: number;
   className?: string;
+  /** Receives the exact branded QR bitmap for print/share exports. */
+  onReady?: (blob: Blob | null) => void;
 }
 
 /**
@@ -27,14 +26,20 @@ interface KretopiaQRCodeProps {
 // anyway, so this is the real floor, not just a crash workaround.
 const MIN_SIZE = 100;
 
-export function KretopiaQRCode({ data, size: requestedSize = 120, className }: KretopiaQRCodeProps) {
+export function KretopiaQRCode({ data, size: requestedSize = 120, className, onReady }: KretopiaQRCodeProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const onReadyRef = useRef(onReady);
+  onReadyRef.current = onReady;
   const size = Math.max(requestedSize, MIN_SIZE);
 
   useEffect(() => {
     if (!data || !ref.current) return;
     let cancelled = false;
     ref.current.innerHTML = "";
+    const tokens = getComputedStyle(document.documentElement);
+    const ink = `hsl(${tokens.getPropertyValue("--qr-ink").trim()})`;
+    const accent = `hsl(${tokens.getPropertyValue("--qr-accent").trim() || tokens.getPropertyValue("--energy").trim()})`;
+    const paper = `hsl(${tokens.getPropertyValue("--qr-paper").trim()})`;
 
     const baseOptions = {
       width: size,
@@ -48,14 +53,14 @@ export function KretopiaQRCode({ data, size: requestedSize = 120, className }: K
           type: "linear" as const,
           rotation: Math.PI / 4,
           colorStops: [
-            { offset: 0, color: MIDNIGHT },
-            { offset: 1, color: ENERGY },
+             { offset: 0, color: ink },
+             { offset: 1, color: accent },
           ],
         },
       },
-      cornersSquareOptions: { color: ENERGY, type: "extra-rounded" as const },
-      cornersDotOptions: { color: MIDNIGHT, type: "dot" as const },
-      backgroundOptions: { color: "#ffffff" },
+       cornersSquareOptions: { color: accent, type: "extra-rounded" as const },
+       cornersDotOptions: { color: ink, type: "dot" as const },
+       backgroundOptions: { color: paper },
     };
 
     const render = (withLogo: boolean) => {
@@ -70,6 +75,11 @@ export function KretopiaQRCode({ data, size: requestedSize = 120, className }: K
           : baseOptions,
       );
       qr.append(ref.current);
+       if (onReadyRef.current) {
+         void qr.getRawData("png")
+           .then((raw) => { if (!cancelled) onReadyRef.current?.(raw instanceof Blob ? raw : null); })
+           .catch(() => { if (!cancelled) onReadyRef.current?.(null); });
+       }
     };
 
     // Same rule as EventPassCard: the center logo is a branding touch, never
