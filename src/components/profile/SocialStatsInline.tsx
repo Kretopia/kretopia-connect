@@ -1,14 +1,9 @@
-import { Youtube, Instagram, Music, Twitter, Linkedin } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { useCallback, useEffect, useState } from "react";
+import { Youtube, Instagram, Music, Twitter } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SocialStatsInlineProps {
-  youtubeSubscribers?: number;
-  instagramFollowers?: number;
-  tiktokFollowers?: number;
-  spotifyListeners?: number;
-  twitterFollowers?: number;
-  linkedinConnections?: number;
-  verifiedMetrics?: boolean;
+  userId: string;
 }
 
 const formatNumber = (num: number) => {
@@ -17,44 +12,64 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
-export const SocialStatsInline = ({
-  youtubeSubscribers,
-  instagramFollowers,
-  tiktokFollowers,
-  spotifyListeners,
-  twitterFollowers,
-  linkedinConnections,
-  verifiedMetrics,
-}: SocialStatsInlineProps) => {
-  const stats = [
-    { icon: Youtube, label: "YouTube", value: youtubeSubscribers, color: "text-red-500", bg: "bg-red-500/10" },
-    { icon: Instagram, label: "Instagram", value: instagramFollowers, color: "text-pink-500", bg: "bg-pink-500/10" },
-    { icon: Music, label: "TikTok", value: tiktokFollowers, color: "text-foreground", bg: "bg-foreground/10" },
-    { icon: Music, label: "Spotify", value: spotifyListeners, color: "text-green-500", bg: "bg-green-500/10" },
-    { icon: Twitter, label: "X", value: twitterFollowers, color: "text-primary", bg: "bg-primary/10" },
-    { icon: Linkedin, label: "LinkedIn", value: linkedinConnections, color: "text-primary", bg: "bg-primary/10" },
-  ].filter((s) => s.value && s.value > 0);
+const platforms = [
+  { id: "youtube", icon: Youtube, label: "YouTube", field: "subscribers" },
+  { id: "instagram", icon: Instagram, label: "Instagram", field: "followers" },
+  { id: "tiktok", icon: Music, label: "TikTok", field: "followers" },
+  { id: "twitter", icon: Twitter, label: "X", field: "followers" },
+  { id: "spotify", icon: Music, label: "Spotify listeners", field: "monthlyListeners" },
+] as const;
 
-  if (stats.length === 0) return null;
+type ReachMetric = { label: string; value: number; icon: typeof Youtube; syncedAt: string | null };
+
+export const SocialStatsInline = ({ userId }: SocialStatsInlineProps) => {
+  const [stats, setStats] = useState<ReachMetric[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const { data, error } = await supabase.from("connected_platforms")
+      .select("platform, platform_data, last_synced_at")
+      .eq("user_id", userId);
+    if (error) { setStats([]); setLoaded(true); return; }
+    const next = (data || []).flatMap((row) => {
+      const platform = platforms.find((item) => item.id === row.platform);
+      const details = row.platform_data;
+      if (!platform || !details || typeof details !== "object" || Array.isArray(details)) return [];
+      const value = details[platform.field];
+      return typeof value === "number" && Number.isFinite(value) && value >= 0
+        ? [{ label: platform.label, value, icon: platform.icon, syncedAt: row.last_synced_at }]
+        : [];
+    });
+    setStats(next);
+    setLoaded(true);
+  }, [userId]);
+
+  useEffect(() => {
+    setLoaded(false);
+    setStats([]);
+    void refresh();
+    const channel = supabase.channel(`passport-reach:${userId}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "connected_platforms", filter: `user_id=eq.${userId}` }, () => { void refresh(); })
+      .subscribe();
+    const onFocus = () => { void refresh(); };
+    window.addEventListener("focus", onFocus);
+    const interval = window.setInterval(() => { if (!document.hidden) void refresh(); }, 60_000);
+    return () => { window.removeEventListener("focus", onFocus); window.clearInterval(interval); void supabase.removeChannel(channel); };
+  }, [refresh, userId]);
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reach</span>
-        {verifiedMetrics && (
-          <Badge variant="secondary" className="h-4 text-[9px] px-1.5 gap-0.5">
-            ✓ Verified
-          </Badge>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-2">
+    <div className="space-y-2 border-t border-border pt-3">
+      <span className="text-[11px] font-semibold uppercase text-muted-foreground">Reach · connected accounts</span>
+      {loaded && stats.length === 0 && <p className="text-xs text-muted-foreground">No synced audience metrics yet.</p>}
+      <div className="flex flex-wrap gap-1.5">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${stat.bg} border border-border/50`}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-2.5 py-1.5"
+            title={stat.syncedAt ? `Last synced ${new Date(stat.syncedAt).toLocaleString()}` : "Sync time unavailable"}
           >
-            <stat.icon className={`h-3.5 w-3.5 ${stat.color}`} />
-            <span className="text-xs font-bold text-foreground">{formatNumber(stat.value!)}</span>
+            <stat.icon className="h-3.5 w-3.5 text-energy" />
+            <span className="text-xs font-bold tabular-nums text-foreground">{formatNumber(stat.value)}</span>
             <span className="text-[10px] text-muted-foreground">{stat.label}</span>
           </div>
         ))}
