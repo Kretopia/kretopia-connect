@@ -124,7 +124,7 @@ export default function SearchResults() {
           </p>
         ) : loading ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <BrandLoader />
+            <BrandLoader fullscreen={false} />
             <p className="text-sm text-muted-foreground">Searching Kretopia…</p>
           </div>
         ) : hasResults ? (
@@ -137,7 +137,7 @@ export default function SearchResults() {
                     <Link
                       key={c.user_id}
                       to={`/profile/${c.user_id}`}
-                      className="flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
+                      className="group flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
                     >
                       <Avatar className="h-11 w-11 shrink-0">
                         <AvatarImage src={c.avatar_url || ""} />
@@ -163,7 +163,7 @@ export default function SearchResults() {
                     <Link
                       key={c.id}
                       to={`/production?name=${encodeURIComponent(c.project_name)}`}
-                      className="flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
+                      className="group flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
                     >
                       {c.thumbnail_url ? (
                         <img src={c.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />

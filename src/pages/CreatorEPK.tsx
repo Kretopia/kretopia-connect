@@ -436,7 +436,7 @@ const CreatorEPK = () => {
   const canonicalUrl = `${APP_URL}/epk/${userId}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-background">
       <SEO 
         title={`${profile.full_name} - ${profile.role || 'Creator'} | Kretopia`}
         description={profile.bio || `${profile.full_name} is a ${profile.role || 'creative professional'}${profile.location ? ` based in ${profile.location}` : ''}. View portfolio, work history, and connect on Kretopia.`}
@@ -892,7 +892,7 @@ const CreatorEPK = () => {
         )}
 
         {/* Positioning uses a full, themed surface rather than a light side stripe. */}
-        {(profile.headline || profile.bio) && (() => {
+        {profile.headline || profile.bio ? (() => {
           const longBio = profile.bio && profile.bio.length > 280;
           const body = profile.headline
             || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
@@ -916,7 +916,7 @@ const CreatorEPK = () => {
               )}
             </div>
           );
-        })()}
+        })() : <div className="rounded-md border border-border bg-secondary p-5"><h3 className="text-sm font-semibold uppercase text-energy">Why work with me</h3><p className="mt-2 text-sm text-muted-foreground">This creator has not added an introduction yet.</p></div>}
 
         {/* Press & Awards Combined */}
         {(pressLinks.length > 0 || awards.length > 0) && (
