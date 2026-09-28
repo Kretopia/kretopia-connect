@@ -1,4 +1,4 @@
-import { AlarmClock, ArrowRight, Check, Clock, MessageCircle, Sparkles, X } from "lucide-react";
+import { AlarmClock, ArrowRight, Check, Clock, FolderKanban, MessageCircle, Sparkles, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -91,23 +91,25 @@ export function TodayCommandCenter({
         compact
       />
 
-      <div className="grid auto-rows-fr gap-4 lg:grid-cols-3">
+      <div className="grid auto-rows-fr gap-4 lg:grid-cols-3 lg:gap-5">
         {profile && signals.passport ? (
           <PassportKretoCard
             profile={profile}
             creditCount={creditCount}
             completion={signals.passport.percentage}
+            missingFields={signals.passport.missingFields}
             firstName={firstName}
             onKreto={openKretoChat}
           />
         ) : (
           <HoloCard maxTilt={3} className="h-full min-w-0">
-            <section aria-label="Creative Passport and Kreto" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
+            <section aria-label="Creative Passport and Kreto" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-energy/30 bg-card p-6 sm:p-7">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
-              <p className="mt-4 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
-              <div className="mt-auto flex flex-wrap gap-3 pt-4">
-                <Link to="/passport" className="inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline">Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
-                <Button type="button" variant="outline" size="sm" onClick={openKretoChat} className="gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
+              <h2 className="mt-4 text-xl font-bold text-foreground">Make your work visible.</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
+              <div className="mt-auto space-y-3 border-t border-border pt-5">
+                <Button asChild className="w-full justify-between"><Link to="/passport">Build my Passport <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+                <Button type="button" variant="outline" onClick={openKretoChat} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
               </div>
             </section>
           </HoloCard>
@@ -130,43 +132,45 @@ function PassportKretoCard({
   completion,
   firstName,
   onKreto,
-}: PassportKretoCardProps) {
+  missingFields,
+}: PassportKretoCardProps & { missingFields: string[] }) {
   const displayName = profile.full_name || profile.username || firstName || "Your Passport";
   const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
   const avatarUrl = profile.avatar_url || "";
   const safeCompletion = Math.max(0, Math.min(100, completion));
   return (
     <HoloCard maxTilt={3} className="h-full min-w-0">
-      <section aria-label="Creative Passport and Kreto" className="relative flex h-full min-h-[320px] min-w-0 flex-col overflow-hidden rounded-2xl border border-energy/30 bg-card p-5 sm:p-6">
+      <section aria-label="Creative Passport and Kreto" className="relative flex h-full min-h-[460px] min-w-0 flex-col overflow-hidden rounded-2xl border border-energy/30 bg-card p-6 sm:p-7">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
-            <div className="mt-3 flex min-w-0 items-center gap-3">
-              <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border border-energy/30 bg-muted">
+             <div className="mt-5 flex min-w-0 items-center gap-4">
+               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-energy/30 bg-muted">
                 {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{getInitials(displayName)}</span>}
               </div>
               <div className="min-w-0">
-                <h2 className="truncate text-lg font-bold text-foreground">{displayName}</h2>
-                <p className="truncate text-xs text-muted-foreground">{profession}</p>
+                 <h2 className="break-words text-xl font-bold leading-tight text-foreground">{displayName}</h2>
+                 <p className="mt-1 break-words text-sm text-muted-foreground">{profession}</p>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between gap-3 text-xs">
+             <div className="mt-6 flex items-center justify-between gap-3 text-xs">
               <span className="text-muted-foreground">Passport · {creditCount} credit{creditCount === 1 ? "" : "s"}</span>
               <span className="font-bold text-energy">{safeCompletion}%</span>
             </div>
             <div role="progressbar" aria-label="Passport completion" aria-valuenow={safeCompletion} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
               <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${safeCompletion}%` }} />
             </div>
+             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{missingFields.length > 0 ? `Next to add: ${missingFields.slice(0, 2).join(" · ")}` : "Your Passport is ready to share."}</p>
           </div>
-          <div className="mt-4 flex min-w-0 items-center gap-2 border-t border-border pt-4">
+           <div className="mt-6 flex min-w-0 items-center gap-2 border-t border-border pt-5">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Kreto · Creator intelligence</p>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
+               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
             </div>
             <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={56} floatAmplitude={1} floatDuration={8} /></div>
           </div>
-          <div className="mt-auto flex flex-wrap items-center gap-3 pt-4">
-            <Link to="/passport" className="inline-flex items-center gap-1 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Passport <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
-            <Button type="button" variant="outline" size="sm" onClick={onKreto} className="gap-2"><MessageCircle className="h-3.5 w-3.5" aria-hidden /> Ask Kreto</Button>
+           <div className="mt-auto grid gap-2 pt-6">
+             <Button asChild className="w-full justify-between"><Link to="/passport">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+             <Button type="button" variant="outline" onClick={onKreto} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
           </div>
       </section>
     </HoloCard>
@@ -182,21 +186,23 @@ function TodayActivityCard({ signals }: { signals: TodaySignals }) {
 
   return (
     <HoloCard maxTilt={3} className="h-full min-w-0">
-      <section aria-label="Your activity" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
+      <section aria-label="Your activity" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-border bg-card p-6 sm:p-7">
         <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Your activity</p>
-        <h2 className="mt-1 text-base font-bold text-foreground">Moving forward</h2>
+        <h2 className="mt-2 text-xl font-bold text-foreground">Moving forward</h2>
         {hasActivity ? (
-          <div className="mt-4 space-y-2 text-sm text-foreground">
-            {activeProjects > 0 && <p><span className="font-bold text-energy">{activeProjects}</span> active project{activeProjects === 1 ? "" : "s"}</p>}
-            {upcomingCount > 0 && <p><span className="font-bold text-energy">{upcomingCount}</span> due in the next 7 days</p>}
-            {completedThisWeek > 0 && <p><span className="font-bold text-energy">{completedThisWeek}</span> completed this week</p>}
-            {signals.approvalCount > 0 && <p><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</p>}
-            {signals.unreadMessages > 0 && <Link to="/messages" className="inline-flex items-center gap-1 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-bold text-energy">{signals.unreadMessages}</span> unread message{signals.unreadMessages === 1 ? "" : "s"} <ArrowRight className="h-3 w-3" aria-hidden /></Link>}
-            {(signals.stamps?.waitingForCoSign ?? 0) > 0 && <p><span className="font-bold text-energy">{signals.stamps?.waitingForCoSign}</span> credit{signals.stamps?.waitingForCoSign === 1 ? "" : "s"} awaiting co-sign</p>}
+          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-border py-5 text-sm text-foreground">
+            <div><strong className="block text-2xl text-energy">{activeProjects}</strong><span>active project{activeProjects === 1 ? "" : "s"}</span></div>
+            <div><strong className="block text-2xl text-energy">{upcomingCount}</strong><span>due in the next 7 days</span></div>
+            <div><strong className="block text-2xl text-energy">{completedThisWeek}</strong><span>completed this week</span></div>
+            <div><strong className="block text-2xl text-energy">{signals.unreadMessages}</strong><span>unread message{signals.unreadMessages === 1 ? "" : "s"}</span></div>
           </div>
-        ) : <p className="mt-4 text-sm text-muted-foreground">No recent activity yet.</p>}
-        {nextMilestone && <p className="mt-3 text-xs text-muted-foreground">Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>}
-        <Link to="/desk" className="mt-auto inline-flex items-center gap-1 self-start pt-4 text-xs font-semibold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Open Studio <ArrowRight className="h-3.5 w-3.5" aria-hidden /></Link>
+        ) : <p className="mt-5 border-y border-border py-5 text-sm text-muted-foreground">No recent activity yet.</p>}
+        <div className="mt-5 space-y-3 text-xs leading-relaxed text-muted-foreground">
+          {signals.approvalCount > 0 && <p><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</p>}
+          {(signals.stamps?.waitingForCoSign ?? 0) > 0 && <p><span className="font-bold text-energy">{signals.stamps?.waitingForCoSign}</span> credit{signals.stamps?.waitingForCoSign === 1 ? "" : "s"} awaiting co-sign</p>}
+          {nextMilestone && <p>Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>}
+        </div>
+        <Button asChild className="mt-auto w-full justify-between"><Link to={signals.unreadMessages > 0 ? "/messages" : "/desk"}>{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
       </section>
     </HoloCard>
   );
@@ -294,11 +300,11 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
 
   return (
     <HoloCard maxTilt={3} className="h-full min-w-0">
-    <section aria-label="Today's next action" className="flex h-full min-h-[320px] min-w-0 flex-col rounded-2xl border border-border bg-card p-5 sm:p-6">
+    <section aria-label="Today's next action" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-border bg-card p-6 sm:p-7">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Today</p>
-          <h2 className="mt-1 text-base font-bold text-foreground">Your next move</h2>
+           <h2 className="mt-2 text-xl font-bold text-foreground">Your next move</h2>
         </div>
 
         <Sparkles className="h-5 w-5 text-primary" aria-hidden />
@@ -311,13 +317,14 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-            className="mt-5"
+             className="mt-7"
           >
             <PriorityLabel overdue={priority.task.overdue} />
 
-            <h3 className="mt-2 text-lg font-bold leading-snug text-foreground">{priority.task.title}</h3>
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.task.title}</h3>
 
             <p className="mt-1 text-sm text-muted-foreground">{priority.task.projectTitle}</p>
+             <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">Due {new Date(`${priority.task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
 
             <PriorityActions>
               <Button type="button" size="sm" onClick={handleComplete} className="gap-1.5">
@@ -347,11 +354,11 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-            className="mt-5"
+             className="mt-7"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Kreto suggests</p>
 
-            <h3 className="mt-2 text-lg font-bold leading-snug text-foreground">{priority.approval.title}</h3>
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.approval.title}</h3>
 
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{priority.approval.body}</p>
 
@@ -373,11 +380,11 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             initial={reducedMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
-            className="mt-5"
+             className="mt-7"
           >
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Fresh Call</p>
 
-            <h3 className="mt-2 text-lg font-bold leading-snug text-foreground">{priority.gig.title}</h3>
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.gig.title}</h3>
 
             {priority.gig.company ? <p className="mt-1 text-sm text-muted-foreground">{priority.gig.company}</p> : null}
 
@@ -393,7 +400,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             key="empty"
             initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-5 flex items-start gap-3"
+             className="mt-7 flex items-start gap-3"
           >
             <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
             <p className="text-sm leading-relaxed text-muted-foreground">
@@ -404,7 +411,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
       </AnimatePresence>
 
       {priority.kind !== "task" && priority.kind !== "approval" && priority.kind !== "gig" ? (
-        <CtaButton type="button" onClick={runPrimaryCta} className="mt-auto w-full gap-1.5 pt-4 sm:w-fit">
+         <CtaButton type="button" onClick={runPrimaryCta} className="mt-auto w-full justify-between gap-1.5">
           {primaryCta.label}
           <ArrowRight className="h-4 w-4" aria-hidden />
         </CtaButton>
