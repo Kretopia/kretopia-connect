@@ -69,7 +69,7 @@ describe("TodayCommandCenter", () => {
       primaryCta: { label: "Build my Passport", href: "/passport" },
     });
     renderCommandCenter(signals);
-    expect(screen.getByText(/Build my Passport/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Build my Passport/ })).toBeInTheDocument();
     expect(screen.getByText("You're all caught up. A good moment to start something.")).toBeInTheDocument();
   });
 
@@ -118,6 +118,6 @@ describe("TodayCommandCenter", () => {
     expect(card.className).toContain("min-h-[460px]");
     expect(activity.className).toContain("min-h-[460px]");
     expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
-    expect(screen.getByRole("link", { name: /Open Passport/ })).toHaveAttribute("href", "/passport");
+    expect(screen.getByRole("link", { name: /Complete Passport/ })).toHaveAttribute("href", "/passport");
   });
 });
