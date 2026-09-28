@@ -103,7 +103,9 @@ const OAuthButton = ({
 const Auth = () => {
   const reducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<string>("signin");
-  const [signupMode, setSignupMode] = useState<"claim" | "classic">("claim");
+  // Default to "classic" (email + password) so the sign-up form is visible
+  // immediately; the claim/search flow stays one click away.
+  const [signupMode, setSignupMode] = useState<"claim" | "classic">("classic");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
