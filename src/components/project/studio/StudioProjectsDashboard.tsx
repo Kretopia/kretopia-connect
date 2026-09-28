@@ -821,17 +821,8 @@ export const StudioProjectsDashboard = ({
   return (
     <section aria-label="Studio projects" className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-auto text-xs font-semibold text-muted-foreground">{rows.length} {rows.length === 1 ? "project" : "projects"}</span>
-        <div className="flex items-center gap-1" aria-label="Project status">
-          {(["all", "active", "completed"] as const).map((status) => (
-            <Button key={status} size="sm" variant={filter === status ? "secondary" : "ghost"} aria-pressed={filter === status} className="h-8 px-2 text-xs capitalize" onClick={() => setFilter(status)}>
-              {status === "all" ? "All" : status} <span className="ml-1 tabular-nums opacity-70">{counts[status]}</span>
-            </Button>
-          ))}
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative flex-1">
+        <span className="mr-auto shrink-0 text-xs font-semibold text-muted-foreground">{rows.length} {rows.length === 1 ? "project" : "projects"}</span>
+        <div className="relative min-w-36 flex-1 sm:max-w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
@@ -841,6 +832,14 @@ export const StudioProjectsDashboard = ({
             className="h-9 pl-9"
           />
         </div>
+        <Select value={filter} onValueChange={(value) => setFilter(value as StatusFilter)}>
+          <SelectTrigger className="w-28" aria-label="Project status"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Any status</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="completed">Completed</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
           <SelectTrigger className="w-32" aria-label="Sort Projects">
             <SelectValue />

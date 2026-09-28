@@ -44,9 +44,10 @@ describe("StudioProjectsDashboard", () => {
     expect(screen.getByText("Draft the invoice")).toBeInTheDocument();
   });
 
-  it("filters via the compact status controls", () => {
+  it("filters via the compact status selector", () => {
     renderDash();
-    fireEvent.click(screen.getByRole("button", { name: /Active 1/i }));
+    fireEvent.click(screen.getByRole("combobox", { name: "Project status" }));
+    fireEvent.click(screen.getByRole("option", { name: "Active" }));
     expect(screen.getByText("Carnival Film")).toBeInTheDocument();
     expect(screen.queryByText("Album Rollout")).not.toBeInTheDocument();
   });
