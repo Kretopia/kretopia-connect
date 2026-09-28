@@ -1,7 +1,9 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { QRCodeSVG } from "qrcode.react";
-import { Download, Share2, Copy } from "lucide-react";
+import { KretopiaQRCode } from "@/components/brand/KretopiaQRCode";
+import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
+import { Download, Share2, Copy, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ProfileQRDialogProps {
@@ -9,7 +11,6 @@ interface ProfileQRDialogProps {
   onOpenChange: (open: boolean) => void;
   userId: string;
   userName: string;
-  userAvatar?: string;
 }
 
 export const ProfileQRDialog = ({
@@ -17,10 +18,12 @@ export const ProfileQRDialog = ({
   onOpenChange,
   userId,
   userName,
-  userAvatar,
 }: ProfileQRDialogProps) => {
   const { toast } = useToast();
   const connectUrl = `https://www.kretopia.com/profile/${userId}`;
+  const passportId = `KRT-${userId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
+  const [qrBlob, setQrBlob] = useState<Blob | null>(null);
+  useEffect(() => { if (!open) setQrBlob(null); }, [open, userId]);
 
   const handleCopyLink = async () => {
     try {
@@ -29,7 +32,7 @@ export const ProfileQRDialog = ({
         title: "Link Copied!",
         description: "Share this link to connect with others",
       });
-    } catch (error) {
+    } catch {
       toast({
         title: "Failed to copy",
         description: "Please try again",
@@ -39,44 +42,13 @@ export const ProfileQRDialog = ({
   };
 
   const handleDownload = () => {
-    const svg = document.getElementById("profile-qr-code");
-    if (!svg) return;
-
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const img = new Image();
-
-    img.onload = () => {
-      canvas.width = 1000;
-      canvas.height = 1200;
-      
-      if (ctx) {
-        // White background
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw QR code
-        ctx.drawImage(img, 100, 200, 800, 800);
-        
-        // Add text
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 48px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText(`Connect with ${userName}`, canvas.width / 2, 100);
-        
-        ctx.font = "32px Arial";
-        ctx.fillText("Scan to connect on Kretopia", canvas.width / 2, 1100);
-      }
-
-      const pngFile = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.download = `kretopia-${userName.replace(/\s+/g, "-")}.png`;
-      downloadLink.href = pngFile;
-      downloadLink.click();
-    };
-
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    if (!qrBlob) return;
+    const url = URL.createObjectURL(qrBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `kretopia-passport-${passportId}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   const handleShare = async () => {
@@ -88,78 +60,38 @@ export const ProfileQRDialog = ({
           url: connectUrl,
         });
       } catch (error) {
-        // User cancelled share or error occurred
-        handleCopyLink();
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        await handleCopyLink();
       }
     } else {
-      handleCopyLink();
+      await handleCopyLink();
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-center">Your Connection QR Code</DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-6 py-4">
-          {/* QR Code */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="rounded-2xl border-4 border-border bg-white p-6">
-              <QRCodeSVG
-                id="profile-qr-code"
-                value={connectUrl}
-                size={256}
-                level="H"
-                includeMargin={false}
-                imageSettings={
-                  userAvatar
-                    ? {
-                        src: userAvatar,
-                        x: undefined,
-                        y: undefined,
-                        height: 50,
-                        width: 50,
-                        excavate: true,
-                      }
-                    : undefined
-                }
-              />
+      <DialogContent className="max-w-sm overflow-hidden border-energy/30 bg-card p-0 shadow-glow">
+        <div className="relative border-b border-energy/20 bg-gradient-to-br from-card via-card to-energy/10 px-5 pb-5 pt-6 sm:px-6">
+          <div aria-hidden className="pointer-events-none absolute right-4 top-5 text-energy/15"><Fingerprint className="h-28 w-28" strokeWidth={0.7} /></div>
+          <DialogHeader className="relative text-left">
+            <div className="flex items-center gap-2">
+              <img src={kMarkAsset.url} alt="" className="h-7 w-7 object-contain" />
+              <span className="text-xs font-bold uppercase text-energy">Kretopia</span>
             </div>
-            
-            <div className="text-center space-y-1">
-              <p className="font-semibold">{userName}</p>
-              <p className="text-sm text-muted-foreground">
-                Scan to connect on Kretopia
-              </p>
-            </div>
-          </div>
+            <DialogTitle className="pt-4 text-2xl font-semibold">Passport QR</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">{userName || "Your passport"} · {passportId}</DialogDescription>
+          </DialogHeader>
+        </div>
 
-          {/* Instructions */}
-          <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-            <p className="text-sm font-medium">How it works:</p>
-            <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Others scan your QR code with their phone</li>
-              <li>If they have Kretopia: instant connection request</li>
-              <li>New to Kretopia: sign up & auto-connect</li>
-            </ul>
+        <div className="flex flex-col items-center gap-3 px-5 py-5 sm:px-6">
+          <div role="img" aria-label={`Kretopia QR code for ${userName || "this passport"}`} className="rounded-md border border-energy/30 bg-[hsl(var(--qr-paper))] p-3 shadow-md">
+            {open && <KretopiaQRCode data={connectUrl} size={224} className="overflow-hidden rounded-sm" onReady={setQrBlob} />}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button onClick={handleDownload} variant="outline" className="flex-1 gap-2">
-              <Download className="h-4 w-4" />
-              Download
-            </Button>
-            <Button onClick={handleShare} variant="outline" className="flex-1 gap-2">
-              <Share2 className="h-4 w-4" />
-              Share
-            </Button>
-            <Button onClick={handleCopyLink} variant="outline" className="flex-1 gap-2">
-              <Copy className="h-4 w-4" />
-              Copy Link
-            </Button>
+          <p className="text-center text-sm text-muted-foreground">Scan to open this public passport</p>
+          <div className="flex w-full gap-2 border-t border-border pt-4">
+            <Button onClick={handleShare} className="min-w-0 flex-1 gap-2" aria-label="Share passport link"><Share2 className="h-4 w-4" />Share</Button>
+            <Button onClick={handleCopyLink} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Copy passport link" title="Copy passport link"><Copy className="h-4 w-4" /></Button>
+            <Button onClick={handleDownload} disabled={!qrBlob} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Download passport QR as PNG" title="Download passport QR as PNG"><Download className="h-4 w-4" /></Button>
           </div>
         </div>
       </DialogContent>
