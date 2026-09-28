@@ -33,7 +33,7 @@ export const SignUpWizard = ({
   confirmPassword, setConfirmPassword,
   accountType, setAccountType,
   loading, onSubmit,
-  onGoogleSignIn, googleLoading,
+  onGoogleSignIn, googleLoading, hideOAuth = false,
 }: SignUpWizardProps) => {
   // Creator vs Brand toggle drives onboarding fork (individual → /onboarding,
   // company → /company-onboarding). Default to individual.
