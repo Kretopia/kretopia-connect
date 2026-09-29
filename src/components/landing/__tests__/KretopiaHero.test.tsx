@@ -52,19 +52,21 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   });
 
-  it("primary CTA has the exact text, canonical class, and preserved route", () => {
+  it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
     renderHero();
     const primary = screen.getByRole("link", { name: /build my passport/i });
-    expect(primary).toHaveAttribute("href", "/auth?tab=signup&src=hero_passport");
-    expect(primary.className).toMatch(/\bbtn-landing-primary\b/);
+    expect(primary).toHaveAttribute("href", "/passport");
+    // CtaButton = the same btn-glass-primary as "Explore Verified Credits".
+    expect(primary.className).toMatch(/\bbtn-glass\b/);
+    expect(primary.className).toMatch(/\bbtn-glass-primary\b/);
   });
 
-  it("secondary CTA has the exact text, canonical outline class, and preserved route", () => {
+  it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
     renderHero();
     const secondary = screen.getByRole("link", { name: /explore opportunities/i });
     expect(secondary).toHaveAttribute("href", "/auth?next=/scout&src=hero_explore");
-    expect(secondary.className).toMatch(/\bbtn-glass\b/);
-    expect(secondary.className).toMatch(/\bbtn-glass-outline\b/);
+    // It keeps its own gradient-border treatment (hero-scoped inline style).
+    expect(secondary.className).not.toMatch(/\bbtn-glass\b/);
   });
 
   it("clicking the primary CTA fires exactly one analytics event with the signal_field variant", () => {

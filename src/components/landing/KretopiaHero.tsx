@@ -25,20 +25,20 @@
  * because it's a container-level fix for a per-line clipping problem.
  * Fixed at the source instead: the gradient span itself now carries
  * lineHeight:1.3 + paddingTop/paddingBottom, self-contained regardless of
- * the H1's own shared line-height, and no longer depends on the external
- * .k-gradient-title/.k-gradient-title--wide classes (unknown, so
- * unverifiable) for the fill itself.
+ * the H1's own shared line-height, and doesn't depend on any gradient
+ * *class* for the fill itself -- only on the shared --k-text-gradient
+ * value (index.css), which every other coloured text on the page reads too.
  */
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
-import { ArrowRight } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
+import { GlassCta } from "@/components/ui/glass-cta";
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
@@ -46,9 +46,11 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 const LINE_1 = ["Find", "work", "that", "fits"];
 const LINE_2 = ["what", "you", "do."];
 
-// Sampled from /logokretopia-removebg-preview.png — see file header.
-const KRETO_LOGO_GRADIENT =
-  "linear-gradient(135deg, #4012F8 0%, #A516C5 35%, #F62489 65%, #FFA722 100%)";
+// Sampled from /logokretopia-removebg-preview.png — see file header. The
+// stops now live once in index.css (--k-text-gradient) because every
+// coloured text on the landing page wears this same gradient; the hero
+// reads it from there instead of keeping its own copy, so it can't drift.
+const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
 
 const ctaFocusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
@@ -165,8 +167,7 @@ export const KretopiaHero = () => {
 
         {/* Headline — line 2 is the exact logo gradient, self-contained
             (own lineHeight + vertical padding) so it can't be clipped by
-            the H1's own shared line-height or by whatever the unknown
-            .k-gradient-title class does. Words still spaced with a
+            the H1's own shared line-height. Words still spaced with a
             margin on each span, not a trailing space character. */}
         <h1 className="landing-h1 landing-glow max-w-full mx-auto" style={{ lineHeight: 1.25 }}>
           <motion.span
@@ -224,12 +225,13 @@ export const KretopiaHero = () => {
           <UnifiedSearchDropdown variant="hero" placeholder="Search by role, skill, location, type of work…" />
         </motion.div>
 
-        {/* CTA pair — primary is a solid fill of the logo gradient;
-            secondary is a gradient BORDER (two-layer background-image
-            trick: an opaque padding-box fill + the gradient on the
-            border-box) so it still reads as secondary rather than
-            competing with the primary button. Both hero-scoped inline
-            overrides, nothing shared touched. */}
+        {/* CTA pair — the primary is the site-wide GlassCta (the same
+            frosted-glass button as "Explore Verified Credits", just at the
+            "lg" size so it stays level with its sibling). The secondary is
+            deliberately NOT that button: it keeps its own gradient BORDER
+            (two-layer background-image trick: an opaque padding-box fill +
+            the logo gradient on the border-box), a hero-scoped inline
+            override, nothing shared touched. */}
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -237,24 +239,19 @@ export const KretopiaHero = () => {
           className="mt-9 sm:mt-10 flex w-full flex-col items-center gap-4"
         >
           <div className="flex w-full max-w-xs flex-col items-center justify-center gap-3 sm:max-w-none sm:w-auto sm:flex-row">
-            <Link
+            <GlassCta
               to="/passport"
+              size="lg"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
                   label: "Build My Passport",
                   variant: "signal_field",
                 })
               }
-              className={`btn-landing-primary group relative inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${ctaFocusRing} focus-visible:ring-[#F62489]/70`}
-              style={{
-                fontFamily: "'Satoshi', 'Inter', sans-serif",
-                backgroundImage: KRETO_LOGO_GRADIENT,
-                boxShadow: "0 10px 28px -10px rgba(246, 36, 137, 0.5)",
-              }}
+              className="w-full sm:w-auto"
             >
               Build My Passport
-              <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover:translate-x-0.5" aria-hidden />
-            </Link>
+            </GlassCta>
 
             <Link
               to="/auth?next=/scout&src=hero_explore"

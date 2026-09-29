@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Lock, Pin, PinOff } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { CtaButton } from "@/components/ui/cta-button";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import {
@@ -41,6 +41,13 @@ interface StudioPhaseRailProps {
 export const StudioPhaseRail = memo(({ flow, onPhaseClick, onPinStage, onValidateStep, className }: StudioPhaseRailProps) => {
   const reducedMotion = useReducedMotion();
   const currentPhaseLabel = STUDIO_PHASES.find((p) => p.id === flow.currentPhaseId)?.label ?? "";
+  // The next phase this click actually moves the Project into -- named
+  // explicitly in the CTA itself ("Move to Build") instead of only naming
+  // the phase being left ("Validate 'Kickoff'"), so the button alone
+  // answers "what happens if I press this?" without reading the marker
+  // row above it first.
+  const currentPhaseIdx = STUDIO_PHASES.findIndex((p) => p.id === flow.currentPhaseId);
+  const nextPhaseLabel = STUDIO_PHASES[currentPhaseIdx + 1]?.label ?? "Complete";
 
   const phaseTab = (phaseId: StudioPhaseId) => {
     const stageIds = phaseTabStages(phaseId);
@@ -129,28 +136,34 @@ export const StudioPhaseRail = memo(({ flow, onPhaseClick, onPinStage, onValidat
       </div>
 
       {/* Explicit validation — the phase only ever advances on this
-          click, never silently. Compact and right-aligned rather than
-          spanning the full width, since it's one action among several in
-          this header, not the page's primary CTA. Disabled (with a
-          one-line reason) until the current stage's own requirement is
-          actually met, so it can't be used to skip ahead of real
-          progress — reuses the exact rule deriveStage() itself walks. */}
+          click, never silently. The one branded, high-contrast CTA in
+          this row (CtaButton — the same canonical primary-CTA treatment
+          as StudioCreateHero's "Open a New Room"), so on a row full of
+          quiet markers and pins, the one button that actually moves the
+          Project forward reads as unmistakably the important one.
+          Disabled (with a one-line reason) until the current stage's own
+          requirement is actually met, so it can't be used to skip ahead
+          of real progress — reuses the exact rule deriveStage() itself
+          walks. The label names the destination phase, not just the one
+          being left, so the button alone says what one click does. */}
       {onValidateStep && flow.currentPhaseId !== "complete" && (
-        <div className="mt-2.5 flex items-center justify-end gap-2">
-          {!flow.canAdvance && (
-            <span className="text-[10px] text-muted-foreground truncate">{flow.nextStep.title}</span>
-          )}
-          <Button
+        <div className="mt-2.5 flex items-center justify-between gap-2">
+          <span className="text-[10px] text-muted-foreground truncate">
+            {flow.canAdvance
+              ? `One click moves this Project into ${nextPhaseLabel}.`
+              : flow.nextStep.title}
+          </span>
+          <CtaButton
             type="button"
             size="sm"
             onClick={onValidateStep}
             disabled={!flow.canAdvance}
-            title={flow.canAdvance ? undefined : flow.nextStep.description}
-            className="gap-1.5 shrink-0"
+            title={flow.canAdvance ? `Finish ${currentPhaseLabel} and move into ${nextPhaseLabel}` : flow.nextStep.description}
+            className="gap-1.5 shrink-0 w-auto"
           >
-            Validate "{currentPhaseLabel}"
+            Move to {nextPhaseLabel}
             <ArrowRight className="h-3.5 w-3.5" />
-          </Button>
+          </CtaButton>
         </div>
       )}
     </div>

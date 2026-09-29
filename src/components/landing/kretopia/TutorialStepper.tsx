@@ -118,20 +118,23 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
               aria-controls={panelId}
               onClick={() => goTo(i, true)}
               onKeyDown={(e) => onRowKeyDown(e, i)}
-              className="group relative flex w-full items-start gap-4 rounded-xl px-3 py-3.5 sm:px-4 text-left transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2"
-              style={{
-                outlineColor: ACCENT,
-                backgroundColor: isActive ? "hsl(var(--energy) / 0.07)" : "transparent",
-              }}
+              className={cn(
+                "group relative flex w-full items-start gap-4 rounded-xl px-3 py-3.5 sm:px-4 text-left transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2",
+                isActive && "k-gradient-tint",
+              )}
+              style={{ outlineColor: ACCENT }}
             >
               {/* icon + connecting roadmap line */}
               <span className="relative flex flex-col items-center shrink-0 self-stretch">
                 <span
-                  className="relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300"
+                  className={cn(
+                    "relative flex h-11 w-11 items-center justify-center rounded-full transition-all duration-300",
+                    isActive ? "k-gradient-chip" : isPast && "k-gradient-ring",
+                  )}
                   style={{
-                    backgroundColor: isActive ? "hsl(var(--energy) / 0.16)" : "hsl(var(--muted) / 0.7)",
-                    border: isActive || isPast ? `1px solid ${ACCENT}` : "1px solid hsl(var(--border))",
-                    boxShadow: isActive ? "0 0 0 4px hsl(var(--energy) / 0.10)" : "none",
+                    backgroundColor: isActive ? undefined : "hsl(var(--muted) / 0.7)",
+                    border: isActive || isPast ? undefined : "1px solid hsl(var(--border))",
+                    boxShadow: isActive ? "0 0 0 4px color-mix(in srgb, var(--k-g-2) 14%, transparent)" : "none",
                   }}
                 >
                   {isActive && (
@@ -140,14 +143,13 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                       className="absolute inset-0 rounded-full ai-orbit-ring"
                       style={{
                         background:
-                          "conic-gradient(from 0deg, transparent 0%, hsl(var(--energy) / 0.85) 12%, transparent 32%, transparent 58%, hsl(var(--energy) / 0.65) 74%, transparent 94%)",
+                          "conic-gradient(from 0deg, transparent 0%, color-mix(in srgb, var(--k-g-1) 85%, transparent) 12%, transparent 32%, transparent 58%, color-mix(in srgb, var(--k-g-3) 70%, transparent) 74%, transparent 94%)",
                       }}
                     />
                   )}
                   {Icon && (
                     <Icon
-                      className={cn("relative h-[18px] w-[18px]", !(isActive || isPast) && "text-muted-foreground")}
-                      style={isActive || isPast ? { color: ACCENT } : undefined}
+                      className={cn("relative h-[18px] w-[18px]", isActive || isPast ? "k-gradient-icon" : "text-muted-foreground")}
                       aria-hidden
                     />
                   )}
@@ -155,8 +157,8 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                 {!isLast && (
                   <span
                     aria-hidden
-                    className="mt-1 w-px flex-1 transition-colors duration-500"
-                    style={{ backgroundColor: isPast ? ACCENT : "hsl(var(--border))", minHeight: "18px" }}
+                    className={cn("mt-1 w-px flex-1 transition-colors duration-500", isPast && "k-gradient-fill")}
+                    style={{ backgroundColor: isPast ? undefined : "hsl(var(--border))", minHeight: "18px" }}
                   />
                 )}
               </span>
@@ -164,8 +166,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
               <div className="min-w-0 flex-1 pt-1.5 pb-1">
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={cn("text-[10px] font-medium tabular-nums", isActive ? "pink-glow-breathe" : "text-muted-foreground")}
-                    style={isActive ? { color: ACCENT } : undefined}
+                    className={cn("text-[10px] font-medium tabular-nums", isActive ? "k-gradient-text" : "text-muted-foreground")}
                   >
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -194,11 +195,11 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                       </p>
                       {!isLast && (
                         <span
-                          className="mt-3 inline-flex items-center gap-1 text-xs font-medium pink-glow-breathe"
-                          style={{ color: ACCENT, fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                          className="k-gradient-text mt-3 inline-flex items-center gap-1 text-xs font-medium"
+                          style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                         >
                           Next: {steps[i + 1].title}
-                          <ChevronRight className="h-3 w-3" aria-hidden />
+                          <ChevronRight className="k-gradient-icon h-3 w-3" aria-hidden />
                         </span>
                       )}
                     </motion.div>

@@ -15,6 +15,8 @@ import { KretoTip } from "@/components/agent/KretoTip";
 import { STUDIO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { PROJECT_COLUMNS_EXCLUDING_LOCKED_FINANCIALS } from "@/lib/projectColumns";
 import { WorkHomeSkeleton } from "@/pages/WorkHomeSkeleton";
+import { TodayStrip } from "@/components/desk/TodayStrip";
+import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
 
 interface ProjectPersonRow {
   user_id: string;

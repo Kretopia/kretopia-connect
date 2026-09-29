@@ -13,7 +13,6 @@ import { Fingerprint, Radar, Users, Clapperboard, CheckCircle2, Sparkles, Rotate
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 
-const ACCENT = "#FF2DA1";
 
 const STAGES = [
   { key: "passport", icon: Fingerprint, label: "Passport", body: "Your record of what you've actually done." },
@@ -75,16 +74,16 @@ export const ProductLoopSection = () => {
                   onFocus={() => setStage(i)}
                   onClick={() => setStage(i)}
                   aria-pressed={isActive}
-                  className="flex w-full flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors"
+                  className={`flex w-full flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors${isActive ? " k-gradient-chip" : ""}`}
                   style={{
-                    borderColor: isActive ? `${ACCENT}66` : "rgba(255,255,255,0.1)",
-                    backgroundColor: isActive ? `${ACCENT}14` : "rgba(255,255,255,0.02)",
+                    borderColor: isActive ? "transparent" : "rgba(255,255,255,0.1)",
+                    backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
                   }}
                 >
-                  <Icon className="h-5 w-5" style={{ color: isActive ? ACCENT : "rgba(255,255,255,0.5)" }} aria-hidden />
+                  <Icon className={`h-5 w-5${isActive ? " k-gradient-icon" : ""}`} style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }} aria-hidden />
                   <span
-                    className="text-[10px] font-bold uppercase tracking-[0.14em]"
-                    style={{ color: isActive ? ACCENT : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                    className={`text-[10px] font-bold uppercase tracking-[0.14em]${isActive ? " k-gradient-text" : ""}`}
+                    style={{ color: isActive ? undefined : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                   >
                     {label}
                   </span>
@@ -115,17 +114,17 @@ export const ProductLoopSection = () => {
                 type="button"
                 onClick={() => setStage(isActive ? active : i)}
                 aria-pressed={isActive}
-                className="flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors"
+                className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors${isActive ? " k-gradient-chip" : ""}`}
                 style={{
-                  borderColor: isActive ? `${ACCENT}66` : "rgba(255,255,255,0.1)",
-                  backgroundColor: isActive ? `${ACCENT}14` : "rgba(255,255,255,0.02)",
+                  borderColor: isActive ? "transparent" : "rgba(255,255,255,0.1)",
+                  backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
                 }}
               >
-                <Icon className="h-5 w-5 shrink-0 mt-0.5" style={{ color: isActive ? ACCENT : "rgba(255,255,255,0.5)" }} aria-hidden />
+                <Icon className={`h-5 w-5 shrink-0 mt-0.5${isActive ? " k-gradient-icon" : ""}`} style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }} aria-hidden />
                 <div>
                   <p
-                    className="text-[10px] font-bold uppercase tracking-[0.14em] mb-1"
-                    style={{ color: isActive ? ACCENT : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                    className={`w-fit text-[10px] font-bold uppercase tracking-[0.14em] mb-1${isActive ? " k-gradient-text" : ""}`}
+                    style={{ color: isActive ? undefined : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                   >
                     {label}
                   </p>
@@ -139,7 +138,7 @@ export const ProductLoopSection = () => {
         {/* Active stage explanation — desktop only, mobile shows it inline per-card above */}
         <div className="hidden lg:block mt-6 min-h-[3.5rem]">
           <p className="text-sm text-white/70 max-w-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
-            <span style={{ color: ACCENT, fontWeight: 700 }}>{STAGES[active].label}.</span>{" "}
+            <span className="k-gradient-text" style={{ fontWeight: 700 }}>{STAGES[active].label}.</span>{" "}
             {STAGES[active].body}
           </p>
         </div>

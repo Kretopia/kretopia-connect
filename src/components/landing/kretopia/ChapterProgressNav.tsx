@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { CHAPTER_REGISTRY as CHAPTERS } from "./chapterRegistry";
+import { kGlow } from "@/lib/kGradient";
 
 const ACCENT = "#FF2DA1";
 
@@ -112,18 +113,18 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
               className="group flex items-center gap-2.5 focus:outline-none"
             >
               <span
-                className="text-[10px] font-medium uppercase tracking-[0.18em] whitespace-nowrap opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0"
-                style={{ color: active ? ACCENT : "rgba(255,255,255,0.6)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                className={`text-[10px] font-medium uppercase tracking-[0.18em] whitespace-nowrap opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0${active ? " k-gradient-text" : ""}`}
+                style={{ color: active ? undefined : "rgba(255,255,255,0.6)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
               >
                 {c.label}
               </span>
               <span
-                className="block rounded-full transition-all duration-200 group-focus-visible:ring-2 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-transparent"
+                className={`block rounded-full transition-all duration-200 group-focus-visible:ring-2 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-transparent${active ? " k-gradient-fill" : ""}`}
                 style={{
                   width: active ? "8px" : "6px",
                   height: active ? "8px" : "6px",
-                  backgroundColor: active ? ACCENT : "rgba(255,255,255,0.3)",
-                  boxShadow: active ? `0 0 0 4px rgba(255,45,161,0.18)` : "none",
+                  backgroundColor: active ? undefined : "rgba(255,255,255,0.3)",
+                  boxShadow: active ? `0 0 0 4px ${kGlow(18)}` : "none",
                   outlineColor: ACCENT,
                 }}
               />

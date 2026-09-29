@@ -24,9 +24,8 @@
  *   kept small and faint enough not to compete with the copy or CTAs.
  */
 import { color, motion } from "framer-motion";
-import { Link } from "react-router-dom";
-import { Search, IdCard, Megaphone, Users2, CheckCircle2, Briefcase, Handshake } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, IdCard, Megaphone, Users2, CheckCircle2 } from "lucide-react";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
@@ -40,9 +39,6 @@ const CAPABILITIES = [
   { icon: Users2, label: "Build teams" },
   { icon: CheckCircle2, label: "Confirm completed work" },
 ];
-
-const focusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF2DA1]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
 
 export const ForOrganisationsSection = () => {
   const reducedMotion = useReducedMotion();
@@ -94,7 +90,7 @@ export const ForOrganisationsSection = () => {
               className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.02] px-3 py-1.5 text-xs text-white/65"
               style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
             >
-              <Icon className="h-3 w-3" style={{ color: ACCENT }} aria-hidden />
+              <Icon className="k-gradient-icon h-3 w-3" aria-hidden />
               {label}
             </span>
           ))}
@@ -107,47 +103,32 @@ export const ForOrganisationsSection = () => {
           transition={{ duration: 0.6, delay: 0.2 }}
           className="mt-8 flex flex-wrap items-center gap-3"
         >
-          <Button
-            asChild
-            className={`h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${focusRing}`}
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          <GlassCta
+            to="/post-opportunity"
+            onClick={() =>
+              trackLandingCtaClick({
+                ctaId: "hire_through_kretopia",
+                section: "for_organisations",
+                label: "Hire Through Kretopia",
+                destinationType: "internal",
+              })
+            }
           >
-            <Link
-              to="/post-opportunity"
-              onClick={() =>
-                trackLandingCtaClick({
-                  ctaId: "hire_through_kretopia",
-                  section: "for_organisations",
-                  label: "Hire Through Kretopia",
-                  destinationType: "internal",
-                })
-              }
-            >
-              <Briefcase className="h-4 w-4" aria-hidden/>
-              Hire Through Kretopia
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className={`h-auto w-fit rounded-full px-5 py-2.5 text-sm font-semibold transition-transform duration-200 hover:-translate-y-0.5 ${focusRing}`}
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif", borderColor: ACCENT, color: ACCENT }}
+            Hire Through Kretopia
+          </GlassCta>
+          <GlassCta
+            to="/auth?tab=signup&src=for_organisations"
+            onClick={() =>
+              trackLandingCtaClick({
+                ctaId: "partner_with_us",
+                section: "for_organisations",
+                label: "Partner With Us",
+                destinationType: "auth",
+              })
+            }
           >
-            <Link
-              to="/auth?tab=signup&src=for_organisations"
-              onClick={() =>
-                trackLandingCtaClick({
-                  ctaId: "partner_with_us",
-                  section: "for_organisations",
-                  label: "Partner With Us",
-                  destinationType: "auth",
-                })
-              }
-            >
-              <Handshake className="h-4 w-4" aria-hidden />
-              Partner With Us
-            </Link>
-          </Button>
+            Partner With Us
+          </GlassCta>
         </motion.div>
       </div>
     </section>

@@ -64,7 +64,12 @@ export function WorkspaceSidebar({ projects, activeProjectId, onClose, onProject
 
   return (
     <>
-      <div className="h-full flex flex-col">
+      {/* flex flex-col without h-full: this now mounts inside a Popover
+          (Studio simplification pass moved it from a permanent, fixed-
+          height left column to an on-demand switcher), which doesn't
+          establish a bounded-height context h-full/flex-1 could resolve
+          against. The project list below caps its own height instead. */}
+      <div className="flex flex-col">
         {/* Header */}
         <div className="h-14 border-b border-border flex items-center justify-between px-4 shrink-0">
           <div className="flex items-center gap-2">
@@ -112,8 +117,11 @@ export function WorkspaceSidebar({ projects, activeProjectId, onClose, onProject
           </div>
         </div>
 
-        {/* Project List */}
-        <ScrollArea className="flex-1">
+        {/* Project List — capped to a viewport-relative max height and
+            scrolling internally, rather than flex-1 against an ancestor
+            that may not define its own height (see the popover note
+            above). */}
+        <ScrollArea className="max-h-[45vh]">
           <div className="p-3 space-y-1">
             {visibleProjects.map((project) => {
               const deadline = project.deadline ? new Date(project.deadline) : null;

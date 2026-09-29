@@ -111,6 +111,24 @@ All colors MUST be HSL.
        tokens above so existing call sites keep working unchanged while
        new code can reach for these directly. */
     --color-accent: 327 100% 59%;           /* #FF2DA1 */
+
+    /* Kretopia text gradient -- the exact gradient "what you do." wears in
+       the landing hero (logo colours, 135deg). Single source: the hero,
+       every coloured text (.k-gradient-text / the scope in
+       .k-gradient-scope below) and the hero's outlined secondary CTA all
+       read this, so retuning it is one edit. */
+    --k-g-1: #4012F8;
+    --k-g-2: #A516C5;
+    --k-g-3: #F62489;
+    --k-g-4: #FFA722;
+    --k-text-gradient: linear-gradient(
+      135deg,
+      var(--k-g-1) 0%,
+      var(--k-g-2) 35%,
+      var(--k-g-3) 65%,
+      var(--k-g-4) 100%
+    );
+
     --color-background: var(--background);
     --color-surface: var(--card);
     --color-surface-elevated: var(--secondary);
@@ -1018,44 +1036,110 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   }
 }
 
-/* The full Kretopia brand gradient (same stops as the logo mark),
-   reserved for a small, deliberate set of emphasis moments — the hero's
-   own headline, one section title per landing chapter, the footer
-   wordmark — never for body copy, buttons, badges or UI chrome, which
-   keep using .landing-accent's single pink instead. Landing overhaul
-   (24/09/2026): "the gradient should stay selective... product stays
-   calmer and more neutral." */
+/* ============================================================
+   KRETOPIA TEXT GRADIENT — one gradient for every coloured text.
+   --k-text-gradient (defined once in :root) is exactly what
+   "what you do." wears in the landing hero.
+
+   Note the gradient is sized by each element's own box, so the same
+   definition spans blue -> orange across a long phrase and only a
+   middle slice across a single short word. That is the intended
+   look (the gradient belongs to the text it colours), not drift.
+
+   .k-gradient-text : any run of text (keeps inline icons' own colour,
+                      since it only zeroes the *text* fill).
+   .k-gradient-title: headings; same thing plus color:transparent.
+   ============================================================ */
+.k-gradient-text,
 .k-gradient-title {
-  background: linear-gradient(
-    160deg,
-    #2A0FD9 0%,
-    #4812F5 22%,
-    #9413D2 52%,
-    #E0179C 78%,
-    #FF3D7A 90%,
-    #FEA61A 100%
-  );
+  background-image: var(--k-text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  /* text-shadow would paint *through* the transparent fill and muddy
+     the gradient; the pink glow/breathing on the old accent classes is
+     dropped for the same reason. */
+  text-shadow: none;
+  animation: none;
+  filter: none;
+}
+.k-gradient-title {
   color: transparent;
 }
-/* This gradient's 160deg angle was tuned against the logo mark, which is
-   roughly square -- on a short, wide single line of text (the hero
-   headline), a CSS angled gradient's line length is dominated by the
-   box's height, not its width, so the same 6 stops compress into barely
-   the blue/purple/pink third of the spectrum and the intended orange
-   tail never shows. Shrinking the gradient image's own virtual height
-   (background-size, well below the box's real height) stretches that
-   same line-length calculation to lean on width instead, spreading the
-   full spectrum across the visible text -- same colors/order/angle,
-   just not naively sized 1:1 to a box the gradient wasn't designed for.
-   Scoped to this one modifier (not the base .k-gradient-title) since
-   chapter titles' taller, less extreme boxes don't have this problem. */
-.k-gradient-title--wide {
-  background-size: 100% 55%;
-  background-position: center;
-  background-repeat: no-repeat;
+
+/* Clipped word endings: background-clip:text only paints inside the
+   element's own box, but italic glyphs overhang it on the right (the
+   slanted last letter of "experience", "you", "people"…), and anything
+   past the box edge is transparent -- i.e. invisible. Give the box
+   slack on both sides and take it back with an equal negative margin so
+   surrounding layout doesn't move. Horizontal only: vertical padding on
+   an inline box never affects line height, and the content area already
+   covers ascenders/descenders. */
+.k-gradient-text,
+.k-gradient-scope .landing-accent,
+.k-gradient-scope .pink-glow-breathe,
+.k-gradient-scope .landing-eyebrow {
+  padding-inline: 0.16em;
+  margin-inline: -0.16em;
+}
+
+/* ------------------------------------------------------------
+   Gradient for the NON-text pink (icons, chips, dots, bars),
+   so nothing on the page stays flat #FF2DA1 next to gradient text.
+   Same --k-g-* stops as the text gradient. Buttons are deliberately
+   not covered: .btn-glass keeps its own pink tint.
+
+   .k-gradient-fill : a solid fill (progress dots/bars, badges).
+   .k-gradient-icon : stroke of an inline lucide <svg> (or any svg
+                      inside it). Needs <KGradientDefs/> mounted once
+                      (src/components/brand/KGradientDefs.tsx) for the
+                      #k-icon-gradient paint; falls back to the pink
+                      stop colour if it isn't there, never to "no stroke".
+   .k-gradient-chip : tinted gradient background + gradient hairline ring
+                      (icon tiles, pills) -- the gradient version of
+                      `background: rgba(pink,.1); border: 1px solid rgba(pink,.22)`.
+   .k-gradient-ring : ring only, transparent inside.
+   ------------------------------------------------------------ */
+.k-gradient-fill {
+  background-image: var(--k-text-gradient);
+}
+.k-gradient-icon svg,
+svg.k-gradient-icon {
+  stroke: url(#k-icon-gradient) var(--k-g-3);
+}
+.k-gradient-chip,
+.k-gradient-ring,
+.k-gradient-tint {
+  position: relative;
+  isolation: isolate;
+}
+.k-gradient-tint {
+  --k-tint: 0.08;
+}
+.k-gradient-chip::before,
+.k-gradient-tint::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: var(--k-text-gradient);
+  opacity: var(--k-tint, 0.16);
+  pointer-events: none;
+}
+.k-gradient-chip::after,
+.k-gradient-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background-image: var(--k-text-gradient);
+  opacity: 0.6;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
 @media (prefers-reduced-motion: reduce) {
   .pink-glow-breathe {
@@ -1086,6 +1170,51 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
     #FEA61A 100%
   );
   color: #ffffff;
+}
+
+/* ============================================================
+   GRADIENT TEXT SCOPE — landing pilot.
+   Turns the product's existing pink *text* language (accent words,
+   eyebrows, the trailing period on chapter titles) into the gradient
+   above without touching each call site: everything under
+   .k-gradient-scope that uses these three classes follows. Buttons,
+   icon strokes, chips and glows are deliberately NOT touched — the
+   ask was coloured *text* only.
+
+   Inline-styled text that has no class (color: ACCENT on a span) gets
+   .k-gradient-text added in its JSX; grep for `color: ACCENT` and
+   `text-energy` when rolling this out.
+
+   ROLLING THIS OUT PROJECT-WIDE: replace `.k-gradient-scope` with
+   `:root` in the selectors below (or add the class to <body>) — the
+   descendant selectors then match the whole app. Then sweep the
+   remaining pink text: `color: "#FF2DA1"`/`ACCENT` spans,
+   `text-energy`, `text-[hsl(var(--energy))]`, `text-primary` where it
+   resolves to the accent. Portals (dialogs, popovers) render outside
+   the landing wrapper, so they stay pink until then.
+
+   Legibility note: the first third of the gradient (#4012F8 -> #A516C5)
+   is only ~2.5:1-3.4:1 against #05070D, fine for large headings but
+   below AA for small text. If small eyebrows read too dark once this is
+   validated, tune --k-text-gradient (one place), not each call site.
+   ============================================================ */
+.k-gradient-scope .landing-accent,
+.k-gradient-scope .pink-glow-breathe,
+.k-gradient-scope .landing-eyebrow {
+  background-image: var(--k-text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none;
+  animation: none;
+  filter: none;
+}
+/* A block-level eyebrow would stretch the gradient across its whole
+   container while the text only fills part of it (left-aligned ones
+   would only ever show the dark blue end). inline-block makes the box
+   hug the text so the gradient spans the text itself. */
+.k-gradient-scope .landing-eyebrow {
+  display: inline-block;
 }
 
 /* Slow orbiting ring — the "AI is active" visual around a tutorial step
@@ -1342,7 +1471,7 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    navbar opt out of it and go back to the plain shadcn treatment they
    had before that sweep. Scoped strictly to [data-nav-chrome] so every
    Studio / Landing CTA keeps the new system. */
-[data-nav-chrome] .btn-glass,
+[data-nav-chrome] .btn-glass:not(.glass-cta),
 .nav-btn-plain {
   background-image: none;
   backdrop-filter: none;
@@ -1350,23 +1479,23 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   box-shadow: none;
   border-color: transparent;
 }
-[data-nav-chrome] .btn-glass:hover,
+[data-nav-chrome] .btn-glass:not(.glass-cta):hover,
 .nav-btn-plain:hover {
   transform: none;
   box-shadow: none;
   background-image: none;
 }
-[data-nav-chrome] .btn-glass::before,
-[data-nav-chrome] .btn-glass::after,
+[data-nav-chrome] .btn-glass:not(.glass-cta)::before,
+[data-nav-chrome] .btn-glass:not(.glass-cta)::after,
 .nav-btn-plain::before,
 .nav-btn-plain::after {
   display: none !important;
   content: none !important;
 }
-[data-nav-chrome] .btn-glass,
-[data-nav-chrome] .btn-glass:hover,
-[data-nav-chrome] .btn-glass:focus,
-[data-nav-chrome] .btn-glass:active {
+[data-nav-chrome] .btn-glass:not(.glass-cta),
+[data-nav-chrome] .btn-glass:not(.glass-cta):hover,
+[data-nav-chrome] .btn-glass:not(.glass-cta):focus,
+[data-nav-chrome] .btn-glass:not(.glass-cta):active {
   color: inherit !important;
 }
 [data-nav-chrome] .btn-glass-outline {

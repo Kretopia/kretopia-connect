@@ -2,12 +2,14 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Loader2, Menu, X, PanelRightOpen, PanelLeftClose, PanelLeftOpen, FolderKanban } from "lucide-react";
+import { Loader2, X, ChevronDown, PanelRightOpen, FolderKanban } from "lucide-react";
 import { ProjectSettingsMenu } from "@/components/project/ProjectSettingsMenu";
 import { SimpleProjectHeader } from "@/components/project/SimpleProjectHeader";
 import { WorkspaceSidebar } from "@/components/project/WorkspaceSidebar";
 import { WorkspaceQuickPanel } from "@/components/project/WorkspaceQuickPanel";
 import { StudioToolBar } from "@/components/project/StudioToolBar";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { ConfirmCreditBanner } from "@/components/project/ConfirmCreditBanner";
 import { AgentModeBanner } from "@/components/project/AgentModeBanner";
 import { ProjectInviteAcceptBanner } from "@/components/project/ProjectInviteAcceptBanner";
@@ -28,7 +30,6 @@ import { useProjectFlowExtras } from "@/hooks/useProjectFlowExtras";
 import { notifyPhaseAdvanced } from "@/lib/notifyPhaseAdvanced";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 const ThriveDesk = () => {
   const { projectId } = useParams();
@@ -39,14 +40,13 @@ const ThriveDesk = () => {
   } = useProjectData(projectId);
 
   const [activeTab, setActiveTab] = useState("today");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(() => {
-    if (typeof window === "undefined") return true;
-    return localStorage.getItem("thrivedesk:sidebar-open") !== "false";
-  });
-  useEffect(() => {
-    localStorage.setItem("thrivedesk:sidebar-open", String(desktopSidebarOpen));
-  }, [desktopSidebarOpen]);
+  // Project switcher — was a permanently-mounted left sidebar (own open/
+  // close state per breakpoint, a localStorage-persisted collapse flag, a
+  // mobile overlay) now a single on-demand Popover anchored in the top
+  // header, per the Studio simplification pass. One boolean instead of
+  // three, and the switcher no longer occupies a permanent column of
+  // width on every screen just to be available if needed.
+  const [switcherOpen, setSwitcherOpen] = useState(false);
   const [quickPanelOpen, setQuickPanelOpen] = useState(true);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [voiceCmdOpen, setVoiceCmdOpen] = useState(false);
@@ -240,44 +240,32 @@ const ThriveDesk = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row overflow-hidden bg-background h-[calc(100dvh-4rem)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:h-[100dvh] lg:pb-0">
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setSidebarOpen(false)} />
-      )}
-
-      {/* Left Sidebar - Project List */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border transform transition-all duration-200 lg:relative",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "lg:translate-x-0",
-        desktopSidebarOpen ? "lg:w-64" : "lg:w-0 lg:border-r-0 lg:overflow-hidden"
-      )}>
-        <WorkspaceSidebar
-          projects={projects}
-          activeProjectId={projectId}
-          onClose={() => setSidebarOpen(false)}
-          onProjectCreated={fetchProjects}
-        />
-      </div>
-
+    <div className="flex flex-col overflow-hidden bg-background h-[calc(100dvh-4rem)] pb-[calc(6.5rem+env(safe-area-inset-bottom))] touch-pan-y lg:h-[100dvh] lg:pb-0">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
-        {/* Workspace Header */}
+        {/* Workspace Header — the Project switcher used to be a permanent
+            left-hand column (Studio simplification pass moved it here, up
+            top, as an on-demand Popover); the Kretopia mark on its trigger
+            is the one piece of explicit brand identity inside Studio's own
+            chrome, rather than a generic Sparkles icon. */}
         <header className="h-14 border-b-2 border-primary/20 bg-card flex items-center gap-3 px-4 shrink-0 shadow-sm">
-          <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={() => setSidebarOpen(true)}>
-            <Menu className="h-5 w-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden lg:inline-flex shrink-0"
-            onClick={() => setDesktopSidebarOpen((v) => !v)}
-            aria-label={desktopSidebarOpen ? "Hide studios" : "Show studios"}
-            title={desktopSidebarOpen ? "Hide studios" : "Show studios"}
-          >
-            {desktopSidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
-          </Button>
+          <Popover open={switcherOpen} onOpenChange={setSwitcherOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" className="shrink-0 gap-1.5 pl-1.5 pr-2.5" aria-label="Switch Project">
+                <KretoMark size="xs" variant="compact" />
+                <span className="hidden sm:inline text-sm font-semibold">Studios</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-80 p-0 overflow-hidden">
+              <WorkspaceSidebar
+                projects={projects}
+                activeProjectId={projectId}
+                onClose={() => setSwitcherOpen(false)}
+                onProjectCreated={fetchProjects}
+              />
+            </PopoverContent>
+          </Popover>
           <SimpleProjectHeader
             project={project}
             collaborators={collaborators}
