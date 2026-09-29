@@ -256,7 +256,7 @@ describe("VoiceFirstCreateModal", () => {
     fireEvent.click(screen.getByText("No — personal/passion"));
     await uploadCoverImage();
 
-    const createButton = screen.getByText("Create all & open");
+    const createButton = screen.getByText("Create All & Open");
 
     // Two rapid clicks simulate the double-click/double-tap race a plain
     // `creating` state boolean can't fully close (state updates lag a
@@ -283,7 +283,7 @@ describe("VoiceFirstCreateModal", () => {
     await screen.findByText("Kreto structured your project — review and edit");
     fireEvent.click(screen.getByText("No — personal/passion"));
 
-    const confirmButton = screen.getByText("Create all & open").closest("button");
+    const confirmButton = screen.getByText("Create All & Open").closest("button");
     expect(confirmButton).toHaveClass("cta-solid", "bg-primary", "shadow-md");
   });
 
@@ -407,11 +407,11 @@ describe("VoiceFirstCreateModal", () => {
       await screen.findByText("Kreto structured your project — review and edit");
       fireEvent.click(screen.getByText("No — personal/passion"));
       await uploadCoverImage();
-      fireEvent.click(screen.getByText("Create all & open"));
+      fireEvent.click(screen.getByText("Create All & Open"));
 
       // NewRoomLaunchScreen (the "your room is live" celebration) shows
       // first -- navigation only fires once the user actually leaves it.
-      const openRoomButton = await screen.findByText("Open the room");
+      const openRoomButton = await screen.findByText("Open the Room");
       expect(mocks.navigate).not.toHaveBeenCalled();
 
       // Regression: the covering review-screen dialog (still mounted
@@ -425,7 +425,7 @@ describe("VoiceFirstCreateModal", () => {
       // (which, unlike role queries, does not filter by aria-hidden) to
       // actually distinguish the covering dialog being gone from merely
       // being accessibility-hidden behind the celebration.
-      expect(screen.queryByText("Create all & open")).not.toBeInTheDocument();
+      expect(screen.queryByText("Create All & Open")).not.toBeInTheDocument();
       expect(screen.queryByText("New Room")).not.toBeInTheDocument();
 
       fireEvent.click(openRoomButton);

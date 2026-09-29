@@ -1590,7 +1590,7 @@ export const VoiceFirstCreateModal = ({
               className="w-auto gap-1.5 px-6"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-              {brief.deliverables?.length ? "Create all & open" : "Open the room"}
+              {brief.deliverables?.length ? "Create All & Open" : "Open the Room"}
             </CtaButton>
           </div>
         </div>

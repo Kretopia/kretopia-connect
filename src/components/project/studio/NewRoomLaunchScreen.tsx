@@ -140,7 +140,7 @@ export function NewRoomLaunchScreen({
             className="btn-glass btn-glass-primary w-full inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold"
           >
             <ArrowRight className="h-4 w-4" />
-            Open the room
+            Open the Room
           </button>
 
           <p className="flex items-center justify-center gap-1.5 text-[10px] text-foreground/30">
