@@ -1,5 +1,6 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -564,25 +565,41 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 </SheetContent>
               </Sheet>
 
-              <Link to="/post-opportunity" className="hidden sm:inline-flex">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    "gap-2",
-                    isDarkChromeRoute && "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white",
-                  )}
-                >
-                  <Briefcase className="h-4 w-4" aria-hidden />
-                  Hire Talent
-                </Button>
-              </Link>
-              <Link to="/auth?tab=signup">
-                <Button variant="link" size="sm" className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold no-underline hover:no-underline">
-                  <Sparkles className="h-4 w-4" aria-hidden />
-                  Build Your Passport
-                </Button>
-              </Link>
+              {isLandingPage ? (
+                // Landing only: the same frosted-glass CTA as every other
+                // button on the page (GlassCta, "sm" = header density).
+                // Other public pages keep their existing nav buttons.
+                <>
+                  <GlassCta to="/post-opportunity" size="sm" className="hidden sm:inline-flex">
+                    Hire Talent
+                  </GlassCta>
+                  <GlassCta to="/auth?tab=signup" size="sm" className="px-3 text-xs sm:px-5 sm:text-sm">
+                    Build Your Passport
+                  </GlassCta>
+                </>
+              ) : (
+                <>
+                  <Link to="/post-opportunity" className="hidden sm:inline-flex">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={cn(
+                        "gap-2",
+                        isDarkChromeRoute && "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white",
+                      )}
+                    >
+                      <Briefcase className="h-4 w-4" aria-hidden />
+                      Hire Talent
+                    </Button>
+                  </Link>
+                  <Link to="/auth?tab=signup">
+                    <Button variant="link" size="sm" className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold no-underline hover:no-underline">
+                      <Sparkles className="h-4 w-4" aria-hidden />
+                      Build Your Passport
+                    </Button>
+                  </Link>
+                </>
+              )}
             </>
           ) : null}
         </div>

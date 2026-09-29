@@ -8,8 +8,7 @@
  * without scrolling the full editorial spine, and it is instrumented so the
  * funnel view can tell whether it is doing any work.
  */
-import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { trackLandingCta } from "@/lib/landingFunnel";
 
 export const InlineSignupBar = () => (
@@ -36,15 +35,13 @@ export const InlineSignupBar = () => (
         </p>
       </div>
 
-      <Link
+      <GlassCta
         to="/auth?tab=signup&intent=inline_bar"
         onClick={() => trackLandingCta("inline_bar_claim_passport", "inline_signup")}
-        className="btn-landing-primary group flex h-auto w-full shrink-0 items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-semibold sm:w-auto"
-        style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+        className="w-full shrink-0 sm:w-auto"
       >
         Claim your Passport
-        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
-      </Link>
+      </GlassCta>
     </div>
   </section>
 );

@@ -14,8 +14,9 @@ import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { kGlow, K_HAIRLINE } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+
 
 interface VisualCardShellProps {
   icon: LucideIcon;
@@ -33,7 +34,7 @@ export const VisualCardShell = ({ icon: Icon, label, tag, children, footer }: Vi
       style={{
         background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015))",
         border: "1px solid rgba(255,255,255,0.10)",
-        boxShadow: "0 30px 80px -40px rgba(255,45,161,0.35)",
+        boxShadow: `0 30px 80px -40px ${kGlow(35)}`,
       }}
     >
       {/* Scan-line sweep along the top edge on first reveal — the same
@@ -44,7 +45,7 @@ export const VisualCardShell = ({ icon: Icon, label, tag, children, footer }: Vi
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px overflow-hidden z-10">
           <div
             className="ai-scan-line h-full w-1/3"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(255,45,161,0.9), transparent)" }}
+            style={{ backgroundImage: K_HAIRLINE }}
           />
         </div>
       )}
@@ -57,11 +58,8 @@ export const VisualCardShell = ({ icon: Icon, label, tag, children, footer }: Vi
         viewport={{ once: true, margin: "-60px" }}
         transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
       >
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-full shrink-0"
-          style={{ backgroundColor: "rgba(255,45,161,0.14)" }}
-        >
-          <Icon className="h-4 w-4" style={{ color: ACCENT }} aria-hidden />
+        <span className="k-gradient-chip flex h-9 w-9 items-center justify-center rounded-full shrink-0">
+          <Icon className="k-gradient-icon h-4 w-4" aria-hidden />
         </span>
         <div className="min-w-0">
           <p className="text-[15px] font-semibold text-white" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>

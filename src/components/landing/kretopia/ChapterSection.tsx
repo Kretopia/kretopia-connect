@@ -2,14 +2,12 @@
  * ChapterSection — full-bleed editorial "movie chapter" for each pillar.
  * One image. One sentence. One accent. Restrained motion.
  */
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
 import { useEffect, useRef, type ComponentType } from "react";
 import type { TutorialStep } from "./FeatureTutorial";
 import { FeatureTutorialPanel } from "./FeatureTutorialPanel";
 import { KretopiaFeatureTutorial } from "./KretopiaFeatureTutorial";
-import { Button } from "@/components/ui/button";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick, type LandingSectionId } from "@/lib/landingMetrics";
 import { KretoCharacter, type KretoCharacterVariant } from "@/components/brand/KretoCharacter";
@@ -218,7 +216,7 @@ export const ChapterSection = ({
                 {concepts.map((c) => (
                   <div key={c.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
                     <p
-                      className="text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
+                      className="k-gradient-text w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
                       style={{ color: accent, fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                     >
                       {c.label}
@@ -241,26 +239,19 @@ export const ChapterSection = ({
             )}
 
             <div className="mt-9 flex flex-wrap items-center gap-3">
-              <Button
-                asChild
-                className="group h-auto w-fit rounded-full px-6 py-3 text-sm font-semibold"
-                style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+              <GlassCta
+                to={`${href}${href.includes("?") ? "&" : "?"}tab=signup&src=${sectionId}`}
+                onClick={() =>
+                  trackLandingCtaClick({
+                    ctaId: `${kicker.toLowerCase()}_chapter_cta`,
+                    section: sectionId,
+                    label: ctaLabel ?? `Enter ${kicker}`,
+                    destinationType: "auth",
+                  })
+                }
               >
-                <Link
-                  to={`${href}${href.includes("?") ? "&" : "?"}tab=signup&src=${sectionId}`}
-                  onClick={() =>
-                    trackLandingCtaClick({
-                      ctaId: `${kicker.toLowerCase()}_chapter_cta`,
-                      section: sectionId,
-                      label: ctaLabel ?? `Enter ${kicker}`,
-                      destinationType: "auth",
-                    })
-                  }
-                >
-                  {ctaLabel ?? `Enter ${kicker}`}
-                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
-                </Link>
-              </Button>
+                {ctaLabel ?? `Enter ${kicker}`}
+              </GlassCta>
 
               {discreetTutorial && tutorialSteps && tutorialSteps.length > 0 && (
                 <KretopiaFeatureTutorial steps={tutorialSteps} featureName={kicker} />

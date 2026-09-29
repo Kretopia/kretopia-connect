@@ -32,6 +32,7 @@ import { KretopiaHero } from "@/components/landing/KretopiaHero";
 import { ChapterProgressNav } from "@/components/landing/kretopia/ChapterProgressNav";
 import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
 import { LandingFunnelTracker } from "@/components/landing/LandingFunnelTracker";
+import { KGradientDefs } from "@/components/brand/KGradientDefs";
 
 const LandingBelowFold = lazy(
   () => import("@/components/landing/kretopia/LandingBelowFold"),
@@ -86,7 +87,8 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
   }, [showRest]);
 
   return (
-    <div className="dark-surface relative" style={{ backgroundColor: "#05070D" }}>
+    <div className="dark-surface k-gradient-scope relative" style={{ backgroundColor: "#05070D" }}>
+      <KGradientDefs />
       {/* I. Hero — critical path */}
       <KretopiaHero />
 

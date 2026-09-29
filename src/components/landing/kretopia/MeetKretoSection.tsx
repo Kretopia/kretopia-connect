@@ -1,7 +1,7 @@
 /**
  * MeetKretoSection — the Kreto (Executive Producer) chapter.
  *
- * Restrained "liquid glass" command surface. Magenta (#FF2DA1) is the only
+ * Restrained "liquid glass" command surface. The soft brand pink (--pink-soft) is the only
  * accent. Every capability listed here maps to something the product
  * actually does, and every generated output is described as editable and
  * user-confirmed — Kreto never writes to the record on its own.
@@ -12,21 +12,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  ArrowUpRight,
   BadgeCheck,
   Sparkles,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
-import { Button } from "@/components/ui/button";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { kGlow } from "@/lib/kGradient";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
 import { TutorialStepper } from "./TutorialStepper";
 import { KRETO_TUTORIAL } from "./tutorialContent";
 import { chapterRoman } from "./chapterRegistry";
 
-const ACCENT = "#FF2DA1";
 // Landing-only trim: the in-app /kreto tutorial (FeatureAITutorial) keeps
 // all 3 KRETO_TUTORIAL steps — this section drops the opening "Get
 // context-aware guidance" step, which read as a flat capability restate
@@ -76,7 +75,7 @@ export const MeetKretoSection = () => {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(45% 55% at 25% 45%, rgba(255,45,161,0.13), transparent 62%)",
+            `radial-gradient(45% 55% at 25% 45%, ${kGlow(13)}, transparent 62%)`,
         }}
       />
 
@@ -94,7 +93,7 @@ export const MeetKretoSection = () => {
 
             <h2 id="kreto-title" className="landing-h2 landing-glow">
               The Executive Producer for your{" "}
-              <span className="italic pink-glow-breathe" style={{ color: ACCENT }}>creative career</span>.
+              <span className="italic k-gradient-text">creative career</span>.
             </h2>
 
             <p className="landing-sub mt-6 max-w-xl">
@@ -114,10 +113,9 @@ export const MeetKretoSection = () => {
               {CAPABILITIES.map(({ icon: Icon, label, body }) => (
                 <li key={label} className="flex gap-3">
                   <span
-                    className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: "rgba(255,45,161,0.10)", border: "1px solid rgba(255,45,161,0.22)" }}
+                    className="k-gradient-chip mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
                   >
-                    <Icon className="h-3.5 w-3.5" style={{ color: ACCENT }} aria-hidden />
+                    <Icon className="k-gradient-icon h-3.5 w-3.5" aria-hidden />
                   </span>
                   <div className="min-w-0">
                     <p
@@ -149,26 +147,20 @@ export const MeetKretoSection = () => {
               removed, and only becomes part of your official record once you confirm it.
             </p>
 
-            <Button
-              asChild
-              className="group mt-9 h-auto w-fit rounded-full px-6 py-3 text-sm font-semibold"
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+            <GlassCta
+              to="/auth?next=/circle&tab=signup&src=meet_kreto"
+              className="mt-9"
+              onClick={() =>
+                trackLandingCtaClick({
+                  ctaId: "meet_kreto",
+                  section: "meet_kreto",
+                  label: "Meet Kreto",
+                  destinationType: "auth",
+                })
+              }
             >
-              <Link
-                to="/auth?next=/circle&tab=signup&src=meet_kreto"
-                onClick={() =>
-                  trackLandingCtaClick({
-                    ctaId: "meet_kreto",
-                    section: "meet_kreto",
-                    label: "Meet Kreto",
-                    destinationType: "auth",
-                  })
-                }
-              >
-                Meet Kreto
-                <ArrowUpRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden />
-              </Link>
-            </Button>
+              Meet Kreto
+            </GlassCta>
           </motion.div>
 
           {/* Command surface */}
@@ -185,7 +177,7 @@ export const MeetKretoSection = () => {
               style={{
                 background: "linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.015))",
                 border: "1px solid rgba(255,255,255,0.10)",
-                boxShadow: "0 30px 80px -40px rgba(255,45,161,0.35)",
+                boxShadow: `0 30px 80px -40px ${kGlow(35)}`,
               }}
             >
               <div
@@ -208,10 +200,9 @@ export const MeetKretoSection = () => {
                   </p>
                 </div>
                 <span
-                  className="ml-auto rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em]"
-                  style={{ color: ACCENT, backgroundColor: "rgba(255,45,161,0.12)" }}
+                  className="k-gradient-chip ml-auto rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.18em]"
                 >
-                  AI-assisted
+                  <span className="k-gradient-text">AI-assisted</span>
                 </span>
               </div>
 
