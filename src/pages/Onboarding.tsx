@@ -1,3 +1,4 @@
+import { createDirectMatch } from "@/lib/createDirectMatch";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -701,7 +702,7 @@ export default function Onboarding() {
       // The raw matches insert here would now be rejected -- the table
       // policy only allows swipe-verified matches, see
       // 20260912120000_gate_matches_direct_insert.sql.
-      await supabase.rpc("create_direct_match" as any, { _other_user_id: targetUserId });
+      await createDirectMatch(targetUserId);
       const notifications = [
         { user_id: user.id, type: "connection", title: `Connected with ${targetProfile?.full_name || "a creator"}!`, message: "You're now connected via QR code.", link: `/profile/${targetUserId}?from=match`, action_url: `/messages?user=${targetUserId}`, action_text: "Send Message", image_url: targetProfile?.avatar_url },
         { user_id: targetUserId, type: "connection", title: `${currentProfile?.full_name || "Someone"} joined and connected!`, message: "New connection via your QR code.", link: `/profile/${user.id}?from=match`, action_url: `/messages?user=${user.id}`, action_text: "Send Message", image_url: currentProfile?.avatar_url },

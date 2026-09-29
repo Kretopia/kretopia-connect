@@ -1,21 +1,42 @@
-import { Sparkles, MessageCircle, ListChecks, ChevronDown, Check, AlarmClock, Clock, ArrowRight, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { AlarmClock, ArrowRight, Check, Clock, MessageCircle, Sparkles, X } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
+import { HoloCard } from "@/components/passport/HoloCard";
 import { CtaButton } from "@/components/ui/cta-button";
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useToast } from "@/hooks/use-toast";
+
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import type { ProfileRow, TodaySignals } from "./today.types";
-import { acceptProposal, completeTask, dismissProposal, fillKretoPrompt, openKretoChat, snoozeTaskToTomorrow } from "./today.actions";
-import { TodayMiniPassport } from "./TodayMiniPassport";
+import {
+  acceptProposal,
+  completeTask,
+  dismissProposal,
+  fillKretoPrompt,
+  openKretoChat,
+  snoozeTaskToTomorrow,
+} from "./today.actions";
 
 const TODAY_TUTORIAL: TutorialStep[] = [
-  { icon: Sparkles, title: "Tell Kreto what's next", body: "Type or speak what you're working on — Kreto routes it to a new workspace, a people search, a gig search, or a straight answer." },
-  { icon: ListChecks, title: "Your command center", body: "Your Passport, active work and the one thing that matters most right now — based on your actual information." },
-  { icon: ChevronDown, title: "Momentum and Next moves", body: "What's actually moving this week, and everything worth doing next, organized by what matters most." },
+  {
+    icon: Sparkles,
+    title: "Tell Kreto what's next",
+    body: "Type or speak what you're working on. Kreto helps you decide what to do next.",
+  },
+  {
+    icon: ArrowRight,
+    title: "Your Passport and next move",
+    body: "Your Passport, today's next move and your activity each have a clear place.",
+  },
+  {
+    icon: Check,
+    title: "Keep moving",
+    body: "Complete, review or snooze the one thing that matters most right now.",
+  },
 ];
 
 interface TodayCommandCenterProps {
@@ -26,173 +47,409 @@ interface TodayCommandCenterProps {
   onSignalsChanged: () => void;
 }
 
+interface PassportKretoCardProps {
+  profile: ProfileRow;
+  creditCount: number;
+  completion: number;
+  missingFields: string[];
+  firstName?: string;
+  onKreto: () => void;
+}
+
+interface TodayPriorityCardProps {
+  signals: TodaySignals;
+  reducedMotion: boolean;
+  onSignalsChanged: () => void;
+}
+
 /**
- * TodayCommandCenter — greeting, Kreto's presence, Passport readiness, and
- * the single highest-priority action, all above the fold. This is the one
- * place a returning user should be able to look and know what to do next
- * without scrolling. Primary CTA adapts to today.selectors.ts's priority
- * table; at most two secondary quick actions (Draft outreach / Or just
- * chat) sit in the header, exactly as before.
+ * TodayCommandCenter
+ *
+  * Three equally sized surfaces: Passport with Kreto, one next action, and
+  * supporting activity drawn from the same live signals.
  */
-export function TodayCommandCenter({ firstName, profile, creditCount = 0, signals, onSignalsChanged }: TodayCommandCenterProps) {
-  const navigate = useNavigate();
-  const { toast } = useToast();
+export function TodayCommandCenter({
+  firstName,
+  profile,
+  creditCount = 0,
+  signals,
+  onSignalsChanged,
+}: TodayCommandCenterProps) {
   const reducedMotion = useReducedMotion();
-  const { priority, primaryCta, passport } = signals;
-
-  const runPrimaryCta = () => {
-    if ("href" in primaryCta) navigate(primaryCta.href);
-    else if (primaryCta.event === "thrive-copilot:open") openKretoChat();
-    else fillKretoPrompt(String(primaryCta.detail?.prompt ?? ""));
-  };
-
-  const handleComplete = async () => {
-    if (priority.kind !== "task") return;
-    try {
-      await completeTask(priority.task.id);
-      toast({ title: "Marked complete", description: priority.task.title });
-      onSignalsChanged();
-    } catch {
-      toast({ title: "Couldn't complete that task", variant: "destructive" });
-    }
-  };
-  const handleSnooze = async () => {
-    if (priority.kind !== "task") return;
-    try {
-      await snoozeTaskToTomorrow(priority.task.id);
-      toast({ title: "Snoozed to tomorrow" });
-      onSignalsChanged();
-    } catch {
-      toast({ title: "Couldn't snooze that task", variant: "destructive" });
-    }
-  };
-  const handleAccept = async () => {
-    if (priority.kind !== "approval") return;
-    try {
-      await acceptProposal(priority.approval.id);
-      if (priority.approval.href) navigate(priority.approval.href);
-      else onSignalsChanged();
-    } catch {
-      toast({ title: "Couldn't open that suggestion", variant: "destructive" });
-    }
-  };
-  const handleDismiss = async () => {
-    if (priority.kind !== "approval") return;
-    try {
-      await dismissProposal(priority.approval.id);
-      onSignalsChanged();
-    } catch {
-      toast({ title: "Couldn't dismiss that", variant: "destructive" });
-    }
-  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <FeaturePageHeader
         eyebrow="Today"
         title={firstName ? `${firstName},` : "Today,"}
         accentTitle="here's what moves you forward today."
         subtitle={priorityLine(signals)}
-        tutorial={{ featureKey: "today", label: "How Today works", steps: TODAY_TUTORIAL }}
+        tutorial={{
+          featureKey: "today",
+          label: "How Today works",
+          steps: TODAY_TUTORIAL,
+        }}
         compact
-        tabs={
-          <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <Button
-              type="button"
-              onClick={() => fillKretoPrompt("Draft outreach to a sponsor or brand", true)}
-              variant="glass"
-              className="gap-1.5 rounded-full"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              Draft outreach
-            </Button>
-            <Button
-              type="button"
-              onClick={openKretoChat}
-              variant="outline"
-              className="gap-1.5 rounded-full"
-            >
-              <MessageCircle className="h-3.5 w-3.5" />
-              Or just chat
-            </Button>
-          </div>
-        }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.35fr)] gap-3">
-        {passport && profile ? <TodayMiniPassport profile={profile} creditCount={creditCount} completion={passport.percentage} /> : null}
-
-        <div className="relative min-h-[210px] overflow-hidden rounded-2xl border border-primary/30 bg-primary/[0.03] p-4 sm:p-5 flex flex-col">
-          <div className="absolute right-2 bottom-0 hidden sm:block opacity-90 pointer-events-none" aria-hidden>
-            <KretoCharacter variant="main" size={138} floatAmplitude={3} floatDuration={8} />
-          </div>
-          <div className="relative z-[2] sm:pr-32">
-            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Kreto · Creator intelligence</p>
-            <p className="mt-1 text-xs text-muted-foreground">Based on your Passport, active work and current signals.</p>
-          </div>
-          <AnimatePresence mode="wait">
-            {priority.kind === "task" ? (
-              <motion.div key={priority.task.id} initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="relative z-[2] flex-1 mt-4 sm:pr-32">
-                <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide ${priority.task.overdue ? "text-destructive" : "text-primary"}`}>
-                  {priority.task.overdue ? <AlarmClock className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
-                  {priority.task.overdue ? "Overdue" : "Due today"}
-                </span>
-                <p className="text-sm font-bold leading-snug text-foreground mt-1">{priority.task.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{priority.task.projectTitle}</p>
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Button size="sm" onClick={handleComplete} className="gap-1.5"><Check className="h-3.5 w-3.5" /> Complete</Button>
-                  <Button size="sm" variant="outline" onClick={handleSnooze}>Snooze</Button>
-                  <Button size="sm" variant="ghost" onClick={() => navigate(`/desk/${priority.task.projectId}`)} className="gap-1">
-                    Open Project <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </motion.div>
-            ) : priority.kind === "approval" ? (
-              <motion.div key={priority.approval.id} initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="relative z-[2] flex-1 mt-4 sm:pr-32">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-primary">Kreto suggests</p>
-                <p className="text-sm font-bold leading-snug text-foreground mt-1">{priority.approval.title}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{priority.approval.body}</p>
-                <div className="flex flex-wrap items-center gap-2 mt-3">
-                  <Button size="sm" onClick={handleAccept} className="gap-1.5"><Check className="h-3.5 w-3.5" /> Review</Button>
-                  <Button size="sm" variant="ghost" onClick={handleDismiss} className="gap-1.5"><X className="h-3.5 w-3.5" /> Not now</Button>
-                </div>
-              </motion.div>
-            ) : priority.kind === "gig" ? (
-              <motion.div key={priority.gig.id} initial={reducedMotion ? false : { opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="relative z-[2] flex-1 mt-4 sm:pr-32">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Fresh Call</p>
-                <p className="text-sm font-bold leading-snug text-foreground mt-1">{priority.gig.title}</p>
-                {priority.gig.company && <p className="text-xs text-muted-foreground mt-0.5">{priority.gig.company}</p>}
-                <Button size="sm" onClick={() => navigate("/scout")} className="gap-1.5 mt-3">View Call <ArrowRight className="h-3.5 w-3.5" /></Button>
-              </motion.div>
-            ) : (
-              <motion.div key="empty" initial={reducedMotion ? false : { opacity: 0 }} animate={{ opacity: 1 }} className="relative z-[2] flex-1 flex items-center gap-3 mt-4 sm:pr-32">
-                <Sparkles className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-sm text-muted-foreground">You're all caught up. A good moment to start something.</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <CtaButton onClick={runPrimaryCta} className="relative z-[2] w-full sm:w-fit mt-3 gap-1.5">
-            {primaryCta.label} <ArrowRight className="h-4 w-4" />
-          </CtaButton>
-        </div>
+      <div className="grid auto-rows-fr gap-4 lg:grid-cols-3 lg:gap-5">
+        {profile && signals.passport ? (
+          <PassportKretoCard
+            profile={profile}
+            creditCount={creditCount}
+            completion={signals.passport.percentage}
+            missingFields={signals.passport.missingFields}
+            firstName={firstName}
+            onKreto={openKretoChat}
+          />
+        ) : (
+          <HoloCard maxTilt={3} className="h-full min-w-0">
+            <section aria-label="Creative Passport and Kreto" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-energy/30 bg-card p-6 sm:p-7">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
+              <h2 className="mt-4 text-xl font-bold text-foreground">Make your work visible.</h2>
+              <p className="mt-2 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
+              <div className="mt-auto space-y-3 border-t border-border pt-5">
+                <Button asChild className="w-full justify-between"><Link to="/passport">Build my Passport <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+                <Button type="button" variant="outline" onClick={openKretoChat} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
+              </div>
+            </section>
+          </HoloCard>
+        )}
+        <TodayPriorityCard signals={signals} reducedMotion={reducedMotion} onSignalsChanged={onSignalsChanged} />
+        <TodayActivityCard signals={signals} />
       </div>
     </div>
   );
 }
 
+/**
+ * Passport + Kreto
+ *
+ * The shared card keeps Passport and Kreto together with distinct actions.
+ */
+function PassportKretoCard({
+  profile,
+  creditCount,
+  completion,
+  firstName,
+  onKreto,
+  missingFields,
+}: PassportKretoCardProps) {
+  const displayName = profile.full_name || profile.username || firstName || "Your Passport";
+  const profession = profile.passport_profession || profile.job_title || profile.role || "Creative professional";
+  const avatarUrl = profile.avatar_url || "";
+  const safeCompletion = Math.max(0, Math.min(100, completion));
+  return (
+    <HoloCard maxTilt={3} className="h-full min-w-0">
+      <section aria-label="Creative Passport and Kreto" className="relative flex h-full min-h-[460px] min-w-0 flex-col overflow-hidden rounded-2xl border border-energy/30 bg-card p-6 sm:p-7">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">My Creative Passport</p>
+             <div className="mt-5 flex min-w-0 items-center gap-4">
+               <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md border border-energy/30 bg-muted">
+                {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{getInitials(displayName)}</span>}
+              </div>
+              <div className="min-w-0">
+                 <h2 className="break-words text-xl font-bold leading-tight text-foreground">{displayName}</h2>
+                 <p className="mt-1 break-words text-sm text-muted-foreground">{profession}</p>
+              </div>
+            </div>
+             <div className="mt-6 flex items-center justify-between gap-3 text-xs">
+              <span className="text-muted-foreground">Passport · {creditCount} credit{creditCount === 1 ? "" : "s"}</span>
+              <span className="font-bold text-energy">{safeCompletion}%</span>
+            </div>
+            <div role="progressbar" aria-label="Passport completion" aria-valuenow={safeCompletion} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-energy transition-[width] duration-500" style={{ width: `${safeCompletion}%` }} />
+            </div>
+             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{missingFields.length > 0 ? `Next to add: ${missingFields.slice(0, 2).join(" · ")}` : "Your Passport is ready to share."}</p>
+          </div>
+           <div className="mt-6 flex min-w-0 items-center gap-2 border-t border-border pt-5">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Kreto · Creator intelligence</p>
+               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
+            </div>
+            <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={56} floatAmplitude={1} floatDuration={8} /></div>
+          </div>
+           <div className="mt-auto grid gap-2 pt-6">
+             <Button asChild className="w-full justify-between"><Link to="/passport">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+             <Button type="button" variant="outline" onClick={onKreto} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
+          </div>
+      </section>
+    </HoloCard>
+  );
+}
+
+function TodayActivityCard({ signals }: { signals: TodaySignals }) {
+  const upcomingCount = signals.deadlines.filter((task) => !task.overdue).length;
+  const completedThisWeek = signals.momentum?.completedThisWeek ?? 0;
+  const activeProjects = signals.momentum?.activeProjects.length ?? 0;
+  const nextMilestone = signals.momentum?.nextMilestone;
+  const hasActivity = upcomingCount > 0 || completedThisWeek > 0 || activeProjects > 0 || signals.approvalCount > 0 || signals.unreadMessages > 0 || !!nextMilestone || !!signals.stamps?.waitingForCoSign;
+
+  return (
+    <HoloCard maxTilt={3} className="h-full min-w-0">
+      <section aria-label="Your activity" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-border bg-card p-6 sm:p-7">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-energy">Your activity</p>
+        <h2 className="mt-2 text-xl font-bold text-foreground">Moving forward</h2>
+        {hasActivity ? (
+          <div className="mt-5 grid grid-cols-2 gap-x-4 gap-y-4 border-y border-border py-5 text-sm text-foreground">
+            <div><strong className="block text-2xl text-energy">{activeProjects}</strong><span>active project{activeProjects === 1 ? "" : "s"}</span></div>
+            <div><strong className="block text-2xl text-energy">{upcomingCount}</strong><span>due in the next 7 days</span></div>
+            <div><strong className="block text-2xl text-energy">{completedThisWeek}</strong><span>completed this week</span></div>
+            <div><strong className="block text-2xl text-energy">{signals.unreadMessages}</strong><span>unread message{signals.unreadMessages === 1 ? "" : "s"}</span></div>
+          </div>
+        ) : <p className="mt-5 border-y border-border py-5 text-sm text-muted-foreground">No recent activity yet.</p>}
+        <div className="mt-5 space-y-3 text-xs leading-relaxed text-muted-foreground">
+          {signals.approvalCount > 0 && <p><span className="font-bold text-energy">{signals.approvalCount}</span> Kreto suggestion{signals.approvalCount === 1 ? "" : "s"} to review</p>}
+          {(signals.stamps?.waitingForCoSign ?? 0) > 0 && <p><span className="font-bold text-energy">{signals.stamps?.waitingForCoSign}</span> credit{signals.stamps?.waitingForCoSign === 1 ? "" : "s"} awaiting co-sign</p>}
+          {nextMilestone && <p>Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>}
+        </div>
+        <Button asChild className="mt-auto w-full justify-between"><Link to={signals.unreadMessages > 0 ? "/messages" : "/desk"}>{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+      </section>
+    </HoloCard>
+  );
+}
+
+/**
+ * Today priority
+ *
+ * Displays one consequential next move, not a dashboard of competing options.
+ */
+function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPriorityCardProps) {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { priority, primaryCta } = signals;
+
+  const runPrimaryCta = () => {
+    if ("href" in primaryCta) {
+      navigate(primaryCta.href);
+      return;
+    }
+
+    if (primaryCta.event === "thrive-copilot:open") {
+      openKretoChat();
+      return;
+    }
+
+    fillKretoPrompt(String(primaryCta.detail?.prompt ?? ""));
+  };
+
+  const handleComplete = async () => {
+    if (priority.kind !== "task") return;
+
+    try {
+      await completeTask(priority.task.id);
+      toast({
+        title: "Marked complete",
+        description: priority.task.title,
+      });
+      onSignalsChanged();
+    } catch {
+      toast({
+        title: "Couldn't complete that task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSnooze = async () => {
+    if (priority.kind !== "task") return;
+
+    try {
+      await snoozeTaskToTomorrow(priority.task.id);
+      toast({ title: "Snoozed to tomorrow" });
+      onSignalsChanged();
+    } catch {
+      toast({
+        title: "Couldn't snooze that task",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAccept = async () => {
+    if (priority.kind !== "approval") return;
+
+    try {
+      await acceptProposal(priority.approval.id);
+
+      if (priority.approval.href) {
+        navigate(priority.approval.href);
+      } else {
+        onSignalsChanged();
+      }
+    } catch {
+      toast({
+        title: "Couldn't open that suggestion",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDismiss = async () => {
+    if (priority.kind !== "approval") return;
+
+    try {
+      await dismissProposal(priority.approval.id);
+      onSignalsChanged();
+    } catch {
+      toast({
+        title: "Couldn't dismiss that",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <HoloCard maxTilt={3} className="h-full min-w-0">
+    <section aria-label="Today's next action" className="flex h-full min-h-[460px] min-w-0 flex-col rounded-2xl border border-border bg-card p-6 sm:p-7">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Today</p>
+           <h2 className="mt-2 text-xl font-bold text-foreground">Your next move</h2>
+        </div>
+
+        <Sparkles className="h-5 w-5 text-primary" aria-hidden />
+      </div>
+
+      <AnimatePresence mode="wait" initial={false}>
+        {priority.kind === "task" ? (
+          <motion.div
+            key={`task-${priority.task.id}`}
+            initial={reducedMotion ? false : { opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
+             className="mt-7 flex flex-1 flex-col"
+          >
+            <PriorityLabel overdue={priority.task.overdue} />
+
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.task.title}</h3>
+
+            <p className="mt-1 text-sm text-muted-foreground">{priority.task.projectTitle}</p>
+             <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">Due {new Date(`${priority.task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
+
+             <PriorityActions>
+               <Button type="button" onClick={handleComplete} className="w-full justify-between gap-1.5">
+                <Check className="h-3.5 w-3.5" aria-hidden />
+                Complete
+              </Button>
+
+              <Button type="button" size="sm" variant="outline" onClick={handleSnooze}>
+                Snooze
+              </Button>
+
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={() => navigate(`/desk/${priority.task.projectId}`)}
+                className="gap-1"
+              >
+                Open Project
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Button>
+            </PriorityActions>
+          </motion.div>
+        ) : priority.kind === "approval" ? (
+          <motion.div
+            key={`approval-${priority.approval.id}`}
+            initial={reducedMotion ? false : { opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
+             className="mt-7 flex flex-1 flex-col"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-primary">Kreto suggests</p>
+
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.approval.title}</h3>
+
+            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{priority.approval.body}</p>
+
+            <PriorityActions>
+               <Button type="button" onClick={handleAccept} className="w-full justify-between gap-1.5">
+                <Check className="h-3.5 w-3.5" aria-hidden />
+                Review
+              </Button>
+
+              <Button type="button" size="sm" variant="ghost" onClick={handleDismiss} className="gap-1.5">
+                <X className="h-3.5 w-3.5" aria-hidden />
+                Not now
+              </Button>
+            </PriorityActions>
+          </motion.div>
+        ) : priority.kind === "gig" ? (
+          <motion.div
+            key={`gig-${priority.gig.id}`}
+            initial={reducedMotion ? false : { opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -5 }}
+             className="mt-7 flex flex-1 flex-col"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Fresh Call</p>
+
+             <h3 className="mt-3 break-words text-xl font-bold leading-snug text-foreground">{priority.gig.title}</h3>
+
+            {priority.gig.company ? <p className="mt-1 text-sm text-muted-foreground">{priority.gig.company}</p> : null}
+
+            <PriorityActions>
+               <CtaButton type="button" onClick={() => navigate("/scout")} className="w-full justify-between gap-1.5">
+                View Call
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </CtaButton>
+            </PriorityActions>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="empty"
+            initial={reducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+             className="mt-7 flex items-start gap-3"
+          >
+            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              You're all caught up. A good moment to start something.
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {priority.kind !== "task" && priority.kind !== "approval" && priority.kind !== "gig" ? (
+         <CtaButton type="button" onClick={runPrimaryCta} className="mt-auto w-full justify-between gap-1.5">
+          {primaryCta.label}
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </CtaButton>
+      ) : null}
+    </section>
+    </HoloCard>
+  );
+}
+
+function PriorityLabel({ overdue }: { overdue?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.15em] ${
+        overdue ? "text-destructive" : "text-primary"
+      }`}
+    >
+      {overdue ? <AlarmClock className="h-3 w-3" aria-hidden /> : <Clock className="h-3 w-3" aria-hidden />}
+      {overdue ? "Overdue" : "Due today"}
+    </span>
+  );
+}
+
+function PriorityActions({ children }: { children: React.ReactNode }) {
+  return <div className="mt-auto flex flex-wrap items-center gap-2 pt-6">{children}</div>;
+}
+
+function getInitials(value: string) {
+  return value
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 function priorityLine(signals: TodaySignals): string {
-  const { passport, stamps, priority } = signals;
-  if (passport && !passport.isComplete && passport.percentage > 0 && passport.percentage < 80) {
-    return `Your Passport is ${passport.percentage}% ready. Add your last campaign credit and I'll draft the co-sign request.`;
-  }
-  if (stamps && stamps.waitingForCoSign > 0) {
-    return `${stamps.waitingForCoSign} credit${stamps.waitingForCoSign === 1 ? "" : "s"} just need a co-sign to become Passport Stamps.`;
-  }
-  if (priority.kind === "task" && priority.task.overdue) {
-    return `"${priority.task.title}" is overdue on ${priority.task.projectTitle} — want it done or snoozed?`;
-  }
-  return "Your Creative Passport is doing the work — want me to draft an outreach DM?";
+  return signals.priority.kind === "none" ? "Your work at a glance." : "One next move, grounded in your work.";
 }
 
 export default TodayCommandCenter;

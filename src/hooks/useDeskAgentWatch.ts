@@ -8,22 +8,32 @@ import { supabase } from "@/integrations/supabase/client";
  */
 const SS_KEY = (id: string) => `thrive:watch:${id}`;
 const CLIENT_THROTTLE_MS = 15 * 60 * 1000;
+// This optional function is not deployed against the production legacy backend.
+// Keep the watcher dormant instead of generating a handled 404 on every Studio visit.
+const DESK_AGENT_WATCH_ENABLED = false;
 
 export function useDeskAgentWatch(projectId?: string | null) {
   useEffect(() => {
-    if (!projectId) return;
+    if (!DESK_AGENT_WATCH_ENABLED || !projectId) return;
 
-    const run = () => {
+    const run = async () => {
       try {
         const last = Number(sessionStorage.getItem(SS_KEY(projectId)) || 0);
         if (Date.now() - last < CLIENT_THROTTLE_MS) return;
         sessionStorage.setItem(SS_KEY(projectId), String(Date.now()));
-        supabase.functions
-          .invoke("desk-agent-watch", { body: { project_id: projectId } })
-          .catch((e) => {
-            // soft-fail — proactive cards are non-critical
-            console.warn("[desk-agent-watch] failed", e);
-          });
+        // Only call the watcher when the project is actually visible to this
+        // user — the legacy backend returns 404 "project not found" otherwise.
+        const { data: proj } = await (supabase as any)
+          .from("projects")
+          .select("id")
+          .eq("id", projectId)
+          .maybeSingle();
+        if (!proj) return;
+        const { error } = await supabase.functions.invoke("desk-agent-watch", {
+          body: { project_id: projectId },
+        });
+        // soft-fail — proactive cards are non-critical
+        if (error) console.warn("[desk-agent-watch] skipped", error.message);
       } catch {
         /* ignore */
       }

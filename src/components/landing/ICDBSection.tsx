@@ -51,7 +51,7 @@ export const ICDBSection = () => {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">Cinematographer • Los Angeles</p>
-                  <p className="text-xs text-muted-foreground/70 font-mono mt-0.5">THRIVE-2026-4829</p>
+                   <p className="text-xs text-muted-foreground/70 font-mono mt-0.5">KRT-2026-4829</p>
                 </div>
                 <div className="text-right hidden sm:block">
                   <div className="text-2xl font-bold text-primary">87</div>

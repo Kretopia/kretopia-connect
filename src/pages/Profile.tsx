@@ -26,7 +26,6 @@ import { ProfileDashboardDrawer } from "@/components/profile/ProfileDashboardDra
 
 // Refactored sections
 import { ProfileDialogs } from "@/pages/profile/ProfileDialogs";
-import { PassportCreditsCta } from "@/components/passport/PassportCreditsCta";
 import { InviteCircleCard } from "@/components/InviteCircleCard";
 import { ClaimContinueBanner } from "@/components/profile/ClaimContinueBanner";
 import { ScoutDiscoveryBanner } from "@/components/profile/ScoutDiscoveryBanner";
@@ -39,8 +38,7 @@ import { PassportAnchorStrip } from "@/components/passport/PassportAnchorStrip";
 import { PassportKretoEntry } from "@/components/passport/PassportKretoEntry";
 import { EPKPdfEditor } from "@/components/epk/EPKPdfEditor";
 import { PassportShareSheet } from "@/components/passport/PassportShareSheet";
-import { KretoActionCenter } from "@/components/passport/KretoActionCenter";
-import { TrustOpportunityCenter } from "@/components/passport/TrustOpportunityCenter";
+import { PassportOverview } from "@/components/passport/PassportOverview";
 import { KretoPassportBuilder } from "@/components/passport/KretoPassportBuilder";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { computeStanding } from "@/lib/passport/standing";
@@ -553,26 +551,17 @@ const ProfileContent = () => {
                 onShowQR={() => setIsQRDialogOpen(true)}
                 onDownloadEPK={() => setIsEPKEditorOpen(true)}
               />
-              {/* Block 1 of 2 — Kreto Action Center: everything "what should I do next" */}
-              <div className="mt-3">
-                <KretoActionCenter
-                  credits={credits || []}
-                  standing={standing}
-                  onReviewCredits={() => navigate('/credits')}
-                />
-              </div>
+              <PassportOverview
+                userId={profile.user_id}
+                credits={credits || []}
+                verified={verified}
+                cosigns={cosigns}
+                standing={standing}
+                onReviewCredits={() => navigate('/credits')}
+              />
             </>
           );
         })()}
-
-        {/* Block 2 of 2 — Trust & Opportunity Center: recent momentum,
-            collaborators, what Kreto remembers. Nothing after the Passport
-            beyond these two blocks. */}
-        {profile?.user_id && (
-          <div className="mt-3">
-            <TrustOpportunityCenter userId={profile.user_id} />
-          </div>
-        )}
 
         {/* The old "Preview public Passport" / "Private dashboard" exit
             buttons are gone -- Passport stays focused on identity,
@@ -580,16 +569,6 @@ const ProfileContent = () => {
             PassportHero above); all of what "Private dashboard" used to
             show now lives in one unified dashboard on Today
             (TodayMetricsDashboard), reachable from the home screen. */}
-
-        {/* Bridge to Credits — the full record (Stamps, Book Me, Skills,
-            Co-signs, Reviews) now lives in the Credits dashboard. */}
-        {profile && (
-          <PassportCreditsCta
-            verified={(credits || []).filter((c: any) => c.verification_status === 'verified').length}
-            total={credits?.length || 0}
-            cosigns={(reviews || []).filter((r: any) => r.status === 'approved').length}
-          />
-        )}
 
         </section>
         {/* /Identity */}

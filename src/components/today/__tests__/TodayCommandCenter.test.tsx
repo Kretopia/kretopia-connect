@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { TodayCommandCenter } from "../TodayCommandCenter";
-import type { TodaySignals } from "../today.types";
+import type { ProfileRow, TodaySignals } from "../today.types";
 
 /**
  * Smoke coverage for the two states the product brief calls out
@@ -54,10 +54,10 @@ function baseSignals(overrides: Partial<TodaySignals> = {}): TodaySignals {
   };
 }
 
-function renderCommandCenter(signals: TodaySignals) {
+function renderCommandCenter(signals: TodaySignals, profile?: ProfileRow) {
   return render(
     <MemoryRouter>
-      <TodayCommandCenter firstName="Maya" signals={signals} onSignalsChanged={vi.fn()} />
+      <TodayCommandCenter firstName="Maya" profile={profile} creditCount={2} signals={signals} onSignalsChanged={vi.fn()} />
     </MemoryRouter>,
   );
 }
@@ -69,7 +69,7 @@ describe("TodayCommandCenter", () => {
       primaryCta: { label: "Build my Passport", href: "/passport" },
     });
     renderCommandCenter(signals);
-    expect(screen.getByText(/Build my Passport/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Build my Passport/ })).toBeInTheDocument();
     expect(screen.getByText("You're all caught up. A good moment to start something.")).toBeInTheDocument();
   });
 
@@ -94,5 +94,30 @@ describe("TodayCommandCenter", () => {
     });
     renderCommandCenter(signals);
     expect(screen.getByText(/Send co-sign requests/)).toBeInTheDocument();
+  });
+
+  it("keeps Passport and Kreto together beside equally structured Today and activity cards", () => {
+    const signals = baseSignals({
+      passport: { percentage: 72, missingFields: ["Bio"], isComplete: false },
+      unreadMessages: 2,
+      approvalCount: 1,
+      deadlines: [{ id: "t2", title: "Finish deck", projectId: "p2", projectTitle: "Film", dueDate: "2026-09-30", overdue: false }],
+      momentum: { completedThisWeek: 3, activeProjects: [], nextMilestone: { title: "Finish deck", projectTitle: "Film", dueDate: "2026-09-30" }, signals: [] },
+    });
+    renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
+    const card = screen.getByRole("region", { name: "Creative Passport and Kreto" });
+    expect(card).toHaveTextContent("My Creative Passport");
+    expect(card).toHaveTextContent("Kreto · Creator intelligence");
+    const activity = screen.getByRole("region", { name: "Your activity" });
+    expect(activity).toHaveTextContent(/2\s*unread messages/);
+    expect(activity).toHaveTextContent(/1\s*due in the next 7 days/);
+    expect(activity).toHaveTextContent("1 Kreto suggestion to review");
+    expect(activity).toHaveTextContent(/3\s*completed this week/);
+    expect(activity).toHaveTextContent("Next milestone: Finish deck");
+    expect(screen.getByRole("region", { name: "Today's next action" })).toBeInTheDocument();
+    expect(card.className).toContain("min-h-[460px]");
+    expect(activity.className).toContain("min-h-[460px]");
+    expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
+    expect(screen.getByRole("link", { name: /Complete Passport/ })).toHaveAttribute("href", "/passport");
   });
 });

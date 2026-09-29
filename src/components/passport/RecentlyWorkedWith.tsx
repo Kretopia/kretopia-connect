@@ -22,10 +22,12 @@ export function RecentlyWorkedWith({
   userId,
   limit = 12,
   className,
+  compact = false,
 }: {
   userId: string;
   limit?: number;
   className?: string;
+  compact?: boolean;
 }) {
   const navigate = useNavigate();
   const [people, setPeople] = useState<Person[] | null>(null);
@@ -67,7 +69,7 @@ export function RecentlyWorkedWith({
   if (!people || people.length === 0) return null;
 
   return (
-    <div className={cn("rounded-xl border border-border bg-card px-3 py-3", className)}>
+    <div className={cn(compact ? "border-t border-border pt-3" : "rounded-xl border border-border bg-card px-3 py-3", className)}>
       <div className="flex items-center gap-1.5 mb-2">
         <Users className="h-3.5 w-3.5 text-[hsl(var(--signal-teal))]" />
         <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">

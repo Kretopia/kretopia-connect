@@ -5,14 +5,15 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { UserCheck, UserX, Clock, Inbox, Loader2 } from "lucide-react";
+import { UserCheck, UserX, Clock, Inbox, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
-export const MyPendingInvitations = () => {
+export const MyPendingInvitations = ({ compact = false }: { compact?: boolean }) => {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -97,9 +98,11 @@ export const MyPendingInvitations = () => {
         title: "Invitation accepted!",
         description: "You've joined the project",
       });
+      setInvitations((previous) => previous.filter((invitation) => invitation.id !== invitationId));
+      setCurrentIndex((index) => Math.min(index, invitations.length - 2 < 0 ? 0 : invitations.length - 2));
       
-      // Navigate to the project
-      navigate(`/desk/${projectId}`);
+      // In Studio, keep the user in the queue so the next invitation can be reviewed.
+      if (!compact) navigate(`/desk/${projectId}`);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -126,7 +129,8 @@ export const MyPendingInvitations = () => {
         description: "You've declined the project invitation",
       });
       
-      fetchMyInvitations();
+      setInvitations((previous) => previous.filter((invitation) => invitation.id !== invitationId));
+      setCurrentIndex((index) => Math.min(index, invitations.length - 2 < 0 ? 0 : invitations.length - 2));
     } catch (error: any) {
       toast({
         title: "Error",
@@ -144,6 +148,29 @@ export const MyPendingInvitations = () => {
 
   if (invitations.length === 0) {
     return null;
+  }
+
+  if (compact) {
+    const index = Math.min(currentIndex, invitations.length - 1);
+    const invitation = invitations[index];
+    return (
+      <div className="flex min-w-0 items-center gap-2 py-2 text-sm" aria-label="Project Invitations">
+        <Inbox className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+        <span className="shrink-0 font-semibold">Invitations <span className="text-primary tabular-nums">{invitations.length}</span></span>
+        <span className="min-w-0 flex-1 truncate text-muted-foreground" title={`${invitation.projects?.title || "Project"} · ${invitation.inviter?.full_name || "Someone"}`}>
+          <span className="font-medium text-foreground">{invitation.projects?.title || "Project"}</span> · {invitation.inviter?.full_name || "Someone"}
+        </span>
+        {invitations.length > 1 && (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Previous invitation" disabled={index === 0} onClick={() => setCurrentIndex(index - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <span className="text-xs tabular-nums text-muted-foreground">{index + 1}/{invitations.length}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Next invitation" disabled={index === invitations.length - 1} onClick={() => setCurrentIndex(index + 1)}><ChevronRight className="h-4 w-4" /></Button>
+          </div>
+        )}
+        <Button variant="outline" size="sm" className="h-7 shrink-0 px-2" disabled={processingId === invitation.id} onClick={() => handleDecline(invitation.id)} aria-label={`Decline invitation to ${invitation.projects?.title || "project"}`}><UserX className="h-3.5 w-3.5" /></Button>
+        <Button size="sm" className="h-7 shrink-0 gap-1 px-2" disabled={processingId === invitation.id} onClick={() => handleAccept(invitation.id, invitation.project_id)}><UserCheck className="h-3.5 w-3.5" /><span className="hidden sm:inline">Accept</span><span className="sr-only sm:hidden">Accept invitation</span></Button>
+      </div>
+    );
   }
 
   return (

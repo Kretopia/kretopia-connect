@@ -52,7 +52,7 @@ const TYPE_META = {
 // suggestions when a name doesn't match anything real.
 const RESULT_GROUP_LABEL: Record<SearchResult["type"], string> = {
   creator: "Users",
-  credit: "Creative Work",
+  credit: "Projects",
   gig: "Opportunities",
 };
 

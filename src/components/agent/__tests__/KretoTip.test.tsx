@@ -33,9 +33,10 @@ function renderTipAtRoute(pathname: string) {
 }
 
 describe("KretoTip — Kreto presence rollout scope", () => {
-  it("Studio (desk) renders the embodied KretoPresence, not the flat KretoMark", () => {
+  it("Studio (desk) renders the miniature 3D Kreto artwork", () => {
     const { container } = renderTip("desk");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(container.querySelector('img[src*="kreto-producer-hd"]')).toBeInTheDocument();
+    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).not.toBeInTheDocument();
     expect(screen.getByText(/Kreto · Studio/i)).toBeInTheDocument();
   });
 
