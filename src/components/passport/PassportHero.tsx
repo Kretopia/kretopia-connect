@@ -293,7 +293,8 @@ export function PassportHero({
           </div>
 
           {/* One primary action + secondary icon row — neutral Liquid Glass,
-              not a loud pink fill. #FF2DA1 shows only on hover/focus/active. */}
+              not a loud fill. The k-g-2 violet (#A516C5) shows only on
+              hover/focus/active, same as everywhere else in the app. */}
           <div className="flex items-center gap-2">
             <Button
               onClick={onShare}

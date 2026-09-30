@@ -4,6 +4,7 @@ import { KretoMark } from "@/components/brand/KretoMark";
 import { TutorialStepper } from "@/components/landing/kretopia/TutorialStepper";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { kGlow } from "@/lib/kGradient";
 
 // Mirrors FunnelStepper's three funnel stages (Sign up / First Stamp / Launch
 // Passport) one level deeper — narrating *why* each stage is worth the click,
@@ -61,10 +62,13 @@ export const AuthBrandingPanel = () => {
 
       <p
         className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border w-fit"
-        style={{ borderColor: "rgba(255,45,161,0.3)", backgroundColor: "rgba(255,45,161,0.06)" }}
+        style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
       >
-        <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: "#FF2DA1" }} />
-        <span className="landing-eyebrow" style={{ color: "#FF2DA1" }}>The Creative Economy OS</span>
+        <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: "hsl(var(--energy))" }} />
+        {/* No inline color here: .landing-eyebrow's own neutral default
+            (index.css) would otherwise be overridden -- same override bug
+            already fixed on the other eyebrow call sites. */}
+        <span className="landing-eyebrow">The Creative Economy OS</span>
       </p>
 
       <h2 className="landing-h2 landing-glow mb-5">
@@ -79,7 +83,7 @@ export const AuthBrandingPanel = () => {
         <div className="mb-7 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-3.5 max-w-md">
           <KretoMark size="md" />
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF2DA1] mb-0.5">Kreto</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--energy))] mb-0.5">Kreto</p>
             <p className="text-sm text-white/90 leading-snug">
               "I'll line up your first three opportunities the moment you sign in."
             </p>
@@ -99,7 +103,7 @@ export const AuthBrandingPanel = () => {
 
         <div className="mt-7">
           <p className="flex items-center gap-1.5 text-xs text-white/55">
-            <Zap className="h-3 w-3 text-[#FF2DA1]" />
+            <Zap className="h-3 w-3 text-[hsl(var(--energy))]" />
             60-second setup · No credit card · Free forever to start
           </p>
           <p className="mt-2 text-[10px] uppercase tracking-[0.25em] text-white/35">

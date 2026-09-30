@@ -10,8 +10,9 @@ import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { FeatureTutorialPanel } from "@/components/landing/kretopia/FeatureTutorialPanel";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
+import { kGlow } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
 
 interface EditorialTutorialSectionProps {
   eyebrow: string;
@@ -39,7 +40,7 @@ export const EditorialTutorialSection = ({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
-        style={{ background: "radial-gradient(45% 55% at 78% 30%, rgba(255,45,161,0.10), transparent 62%)" }}
+        style={{ background: `radial-gradient(45% 55% at 78% 30%, ${kGlow(10)}, transparent 62%)` }}
       />
 
       <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 py-16 sm:py-24">

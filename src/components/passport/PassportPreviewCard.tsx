@@ -23,9 +23,10 @@ interface PassportPreviewCardProps {
   variant?: "flat" | "holo";
 }
 
-/** Same gray -> Kretopia pink treatment as PassportHero's banner/strength
- *  bar, so a preview card visibly belongs to the same Passport family. */
-const GRAY_PINK_GRADIENT = "linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, #FF2DA1 100%)";
+/** Same gray -> Kretopia accent treatment as PassportHero's banner/strength
+ *  bar, so a preview card visibly belongs to the same Passport family.
+ *  Was a flat pink end stop (#FF2DA1); now the logo's own violet stop. */
+const GRAY_PINK_GRADIENT = "linear-gradient(90deg, hsl(var(--muted-foreground)) 0%, var(--k-g-2) 100%)";
 
 /**
  * Compact Passport preview -- the card "People for you" (Today) and any

@@ -5,6 +5,7 @@ import { Sparkles, Copy, MessageCircle, Twitter, Instagram, ArrowRight, DollarSi
 import Confetti from "react-dom-confetti";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { kGlow } from "@/lib/kGradient";
 
 interface ProfileLaunchScreenProps {
   open: boolean;
@@ -18,7 +19,7 @@ interface ProfileLaunchScreenProps {
   pendingConnect?: string | null;
 }
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
 
 const confettiConfig = {
   angle: 90,
@@ -30,7 +31,9 @@ const confettiConfig = {
   stagger: 2,
   width: "10px",
   height: "10px",
-  colors: [ACCENT, "#ffffff", "#ff8ac9", "#B0083F"],
+  // Full brand sweep instead of a monochrome pink burst -- was flat pink
+  // shades ("#ff8ac9"/"#B0083F"), now the logo's own violet/orange stops.
+  colors: [ACCENT, "#ffffff", "var(--k-g-2)", "var(--k-g-4)"],
 };
 
 /**
@@ -175,13 +178,13 @@ export function ProfileLaunchScreen({
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(65% 60% at 50% 0%, rgba(255,45,161,0.18), transparent 65%)" }}
+            style={{ background: `radial-gradient(65% 60% at 50% 0%, ${kGlow(18)}, transparent 65%)` }}
           />
 
           <div className="relative">
             <p
               className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] mb-4 px-2.5 py-1 rounded-full border"
-              style={{ borderColor: "rgba(255,45,161,0.3)", backgroundColor: "rgba(255,45,161,0.06)", color: ACCENT }}
+              style={{ borderColor: kGlow(30), backgroundColor: kGlow(6), color: ACCENT }}
             >
               <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ backgroundColor: ACCENT }} />
               Your profile is live
@@ -190,10 +193,10 @@ export function ProfileLaunchScreen({
             <div className="flex justify-center mb-3">
               <Avatar
                 className="h-24 w-24 shadow-2xl"
-                style={{ boxShadow: "0 0 0 4px rgba(255,45,161,0.45), 0 0 46px rgba(255,45,161,0.35)" }}
+                style={{ boxShadow: `0 0 0 4px ${kGlow(45)}, 0 0 46px ${kGlow(35)}` }}
               >
                 <AvatarImage src={avatarUrl} className="object-cover" />
-                <AvatarFallback className="text-foreground text-2xl font-bold" style={{ backgroundColor: "rgba(255,45,161,0.2)" }}>
+                <AvatarFallback className="text-foreground text-2xl font-bold" style={{ backgroundColor: kGlow(20) }}>
                   {firstName.slice(0, 1)}
                 </AvatarFallback>
               </Avatar>
@@ -205,7 +208,7 @@ export function ProfileLaunchScreen({
             {creditsCount > 0 && (
               <div
                 className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-semibold"
-                style={{ borderColor: "rgba(255,45,161,0.25)", backgroundColor: "rgba(255,45,161,0.06)", color: "hsl(var(--foreground))" }}
+                style={{ borderColor: kGlow(25), backgroundColor: kGlow(6), color: "hsl(var(--foreground))" }}
               >
                 <Check className="h-3 w-3" style={{ color: ACCENT }} />
                 {creditsCount} verified credit{creditsCount === 1 ? "" : "s"}

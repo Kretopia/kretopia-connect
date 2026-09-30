@@ -1,12 +1,13 @@
-// One accent family, no rainbow: every mood is a shade of the brand pink
-// (hue 327, matching --energy) or neutral gray, differentiated by
+// One accent family, no rainbow: every mood is a shade of the logo's own
+// violet stop (hue 289 / #A516C5 -- was hue 327 flat pink, rolled back
+// per the app-wide brand rollback) or neutral gray, differentiated by
 // lightness/saturation instead of hue — keeps moods visually distinct
 // without introducing teal/red/blue/green into the palette.
 const MOOD_ACCENT: Record<string, string> = {
-  creative: "hsl(327 70% 60%)",  // bright pink
-  urgent: "hsl(327 90% 45%)",    // deep, saturated pink — reads as intense
-  musical: "hsl(327 100% 59%)",  // canonical brand pink
-  visual: "hsl(327 40% 72%)",    // soft, pale pink
+  creative: "hsl(289 70% 60%)",  // bright violet
+  urgent: "hsl(289 90% 45%)",    // deep, saturated violet — reads as intense
+  musical: "hsl(289 100% 59%)",  // canonical brand violet
+  visual: "hsl(289 40% 72%)",    // soft, pale violet
   chill: "hsl(240 8% 55%)",      // neutral gray — calm, deliberately colorless
 };
 export const moodAccent = (m?: string | null) => MOOD_ACCENT[m ?? "creative"] ?? MOOD_ACCENT.creative;

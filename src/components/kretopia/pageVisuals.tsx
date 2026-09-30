@@ -12,8 +12,9 @@ import {
 } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { VisualCardShell } from "@/components/landing/kretopia/visualShell";
+import { kGlow } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
 
 const fade = (reducedMotion: boolean) => ({
   initial: reducedMotion ? false : { opacity: 0, y: 8 },
@@ -121,7 +122,7 @@ export const SpotlightVisual = ({ activeStep }: { activeStep: number }) => {
         {activeStep === 1 && (
           <motion.div key="s1" {...fade(reducedMotion)} className="space-y-3">
             <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] p-3.5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: "rgba(255,45,161,0.16)" }}>
+              <span className="flex h-11 w-11 items-center justify-center rounded-full" style={{ backgroundColor: kGlow(16) }}>
                 <Play className="h-4 w-4" style={{ color: ACCENT }} aria-hidden />
               </span>
               <div className="min-w-0 flex-1">
@@ -209,8 +210,8 @@ export const AboutVisual = ({ activeStep }: { activeStep: number }) => {
             key={s.label}
             className="rounded-xl px-2 py-3 text-center transition-all duration-500"
             style={{
-              backgroundColor: i === activeStep ? "rgba(255,45,161,0.14)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${i === activeStep ? "rgba(255,45,161,0.4)" : "rgba(255,255,255,0.07)"}`,
+              backgroundColor: i === activeStep ? kGlow(14) : "rgba(255,255,255,0.04)",
+              border: `1px solid ${i === activeStep ? kGlow(40) : "rgba(255,255,255,0.07)"}`,
             }}
           >
             <s.icon

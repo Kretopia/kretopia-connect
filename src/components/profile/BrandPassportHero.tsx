@@ -336,7 +336,7 @@ export function BrandPassportHero({
             <Button
               onClick={onShare}
               variant="outline"
-              className="glass-surface flex-1 h-10 gap-1.5 border-white/10 text-foreground transition-colors hover:border-[#FF2DA1]/50 hover:text-[#FF2DA1] focus-visible:ring-[#FF2DA1] active:text-[#FF2DA1]"
+              className="glass-surface flex-1 h-10 gap-1.5 border-white/10 text-foreground transition-colors hover:border-[#A516C5]/50 hover:text-[#A516C5] focus-visible:ring-[#A516C5] active:text-[#A516C5]"
             >
               <Share2 className="h-4 w-4" />
               Share Brand Passport

@@ -2,11 +2,12 @@
  * EPK (Electronic Press Kit) PDF Generator — Kretopia Editorial Deck
  *
  * Visual language ported from the app's own dark editorial system
- * (src/index.css: --background #05070D, --card #11141B, --energy #FF2DA1,
- * --success #1DB954) plus the real Kretopia K-mark/wordmark logo assets —
- * bordered cards, a small K-icon eyebrow on every section, colored
- * top-accent bars, badge pills, and a closing contact card. Gated to
- * Creator / Creator+ subscribers.
+ * (src/index.css: --background #05070D, --card #11141B, --success #1DB954)
+ * plus the real Kretopia K-mark/wordmark logo assets — bordered cards, a
+ * small K-icon eyebrow on every section, colored top-accent bars, badge
+ * pills, and a closing contact card. Gated to Creator / Creator+
+ * subscribers. The templates' "signal violet" (#A516C5, the logo's own
+ * violet stop) was flat pink (#FF2DA1) before the app-wide brand rollback.
  */
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
@@ -123,17 +124,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'cinematic-dark',
     name: 'Kretopia Editorial',
-    description: 'The real Kretopia dark canvas — signal pink, bordered cards, editorial type',
+    description: 'The real Kretopia dark canvas — signal violet, bordered cards, editorial type',
     previewBg: 'bg-[#05070D]',
-    previewAccent: 'bg-[#FF2DA1]',
+    previewAccent: 'bg-[#A516C5]',
     previewText: 'text-white',
     palette: {
       bg: [5, 7, 13],            // #05070D — app's real --background (dark)
       surface: [13, 16, 22],
       card: [17, 20, 27],        // #11141B — app's real --card (dark)
       cardBorder: [30, 34, 44],
-      primary: [255, 45, 161],   // #FF2DA1 — app's real --energy
-      accent: [255, 120, 195],
+      primary: [165, 22, 197],   // #A516C5 — the logo's own violet stop
+      accent: [200, 110, 220],   // lighter tint of #A516C5
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [168, 176, 192],    // #A8B0C0 — app's real --muted-foreground (dark)
@@ -144,17 +145,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'clean-light',
     name: 'Editorial Light',
-    description: 'Warm white canvas, same signal pink accent — for print-first EPKs',
+    description: 'Warm white canvas, same signal violet accent — for print-first EPKs',
     previewBg: 'bg-[#FAFAF8]',
-    previewAccent: 'bg-[#DC1478]',
+    previewAccent: 'bg-[#A516C5]',
     previewText: 'text-[#1a1a1a]',
     palette: {
       bg: [250, 250, 248],
       surface: [244, 244, 241],
       card: [255, 255, 255],
       cardBorder: [228, 226, 220],
-      primary: [220, 20, 120],
-      accent: [220, 20, 120],
+      primary: [165, 22, 197],   // #A516C5
+      accent: [165, 22, 197],
       gold: [190, 140, 20],
       white: [26, 26, 26],       // inverted: text is dark
       muted: [110, 110, 115],
@@ -165,17 +166,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'bold-minimal',
     name: 'Pure Black',
-    description: 'Pure black canvas, signal pink accent — striking & modern',
+    description: 'Pure black canvas, signal violet accent — striking & modern',
     previewBg: 'bg-black',
-    previewAccent: 'bg-[#FF2DA1]',
+    previewAccent: 'bg-[#A516C5]',
     previewText: 'text-white',
     palette: {
       bg: [0, 0, 0],
       surface: [13, 13, 13],
       card: [20, 20, 20],
       cardBorder: [40, 40, 40],
-      primary: [255, 45, 161],
-      accent: [255, 45, 161],
+      primary: [165, 22, 197],
+      accent: [165, 22, 197],
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [140, 140, 140],
@@ -192,7 +193,7 @@ export function getEPKTemplate(id?: string): EPKTemplate {
 // Category accent colors for credit cards — a few distinct hues around the
 // same warm/cool split as the rest of the palette, not a random rainbow.
 const CATEGORY_ACCENTS: Record<string, [number, number, number]> = {
-  film: [255, 45, 161],
+  film: [165, 22, 197],      // #A516C5
   music: [220, 60, 190],
   tv: [90, 140, 255],
   podcast: [29, 185, 84],

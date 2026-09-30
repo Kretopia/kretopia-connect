@@ -17,7 +17,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
  * answer below describes what's live today (invoices, payment links, direct
  * bank payout) rather than that gated feature set.
  */
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
 
 const FAQS = [
   {

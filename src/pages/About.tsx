@@ -19,8 +19,9 @@ import { Reveal } from "@/components/kretopia/Reveal";
 import { KretoCharacter, type KretoCharacterVariant } from "@/components/brand/KretoCharacter";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { kGlow } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
 
 const GRAIN =
   "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")";
@@ -127,10 +128,10 @@ const About = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {PILLARS.map((p, i) => (
             <Reveal key={p.title} delayIndex={i}>
-              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-5 transition-colors hover:border-[rgba(255,45,161,0.35)]">
+              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-5 transition-colors hover:border-[rgba(165,22,197,0.35)]">
                 <span
                   className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: "rgba(255,45,161,0.1)" }}
+                  style={{ backgroundColor: kGlow(10) }}
                 >
                   <p.icon className="h-4 w-4" style={{ color: ACCENT }} />
                 </span>
@@ -153,14 +154,14 @@ const About = () => {
                   opacity: loopVisible ? 1 : 0,
                   transform: loopVisible ? "none" : "translateY(6px)",
                   transitionDelay: `${i * 90}ms`,
-                  borderColor: "rgba(255,45,161,0.25)",
+                  borderColor: kGlow(25),
                   backgroundColor: "hsl(var(--foreground) / 0.02)",
                 }}
               >
                 {step}
               </span>
               {i < LOOP_STEPS.length - 1 && (
-                <ChevronRight className="mx-0.5 h-3.5 w-3.5" style={{ color: "rgba(255,45,161,0.5)" }} aria-hidden />
+                <ChevronRight className="mx-0.5 h-3.5 w-3.5" style={{ color: kGlow(50) }} aria-hidden />
               )}
             </span>
           ))}
@@ -177,10 +178,11 @@ const About = () => {
         <div className="grid gap-4 md:grid-cols-3">
           {FOUNDERS.map((f, i) => (
             <Reveal key={f.name} delayIndex={i}>
-              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-6 transition-colors hover:border-[rgba(255,45,161,0.35)]">
+              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-6 transition-colors hover:border-[rgba(165,22,197,0.35)]">
                 <KretoCharacter variant={f.kretoVariant} size={56} floatAmplitude={0} className="mb-5" />
                 <p className="text-foreground font-semibold">{f.name}</p>
-                <p className="landing-eyebrow mb-3" style={{ color: ACCENT }}>{f.role}</p>
+                {/* No inline color: .landing-eyebrow's own neutral default applies. */}
+                <p className="landing-eyebrow mb-3">{f.role}</p>
                 <p className="text-sm leading-relaxed text-foreground/55">{f.body}</p>
               </div>
             </Reveal>

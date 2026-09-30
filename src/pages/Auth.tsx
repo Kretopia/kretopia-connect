@@ -22,6 +22,7 @@ import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { BrandLogo } from "@/components/BrandLogo";
 import { OAuthQuickButtons } from "@/components/landing/OAuthQuickButtons";
+import { kGlow } from "@/lib/kGradient";
 import { FunnelStepper } from "@/components/onboarding/FunnelStepper";
 import { computePostAuthRedirect } from "@/lib/eventAuthRedirect";
 import {
@@ -620,7 +621,7 @@ const Auth = () => {
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-          style={{ background: "radial-gradient(55% 45% at 50% 20%, rgba(255,45,161,0.08), transparent 65%)" }}
+          style={{ background: `radial-gradient(55% 45% at 50% 20%, ${kGlow(8)}, transparent 65%)` }}
         />
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 16 }}
@@ -637,7 +638,11 @@ const Auth = () => {
               style={{ color: "hsl(var(--foreground))", fontSize: "clamp(1.375rem, 5.5vw, 1.875rem)" }}
             >
               {isPasswordReset ? "Reset Your Password" : (
-                <>Welcome to <span className="italic pink-glow-breathe" style={{ color: "#FF2DA1" }}>Kretopia</span></>
+                // No inline color: .pink-glow-breathe's own project-wide
+                // gradient-scope CSS rule (index.css) paints it -- an
+                // inline color here would win on specificity and silently
+                // override the gradient with a flat fill.
+                <>Welcome to <span className="italic pink-glow-breathe">Kretopia</span></>
               )}
             </h1>
             <p className="landing-sub mt-3" style={{ color: "hsl(var(--muted-foreground))" }}>
@@ -648,10 +653,10 @@ const Auth = () => {
           {/* Editorial form shell — same language as the Hire Talent brief form */}
           <div className="rounded-2xl border border-border bg-foreground/[0.02] overflow-hidden">
             {!isPasswordReset && activeTab === "signup" && (
-              <div className="p-4 sm:p-5 border-b border-border bg-gradient-to-r from-[rgba(255,45,161,0.08)] via-transparent to-transparent">
+              <div className="p-4 sm:p-5 border-b border-border" style={{ background: `linear-gradient(90deg, ${kGlow(8)}, transparent, transparent)` }}>
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[rgba(255,45,161,0.12)]">
-                    <Sparkles className="h-4 w-4" style={{ color: "#FF2DA1" }} />
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ backgroundColor: kGlow(12) }}>
+                    <Sparkles className="h-4 w-4" style={{ color: "hsl(var(--energy))" }} />
                   </span>
                   <div className="min-w-0">
                     <p className="text-foreground font-semibold text-sm">Start with Kreto</p>
@@ -689,7 +694,7 @@ const Auth = () => {
                     toast({ title: "Could not resend", description: err?.message || "Try again in a moment.", variant: "destructive" });
                   }
                 }}
-                className="text-sm text-foreground font-semibold hover:text-[#FF2DA1] hover:underline transition-colors"
+                className="text-sm text-foreground font-semibold hover:text-[#A516C5] hover:underline transition-colors"
               >
                 Resend verification email
               </button>
@@ -697,7 +702,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => { setPendingVerificationEmail(null); setActiveTab("signin"); }}
-                  className="text-xs text-foreground/60 hover:text-[#FF2DA1] underline-offset-4 hover:underline transition-colors"
+                  className="text-xs text-foreground/60 hover:text-[#A516C5] underline-offset-4 hover:underline transition-colors"
                 >
                   Use a different email
                 </button>
@@ -835,7 +840,7 @@ const Auth = () => {
                       <button
                         type="button"
                         onClick={() => setSignupMode("classic")}
-                        className="text-xs text-foreground/60 hover:text-[#FF2DA1] underline-offset-4 hover:underline transition-colors"
+                        className="text-xs text-foreground/60 hover:text-[#A516C5] underline-offset-4 hover:underline transition-colors"
                       >
                         Use email & password instead
                       </button>
@@ -873,7 +878,7 @@ const Auth = () => {
                       <button
                         type="button"
                         onClick={() => setSignupMode("claim")}
-                        className="text-xs text-foreground hover:text-[#FF2DA1] hover:underline font-semibold transition-colors"
+                        className="text-xs text-foreground hover:text-[#A516C5] hover:underline font-semibold transition-colors"
                       >
                         ← Back to one-tap claim
                       </button>
