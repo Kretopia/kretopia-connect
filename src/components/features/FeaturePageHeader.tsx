@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
-import { kGlow } from "@/lib/kGradient";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
