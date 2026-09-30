@@ -27,7 +27,11 @@ export interface ChapterProps {
    *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
    *  omit (the default) to keep this title plain white like the rest. */
   gradientTitle?: boolean;
-  accent: string;       // hex
+  /** Corner/eyebrow dot fill -- any valid CSS colour. Neutralized to
+   *  "hsl(var(--energy))" at every current call site (was the logo
+   *  gradient's violet stop) so these small dots stay "selected few
+   *  elements" restrained rather than another spot of colour per chapter. */
+  accent: string;
   href: string;
   reverse?: boolean;    // flip layout
   id?: string;          // scroll-to anchor for chapter nav

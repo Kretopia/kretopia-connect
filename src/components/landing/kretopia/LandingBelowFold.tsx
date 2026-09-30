@@ -64,21 +64,19 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-passport")}
         kicker="Passport"
         title={
-          // Gradient now covers the phrase's logical ending ("that made
-          // you"), matching "III · Verified Credits" -- it used to sit
-          // mid-sentence ("the work"), with plain white trailing after
-          // it, the one chapter that didn't end on its own accent span.
+          // Plain white -- gradient is intentionally selective across the
+          // chapters (Scout/Studio/Community carry the one accent phrase;
+          // Passport/Match stay plain), per user feedback that gradient on
+          // every single chapter title broke the page's hierarchy.
           <>
             One place for the work<br />
-            <span className="landing-accent">
-              that made you
-            </span>
+            that made you
           </>
         }
         body="Your Creative Passport brings your projects, credits, skills, collaborators and professional history together in one living record. Not just what you say you can do — what you've actually done."
         caption="Passport"
         image={passportImg}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/profile"
         ctaLabel="Build Your Passport"
         closingLine="One link. Your creative career."
@@ -104,6 +102,9 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-scout")}
         kicker="Scout"
         title={
+          // One of the "selected few" chapters that keeps the accent
+          // phrase (with Studio and Community, below) -- see the Passport
+          // chapter's comment above for why the others stay plain.
           <>
             The opportunity finds<br />
             <span className="landing-accent">
@@ -115,7 +116,7 @@ export const LandingBelowFold = () => {
         caption="Scout"
         image={scoutImg}
         video={scoutVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
         reverse
@@ -131,17 +132,17 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-match")}
         kicker="Match"
         title={
+          // Plain white -- see the Passport chapter's comment above for why
+          // this one doesn't carry the accent phrase.
           <>
             The right person<br />
-            <span className="landing-accent">
-              for the work
-            </span>
+            for the work
           </>
         }
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
         caption="Match"
         image={matchImg}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"
         tutorialSteps={MATCH_TUTORIAL}
@@ -165,7 +166,7 @@ export const LandingBelowFold = () => {
         caption="Studio"
         image={studioImg}
         video={studioVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
         closingLine="When the project is finished, the outcome strengthens the Creative Passports of the people who made it happen."
@@ -196,7 +197,7 @@ export const LandingBelowFold = () => {
         caption="Community"
         image={soundstagesImg}
         video={soundstagesVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"
         tutorialSteps={SOUNDSTAGES_TUTORIAL}
