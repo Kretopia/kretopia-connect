@@ -59,10 +59,8 @@ export function CinematicHeaderPlate({
         className={centered ? "flex flex-col items-center gap-4 text-center" : "flex flex-col gap-4"}
       >
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
-          {/* Same eyebrow treatment as the landing chapters ("VII · Kreto"):
-              a bare breathing dot + neutral eyebrow text, no pill chrome. */}
-          <div className="flex items-center gap-2 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground ai-ambient-breathe" />
+          {/* The landing chapter uses a bare, neutral eyebrow. */}
+          <div className="flex items-center mb-6">
             <span className="landing-eyebrow">{eyebrow}</span>
           </div>
           <h1

@@ -33,7 +33,7 @@ export function StudioPrimaryCard({ eyebrow, title, description, action, icon, c
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
           )}
           <div className="flex items-center gap-2.5">
-            {icon && <span className="text-foreground shrink-0">{icon}</span>}
+            {icon && <span className="k-gradient-chip k-gradient-icon flex h-7 w-7 items-center justify-center rounded-lg shrink-0 [&_svg]:h-3.5 [&_svg]:w-3.5">{icon}</span>}
             <p className="text-xl font-bold text-foreground leading-tight">{title}</p>
           </div>
           {description && <p className="text-sm text-muted-foreground max-w-md">{description}</p>}

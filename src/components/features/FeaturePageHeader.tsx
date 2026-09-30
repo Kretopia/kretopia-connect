@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
+import { KGradientDefs } from "@/components/brand/KGradientDefs";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -39,9 +40,10 @@ interface FeaturePageHeaderProps {
 export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
   return (
     <div
-      className={`relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
+      className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
+      <KGradientDefs />
       {/* aurora — neutral white glow (no purple): the gradient is reserved
           for title text, so the backdrop stays achromatic. */}
       <div
@@ -65,7 +67,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         title={title}
         accentTitle={accentTitle}
         subtitle={subtitle}
-        align="center"
+        align="left"
         oneLine={oneLine}
         compact={compact}
         cornerSlot={
