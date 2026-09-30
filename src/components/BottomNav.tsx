@@ -114,7 +114,7 @@ const BottomNav = memo(() => {
               {active && (
                 <span
                   className="absolute -top-px left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full"
-                  style={{ background: "var(--kretopia-sunset, hsl(327 100% 59%))" }}
+                  style={{ background: "var(--kretopia-sunset, hsl(289 80% 43%))" }}
                 />
               )}
             </Link>

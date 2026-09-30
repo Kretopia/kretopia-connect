@@ -18,7 +18,7 @@ const frameStyles: Record<string, string> = {
   gradient_gold:
     "ring-[3px] ring-amber-400 shadow-[0_0_12px_2px_rgba(251,191,36,0.4)]",
   gradient_rainbow:
-    "ring-[3px] ring-transparent bg-clip-padding [background-image:linear-gradient(var(--background),var(--background)),var(--kretopia-sunset,hsl(327_100%_59%))] [background-origin:border-box] [background-clip:padding-box,border-box]",
+    "ring-[3px] ring-transparent bg-clip-padding [background-image:linear-gradient(var(--background),var(--background)),var(--kretopia-sunset,hsl(289_80%_43%))] [background-origin:border-box] [background-clip:padding-box,border-box]",
   pulse_primary:
     "ring-[3px] ring-primary/60 shadow-[0_0_14px_3px_hsl(var(--primary)/0.35)] animate-pulse",
 };

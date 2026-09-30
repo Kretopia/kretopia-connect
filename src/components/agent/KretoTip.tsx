@@ -183,7 +183,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
       <div
         aria-hidden
         className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full opacity-40 blur-3xl"
-        style={{ background: "var(--kretopia-sunset, hsl(327 100% 59%))" }}
+        style={{ background: "var(--kretopia-sunset, hsl(289 80% 43%))" }}
       />
 
       <button

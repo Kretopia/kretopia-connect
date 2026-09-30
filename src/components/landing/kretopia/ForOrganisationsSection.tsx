@@ -30,8 +30,6 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
 
-const ACCENT = "#FF2DA1";
-
 const CAPABILITIES = [
   { icon: Search, label: "Find creatives" },
   { icon: IdCard, label: "Review Creative Passports" },
