@@ -13,8 +13,13 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { renderStaggerWords } from "@/components/typography/StaggerReveal";
+import { kGlow } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+// Solid stop from the Kretopia logo gradient (violet), not the retired
+// flat pink/magenta -- used for the eyebrow dot's solid fill, which
+// can't render a gradient. kGlow() (the pill's translucent border/
+// background below) reads the same stop at partial opacity.
+const ACCENT = "#A516C5";
 
 // Feature titles are short by convention (2-4 words per this file's own
 // prop doc), so the hero's per-word stagger (via the shared
@@ -69,10 +74,14 @@ export function CinematicHeaderPlate({
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
           <p
             className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6"
-            style={{ borderColor: "rgba(255,45,161,0.3)", backgroundColor: "rgba(255,45,161,0.06)" }}
+            style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
           >
             <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
-            <span className="landing-eyebrow" style={{ color: ACCENT }}>{eyebrow}</span>
+            {/* No inline color here: .landing-eyebrow's own project-wide
+                gradient-scope CSS rule (index.css) paints it -- an inline
+                style={{color: ACCENT}} would win on specificity and
+                silently override that gradient with a flat fill. */}
+            <span className="landing-eyebrow">{eyebrow}</span>
           </p>
           <h1
             className={`landing-h1 landing-glow ${oneLine ? "whitespace-nowrap max-w-none" : "text-balance max-w-4xl"}`}
