@@ -48,7 +48,10 @@ export const ProductLoopSection = () => {
         >
           <p className="landing-eyebrow mb-4">Your Passport does more</p>
           <h2 id="product-loop-title" className="landing-h2 landing-glow">
-            Your past work should help create <span className="landing-accent">your next opportunity</span>
+            {/* Trailing period stays plain white, matching every other
+                gradiented title's own pattern -- a bare "." sibling, not
+                inside the gradient span. */}
+            Your past work should help create <span className="landing-accent">your next opportunity</span>.
           </h2>
           <p className="landing-sub mt-5">
             As your Passport grows, Kretopia understands more about what you do, who you've worked with and where you

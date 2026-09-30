@@ -1113,14 +1113,26 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    slanted last letter of "experience", "you", "people"…), and anything
    past the box edge is transparent -- i.e. invisible. Give the box
    slack on both sides; headings can wrap naturally within their container.
-   Horizontal only: vertical padding on
-   an inline box never affects line height, and the content area already
-   covers ascenders/descenders. */
+
+   Vertical padding is ALSO needed, not just horizontal: .landing-h2/h1's
+   line-height (1.08) leaves only ~3px of slack above the font's own
+   em-box, nowhere near a descender's real depth (~20-25% of font-size,
+   7-8px at this scale) -- confirmed live, every descender (g/y/p/q) in a
+   gradiented word was getting its tail clipped by the box's bottom edge
+   ("opportunity", "you", "through", "they"). padding-block gives the
+   clip area that room; margin-block cancels the size increase so
+   surrounding line spacing doesn't visibly shift. On .k-gradient-text
+   (plain `inline`, not inline-block) the margin half of this is inert --
+   vertical margin never affects an inline element's line box per spec --
+   but harmless to include for the two selectors below that are
+   inline-block and do need it. */
  .k-gradient-text,
  :root .landing-accent,
  :root .pink-glow-breathe {
    padding-inline: 0.16em;
    margin-inline: 0;
+   padding-block: 0.22em;
+   margin-block: -0.22em;
  }
 
 /* ------------------------------------------------------------
