@@ -76,7 +76,7 @@ export const LandingBelowFold = () => {
         body="Your Creative Passport brings your projects, credits, skills, collaborators and professional history together in one living record. Not just what you say you can do — what you've actually done."
         caption="Passport"
         image={passportImg}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/profile"
         ctaLabel="Build Your Passport"
         closingLine="One link. Your creative career."
@@ -116,7 +116,7 @@ export const LandingBelowFold = () => {
         caption="Scout"
         image={scoutImg}
         video={scoutVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
         reverse
@@ -142,7 +142,7 @@ export const LandingBelowFold = () => {
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
         caption="Match"
         image={matchImg}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"
         tutorialSteps={MATCH_TUTORIAL}
@@ -166,7 +166,7 @@ export const LandingBelowFold = () => {
         caption="Studio"
         image={studioImg}
         video={studioVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
         closingLine="When the project is finished, the outcome strengthens the Creative Passports of the people who made it happen."
@@ -197,7 +197,7 @@ export const LandingBelowFold = () => {
         caption="Community"
         image={soundstagesImg}
         video={soundstagesVideo}
-        accent="var(--k-g-2)"
+        accent="hsl(var(--energy))"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"
         tutorialSteps={SOUNDSTAGES_TUTORIAL}

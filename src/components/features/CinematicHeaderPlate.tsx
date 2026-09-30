@@ -15,11 +15,13 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { renderStaggerWords } from "@/components/typography/StaggerReveal";
 import { kGlow } from "@/lib/kGradient";
 
-// Solid stop from the Kretopia logo gradient (violet), not the retired
-// flat pink/magenta -- used for the eyebrow dot's solid fill, which
-// can't render a gradient. kGlow() (the pill's translucent border/
-// background below) reads the same stop at partial opacity.
-const ACCENT = "#A516C5";
+// Neutral --energy dot fill -- was the logo gradient's violet stop
+// (#A516C5), rolled back to match ChapterSection's own chapter dots:
+// "selected few elements" restrained, not another spot of colour on
+// every one of the 19 feature-page headers this renders. kGlow() (the
+// pill's translucent border/background below) still reads the real
+// k-g-2 violet at low opacity -- only the solid dot fill changed.
+const ACCENT = "hsl(var(--energy))";
 
 // Feature titles are short by convention (2-4 words per this file's own
 // prop doc), so the hero's per-word stagger (via the shared

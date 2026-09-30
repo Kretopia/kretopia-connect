@@ -27,7 +27,11 @@ export interface ChapterProps {
    *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
    *  omit (the default) to keep this title plain white like the rest. */
   gradientTitle?: boolean;
-  accent: string;       // hex
+  /** Corner/eyebrow dot fill -- any valid CSS colour. Neutralized to
+   *  "hsl(var(--energy))" at every current call site (was the logo
+   *  gradient's violet stop) so these small dots stay "selected few
+   *  elements" restrained rather than another spot of colour per chapter. */
+  accent: string;
   href: string;
   reverse?: boolean;    // flip layout
   id?: string;          // scroll-to anchor for chapter nav
@@ -224,13 +228,12 @@ export const ChapterSection = ({
               <div className="mt-7 grid grid-cols-2 gap-3 max-w-md">
                 {concepts.map((c) => (
                   <div key={c.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
-                    {/* No inline color here either -- same override bug
-                        as the eyebrow above: .k-gradient-text's own
-                        color:transparent (needed for the background-clip
-                        gradient to paint) would lose to an inline
-                        style={{color: accent}} on specificity. */}
+                    {/* Plain neutral, not gradiented -- these are small
+                        in-card data labels, not a title/subtitle, and the
+                        gradient rollback ("selected few elements") pulled
+                        it back out of here same as the chapter eyebrows. */}
                     <p
-                      className="k-gradient-text w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
+                      className="w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1 text-white/70"
                       style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                     >
                       {c.label}
