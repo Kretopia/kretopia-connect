@@ -19,15 +19,15 @@ const TILES: Tile[] = [
     blurb: "Cream canvas, calm. Editorial.",
     bg: "#FAF8F5",
     fg: "#0F0F12",
-    accent: "#FF2DA1",
+    accent: "#A516C5",
   },
   {
     id: "midnight",
     label: "Midnight",
-    blurb: "Dark canvas, pink accent. Focused.",
+    blurb: "Dark canvas, violet accent. Focused.",
     bg: "#05070D",
     fg: "#FAF8F5",
-    accent: "#FF2DA1",
+    accent: "#A516C5",
   },
 ];
 

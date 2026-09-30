@@ -323,7 +323,7 @@ export const CreateServiceDialog = ({ open, onOpenChange, onCreated, editService
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={imageUploading || aiImageGenerating}
-                  className="w-full aspect-[16/9] rounded-lg border-2 border-dashed border-border hover:border-[#FF2DA1]/50 transition-colors flex flex-col items-center justify-center gap-1.5 bg-muted/30"
+                  className="w-full aspect-[16/9] rounded-lg border-2 border-dashed border-border hover:border-[#A516C5]/50 transition-colors flex flex-col items-center justify-center gap-1.5 bg-muted/30"
                 >
                   {imageUploading ? (
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

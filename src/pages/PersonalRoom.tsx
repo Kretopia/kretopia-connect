@@ -300,7 +300,7 @@ export default function PersonalRoom() {
         )}
         {!isOwner && knockStatus === "expired" && (
           <Card className="mt-6"><CardContent className="p-5 text-center text-sm">
-            No answer. <button onClick={() => { setKnock(null); setKnockStatus("pending"); }} className="text-white hover:text-[#FF2DA1] underline transition-colors">Knock again</button> or <Link to={`/@${handle}/book`} className="text-white hover:text-[#FF2DA1] underline transition-colors">book a slot</Link>.
+            No answer. <button onClick={() => { setKnock(null); setKnockStatus("pending"); }} className="text-white hover:text-[#A516C5] underline transition-colors">Knock again</button> or <Link to={`/@${handle}/book`} className="text-white hover:text-[#A516C5] underline transition-colors">book a slot</Link>.
           </CardContent></Card>
         )}
 

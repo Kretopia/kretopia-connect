@@ -128,7 +128,7 @@ export const PricingPreviewSection = () => {
         <div className="mt-8 text-center">
           <button
             onClick={() => navigate(user ? "/subscription" : "/auth?tab=signup&redirect=/subscription")}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-[#FF2DA1] transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-white hover:text-[#A516C5] transition-colors"
           >
             <Crown className="h-3.5 w-3.5" />
             View all plans including Brand tiers & Founder Circle

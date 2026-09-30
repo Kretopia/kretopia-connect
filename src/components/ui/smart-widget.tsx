@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
+import { kGlow } from "@/lib/kGradient";
 
 const ACCENT = "hsl(var(--energy))";
 
@@ -30,16 +31,19 @@ export const SmartWidget = ({ children, className, scanLine = true, interactive 
       transition={{ duration: 0.25, ease: [0.2, 0.65, 0.3, 0.95] }}
       className={cn(
         "group/smart relative overflow-hidden rounded-2xl border bg-card transition-shadow duration-300",
-        interactive && "hover:shadow-[0_20px_50px_-25px_rgba(255,45,161,0.45)]",
+        // #A516C5 = the k-g-2 violet stop, as a literal rgba() -- Tailwind's
+        // arbitrary-value classes can't call kGlow() inline like the two
+        // style={} props below can.
+        interactive && "hover:shadow-[0_20px_50px_-25px_rgba(165,22,197,0.45)]",
         className,
       )}
-      style={{ borderColor: "rgba(255,45,161,0.16)" }}
+      style={{ borderColor: kGlow(16) }}
     >
       {/* ambient glow — breathes slowly behind the content */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe opacity-0 group-hover/smart:opacity-100 transition-opacity duration-500"
-        style={{ background: "radial-gradient(60% 80% at 15% 0%, rgba(255,45,161,0.10), transparent 65%)" }}
+        style={{ background: `radial-gradient(60% 80% at 15% 0%, ${kGlow(10)}, transparent 65%)` }}
       />
 
       {/* scanning top-edge sweep */}

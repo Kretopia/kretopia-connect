@@ -1660,7 +1660,7 @@ function ColorfulAvatar({
         className,
       )}
       style={{
-        background: `hsl(327 70% ${lightness}%)`,
+        background: `hsl(289 70% ${lightness}%)`,
       }}
     >
       {avatar ? (
@@ -1897,7 +1897,7 @@ function VideoStageTile({
         <div
           className="absolute inset-0 flex items-center justify-center"
           style={{
-            background: `hsl(327 65% ${lightness}%)`,
+            background: `hsl(289 65% ${lightness}%)`,
           }}
         >
           {member.avatar ? (

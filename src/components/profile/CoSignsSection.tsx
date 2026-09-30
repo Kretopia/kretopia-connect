@@ -171,7 +171,7 @@ function EvidenceCarousel({
                       <button
                         type="button"
                         onClick={() => onRequestCosign(c)}
-                        className="mt-auto pt-2 text-[11px] font-semibold text-white text-left hover:text-[#FF2DA1] hover:underline transition-colors"
+                        className="mt-auto pt-2 text-[11px] font-semibold text-white text-left hover:text-[#A516C5] hover:underline transition-colors"
                       >
                         Request Co-Sign
                       </button>

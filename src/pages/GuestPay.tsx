@@ -184,7 +184,7 @@ export default function GuestPay() {
                     />
                     <button
                       type="button"
-                      className="text-xs text-white/60 hover:text-[#FF2DA1] underline transition-colors"
+                      className="text-xs text-white/60 hover:text-[#A516C5] underline transition-colors"
                       onClick={() => {
                         setCodeSent(false);
                         setCode("");

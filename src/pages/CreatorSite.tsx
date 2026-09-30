@@ -159,7 +159,7 @@ const CreatorSite = () => {
       <div className="min-h-dvh bg-[#0a0a0c] flex flex-col items-center justify-center text-white gap-4">
         <h1 className="text-2xl font-bold">Site Not Found</h1>
         <p className="text-zinc-400">This creator hasn't set up their site yet.</p>
-        <button onClick={() => navigate('/')} className="text-white hover:text-[#FF2DA1] hover:underline transition-colors">
+        <button onClick={() => navigate('/')} className="text-white hover:text-[#A516C5] hover:underline transition-colors">
           Go to Kretopia →
         </button>
       </div>

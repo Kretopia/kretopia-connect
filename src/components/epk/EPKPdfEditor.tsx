@@ -90,8 +90,10 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const [tagline, setTagline] = useState("");
   const [sections, setSections] = useState<EPKSection[]>(DEFAULT_SECTIONS);
   const [branding, setBranding] = useState<EPKBranding>({
-    primaryColor: "#FF2DA1",
-    accentColor: "#FF2DA1",
+    // Default before the creator customizes it -- was flat pink, now the
+    // logo's own violet stop, matching the app's current branding.
+    primaryColor: "#A516C5",
+    accentColor: "#A516C5",
     darkColor: "#05070D",
     logoUrl: "",
     tagline: "",
@@ -604,7 +606,7 @@ const EPKPreview = ({
   tagline?: string;
   sections: EPKSection[];
 }) => {
-  const primary = branding?.primaryColor || "#FF2DA1";
+  const primary = branding?.primaryColor || "#A516C5";
   const dark = branding?.darkColor || "#05070D";
   const { profile, credits, awards, pressLinks, industryStats, reviews } = data;
   // Content-driven sections (credits/awards/press/credentials/reviews) are

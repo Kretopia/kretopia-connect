@@ -8,7 +8,10 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
-const ENERGY = "#FF2DA1";
+// Literal hex, not a CSS var -- feeds qr-code-styling's own canvas/SVG
+// renderer below, which can't resolve custom properties. Was flat pink;
+// now the logo's own violet stop, matching the rest of the app.
+const ENERGY = "#A516C5";
 const MIDNIGHT = "#05070D";
 
 interface EventPassCardProps {
