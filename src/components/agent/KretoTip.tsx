@@ -15,6 +15,7 @@ import { KretoMark } from "@/components/brand/KretoMark";
 import { KretoPresence } from "@/components/brand/KretoPresence";
 import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 type Tip = { eyebrow: string; line: string; cta: string; prompt: string };
 
@@ -179,21 +180,16 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
         className,
       )}
     >
-      {/* Sunset glow */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-20 -right-20 h-48 w-48 rounded-full opacity-40 blur-3xl"
-        style={{ background: "var(--kretopia-sunset, hsl(289 80% 43%))" }}
-      />
-
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={dismiss}
         aria-label="Dismiss tip"
-        className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full flex items-center justify-center text-card-foreground/50 hover:text-card-foreground hover:bg-card-foreground/10 transition-colors"
+        className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
       >
         <X className="h-3.5 w-3.5" />
-      </button>
+      </Button>
 
       <div className="relative flex items-start gap-3 sm:gap-4">
         {tip.eyebrow === "Studio" ? (
@@ -205,7 +201,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
         )}
 
         <div className="min-w-0 flex-1 pr-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--energy))] mb-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground mb-1">
             Kreto · {tip.eyebrow}
           </p>
           <p className={cn("text-card-foreground/90 leading-snug", compact ? "text-sm" : "text-sm sm:text-[15px]")}>
@@ -213,21 +209,25 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={() => openKreto(tip.prompt)}
-              className="group inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-bold text-card-foreground bg-card-foreground/10 border border-card-foreground/15 hover:bg-card-foreground/15 transition-colors"
+              className="group gap-1.5 text-xs font-bold text-foreground"
             >
               {tip.cta}
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => openKreto()}
-              className="text-[11px] font-semibold text-card-foreground/60 hover:text-card-foreground px-2 py-1 transition-colors"
+              className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
             >
               Or just chat
-            </button>
+            </Button>
           </div>
         </div>
       </div>
