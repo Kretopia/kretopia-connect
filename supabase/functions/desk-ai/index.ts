@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -170,7 +171,7 @@ Today's date: ${new Date().toISOString().slice(0, 10)}. Keep replies under 250 w
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [{ role: "system", content: systemPrompt }, ...userMessages],
       }),
     });

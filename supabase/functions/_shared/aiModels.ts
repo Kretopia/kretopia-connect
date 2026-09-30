@@ -15,3 +15,11 @@ export const GEMINI_FLASH_LITE = "google/gemini-2.5-flash-lite";
 export const GEMINI_PRO = "google/gemini-2.5-pro";
 export const GEMINI_FLASH_IMAGE = "google/gemini-2.5-flash-image";
 export const GEMINI_FLASH_IMAGE_PREVIEW = "google/gemini-2.5-flash-image-preview";
+
+// Gemini 3 -- Kreto's own conversational/agent surfaces (desk-agent,
+// desk-agent-watch, thrive-ai-chat, desk-ai, agent-orchestrator) run on
+// these instead of the 2.5 constants above. Still "-preview" model ids,
+// so treat them the same way as the 2.5 retirement note up top: swap the
+// value here (not at each call site) once Google ships the GA successor.
+export const GEMINI_3_FLASH = "google/gemini-3-flash-preview";
+export const GEMINI_3_1_PRO = "google/gemini-3.1-pro-preview";

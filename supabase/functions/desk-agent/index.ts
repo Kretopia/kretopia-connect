@@ -2,6 +2,7 @@
 // tool calling, and conversational memory.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -575,7 +576,7 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [
           { role: "system", content: systemPrompt },
           ...historyMsgs,
@@ -812,7 +813,7 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
               context: { project_id: targetProjectId, source: "desk_agent" },
               status: "awaiting_approval",
               source: "desk_agent",
-              model: "google/gemini-3-flash-preview",
+              model: GEMINI_3_FLASH,
               tool_call_count: 1,
               tool_names: ["remove_collaborator"],
             })
@@ -964,7 +965,7 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       context: { project_id },
       status: actions.some((a) => !a.ok) ? "failed" : "completed",
       source: "desk_agent",
-      model: requestedTool ? null : "google/gemini-3-flash-preview",
+      model: requestedTool ? null : GEMINI_3_FLASH,
       tokens_used: turnTokens,
       tool_call_count: actions.length,
       tool_names: Array.from(new Set(actions.map((a) => a.tool))),

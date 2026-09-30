@@ -4,6 +4,7 @@
 // Writes results to public.agent_proposals; client renders them as
 // ProactiveCards. Throttled to 1 run / project / 30 min.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -196,7 +197,7 @@ Return JSON only: {"proposals":[...]} or {"proposals":[]}.`;
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: GEMINI_3_FLASH,
           messages: [
             { role: "system", content: sys },
             { role: "user", content: userPrompt },

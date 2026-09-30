@@ -18,7 +18,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
+import { GEMINI_FLASH_LITE, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -247,7 +247,7 @@ async function planTools(
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: GEMINI_3_FLASH,
           messages,
           tools: toolDefs,
           tool_choice: turn === 0 ? "auto" : "auto",
@@ -265,7 +265,7 @@ async function planTools(
     }
 
     const data = await resp.json();
-    addUsage(usage, data, "google/gemini-3-flash-preview");
+    addUsage(usage, data, GEMINI_3_FLASH);
     const msg = data.choices?.[0]?.message;
     const calls = msg?.tool_calls ?? [];
 

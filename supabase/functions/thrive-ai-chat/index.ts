@@ -6,6 +6,7 @@ import {
   getOrCreateCopilotThread,
 } from "../_shared/copilotContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
+import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -581,7 +582,7 @@ Short replies like "yes", "no", "ok", "sure", "do it", "go ahead", "nope", "let'
         // Use the pro-preview model everywhere — flash drops <action>/<plan> tags
         // under load, which surfaces as Thrive saying "I'll do X" with no card
         // appearing. Pro-preview reliably follows the tag protocol.
-        model: "google/gemini-3.1-pro-preview",
+        model: GEMINI_3_1_PRO,
         messages: modelMessages,
         stream: stream,
       }),
