@@ -13,7 +13,6 @@ import { Fingerprint, Radar, Users, Clapperboard, CheckCircle2, Sparkles, Rotate
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 
-
 const STAGES = [
   { key: "passport", icon: Fingerprint, label: "Passport", body: "Your record of what you've actually done." },
   { key: "scout", icon: Radar, label: "Scout", body: "Finds the gigs and briefs that fit your record." },
@@ -49,10 +48,11 @@ export const ProductLoopSection = () => {
         >
           <p className="landing-eyebrow mb-4">Your Passport does more</p>
           <h2 id="product-loop-title" className="landing-h2 landing-glow">
-            Your past work should help create <span className="landing-accent">your next opportunity.</span>
+            Your past work should help create <span className="landing-accent">your next opportunity</span>
           </h2>
           <p className="landing-sub mt-5">
-            As your Passport grows, Kretopia understands more about what you do, who you've worked with and where you want to go next. That powers everything around it.
+            As your Passport grows, Kretopia understands more about what you do, who you've worked with and where you
+            want to go next. That powers everything around it.
           </p>
         </motion.div>
 
@@ -80,16 +80,25 @@ export const ProductLoopSection = () => {
                     backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
                   }}
                 >
-                  <Icon className={`h-5 w-5${isActive ? " k-gradient-icon" : ""}`} style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }} aria-hidden />
+                  <Icon
+                    className={`h-5 w-5${isActive ? " k-gradient-icon" : ""}`}
+                    style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }}
+                    aria-hidden
+                  />
                   <span
                     className={`text-[10px] font-bold uppercase tracking-[0.14em]${isActive ? " k-gradient-text" : ""}`}
-                    style={{ color: isActive ? undefined : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                    style={{
+                      color: isActive ? undefined : "rgba(255,255,255,0.7)",
+                      fontFamily: "'Satoshi', 'Inter', sans-serif",
+                    }}
                   >
                     {label}
                   </span>
                 </button>
                 {i < STAGES.length - 1 ? (
-                  <span className="text-white/25 text-lg shrink-0" aria-hidden>→</span>
+                  <span className="text-white/25 text-lg shrink-0" aria-hidden>
+                    →
+                  </span>
                 ) : (
                   <RotateCw className="h-4 w-4 shrink-0 text-white/25" aria-hidden />
                 )}
@@ -120,15 +129,24 @@ export const ProductLoopSection = () => {
                   backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
                 }}
               >
-                <Icon className={`h-5 w-5 shrink-0 mt-0.5${isActive ? " k-gradient-icon" : ""}`} style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }} aria-hidden />
+                <Icon
+                  className={`h-5 w-5 shrink-0 mt-0.5${isActive ? " k-gradient-icon" : ""}`}
+                  style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }}
+                  aria-hidden
+                />
                 <div>
                   <p
                     className={`w-fit text-[10px] font-bold uppercase tracking-[0.14em] mb-1${isActive ? " k-gradient-text" : ""}`}
-                    style={{ color: isActive ? undefined : "rgba(255,255,255,0.7)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                    style={{
+                      color: isActive ? undefined : "rgba(255,255,255,0.7)",
+                      fontFamily: "'Satoshi', 'Inter', sans-serif",
+                    }}
                   >
                     {label}
                   </p>
-                  <p className="text-xs text-white/55" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>{body}</p>
+                  <p className="text-xs text-white/55" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                    {body}
+                  </p>
                 </div>
               </button>
             );
@@ -138,7 +156,9 @@ export const ProductLoopSection = () => {
         {/* Active stage explanation — desktop only, mobile shows it inline per-card above */}
         <div className="hidden lg:block mt-6 min-h-[3.5rem]">
           <p className="text-sm text-white/70 max-w-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
-            <span className="k-gradient-text" style={{ fontWeight: 700 }}>{STAGES[active].label}.</span>{" "}
+            <span className="k-gradient-text" style={{ fontWeight: 700 }}>
+              {STAGES[active].label}.
+            </span>{" "}
             {STAGES[active].body}
           </p>
         </div>

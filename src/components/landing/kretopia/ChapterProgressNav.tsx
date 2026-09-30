@@ -115,7 +115,7 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
               className="group flex items-center gap-2.5 focus:outline-none"
             >
               <span
-                className={`text-[10px] font-medium uppercase tracking-[0.18em] whitespace-nowrap opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0${active ? " k-gradient-text" : ""}`}
+                className={`text-[10px] font-medium uppercase tracking-[0.18em] whitespace-nowrap opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0${active ? " text-foreground" : ""}`}
                 style={{ color: active ? undefined : "rgba(255,255,255,0.6)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
               >
                 {c.label}

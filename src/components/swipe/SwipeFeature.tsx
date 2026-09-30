@@ -153,12 +153,12 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     return (
       <div className="text-center py-12">
         <p className="text-destructive mb-4">{error}</p>
-        <button 
+         <Button variant="link"
           onClick={() => fetchProfiles()}
-          className="text-primary underline"
+           className="text-foreground underline"
         >
           Try again
-        </button>
+         </Button>
       </div>
     );
   }
@@ -173,8 +173,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
 
     return (
       <div className="w-full flex flex-col items-center justify-center py-12 px-4 text-center space-y-5">
-        <div className="h-16 w-16 rounded-full bg-orange-500/10 flex items-center justify-center">
-          <EyeOff className="h-8 w-8 text-orange-500" />
+         <div className="k-gradient-chip flex h-16 w-16 items-center justify-center rounded-full">
+           <EyeOff className="k-gradient-icon h-8 w-8" />
         </div>
         <div className="space-y-2">
           <h3 className="text-lg font-bold">Complete Your Profile to Connect</h3>
@@ -184,7 +184,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
         </div>
         <div className="flex flex-col gap-2 w-full max-w-xs">
           {missingFields.map((field) => (
-            <div key={field} className="flex items-center gap-2 bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800/30 rounded-lg px-3 py-2.5 text-sm text-orange-800 dark:text-orange-200">
+             <div key={field} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground [&_svg]:stroke-foreground">
               {fieldIcons[field] || <EyeOff className="h-4 w-4" />}
               <span>{field}</span>
             </div>
@@ -194,7 +194,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           Complete Profile <ArrowRight className="h-4 w-4" />
         </Button>
         <p className="text-xs text-muted-foreground">
-          You can still <button onClick={() => navigate('/circle?tab=browse')} className="text-primary underline">browse creators</button> while you complete your profile.
+           You can still <Button variant="link" onClick={() => navigate('/circle?tab=browse')} className="h-auto p-0 text-foreground underline">browse creators</Button> while you complete your profile.
         </p>
       </div>
     );
@@ -213,8 +213,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   if (!currentProfile) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-4">
-          <Heart className="h-10 w-10 text-muted-foreground" />
+         <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
+           <Heart className="k-gradient-icon h-10 w-10" />
         </div>
         <h3 className="text-xl font-semibold mb-2">All Caught Up!</h3>
         <p className="text-muted-foreground mb-1 max-w-sm">

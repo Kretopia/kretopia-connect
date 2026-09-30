@@ -430,7 +430,7 @@ const ProfileContent = () => {
         {/* Passport reveal — the reward moment right after Kreto builds the
             Passport. Uses the real Passport UI below it, doesn't replace it. */}
         {justRevealed && (
-          <div className="mb-4 rounded-2xl border border-[hsl(var(--signal-teal))]/30 bg-gradient-to-br from-[hsl(var(--signal-teal))]/10 to-card p-5">
+          <div className="mb-4 rounded-2xl border border-border bg-card p-5">
             <p className="text-lg font-semibold text-foreground">Your Creative Passport is ready.</p>
             {justRevealed.bioDrafted && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -438,34 +438,37 @@ const ProfileContent = () => {
               </p>
             )}
             <div className="flex flex-wrap gap-2 mt-3">
-              <button
+              <Button
                 type="button"
                 onClick={() => setJustRevealed(null)}
-                className="btn-glass btn-glass-primary text-xs font-semibold px-3 py-1.5 rounded-lg"
+                size="sm"
               >
                 Looks good
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => { setIsEditOpen(true); setJustRevealed(null); }}
-                className="btn-glass btn-glass-outline text-xs font-medium px-3 py-1.5 rounded-lg"
+                size="sm"
               >
                 Edit Passport
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => { navigate('/credits'); setJustRevealed(null); }}
-                className="btn-glass btn-glass-outline text-xs font-medium px-3 py-1.5 rounded-lg"
+                size="sm"
               >
                 Review credit evidence
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => { setIsShareDialogOpen(true); setJustRevealed(null); }}
-                className="btn-glass btn-glass-outline text-xs font-medium px-3 py-1.5 rounded-lg"
+                size="sm"
               >
                 Share Passport
-              </button>
+              </Button>
             </div>
           </div>
         )}

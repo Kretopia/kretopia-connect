@@ -28,10 +28,10 @@ export function PassportOverview({ userId, credits, verified, cosigns, standing,
 
   return (
     <section aria-label="Passport overview" className="relative mt-4 overflow-hidden rounded-lg border border-border bg-card">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-energy to-transparent" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-foreground/20" />
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-5">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-energy/30 bg-energy/10 text-energy"><Fingerprint className="h-4 w-4" /></span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-muted text-foreground"><Fingerprint className="h-4 w-4" /></span>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Passport intelligence</h3>
             <p className="text-[11px] text-muted-foreground">Your next move and your creative record</p>
@@ -57,12 +57,12 @@ export function PassportOverview({ userId, credits, verified, cosigns, standing,
 
       <div className="space-y-3 px-4 py-4 sm:px-5">
         <div className="flex items-center gap-2 text-[11px] font-semibold uppercase text-muted-foreground">
-          <Sparkles className="h-3.5 w-3.5 text-energy" /> Kreto's next move
+          <Sparkles className="h-3.5 w-3.5 text-foreground" /> Kreto's next move
         </div>
         <SurfaceProactiveCards surface="passport" limit={1} className="px-0" />
         {needsCosign > 0 && (
           <Button variant="outline" className="h-auto w-full justify-between gap-2 whitespace-normal py-2.5 text-left text-xs" onClick={() => { analytics.trustActionStarted("cosign"); onReviewCredits(); }}>
-            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-energy" />{needsCosign} credit{needsCosign === 1 ? "" : "s"} awaiting a co-sign</span>
+            <span className="flex items-center gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-foreground" />{needsCosign} credit{needsCosign === 1 ? "" : "s"} awaiting a co-sign</span>
             <ArrowRight className="h-4 w-4 shrink-0" />
           </Button>
         )}

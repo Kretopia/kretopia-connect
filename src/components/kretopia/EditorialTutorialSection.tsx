@@ -59,7 +59,7 @@ export const EditorialTutorialSection = ({
                 <span className="landing-accent">{accentWord}</span>
               </>
             )}
-            <span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span>
+            .
           </h2>
           {body && <p className="landing-sub mt-6">{body}</p>}
         </motion.div>

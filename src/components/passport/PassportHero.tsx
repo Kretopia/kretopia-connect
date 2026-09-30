@@ -100,12 +100,12 @@ export function PassportHero({
 
   return (
     <HoloCard>
-      <div className="relative overflow-hidden rounded-lg border border-energy/30 bg-card shadow-lg">
+      <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-lg">
         {/* Cover */}
         <div
           className={cn(
             "relative aspect-[3/1] sm:aspect-[4/1] overflow-hidden",
-             !profile.cover_image_url && "bg-gradient-to-br from-card via-muted/80 to-energy/15",
+             !profile.cover_image_url && "bg-muted",
           )}
         >
           {profile.cover_image_url ? (
@@ -118,9 +118,9 @@ export function PassportHero({
           ) : null}
           {!profile.cover_image_url && (
             <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-              <div className="absolute -right-8 -top-20 h-56 w-56 rotate-45 border border-energy/30 sm:h-72 sm:w-72" />
-              <div className="absolute right-5 -top-24 h-56 w-56 rotate-45 border border-energy/15 sm:h-72 sm:w-72" />
-              <Fingerprint className="h-20 w-20 text-energy/20 sm:h-28 sm:w-28" strokeWidth={0.8} />
+              <div className="absolute -right-8 -top-20 h-56 w-56 rotate-45 border border-foreground/20 sm:h-72 sm:w-72" />
+              <div className="absolute right-5 -top-24 h-56 w-56 rotate-45 border border-foreground/10 sm:h-72 sm:w-72" />
+              <Fingerprint className="h-20 w-20 text-foreground/20 sm:h-28 sm:w-28" strokeWidth={0.8} />
             </div>
           )}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
@@ -129,7 +129,7 @@ export function PassportHero({
               <Button
                 size="icon"
                 variant="secondary"
-                className="absolute right-3 top-3 z-10 h-10 w-10 rounded-md border border-energy/40 bg-card/90 text-energy shadow-md backdrop-blur-md hover:bg-card focus-visible:ring-energy"
+                className="absolute right-3 top-3 z-10 h-10 w-10 rounded-md border border-border bg-card/90 text-foreground shadow-md backdrop-blur-md hover:bg-card focus-visible:ring-ring"
                 onClick={onEdit}
                 aria-label="Edit profile"
               >
@@ -150,7 +150,7 @@ export function PassportHero({
                 <div
                   aria-hidden
                   className="ai-orbit-ring pointer-events-none absolute -inset-1.5 rounded-full"
-                  style={{ background: "conic-gradient(from 0deg, transparent, hsl(var(--signal-teal)/0.85), transparent 30%)" }}
+                  style={{ background: "conic-gradient(from 0deg, transparent, hsl(var(--foreground)/0.6), transparent 30%)" }}
                 />
               )}
               <FramedAvatar
@@ -187,7 +187,7 @@ export function PassportHero({
               )}
             </div>
             <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-muted-foreground/70">
-              <Fingerprint className="h-3 w-3 shrink-0 text-[hsl(var(--signal-teal))]" />
+               <Fingerprint className="h-3 w-3 shrink-0 text-foreground" />
               <span title="Your unique Passport ID">{passportId}</span>
             </div>
             <div className="mt-1 flex items-center gap-x-2 gap-y-1 text-xs text-muted-foreground flex-wrap">
@@ -240,7 +240,7 @@ export function PassportHero({
                 />
               )}
               {taggedCount > 0 && (
-                <span className="text-[11px] text-[hsl(var(--signal-teal))] font-medium">
+                 <span className="text-[11px] text-foreground font-medium">
                   {taggedCount} unclaimed credit{taggedCount === 1 ? "" : "s"} tagged to you
                 </span>
               )}
@@ -259,7 +259,7 @@ export function PassportHero({
                     <p className="text-xs font-semibold truncate">{c.project_name}</p>
                     <p className="text-[11px] text-muted-foreground truncate">
                       {c.role}{c.verification_status === "verified" && (
-                        <span className="text-[hsl(var(--signal-teal))]"> · Verified</span>
+                         <span className="text-foreground"> · Verified</span>
                       )}
                     </p>
                   </div>
@@ -281,12 +281,12 @@ export function PassportHero({
           {/* Passport Strength — the one progress meter */}
           <div>
             <div className="flex items-center gap-1.5 mb-1">
-              <Gauge className="h-3.5 w-3.5 text-[hsl(var(--signal-teal))]" />
+              <Gauge className="h-3.5 w-3.5 text-foreground" />
               <p className="text-xs font-medium">Passport Strength — {strength}%</p>
             </div>
             <div className="h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-energy transition-all"
+                className="h-full rounded-full k-gradient-fill transition-all"
                 style={{ width: `${Math.min(strength, 100)}%` }}
               />
             </div>
@@ -298,7 +298,7 @@ export function PassportHero({
             <Button
               onClick={onShare}
               variant="outline"
-               className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-energy/50 hover:text-energy focus-visible:ring-energy active:text-energy"
+               className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-foreground/50 focus-visible:ring-ring"
             >
               <Share2 className="h-4 w-4" />
               Share Passport

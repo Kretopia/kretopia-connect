@@ -12,6 +12,7 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { KretoTip } from "@/components/agent/KretoTip";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
+import { Button } from "@/components/ui/button";
 
 type Tab = "scouted" | "shortlist" | "marketplace";
 
@@ -65,8 +66,10 @@ const Scout = () => {
                 const Icon = t.icon;
                 const active = tab === t.id;
                 return (
-                  <button
+                  <Button
                     key={t.id}
+                    type="button"
+                    variant="ghost"
                     role="tab"
                     aria-selected={active}
                     aria-label={t.hint}
@@ -74,13 +77,13 @@ const Scout = () => {
                     className={cn(
                       "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
                       active
-                        ? "bg-background text-energy shadow-sm ring-1 ring-energy"
+                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
                         : "text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <Icon className={cn("h-3.5 w-3.5", active && "text-energy")} />
+                    <Icon className={cn("h-3.5 w-3.5", active && "text-foreground")} />
                     {t.label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -115,8 +118,8 @@ const Scout = () => {
           the bottom instead of sitting above results on every visit. */}
       <StudioFeatureShell>
         {contextQuery && (
-          <div className="rounded-xl border border-[hsl(var(--accent-scout))]/30 bg-[hsl(var(--accent-scout))]/5 p-3 text-xs flex items-start gap-2">
-            <Radar className="h-3.5 w-3.5 mt-0.5 text-[hsl(var(--accent-scout))] shrink-0" />
+          <div className="rounded-xl border border-border bg-card p-3 text-xs flex items-start gap-2">
+            <Radar className="h-3.5 w-3.5 mt-0.5 text-foreground shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground">From your Studio:</p>
               <p className="text-muted-foreground truncate">{contextQuery}</p>

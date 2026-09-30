@@ -127,7 +127,7 @@ export function NewRoomLaunchScreen({
         <div className="relative p-5 space-y-5">
           <div className="text-center space-y-1">
             <p className="text-base font-bold text-foreground">
-              Nice work<span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span> Kreto set up the room.
+              Nice work. Kreto set up the room.
             </p>
             <p className="text-xs text-foreground/50">
               Review the structure, then bring in whoever needs to be there.

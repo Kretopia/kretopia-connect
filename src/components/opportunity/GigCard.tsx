@@ -52,9 +52,9 @@ const TYPE_CONFIG: Record<string, { label: string; chip: string; icon: typeof Br
   collab:         { label: "Collab",        chip: "bg-primary/20 text-primary border-primary/30",             icon: Handshake },
   collaboration:  { label: "Collab",        chip: "bg-primary/20 text-primary border-primary/30",             icon: Handshake },
   gig:            { label: "Quick Gig",     chip: "bg-amber-500/15 text-amber-400 border-amber-500/25",       icon: Zap },
-  project:        { label: "Project",       chip: "bg-violet-500/15 text-violet-400 border-violet-500/25",             icon: Target },
+  project:        { label: "Project",       chip: "bg-muted text-foreground border-border",             icon: Target },
   internship:     { label: "Internship",    chip: "bg-orange-500/15 text-orange-400 border-orange-500/25",    icon: GraduationCap },
-  barter:         { label: "Barter",        chip: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/25", icon: ArrowRightLeft },
+  barter:         { label: "Barter",        chip: "bg-muted text-foreground border-border", icon: ArrowRightLeft },
   casting:        { label: "Casting Call",  chip: "bg-rose-500/15 text-rose-400 border-rose-500/25",          icon: Camera },
 };
 
@@ -236,11 +236,11 @@ const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null
 
         {/* Barter exchange strip */}
         {isBarter && (opp.barter_offering || opp.barter_requesting) && (
-          <div className="px-4 py-2 bg-fuchsia-500/[0.06] border-t border-fuchsia-500/15 flex items-center gap-2 text-[11px]">
-            <Gift className="h-3 w-3 text-fuchsia-300 shrink-0" />
-            <span className="truncate text-fuchsia-200">{opp.barter_offering || "Trade offer"}</span>
-            <ArrowRight className="h-3 w-3 text-fuchsia-400 shrink-0" />
-            <span className="truncate text-fuchsia-300/80">{opp.barter_requesting || "Content needed"}</span>
+          <div className="px-4 py-2 bg-muted/40 border-t border-border flex items-center gap-2 text-[11px]">
+            <Gift className="h-3 w-3 text-foreground shrink-0" />
+            <span className="truncate text-foreground">{opp.barter_offering || "Trade offer"}</span>
+            <ArrowRight className="h-3 w-3 text-foreground shrink-0" />
+            <span className="truncate text-muted-foreground">{opp.barter_requesting || "Content needed"}</span>
           </div>
         )}
       </div>
@@ -340,11 +340,11 @@ const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null
 
         {/* Barter exchange */}
         {isBarter && (opp.barter_offering || opp.barter_requesting) && (
-          <div className="mt-4 px-3 py-2 rounded-lg bg-fuchsia-500/[0.06] border border-fuchsia-500/15 flex items-center gap-2 text-[11px]">
-            <Gift className="h-3 w-3 text-fuchsia-300 shrink-0" />
-            <span className="truncate text-fuchsia-200">{opp.barter_offering || "Trade"}</span>
-            <ArrowRight className="h-3 w-3 text-fuchsia-400 shrink-0" />
-            <span className="truncate text-fuchsia-300/80">{opp.barter_requesting || "For"}</span>
+          <div className="mt-4 px-3 py-2 rounded-lg bg-muted/40 border border-border flex items-center gap-2 text-[11px]">
+            <Gift className="h-3 w-3 text-foreground shrink-0" />
+            <span className="truncate text-foreground">{opp.barter_offering || "Trade"}</span>
+            <ArrowRight className="h-3 w-3 text-foreground shrink-0" />
+            <span className="truncate text-muted-foreground">{opp.barter_requesting || "For"}</span>
           </div>
         )}
 
