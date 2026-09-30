@@ -181,8 +181,12 @@ export default function Subscription() {
     <div className="min-h-screen">
       <FeaturePageHeader
         eyebrow="Pricing"
-        title="Choose your"
-        accentTitle="plan."
+        title="Choose"
+        // "plan." alone (~70px) was too narrow for the gradient's 4-stop
+        // sweep to read as complete -- same issue as the landing chapters'
+        // "you"/"finds you" fix. Widened to "the right plan." so the box
+        // is wide enough to show the full blue->orange range.
+        accentTitle="the right plan."
         subtitle={
           viewMode === "brand"
             ? "Find, hire & manage top creative talent."
