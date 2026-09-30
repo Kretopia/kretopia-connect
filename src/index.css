@@ -1098,9 +1098,9 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    an inline box never affects line height, and the content area already
    covers ascenders/descenders. */
 .k-gradient-text,
-.k-gradient-scope .landing-accent,
-.k-gradient-scope .pink-glow-breathe,
-.k-gradient-scope .landing-eyebrow {
+:root .landing-accent,
+:root .pink-glow-breathe,
+:root .landing-eyebrow {
   padding-inline: 0.16em;
   margin-inline: -0.16em;
 }
@@ -1195,34 +1195,36 @@ svg.k-gradient-icon {
 }
 
 /* ============================================================
-   GRADIENT TEXT SCOPE — landing pilot.
+   GRADIENT TEXT SCOPE — project-wide (was landing-pilot-only via
+   .k-gradient-scope; rolled out per this block's own prior
+   instructions once the landing pilot was validated by the user).
    Turns the product's existing pink *text* language (accent words,
    eyebrows, the trailing period on chapter titles) into the gradient
-   above without touching each call site: everything under
-   .k-gradient-scope that uses these three classes follows. Buttons,
-   icon strokes, chips and glows are deliberately NOT touched — the
-   ask was coloured *text* only.
+   above without touching each call site: every .landing-accent /
+   .pink-glow-breathe / .landing-eyebrow anywhere in the app follows,
+   confirmed via grep to be text-only call sites (CinematicHeaderPlate's
+   19 feature-page headers, Auth, AuthBrandingPanel, the Editorial*
+   template family, Studio's VoiceFirstCreateModal/NewRoomLaunchScreen,
+   onboarding, About, Ambassadors, MeetupManage, PerksTab) before this
+   was flipped. Buttons, icon strokes, chips and glows are deliberately
+   NOT touched — the ask was coloured *text* only.
 
-   Inline-styled text that has no class (color: ACCENT on a span) gets
-   .k-gradient-text added in its JSX; grep for `color: ACCENT` and
-   `text-energy` when rolling this out.
+   Inline-styled text that has no class (color: ACCENT on a span) needs
+   .k-gradient-text added in its JSX directly instead -- this scope only
+   catches the three named classes above.
 
-   ROLLING THIS OUT PROJECT-WIDE: replace `.k-gradient-scope` with
-   `:root` in the selectors below (or add the class to <body>) — the
-   descendant selectors then match the whole app. Then sweep the
-   remaining pink text: `color: "#FF2DA1"`/`ACCENT` spans,
-   `text-energy`, `text-[hsl(var(--energy))]`, `text-primary` where it
-   resolves to the accent. Portals (dialogs, popovers) render outside
-   the landing wrapper, so they stay pink until then.
+   Portals (dialogs, popovers) render via React portals into <body>, so
+   :root (the <html> element) still contains them -- this rule reaches
+   them same as anywhere else in the DOM.
 
    Legibility note: the first third of the gradient (#4012F8 -> #A516C5)
    is only ~2.5:1-3.4:1 against #05070D, fine for large headings but
-   below AA for small text. If small eyebrows read too dark once this is
-   validated, tune --k-text-gradient (one place), not each call site.
+   below AA for small text. If small eyebrows read too dark, tune
+   --k-text-gradient (one place), not each call site.
    ============================================================ */
-.k-gradient-scope .landing-accent,
-.k-gradient-scope .pink-glow-breathe,
-.k-gradient-scope .landing-eyebrow {
+:root .landing-accent,
+:root .pink-glow-breathe,
+:root .landing-eyebrow {
   background-image: var(--k-text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1235,7 +1237,21 @@ svg.k-gradient-icon {
    container while the text only fills part of it (left-aligned ones
    would only ever show the dark blue end). inline-block makes the box
    hug the text so the gradient spans the text itself. */
-.k-gradient-scope .landing-eyebrow {
+:root .landing-eyebrow {
+  display: inline-block;
+}
+/* Plain-string .landing-accent usage (the landing chapters' own
+   <span className="landing-accent">the work</span>) renders fine at the
+   default `inline`. But CinematicHeaderPlate's accentTitle (used by 19+
+   feature-page headers) wraps its words in per-word Framer Motion spans
+   via renderStaggerWords -- an `inline` parent around multiple child
+   elements is the exact condition that silently failed to paint the
+   gradient at all in KretopiaHero's own "what you do" (fixed earlier in
+   this same pass with an explicit inline-block wrapper there). Confirmed
+   live in the browser: accentTitle was invisible until this was added.
+   inline-block gives every .landing-accent usage the same well-defined
+   single content box regardless of what's nested inside it. */
+:root .landing-accent {
   display: inline-block;
 }
 

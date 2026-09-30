@@ -2,13 +2,17 @@ import type { ReactNode } from "react";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
+import { kGlow } from "@/lib/kGradient";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
   eyebrow: string;
   /** White first line — keep it short (2-4 words). */
   title: ReactNode;
-  /** Magenta second line, rendered exactly like the landing hero's accent. */
+  /** Kretopia-gradient second line (any trailing "." in the string is
+   *  swept into the gradient too, unlike the landing chapters' own
+   *  pattern of a separate white period -- accentTitle is a caller-owned
+   *  string/ReactNode here, not something this template can safely split). */
   accentTitle?: ReactNode;
   subtitle: string;
   /** Optional segmented tab toggle, rendered below the title block. */
@@ -43,7 +47,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-        style={{ background: "radial-gradient(60% 55% at 50% 0%, rgba(255,45,161,0.14), transparent 62%)" }}
+        style={{ background: `radial-gradient(60% 55% at 50% 0%, ${kGlow(14)}, transparent 62%)` }}
       />
       {/* quadrillé grid texture — restrained graph-paper lines, faded via mask */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
