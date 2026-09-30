@@ -3,7 +3,7 @@
  * EditorialPageHero. Both components wrap this with their own outer element
  * and backdrop layers (aurora/grid/grain) and pass through their own extras
  * (tutorial trigger, tabs, children) via `cornerSlot`/`footer` — but the
- * eyebrow pill, title, subtitle and reveal motion render from exactly one
+ * eyebrow, title, subtitle and reveal motion render from exactly one
  * place now, instead of being duplicated between the two files. See
  * TITLE_ANIMATION_AUDIT.md for why this split existed and was normalized:
  * the two components previously had identical motion timing but diverging
@@ -17,13 +17,6 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 // gradient phrase. Splitting the gradient into animated word spans leaves
 // transparent words when background-clip paints only the parent's text.
 
-// Feature titles are short by convention (2-4 words per this file's own
-// prop doc), so the hero's per-word stagger (via the shared
-// renderStaggerWords helper) adds only a few hundred ms over the old
-// single-block fade -- not the hero's full-sentence-length reveal. See
-// TITLE_ANIMATION_AUDIT.md §7 for why this was previously landing-only
-// and why that exception was later lifted.
-
 export interface CinematicHeaderPlateProps {
   eyebrow: string;
   title: ReactNode;
@@ -31,9 +24,7 @@ export interface CinematicHeaderPlateProps {
   subtitle?: string;
   /** Centre the whole block (default) or keep it left-aligned. */
   align?: "left" | "center";
-  /** Keep title + accent on a single line (auto-scaled to fit). Default true — every
-   *  feature-page title stays on one line; only the landing page's own hero (which
-   *  doesn't use this component) keeps the multi-line word-stagger treatment. */
+  /** Prefer one line on wider screens for short titles. Long titles wrap instead of clipping. */
   oneLine?: boolean;
   /** Keep the subtitle itself on one line (auto-scaled to fit, same idea as
    *  `oneLine` for the title). Default false — most callers write a subtitle
@@ -75,7 +66,7 @@ export function CinematicHeaderPlate({
             <span className="landing-eyebrow">{eyebrow}</span>
           </div>
           <h1
-            className={`landing-h1 landing-glow max-w-4xl text-balance break-words py-2 ${oneLine ? "sm:whitespace-nowrap" : ""}`}
+            className={`landing-h1 landing-glow w-full max-w-4xl text-balance break-words py-2 ${oneLine ? "sm:whitespace-nowrap" : ""}`}
             style={{
               color: "hsl(var(--foreground))",
               ...(oneLine ? { fontSize: "clamp(1.5rem, 3.6vw, 3rem)" } : {}),

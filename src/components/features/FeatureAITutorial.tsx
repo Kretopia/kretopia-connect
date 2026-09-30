@@ -63,7 +63,7 @@ export function FeatureAITutorial({
     setOpen(false);
   };
 
-  const sparkle = <Sparkles className={reducedMotion ? "h-3 w-3" : "h-3 w-3 pink-glow-breathe"} />;
+  const sparkle = <Sparkles className="h-3 w-3" />;
 
   return (
     <>
@@ -74,7 +74,7 @@ export function FeatureAITutorial({
           aria-label={label}
           title={label}
           className={cn(
-             "inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            "inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
             className,
           )}
         >
@@ -86,7 +86,7 @@ export function FeatureAITutorial({
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-             "mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            "mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
             className,
           )}
         >
@@ -103,7 +103,7 @@ export function FeatureAITutorial({
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
-             style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--foreground) / 0.06), transparent 65%)" }}
+            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--foreground) / 0.06), transparent 65%)" }}
           />
           <div className="relative p-6">
             <p className="landing-eyebrow mb-1">AI-guided tour</p>

@@ -18,7 +18,7 @@ interface FeaturePageHeaderProps {
   tabs?: ReactNode;
   /** Feature key + tutorial steps -- omit to render the header with no tutorial trigger. */
   tutorial?: { featureKey: string; label: string; steps: TutorialStep[] };
-  /** Keep title + accent on a single line (auto-scaled to fit). Defaults to true. */
+  /** Prefer one line on wider screens; defaults to wrapping for long titles. */
   oneLine?: boolean;
   /** Tighter top padding -- see CinematicHeaderPlate's own doc. Default false. */
   compact?: boolean;
