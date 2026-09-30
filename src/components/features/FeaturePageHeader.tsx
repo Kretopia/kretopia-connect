@@ -67,7 +67,14 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         title={title}
         accentTitle={accentTitle}
         subtitle={subtitle}
-        align="left"
+        /* Centered -- matches EditorialPageHero's own default and the
+           canonical "III · Verified Credits" reference pattern. A recent
+           edit hardcoded "left" here specifically, which every one of
+           these ~17 feature-page headers inherited while every other page
+           header in the app (EditorialPageHero-based) stayed centered --
+           a visible UX inconsistency between two templates that render
+           the same visual pattern. */
+        align="center"
         oneLine={oneLine}
         compact={compact}
         cornerSlot={
