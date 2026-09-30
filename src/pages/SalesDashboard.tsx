@@ -103,7 +103,7 @@ const SalesDashboard = () => {
     { label: "Total Leads", value: totalLeads, icon: Users, color: "text-primary" },
     { label: "Hot Leads", value: hotLeads, icon: TrendingUp, color: "text-orange-500" },
     { label: "Converted", value: convertedLeads, icon: Target, color: "text-green-500" },
-    { label: "AI Scouted", value: aiScoutedLeads, icon: Search, color: "text-violet-500" },
+    { label: "AI Scouted", value: aiScoutedLeads, icon: Search, color: "text-foreground" },
     { label: "Active Sequences", value: activeSequences, icon: Send, color: "text-blue-500" },
     { label: "Emails Sent", value: totalEmailsSent, icon: Mail, color: "text-amber-500" },
   ];

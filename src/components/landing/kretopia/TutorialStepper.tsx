@@ -166,7 +166,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
               <div className="min-w-0 flex-1 pt-1.5 pb-1">
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={cn("text-[10px] font-medium tabular-nums", isActive ? "k-gradient-text" : "text-muted-foreground")}
+                    className={cn("text-[10px] font-medium tabular-nums", isActive ? "text-foreground" : "text-muted-foreground")}
                   >
                     {String(i + 1).padStart(2, "0")}
                   </span>
@@ -195,7 +195,7 @@ export const TutorialStepper = ({ steps, label, activeStep, onStepChange, autoPl
                       </p>
                       {!isLast && (
                         <span
-                          className="k-gradient-text mt-3 inline-flex items-center gap-1 text-xs font-medium"
+                          className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-foreground"
                           style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                         >
                           Next: {steps[i + 1].title}

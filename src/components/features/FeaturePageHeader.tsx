@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
-import { kGlow } from "@/lib/kGradient";
+import { KGradientDefs } from "@/components/brand/KGradientDefs";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -19,7 +19,7 @@ interface FeaturePageHeaderProps {
   tabs?: ReactNode;
   /** Feature key + tutorial steps -- omit to render the header with no tutorial trigger. */
   tutorial?: { featureKey: string; label: string; steps: TutorialStep[] };
-  /** Keep title + accent on a single line (auto-scaled to fit). Defaults to true. */
+  /** Prefer one line on wider screens; defaults to wrapping for long titles. */
   oneLine?: boolean;
   /** Tighter top padding -- see CinematicHeaderPlate's own doc. Default false. */
   compact?: boolean;
@@ -37,17 +37,19 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = true, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
   return (
     <div
-      className={`relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
+      className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
-      {/* aurora — same plate as the landing chapters / EditorialPageHero */}
+      <KGradientDefs />
+      {/* aurora — neutral white glow (no purple): the gradient is reserved
+          for title text, so the backdrop stays achromatic. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-        style={{ background: `radial-gradient(60% 55% at 50% 0%, ${kGlow(14)}, transparent 62%)` }}
+        style={{ background: "radial-gradient(60% 55% at 50% 0%, hsl(var(--foreground) / 0.07), transparent 62%)" }}
       />
       {/* quadrillé grid texture — restrained graph-paper lines, faded via mask */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
@@ -65,7 +67,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         title={title}
         accentTitle={accentTitle}
         subtitle={subtitle}
-        align="center"
+        align="left"
         oneLine={oneLine}
         compact={compact}
         cornerSlot={
@@ -77,7 +79,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
               label={tutorial.label}
               steps={tutorial.steps}
               variant="floating"
-              className="absolute right-4 top-4 z-10"
+              className="feature-tutorial-trigger z-10"
             />
           )
         }

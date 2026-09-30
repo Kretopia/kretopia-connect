@@ -30,4 +30,14 @@ describe("CinematicHeaderPlate", () => {
     expect(subtitle).toHaveClass("whitespace-nowrap");
     expect(subtitle).not.toHaveClass("max-w-xl");
   });
+
+  it("renders the complete accent phrase as one gradient span without clipping the heading", () => {
+    render(<CinematicHeaderPlate eyebrow="Collaborators" title="Match." accentTitle="Find your people." />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveTextContent("Match. Find your people.");
+    expect(heading).toHaveClass("break-words");
+    const accent = heading.querySelector(".k-gradient-text");
+    expect(accent).toHaveTextContent("Find your people.");
+    expect(accent?.children).toHaveLength(0);
+  });
 });

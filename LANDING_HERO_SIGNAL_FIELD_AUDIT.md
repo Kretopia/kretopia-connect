@@ -42,21 +42,21 @@ File: [`src/components/landing/KretopiaHero.tsx`](src/components/landing/Kretopi
 
 ## 2. Current dominant colors — the actual problem, precisely
 
-| Element | Color used | Brand-token status |
-|---|---|---|
-| Curtain 1 | `rgba(52,211,153,...)` (Tailwind emerald-400) | **Raw hex-equivalent, not a token. Emerald/green is explicitly reserved for KrePay per house rules — this is a real brand-consistency violation, not just "too colorful."** |
-| Curtain 1–2 transition | `rgba(45,212,191,...)` (teal-400) | Raw, not a token. Used as a *dominant* color across 3 of 4 curtains — the brief allows teal only as a "tiny optional accent," not a structural color. |
-| Curtain 2–3 | `rgba(129,102,255,...)` (indigo/violet) | Raw. In the same family as the Signal Triad's violet (`#9413D2`) but not the same value and not a token. |
-| Curtain 3 | `rgba(255,45,161,...)` (matches `--energy`) | Correct hue, but hardcoded rather than reading `hsl(var(--energy))`. |
-| Spotlight | `rgba(148,255,214,...)` (mint/cyan) | Raw, off-brand — not in the Signal Triad or `--energy` at all. |
+| Element                | Color used                                    | Brand-token status                                                                                                                                                          |
+| ---------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Curtain 1              | `rgba(52,211,153,...)` (Tailwind emerald-400) | **Raw hex-equivalent, not a token. Emerald/green is explicitly reserved for KrePay per house rules — this is a real brand-consistency violation, not just "too colorful."** |
+| Curtain 1–2 transition | `rgba(45,212,191,...)` (teal-400)             | Raw, not a token. Used as a _dominant_ color across 3 of 4 curtains — the brief allows teal only as a "tiny optional accent," not a structural color.                       |
+| Curtain 2–3            | `rgba(129,102,255,...)` (indigo/violet)       | Raw. In the same family as the Signal Triad's violet (`#9413D2`) but not the same value and not a token.                                                                    |
+| Curtain 3              | `rgba(255,45,161,...)` (matches `--energy`)   | Correct hue, but hardcoded rather than reading `hsl(var(--energy))`.                                                                                                        |
+| Spotlight              | `rgba(148,255,214,...)` (mint/cyan)           | Raw, off-brand — not in the Signal Triad or `--energy` at all.                                                                                                              |
 
-**Root cause of "too much color":** the hero currently mixes five distinct hues (green, teal, violet, pink, mint) as co-equal dominant colors via `mix-blend-mode: screen`, which is precisely what screen-blending many saturated hues produces — a washed, rainbow-adjacent look. This is a *design* problem (too many co-dominant hues), not merely an opacity problem — the brief is correct that simply dimming the existing layers would not fix it.
+**Root cause of "too much color":** the hero currently mixes five distinct hues (green, teal, violet, pink, mint) as co-equal dominant colors via `mix-blend-mode: screen`, which is precisely what screen-blending many saturated hues produces — a washed, rainbow-adjacent look. This is a _design_ problem (too many co-dominant hues), not merely an opacity problem — the brief is correct that simply dimming the existing layers would not fix it.
 
 ## 3. Existing brand color system (discovered, not previously honored by this hero)
 
-- [`src/index.css:80-83`](src/index.css) — `--signal-pink`, `--signal-amber`, `--signal-violet`, `--signal-teal` are **all defined as the same value**, `327 100% 59%` (`#FF2DA1`), with comments: *"retired triad member — now = accent"* and *"kept as an alias name; hundreds of call sites reference it."* This is direct, load-bearing evidence that the design system was deliberately consolidated from a multi-hue "Signal Triad" down to **one dominant pink accent**. The current aurora directly contradicts this consolidation by reintroducing five hues.
+- [`src/index.css:80-83`](src/index.css) — `--signal-pink`, `--signal-amber`, `--signal-violet`, `--signal-teal` are **all defined as the same value**, `327 100% 59%` (`#FF2DA1`), with comments: _"retired triad member — now = accent"_ and _"kept as an alias name; hundreds of call sites reference it."_ This is direct, load-bearing evidence that the design system was deliberately consolidated from a multi-hue "Signal Triad" down to **one dominant pink accent**. The current aurora directly contradicts this consolidation by reintroducing five hues.
 - [`src/components/brand/BrandDots.tsx`](src/components/brand/BrandDots.tsx) — the historical three-dot mark (Violet `#9413D2`, Magenta `#E0179C`, Amber `#FEA61A`), explicitly documented as reserved for **loading/pending states only** ("Do NOT use it as a permanent decoration"). Not a fit for a static hero background element — noted for completeness, not for reuse here.
-- [`src/components/brand/KretoMark.tsx`](src/components/brand/KretoMark.tsx) — the official K-mark component. Renders the real multicolor K-mark asset (same image `BrandLogo` uses in the navbar) at various sizes, with a `"bare"` variant that renders just the icon with no surrounding surface — exactly the form factor for a subtle, non-interactive brand signal inside a custom composition. This is almost certainly what the brief means by *"use the official Kretopia K-mark if it already exists."*
+- [`src/components/brand/KretoMark.tsx`](src/components/brand/KretoMark.tsx) — the official K-mark component. Renders the real multicolor K-mark asset (same image `BrandLogo` uses in the navbar) at various sizes, with a `"bare"` variant that renders just the icon with no surrounding surface — exactly the form factor for a subtle, non-interactive brand signal inside a custom composition. This is almost certainly what the brief means by _"use the official Kretopia K-mark if it already exists."_
 - `--k-midnight: 240 18% 5%` (`#0B0B10`) exists as a token, but it is **not** what Landing currently uses — every Landing section (this hero included) hardcodes `#05070D` instead, consistently, across ~15 components. This is a pre-existing, deliberate, page-wide convention, not a hero-specific oversight. Recommendation: **preserve `#05070D`** for the hero background rather than switching to `--k-midnight`, since changing only the hero would create a visible color seam at the boundary with every section below it — out of this task's "Hero only" scope to fix site-wide.
 - `--secondary` (dark/midnight theme: `222 22% 13%`, `#1A1E28`) is the closest existing "graphite/structural grey" token, and is already the grey end of `.btn-landing-primary`'s gradient — the natural choice for the Signal Field's grey component, for consistency with the CTA it sits behind.
 - `--energy: 327 100% 59%` (`#FF2DA1`) is constant across every theme/vibe variant in the codebase (light, dark, midnight, neon) — the one truly stable "focused brand signal" color to build the field around.
@@ -77,12 +77,14 @@ Secondary: <Link to="/auth?next=/scout&src=hero_explore"> ... className="btn-gla
 ## 5. Current copy — a real discrepancy with this brief's assumption
 
 This brief's §4 states the "approved" copy to preserve-or-restore is the **older** version:
+
 > "Turn the work you've already done into your next opportunity." / "Build a Creative Passport from your real work, get your Credits co-signed..." / "Build my Creative Passport"
 
 The **actual current copy**, implemented in the immediately preceding session turn per an explicit, detailed GTM/conversion-strategy review, is:
-> Eyebrow: "For creative professionals" · H1: "Find work that fits" / "what you do." · Supporting line: "Your past work should help create your next opportunity." · Body: "Your Creative Passport is a living record of your real projects, credits and skills. Get your work co-signed, then let Scout surface opportunities that fit what you've already proved." · CTAs: "Build My Passport" / "Explore Opportunities"
 
-That GTM review ended with an explicit instruction: *"I would not keep rewriting the hero after this until we have actual conversion data from enough real users."*
+> Eyebrow: "For creative professionals" · H1: "Find work that fits" / "what you do" · Supporting line: "Your past work should help create your next opportunity." · Body: "Your Creative Passport is a living record of your real projects, credits and skills. Get your work co-signed, then let Scout surface opportunities that fit what you've already proved." · CTAs: "Build My Passport" / "Explore Opportunities"
+
+That GTM review ended with an explicit instruction: _"I would not keep rewriting the hero after this until we have actual conversion data from enough real users."_
 
 **This is flagged as `REQUIRES_PRODUCT_DECISION`, not silently resolved either way.** My recommendation is to **keep the current GTM copy** and treat this brief's copy block as referring to an earlier snapshot it doesn't have visibility into, rather than reverting a deliberate, recently-locked decision — but this is a product call, not mine to make unilaterally. I will not touch copy without explicit confirmation of which version to ship.
 
@@ -96,17 +98,17 @@ That GTM review ended with an explicit instruction: *"I would not keep rewriting
 
 Measured against the **production build** (`npm run build` + `vite preview`, not the dev server — the dev server's unbundled module graph gives misleading numbers), Lighthouse 13.4.1, desktop preset, headless Chrome, single run (local machine, not CDN-hosted — noted as a caveat per this brief's own "no numerical claims without measurement" rule):
 
-| Metric | Value |
-|---|---|
-| Performance score | 94 |
-| Accessibility score | 96 |
-| Best Practices score | 96 |
-| SEO score | 100 |
-| First Contentful Paint | 0.9s |
-| Largest Contentful Paint | 1.5s |
-| Total Blocking Time | 0ms |
-| Cumulative Layout Shift | 0.003 |
-| Speed Index | 1.2s |
+| Metric                   | Value |
+| ------------------------ | ----- |
+| Performance score        | 94    |
+| Accessibility score      | 96    |
+| Best Practices score     | 96    |
+| SEO score                | 100   |
+| First Contentful Paint   | 0.9s  |
+| Largest Contentful Paint | 1.5s  |
+| Total Blocking Time      | 0ms   |
+| Cumulative Layout Shift  | 0.003 |
+| Speed Index              | 1.2s  |
 
 **LCP element** (confirmed via `PerformanceObserver` in a live page, not inferred): the headline's first word span (`"Find "`) — a **text node**, not an image or the aurora itself. This is the ideal LCP candidate (no network dependency, resolves as soon as the font is ready) and is not at risk from the background redesign as long as the new field doesn't block text paint.
 
@@ -130,10 +132,12 @@ A richer tracker, `trackLandingCtaClick` in [`src/lib/landingMetrics.ts`](src/li
 ## 10. Files to change vs. protect
 
 **May change (Hero-scoped, per this brief's own boundary):**
+
 - `src/components/landing/KretopiaHero.tsx` — the entire implementation.
 - `src/index.css` — only if a new reusable class is warranted; likely unnecessary, since the existing pattern in this exact file already does everything via inline styles referencing `hsl(var(--secondary))`/`hsl(var(--energy))` (see the now-removed electric-arc gradient, which used this exact approach) — confirmed no dead CSS remains from that removal.
 
 **Explicitly protected (not touched by this task):**
+
 - `src/components/Navbar.tsx` (edited in the immediately prior session turn for the "Build Your Passport" CTA rename — out of scope here, not a Hero file).
 - `src/components/landing/kretopia/**` (every other Landing section).
 - `src/lib/landingFunnel.ts`, `src/lib/landingMetrics.ts`, `src/lib/analytics.ts` (read-only reference; extending an existing call's arguments, not editing these files).

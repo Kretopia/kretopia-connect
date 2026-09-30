@@ -6,8 +6,7 @@ import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser";
 import { cn } from "@/lib/utils";
-
-const ACCENT = "hsl(var(--energy))";
+import { Button } from "@/components/ui/button";
 
 interface FeatureAITutorialProps {
   /** Unique per feature, e.g. "studio". Gates the auto-open-once-for-new-users behavior. */
@@ -65,46 +64,40 @@ export function FeatureAITutorial({
     setOpen(false);
   };
 
-  const sparkle = <Sparkles className={reducedMotion ? "h-3 w-3" : "h-3 w-3 pink-glow-breathe"} />;
+  const sparkle = <Sparkles className="h-3 w-3" />;
 
   return (
     <>
       {variant === "floating" ? (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setOpen(true)}
           aria-label={label}
           title={label}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors hover:bg-[rgba(255,45,161,0.12)]",
+            "inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground",
             className,
           )}
-          style={{
-            borderColor: "rgba(255,45,161,0.28)",
-            backgroundColor: "rgba(255,45,161,0.05)",
-            color: ACCENT,
-          }}
         >
           {sparkle}
           <span className="hidden sm:inline">How this works</span>
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setOpen(true)}
           className={cn(
-            "mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors",
+            "mt-3 inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
             className,
           )}
-          style={{
-            borderColor: "rgba(255,45,161,0.3)",
-            backgroundColor: "rgba(255,45,161,0.06)",
-            color: ACCENT,
-          }}
         >
           {sparkle}
           How this works
-        </button>
+        </Button>
       )}
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : dismiss())}>
@@ -115,22 +108,23 @@ export function FeatureAITutorial({
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--energy) / 0.12), transparent 65%)" }}
+            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--foreground) / 0.06), transparent 65%)" }}
           />
           <div className="relative p-6">
             <p className="landing-eyebrow mb-1">AI-guided tour</p>
             <h2 className="mb-5 text-2xl font-semibold text-foreground">
               {label}
-              <span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span>
+              .
             </h2>
             <TutorialStepper steps={steps} label={label} autoPlay={!reducedMotion} />
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={dismiss}
-              className="btn-glass btn-glass-primary mt-6 w-full rounded-full px-5 py-2.5 text-sm font-semibold"
+              className="mt-6 w-full rounded-full border-border text-sm font-semibold"
             >
               Got it
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

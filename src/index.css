@@ -111,12 +111,10 @@ All colors MUST be HSL.
     /* Product accent tokens — all product areas now share the one accent.
        Passport/Scout/Match no longer get their own hue; --accent-pay
        stays green because it's a functional money-state signal, not
-       decoration (see "preserve semantic colors" rule). Aliased to
-       var(--energy) (not a hardcoded hue) so the neutral rollback above
-       propagates here automatically. */
-    --accent-passport: var(--energy);
-    --accent-scout:    var(--energy);
-    --accent-match:    var(--energy);
+       decoration (see "preserve semantic colors" rule). */
+    --accent-passport: var(--foreground);
+    --accent-scout:    var(--foreground);
+    --accent-match:    var(--foreground);
     --accent-pay:      141 71% 42%;   /* #1DB954 — Money only, functional */
     --radius: 1rem;
 
@@ -604,6 +602,13 @@ All colors MUST be HSL.
      Subtle references to the other two colors should appear elsewhere
      so the experience always feels like one Kretopia ecosystem.
      ============================================================ */
+  /* Feature surfaces use neutral ink, like landing chapter VII. Keep the
+     multi-stop spectrum for title accents and deliberately chosen progress. */
+  .accent-passport, .accent-scout, .accent-match, .accent-studios {
+    --energy: var(--foreground);
+    --energy-foreground: var(--background);
+    --qr-accent: 289 80% 43%; /* QR branding must remain scannable on its white paper. */
+  }
   .accent-passport { --surface-accent: var(--accent-passport); }
   .accent-scout    { --surface-accent: var(--accent-scout); }
   .accent-match    { --surface-accent: var(--accent-match); }
@@ -611,7 +616,7 @@ All colors MUST be HSL.
   /* Studios = teal dominant with yellow nods (per Brand System v1.0) */
   .accent-studios  { --surface-accent: var(--accent-passport); --surface-accent-alt: var(--accent-scout); }
   .text-studios    { color: hsl(var(--accent-passport)); }
-  .bg-studios      { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
+  .bg-studios      { background-color: hsl(var(--accent-passport)); color: hsl(var(--background)); }
   .border-studios  { border-color: hsl(var(--accent-passport)); }
 
   .text-passport { color: hsl(var(--accent-passport)); }
@@ -619,9 +624,9 @@ All colors MUST be HSL.
   .text-match    { color: hsl(var(--accent-match)); }
   .text-pay      { color: hsl(var(--accent-pay)); }
 
-  .bg-passport { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
-  .bg-scout    { background-color: hsl(var(--accent-scout));    color: hsl(225 44% 4%); }
-  .bg-match    { background-color: hsl(var(--accent-match));    color: hsl(0 0% 100%); }
+  .bg-passport { background-color: hsl(var(--accent-passport)); color: hsl(var(--background)); }
+  .bg-scout    { background-color: hsl(var(--accent-scout));    color: hsl(var(--background)); }
+  .bg-match    { background-color: hsl(var(--accent-match));    color: hsl(var(--background)); }
   .bg-pay      { background-color: hsl(var(--accent-pay));      color: hsl(0 0% 100%); }
 
   .border-passport { border-color: hsl(var(--accent-passport)); }
@@ -983,13 +988,19 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  /* Solid --energy by default (now a neutral ink/white, not a gradient
-     or a flat hue -- eyebrows stay out of the gradient scope below,
-     see that block's own comment). Sites that deliberately want a
-     different tone (AuthBrandingPanel's own inline overrides,
-     EditorialChapter/About's numbered kickers) set their own color and
-     take precedence over this default via normal cascade/specificity. */
-  color: hsl(var(--energy));
+  /* Neutral by default — the gradient is reserved for titles (see the
+     GRADIENT TEXT SCOPE block). Call sites that deliberately want a
+     coloured kicker (AuthBrandingPanel's inline overrides,
+     EditorialChapter/About's numbered kickers) still set their own
+     color and take precedence via normal cascade/specificity. */
+  color: hsl(var(--muted-foreground));
+}
+
+/* Feature chapters keep the tour action out of the eyebrow's reading line. */
+.feature-reference-header .feature-tutorial-trigger {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
 }
 
 .landing-h1 {
@@ -1101,16 +1112,16 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    element's own box, but italic glyphs overhang it on the right (the
    slanted last letter of "experience", "you", "people"…), and anything
    past the box edge is transparent -- i.e. invisible. Give the box
-   slack on both sides and take it back with an equal negative margin so
-   surrounding layout doesn't move. Horizontal only: vertical padding on
+   slack on both sides; headings can wrap naturally within their container.
+   Horizontal only: vertical padding on
    an inline box never affects line height, and the content area already
    covers ascenders/descenders. */
-.k-gradient-text,
-:root .landing-accent,
-:root .pink-glow-breathe {
-  padding-inline: 0.16em;
-  margin-inline: -0.16em;
-}
+ .k-gradient-text,
+ :root .landing-accent,
+ :root .pink-glow-breathe {
+   padding-inline: 0.16em;
+   margin-inline: 0;
+ }
 
 /* ------------------------------------------------------------
    Gradient for the NON-text pink (icons, chips, dots, bars),
@@ -1202,19 +1213,13 @@ svg.k-gradient-icon {
 }
 
 /* ============================================================
-   GRADIENT TEXT SCOPE — project-wide, but RESTRAINED per user feedback
-   on the first full rollout: gradient on every eyebrow + every chapter
-   title's accent phrase, everywhere, read as "too much" and broke the
-   page's hierarchy/coherence. .landing-eyebrow was pulled back out of
-   this scope entirely (eyebrows are small metadata kickers, closer to a
-   subtitle than a title -- "no gradient on subtitles" applies to them);
-   they render at their own plain solid --energy colour again (now a
-   neutral ink/white, see :root's --energy comment, not the retired
-   purple). Only .landing-accent / .pink-glow-breathe -- the ONE accent
-   phrase inside a selected few chapter/page titles -- still gets the
-   real gradient. Which chapters carry that phrase is now a deliberate,
-   sparse choice made at each call site (see LandingBelowFold.tsx), not
-   "every chapter, uniformly" like before.
+   GRADIENT TEXT SCOPE — titles only.
+   The user's direction: the Kretopia gradient is reserved for TITLES
+   (hero titles, feature-page title accent lines, the landing chapters'
+   accent words). Eyebrows and subtitles stay neutral -- no gradient,
+   no purple. Every .landing-accent / .pink-glow-breathe anywhere in
+   the app follows this scope; .landing-eyebrow was deliberately
+   REMOVED from it and falls back to its own neutral color above.
 
    Inline-styled text that has no class (color: ACCENT on a span) needs
    .k-gradient-text added in its JSX directly instead -- this scope only
@@ -1223,10 +1228,6 @@ svg.k-gradient-icon {
    Portals (dialogs, popovers) render via React portals into <body>, so
    :root (the <html> element) still contains them -- this rule reaches
    them same as anywhere else in the DOM.
-
-   Legibility note: the first third of the gradient (#4012F8 -> #A516C5)
-   is only ~2.5:1-3.4:1 against #05070D, fine for large headings but
-   below AA for small text.
    ============================================================ */
 :root .landing-accent,
 :root .pink-glow-breathe {
@@ -1238,17 +1239,9 @@ svg.k-gradient-icon {
   animation: none;
   filter: none;
 }
-/* Plain-string .landing-accent usage (the landing chapters' own
-   <span className="landing-accent">the work</span>) renders fine at the
-   default `inline`. But CinematicHeaderPlate's accentTitle (used by 19+
-   feature-page headers) wraps its words in per-word Framer Motion spans
-   via renderStaggerWords -- an `inline` parent around multiple child
-   elements is the exact condition that silently failed to paint the
-   gradient at all in KretopiaHero's own "what you do" (fixed earlier in
-   this same pass with an explicit inline-block wrapper there). Confirmed
-   live in the browser: accentTitle was invisible until this was added.
-   inline-block gives every .landing-accent usage the same well-defined
-   single content box regardless of what's nested inside it. */
+ /* Some landing accent phrases still wrap children; inline-block gives
+    those phrases a well-defined gradient box. Feature headings instead
+    use a single uninterrupted inline .k-gradient-text phrase. */
 :root .landing-accent {
   display: inline-block;
 }

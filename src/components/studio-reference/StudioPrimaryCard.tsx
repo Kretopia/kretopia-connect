@@ -25,7 +25,7 @@ export function StudioPrimaryCard({ eyebrow, title, description, action, icon, c
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-60"
-        style={{ background: "radial-gradient(120% 100% at 0% 0%, hsl(var(--energy) / 0.06), transparent 60%)" }}
+        style={{ background: "radial-gradient(120% 100% at 0% 0%, hsl(var(--foreground) / 0.06), transparent 60%)" }}
       />
       <div className="relative flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-1.5">
@@ -33,7 +33,7 @@ export function StudioPrimaryCard({ eyebrow, title, description, action, icon, c
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">{eyebrow}</p>
           )}
           <div className="flex items-center gap-2.5">
-            {icon && <span className="text-[hsl(var(--energy))] shrink-0">{icon}</span>}
+            {icon && <span className="k-gradient-chip k-gradient-icon flex h-7 w-7 items-center justify-center rounded-lg shrink-0 [&_svg]:h-3.5 [&_svg]:w-3.5">{icon}</span>}
             <p className="text-xl font-bold text-foreground leading-tight">{title}</p>
           </div>
           {description && <p className="text-sm text-muted-foreground max-w-md">{description}</p>}
