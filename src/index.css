@@ -1099,8 +1099,7 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    covers ascenders/descenders. */
 .k-gradient-text,
 :root .landing-accent,
-:root .pink-glow-breathe,
-:root .landing-eyebrow {
+:root .pink-glow-breathe {
   padding-inline: 0.16em;
   margin-inline: -0.16em;
 }
