@@ -221,13 +221,10 @@ export const ChapterSection = ({
               <div className="mt-7 grid grid-cols-2 gap-3 max-w-md">
                 {concepts.map((c) => (
                   <div key={c.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
-                    {/* No inline color here either -- same override bug
-                        as the eyebrow above: .k-gradient-text's own
-                        color:transparent (needed for the background-clip
-                        gradient to paint) would lose to an inline
-                        style={{color: accent}} on specificity. */}
+                    {/* Neutral label — the gradient is reserved for titles
+                        only (same rule as the eyebrow above). */}
                     <p
-                      className="k-gradient-text w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
+                      className="w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1 text-foreground"
                       style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                     >
                       {c.label}

@@ -202,7 +202,7 @@ export const PassportVisual = ({ activeStep, inView }: { activeStep: number; inV
               <motion.div key="publish" {...fade(reducedMotion)} className="space-y-1.5">
                 <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: ACCENT }}>
                   <Sparkles className="h-4 w-4" aria-hidden />
-                  <span className="k-gradient-text">Ready to publish</span>
+                  <span className="text-foreground font-semibold">Ready to publish</span>
                 </div>
                 <p className="text-xs text-white/35">kretopia.com/maya-solano — your one shareable link.</p>
               </motion.div>
@@ -237,7 +237,7 @@ export const ScoutVisual = ({ activeStep, inView }: { activeStep: number; inView
                 <div className="flex flex-wrap gap-2">
                   {["Event Production", "Bali-based", "Team lead"].map((t) => (
                     <span key={t} className="rounded-full px-3 py-1.5 text-[11px] font-medium" style={{ backgroundColor: kGlow(12), color: ACCENT, border: `1px solid ${kGlow(25)}` }}>
-                      <Target className="h-3 w-3 inline mr-1" aria-hidden /><span className="k-gradient-text">{t}</span>
+                      <Target className="h-3 w-3 inline mr-1" aria-hidden /><span className="text-foreground font-semibold">{t}</span>
                     </span>
                   ))}
                 </div>
@@ -316,7 +316,7 @@ export const MatchVisual = ({ activeStep, inView }: { activeStep: number; inView
               <motion.div key="s3" {...fade(reducedMotion)} className="space-y-1.5">
                 <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: ACCENT }}>
                   <Handshake className="h-4 w-4" aria-hidden />
-                  <span className="k-gradient-text">Bring them into a Studio project</span>
+                  <span className="text-foreground font-semibold">Bring them into a Studio project</span>
                 </div>
                 <p className="text-xs text-white/35">Brief, files, and payment — no separate thread to manage.</p>
               </motion.div>
@@ -391,7 +391,7 @@ export const StudioVisual = ({ activeStep, inView }: { activeStep: number; inVie
               <motion.div key="s3" {...fade(reducedMotion)} className="space-y-1.5">
                 <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: ACCENT }}>
                   <Banknote className="h-4 w-4" aria-hidden />
-                  <span className="k-gradient-text">Invoice sent — awaiting payment</span>
+                  <span className="text-foreground font-semibold">Invoice sent — awaiting payment</span>
                 </div>
                 <p className="text-xs text-white/35">$1,100 · Invoice #0042 · Due in 5 days</p>
               </motion.div>
@@ -456,7 +456,7 @@ export const SoundStagesVisual = ({ activeStep, inView }: { activeStep: number; 
               <motion.div key="s3" {...fade(reducedMotion)} className="space-y-1.5">
                 <div className="flex items-center gap-2 text-sm font-semibold" style={{ color: ACCENT }}>
                   <Share2 className="h-4 w-4" aria-hidden />
-                  <span className="k-gradient-text">Follow up via their Passport</span>
+                  <span className="text-foreground font-semibold">Follow up via their Passport</span>
                 </div>
                 <p className="text-xs text-white/35">Whoever you met stays reachable — no lost contact after the room closes.</p>
               </motion.div>

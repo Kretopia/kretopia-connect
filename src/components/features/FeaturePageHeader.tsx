@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
-import { kGlow } from "@/lib/kGradient";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -43,11 +42,12 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
       className={`relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
-      {/* aurora — same plate as the landing chapters / EditorialPageHero */}
+      {/* aurora — neutral white glow (no purple): the gradient is reserved
+          for title text, so the backdrop stays achromatic. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-        style={{ background: `radial-gradient(60% 55% at 50% 0%, ${kGlow(14)}, transparent 62%)` }}
+        style={{ background: "radial-gradient(60% 55% at 50% 0%, hsl(var(--foreground) / 0.07), transparent 62%)" }}
       />
       {/* quadrillé grid texture — restrained graph-paper lines, faded via mask */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />

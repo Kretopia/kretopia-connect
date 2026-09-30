@@ -218,7 +218,7 @@ export function ProfileLaunchScreen({
           {/* Pride copy */}
           <div className="text-center space-y-1">
             <p className="text-base font-bold text-foreground">
-              Way to go, {firstName}<span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span> Your creative résumé is ready.
+              Way to go, {firstName}. Your creative résumé is ready.
             </p>
             <p className="text-xs text-foreground/50">
               Share it now to get your first profile views.
