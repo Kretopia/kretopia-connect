@@ -59,7 +59,7 @@ export function StudioSectionTabs({ tabs, defaultTabId, queryParam, onTabChange,
             <TabsTrigger
               key={t.id}
               value={t.id}
-              className="gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold data-[state=active]:bg-[hsl(var(--energy))] data-[state=active]:text-white"
+              className="gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold data-[state=active]:bg-foreground data-[state=active]:text-background"
             >
               {Icon && <Icon className="h-3.5 w-3.5" />}
               {t.label}
