@@ -36,7 +36,7 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = true, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
   return (
     <div
       className={`relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}

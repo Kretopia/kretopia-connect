@@ -1097,12 +1097,12 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    surrounding layout doesn't move. Horizontal only: vertical padding on
    an inline box never affects line height, and the content area already
    covers ascenders/descenders. */
-.k-gradient-text,
-:root .landing-accent,
-:root .pink-glow-breathe {
-  padding-inline: 0.16em;
-  margin-inline: -0.16em;
-}
+ .k-gradient-text,
+ :root .landing-accent,
+ :root .pink-glow-breathe {
+   padding-inline: 0.16em;
+   margin-inline: 0;
+ }
 
 /* ------------------------------------------------------------
    Gradient for the NON-text pink (icons, chips, dots, bars),

@@ -32,7 +32,7 @@ export interface EditorialPageHeroProps {
 }
 
 export const EditorialPageHero = ({
-  kicker, title, accentTitle, subtitle, children, align = "center", oneLine = true, subtitleOneLine = false,
+  kicker, title, accentTitle, subtitle, children, align = "center", oneLine = false, subtitleOneLine = false,
 }: EditorialPageHeroProps) => {
   const centered = align === "center";
 

@@ -7,8 +7,6 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser";
 import { cn } from "@/lib/utils";
 
-const ACCENT = "hsl(var(--energy))";
-
 interface FeatureAITutorialProps {
   /** Unique per feature, e.g. "studio". Gates the auto-open-once-for-new-users behavior. */
   featureKey: string;
@@ -76,14 +74,9 @@ export function FeatureAITutorial({
           aria-label={label}
           title={label}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition-colors hover:bg-[rgba(255,45,161,0.12)]",
+             "inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
             className,
           )}
-          style={{
-            borderColor: "rgba(255,45,161,0.28)",
-            backgroundColor: "rgba(255,45,161,0.05)",
-            color: ACCENT,
-          }}
         >
           {sparkle}
           <span className="hidden sm:inline">How this works</span>
@@ -93,14 +86,9 @@ export function FeatureAITutorial({
           type="button"
           onClick={() => setOpen(true)}
           className={cn(
-            "mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors",
+             "mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
             className,
           )}
-          style={{
-            borderColor: "rgba(255,45,161,0.3)",
-            backgroundColor: "rgba(255,45,161,0.06)",
-            color: ACCENT,
-          }}
         >
           {sparkle}
           How this works
@@ -115,7 +103,7 @@ export function FeatureAITutorial({
           <div
             aria-hidden
             className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--energy) / 0.12), transparent 65%)" }}
+             style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--foreground) / 0.06), transparent 65%)" }}
           />
           <div className="relative p-6">
             <p className="landing-eyebrow mb-1">AI-guided tour</p>
