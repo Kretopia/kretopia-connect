@@ -30,7 +30,14 @@ const STATUS_DOT: Record<string, string> = {
   active: "bg-[hsl(var(--energy))]",
   planning: "bg-muted-foreground/50",
   wrapping: "bg-primary",
-  completed: "bg-white",
+  // "Brightest = fully resolved" (same idiom as PAY_DOT.paid in
+  // studioCardHelpers.ts) needs a theme-aware token, not a literal
+  // white -- bg-white on bg-popover is invisible in light mode (both
+  // are pure #FFFFFF; confirmed via computed styles, not a guess).
+  // bg-foreground flips to near-black in light mode / white in dark
+  // mode, so it stays the highest-contrast dot against the popover's
+  // background in both themes.
+  completed: "bg-foreground",
   archived: "bg-muted-foreground/30",
 };
 
