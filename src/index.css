@@ -1093,8 +1093,8 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    element's own box, but italic glyphs overhang it on the right (the
    slanted last letter of "experience", "you", "people"…), and anything
    past the box edge is transparent -- i.e. invisible. Give the box
-   slack on both sides and take it back with an equal negative margin so
-   surrounding layout doesn't move. Horizontal only: vertical padding on
+   slack on both sides; headings can wrap naturally within their container.
+   Horizontal only: vertical padding on
    an inline box never affects line height, and the content area already
    covers ascenders/descenders. */
  .k-gradient-text,
@@ -1220,17 +1220,9 @@ svg.k-gradient-icon {
   animation: none;
   filter: none;
 }
-/* Plain-string .landing-accent usage (the landing chapters' own
-   <span className="landing-accent">the work</span>) renders fine at the
-   default `inline`. But CinematicHeaderPlate's accentTitle (used by 19+
-   feature-page headers) wraps its words in per-word Framer Motion spans
-   via renderStaggerWords -- an `inline` parent around multiple child
-   elements is the exact condition that silently failed to paint the
-   gradient at all in KretopiaHero's own "what you do" (fixed earlier in
-   this same pass with an explicit inline-block wrapper there). Confirmed
-   live in the browser: accentTitle was invisible until this was added.
-   inline-block gives every .landing-accent usage the same well-defined
-   single content box regardless of what's nested inside it. */
+ /* Some landing accent phrases still wrap children; inline-block gives
+    those phrases a well-defined gradient box. Feature headings instead
+    use a single uninterrupted inline .k-gradient-text phrase. */
 :root .landing-accent {
   display: inline-block;
 }
