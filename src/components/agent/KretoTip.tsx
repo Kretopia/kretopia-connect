@@ -201,7 +201,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
         )}
 
         <div className="min-w-0 flex-1 pr-6">
-          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground mb-1">
+          <p className="landing-eyebrow mb-1">
             Kreto · {tip.eyebrow}
           </p>
           <p className={cn("text-card-foreground/90 leading-snug", compact ? "text-sm" : "text-sm sm:text-[15px]")}>

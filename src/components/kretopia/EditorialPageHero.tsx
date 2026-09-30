@@ -12,6 +12,7 @@
  */
 import type { ReactNode } from "react";
 import { CinematicHeaderPlate } from "@/components/features/CinematicHeaderPlate";
+import { KGradientDefs } from "@/components/brand/KGradientDefs";
 
 export interface EditorialPageHeroProps {
   /** Small uppercase kicker, eg. "Verified Credits". */
@@ -38,9 +39,10 @@ export const EditorialPageHero = ({
 
   return (
     <section
-      className="relative overflow-hidden"
+      className="feature-reference-header relative overflow-hidden"
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
+      <KGradientDefs />
       {/* aurora */}
       <div
         aria-hidden
