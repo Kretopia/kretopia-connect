@@ -976,12 +976,12 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  /* Pink by default -- most call sites want the brand accent here and
-     used to re-declare it inline one at a time. Sites that deliberately
-     want the neutral tone (AuthBrandingPanel's own inline overrides,
-     EditorialChapter/About's numbered kickers) set their own color and
-     take precedence over this default via normal cascade/specificity. */
-  color: hsl(var(--energy));
+  /* Neutral by default — the gradient is reserved for titles (see the
+     GRADIENT TEXT SCOPE block). Call sites that deliberately want a
+     coloured kicker (AuthBrandingPanel's inline overrides,
+     EditorialChapter/About's numbered kickers) still set their own
+     color and take precedence via normal cascade/specificity. */
+  color: hsl(var(--muted-foreground));
 }
 
 .landing-h1 {
@@ -1099,8 +1099,7 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    covers ascenders/descenders. */
 .k-gradient-text,
 :root .landing-accent,
-:root .pink-glow-breathe,
-:root .landing-eyebrow {
+:root .pink-glow-breathe {
   padding-inline: 0.16em;
   margin-inline: -0.16em;
 }
@@ -1195,36 +1194,24 @@ svg.k-gradient-icon {
 }
 
 /* ============================================================
-   GRADIENT TEXT SCOPE — project-wide (was landing-pilot-only via
-   .k-gradient-scope; rolled out per this block's own prior
-   instructions once the landing pilot was validated by the user).
-   Turns the product's existing pink *text* language (accent words,
-   eyebrows, the trailing period on chapter titles) into the gradient
-   above without touching each call site: every .landing-accent /
-   .pink-glow-breathe / .landing-eyebrow anywhere in the app follows,
-   confirmed via grep to be text-only call sites (CinematicHeaderPlate's
-   19 feature-page headers, Auth, AuthBrandingPanel, the Editorial*
-   template family, Studio's VoiceFirstCreateModal/NewRoomLaunchScreen,
-   onboarding, About, Ambassadors, MeetupManage, PerksTab) before this
-   was flipped. Buttons, icon strokes, chips and glows are deliberately
-   NOT touched — the ask was coloured *text* only.
+   GRADIENT TEXT SCOPE — titles only.
+   The user's direction: the Kretopia gradient is reserved for TITLES
+   (hero titles, feature-page title accent lines, the landing chapters'
+   accent words). Eyebrows and subtitles stay neutral -- no gradient,
+   no purple. Every .landing-accent / .pink-glow-breathe anywhere in
+   the app follows this scope; .landing-eyebrow was deliberately
+   REMOVED from it and falls back to its own neutral color above.
 
    Inline-styled text that has no class (color: ACCENT on a span) needs
    .k-gradient-text added in its JSX directly instead -- this scope only
-   catches the three named classes above.
+   catches the two named classes above.
 
    Portals (dialogs, popovers) render via React portals into <body>, so
    :root (the <html> element) still contains them -- this rule reaches
    them same as anywhere else in the DOM.
-
-   Legibility note: the first third of the gradient (#4012F8 -> #A516C5)
-   is only ~2.5:1-3.4:1 against #05070D, fine for large headings but
-   below AA for small text. If small eyebrows read too dark, tune
-   --k-text-gradient (one place), not each call site.
    ============================================================ */
 :root .landing-accent,
-:root .pink-glow-breathe,
-:root .landing-eyebrow {
+:root .pink-glow-breathe {
   background-image: var(--k-text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1232,13 +1219,6 @@ svg.k-gradient-icon {
   text-shadow: none;
   animation: none;
   filter: none;
-}
-/* A block-level eyebrow would stretch the gradient across its whole
-   container while the text only fills part of it (left-aligned ones
-   would only ever show the dark blue end). inline-block makes the box
-   hug the text so the gradient spans the text itself. */
-:root .landing-eyebrow {
-  display: inline-block;
 }
 /* Plain-string .landing-accent usage (the landing chapters' own
    <span className="landing-accent">the work</span>) renders fine at the

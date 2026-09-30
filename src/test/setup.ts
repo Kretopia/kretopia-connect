@@ -22,6 +22,7 @@ Object.defineProperty(window, "matchMedia", {
 class IntersectionObserverStub {
   readonly root: Element | null = null;
   readonly rootMargin: string = "";
+  readonly scrollMargin: string = "0px";
   readonly thresholds: ReadonlyArray<number> = [];
   observe() {}
   unobserve() {}

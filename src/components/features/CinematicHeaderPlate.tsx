@@ -13,13 +13,11 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { renderStaggerWords } from "@/components/typography/StaggerReveal";
-import { kGlow } from "@/lib/kGradient";
 
-// Solid stop from the Kretopia logo gradient (violet), not the retired
-// flat pink/magenta -- used for the eyebrow dot's solid fill, which
-// can't render a gradient. kGlow() (the pill's translucent border/
-// background below) reads the same stop at partial opacity.
-const ACCENT = "#A516C5";
+// The gradient is reserved for titles (see index.css's GRADIENT TEXT
+// SCOPE block), so the eyebrow chrome stays neutral: a plain token dot
+// and a token hairline pill -- no purple, no kGlow tint.
+const ACCENT = "hsl(var(--muted-foreground))";
 
 // Feature titles are short by convention (2-4 words per this file's own
 // prop doc), so the hero's per-word stagger (via the shared
@@ -74,13 +72,12 @@ export function CinematicHeaderPlate({
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
           <p
             className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6"
-            style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
+            style={{ borderColor: "hsl(var(--border))" }}
           >
             <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
-            {/* No inline color here: .landing-eyebrow's own project-wide
-                gradient-scope CSS rule (index.css) paints it -- an inline
-                style={{color: ACCENT}} would win on specificity and
-                silently override that gradient with a flat fill. */}
+            {/* No inline color here: .landing-eyebrow's own neutral default
+                (index.css) paints it -- keep this span class-only so the
+                scope stays in one place. */}
             <span className="landing-eyebrow">{eyebrow}</span>
           </p>
           <h1

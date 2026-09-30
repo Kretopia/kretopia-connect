@@ -193,12 +193,9 @@ export const ChapterSection = ({
                 same breathing accent dot AuthBrandingPanel's eyebrow pill
                 uses — one small "AI-aware" presence signal, reused rather
                 than invented per-section. */}
-            {/* No inline color on the eyebrow (unlike before): "III ·
-                Verified Credits" -- the reference pattern this template
-                now matches -- lets .landing-eyebrow's own gradient-scope
-                CSS rule paint it. An inline style={{color: accent}} here
-                would win on specificity and silently override that
-                gradient with a flat fill, the exact bug this fixes. */}
+            {/* No inline color on the eyebrow: .landing-eyebrow's own
+                neutral default (index.css) paints it -- the gradient is
+                reserved for titles (h2 below), eyebrows stay neutral. */}
             <div className="flex items-center gap-2 mb-6">
               <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: accent }} />
               <span className="landing-eyebrow">
