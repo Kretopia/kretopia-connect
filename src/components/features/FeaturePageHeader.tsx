@@ -79,7 +79,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
               label={tutorial.label}
               steps={tutorial.steps}
               variant="floating"
-              className="absolute right-4 top-4 z-10"
+              className="feature-tutorial-trigger z-10"
             />
           )
         }
