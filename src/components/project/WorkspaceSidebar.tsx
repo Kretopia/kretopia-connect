@@ -120,9 +120,25 @@ export function WorkspaceSidebar({ projects, activeProjectId, onClose, onProject
         {/* Project List — capped to a viewport-relative max height and
             scrolling internally, rather than flex-1 against an ancestor
             that may not define its own height (see the popover note
-            above). */}
-        <ScrollArea className="max-h-[45vh]">
-          <div className="p-3 space-y-1">
+            above).
+
+            w-[320px] (not w-full) on the inner wrapper is load-bearing,
+            not decorative: Radix ScrollArea's Viewport renders an
+            internal, unstyleable `display: table` wrapper around its
+            children for its own scroll-size measurement, which sizes to
+            its content's natural width regardless of any percentage
+            width on an ancestor -- a long, unbroken Project title would
+            silently blow past the popover's edge with no ellipsis ever
+            appearing (found and confirmed via a real mobile-viewport
+            check, not theoretical: rendered row width was 555px inside a
+            320px popover, clipped by overflow-hidden with no "…" ever
+            painted, since the ellipsis would render past the clipped
+            edge). An explicit pixel width breaks that percentage/table
+            sizing loop. 320px matches ThriveDesk.tsx's PopoverContent
+            className="w-80 ..." exactly -- if that width ever changes,
+            update this one to match, or the same clipping recurs. */}
+        <ScrollArea className="max-h-[45vh] w-full">
+          <div className="p-3 space-y-1 w-[320px]">
             {visibleProjects.map((project) => {
               const deadline = project.deadline ? new Date(project.deadline) : null;
               const overdue = deadline ? isPast(deadline) && project.status !== "completed" : false;
