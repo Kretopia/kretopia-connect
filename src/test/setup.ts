@@ -22,9 +22,7 @@ Object.defineProperty(window, "matchMedia", {
 class IntersectionObserverStub {
   readonly root: Element | null = null;
   readonly rootMargin: string = "";
-  // Required by the current lib.dom IntersectionObserver type (newer
-  // TypeScript DOM libs added it); jsdom never reads it in tests.
-  readonly scrollMargin: number = 0;
+  readonly scrollMargin: string = "0px";
   readonly thresholds: ReadonlyArray<number> = [];
   observe() {}
   unobserve() {}
