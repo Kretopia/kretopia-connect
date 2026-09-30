@@ -61,17 +61,19 @@ All colors MUST be HSL.
     --btn-glass-neutral-tint: 15, 15, 18;
 
     /* Energy = Kretopia brand accent (primary highlight/CTA signal).
-       Was flat magenta (327 100% 59% / #FF2DA1) -- repointed to the
-       violet stop of the actual logo's own 4-stop gradient (--k-g-2,
-       #A516C5, converted to HSL: hsl(289 80% 43%)) per the project-wide
-       "no flat pink, Kretopia logo is the core" pass. Consumed everywhere
-       as hsl(var(--energy)) (a bare H S% L% triplet, not a full color),
-       so it can only ever be ONE solid hue -- true multi-stop gradient
-       text/fills still come from --k-text-gradient / --k-g-1..4 directly,
-       this is just "the one accent color" for everything that can't be
-       a gradient (borders, rings, dots, badges, bars). */
-    --energy: 289 80% 43%;
-    --energy-foreground: 0 0% 100%;
+       Was flat magenta (327 100% 59% / #FF2DA1), then briefly the logo's
+       violet stop (289 80% 43% / #A516C5) -- user feedback on the full
+       gradient rollout called that violet "ugly" once it was everywhere,
+       and asked for "a regular UX/UI mainly white" instead, with actual
+       brand color reserved for titles only (--k-text-gradient / --k-g-1..4
+       directly). So --energy now tracks the same neutral ink/white as
+       --foreground/--primary per theme -- it stops being a distinct
+       "spectrum" hue at all and just reads as regular UI. Consumed
+       everywhere as hsl(var(--energy)) (a bare H S% L% triplet, not a
+       full color), so it can only ever be ONE solid tone -- borders,
+       rings, dots, badges, bars. */
+    --energy: 240 11% 8%;
+    --energy-foreground: 36 27% 97%;
 
     /* Fixed print-safe QR palette: the light quiet zone keeps the code scannable in either theme. */
     --qr-paper: 0 0% 100%;
@@ -101,25 +103,27 @@ All colors MUST be HSL.
        Kretopia brand-sheet gradient palette are retired: one accent,
        used strategically, not a rainbow of section colors.
        ============================================================ */
-    --signal-pink: 289 80% 43%;      /* retired triad member — now = accent */
-    --signal-amber: 289 80% 43%;     /* retired triad member — now = accent */
-    --signal-violet: 289 80% 43%;    /* retired triad member — now = accent */
-    --signal-teal: 289 80% 43%;      /* kept as an alias name; hundreds of call sites reference it -- same value as --energy above */
+    --signal-pink: var(--energy);      /* retired triad member — now = accent */
+    --signal-amber: var(--energy);     /* retired triad member — now = accent */
+    --signal-violet: var(--energy);    /* retired triad member — now = accent */
+    --signal-teal: var(--energy);      /* kept as an alias name; hundreds of call sites reference it -- tracks --energy, so the "mainly white" rollback needs one edit, not five */
 
     /* Product accent tokens — all product areas now share the one accent.
        Passport/Scout/Match no longer get their own hue; --accent-pay
        stays green because it's a functional money-state signal, not
-       decoration (see "preserve semantic colors" rule). */
-    --accent-passport: 289 80% 43%;
-    --accent-scout:    289 80% 43%;
-    --accent-match:    289 80% 43%;
+       decoration (see "preserve semantic colors" rule). Aliased to
+       var(--energy) (not a hardcoded hue) so the neutral rollback above
+       propagates here automatically. */
+    --accent-passport: var(--energy);
+    --accent-scout:    var(--energy);
+    --accent-match:    var(--energy);
     --accent-pay:      141 71% 42%;   /* #1DB954 — Money only, functional */
     --radius: 1rem;
 
     /* Canonical reset tokens (requested names) — thin aliases over the
        tokens above so existing call sites keep working unchanged while
        new code can reach for these directly. */
-    --color-accent: 289 80% 43%;           /* #FF2DA1 */
+    --color-accent: var(--energy);         /* neutral ink/white, see --energy */
 
     /* Kretopia text gradient -- the exact gradient "what you do." wears in
        the landing hero (logo colours, 135deg). Single source: the hero,
@@ -170,19 +174,20 @@ All colors MUST be HSL.
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-bounce: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    /* Mode accent tokens — one accent, no per-mode hue switching */
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 0 0% 100%;
-    --mode-glow: 0 0 32px hsl(289 80% 43% / 0.22);
+    /* Mode accent tokens — one accent, no per-mode hue switching. Aliased
+       to --energy so the neutral "mainly white" rollback applies here too. */
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 32px hsl(var(--energy) / 0.22);
   }
 
   /* Nav modes (Create/Work) no longer switch accent hue — same token
      everywhere so routes share one design system, not a color per section. */
   [data-nav-mode="create"],
   [data-nav-mode="work"] {
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 0 0% 100%;
-    --mode-glow: 0 0 32px hsl(289 80% 43% / 0.22);
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 32px hsl(var(--energy) / 0.22);
   }
 
 
@@ -226,10 +231,12 @@ All colors MUST be HSL.
     --cream: 38 35% 92%;
     --cream-foreground: 225 44% 4%;
 
-    /* Energy = Kretopia brand accent credibility -- see :root for why
-       this moved from flat magenta to the logo gradient's violet stop. */
-    --energy: 289 80% 43%;
-    --energy-foreground: 0 0% 100%;
+    /* Energy = Kretopia brand accent -- see :root for why this rolled
+       back off the logo gradient's violet stop to a neutral, theme-
+       matching white ("mainly white" per user feedback on the purple
+       being everywhere and looking ugly). */
+    --energy: 0 0% 100%;
+    --energy-foreground: 225 44% 4%;
 
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -301,21 +308,21 @@ All colors MUST be HSL.
     --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.7);
     --shadow-card-hover: 0 12px 40px -8px hsl(289 80% 43% / 0.22), 0 4px 20px -4px hsl(0 0% 0% / 0.7);
 
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 225 44% 4%;
-    --mode-glow: 0 0 32px hsl(289 80% 43% / 0.35);
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 32px hsl(var(--energy) / 0.35);
   }
 
   .dark [data-nav-mode="create"] {
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 0 0% 100%;
-    --mode-glow: 0 0 40px hsl(289 80% 43% / 0.4);
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 40px hsl(var(--energy) / 0.4);
   }
 
   .dark [data-nav-mode="work"] {
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 0 0% 100%;
-    --mode-glow: 0 0 40px hsl(289 80% 43% / 0.4);
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 40px hsl(var(--energy) / 0.4);
   }
 
   /* ============================================================
@@ -328,16 +335,16 @@ All colors MUST be HSL.
     --primary-foreground: 225 44% 4%;
     --accent: 222 22% 13%;
     --accent-foreground: 0 0% 100%;
-    --energy: 289 80% 43%;
-    --energy-foreground: 0 0% 100%;
+    --energy: 0 0% 100%;
+    --energy-foreground: 225 44% 4%;
     --ring: 0 0% 100%;
     --gradient-secondary: hsl(289 80% 43% / 0.10);
     --gradient-subtle: hsl(289 80% 43% / 0.05);
     --gradient-hero: hsl(289 80% 43% / 0.08);
     --shadow-glow: 0 0 32px hsl(289 80% 43% / 0.35);
-    --mode-accent: 289 80% 43%;
-    --mode-accent-foreground: 0 0% 100%;
-    --mode-glow: 0 0 32px hsl(289 80% 43% / 0.35);
+    --mode-accent: var(--energy);
+    --mode-accent-foreground: var(--energy-foreground);
+    --mode-glow: 0 0 32px hsl(var(--energy) / 0.35);
   }
 
   /* ============================================================
@@ -976,9 +983,10 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  /* Pink by default -- most call sites want the brand accent here and
-     used to re-declare it inline one at a time. Sites that deliberately
-     want the neutral tone (AuthBrandingPanel's own inline overrides,
+  /* Solid --energy by default (now a neutral ink/white, not a gradient
+     or a flat hue -- eyebrows stay out of the gradient scope below,
+     see that block's own comment). Sites that deliberately want a
+     different tone (AuthBrandingPanel's own inline overrides,
      EditorialChapter/About's numbered kickers) set their own color and
      take precedence over this default via normal cascade/specificity. */
   color: hsl(var(--energy));
@@ -1099,8 +1107,7 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    covers ascenders/descenders. */
 .k-gradient-text,
 :root .landing-accent,
-:root .pink-glow-breathe,
-:root .landing-eyebrow {
+:root .pink-glow-breathe {
   padding-inline: 0.16em;
   margin-inline: -0.16em;
 }
@@ -1195,23 +1202,23 @@ svg.k-gradient-icon {
 }
 
 /* ============================================================
-   GRADIENT TEXT SCOPE — project-wide (was landing-pilot-only via
-   .k-gradient-scope; rolled out per this block's own prior
-   instructions once the landing pilot was validated by the user).
-   Turns the product's existing pink *text* language (accent words,
-   eyebrows, the trailing period on chapter titles) into the gradient
-   above without touching each call site: every .landing-accent /
-   .pink-glow-breathe / .landing-eyebrow anywhere in the app follows,
-   confirmed via grep to be text-only call sites (CinematicHeaderPlate's
-   19 feature-page headers, Auth, AuthBrandingPanel, the Editorial*
-   template family, Studio's VoiceFirstCreateModal/NewRoomLaunchScreen,
-   onboarding, About, Ambassadors, MeetupManage, PerksTab) before this
-   was flipped. Buttons, icon strokes, chips and glows are deliberately
-   NOT touched — the ask was coloured *text* only.
+   GRADIENT TEXT SCOPE — project-wide, but RESTRAINED per user feedback
+   on the first full rollout: gradient on every eyebrow + every chapter
+   title's accent phrase, everywhere, read as "too much" and broke the
+   page's hierarchy/coherence. .landing-eyebrow was pulled back out of
+   this scope entirely (eyebrows are small metadata kickers, closer to a
+   subtitle than a title -- "no gradient on subtitles" applies to them);
+   they render at their own plain solid --energy colour again (now a
+   neutral ink/white, see :root's --energy comment, not the retired
+   purple). Only .landing-accent / .pink-glow-breathe -- the ONE accent
+   phrase inside a selected few chapter/page titles -- still gets the
+   real gradient. Which chapters carry that phrase is now a deliberate,
+   sparse choice made at each call site (see LandingBelowFold.tsx), not
+   "every chapter, uniformly" like before.
 
    Inline-styled text that has no class (color: ACCENT on a span) needs
    .k-gradient-text added in its JSX directly instead -- this scope only
-   catches the three named classes above.
+   catches the two named classes above.
 
    Portals (dialogs, popovers) render via React portals into <body>, so
    :root (the <html> element) still contains them -- this rule reaches
@@ -1219,12 +1226,10 @@ svg.k-gradient-icon {
 
    Legibility note: the first third of the gradient (#4012F8 -> #A516C5)
    is only ~2.5:1-3.4:1 against #05070D, fine for large headings but
-   below AA for small text. If small eyebrows read too dark, tune
-   --k-text-gradient (one place), not each call site.
+   below AA for small text.
    ============================================================ */
 :root .landing-accent,
-:root .pink-glow-breathe,
-:root .landing-eyebrow {
+:root .pink-glow-breathe {
   background-image: var(--k-text-gradient);
   -webkit-background-clip: text;
   background-clip: text;
@@ -1232,13 +1237,6 @@ svg.k-gradient-icon {
   text-shadow: none;
   animation: none;
   filter: none;
-}
-/* A block-level eyebrow would stretch the gradient across its whole
-   container while the text only fills part of it (left-aligned ones
-   would only ever show the dark blue end). inline-block makes the box
-   hug the text so the gradient spans the text itself. */
-:root .landing-eyebrow {
-  display: inline-block;
 }
 /* Plain-string .landing-accent usage (the landing chapters' own
    <span className="landing-accent">the work</span>) renders fine at the
