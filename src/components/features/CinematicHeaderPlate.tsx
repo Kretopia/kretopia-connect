@@ -13,7 +13,6 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { renderStaggerWords } from "@/components/typography/StaggerReveal";
-import { kGlow } from "@/lib/kGradient";
 
 // The gradient is reserved for titles (see index.css's GRADIENT TEXT
 // SCOPE block), so the eyebrow chrome stays neutral: a plain token dot
