@@ -976,12 +976,12 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   font-weight: 600;
   letter-spacing: 0.32em;
   text-transform: uppercase;
-  /* Pink by default -- most call sites want the brand accent here and
-     used to re-declare it inline one at a time. Sites that deliberately
-     want the neutral tone (AuthBrandingPanel's own inline overrides,
-     EditorialChapter/About's numbered kickers) set their own color and
-     take precedence over this default via normal cascade/specificity. */
-  color: hsl(var(--energy));
+  /* Neutral by default — the gradient is reserved for titles (see the
+     GRADIENT TEXT SCOPE block). Call sites that deliberately want a
+     coloured kicker (AuthBrandingPanel's inline overrides,
+     EditorialChapter/About's numbered kickers) still set their own
+     color and take precedence via normal cascade/specificity. */
+  color: hsl(var(--muted-foreground));
 }
 
 .landing-h1 {
