@@ -193,18 +193,27 @@ export const ChapterSection = ({
                 same breathing accent dot AuthBrandingPanel's eyebrow pill
                 uses — one small "AI-aware" presence signal, reused rather
                 than invented per-section. */}
+            {/* No inline color on the eyebrow (unlike before): "III ·
+                Verified Credits" -- the reference pattern this template
+                now matches -- lets .landing-eyebrow's own gradient-scope
+                CSS rule paint it. An inline style={{color: accent}} here
+                would win on specificity and silently override that
+                gradient with a flat fill, the exact bug this fixes. */}
             <div className="flex items-center gap-2 mb-6">
               <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: accent }} />
-              <span className="landing-eyebrow" style={{ color: accent }}>
+              <span className="landing-eyebrow">
                 {index}. {kicker}
               </span>
             </div>
 
+            {/* Trailing period stays the title's own plain white, not a
+                colored/animated pink-glow-breathe dot -- matching "III ·
+                Verified Credits"'s own pattern (a bare "." after the
+                gradient span, inheriting the h2's white) instead of
+                coloring the period itself. */}
             <h2 className={`landing-h2 landing-glow${gradientTitle ? " k-gradient-title" : ""}`}>
               {title}
-              {!gradientTitle && (
-                <span className="pink-glow-breathe" style={{ color: accent }}>.</span>
-              )}
+              {!gradientTitle && "."}
             </h2>
 
             <p className="landing-sub mt-7 max-w-md">
@@ -215,9 +224,14 @@ export const ChapterSection = ({
               <div className="mt-7 grid grid-cols-2 gap-3 max-w-md">
                 {concepts.map((c) => (
                   <div key={c.label} className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
+                    {/* No inline color here either -- same override bug
+                        as the eyebrow above: .k-gradient-text's own
+                        color:transparent (needed for the background-clip
+                        gradient to paint) would lose to an inline
+                        style={{color: accent}} on specificity. */}
                     <p
                       className="k-gradient-text w-fit text-[10px] font-bold uppercase tracking-[0.18em] mb-1"
-                      style={{ color: accent, fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                      style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                     >
                       {c.label}
                     </p>

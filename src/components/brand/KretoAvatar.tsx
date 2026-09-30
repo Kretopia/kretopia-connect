@@ -47,10 +47,10 @@ const HALO_ANIMATE: Record<AvatarState, { scale: number[]; opacity: number[] }> 
 const HALO_DURATION: Record<AvatarState, number> = { idle: 4, thinking: 1.1, listening: 1.6, speaking: 0.9, recording: 1.2 };
 const HALO_STATIC_OPACITY: Record<AvatarState, number> = { idle: 0.5, thinking: 0.75, listening: 0.65, speaking: 0.7, recording: 0.8 };
 const HALO_COLOR: Record<AvatarState, string> = {
-  idle: "var(--kretopia-sunset, hsl(327 100% 59%))",
-  thinking: "var(--kretopia-sunset, hsl(327 100% 59%))",
-  listening: "var(--kretopia-sunset, hsl(327 100% 59%))",
-  speaking: "var(--kretopia-sunset, hsl(327 100% 59%))",
+  idle: "var(--kretopia-sunset, hsl(289 80% 43%))",
+  thinking: "var(--kretopia-sunset, hsl(289 80% 43%))",
+  listening: "var(--kretopia-sunset, hsl(289 80% 43%))",
+  speaking: "var(--kretopia-sunset, hsl(289 80% 43%))",
   recording: "hsl(var(--destructive))",
 };
 

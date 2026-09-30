@@ -17,17 +17,26 @@
  * utility text (eyebrow labels, the "Free to start" line) stays plain —
  * gradient-filled text at that size reads as muddy, not on-brand.
  *
- * CLIPPING FIX ("what you do." cut in half) — this is the classic
+ * CLIPPING FIX ("what you do" cut in half) — this is the classic
  * `background-clip: text` artifact: WebKit/Blink clip gradient text
  * tighter than normal glyph rendering, so ascenders/descenders get cut
  * unless the element carries its own extra vertical padding on top of
  * line-height. The earlier lineHeight:1.25 on the H1 wasn't enough
  * because it's a container-level fix for a per-line clipping problem.
- * Fixed at the source instead: the gradient span itself now carries
- * lineHeight:1.3 + paddingTop/paddingBottom, self-contained regardless of
- * the H1's own shared line-height, and doesn't depend on any gradient
- * *class* for the fill itself -- only on the shared --k-text-gradient
- * value (index.css), which every other coloured text on the page reads too.
+ * Fixed at the source instead: the OUTER block-level line now carries
+ * lineHeight:1.3 + paddingTop/paddingBottom (self-contained regardless of
+ * the H1's own shared line-height), with the actual gradient clip on an
+ * INNER inline span around just the words, not the line itself -- only on
+ * the shared --k-text-gradient value (index.css), which every other
+ * coloured text on the page reads too.
+ *
+ * TRAILING PERIOD — per the "III · Verified Credits" pattern (title stays
+ * white, only the phrase's logical ending gets the gradient, the period
+ * after it stays plain white), the final "." is a sibling of the gradient
+ * span, not inside it -- background-clip:text's `color:transparent` would
+ * otherwise swallow it into the gradient too. Splitting the wrapper into
+ * an outer block (line-height/padding) + inner inline gradient span is
+ * what makes that possible while keeping the period on the same line.
  */
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -44,7 +53,11 @@ import { GlassCta } from "@/components/ui/glass-cta";
  *  load. Spacing between words comes from a margin on every span but the
  *  line's last, not a text-node space (which is what was collapsing). */
 const LINE_1 = ["Find", "work", "that", "fits"];
-const LINE_2 = ["what", "you", "do."];
+// Trailing period lives outside this array on purpose — see the closing
+// "." rendered right after the gradient span below, kept plain white to
+// match the "III · Verified Credits" pattern (gradient covers the
+// phrase's logical ending, the period stays the title's own white).
+const LINE_2 = ["what", "you", "do"];
 
 // Sampled from /logokretopia-removebg-preview.png — see file header. The
 // stops now live once in index.css (--k-text-gradient) because every
@@ -187,27 +200,36 @@ export const KretopiaHero = () => {
                 </motion.span>
               ))}
             </span>
-            <span
-              className="block"
-              style={{
-                backgroundImage: KRETO_LOGO_GRADIENT,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-                lineHeight: 1.3,
-                paddingTop: "0.05em",
-                paddingBottom: "0.2em",
-              }}
-            >
-              {LINE_2.map((word, wi) => (
-                <motion.span
-                  key={wi}
-                  className={`inline-block${wi < LINE_2.length - 1 ? " mr-[0.28em]" : ""}`}
-                  variants={wordVariants(reducedMotion)}
-                >
-                  {word}
-                </motion.span>
-              ))}
+            {/* The block-level line/padding fix now lives on this outer
+                wrapper instead of the gradient span itself, so the
+                trailing "." can sit right after "do" on the same line
+                while staying outside the gradient's background-clip:text
+                (color: transparent) -- it inherits the h1's own white
+                instead, matching "III · Verified Credits"'s pattern of a
+                plain white period after the gradient phrase. */}
+            <span className="block" style={{ lineHeight: 1.3, paddingTop: "0.05em", paddingBottom: "0.2em" }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  backgroundImage: KRETO_LOGO_GRADIENT,
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                {LINE_2.map((word, wi) => (
+                  <motion.span
+                    key={wi}
+                    className={`inline-block${wi < LINE_2.length - 1 ? " mr-[0.28em]" : ""}`}
+                    variants={wordVariants(reducedMotion)}
+                  >
+                    {word}
+                  </motion.span>
+                ))}
+              </span>
+              <motion.span variants={wordVariants(reducedMotion)} className="inline-block text-white">
+                .
+              </motion.span>
             </span>
           </motion.span>
         </h1>
@@ -261,7 +283,7 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white/90 transition-transform duration-200 hover:-translate-y-0.5 hover:text-white ${ctaFocusRing} focus-visible:ring-[#F62489]/70`}
+              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full px-7 py-3.5 text-base font-semibold text-white/90 transition-transform duration-200 hover:-translate-y-0.5 hover:text-white ${ctaFocusRing} focus-visible:ring-[#A516C5]/70`}
               style={{
                 fontFamily: "'Satoshi', 'Inter', sans-serif",
                 border: "1.5px solid transparent",

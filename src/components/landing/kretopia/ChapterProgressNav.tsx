@@ -17,7 +17,9 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { CHAPTER_REGISTRY as CHAPTERS } from "./chapterRegistry";
 import { kGlow } from "@/lib/kGradient";
 
-const ACCENT = "#FF2DA1";
+// Focus-outline only (see usage below) -- a solid stop from the Kretopia
+// logo gradient, not the retired flat pink/magenta.
+const ACCENT = "#A516C5";
 
 interface ChapterProgressNavProps {
   /** Whether the below-fold chapters have mounted yet — re-scans anchors once true. */

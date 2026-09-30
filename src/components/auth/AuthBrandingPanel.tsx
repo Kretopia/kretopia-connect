@@ -44,10 +44,10 @@ export const AuthBrandingPanel = () => {
       {/* Sunset wash behind */}
       <div
         className="pointer-events-none absolute -top-32 -left-32 h-[560px] w-[560px] rounded-full opacity-50 blur-[140px]"
-        style={{ background: "var(--kretopia-sunset, hsl(327 100% 59%))" }}
+        style={{ background: "var(--kretopia-sunset, hsl(289 80% 43%))" }}
       />
       <div className="pointer-events-none absolute -bottom-40 -right-20 h-[420px] w-[420px] rounded-full opacity-30 blur-[120px]"
-           style={{ background: "hsl(327 100% 59%)" }} />
+           style={{ background: "hsl(289 80% 43%)" }} />
       <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/15 to-transparent" />
 
       {/* pt-8 sm:pt-12 matches the right column's own py-8 sm:py-12 exactly —

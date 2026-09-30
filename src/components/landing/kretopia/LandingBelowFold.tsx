@@ -64,19 +64,21 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-passport")}
         kicker="Passport"
         title={
+          // Gradient now covers the phrase's logical ending ("that made
+          // you"), matching "III · Verified Credits" -- it used to sit
+          // mid-sentence ("the work"), with plain white trailing after
+          // it, the one chapter that didn't end on its own accent span.
           <>
-            One place for <br />
+            One place for the work<br />
             <span className="landing-accent">
-              the work
-            </span>{" "}
-            <br className="hidden sm:block" />
-            that made you
+              that made you
+            </span>
           </>
         }
         body="Your Creative Passport brings your projects, credits, skills, collaborators and professional history together in one living record. Not just what you say you can do — what you've actually done."
         caption="Passport"
         image={passportImg}
-        accent="#FF2DA1"
+        accent="var(--k-g-2)"
         href="/auth?next=/profile"
         ctaLabel="Build Your Passport"
         closingLine="One link. Your creative career."
@@ -113,7 +115,7 @@ export const LandingBelowFold = () => {
         caption="Scout"
         image={scoutImg}
         video={scoutVideo}
-        accent="#FF2DA1"
+        accent="var(--k-g-2)"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
         reverse
@@ -139,7 +141,7 @@ export const LandingBelowFold = () => {
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
         caption="Match"
         image={matchImg}
-        accent="#FF2DA1"
+        accent="var(--k-g-2)"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"
         tutorialSteps={MATCH_TUTORIAL}
@@ -163,7 +165,7 @@ export const LandingBelowFold = () => {
         caption="Studio"
         image={studioImg}
         video={studioVideo}
-        accent="#FF2DA1"
+        accent="var(--k-g-2)"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
         closingLine="When the project is finished, the outcome strengthens the Creative Passports of the people who made it happen."
@@ -194,7 +196,7 @@ export const LandingBelowFold = () => {
         caption="Community"
         image={soundstagesImg}
         video={soundstagesVideo}
-        accent="#FF2DA1"
+        accent="var(--k-g-2)"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"
         tutorialSteps={SOUNDSTAGES_TUTORIAL}
