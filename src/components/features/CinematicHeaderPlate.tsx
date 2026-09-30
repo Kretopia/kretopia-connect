@@ -76,10 +76,9 @@ export function CinematicHeaderPlate({
             style={{ borderColor: "hsl(var(--border))" }}
           >
             <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
-            {/* No inline color here: .landing-eyebrow's own project-wide
-                gradient-scope CSS rule (index.css) paints it -- an inline
-                style={{color: ACCENT}} would win on specificity and
-                silently override that gradient with a flat fill. */}
+            {/* No inline color here: .landing-eyebrow's own neutral default
+                (index.css) paints it -- keep this span class-only so the
+                scope stays in one place. */}
             <span className="landing-eyebrow">{eyebrow}</span>
           </p>
           <h1
