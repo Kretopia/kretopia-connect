@@ -60,14 +60,22 @@ export function CinematicHeaderPlate({
       >
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
           {/* The landing chapter uses a bare, neutral eyebrow. */}
-          <div className="flex items-center mb-6">
+          <div className={`flex items-center mb-6 ${centered ? "justify-center" : ""}`}>
             <span className="landing-eyebrow">{eyebrow}</span>
           </div>
+          {/* Font size is a fixed, moderate clamp regardless of `oneLine` --
+              `oneLine` only toggles wrap behaviour (sm:whitespace-nowrap).
+              It used to also gate this size override, so once its default
+              flipped to false, every caller that didn't explicitly opt
+              into oneLine silently fell through to .landing-h1's own
+              clamp(1.35rem, 6vw, 4.75rem) -- the landing HERO's scale, up
+              to 76px on a real desktop viewport. That's a feature-page
+              header, not the hero; it keeps this smaller cap always. */}
           <h1
             className={`landing-h1 landing-glow w-full max-w-4xl text-balance break-words py-2 ${oneLine ? "sm:whitespace-nowrap" : ""}`}
             style={{
               color: "hsl(var(--foreground))",
-              ...(oneLine ? { fontSize: "clamp(1.5rem, 3.6vw, 3rem)" } : {}),
+              fontSize: "clamp(1.5rem, 3.6vw, 3rem)",
             }}
           >
             {title}
