@@ -3,7 +3,7 @@
  * EditorialPageHero. Both components wrap this with their own outer element
  * and backdrop layers (aurora/grid/grain) and pass through their own extras
  * (tutorial trigger, tabs, children) via `cornerSlot`/`footer` — but the
- * eyebrow pill, title, subtitle and reveal motion render from exactly one
+ * eyebrow, title, subtitle and reveal motion render from exactly one
  * place now, instead of being duplicated between the two files. See
  * TITLE_ANIMATION_AUDIT.md for why this split existed and was normalized:
  * the two components previously had identical motion timing but diverging
@@ -12,19 +12,10 @@
 import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { renderStaggerWords } from "@/components/typography/StaggerReveal";
 
-// The gradient is reserved for titles (see index.css's GRADIENT TEXT
-// SCOPE block), so the eyebrow chrome stays neutral: a plain token dot
-// and a token hairline pill -- no purple, no kGlow tint.
-const ACCENT = "hsl(var(--muted-foreground))";
-
-// Feature titles are short by convention (2-4 words per this file's own
-// prop doc), so the hero's per-word stagger (via the shared
-// renderStaggerWords helper) adds only a few hundred ms over the old
-// single-block fade -- not the hero's full-sentence-length reveal. See
-// TITLE_ANIMATION_AUDIT.md §7 for why this was previously landing-only
-// and why that exception was later lifted.
+// The Kreto chapter uses a neutral eyebrow and a single uninterrupted
+// gradient phrase. Splitting the gradient into animated word spans leaves
+// transparent words when background-clip paints only the parent's text.
 
 export interface CinematicHeaderPlateProps {
   eyebrow: string;
@@ -33,9 +24,7 @@ export interface CinematicHeaderPlateProps {
   subtitle?: string;
   /** Centre the whole block (default) or keep it left-aligned. */
   align?: "left" | "center";
-  /** Keep title + accent on a single line (auto-scaled to fit). Default true — every
-   *  feature-page title stays on one line; only the landing page's own hero (which
-   *  doesn't use this component) keeps the multi-line word-stagger treatment. */
+  /** Prefer one line on wider screens for short titles. Long titles wrap instead of clipping. */
   oneLine?: boolean;
   /** Keep the subtitle itself on one line (auto-scaled to fit, same idea as
    *  `oneLine` for the title). Default false — most callers write a subtitle
@@ -55,7 +44,7 @@ export interface CinematicHeaderPlateProps {
 }
 
 export function CinematicHeaderPlate({
-  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = true, subtitleOneLine = false, cornerSlot, footer, compact = false,
+  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = false, subtitleOneLine = false, cornerSlot, footer, compact = false,
 }: CinematicHeaderPlateProps) {
   const reducedMotion = useReducedMotion();
   const centered = align === "center";
@@ -73,29 +62,18 @@ export function CinematicHeaderPlate({
           {/* Same eyebrow treatment as the landing chapters ("VII · Kreto"):
               a bare breathing dot + neutral eyebrow text, no pill chrome. */}
           <div className="flex items-center gap-2 mb-6">
-            <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
+            <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground ai-ambient-breathe" />
             <span className="landing-eyebrow">{eyebrow}</span>
           </div>
           <h1
-            className={`landing-h1 landing-glow ${oneLine ? "whitespace-nowrap max-w-none" : "text-balance max-w-4xl"}`}
+            className={`landing-h1 landing-glow w-full max-w-4xl text-balance break-words py-2 ${oneLine ? "sm:whitespace-nowrap" : ""}`}
             style={{
               color: "hsl(var(--foreground))",
-              ...(oneLine ? { fontSize: "clamp(1.05rem, 4.2vw, 3rem)" } : {}),
+              ...(oneLine ? { fontSize: "clamp(1.5rem, 3.6vw, 3rem)" } : {}),
             }}
           >
-            <motion.span
-              initial="hidden"
-              animate="show"
-              variants={{ show: { transition: { staggerChildren: reducedMotion ? 0 : 0.075 } } }}
-            >
-              {renderStaggerWords(title, "t", reducedMotion)}
-              {accentTitle && (
-                <>
-                  {oneLine ? " " : <br />}
-                  <span className="landing-accent">{renderStaggerWords(accentTitle, "a", reducedMotion)}</span>
-                </>
-              )}
-            </motion.span>
+            {title}
+            {accentTitle && <>{" "}<span className="italic k-gradient-text">{accentTitle}</span></>}
           </h1>
           {subtitle && (
             <p
