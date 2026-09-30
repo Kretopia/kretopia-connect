@@ -22,16 +22,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-// This component is shared beyond the landing page (used verbatim in
-// Messages.tsx too, per the file header) -- the landing-only
-// KGradientDefs SVG (mounted inside KretopiaLanding.tsx) isn't guaranteed
-// to exist wherever this renders, so it can't safely depend on the
-// .k-gradient-icon/.k-gradient-fill classes' url(#k-icon-gradient)
-// reference. One solid stop from the Kretopia logo gradient (var(--k-g-2),
-// purple) instead of the retired flat pink/magenta --energy accent works
-// everywhere this renders, with no defs dependency.
-const ACCENT = "var(--k-g-2)";
 const SWIPE_THRESHOLD_PX = 40;
 const THINKING_MS = 360;
 
@@ -117,22 +109,19 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
       className="relative overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      style={{
-        outlineColor: ACCENT,
-      }}
     >
       {/* ambient glow — breathes slowly, an "always-on" AI presence */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-        style={{ background: "radial-gradient(60% 80% at 15% 0%, hsl(var(--energy) / 0.14), transparent 65%)" }}
+         style={{ background: "radial-gradient(60% 80% at 15% 0%, hsl(var(--foreground) / 0.08), transparent 65%)" }}
       />
 
       {/* Continuous scan-line sweep along the top edge */}
       <div aria-hidden className="pointer-events-none absolute top-0 left-0 right-0 h-px overflow-hidden">
         <div
           className="ai-scan-line h-full w-1/3"
-          style={{ background: "linear-gradient(90deg, transparent, hsl(var(--energy) / 0.9), transparent)" }}
+           style={{ background: "linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.45), transparent)" }}
         />
       </div>
 
@@ -163,8 +152,7 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
               {[0, 1, 2].map((i) => (
                 <motion.span
                   key={i}
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: ACCENT }}
+                   className="h-2 w-2 rounded-full bg-foreground"
                   animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }}
                   transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
                 />
@@ -192,20 +180,20 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
                     className="absolute inset-0 rounded-full ai-orbit-ring"
                     style={{
                       background:
-                          "conic-gradient(from 0deg, transparent 0%, hsl(var(--energy) / 0.95) 12%, transparent 32%, transparent 58%, hsl(var(--energy) / 0.75) 74%, transparent 94%)",
+                          "conic-gradient(from 0deg, transparent 0%, hsl(var(--foreground) / 0.7) 12%, transparent 32%, transparent 58%, hsl(var(--foreground) / 0.5) 74%, transparent 94%)",
                     }}
                   />
                   {/* Breathing halo behind the ring */}
                   <div
                     aria-hidden
                     className="absolute -inset-1.5 rounded-full ai-ambient-breathe"
-                    style={{ background: "radial-gradient(circle, hsl(var(--energy) / 0.28), transparent 70%)" }}
+                     style={{ background: "radial-gradient(circle, hsl(var(--foreground) / 0.12), transparent 70%)" }}
                   />
                   {/* Icon box, inset so the ring peeks out around its edge */}
                   <span
-                    className="absolute inset-[3px] flex items-center justify-center rounded-full border border-energy/30 bg-card"
+                     className="absolute inset-[3px] flex items-center justify-center rounded-full border border-border bg-card"
                   >
-                    <Icon className="h-[18px] w-[18px]" style={{ color: ACCENT }} aria-hidden />
+                     <Icon className="h-[18px] w-[18px] text-foreground" aria-hidden />
                   </span>
                 </motion.div>
               )}
@@ -225,51 +213,52 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
       <div
         className="relative flex items-center justify-between gap-3 border-t border-border px-5 py-3.5 sm:px-6"
       >
-        <button
+         <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={prev}
           disabled={isFirst}
           aria-label="Previous step"
-          className="btn-glass btn-glass-outline flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2"
-          style={{ outlineColor: ACCENT }}
+          className="h-8 w-8 rounded-full"
         >
           <ChevronLeft className="h-4 w-4 text-foreground/80" aria-hidden />
-        </button>
+         </Button>
 
         {/* Clickable step pills — the progress indicator doubles as jump nav */}
         <div className="flex items-center gap-1.5" role="tablist" aria-label={`${label} steps`}>
           {steps.map((s, i) => (
-            <button
+             <Button
               key={s.title}
               type="button"
+              variant="ghost"
               role="tab"
               aria-selected={i === index}
               aria-label={`Go to step ${i + 1}: ${s.title}`}
               onClick={() => goTo(i)}
               className={cn(
-                "relative h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
+                 "relative h-1.5 min-w-1.5 rounded-full p-0 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2",
                 i === index && "ai-ambient-breathe",
+                 i <= index ? "bg-foreground" : "bg-muted-foreground/25",
               )}
               style={{
                 width: i === index ? "22px" : "6px",
-                 backgroundColor: i <= index ? ACCENT : "hsl(var(--muted-foreground) / 0.25)",
-                 boxShadow: i === index ? "0 0 8px hsl(var(--energy) / 0.65)" : "none",
-                outlineColor: ACCENT,
               }}
-            />
+             />
           ))}
         </div>
 
-        <button
+         <Button
           type="button"
+          variant="outline"
+          size="icon"
           onClick={next}
           disabled={isLast}
           aria-label="Next step"
-          className="btn-glass btn-glass-outline flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-30 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2"
-          style={{ outlineColor: ACCENT }}
+          className="h-8 w-8 rounded-full"
         >
           <ChevronRight className="h-4 w-4 text-foreground/80" aria-hidden />
-        </button>
+         </Button>
       </div>
     </div>
   );
