@@ -152,7 +152,7 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
               {[0, 1, 2].map((i) => (
                 <motion.span
                   key={i}
-                   className="h-2 w-2 rounded-full bg-foreground"
+                   className="k-gradient-fill h-2 w-2 rounded-full"
                   animate={{ opacity: [0.25, 1, 0.25], y: [0, -3, 0] }}
                   transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
                 />
@@ -191,9 +191,9 @@ export const FeatureTutorial = ({ steps, label, activeStep, onStepChange }: Feat
                   />
                   {/* Icon box, inset so the ring peeks out around its edge */}
                   <span
-                     className="absolute inset-[3px] flex items-center justify-center rounded-full border border-border bg-card"
+                     className="k-gradient-chip absolute inset-[3px] flex items-center justify-center rounded-full bg-card"
                   >
-                     <Icon className="h-[18px] w-[18px] text-foreground" aria-hidden />
+                     <Icon className="k-gradient-icon h-[18px] w-[18px]" aria-hidden />
                   </span>
                 </motion.div>
               )}

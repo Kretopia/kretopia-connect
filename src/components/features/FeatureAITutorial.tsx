@@ -6,6 +6,7 @@ import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface FeatureAITutorialProps {
   /** Unique per feature, e.g. "studio". Gates the auto-open-once-for-new-users behavior. */
@@ -68,31 +69,35 @@ export function FeatureAITutorial({
   return (
     <>
       {variant === "floating" ? (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setOpen(true)}
           aria-label={label}
           title={label}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            "inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground hover:text-foreground",
             className,
           )}
         >
           {sparkle}
           <span className="hidden sm:inline">How this works</span>
-        </button>
+        </Button>
       ) : (
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           onClick={() => setOpen(true)}
           className={cn(
-            "mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+            "mt-3 inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
             className,
           )}
         >
           {sparkle}
           How this works
-        </button>
+        </Button>
       )}
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : dismiss())}>
@@ -112,13 +117,14 @@ export function FeatureAITutorial({
               .
             </h2>
             <TutorialStepper steps={steps} label={label} autoPlay={!reducedMotion} />
-            <button
+            <Button
               type="button"
+              variant="outline"
               onClick={dismiss}
-              className="btn-glass btn-glass-primary mt-6 w-full rounded-full px-5 py-2.5 text-sm font-semibold"
+              className="mt-6 w-full rounded-full border-border text-sm font-semibold"
             >
               Got it
-            </button>
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
