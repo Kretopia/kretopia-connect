@@ -215,6 +215,22 @@ export const KretopiaHero = () => {
                   WebkitBackgroundClip: "text",
                   backgroundClip: "text",
                   color: "transparent",
+                  // Same fix as .k-gradient-text/.landing-accent's own
+                  // shared CSS rule (index.css), applied directly since
+                  // this span uses raw inline styles, not those classes.
+                  // Confirmed live at 320px: with zero padding, "do" (the
+                  // last word, no trailing margin) sits flush against
+                  // this box's right edge and Chromium fails to paint
+                  // background-clip:text right at that boundary -- the
+                  // word silently disappears while "what"/"you" (which
+                  // have breathing room from their own trailing margin)
+                  // render fine. padding-inline gives the clip area
+                  // slack; margin-inline cancels the size increase so
+                  // the trailing "." doesn't shift right.
+                  paddingInline: "0.16em",
+                  marginInline: "-0.16em",
+                  paddingBlock: "0.22em",
+                  marginBlock: "-0.22em",
                 }}
               >
                 {LINE_2.map((word, wi) => (
