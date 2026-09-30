@@ -38,8 +38,8 @@ const HandleResolver = ({ mode }: { mode: Mode }) => {
           setStatus("notfound");
         }
       } else {
-        // /passport/THR-XXXXX — match against derived id (first 5 chars of user_id hex).
-        const code = raw.toUpperCase().replace(/^THR-?/, "").trim();
+        // Existing THR links remain valid; all displayed Passport IDs now use KRT.
+        const code = raw.toUpperCase().replace(/^(?:KRT|THR)-?/, "").trim();
         if (!code) {
           setStatus("notfound");
           return;

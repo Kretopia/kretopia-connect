@@ -1,21 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  ChevronLeft, Folder, Inbox, Clock, Briefcase, Library as LibraryIcon,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { useStudioGlobalModals } from "@/components/project/studio/useStudioGlobalModals";
-import { StudioCardsGrid } from "@/components/project/studio/StudioCardsGrid";
 import { StudioProjectsDashboard } from "@/components/project/studio/StudioProjectsDashboard";
 import { StudioCreateHero } from "@/components/project/studio/StudioCreateHero";
-import { StudioFoldersBar, type StudioFolder } from "@/components/project/studio/StudioFoldersBar";
+import type { StudioFolder } from "@/components/project/studio/studioHome.types";
 import { StudioPulse } from "@/components/project/studio/StudioPulse";
-import { StudioLibraryTab } from "@/components/project/studio/StudioLibraryTab";
-import { StudioInboxTab } from "@/components/project/studio/StudioInboxTab";
-import { computeFolderCounts } from "@/components/project/studio/studioHome.selectors";
 import { PageTransition } from "@/components/PageTransition";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoTip } from "@/components/agent/KretoTip";
@@ -212,8 +205,6 @@ export const CreatorWorkHome = () => {
 
   const activeProjects = projects.filter(p => p.status === "active");
 
-  const folderCounts = computeFolderCounts(projects);
-
   const visibleProjects = projects.filter((p) => {
     if (folderFilter === "all") return true;
     if (folderFilter === "unfiled") return !(p as any).studio_folder_id;
@@ -238,10 +229,6 @@ export const CreatorWorkHome = () => {
     fetchProjects();
   };
 
-  const hasFolders = folders.length > 0;
-  const atRoot = folderFilter === "all";
-  const currentFolder = folders.find((f) => f.id === folderFilter);
-  const unfiledProjects = projects.filter((p) => !(p as any).studio_folder_id);
 
   return (
     <PageTransition>
@@ -259,7 +246,7 @@ export const CreatorWorkHome = () => {
       />
 
       {/* Wider on desktop, capped for readability */}
-      <div className="max-w-6xl mx-auto px-4 pt-4 pb-36 md:pb-12 space-y-5">
+      <div className="max-w-6xl mx-auto px-4 pt-4 pb-8 md:pb-10 space-y-5">
         <KretoTip compact />
 
         {/* Creation-first hero — the promise, then one dominant CTA using
@@ -271,136 +258,39 @@ export const CreatorWorkHome = () => {
           activeCount={activeProjects.length}
         />
 
-        {/* Studio-LOCAL navigation (Today / Work / Library / Inbox), per
-            the Studio UX Spec's own ruling: this tab set is scoped inside
-            Studio only, not a global app-nav change (the app-wide IA
-            stays Today/Work/People/Calendar/Money, unaffected). Reuses
-            the same StudioSectionTabs primitive 15+ other feature pages
-            already use, so it reads as one more Studio-grammar tab strip,
-            not a bespoke nav widget. Defaults to "work" -- not "today" --
-            so a brand-new, zero-Project account still lands directly on
-            the "Create your first Project" empty state/CTA instead of a
-            first glance at an all-empty Today tab. */}
-        <StudioSectionTabs
-          queryParam="section"
-          defaultTabId="work"
-          tabs={[
-            {
-              id: "today",
-              label: "Today",
-              icon: Clock,
-              content: (
-                <div className="space-y-5">
-                  <TodayStrip onVoice={openVoiceCommand} onCommandPalette={openPalette} onWrapWeek={openWrapWeek} />
-                  {/* What's happening now, who's involved, what needs
-                      attention. Replaces the previous always-stacked
-                      placement above Folders/Projects -- it's "right now"
-                      content, so it lives in Today rather than showing on
-                      every tab regardless of what the user is looking at. */}
-                  <StudioPulse
-                    recentCollaborators={recentCollaborators}
-                    onVoice={openVoiceCommand}
-                    onCommandPalette={openPalette}
-                    onWrapWeek={openWrapWeek}
-                  />
-                </div>
-              ),
-            },
-            {
-              id: "work",
-              label: "Work",
-              icon: Briefcase,
-              content:
-                !atRoot && projects.length > 0 ? (
-                  // ── INSIDE A FOLDER (Drive-style detail view) ──
-                  (() => {
-                    const folderName =
-                      folderFilter === "unfiled" ? "Unfiled" : currentFolder?.name ?? "Folder";
-                    const FolderIcon = folderFilter === "unfiled" ? Inbox : Folder;
-                    return (
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setFolderFilter("all")}
-                            className="h-9 -ml-2 gap-1 rounded-full text-muted-foreground hover:text-foreground"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            Folders
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="h-11 w-11 rounded-2xl bg-muted grid place-items-center">
-                            <FolderIcon className="h-5 w-5 text-foreground/80" />
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <h2 className="text-xl font-black tracking-[-0.02em] truncate">
-                              {folderName}
-                            </h2>
-                            <p className="text-xs text-muted-foreground">
-                              {visibleProjects.length}{" "}
-                              {visibleProjects.length === 1 ? "project" : "projects"}
-                            </p>
-                          </div>
-                        </div>
-                        <StudioCardsGrid
-                          projects={visibleProjects as any}
-                          invoicesByProject={invoicesByProject}
-                          moneyVisibleByProject={moneyVisibleByProject}
-                          onNewProject={openCreateProject}
-                          folders={folders}
-                          onMoveToFolder={moveProject}
-                          hideHero
-                        />
-                      </div>
-                    );
-                  })()
-                ) : (
-                  // ── ROOT — folders grid + Projects dashboard below ──
-                  <div className="space-y-5">
-                    {user && (projects.length > 0 || hasFolders) && (
-                      <StudioFoldersBar
-                        userId={user.id}
-                        folders={folders}
-                        counts={folderCounts}
-                        selected={folderFilter}
-                        onSelect={setFolderFilter}
-                        onChanged={() => { fetchFolders(); fetchProjects(); }}
-                        onDropProject={moveProject}
-                      />
-                    )}
-
-                    {/* One Projects dashboard for every root view. When
-                        folders exist we scope it to the unfiled Projects
-                        (previously labeled "Loose projects" — copy only,
-                        no data change). */}
-                    <StudioProjectsDashboard
-                      projects={(hasFolders ? unfiledProjects : projects) as any}
-                      invoicesByProject={invoicesByProject}
-                      moneyVisibleByProject={moneyVisibleByProject}
-                      participantsByProject={participantsByProject}
-                      onCreate={openCreateProject}
-                      folders={folders}
-                      onMoveToFolder={moveProject}
-                    />
-                  </div>
-                ),
-            },
-            {
-              id: "library",
-              label: "Library",
-              icon: LibraryIcon,
-              content: <StudioLibraryTab projects={projects} />,
-            },
-            {
-              id: "inbox",
-              label: "Inbox",
-              icon: Inbox,
-              content: <StudioInboxTab projects={projects} />,
-            },
-          ]}
+        {/* What's happening now, who's involved, what needs attention --
+            immediately below the header/create hero, above Folders and
+            Projects, per the Studio home overhaul. Replaces the previous
+            separately-stacked "Session & Activity" and "Casting &
+            Collaborators" SectionCards. */}
+        <StudioPulse
+          recentCollaborators={recentCollaborators}
+          folderCount={folders.length}
+          projectCount={projects.length}
+          folderControls={folders.length > 0 ? (
+            <Select value={folderFilter} onValueChange={setFolderFilter}>
+              <SelectTrigger aria-label="Filter projects by folder" className="h-8 w-36 shrink-0 text-xs sm:w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All projects</SelectItem>
+                <SelectItem value="unfiled">Unfiled</SelectItem>
+                {folders.map((folder) => <SelectItem value={folder.id} key={folder.id}>{folder.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : undefined}
+          onVoice={openVoiceCommand}
+          onCommandPalette={openPalette}
+          onWrapWeek={openWrapWeek}
         />
+
+        <StudioProjectsDashboard
+              projects={visibleProjects as any}
+              invoicesByProject={invoicesByProject}
+              moneyVisibleByProject={moneyVisibleByProject}
+              participantsByProject={participantsByProject}
+              onCreate={openCreateProject}
+              folders={folders}
+              onMoveToFolder={moveProject}
+            />
       </div>
 
       {modals}

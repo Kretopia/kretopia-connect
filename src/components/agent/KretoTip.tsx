@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom";
 import { ArrowRight, X } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretoPresence } from "@/components/brand/KretoPresence";
+import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
 import { cn } from "@/lib/utils";
 
 type Tip = { eyebrow: string; line: string; cta: string; prompt: string };
@@ -195,7 +196,9 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
       </button>
 
       <div className="relative flex items-start gap-3 sm:gap-4">
-        {usesPresence ? (
+        {tip.eyebrow === "Studio" ? (
+          <img src={kretoProducer} alt="" aria-hidden="true" className={cn("shrink-0 object-contain drop-shadow-lg", compact ? "h-16 w-16 sm:h-20 sm:w-20" : "h-20 w-20 sm:h-24 sm:w-24")} />
+        ) : usesPresence ? (
           <KretoPresence size={compact ? "compact" : "card"} state="idle" />
         ) : (
           <KretoMark variant="default" size={compact ? "sm" : "md"} />

@@ -262,13 +262,13 @@ export const StudioFoldersBar = ({
   const hiddenCount = orderedFolders.length - visibleFolders.length;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-2">
       {/* Header */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <FolderOpen className="h-4 w-4 text-muted-foreground" />
           <h3 className="text-[13px] font-semibold tracking-wide uppercase text-muted-foreground">Folders</h3>
-          <span className="text-[11px] text-muted-foreground/70">· {folders.length}</span>
+          <span className="text-[11px] text-muted-foreground/70">· {folders.length} · {totalCount} projects</span>
         </div>
         <div className="flex items-center gap-1">
           {showSuggest && (
@@ -282,15 +282,6 @@ export const StudioFoldersBar = ({
               <span className="hidden xs:inline">Suggest</span>
             </Button>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setCreateOpen(true)}
-            className="h-8 px-2.5 rounded-full text-[12px] font-semibold text-muted-foreground hover:text-foreground gap-1"
-          >
-            <FolderPlus className="h-3.5 w-3.5" />
-            <span className="hidden xs:inline">New</span>
-          </Button>
         </div>
       </div>
 

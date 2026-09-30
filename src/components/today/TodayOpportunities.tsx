@@ -1,25 +1,16 @@
 import { useState, type ReactNode } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Bell, Calendar, Check, LayoutGrid, MessageSquare, BriefcaseBusiness, CircleCheckBig } from "lucide-react";
+import { ArrowRight, Bell, Calendar, Check, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { TodaySectionShell } from "@/components/home/TodaySectionShell";
-import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
-import { ApprovalsHub } from "@/components/agent/ApprovalsHub";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
-import { DailyBriefingCard } from "@/components/home/DailyBriefingCard";
-import { KretoTip } from "@/components/agent/KretoTip";
-import { MoneyBrief } from "@/components/thrivepay/MoneyBrief";
-import { TrendingLane } from "@/components/discover/TrendingLane";
 import { UpcomingSessionsCard } from "@/components/home/UpcomingSessionsCard";
-import { SpeedTonightCard } from "@/components/home/SpeedTonightCard";
-import { CuratedStagesRail } from "@/components/circle/CuratedStagesRail";
 import { GetStartedChecklist } from "@/components/onboarding/GetStartedChecklist";
 import { DuplicateAccountBanner } from "@/components/account/DuplicateAccountBanner";
-import { PushNotificationPrompt } from "@/components/PushNotificationPrompt";
 import { completeTask, snoozeTaskToTomorrow } from "./today.actions";
 import type { OpportunityTab, TodaySignals } from "./today.types";
 
@@ -32,14 +23,8 @@ interface TodayOpportunitiesProps {
 
 /**
  * TodayOpportunities — "what happens next", as one unified stream behind a
- * compact segmented control (For you / Calls / People / Studio) instead of
- * four separate pages. "For you" is a real priority merge (time-sensitive
- * work > money > Studio > discovery), not just a re-list of everything;
- * the other three tabs are focused, single-purpose views onto the same
- * underlying data Momentum already fetched -- no new queries here beyond
- * the widgets that already owned their own data (ScoutedGigsSection,
- * MoneyBrief, etc.), which this component composes rather than
- * reimplements.
+ * compact segmented control (For you / Calls / People / Studio).
+ * The primary action is owned by TodayCommandCenter, so it is not repeated here.
  */
 export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, showOnboardingChecklist }: TodayOpportunitiesProps) {
   const navigate = useNavigate();
@@ -47,13 +32,13 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
   const reducedMotion = useReducedMotion();
   const [tab, setTab] = useState<OpportunityTab>("for-you");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const { deadlines, approvalCount, unreadMessages } = signals;
+  const { deadlines } = signals;
 
   const tabs: Array<{ key: OpportunityTab; label: string; count?: number }> = [
     { key: "for-you", label: "For you" },
     { key: "calls", label: "Calls" },
     { key: "people", label: "People" },
-    { key: "studio", label: "Studio", count: deadlines.length || undefined },
+    { key: "studio", label: "Studio", count: deadlines.filter((d) => d.id !== (signals.priority.kind === "task" ? signals.priority.task.id : null)).length || undefined },
   ];
 
   const handleCompleteDeadline = async (id: string, title: string) => {
@@ -112,24 +97,7 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
   );
 
   return (
-    <TodaySectionShell icon={<LayoutGrid className="h-4 w-4" />} eyebrow="Kreto's creator radar" title="Your work, in focus">
-      <div className="mb-4 grid grid-cols-3 divide-x divide-border overflow-hidden rounded-xl border border-border bg-background/60">
-        <div className="px-2 py-3 text-center">
-          <CircleCheckBig className="mx-auto h-4 w-4 text-primary" />
-          <p className="mt-1 text-lg font-black text-foreground">{signals.momentum?.completedThisWeek ?? 0}</p>
-          <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">Completed</p>
-        </div>
-        <div className="px-2 py-3 text-center">
-          <BriefcaseBusiness className="mx-auto h-4 w-4 text-primary" />
-          <p className="mt-1 text-lg font-black text-foreground">{signals.momentum?.activeProjects.length ?? 0}</p>
-          <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">Projects</p>
-        </div>
-        <div className="px-2 py-3 text-center">
-          <MessageSquare className="mx-auto h-4 w-4 text-primary" />
-          <p className="mt-1 text-lg font-black text-foreground">{unreadMessages}</p>
-          <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">Messages</p>
-        </div>
-      </div>
+    <TodaySectionShell icon={<LayoutGrid className="h-4 w-4" />} eyebrow="Explore" title="Beyond today">
       <div role="tablist" aria-label="Filter next moves" className="flex flex-wrap gap-1.5 mb-4">
         {tabs.map((t) => (
           <button
@@ -151,27 +119,19 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
       <div className="space-y-3">
         {tab === "for-you" && (
           <>
-            <SurfaceProactiveCards surface="home" className="px-0" limit={3} />
-            <ApprovalsHub limit={4} />
-            {deadlines.filter((d) => d.overdue).length > 0 && (
-              <section className="space-y-2">
-                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-1.5">
-                  <Calendar className="h-3.5 w-3.5" /> Time-sensitive
-                </p>
-                {deadlines.filter((d) => d.overdue).slice(0, 3).map(deadlineRow)}
-              </section>
-            )}
-            <MoneyBrief variant="compact" />
             {showOnboardingChecklist && <GetStartedChecklist />}
-            <KretoTip surface="today" />
-            <DailyBriefingCard />
+            {signals.momentum?.nextMilestone && (
+              <p className="text-sm text-foreground">
+                <span className="min-w-0 truncate">Next: {signals.momentum.nextMilestone.title} · {signals.momentum.nextMilestone.projectTitle}</span>
+              </p>
+            )}
+            {!showOnboardingChecklist && !signals.momentum?.nextMilestone && <p className="text-sm text-muted-foreground">Nothing else needs your attention right now.</p>}
           </>
         )}
 
         {tab === "calls" && (
           <section className="space-y-4">
             <ScoutedGigsSection limit={6} />
-            <TrendingLane />
           </section>
         )}
 
@@ -183,35 +143,19 @@ export function TodayOpportunities({ signals, onSignalsChanged, peopleForYou, sh
 
         {tab === "studio" && (
           <section className="space-y-4">
-            {deadlines.length > 0 && (
+            {deadlines.some((d) => d.id !== (signals.priority.kind === "task" ? signals.priority.task.id : null)) && (
               <div className="space-y-2">
                 <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5" /> Upcoming deadlines
                 </p>
-                {deadlines.map(deadlineRow)}
+                {deadlines.filter((d) => d.id !== (signals.priority.kind === "task" ? signals.priority.task.id : null)).map(deadlineRow)}
               </div>
             )}
             <UpcomingSessionsCard />
-            <CuratedStagesRail limit={6} hideWhenEmpty />
-            <SpeedTonightCard />
           </section>
         )}
 
-        {unreadMessages > 0 && (
-          <button
-            onClick={() => navigate("/messages")}
-            className="w-full flex items-center gap-2.5 rounded-2xl border border-border bg-background/60 px-3.5 py-3 text-left hover:border-primary/40 transition-colors"
-          >
-            <MessageSquare className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-sm font-medium flex-1">
-              {unreadMessages} unread message{unreadMessages === 1 ? "" : "s"}
-            </span>
-            <ArrowRight className="h-3.5 w-3.5 text-muted-foreground" />
-          </button>
-        )}
-
         <DuplicateAccountBanner />
-        <PushNotificationPrompt trigger="default" />
       </div>
     </TodaySectionShell>
   );

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { BriefcaseBusiness } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
@@ -10,6 +10,7 @@ import { SearchV2 } from "@/components/search/SearchV2";
 import { SearchResultsSuggestions } from "@/components/search/SearchResultsSuggestions";
 import GigCard, { type GigOpportunity, type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { BrandLoader } from "@/components/brand/BrandDots";
 
 interface CreatorResult {
   user_id: string;
@@ -123,20 +124,20 @@ export default function SearchResults() {
           </p>
         ) : loading ? (
           <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <BrandLoader fullscreen={false} />
             <p className="text-sm text-muted-foreground">Searching Kretopia…</p>
           </div>
         ) : hasResults ? (
-          <div className="space-y-10">
+          <div className="space-y-8">
             {creators.length > 0 && (
               <section>
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Users</h2>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                   {creators.map((c) => (
                     <Link
                       key={c.user_id}
                       to={`/profile/${c.user_id}`}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      className="group flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
                     >
                       <Avatar className="h-11 w-11 shrink-0">
                         <AvatarImage src={c.avatar_url || ""} />
@@ -156,18 +157,18 @@ export default function SearchResults() {
 
             {credits.length > 0 && (
               <section>
-                <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Creative Work</h2>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <h2 className="mb-4 text-sm font-semibold uppercase text-muted-foreground">Projects</h2>
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,16rem),1fr))]">
                   {credits.map((c) => (
                     <Link
                       key={c.id}
                       to={`/production?name=${encodeURIComponent(c.project_name)}`}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-colors hover:border-primary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                      className="group flex min-h-20 min-w-0 items-center gap-3 rounded-md border border-border bg-card p-4 transition-colors hover:border-energy/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-energy"
                     >
                       {c.thumbnail_url ? (
                         <img src={c.thumbnail_url} alt="" className="h-11 w-11 shrink-0 rounded-md object-cover" />
                       ) : (
-                        <div className="h-11 w-11 shrink-0 rounded-md bg-muted" />
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-energy/10 text-energy"><BriefcaseBusiness className="h-5 w-5" /></div>
                       )}
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-foreground">{c.project_name}</p>

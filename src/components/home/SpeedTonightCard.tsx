@@ -20,7 +20,7 @@ type Sess = {
  * Home/Today surface card. Shows the next Speed Session the user RSVP'd to,
  * OR the nearest open scheduled session within 36h. Hides when nothing fits.
  */
-export const SpeedTonightCard = () => {
+export const SpeedTonightCard = ({ compact = false }: { compact?: boolean }) => {
   const { user } = useAuth();
   const [sess, setSess] = useState<(Sess & { mine: boolean }) | null>(null);
 
@@ -69,6 +69,16 @@ export const SpeedTonightCard = () => {
     ? "Live now"
     : `In ${formatDistanceToNowStrict(startsAt)}`;
   const isGroupMode = sess.fallback_mode === "group";
+
+  if (compact) return (
+    <Link to={`/circle/speed/${sess.id}`} className="flex min-w-0 items-center gap-2 py-2 text-sm hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+      {isLive ? <Radio className="h-4 w-4 shrink-0 text-primary" aria-hidden /> : <CalendarDays className="h-4 w-4 shrink-0 text-primary" aria-hidden />}
+      <span className="shrink-0 font-semibold">Speed Session</span>
+      <span className="min-w-0 flex-1 truncate text-muted-foreground">{sess.title}</span>
+      <span className="shrink-0 text-xs text-primary">{inWords}</span>
+      <ArrowRight className="h-3.5 w-3.5 shrink-0" aria-hidden />
+    </Link>
+  );
 
   return (
     <Link to={`/circle/speed/${sess.id}`} className="block">

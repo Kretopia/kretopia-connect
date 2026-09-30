@@ -34,7 +34,7 @@ const STANDING_LABEL: Record<string, string> = {
 };
 
 const passportIdFor = (userId: string) =>
-  `THR-${userId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
+  `KRT-${userId.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
 
 const PassportDirectory = () => {
   const navigate = useNavigate();

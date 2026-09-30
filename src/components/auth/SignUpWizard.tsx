@@ -23,6 +23,9 @@ interface SignUpWizardProps {
   onSubmit: (e: React.FormEvent) => void;
   onGoogleSignIn: () => void;
   googleLoading: boolean;
+  // Temporarily hides the social buttons while the OAuth secret is missing
+  // on the backend (see OAUTH_TEMPORARILY_DISABLED in Auth.tsx).
+  hideOAuth?: boolean;
 }
 
 export const SignUpWizard = ({
@@ -30,7 +33,7 @@ export const SignUpWizard = ({
   confirmPassword, setConfirmPassword,
   accountType, setAccountType,
   loading, onSubmit,
-  onGoogleSignIn, googleLoading,
+  onGoogleSignIn, googleLoading, hideOAuth = false,
 }: SignUpWizardProps) => {
   // Creator vs Brand toggle drives onboarding fork (individual → /onboarding,
   // company → /company-onboarding). Default to individual.
@@ -114,8 +117,8 @@ export const SignUpWizard = ({
               : "Hire creators, run campaigns, manage briefs."}
           </p>
 
-          <SocialLoginButtons onGoogleSignIn={onGoogleSignIn} googleLoading={googleLoading} />
-          <OrDivider text="or sign up with email" />
+          {!hideOAuth && <SocialLoginButtons onGoogleSignIn={onGoogleSignIn} googleLoading={googleLoading} />}
+          {hideOAuth && <OrDivider text="sign up with email" />}
 
           <div className="space-y-2">
             <Label htmlFor="signup-email">Email Address</Label>

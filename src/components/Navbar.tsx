@@ -4,10 +4,50 @@ import { GlassCta } from "@/components/ui/glass-cta";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  LogOut, Menu, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles,
-  DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet,
-  MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, Home, UserPlus, UserCircle2, Building2, Inbox,
-  Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Gift, Star, RefreshCw, Theater, Database, Heart, Video, Info
+  LogOut,
+  Menu,
+  Settings,
+  Users,
+  User,
+  Briefcase,
+  MessageCircle,
+  Shield,
+  Crown,
+  Sparkles,
+  DollarSign,
+  FolderKanban,
+  LayoutDashboard,
+  Radar,
+  Search,
+  BarChart3,
+  ShoppingBag,
+  Share2,
+  Rocket,
+  Wallet,
+  MapPin,
+  Trophy,
+  CheckCircle,
+  Target,
+  Zap,
+  CalendarDays,
+  Home,
+  UserPlus,
+  UserCircle2,
+  Building2,
+  Inbox,
+  Sun,
+  LayoutGrid,
+  Compass,
+  BadgeCheck,
+  BookOpen,
+  Gift,
+  Star,
+  RefreshCw,
+  Theater,
+  Database,
+  Heart,
+  Video,
+  Info,
 } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
@@ -28,16 +68,9 @@ import { MessagesDrawer } from "@/components/messages/MessagesDrawer";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
 
 // useNavMode removed — single unified nav
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { useState, useEffect, memo, type ReactNode, type ComponentType } from "react";
-
 
 interface NavbarProps {
   user?: SupabaseUser | null;
@@ -107,13 +140,15 @@ const Navbar = memo(({ user }: NavbarProps) => {
         .from("profiles")
         .select("account_type, is_manager_mode, avatar_url, full_name")
         .eq("user_id", user.id)
-        .maybeSingle()
-    ).then(({ data }) => {
-      if (data?.account_type) setAccountType(data.account_type);
-      if (data?.is_manager_mode) setIsManagerMode(true);
-      setAvatarUrl(data?.avatar_url ?? null);
-      setAvatarName(data?.full_name ?? "");
-    }).catch(err => console.warn('[Navbar] Error loading profile:', err));
+        .maybeSingle(),
+    )
+      .then(({ data }) => {
+        if (data?.account_type) setAccountType(data.account_type);
+        if (data?.is_manager_mode) setIsManagerMode(true);
+        setAvatarUrl(data?.avatar_url ?? null);
+        setAvatarName(data?.full_name ?? "");
+      })
+      .catch((err) => console.warn("[Navbar] Error loading profile:", err));
   }, [user?.id]);
 
   const handleSignOut = async () => {
@@ -121,22 +156,20 @@ const Navbar = memo(({ user }: NavbarProps) => {
       setIsOpen(false);
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('[Navbar] Sign out error:', error);
-        localStorage.removeItem('sb-kwmcocsitwssrtzkdojh-auth-token');
+        console.error("[Navbar] Sign out error:", error);
+        localStorage.removeItem("sb-kwmcocsitwssrtzkdojh-auth-token");
         sessionStorage.clear();
       }
-      import("@/lib/analytics")
-        .then(({ analytics }) => analytics.signOut())
-        .catch(() => {});
+      import("@/lib/analytics").then(({ analytics }) => analytics.signOut()).catch(() => {});
       toast({ title: "Signed out", description: "You've been successfully signed out" });
       navigate("/", { replace: true });
     } catch (error) {
-      console.error('[Navbar] Sign out exception:', error);
+      console.error("[Navbar] Sign out exception:", error);
       try {
-        localStorage.removeItem('sb-kwmcocsitwssrtzkdojh-auth-token');
+        localStorage.removeItem("sb-kwmcocsitwssrtzkdojh-auth-token");
         sessionStorage.clear();
       } catch (e) {
-        console.error('[Navbar] Error clearing storage:', e);
+        console.error("[Navbar] Error clearing storage:", e);
       }
       toast({ title: "Signed out", description: "You've been signed out locally" });
       navigate("/", { replace: true });
@@ -209,8 +242,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
           <BrandLogo size="md" showBeta linkToHome="/landing" onDark={isDarkChromeRoute} />
         </div>
 
-     
-
         {/* ═══ GUEST INLINE NAV (desktop) ═══
             lg:, matching the authenticated desktop nav's own breakpoint below —
             at md: (768px) this plus the search icon, Hire Talent and Get
@@ -242,28 +273,29 @@ const Navbar = memo(({ user }: NavbarProps) => {
           </div>
         )}
 
-        {/* Desktop Navigation - Mode Aware */}
-        {user && !isLandingPage && (
+        {/* Desktop Navigation - Authenticated users: visible on every route, including /landing */}
+        {user && (
           <div className="hidden lg:flex items-center gap-2 mx-6 pl-6 border-l border-border/50">
-
             {/* Mode toggle removed — single unified nav */}
 
             {desktopNavItems.map(({ path, icon: Icon, label }) => {
-              const isActive = location.pathname === path ||
+              const isActive =
+                location.pathname === path ||
                 (path === "/desk" && location.pathname.startsWith("/desk")) ||
-                (path === "/messages" && (location.pathname.startsWith("/messages") || location.pathname.startsWith("/inbox"))) ||
-                (path === "/circle" && location.pathname.startsWith("/circle") && !location.pathname.startsWith("/circles")) ||
-                (path === "/scout" && (
-                  location.pathname.startsWith("/scout") ||
-                  location.pathname === "/opportunities" ||
-                  location.pathname === "/opportunity-dashboard"
-                )) ||
-                (path === "/profile" && (
-                  location.pathname.startsWith("/profile") ||
-                  location.pathname.startsWith("/thrivepay") ||
-                  location.pathname.startsWith("/accounting") ||
-                  location.pathname.startsWith("/credits")
-                ));
+                (path === "/messages" &&
+                  (location.pathname.startsWith("/messages") || location.pathname.startsWith("/inbox"))) ||
+                (path === "/circle" &&
+                  location.pathname.startsWith("/circle") &&
+                  !location.pathname.startsWith("/circles")) ||
+                (path === "/scout" &&
+                  (location.pathname.startsWith("/scout") ||
+                    location.pathname === "/opportunities" ||
+                    location.pathname === "/opportunity-dashboard")) ||
+                (path === "/profile" &&
+                  (location.pathname.startsWith("/profile") ||
+                    location.pathname.startsWith("/thrivepay") ||
+                    location.pathname.startsWith("/accounting") ||
+                    location.pathname.startsWith("/credits")));
               return (
                 <Link
                   key={path}
@@ -293,7 +325,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className={cn("relative h-8 w-8 sm:h-10 sm:w-10 lg:hidden", isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10")}
+                className={cn(
+                  "relative h-8 w-8 sm:h-10 sm:w-10 lg:hidden",
+                  isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
+                )}
                 aria-label="Search"
               >
                 <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
@@ -304,26 +339,28 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <SheetTitle>Search</SheetTitle>
               </SheetHeader>
               <div className="mt-4">
-                <UnifiedSearchDropdown
-                  variant="hero"
-                  placeholder="Search Kretopia"
-                  autoFocus
-                />
+                <UnifiedSearchDropdown variant="hero" placeholder="Search Kretopia" autoFocus />
               </div>
             </SheetContent>
           </Sheet>
           {!isLandingPage && user && (
-            <MessagesDrawer triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined} />
+            <MessagesDrawer
+              triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
+            />
           )}
 
           {!isLandingPage && user && (
-            <NotificationCenter triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined} />
+            <NotificationCenter
+              triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
+            />
           )}
           {!isLandingPage && user && (
-            <SettingsDrawer triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined} />
+            <SettingsDrawer
+              triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
+            />
           )}
           {!user && !isLandingPage && <ThemeToggle />}
-          
+
           {user ? (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
@@ -351,13 +388,19 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     variant="ghost"
                     size="icon"
                     aria-label="Open menu"
-                    className={cn("h-8 w-8 sm:h-10 sm:w-10", isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10")}
+                    className={cn(
+                      "h-8 w-8 sm:h-10 sm:w-10",
+                      isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
+                    )}
                   >
                     <Menu className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
                   </Button>
                 )}
               </SheetTrigger>
-              <SheetContent side="right" className="w-[85vw] sm:w-[400px] bg-background text-foreground border-l border-border">
+              <SheetContent
+                side="right"
+                className="w-[85vw] sm:w-[400px] bg-background text-foreground border-l border-border"
+              >
                 <SheetHeader className="pr-8 text-left">
                   <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
@@ -377,85 +420,193 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     Switch-to-Company to 18px, both with the second line
                     rendered but invisible underneath the first. */}
                 <div className="flex flex-col gap-1 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] [&>*]:shrink-0">
-
                   {isCompany ? (
                     /* ====== COMPANY MENU (unchanged) ====== */
                     <>
                       <MenuGrid>
-                        <MenuGridTile icon={Inbox} label="Inbox" onClick={() => handleNavigation("/inbox")} path="/inbox" badge={inboxBadge} />
+                        <MenuGridTile
+                          icon={Inbox}
+                          label="Inbox"
+                          onClick={() => handleNavigation("/inbox")}
+                          path="/inbox"
+                          badge={inboxBadge}
+                        />
                         {/* "Find Talent" removed — already one tap away via bottom nav (mobile)
                             and the top desktop nav, at every breakpoint this menu is reachable from. */}
                         {/* Events hidden from nav — /meetup route alive, event Studios cover the workflow. */}
-                        <MenuGridTile icon={User} label="Company Page" onClick={() => handleNavigation(`/profile/${user?.id}`)} path={`/profile/${user?.id}`} />
+                        <MenuGridTile
+                          icon={User}
+                          label="Company Page"
+                          onClick={() => handleNavigation(`/profile/${user?.id}`)}
+                          path={`/profile/${user?.id}`}
+                        />
                         {isManagerMode && (
-                          <MenuGridTile icon={Users} label="Talent Manager" onClick={() => handleNavigation("/talent-manager")} path="/talent-manager" />
+                          <MenuGridTile
+                            icon={Users}
+                            label="Talent Manager"
+                            onClick={() => handleNavigation("/talent-manager")}
+                            path="/talent-manager"
+                          />
                         )}
                       </MenuGrid>
                       <Separator className="my-3" />
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                      <Button variant="ghost" className="justify-start gap-3 h-auto w-full py-3" onClick={() => handleNavigation("/subscription")}>
-                        {isPro ? <Crown className="h-5 w-5 text-accent" /> : <Sparkles className="h-5 w-5 text-primary" />}
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Account
+                      </p>
+                      <Button
+                        variant="ghost"
+                        className="justify-start gap-3 h-auto w-full py-3"
+                        onClick={() => handleNavigation("/subscription")}
+                      >
+                        {isPro ? (
+                          <Crown className="h-5 w-5 text-accent" />
+                        ) : (
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        )}
                         <div className="flex flex-col items-start gap-0.5">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">Subscription</span>
-                            <Badge variant="secondary" className={cn("text-[10px] uppercase tracking-wider", isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>{tierName}</Badge>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-[10px] uppercase tracking-wider",
+                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {tierName}
+                            </Badge>
                           </div>
                           {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
                         </div>
                       </Button>
-                      <AccountSwitcher currentAccountType={accountType} onSwitch={() => setIsOpen(false)} onManagerModeChange={(enabled) => setIsManagerMode(enabled)} />
+                      <AccountSwitcher
+                        currentAccountType={accountType}
+                        onSwitch={() => setIsOpen(false)}
+                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
+                      />
                       <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                     </>
                   ) : (
                     /* ====== DAILY DRIVER MENU — System + Account only ====== */
                     <>
                       {/* ACCOUNT */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-                      <Button variant="ghost" className="justify-start gap-3 h-auto w-full py-3" onClick={() => handleNavigation("/subscription")}>
-                        {isPro ? <Crown className="h-5 w-5 text-accent" /> : <Sparkles className="h-5 w-5 text-primary" />}
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Account
+                      </p>
+                      <Button
+                        variant="ghost"
+                        className="justify-start gap-3 h-auto w-full py-3"
+                        onClick={() => handleNavigation("/subscription")}
+                      >
+                        {isPro ? (
+                          <Crown className="h-5 w-5 text-accent" />
+                        ) : (
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        )}
                         <div className="flex flex-col items-start gap-0.5">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">Subscription</span>
-                            <Badge variant="secondary" className={cn("text-[10px] uppercase tracking-wider", isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground")}>{tierName}</Badge>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-[10px] uppercase tracking-wider",
+                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {tierName}
+                            </Badge>
                           </div>
                           {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
                         </div>
                       </Button>
-                      
+
                       <div className="px-1 py-1">
                         <StorageMeter variant="compact" />
                       </div>
-                      <AccountSwitcher currentAccountType={accountType} onSwitch={() => setIsOpen(false)} onManagerModeChange={(enabled) => setIsManagerMode(enabled)} />
+                      <AccountSwitcher
+                        currentAccountType={accountType}
+                        onSwitch={() => setIsOpen(false)}
+                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
+                      />
 
                       <Separator className="my-3" />
 
                       {/* WORKSPACE — daily shortcuts only. Today/Desk live in bottom nav; Pay in Passport. */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Workspace</p>
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Workspace
+                      </p>
                       <MenuGrid>
-                        <MenuGridTile icon={DollarSign} label="KrePay" onClick={() => handleNavigation("/thrivepay")} path="/thrivepay" />
-                        <MenuGridTile icon={Building2} label="Clients" onClick={() => handleNavigation("/clients")} path="/clients" />
+                        <MenuGridTile
+                          icon={DollarSign}
+                          label="KrePay"
+                          onClick={() => handleNavigation("/thrivepay")}
+                          path="/thrivepay"
+                        />
+                        <MenuGridTile
+                          icon={Building2}
+                          label="Clients"
+                          onClick={() => handleNavigation("/clients")}
+                          path="/clients"
+                        />
                         {/* Crews hidden from UI — data preserved, deep links still work via /crews. Group chat lives in Messages. */}
                         {isManagerMode && (
-                          <MenuGridTile icon={Users} label="Manager Mode" onClick={() => handleNavigation("/talent-manager")} path="/talent-manager" />
+                          <MenuGridTile
+                            icon={Users}
+                            label="Manager Mode"
+                            onClick={() => handleNavigation("/talent-manager")}
+                            path="/talent-manager"
+                          />
                         )}
                       </MenuGrid>
 
                       <Separator className="my-3" />
 
                       {/* PILLARS — live surfaces not in bottom nav */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Explore</p>
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Explore
+                      </p>
                       <MenuGrid>
                         {/* "Stages" -> /circle is the one entry point here. /soundstages
                             renders the same live-stages feed with no other chrome (confirmed
                             duplicate content, not just a duplicate label) -- it stays reachable
                             from inside /circle and from every in-app "Join"/"Start Stage" button,
                             it just doesn't need its own top-level menu entry too. */}
-                        <MenuGridTile icon={Theater} label="Stages" onClick={() => handleNavigation("/circle")} path="/circle" />
-                        <MenuGridTile icon={Sparkles} label="Kreto" onClick={() => handleNavigation("/kreto")} path="/kreto" />
-                        <MenuGridTile icon={Heart} label="Match" onClick={() => handleNavigation("/match")} path="/match" />
-                        <MenuGridTile icon={Gift} label="Perks" onClick={() => handleNavigation("/perks")} path="/perks" />
-                        <MenuGridTile icon={CalendarDays} label="Events" onClick={() => handleNavigation("/meetup")} path="/meetup" />
-                        <MenuGridTile icon={Video} label="Recordings" onClick={() => handleNavigation("/recordings")} path="/recordings" />
+                        <MenuGridTile
+                          icon={Theater}
+                          label="Stages"
+                          onClick={() => handleNavigation("/circle")}
+                          path="/circle"
+                        />
+                        <MenuGridTile
+                          icon={Sparkles}
+                          label="Kreto"
+                          onClick={() => handleNavigation("/kreto")}
+                          path="/kreto"
+                        />
+                        <MenuGridTile
+                          icon={Heart}
+                          label="Match"
+                          onClick={() => handleNavigation("/match")}
+                          path="/match"
+                        />
+                        <MenuGridTile
+                          icon={Gift}
+                          label="Perks"
+                          onClick={() => handleNavigation("/perks")}
+                          path="/perks"
+                        />
+                        <MenuGridTile
+                          icon={CalendarDays}
+                          label="Events"
+                          onClick={() => handleNavigation("/meetup")}
+                          path="/meetup"
+                        />
+                        <MenuGridTile
+                          icon={Video}
+                          label="Recordings"
+                          onClick={() => handleNavigation("/recordings")}
+                          path="/recordings"
+                        />
                       </MenuGrid>
 
                       <Separator className="my-3" />
@@ -464,14 +615,35 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           Spotlight restored here — it's the only path to the Magazine
                           "Write" (edit/upload article) button for editors/admins, and
                           direct-URL-only made that undiscoverable. */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">More</p>
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        More
+                      </p>
                       <MenuGrid>
-                        <MenuGridTile icon={Sparkles} label="Spotlight" onClick={() => handleNavigation("/spotlight")} path="/spotlight" />
-                        <MenuGridTile icon={Database} label="Verified Credits" onClick={() => handleNavigation("/credits")} path="/credits" />
-                        <MenuGridTile icon={Crown} label="Founding Circle" onClick={() => handleNavigation("/founding-member")} path="/founding-member" />
-                        <MenuGridTile icon={UserPlus} label="Creative Circle" onClick={() => handleNavigation("/creative-circle")} path="/creative-circle" />
+                        <MenuGridTile
+                          icon={Sparkles}
+                          label="Spotlight"
+                          onClick={() => handleNavigation("/spotlight")}
+                          path="/spotlight"
+                        />
+                        <MenuGridTile
+                          icon={Database}
+                          label="Verified Credits"
+                          onClick={() => handleNavigation("/credits")}
+                          path="/credits"
+                        />
+                        <MenuGridTile
+                          icon={Crown}
+                          label="Founding Circle"
+                          onClick={() => handleNavigation("/founding-member")}
+                          path="/founding-member"
+                        />
+                        <MenuGridTile
+                          icon={UserPlus}
+                          label="Creative Circle"
+                          onClick={() => handleNavigation("/creative-circle")}
+                          path="/creative-circle"
+                        />
                       </MenuGrid>
-
 
                       {/* Settings and Support sections removed from this menu by request --
                           Settings (incl. Notifications/Memory & Agent/Language/Privacy/Appearance)
@@ -482,7 +654,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           listed here. */}
 
                       {/* ADMIN */}
-                      {user?.id === 'ef429714-ea32-4f08-a4f9-ef0226f1804b' && (
+                      {user?.id === "ef429714-ea32-4f08-a4f9-ef0226f1804b" && (
                         <>
                           <Separator className="my-3" />
                           <MenuButton icon={Shield} label="Admin Panel" onClick={() => handleNavigation("/admin")} />
@@ -515,7 +687,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     variant="ghost"
                     size="icon"
                     aria-label="Open menu"
-                    className={cn("h-9 w-9 lg:hidden", isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10")}
+                    className={cn(
+                      "h-9 w-9 lg:hidden",
+                      isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
+                    )}
                   >
                     <Menu className="h-5 w-5" />
                   </Button>
@@ -527,8 +702,14 @@ const Navbar = memo(({ user }: NavbarProps) => {
                   <div className="flex flex-col gap-1 mt-6">
                     <Button
                       variant="ghost"
-                      className={cn("justify-start h-12 gap-2 text-sm font-medium", location.pathname === "/" && "bg-accent/30")}
-                      onClick={() => { setGuestMenuOpen(false); navigate("/"); }}
+                      className={cn(
+                        "justify-start h-12 gap-2 text-sm font-medium",
+                        location.pathname === "/" && "bg-accent/30",
+                      )}
+                      onClick={() => {
+                        setGuestMenuOpen(false);
+                        navigate("/");
+                      }}
                     >
                       <Home className="h-4 w-4" aria-hidden />
                       Home
@@ -537,8 +718,14 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       <Button
                         key={path}
                         variant="ghost"
-                        className={cn("justify-start h-12 gap-2 text-sm font-medium", location.pathname === path && "bg-accent/30")}
-                        onClick={() => { setGuestMenuOpen(false); navigate(path); }}
+                        className={cn(
+                          "justify-start h-12 gap-2 text-sm font-medium",
+                          location.pathname === path && "bg-accent/30",
+                        )}
+                        onClick={() => {
+                          setGuestMenuOpen(false);
+                          navigate(path);
+                        }}
                       >
                         <Icon className="h-4 w-4" aria-hidden />
                         {label}
@@ -548,7 +735,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     <Button
                       variant="ghost"
                       className="justify-start h-12 gap-2 text-sm font-medium"
-                      onClick={() => { setGuestMenuOpen(false); navigate("/post-opportunity"); }}
+                      onClick={() => {
+                        setGuestMenuOpen(false);
+                        navigate("/post-opportunity");
+                      }}
                     >
                       <Briefcase className="h-4 w-4" aria-hidden />
                       Hire Talent
@@ -556,7 +746,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     <Button
                       variant="link"
                       className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 justify-start h-12 gap-2 text-sm font-semibold no-underline hover:no-underline"
-                      onClick={() => { setGuestMenuOpen(false); navigate("/auth?tab=signup"); }}
+                      onClick={() => {
+                        setGuestMenuOpen(false);
+                        navigate("/auth?tab=signup");
+                      }}
                     >
                       <Sparkles className="h-4 w-4" aria-hidden />
                       Build Your Passport
@@ -565,41 +758,29 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 </SheetContent>
               </Sheet>
 
-              {isLandingPage ? (
-                // Landing only: the same frosted-glass CTA as every other
-                // button on the page (GlassCta, "sm" = header density).
-                // Other public pages keep their existing nav buttons.
-                <>
-                  <GlassCta to="/post-opportunity" size="sm" className="hidden sm:inline-flex">
-                    Hire Talent
-                  </GlassCta>
-                  <GlassCta to="/auth?tab=signup" size="sm" className="px-3 text-xs sm:px-5 sm:text-sm">
-                    Build Your Passport
-                  </GlassCta>
-                </>
-              ) : (
-                <>
-                  <Link to="/post-opportunity" className="hidden sm:inline-flex">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={cn(
-                        "gap-2",
-                        isDarkChromeRoute && "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white",
-                      )}
-                    >
-                      <Briefcase className="h-4 w-4" aria-hidden />
-                      Hire Talent
-                    </Button>
-                  </Link>
-                  <Link to="/auth?tab=signup">
-                    <Button variant="link" size="sm" className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold no-underline hover:no-underline">
-                      <Sparkles className="h-4 w-4" aria-hidden />
-                      Build Your Passport
-                    </Button>
-                  </Link>
-                </>
-              )}
+              <Link to="/post-opportunity" className="hidden sm:inline-flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn(
+                    "gap-2",
+                    isDarkChromeRoute && "border-white/25 bg-transparent text-white hover:bg-white/10 hover:text-white",
+                  )}
+                >
+                  <Briefcase className="h-4 w-4" aria-hidden />
+                  Hire Talent
+                </Button>
+              </Link>
+              <Link to="/auth?tab=signup">
+                <Button
+                  variant="link"
+                  size="sm"
+                  className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold no-underline hover:no-underline"
+                >
+                  <Sparkles className="h-4 w-4" aria-hidden />
+                  Build Your Passport
+                </Button>
+              </Link>
             </>
           ) : null}
         </div>
@@ -613,12 +794,21 @@ const Navbar = memo(({ user }: NavbarProps) => {
    mobile, 400px fixed above sm:) rather than the viewport breakpoints
    Tailwind's sm:/lg: prefixes key off, which don't track a fixed-width
    panel's actual size. */
-function MenuGridTile({ icon: Icon, label, onClick, badge, path }: { icon: ComponentType<{ className?: string }>; label: string; onClick: () => void; badge?: string; path?: string }) {
+function MenuGridTile({
+  icon: Icon,
+  label,
+  onClick,
+  badge,
+  path,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  badge?: string;
+  path?: string;
+}) {
   const location = useLocation();
-  const isActive = !!path && (
-    path === location.pathname ||
-    (path !== "/" && location.pathname.startsWith(path + "/"))
-  );
+  const isActive = !!path && (path === location.pathname || (path !== "/" && location.pathname.startsWith(path + "/")));
   return (
     <button
       type="button"
@@ -640,35 +830,35 @@ function MenuGridTile({ icon: Icon, label, onClick, badge, path }: { icon: Compo
 }
 
 function MenuGrid({ children }: { children: ReactNode }) {
-  return (
-    <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">
-      {children}
-    </div>
-  );
+  return <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">{children}</div>;
 }
 
 /* Reusable menu button */
-function MenuButton({ icon: Icon, label, onClick, badge, path }: { icon: ComponentType<{ className?: string }>; label: string; onClick: () => void; badge?: string; path?: string }) {
+function MenuButton({
+  icon: Icon,
+  label,
+  onClick,
+  badge,
+  path,
+}: {
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+  onClick: () => void;
+  badge?: string;
+  path?: string;
+}) {
   const location = useLocation();
-  const isActive = !!path && (
-    path === location.pathname ||
-    (path !== "/" && location.pathname.startsWith(path + "/"))
-  );
+  const isActive = !!path && (path === location.pathname || (path !== "/" && location.pathname.startsWith(path + "/")));
   return (
     <Button
       variant="ghost"
-      className={cn(
-        "justify-start gap-3 h-12 w-full",
-        isActive && "bg-energy/10 text-energy hover:bg-energy/15"
-      )}
+      className={cn("justify-start gap-3 h-12 w-full", isActive && "bg-energy/10 text-energy hover:bg-energy/15")}
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
     >
       <Icon className="h-5 w-5" />
       <span className="flex-1 text-left">{label}</span>
-      {badge && (
-        <Badge className="bg-primary/10 text-primary text-[10px] px-1.5">{badge}</Badge>
-      )}
+      {badge && <Badge className="bg-primary/10 text-primary text-[10px] px-1.5">{badge}</Badge>}
     </Button>
   );
 }

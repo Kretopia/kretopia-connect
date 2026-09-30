@@ -436,7 +436,7 @@ const CreatorEPK = () => {
   const canonicalUrl = `${APP_URL}/epk/${userId}`;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+    <div className="min-h-screen bg-background">
       <SEO 
         title={`${profile.full_name} - ${profile.role || 'Creator'} | Kretopia`}
         description={profile.bio || `${profile.full_name} is a ${profile.role || 'creative professional'}${profile.location ? ` based in ${profile.location}` : ''}. View portfolio, work history, and connect on Kretopia.`}
@@ -460,130 +460,59 @@ const CreatorEPK = () => {
         }}
       />
 
-      {/* Horizontal on desktop: identity + primary collaboration CTA pinned
-          in a sticky left column, full Passport detail scrolling on the
-          right -- CEO overhaul (24/09/2026), confirmed layout direction.
-          Stacks back to the original single vertical column on mobile
-          (lg: breakpoint only), so nothing below this point needed to
-          change -- each block just moved into one column or the other. */}
-      <div className="max-w-lg lg:max-w-6xl mx-auto px-4 pt-6 pb-16 lg:grid lg:grid-cols-[380px_1fr] lg:gap-8 lg:items-start">
-
-      <div className="lg:sticky lg:top-6 lg:self-start">
-        {/* Public Passport — same dominant identity treatment as the owner Passport. */}
-        <div className="mb-8">
-          <PublicPassportHero
-            profile={profile}
-            credits={credits}
-            connectionStatus={connectionStatus}
-            isOwner={isOwner}
-            isSignedIn={Boolean(currentUserId)}
-            isConnecting={isConnecting}
-            onConnect={handleConnect}
-            onMessage={() => setMessageOpen(true)}
-            onCollaborate={() => setCollaborateOpen(true)}
-            onAddToProject={() => setInviteOpen(true)}
-            onShare={handleShare}
-            onJoin={() => navigate(`/auth?connect=${userId}`)}
-          />
-        </div>
-
-        {/* "Work with [Name]" — the direct-collab entry point the brief
-            asked for, right under the hero so it's the first real decision
-            a visitor makes. Orchestrates the connect/message/collaborate
-            dialogs that already exist below rather than adding new ones —
-            connect-first gating kept exactly as-is (confirmed): a visitor
-            still has to connect before Message/Start a Project/Invite
-            unlock, this block just makes that path far more visible and
-            explains what happens at each state instead of relying on
-            PublicPassportHero's own (smaller) CTA alone. */}
-        {!isOwner && (
-          <div className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-            <h2 className="text-sm font-semibold text-primary uppercase tracking-wider mb-1">
-              Work with {firstName}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {connectionStatus === 'connected'
-                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
-                : connectionStatus === 'pending'
-                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
-                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Start a Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
-                    <UserPlus2 className="h-4 w-4" />
-                    Invite to Project
-                  </Button>
-                </>
-              ) : (
-                // Priority #1 CTA (CEO overhaul): the same canonical
-                // primary-CTA treatment New Room/Studio home use for their
-                // single most important action, not a plain default Button
-                // indistinguishable from a secondary one.
-                <CtaButton
-                  onClick={handleConnect}
-                  disabled={isConnecting || connectionStatus === 'pending'}
-                  className="w-full gap-2"
-                >
-                  <UserPlus2 className="h-4 w-4" />
-                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </CtaButton>
-              )}
-            </div>
-            {/* The removed fixed footer's one function with no inline
-                equivalent elsewhere: a distinct entry point for a brand
-                (not this specific visitor) wanting to browse more
-                creators, not just connect with this one. */}
-            {!currentUserId && (
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate('/auth?type=brand')}
-                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
-              >
-                I'm a brand — find creators like {firstName}
-              </Button>
-            )}
+      <div className="mx-auto grid max-w-7xl gap-6 px-4 pb-16 pt-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-8">
+        <div className="order-2 min-w-0 space-y-7 lg:order-1">
+          <div className="border-b border-border pb-5">
+            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-energy"><Fingerprint className="h-4 w-4" /> Kretopia / Creator record</p>
+            <h2 className="break-words text-2xl font-bold text-foreground">{profile.full_name}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{[profile.job_title || profile.role, profile.location].filter(Boolean).join(' · ')}</p>
           </div>
-        )}
-
-        {/* Owner Share Toolbar */}
-        {isOwner && (
-          <div ref={shareRef}>
-            <EPKShareToolbar
-              profileName={profile.full_name}
-              profileRole={profile.role || 'Creator'}
-              userId={userId || ''}
-              epkPdfData={{
-                profile,
-                credits,
-                awards,
-                pressLinks,
-                industryStats,
-                reviews: reviews.map((r: any) => ({
-                  reviewer_name: r.reviewer_name || r.reviewer?.full_name,
-                  rating: r.rating,
-                  review_text: r.review_text,
-                })),
-              }}
-            />
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Credits', value: credits.length },
+              { label: 'Verified', value: credits.filter(c => c.isVerified).length },
+              { label: 'Features', value: pressLinks.length },
+              { label: 'Awards', value: awards.length },
+            ].map(({ label, value }) => (
+              <div key={label} className="min-w-0 bg-card p-4">
+                <p className="text-2xl font-bold text-foreground">{value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
-
-      {/* Right column: the rest of the Passport, scrolls independently of
-          the sticky identity/CTA column above on desktop. */}
-      <div>
-        {/* Video Intro — pinned high so the EPK feels alive */}
+          {allSkills.length > 0 && (
+            <section>
+              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Expertise</h3>
+              <div className="flex flex-wrap gap-2">{allSkills.slice(0, 12).map((skill, index) => <Badge key={`${skill}-${index}`} variant="secondary">{skill}</Badge>)}</div>
+            </section>
+          )}
+          {credits.length > 0 && (
+            <section>
+              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Selected work</h3>
+              <div className="divide-y divide-border border-y border-border">
+                {credits.slice(0, 5).map((credit) => (
+                  <div key={credit.id} className="flex items-start justify-between gap-4 py-3 text-sm">
+                    <div className="min-w-0"><p className="truncate font-semibold text-foreground">{decodeHtmlEntities(credit.project_name || credit.title || 'Creative work')}</p><p className="truncate text-xs text-muted-foreground">{credit.role}</p></div>
+                    <span className="shrink-0 text-xs text-muted-foreground">{credit.year || (credit.isVerified ? 'Verified' : '')}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+          {industryStats.length > 0 && (
+            <section>
+              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Credentials & stats</h3>
+              <div className="grid grid-cols-2 gap-3">{industryStats.map((stat) => (
+                <div key={stat.id} className="min-w-0 border-t border-border pt-3">
+                  {stat.value && <p className="font-bold text-energy">{stat.value}</p>}
+                  <p className="break-words text-sm font-medium">{stat.title}</p>
+                  {stat.issuer && <p className="text-xs text-muted-foreground">{stat.issuer}</p>}
+                </div>
+              ))}</div>
+            </section>
+          )}
+          {profile.availability_status && <p className="border-t border-border pt-4 text-sm text-muted-foreground">Availability · <span className="capitalize text-foreground">{profile.availability_status.replace(/_/g, ' ')}</span>{profile.availability_note && ` · ${profile.availability_note}`}</p>}
+{/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
           <div className="mb-8">
             <VideoIntroSection
@@ -605,33 +534,6 @@ const CreatorEPK = () => {
             categories={(profile as any).model_categories}
           />
         )}
-
-        {/* Why work with me — leads the press kit with positioning. */}
-        {(profile.headline || profile.bio) && (() => {
-          const longBio = profile.bio && profile.bio.length > 280;
-          const body = profile.headline
-            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
-          return (
-            <div className="mb-8 p-5 rounded-xl border-l-4 border-primary bg-primary/5">
-              <h3 className="text-sm font-semibold text-primary uppercase tracking-wider mb-2">
-                Why work with me
-              </h3>
-              <p className="text-base leading-relaxed text-foreground whitespace-pre-line">
-                {body}
-              </p>
-              {!profile.headline && longBio && (
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => setBioExpanded((v) => !v)}
-                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
-                >
-                  {bioExpanded ? "Show less" : "Read more"}
-                </Button>
-              )}
-            </div>
-          );
-        })()}
 
         {/* Unclaimed Profile Banner */}
         {profile.is_claimed === false && (
@@ -662,61 +564,6 @@ const CreatorEPK = () => {
             profile={profile}
             onSuccess={() => navigate('/onboarding')}
           />
-        )}
-
-        {/* Professional Skills */}
-        {profile.professional_skills && Array.isArray(profile.professional_skills) && profile.professional_skills.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Professional Skills
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.professional_skills.slice(0, 10).map((skill: any, index: number) => (
-                <Badge key={index} variant="secondary" className="px-3 py-1">
-                  {typeof skill === 'string' ? skill : skill?.skill || skill?.name || 'Skill'}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Passion Skills / Other Expertise */}
-        {profile.passion_skills && Array.isArray(profile.passion_skills) && profile.passion_skills.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Also Skilled In
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {profile.passion_skills.slice(0, 8).map((skill: any, index: number) => (
-                <Badge key={index} variant="outline" className="px-3 py-1">
-                  {typeof skill === 'string' ? skill : skill?.skill || skill?.name || 'Skill'}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Collaboration Info */}
-        {(profile.collab_intent || profile.rate_range) && (
-          <div className="mb-8 p-4 rounded-lg bg-muted/50">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Availability
-            </h3>
-            <div className="space-y-2 text-sm">
-              {profile.collab_intent && (
-                <p className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Looking for:</span>
-                  <span className="font-medium capitalize">{profile.collab_intent.replace(/_/g, ' ')}</span>
-                </p>
-              )}
-              {profile.rate_range && (
-                <p className="flex items-center gap-2">
-                  <span className="text-muted-foreground">Rate:</span>
-                  <span className="font-medium">{profile.rate_range}</span>
-                </p>
-              )}
-            </div>
-          </div>
         )}
 
         {/* Rate Cards — turns the EPK into a sales page. RateCardSection has its own
@@ -860,31 +707,6 @@ const CreatorEPK = () => {
           </div>
         )}
 
-        {/* Industry Stats / Certifications */}
-        {industryStats.length > 0 && (
-          <div className="mb-8">
-            <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-              Credentials & Stats
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              {industryStats.map((stat) => (
-                <div
-                  key={stat.id}
-                  className="p-3 rounded-lg bg-muted/50 text-center"
-                >
-                  {stat.value && (
-                    <p className="text-lg font-bold text-primary">{stat.value}</p>
-                  )}
-                  <p className="text-xs font-medium truncate">{stat.title}</p>
-                  {stat.issuer && (
-                    <p className="text-xs text-muted-foreground truncate">{stat.issuer}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Achievement Badges */}
         {profile.achievement_badges && profile.achievement_badges.length > 0 && (
           <div className="mb-8">
@@ -917,64 +739,6 @@ const CreatorEPK = () => {
             thumbnail_url: selectedItem.thumbnail_url
           } : null}
         />
-
-        {/* Press & Awards Combined */}
-        {(pressLinks.length > 0 || awards.length > 0) && (
-          <div className="mb-8 space-y-4">
-            {pressLinks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured In
-                </h3>
-                <div className="space-y-2">
-                  {pressLinks.slice(0, 4).map((press) => (
-                    <a
-                      key={press.id}
-                      href={press.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      {press.image_url ? (
-                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
-                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
-                        <p className="text-xs text-muted-foreground">{press.publication}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {awards.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Awards
-                </h3>
-                <div className="space-y-2">
-                  {awards.slice(0, 3).map((award) => (
-                    <div
-                      key={award.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10"
-                    >
-                      <Award className="h-4 w-4 text-amber-500 shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{award.title}</p>
-                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Reviews */}
         <EPKReviews
@@ -1033,21 +797,189 @@ const CreatorEPK = () => {
           </div>
         )}
 
+        {/* Owner Share Toolbar */}
+        {isOwner && (
+          <div ref={shareRef}>
+            <EPKShareToolbar
+              profileName={profile.full_name}
+              profileRole={profile.role || 'Creator'}
+              userId={userId || ''}
+              epkPdfData={{
+                profile,
+                credits,
+                awards,
+                pressLinks,
+                industryStats,
+                reviews: reviews.map((r: any) => ({
+                  reviewer_name: r.reviewer_name || r.reviewer?.full_name,
+                  rating: r.rating,
+                  review_text: r.review_text,
+                })),
+              }}
+            />
+          </div>
+        )}
       </div>
-      {/* closes right column */}
-      </div>
-      {/* closes lg:grid outer container */}
 
-      {/* CEO overhaul: the fixed bottom EPKFooterCTA bar is gone -- every
-          state it handled already has a real inline equivalent above, now
-          that collaboration is a primary CTA rather than living only in a
-          persistent floating bar: Owner -> EPKShareToolbar (left column),
-          Unclaimed -> the "Is this you? Claim This Profile" banner (right
-          column), signed-in visitor -> the "Work with X" block (left
-          column). Only the footer's brand-discovery link ("I'm a Brand —
-          Find Creators Like X") had no inline equivalent; it's preserved
-          as a secondary link in "Work with X" below instead of a whole
-          separate persistent bar. */}
+        <div className="order-1 min-w-0 lg:order-2">
+          <PublicPassportHero
+            profile={profile}
+            credits={credits}
+            connectionStatus={connectionStatus}
+            isOwner={isOwner}
+            isSignedIn={Boolean(currentUserId)}
+            isConnecting={isConnecting}
+            onConnect={handleConnect}
+            onMessage={() => setMessageOpen(true)}
+            onCollaborate={() => setCollaborateOpen(true)}
+            onAddToProject={() => setInviteOpen(true)}
+            onShare={handleShare}
+            onJoin={() => navigate(`/auth?connect=${userId}`)}
+            showBio={false}
+            showActions={false}
+          >
+        {/* Collaboration uses the same existing gated actions. */}
+        {!isOwner && (
+          <div className="border-b border-border pb-5">
+            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
+              Work with {firstName}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {connectionStatus === 'connected'
+                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
+                : connectionStatus === 'pending'
+                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
+                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {connectionStatus === 'connected' ? (
+                <>
+                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Message
+                  </Button>
+                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Start a Project
+                  </Button>
+                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
+                    <UserPlus2 className="h-4 w-4" />
+                    Invite to Project
+                  </Button>
+                </>
+              ) : (
+                <CtaButton
+                  onClick={handleConnect}
+                  disabled={isConnecting || connectionStatus === 'pending'}
+                  className="w-full gap-2"
+                >
+                  <UserPlus2 className="h-4 w-4" />
+                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
+                </CtaButton>
+              )}
+            </div>
+            {!currentUserId && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/auth?type=brand')}
+                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
+              >
+                I'm a brand — find creators like {firstName}
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
+        {profile.headline || profile.bio ? (() => {
+          const longBio = profile.bio && profile.bio.length > 280;
+          const body = profile.headline
+            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
+          return (
+            <div className="rounded-md border border-border bg-secondary p-5">
+              <h3 className="text-sm font-semibold text-energy uppercase mb-2">
+                Why work with me
+              </h3>
+              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
+                {body}
+              </p>
+              {!profile.headline && longBio && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => setBioExpanded((v) => !v)}
+                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                </Button>
+              )}
+            </div>
+          );
+        })() : <div className="rounded-md border border-border bg-secondary p-5"><h3 className="text-sm font-semibold uppercase text-energy">Why work with me</h3><p className="mt-2 text-sm text-muted-foreground">This creator has not added an introduction yet.</p></div>}
+
+        {/* Press & Awards Combined */}
+        {(pressLinks.length > 0 || awards.length > 0) && (
+          <div className="space-y-5">
+            {pressLinks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Featured In
+                </h3>
+                <div className="space-y-2">
+                  {pressLinks.slice(0, 4).map((press) => (
+                    <a
+                      key={press.id}
+                      href={press.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      {press.image_url ? (
+                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
+                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
+                        <p className="text-xs text-muted-foreground">{press.publication}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {awards.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Awards
+                </h3>
+                <div className="space-y-2">
+                  {awards.slice(0, 3).map((award) => (
+                    <div
+                      key={award.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
+                    >
+                      <Award className="h-4 w-4 text-energy shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{award.title}</p>
+                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+          </PublicPassportHero>
+        </div>
+      </div>
+
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (
         <StartProjectFromMatchDialog open={collaborateOpen} onOpenChange={setCollaborateOpen} matchedUser={{ id: profile.user_id, name: profile.full_name, role: profile.role, avatar: profile.avatar_url }} />
