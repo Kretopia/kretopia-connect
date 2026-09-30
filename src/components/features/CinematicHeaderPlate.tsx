@@ -73,7 +73,7 @@ export function CinematicHeaderPlate({
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
           <p
             className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6"
-            style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
+            style={{ borderColor: "hsl(var(--border))" }}
           >
             <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
             {/* No inline color here: .landing-eyebrow's own project-wide
