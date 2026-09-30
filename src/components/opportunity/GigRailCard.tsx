@@ -16,9 +16,9 @@ const TYPE_CONFIG: Record<string, { label: string; chip: string; icon: typeof Br
   collab:        { label: "Collab",    chip: "bg-primary/20 text-primary border-primary/30",             icon: Handshake,     gradient: "from-primary/40 via-primary/10 to-background" },
   collaboration: { label: "Collab",    chip: "bg-primary/20 text-primary border-primary/30",             icon: Handshake,     gradient: "from-primary/40 via-primary/10 to-background" },
   gig:           { label: "Quick Gig", chip: "bg-amber-500/15 text-amber-400 border-amber-500/25",       icon: Zap,           gradient: "from-amber-500/30 via-amber-500/10 to-background" },
-  project:       { label: "Project",   chip: "bg-violet-500/15 text-violet-400 border-violet-500/25",             icon: Target,        gradient: "from-violet-500/30 via-violet-500/10 to-background" },
+  project:       { label: "Project",   chip: "bg-muted text-foreground border-border",             icon: Target,        gradient: "from-muted via-card to-background" },
   internship:    { label: "Internship",chip: "bg-orange-500/15 text-orange-400 border-orange-500/25",   icon: GraduationCap, gradient: "from-orange-500/30 via-orange-500/10 to-background" },
-  barter:        { label: "Barter",    chip: "bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/25", icon: ArrowRightLeft,gradient: "from-fuchsia-500/30 via-fuchsia-500/10 to-background" },
+  barter:        { label: "Barter",    chip: "bg-muted text-foreground border-border", icon: ArrowRightLeft,gradient: "from-muted via-card to-background" },
   casting:       { label: "Casting Call", chip: "bg-rose-500/15 text-rose-400 border-rose-500/25",       icon: Camera,        gradient: "from-rose-500/30 via-rose-500/10 to-background" },
 };
 

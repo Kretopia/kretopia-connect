@@ -31,7 +31,7 @@ const KIND_META: Record<Discovery["kind"], { label: string; icon: any; color: st
   credit: { label: "Credit", icon: FileText, color: "bg-primary/15 text-primary border-primary/30" },
   press: { label: "Press", icon: Newspaper, color: "bg-accent/15 text-accent-foreground border-accent/30" },
   award: { label: "Award", icon: Award, color: "bg-amber-500/15 text-amber-600 border-amber-500/30" },
-  upload: { label: "Upload", icon: Music, color: "bg-fuchsia-500/15 text-fuchsia-500 border-fuchsia-500/30" },
+  upload: { label: "Upload", icon: Music, color: "bg-muted text-foreground border-border" },
 };
 
 export const PendingDiscoveriesDialog = ({ open, onOpenChange, onChanged, onRescan, scanning }: Props) => {
