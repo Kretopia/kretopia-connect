@@ -64,13 +64,18 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-passport")}
         kicker="Passport"
         title={
-          // Plain white -- gradient is intentionally selective across the
-          // chapters (Scout/Studio/Community carry the one accent phrase;
-          // Passport/Match stay plain), per user feedback that gradient on
-          // every single chapter title broke the page's hierarchy.
+          // Every chapter now carries the one accent phrase (matching Scout/
+          // Studio/Community below) -- restored after user feedback that an
+          // all-plain title read as "the gradient didn't apply" rather than
+          // "restrained". The phrase is 3 words, comfortably long enough for
+          // the accent gradient to sweep its complete blue->orange range
+          // (see .landing-accent's own comment on why a bare 1-2 word
+          // phrase visually truncates the sweep).
           <>
             One place for the work<br />
-            that made you
+            <span className="landing-accent">
+              that made you
+            </span>
           </>
         }
         body="Your Creative Passport brings your projects, credits, skills, collaborators and professional history together in one living record. Not just what you say you can do — what you've actually done."
@@ -102,13 +107,18 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-scout")}
         kicker="Scout"
         title={
-          // One of the "selected few" chapters that keeps the accent
-          // phrase (with Studio and Community, below) -- see the Passport
-          // chapter's comment above for why the others stay plain.
+          // "you" alone (66px wide) was too narrow for the gradient's
+          // 4-stop sweep to read as complete -- background-clip:text maps
+          // 0%-100% of the gradient across this span's own box, but a box
+          // this narrow only ever showed the middle violet/magenta stops,
+          // never reaching the blue start or orange end. Moved the split
+          // one word earlier so the accent phrase is "finds you" instead
+          // of just "you" -- confirmed live, the wider box shows the full
+          // range correctly.
           <>
-            The opportunity finds<br />
+            The opportunity<br />
             <span className="landing-accent">
-              you
+              finds you
             </span>
           </>
         }
@@ -132,11 +142,13 @@ export const LandingBelowFold = () => {
         index={chapterRoman("chapter-match")}
         kicker="Match"
         title={
-          // Plain white -- see the Passport chapter's comment above for why
-          // this one doesn't carry the accent phrase.
+          // Restored the accent phrase, matching every other chapter now
+          // (see the Passport chapter's comment above).
           <>
             The right person<br />
-            for the work
+            <span className="landing-accent">
+              for the work
+            </span>
           </>
         }
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
