@@ -121,7 +121,7 @@ export function FeatureAITutorial({
             <p className="landing-eyebrow mb-1">AI-guided tour</p>
             <h2 className="mb-5 text-2xl font-semibold text-foreground">
               {label}
-              <span className="pink-glow-breathe" style={{ color: ACCENT }}>.</span>
+              .
             </h2>
             <TutorialStepper steps={steps} label={label} autoPlay={!reducedMotion} />
             <button
