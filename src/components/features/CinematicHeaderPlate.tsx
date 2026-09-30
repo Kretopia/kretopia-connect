@@ -70,16 +70,12 @@ export function CinematicHeaderPlate({
         className={centered ? "flex flex-col items-center gap-4 text-center" : "flex flex-col gap-4"}
       >
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
-          <p
-            className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6"
-            style={{ borderColor: "hsl(var(--border))" }}
-          >
+          {/* Same eyebrow treatment as the landing chapters ("VII · Kreto"):
+              a bare breathing dot + neutral eyebrow text, no pill chrome. */}
+          <div className="flex items-center gap-2 mb-6">
             <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
-            {/* No inline color here: .landing-eyebrow's own neutral default
-                (index.css) paints it -- keep this span class-only so the
-                scope stays in one place. */}
             <span className="landing-eyebrow">{eyebrow}</span>
-          </p>
+          </div>
           <h1
             className={`landing-h1 landing-glow ${oneLine ? "whitespace-nowrap max-w-none" : "text-balance max-w-4xl"}`}
             style={{
