@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface StudioEmptyStateProps {
   icon?: ReactNode;
@@ -33,13 +34,14 @@ export function StudioErrorState({ title = "Something went wrong", description, 
       <p className="text-sm font-semibold text-foreground">{title}</p>
       <p className="text-xs text-muted-foreground max-w-xs">{description}</p>
       {onRetry && (
-        <button
+        <Button
           type="button"
+          variant="link"
           onClick={onRetry}
-          className="mt-2 text-xs font-semibold text-[hsl(var(--energy))] hover:underline"
+          className="mt-2 h-auto p-0 text-xs font-semibold text-foreground hover:underline"
         >
           Try again
-        </button>
+        </Button>
       )}
     </div>
   );

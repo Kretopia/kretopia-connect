@@ -19,7 +19,7 @@ const CATEGORY_VISUALS: Record<string, { gradient: string; icon: any; accent: st
   music: { gradient: "from-zinc-900 via-rose-950 to-zinc-900", icon: Music, accent: "text-rose-400/60" },
   album: { gradient: "from-zinc-900 via-rose-950 to-zinc-900", icon: Music, accent: "text-rose-400/60" },
   single: { gradient: "from-neutral-900 via-pink-950 to-neutral-900", icon: Music, accent: "text-pink-400/60" },
-  ep: { gradient: "from-neutral-900 via-fuchsia-950 to-neutral-900", icon: Music, accent: "text-fuchsia-400/60" },
+  ep: { gradient: "from-card via-muted to-card", icon: Music, accent: "text-foreground/60" },
   mixtape: { gradient: "from-zinc-900 via-primary to-zinc-900", icon: Music, accent: "text-primary/60" },
 
   // Audio & Podcast

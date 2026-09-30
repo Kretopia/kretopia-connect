@@ -110,9 +110,9 @@ All colors MUST be HSL.
        Passport/Scout/Match no longer get their own hue; --accent-pay
        stays green because it's a functional money-state signal, not
        decoration (see "preserve semantic colors" rule). */
-    --accent-passport: 289 80% 43%;
-    --accent-scout:    289 80% 43%;
-    --accent-match:    289 80% 43%;
+    --accent-passport: var(--foreground);
+    --accent-scout:    var(--foreground);
+    --accent-match:    var(--foreground);
     --accent-pay:      141 71% 42%;   /* #1DB954 — Money only, functional */
     --radius: 1rem;
 
@@ -597,6 +597,13 @@ All colors MUST be HSL.
      Subtle references to the other two colors should appear elsewhere
      so the experience always feels like one Kretopia ecosystem.
      ============================================================ */
+  /* Feature surfaces use neutral ink, like landing chapter VII. Keep the
+     multi-stop spectrum for title accents and deliberately chosen progress. */
+  .accent-passport, .accent-scout, .accent-match, .accent-studios {
+    --energy: var(--foreground);
+    --energy-foreground: var(--background);
+    --qr-accent: 289 80% 43%; /* QR branding must remain scannable on its white paper. */
+  }
   .accent-passport { --surface-accent: var(--accent-passport); }
   .accent-scout    { --surface-accent: var(--accent-scout); }
   .accent-match    { --surface-accent: var(--accent-match); }
@@ -604,7 +611,7 @@ All colors MUST be HSL.
   /* Studios = teal dominant with yellow nods (per Brand System v1.0) */
   .accent-studios  { --surface-accent: var(--accent-passport); --surface-accent-alt: var(--accent-scout); }
   .text-studios    { color: hsl(var(--accent-passport)); }
-  .bg-studios      { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
+  .bg-studios      { background-color: hsl(var(--accent-passport)); color: hsl(var(--background)); }
   .border-studios  { border-color: hsl(var(--accent-passport)); }
 
   .text-passport { color: hsl(var(--accent-passport)); }
@@ -612,9 +619,9 @@ All colors MUST be HSL.
   .text-match    { color: hsl(var(--accent-match)); }
   .text-pay      { color: hsl(var(--accent-pay)); }
 
-  .bg-passport { background-color: hsl(var(--accent-passport)); color: hsl(225 44% 4%); }
-  .bg-scout    { background-color: hsl(var(--accent-scout));    color: hsl(225 44% 4%); }
-  .bg-match    { background-color: hsl(var(--accent-match));    color: hsl(0 0% 100%); }
+  .bg-passport { background-color: hsl(var(--accent-passport)); color: hsl(var(--background)); }
+  .bg-scout    { background-color: hsl(var(--accent-scout));    color: hsl(var(--background)); }
+  .bg-match    { background-color: hsl(var(--accent-match));    color: hsl(var(--background)); }
   .bg-pay      { background-color: hsl(var(--accent-pay));      color: hsl(0 0% 100%); }
 
   .border-passport { border-color: hsl(var(--accent-passport)); }
