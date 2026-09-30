@@ -17,9 +17,15 @@ import {
   UploadCloud, Share2, MapPin, CheckCircle2, Mic, FileVideo,
 } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { kGlow } from "@/lib/kGradient";
 import { VisualCardShell } from "./visualShell";
 
-const ACCENT = "#FF2DA1";
+// One solid stop from the Kretopia logo gradient (purple), not the
+// retired flat pink/magenta -- used for icon fills and small solid pills
+// throughout these mockups, where a single flat color reads more cleanly
+// at this size than the full 4-stop gradient. kGlow() (translucent
+// borders/backgrounds below) reads the same stop at partial opacity.
+const ACCENT = "var(--k-g-2)";
 
 const fade = (reducedMotion: boolean) => ({
   initial: reducedMotion ? false : { opacity: 0, y: 8 },
@@ -83,7 +89,7 @@ export const SearchVisual = ({ activeStep, inView }: { activeStep: number; inVie
         <Row reducedMotion={reducedMotion}>
           <div
             className="rounded-full px-5 py-3.5 flex items-center gap-2.5 text-[15px]"
-            style={{ border: "1px solid rgba(255,45,161,0.3)", color: "rgba(255,255,255,0.85)" }}
+            style={{ border: `1px solid ${kGlow(30)}`, color: "rgba(255,255,255,0.85)" }}
           >
             <Search className="h-4 w-4 shrink-0" style={{ color: ACCENT }} aria-hidden />
             <span>Maya Solano</span>
@@ -149,7 +155,7 @@ export const SearchVisual = ({ activeStep, inView }: { activeStep: number; inVie
 /* ─── Passport ─── */
 export const PassportVisual = ({ activeStep, inView }: { activeStep: number; inView: boolean }) => {
   const reducedMotion = useReducedMotion();
-  const ring = (i: number) => (activeStep === i ? { border: "1px solid rgba(255,45,161,0.5)", boxShadow: "0 0 0 3px rgba(255,45,161,0.1)" } : { border: "1px solid rgba(255,255,255,0.08)" });
+  const ring = (i: number) => (activeStep === i ? { border: `1px solid ${kGlow(50)}`, boxShadow: `0 0 0 3px ${kGlow(10)}` } : { border: "1px solid rgba(255,255,255,0.08)" });
   return (
     <VisualCardShell icon={UserCheck} label="Passport preview" tag="Illustrative — not live data">
       <Cascade reducedMotion={reducedMotion} inView={inView}>
@@ -230,7 +236,7 @@ export const ScoutVisual = ({ activeStep, inView }: { activeStep: number; inView
                 <p className="text-xs text-white/45">Matches because:</p>
                 <div className="flex flex-wrap gap-2">
                   {["Event Production", "Bali-based", "Team lead"].map((t) => (
-                    <span key={t} className="rounded-full px-3 py-1.5 text-[11px] font-medium" style={{ backgroundColor: "rgba(255,45,161,0.12)", color: ACCENT, border: "1px solid rgba(255,45,161,0.25)" }}>
+                    <span key={t} className="rounded-full px-3 py-1.5 text-[11px] font-medium" style={{ backgroundColor: kGlow(12), color: ACCENT, border: `1px solid ${kGlow(25)}` }}>
                       <Target className="h-3 w-3 inline mr-1" aria-hidden /><span className="k-gradient-text">{t}</span>
                     </span>
                   ))}

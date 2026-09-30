@@ -56,7 +56,11 @@ export function KretopiaFeatureTutorial({ steps, featureName }: KretopiaFeatureT
               type="button"
               aria-label={`Open how ${featureName} works`}
               className={`group inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.03] py-2 pl-2 pr-4 transition-colors hover:border-white/35 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${reducedMotion ? "" : "ai-ambient-breathe"}`}
-              style={{ ["--tw-ring-color" as string]: "#FF2DA1" }}
+              // A focus ring is a solid outline, not gradient-capable --
+              // one stop from the Kretopia logo gradient (var(--k-g-2),
+              // purple) instead of the retired flat pink/magenta accent,
+              // matching KretopiaHero's own focus-ring fix.
+              style={{ ["--tw-ring-color" as string]: "var(--k-g-2)" }}
             >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06]">
                 <Fingerprint className="h-4 w-4 text-white/60 transition-colors group-hover:text-white" aria-hidden />

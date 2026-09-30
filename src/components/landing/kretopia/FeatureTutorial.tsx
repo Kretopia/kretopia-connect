@@ -23,7 +23,15 @@ import type { LucideIcon } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
 
-const ACCENT = "hsl(var(--energy))";
+// This component is shared beyond the landing page (used verbatim in
+// Messages.tsx too, per the file header) -- the landing-only
+// KGradientDefs SVG (mounted inside KretopiaLanding.tsx) isn't guaranteed
+// to exist wherever this renders, so it can't safely depend on the
+// .k-gradient-icon/.k-gradient-fill classes' url(#k-icon-gradient)
+// reference. One solid stop from the Kretopia logo gradient (var(--k-g-2),
+// purple) instead of the retired flat pink/magenta --energy accent works
+// everywhere this renders, with no defs dependency.
+const ACCENT = "var(--k-g-2)";
 const SWIPE_THRESHOLD_PX = 40;
 const THINKING_MS = 360;
 
