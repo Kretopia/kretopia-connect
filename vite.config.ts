@@ -62,9 +62,12 @@ export default defineConfig(({ mode }) => {
       host: "::",
       // Respect an assigned PORT env var (e.g. the Claude Code preview
       // harness's autoPort) instead of always fighting over 8080 with
-      // whatever else happens to be running locally; falls back to 8080
-      // for a plain `npm run dev` with nothing else set.
-      port: Number(process.env.PORT) || 8080,
+      // whatever else happens to be running locally. Falls back to Vite's
+      // own native default (5173, not 8080) for a plain `npm run dev` with
+      // nothing else set -- an 8080 fallback here was making the preview
+      // harness's static port-probe treat 8080 as this app's port even
+      // when a different one was configured in .claude/launch.json.
+      port: Number(process.env.PORT) || 5173,
     },
     plugins: [
       react(),
