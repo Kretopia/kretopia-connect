@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Trash2, Rocket, Loader2, Lock, Sparkles, Wand2, ImagePlus, ChevronLeft, ChevronRight, Upload, Check,
 } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { useCreateCampaign, useMyCampaigns } from "@/hooks/useThriveFund";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasProAccess, hasCreatorProAccess, type SubscriptionTier } from "@/lib/subscriptionConfig";
@@ -282,9 +283,12 @@ const FundNew = () => {
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-5 space-y-3">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-            ThriveFund · New Campaign
-          </p>
+          <div className="flex items-center gap-2">
+            <PageBackButton variant="inline" />
+            <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+              ThriveFund · New Campaign
+            </p>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">
             Launch your campaign
           </h1>

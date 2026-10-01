@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
@@ -119,13 +120,16 @@ const CreativeCircle = () => {
     <div>
       <SEO title="Creative Circle | Kretopia" description="Grow your creative network, unlock rewards, and earn passive income by inviting creatives to Kretopia." />
 
-      <FeaturePageHeader
-        eyebrow="Creative Circle"
-        title="Creative Circle."
-        accentTitle="Earn as it grows."
-        subtitle="Invite creatives, climb tiers, and earn passive commission — all from one link."
-        tutorial={{ featureKey: "creative-circle", label: "How Creative Circle works", steps: CREATIVE_CIRCLE_TUTORIAL }}
-      />
+      <div className="relative">
+        <PageBackButton />
+        <FeaturePageHeader
+          eyebrow="Creative Circle"
+          title="Creative Circle."
+          accentTitle="Earn as it grows."
+          subtitle="Invite creatives, climb tiers, and earn passive commission — all from one link."
+          tutorial={{ featureKey: "creative-circle", label: "How Creative Circle works", steps: CREATIVE_CIRCLE_TUTORIAL }}
+        />
+      </div>
 
       <StudioFeatureShell>
 
