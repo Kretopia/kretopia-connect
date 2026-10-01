@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Users, DollarSign, Link2, TrendingUp, Loader2, Briefcase, ShieldCheck, ArrowRight, Plus } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { SEO } from "@/components/SEO";
 
 interface ManagerData {
@@ -162,9 +163,12 @@ export default function TalentManager() {
       <SEO title="Talent Manager | Kretopia" description="Manage your talent network, post jobs for clients, and earn commissions on bookings." />
 
       <div className="mb-6 space-y-3">
-        <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-          Referral network
-        </p>
+        <div className="flex items-center gap-2">
+          <PageBackButton variant="inline" />
+          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+            Referral network
+          </p>
+        </div>
         <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">Talent Manager</h1>
         <p className="text-sm text-muted-foreground max-w-md">
           Manage your roster, post jobs for clients, and earn {manager?.commission_rate || 10}% on every booking.

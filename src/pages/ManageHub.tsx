@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Building2, Briefcase, CalendarDays, Rocket, ArrowRight } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 const items = [
   {
@@ -42,9 +43,12 @@ const ManageHub = () => {
 
       <div className="max-w-3xl mx-auto px-4 pt-8">
         <header className="mb-6 space-y-3">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-            Command center
-          </p>
+          <div className="flex items-center gap-2">
+            <PageBackButton variant="inline" />
+            <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+              Command center
+            </p>
+          </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">Manage</h1>
           <p className="text-sm text-muted-foreground max-w-md">
             Everything you've put out — clients, gigs, events, and campaigns — in one place.

@@ -37,6 +37,7 @@ import { TransactionDetailDrawer, type TransactionDetail } from "@/components/th
 import { TrustControlsCard } from "@/components/thrivepay/TrustControlsCard";
 import { InvoiceSepaBeneficiaryCard } from "@/components/thrivepay/InvoiceSepaBeneficiaryCard";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { KretoTip } from "@/components/agent/KretoTip";
 import { KREPAY_BRAND_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -297,6 +298,8 @@ export default function ThrivePay() {
         description="Manage your wallet, earnings, status, and payment account"
       />
 
+      <div className="relative">
+      <PageBackButton />
       <FeaturePageHeader
         eyebrow="Your money, daily"
         title="KrePay."
@@ -380,6 +383,7 @@ export default function ThrivePay() {
           </div>
         }
       />
+      </div>
 
       <div className="accent-pay min-h-screen">
       <StudioFeatureShell>

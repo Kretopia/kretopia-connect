@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Search, Send, Target, Users, TrendingUp, Mail, Crown, Lock, Kanban, BarChart3 } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import LeadsTab from "@/components/thrive-ai/LeadsTab";
 import OutreachTab from "@/components/thrive-ai/OutreachTab";
 
@@ -116,9 +117,12 @@ const SalesDashboard = () => {
       {/* Header */}
       <div className="mb-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-            Sales
-          </p>
+          <div className="flex items-center gap-2">
+            <PageBackButton variant="inline" />
+            <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+              Sales
+            </p>
+          </div>
           {!isPro && (
             <span className="inline-flex items-center gap-1.5 shrink-0 text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full border backdrop-blur-sm bg-muted/60 text-muted-foreground border-border">
               Spark Plan
