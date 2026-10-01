@@ -190,7 +190,7 @@ export const StudioAICreate = ({ projectId, currentUserId, isPro }: StudioAICrea
 
           <TabsContent value="copy" className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Describe what you need — a caption, a pitch, a short script — and Kreto will draft it.
+              Describe what you need — a caption, a pitch, a short script — and AI drafts it.
             </p>
             <Textarea
               placeholder="e.g. A punchy Instagram caption announcing this project is wrapped..."
