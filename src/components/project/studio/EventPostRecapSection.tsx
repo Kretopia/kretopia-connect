@@ -80,7 +80,7 @@ export const EventPostRecapSection = ({ project, currentUserId }: Props) => {
           <h3 className="text-base font-black tracking-tight">Post-event recap</h3>
           <p className="text-xs text-muted-foreground mt-0.5">AI drafts captions, sponsor reports, highlight ideas, and thank-yous.</p>
         </div>
-        <Button onClick={generate} disabled={generating} size="sm" className="bg-[hsl(var(--energy))] text-[hsl(var(--background))] hover:bg-[hsl(var(--energy)/0.9)] font-bold gap-1.5">
+        <Button onClick={generate} disabled={generating} size="sm" className="cta-primary font-bold gap-1.5">
           {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
           {recap ? "Regenerate" : "Generate"}
         </Button>
