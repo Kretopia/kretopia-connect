@@ -11,6 +11,7 @@ import { Bell, CheckCheck, ExternalLink, Check, Trash2, Inbox as InboxIcon } fro
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 /**
  * Unified Inbox — split into two clear lanes:
@@ -65,6 +66,7 @@ const Inbox = () => {
           <div className="space-y-1.5 min-w-0">
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">Your inbox</p>
             <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05] flex items-center gap-3">
+              <PageBackButton variant="inline" />
               <Bell className="h-7 w-7 text-[hsl(var(--energy))]" />
               Inbox
             </h1>

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateStatusFromCredits, getAllTiers } from "@/lib/statusEngine";
 import { FeatureAITutorial } from "@/components/features/FeatureAITutorial";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { useFitTitleOneLine } from "@/hooks/useFitTitleOneLine";
 
@@ -52,6 +53,7 @@ export default function PerksTab() {
     <div className="min-h-[calc(100vh-56px)] bg-background text-foreground">
       <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
         <div className="relative overflow-hidden -mx-4 px-4 pt-4 pb-2">
+          <PageBackButton />
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
           <div className="relative flex flex-col items-center text-center">
             <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--energy))] mb-3 px-2.5 py-1 rounded-full border border-[hsl(var(--energy)/0.35)] bg-[hsl(var(--energy)/0.06)] backdrop-blur-sm">

@@ -12,6 +12,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Video, Sparkles, Clock, ArrowLeft, FileVideo, RefreshCw } from "lucide-react";
 import { toast as sonnerToast } from "sonner";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { KretoTip } from "@/components/agent/KretoTip";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
@@ -129,13 +130,16 @@ export default function Recordings() {
         <meta name="description" content="Watch replays, read transcripts and pull action items from your Kretopia video calls." />
       </Helmet>
 
-      <FeaturePageHeader
-        eyebrow="Call recordings"
-        title="Recordings."
-        accentTitle="Every call, revisited."
-        subtitle="Replays, transcripts, and Kreto-extracted action items from every recorded call."
-        tutorial={{ featureKey: "recordings", label: "How Recordings works", steps: RECORDINGS_TUTORIAL }}
-      />
+      <div className="relative">
+        <PageBackButton />
+        <FeaturePageHeader
+          eyebrow="Call recordings"
+          title="Recordings."
+          accentTitle="Every call, revisited."
+          subtitle="Replays, transcripts, and Kreto-extracted action items from every recorded call."
+          tutorial={{ featureKey: "recordings", label: "How Recordings works", steps: RECORDINGS_TUTORIAL }}
+        />
+      </div>
 
       <div className="max-w-3xl mx-auto px-4 pt-4">
         <KretoTip compact />

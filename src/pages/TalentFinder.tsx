@@ -14,6 +14,7 @@ import { FreeTierGate } from "@/components/FreeTierGate";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { TALENT_FINDER_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import {
@@ -135,13 +136,16 @@ export default function TalentFinder() {
       </Helmet>
 
       <div className="min-h-screen bg-background pb-24">
-        <FeaturePageHeader
-          eyebrow="Hiring"
-          title="Smart Talent Finder."
-          accentTitle="Real matches, in real time."
-          subtitle="Describe what you need — Kreto searches Kretopia's live creator network and ranks real, verified people against your brief."
-          tutorial={{ featureKey: "talent-finder", label: "How Smart Talent Finder works", steps: TALENT_FINDER_TUTORIAL }}
-        />
+        <div className="relative">
+          <PageBackButton />
+          <FeaturePageHeader
+            eyebrow="Hiring"
+            title="Smart Talent Finder."
+            accentTitle="Real matches, in real time."
+            subtitle="Describe what you need — Kreto searches Kretopia's live creator network and ranks real, verified people against your brief."
+            tutorial={{ featureKey: "talent-finder", label: "How Smart Talent Finder works", steps: TALENT_FINDER_TUTORIAL }}
+          />
+        </div>
 
         {/* max-w-4xl, not the max-w-2xl this carried before — same class of
             fix as BrandWorkHome/CompanyProfileView (both moved to max-w-6xl

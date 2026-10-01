@@ -7,6 +7,7 @@ import { Plus, Building2, ChevronRight, UserPlus, FolderKanban, ClipboardList, C
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { KretoTip } from "@/components/agent/KretoTip";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { formatDistanceToNow } from "date-fns";
@@ -28,13 +29,16 @@ const Clients = () => {
     <div className="pb-32">
       <SEO title="Clients · Kretopia" description="All your clients in one hub" />
 
-      <FeaturePageHeader
-        eyebrow="Client hub"
-        title="Clients."
-        accentTitle="Everyone you work with."
-        subtitle="Group projects, contacts and threads under one client — no more digging for who's who."
-        tutorial={{ featureKey: "clients", label: "How Clients works", steps: CLIENTS_TUTORIAL }}
-      />
+      <div className="relative">
+        <PageBackButton />
+        <FeaturePageHeader
+          eyebrow="Client hub"
+          title="Clients."
+          accentTitle="Everyone you work with."
+          subtitle="Group projects, contacts and threads under one client — no more digging for who's who."
+          tutorial={{ featureKey: "clients", label: "How Clients works", steps: CLIENTS_TUTORIAL }}
+        />
+      </div>
 
       <div className="max-w-3xl mx-auto p-4">
         <KretoTip compact className="mb-4" />

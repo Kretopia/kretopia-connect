@@ -8,6 +8,7 @@ import { BRAND } from "@/lib/brandLexicon";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { KRETO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { InlineKretoChat } from "@/components/kreto/InlineKretoChat";
@@ -111,13 +112,16 @@ export default function KretoTab() {
 
   return (
     <div className="min-h-[calc(100vh-56px)] bg-background text-foreground">
-      <FeaturePageHeader
-        eyebrow="Executive Producer"
-        title={`${BRAND.agentName}.`}
-        accentTitle="Your creative career, run point."
-        subtitle={`${BRAND.agentRole}. Finds opportunities, drafts pitches, keeps your Passport sharp, and closes the loop from search to paid credit — with your approval at every step.`}
-        tutorial={{ featureKey: "kreto", label: "How Kreto works", steps: KRETO_TUTORIAL }}
-      />
+      <div className="relative">
+        <PageBackButton />
+        <FeaturePageHeader
+          eyebrow="Executive Producer"
+          title={`${BRAND.agentName}.`}
+          accentTitle="Your creative career, run point."
+          subtitle={`${BRAND.agentRole}. Finds opportunities, drafts pitches, keeps your Passport sharp, and closes the loop from search to paid credit — with your approval at every step.`}
+          tutorial={{ featureKey: "kreto", label: "How Kreto works", steps: KRETO_TUTORIAL }}
+        />
+      </div>
 
       <StudioFeatureShell>
         <div className="flex gap-4 items-start">
