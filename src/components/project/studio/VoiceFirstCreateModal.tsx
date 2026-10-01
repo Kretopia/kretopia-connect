@@ -1080,8 +1080,8 @@ export const VoiceFirstCreateModal = ({
                     onClick={submitText}
                     disabled={!textInput.trim()}
                     aria-label="Send to Kreto"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-xl flex items-center justify-center text-white disabled:opacity-40 transition-colors"
-                    style={{ backgroundColor: "hsl(var(--energy))" }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-9 w-9 rounded-xl flex items-center justify-center disabled:opacity-40 transition-colors"
+                    style={{ backgroundColor: "hsl(var(--energy))", color: "hsl(var(--energy-foreground))" }}
                   >
                     <ArrowRight className="h-4 w-4" />
                   </button>

@@ -135,7 +135,7 @@ export const WrapMyWeekSheet = ({ open, onOpenChange, projectId }: WrapMyWeekShe
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[92vh] sm:h-[88vh] sm:max-w-2xl sm:mx-auto sm:rounded-t-3xl overflow-y-auto"
+        className="max-h-[90vh] sm:max-w-2xl sm:mx-auto sm:rounded-t-3xl overflow-y-auto"
       >
         <SheetHeader className="text-left mb-3">
           <SheetTitle className="flex items-center gap-2 text-xl">
@@ -153,6 +153,17 @@ export const WrapMyWeekSheet = ({ open, onOpenChange, projectId }: WrapMyWeekShe
             <p className="text-sm text-muted-foreground">
               Reading the week's tasks, files, and notes…
             </p>
+          </div>
+        )}
+
+        {!loading && !data && (
+          <div className="py-12 text-center space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Couldn't put this week's recap together.
+            </p>
+            <Button variant="outline" size="sm" onClick={generate} className="gap-1.5">
+              <RefreshCcw className="h-3.5 w-3.5" /> Try again
+            </Button>
           </div>
         )}
 

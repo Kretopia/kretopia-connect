@@ -51,7 +51,7 @@ export const MessageComposer = forwardRef<HTMLInputElement, Props>(
           type="submit"
           disabled={!newMessage.trim() && !attachment}
           aria-label="Send message"
-          className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-white disabled:opacity-40 transition-colors bg-[hsl(var(--energy))] hover:bg-[hsl(var(--energy)/0.9)]"
+          className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-[hsl(var(--energy-foreground))] disabled:opacity-40 transition-colors bg-[hsl(var(--energy))] hover:bg-[hsl(var(--energy)/0.9)]"
         >
           <Send className="h-4 w-4" />
         </button>

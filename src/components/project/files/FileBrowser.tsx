@@ -192,8 +192,8 @@ export const FileBrowser = ({ projectId, files, onFileUploaded }: FileBrowserPro
     const s = search.trim().toLowerCase();
     if (!s) return { folders: visibleFolders, files: visibleFiles };
     return {
-      folders: visibleFolders.filter((f) => f.name.toLowerCase().includes(s)),
-      files: visibleFiles.filter((f) => f.file_name.toLowerCase().includes(s)),
+      folders: visibleFolders.filter((f) => (f.name ?? "").toLowerCase().includes(s)),
+      files: visibleFiles.filter((f) => (f.file_name ?? "").toLowerCase().includes(s)),
     };
   }, [search, visibleFolders, visibleFiles]);
 
