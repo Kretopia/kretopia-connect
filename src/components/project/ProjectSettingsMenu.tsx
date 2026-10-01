@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MoreVertical, Settings, Trash2, StickyNote, FolderLock, Clapperboard, ListChecks, UserCheck, Music2, History, Crown } from "lucide-react";
+import { MoreVertical, Settings, Trash2, StickyNote, FolderLock, Clapperboard, ListChecks, UserCheck, Music2, History, Crown, LayoutTemplate } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -43,6 +43,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ReviewPromptDialog } from "./ReviewPromptDialog";
 import { ProjectCreditsDialog } from "./ProjectCreditsDialog";
+import { ProjectTemplatePicker } from "./ProjectTemplatePicker";
 
 interface ProjectSettingsMenuProps {
   project: {
@@ -73,6 +74,7 @@ export function ProjectSettingsMenu({
   const { toast } = useToast();
   const [reviewPromptOpen, setReviewPromptOpen] = useState(false);
   const [creditsDialogOpen, setCreditsDialogOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -249,6 +251,13 @@ export function ProjectSettingsMenu({
           <DropdownMenuLabel className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Project</DropdownMenuLabel>
 
           {isOwner && (
+            <DropdownMenuItem onClick={() => setTemplatesOpen(true)} className="gap-2">
+              <LayoutTemplate className="h-4 w-4" />
+              Apply a Template
+            </DropdownMenuItem>
+          )}
+
+          {isOwner && (
             <DropdownMenuItem
               onClick={() => {
                 setTitle(project.title);
@@ -274,6 +283,35 @@ export function ProjectSettingsMenu({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Apply a Template -- CDO audit "Templates" resurrection. The live
+          creation flow (VoiceFirstCreateModal) has no template step: it's
+          built entirely around voice/text/doc → AI-brief-extraction →
+          createProject(), which needs a cover image and a populated brief,
+          with no blank-project bypass to build a template path onto
+          without restructuring that flow. ProjectTemplatePicker already
+          does the real work (inserts real project_tasks/milestones/
+          asset_folders from project_templates) but was only ever a dead
+          import (DeskTabContent.tsx) -- mounted here instead, as a
+          post-creation "retrofit structure onto this project" action. */}
+      <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Apply a Template</DialogTitle>
+            <DialogDescription>
+              Add a pre-built set of tasks, milestones and folders to this project.
+            </DialogDescription>
+          </DialogHeader>
+          <ProjectTemplatePicker
+            projectId={project.id}
+            currentUserId={currentUserId}
+            onApplied={() => {
+              setTemplatesOpen(false);
+              onProjectUpdated();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
 
       {/* Settings Dialog */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
