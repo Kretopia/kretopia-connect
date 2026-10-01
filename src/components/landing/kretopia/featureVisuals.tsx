@@ -414,7 +414,7 @@ export const SoundStagesVisual = ({ activeStep, inView }: { activeStep: number; 
             {activeStep === 0 && (
               <motion.div key="s0" {...fade(reducedMotion)} className="space-y-2.5">
                 <div className="flex gap-2.5">
-                  <span className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold" style={{ backgroundColor: ACCENT, color: "#05070D" }}>Speed Session</span>
+                  <span className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold" style={{ backgroundColor: ACCENT, color: "#ffffff" }}>Speed Session</span>
                   <span className="flex-1 rounded-xl border border-white/15 px-4 py-2.5 text-center text-sm text-white/70">Audition</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 text-[10px] text-white/40">

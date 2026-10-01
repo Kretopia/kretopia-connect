@@ -208,13 +208,15 @@ export const ChapterSection = ({
             </div>
 
             {/* Trailing period stays the title's own plain white, not a
-                colored/animated pink-glow-breathe dot -- matching "III ·
-                Verified Credits"'s own pattern (a bare "." after the
-                gradient span, inheriting the h2's white) instead of
-                coloring the period itself. */}
+                colored/animated pink-glow-breathe dot. Every chapter's
+                title ends with a .landing-accent span (italic), so the
+                period needs the same italic slant or it reads as a
+                disconnected upright fragment glued onto stylized text --
+                confirmed live, this is the CDO audit's "small white
+                artefact after 'people.'" on the Community chapter. */}
             <h2 className={`landing-h2 landing-glow${gradientTitle ? " k-gradient-title" : ""}`}>
               {title}
-              {!gradientTitle && "."}
+              {!gradientTitle && <span className="italic">.</span>}
             </h2>
 
             <p className="landing-sub mt-7 max-w-md">

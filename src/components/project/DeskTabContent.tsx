@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { WidgetErrorBoundary } from "@/components/project/studio/WidgetErrorBoundary";
 import { TodayWorkspace } from "@/components/project/today/TodayWorkspace";
 import { FileBrowser } from "@/components/project/files/FileBrowser";
 import { VaultTab } from "@/components/project/studio/VaultTab";
@@ -71,6 +72,12 @@ export const DeskTabContent = memo(({
     window.dispatchEvent(new CustomEvent("thrivedesk:set-tab", { detail: tab }));
   };
   return (
+  // Keyed by activeTab so switching tabs always remounts a fresh boundary
+  // instead of staying stuck on a previous tab's error state. Previously a
+  // render exception anywhere in a tab's tree (e.g. Vault) had nothing local
+  // to catch it and fell through to GlobalErrorBoundary, blanking the whole
+  // app instead of just this panel.
+  <WidgetErrorBoundary key={activeTab} name="This tab">
   <div className={cn("flex-1 min-h-0 min-w-0", activeTab === "messages" || activeTab === "today" ? "flex flex-col" : "overflow-y-auto")}>
     {activeTab === "today" && (
       <TodayWorkspace
@@ -259,6 +266,7 @@ export const DeskTabContent = memo(({
       </div>
     )}
   </div>
+  </WidgetErrorBoundary>
   );
 });
 
