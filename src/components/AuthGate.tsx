@@ -32,7 +32,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2">
             <Button
               onClick={() => navigate("/auth")}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold"
+              className="w-full cta-primary font-semibold"
             >
               Sign Up Free
             </Button>

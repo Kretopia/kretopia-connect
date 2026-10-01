@@ -51,7 +51,7 @@ export function FreeTierGate({ feature, featureLabel, description, children }: F
             </p>
             <Button
               onClick={() => navigate("/subscription")}
-              className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold gap-2"
+              className="w-full cta-primary font-semibold gap-2"
             >
               <Sparkles className="h-4 w-4" />
               {isPro ? "Upgrade to Creator+" : "Upgrade to Creator"}
