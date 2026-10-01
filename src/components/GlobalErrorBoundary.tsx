@@ -44,7 +44,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   handleReload = () => {
-    window.location.href = '/';
+    // CDO audit: "Go Home is ambiguous inside a multi-surface product --
+    // use a contextual destination." This is the app-wide catch-all
+    // boundary (no specific section to return to), so /today is the one
+    // safe, always-meaningful destination rather than "/" -- a hard
+    // reload (not a soft navigate) is deliberate here: the React tree
+    // that just threw may be in a genuinely broken state, and a full
+    // reload is the one recovery path that doesn't depend on it.
+    window.location.href = '/today';
   };
 
   handleRefresh = () => {
@@ -90,7 +97,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
               </Button>
               <Button onClick={this.handleReload}>
                 <Home className="h-4 w-4 mr-2" />
-                Go Home
+                Go to Today
               </Button>
             </div>
           </div>
