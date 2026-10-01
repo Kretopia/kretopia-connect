@@ -102,7 +102,7 @@ const HandleResolver = ({ mode }: { mode: Mode }) => {
         {BRAND.passportHeadline} Claim {displayed} before someone else does.
       </p>
       <div className="flex gap-2">
-        <Button asChild className="bg-[hsl(var(--signal-teal))] text-black hover:bg-[hsl(var(--signal-teal))]/90">
+        <Button asChild className="cta-primary">
           <Link to="/auth?intent=claim">Claim my Passport</Link>
         </Button>
         <Button asChild variant="outline">

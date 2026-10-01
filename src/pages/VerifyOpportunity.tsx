@@ -107,7 +107,7 @@ const VerifyOpportunity = () => {
                       Build your brand reputation with reviews
                     </li>
                   </ul>
-                  <Button asChild className="w-full bg-gradient-to-r from-primary to-primary/80" size="lg">
+                  <Button asChild className="w-full cta-primary" size="lg">
                     <Link to={`/auth?claim=${result.claimToken}`}>
                       Claim Profile — It's Free
                     </Link>

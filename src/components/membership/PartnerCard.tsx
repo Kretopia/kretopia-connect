@@ -188,7 +188,7 @@ export const PartnerCard = ({
               )}
             </div>
           ) : (
-            <Button className="w-full group/btn bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition-opacity" asChild>
+            <Button className="w-full group/btn cta-primary" asChild>
               <a href="/subscription">
                 Upgrade to Access
                 <ExternalLink className="h-4 w-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />

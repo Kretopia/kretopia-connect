@@ -84,7 +84,7 @@ ${topCredits.slice(0, 3).map(c => `- **${c.project_name}** — ${c.role}`).join(
           <p className="text-sm text-muted-foreground mb-4">
             Showcase your verified Stamps on your website, portfolio, or LinkedIn. Creator feature.
           </p>
-          <Button onClick={() => navigate("/subscription")} className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold gap-2">
+          <Button onClick={() => navigate("/subscription")} className="cta-primary font-semibold gap-2">
             <Sparkles className="h-4 w-4" />
             Upgrade to Creator — $29/mo
           </Button>

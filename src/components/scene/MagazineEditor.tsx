@@ -529,15 +529,15 @@ export const MagazineEditor = ({ onClose, onPublished, articleId }: Props) => {
 
         {/* Add Block buttons */}
         <div className="flex gap-2 justify-center pt-1">
-          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-full" onClick={() => addBlock("text")}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-pill" onClick={() => addBlock("text")}>
             <Type className="h-3 w-3" />
             Text
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-full" onClick={() => addBlock("image")}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-pill" onClick={() => addBlock("image")}>
             <Image className="h-3 w-3" />
             Image
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-full" onClick={() => addBlock("quote")}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-[11px] h-7 rounded-pill" onClick={() => addBlock("quote")}>
             <Quote className="h-3 w-3" />
             Quote
           </Button>
