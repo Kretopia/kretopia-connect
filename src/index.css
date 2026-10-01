@@ -82,6 +82,11 @@ All colors MUST be HSL.
 
     --destructive: 0 70% 52%;
     --destructive-foreground: 0 0% 100%;
+    /* CDO audit canonical taxonomy: .cta-danger's own name for the same
+       value, not a second hue -- one danger color, two names during the
+       migration off ad hoc destructive stylings. */
+    --danger: var(--destructive);
+    --danger-foreground: var(--destructive-foreground);
 
     /* Hairline borders — barely visible, more whitespace */
     --border: 36 15% 88%;
@@ -116,7 +121,21 @@ All colors MUST be HSL.
     --accent-scout:    var(--foreground);
     --accent-match:    var(--foreground);
     --accent-pay:      141 71% 42%;   /* #1DB954 — Money only, functional */
+    /* CDO audit: .cta-kreto / .icon-kreto need a named token distinct from
+       the generic brand accent. Aliased to --energy rather than a new hue,
+       matching this file's own established pattern of collapsing
+       --accent-passport/scout/match onto one accent instead of a rainbow
+       of per-area colors. Revisit if Kreto should read as visually
+       distinct from the general brand accent. */
+    --accent-kreto: var(--energy);
     --radius: 1rem;
+    /* CDO audit radius tiers -- component family gets its own token instead
+       of ad hoc rounded-full/rounded-xl overrides per call site. All derive
+       from the one --radius that already exists; this doesn't introduce a
+       second size scale, just names the existing intent per family. */
+    --radius-control: var(--radius);       /* buttons, inputs, compact controls */
+    --radius-panel: var(--radius);         /* cards, modals, major containers */
+    --radius-pill: 9999px;                 /* chips, filters, deliberately pill-shaped controls only */
 
     /* Canonical reset tokens (requested names) — thin aliases over the
        tokens above so existing call sites keep working unchanged while
@@ -1586,6 +1605,76 @@ svg.k-gradient-icon {
   opacity: 1 !important;
   background-color: hsl(var(--primary) / 0.4) !important;
   color: hsl(var(--primary-foreground)) !important;
+}
+
+/* ── CDO AUDIT CANONICAL ACTION TAXONOMY ─────────────────────────────
+   .cta-primary/secondary/tertiary/danger are the named vocabulary the
+   audit's Phase 2 batches migrate individual ad hoc Button overrides
+   onto, one feature area at a time -- not a breaking replacement of
+   .btn-glass/.cta-solid/CtaButton in this PR. .cta-primary is .cta-solid
+   under a second name (one ruleset, so the two can't drift). Deliberately
+   NOT touching .btn-glass/.btn-glass-danger below (a separate, concurrent
+   change is mid-edit on that block's --btn-glass-accent) -- .cta-danger
+   is its own small, independent rule using the --danger token instead of
+   composing with .btn-glass-danger's variable-driven glass system. */
+.cta-solid,
+.cta-primary {
+  background-image: none !important;
+  background-color: hsl(var(--primary)) !important;
+  border-color: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.cta-primary:hover {
+  background-color: hsl(var(--primary) / 0.9) !important;
+}
+.cta-primary,
+.cta-primary:hover,
+.cta-primary:focus-visible {
+  color: hsl(var(--primary-foreground)) !important;
+}
+.cta-primary:disabled {
+  opacity: 1 !important;
+  background-color: hsl(var(--primary) / 0.4) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+/* Important alternative action without primary visual weight -- the
+   existing outline/glass-surface recipe already used ad hoc at call
+   sites like PassportHero's "Share Passport", formalized as a class. */
+.cta-secondary {
+  background-color: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.cta-secondary:hover {
+  border-color: hsl(var(--foreground) / 0.5);
+  background-color: hsl(var(--foreground) / 0.04);
+}
+
+/* Back, dismiss, lightweight navigation and other low-emphasis actions —
+   the existing ghost/text-link pattern, formalized. */
+.cta-tertiary {
+  background-color: transparent;
+  border-color: transparent;
+  color: hsl(var(--muted-foreground));
+  transition: color 0.2s ease;
+}
+.cta-tertiary:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Delete account, irreversible deletion, destructive confirmations. */
+.cta-danger {
+  background-color: hsl(var(--danger) / 0.12);
+  border: 1px solid hsl(var(--danger) / 0.4);
+  color: hsl(var(--danger));
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+.cta-danger:hover {
+  background-color: hsl(var(--danger) / 0.18);
+  border-color: hsl(var(--danger) / 0.6);
 }
 
 /* ── LANDING PRIMARY CTA — grey-to-pink gradient ─────────────────────
