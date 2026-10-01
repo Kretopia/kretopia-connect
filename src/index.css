@@ -260,7 +260,12 @@ All colors MUST be HSL.
 
     --border: 222 22% 13%;
     --input: 222 22% 13%;
-    --ring: 0 0% 100%;
+    /* CDO audit "distinct input focus, not pure white": was 0 0% 100%,
+       which against this theme's dark --border/--background read as a
+       permanent-focus glare rather than a focus state. Still clearly
+       visible (large contrast jump from the 13% border), just not a
+       flash of pure white. */
+    --ring: 0 0% 82%;
 
     --success: 141 71% 42%;          /* #1DB954 */
     --success-foreground: 0 0% 100%;
@@ -354,7 +359,12 @@ All colors MUST be HSL.
     --accent-foreground: 0 0% 100%;
     --energy: 0 0% 100%;
     --energy-foreground: 225 44% 4%;
-    --ring: 0 0% 100%;
+    /* Same "not pure white" focus-ring fix as the base .dark block above --
+       --primary/--energy intentionally stay pure white here (that's this
+       session's own prior "mainly white UI" decision for fills), but a
+       *focus ring* at 100% lightness reads as a permanent glare, not a
+       momentary focus cue. */
+    --ring: 0 0% 82%;
     --gradient-secondary: hsl(289 80% 43% / 0.10);
     --gradient-subtle: hsl(289 80% 43% / 0.05);
     --gradient-hero: hsl(289 80% 43% / 0.08);
