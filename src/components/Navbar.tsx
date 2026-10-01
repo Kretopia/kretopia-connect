@@ -744,8 +744,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       Hire Talent
                     </Button>
                     <Button
-                      variant="link"
-                      className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 justify-start h-12 gap-2 text-sm font-semibold no-underline hover:no-underline"
+                      variant="default"
+                      className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 justify-start h-12 gap-2 text-sm font-semibold"
                       onClick={() => {
                         setGuestMenuOpen(false);
                         navigate("/auth?tab=signup");
@@ -773,9 +773,9 @@ const Navbar = memo(({ user }: NavbarProps) => {
               </Link>
               <Link to="/auth?tab=signup">
                 <Button
-                  variant="link"
+                  variant="default"
                   size="sm"
-                  className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold no-underline hover:no-underline"
+                  className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold"
                 >
                   <Sparkles className="h-4 w-4" aria-hidden />
                   Build Your Passport
