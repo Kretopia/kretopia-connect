@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { Send, Loader2, ChevronRight, Sparkles, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Send, Loader2, ChevronRight, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
@@ -297,7 +298,7 @@ export function DesktopCopilotRail() {
         className="hidden lg:flex fixed right-3 top-1/2 -translate-y-1/2 z-30 flex-col items-center gap-1.5 rounded-full bg-card border border-border shadow-lg px-2.5 py-3 hover:border-primary/40 transition-colors"
         aria-label="Open Kreto"
       >
-        <Sparkles className="h-4 w-4 text-primary" />
+        <KretoMark size="sm" variant="bare" />
         <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground">
           Kreto
         </span>
@@ -318,9 +319,7 @@ export function DesktopCopilotRail() {
       {/* Header */}
       <div className="flex items-center justify-between px-3 h-11 border-b border-border shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="h-7 w-7 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
-            <Sparkles className="h-3.5 w-3.5" />
-          </span>
+          <KretoMark size="xs" />
           <div className="min-w-0">
             <p className="text-xs font-bold leading-tight truncate">Kreto</p>
             <p className="text-[10px] text-muted-foreground leading-tight truncate">

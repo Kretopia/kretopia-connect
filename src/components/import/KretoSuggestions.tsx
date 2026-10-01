@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2, Sparkles, X } from "lucide-react";
+import { Check, Loader2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { generateSuggestions, resolveSuggestions } from "@/lib/studioImport";
 import { useToast } from "@/hooks/use-toast";
 
@@ -96,7 +97,7 @@ export const KretoSuggestions = ({ jobId }: { jobId: string }) => {
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="flex items-center gap-1.5 text-sm font-semibold">
-          <Sparkles className="h-4 w-4 text-[hsl(var(--signal-amber))]" />
+          <KretoMark size="xs" variant="bare" />
           I picked out {items.length} thing{items.length === 1 ? "" : "s"} worth keeping
         </p>
         <Button size="sm" variant="ghost" onClick={acceptAll} disabled={busy === "all"}>

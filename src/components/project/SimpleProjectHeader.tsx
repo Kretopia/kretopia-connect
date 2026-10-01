@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowLeft, UserPlus, X, Crown, Video, Loader2, ChevronDown, Link as LinkIcon, Clock, Sparkles } from "lucide-react";
+import { Users, ArrowLeft, UserPlus, X, Crown, Video, Loader2, ChevronDown, Link as LinkIcon, Clock } from "lucide-react";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { InviteCollaboratorDialog } from "./InviteCollaboratorDialog";
@@ -380,17 +381,12 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
             )}
           </div>
           <div className="flex items-center">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
+            <KretoMark
+              size="sm"
+              variant="interactive"
+              label="Ask Kreto about this Work Room"
               onClick={() => window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: { projectId: project.id } }))}
-              aria-label="Ask Kreto about this Work Room"
-              title="Ask Kreto"
-            >
-              <Sparkles className="h-4 w-4 text-primary" />
-            </Button>
+            />
             <Button
               type="button"
               size="icon"
