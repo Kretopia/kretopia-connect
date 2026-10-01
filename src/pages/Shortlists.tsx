@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Bookmark, Plus, Trash2, ChevronRight, Users, Loader2 } from "lucide-react";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -226,6 +227,7 @@ const Shortlists = () => {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
+            <PageBackButton variant="inline" />
             <Bookmark className="h-5 w-5 text-primary" />
             My Shortlists
           </h1>

@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { PageTransition } from "@/components/PageTransition";
 import { toast } from "@/hooks/use-toast";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import {
@@ -266,6 +267,8 @@ const ManageOpportunities = () => {
   return (
     <PageTransition>
       <Tabs defaultValue="listings" className="w-full">
+        <div className="relative">
+        <PageBackButton />
         <FeaturePageHeader
           eyebrow="Manage"
           title="Gig Manager."
@@ -294,6 +297,7 @@ const ManageOpportunities = () => {
             </div>
           }
         />
+        </div>
 
         <StudioFeatureShell>
           {/* ── MY LISTINGS ── */}

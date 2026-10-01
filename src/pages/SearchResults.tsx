@@ -11,6 +11,7 @@ import { SearchResultsSuggestions } from "@/components/search/SearchResultsSugge
 import GigCard, { type GigOpportunity, type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrandLoader } from "@/components/brand/BrandDots";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 interface CreatorResult {
   user_id: string;
@@ -110,11 +111,12 @@ export default function SearchResults() {
   const hasResults = creators.length + credits.length + gigs.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
       <SEO
         title={q ? `"${q}" — Search — Kretopia` : "Search — Kretopia"}
         description="Search creators, credits and opportunities on Kretopia."
       />
+      <PageBackButton />
       <SearchV2 initialQuery={q} />
 
       <div className="relative z-0 mx-auto max-w-5xl bg-background px-4 py-10 sm:px-6 lg:px-8">
