@@ -15,6 +15,7 @@ import { CreditsAIInsights } from "@/components/credits/CreditsAIInsights";
 import { CreditsErrorState } from "@/components/credits/CreditsPrimitives";
 import { CreditsFullRecord } from "@/components/credits/CreditsFullRecord";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 import { User, Briefcase, Award, Activity, FileText, Sparkles as SparklesIcon } from "lucide-react";
@@ -182,6 +183,7 @@ export default function CreditsDashboard() {
       </Helmet>
 
       <div className="accent-passport relative min-h-screen bg-background">
+        <PageBackButton />
         <FeaturePageHeader
           eyebrow="Credits"
           title="Credits."
