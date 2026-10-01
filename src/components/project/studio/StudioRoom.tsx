@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DndContext,
@@ -190,9 +190,7 @@ export const StudioRoom = ({
       onClick={() => onNavigateToTab("messages")}
       className="mx-4 mb-3 mt-1 flex items-center gap-3 rounded-xl border border-border bg-card hover:bg-accent/40 transition-colors p-3 text-left lg:mx-0 lg:w-full"
     >
-      <div className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-        <span aria-hidden className="text-base">💬</span>
-      </div>
+      <MessageCircle className="h-5 w-5 text-primary shrink-0" aria-hidden />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold leading-tight">Room chat</p>
         <p className="text-[11px] text-muted-foreground leading-tight">
