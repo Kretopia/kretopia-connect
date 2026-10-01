@@ -28,6 +28,7 @@ interface PendingPerson {
   avatar_url: string | null;
   email: string | null;
   isGuest: boolean;
+  invitedByName: string | null;
 }
 
 export const PeopleSection = ({
@@ -120,12 +121,21 @@ ${url}`;
     (async () => {
       const { data, error } = await supabase
         .from("project_collaborators")
-        .select("id, user_id, email")
+        .select("id, user_id, email, invited_by")
         .eq("project_id", projectId)
         .eq("status", "pending");
       if (error || !data || cancelled) return;
 
-      const userIds = data.map((d) => d.user_id).filter(Boolean) as string[];
+      // CDO audit "membership provenance" -- who invited each pending
+      // person, surfaced from project_collaborators.invited_by (already on
+      // the table, no migration needed). Accepted/active members go through
+      // get_project_people() instead, which doesn't return invited_by/
+      // invited_at yet -- that's a separate, backend/migration-scoped gap,
+      // not fixed here.
+      const userIds = [...new Set([
+        ...data.map((d) => d.user_id),
+        ...data.map((d) => d.invited_by),
+      ])].filter(Boolean) as string[];
       let profileMap = new Map<string, { full_name: string; avatar_url: string | null }>();
       if (userIds.length) {
         const { data: profiles } = await supabase
@@ -138,6 +148,7 @@ ${url}`;
       }
 
       const mapped: PendingPerson[] = data.map((d) => {
+        const invitedByName = d.invited_by ? profileMap.get(d.invited_by)?.full_name ?? null : null;
         if (d.user_id) {
           const p = profileMap.get(d.user_id);
           return {
@@ -146,6 +157,7 @@ ${url}`;
             avatar_url: p?.avatar_url || null,
             email: d.email,
             isGuest: false,
+            invitedByName,
           };
         }
         return {
@@ -154,6 +166,7 @@ ${url}`;
           avatar_url: null,
           email: d.email,
           isGuest: true,
+          invitedByName,
         };
       });
       if (!cancelled) setPending(mapped);
@@ -311,8 +324,11 @@ ${url}`;
               <p className="text-[11px] font-medium text-center leading-tight line-clamp-1 max-w-full">
                 {p.full_name.split(" ")[0]}
               </p>
-              <p className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                Pending
+              <p
+                className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground line-clamp-1 max-w-full"
+                title={p.invitedByName ? `Invited by ${p.invitedByName}` : undefined}
+              >
+                {p.invitedByName ? `Invited by ${p.invitedByName.split(" ")[0]}` : "Pending"}
               </p>
             </div>
           ))}
