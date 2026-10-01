@@ -236,7 +236,7 @@ export function SwipeFilters({ filters, onFiltersChange, isPro = false, profiles
       <div className="absolute inset-0 flex items-center justify-center">
         <Button 
           size="sm" 
-          className="gap-1.5 text-xs bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
+          className="gap-1.5 text-xs cta-primary"
           onClick={() => navigate('/subscription')}
         >
           <Crown className="h-3 w-3" />
@@ -317,7 +317,7 @@ export function SwipeFilters({ filters, onFiltersChange, isPro = false, profiles
               ) : (
                 <Button 
                   size="sm" 
-                  className="gap-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                  className="gap-1 cta-primary"
                   onClick={() => navigate('/subscription')}
                 >
                   <Crown className="h-3 w-3" />
@@ -579,7 +579,7 @@ export function SwipeFilters({ filters, onFiltersChange, isPro = false, profiles
                     </p>
                   </div>
                   <Button 
-                    className="w-full gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-lg"
+                    className="w-full gap-2 cta-primary"
                     onClick={() => navigate('/subscription')}
                   >
                     <Crown className="h-4 w-4" />
@@ -616,7 +616,7 @@ export function SwipeFilters({ filters, onFiltersChange, isPro = false, profiles
         {/* Bottom CTA */}
         <div className="border-t pt-4 pb-2">
           <Button
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90"
+            className="w-full cta-primary"
             onClick={() => setIsOpen(false)}
           >
             Show {profilesCount} Creator{profilesCount !== 1 ? 's' : ''}
