@@ -16,7 +16,6 @@ import { AIAutomation } from "@/components/project/AIAutomation";
 import { ApprovalWorkflows } from "@/components/project/ApprovalWorkflows";
 import { CreativeAssetLibrary } from "@/components/project/CreativeAssetLibrary";
 import { StudioAICreate } from "@/components/project/studio/StudioAICreate";
-import { ProjectTemplatePicker } from "@/components/project/ProjectTemplatePicker";
 import { CreativeBoard } from "@/components/project/CreativeBoard";
 import { ScopeGuardian } from "@/components/project/ScopeGuardian";
 import { ContractsList } from "@/components/project/contracts/ContractsList";
