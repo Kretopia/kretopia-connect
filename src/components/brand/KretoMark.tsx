@@ -13,6 +13,22 @@
  * uses in the navbar) rather than recoloring it -- Kreto's own mark used to
  * be masked down to a flat brand-pink fill, which read as a different logo
  * from the one in the navbar instead of the same mark in a smaller context.
+ *
+ * CDO audit icon convention: `Sparkles` (lucide-react) had been reused for
+ * AI generation, Kreto, New Room, How This Works, Quick Jump, Wrap Week and
+ * plain upsell badges -- no stable meaning. The fix is per-context icon
+ * choice, not a new icon font, so this is a reference, not a class:
+ *   - Kreto identity (anywhere "Kreto" is the subject, e.g. "Ask Kreto")
+ *     -> KretoMark (this component), never bare Sparkles.
+ *   - AI generation specifically (Generate Image/Copy, Creative Board,
+ *     Thrive Generate) -> Sparkles stays fine; that's its one real meaning.
+ *   - Create (New Room, new project, add/create) -> Plus / FolderPlus.
+ *   - Navigation (Quick Jump, forward nav, command actions) -> ChevronRight
+ *     / ArrowRight, not Sparkles.
+ *   - Summary (Wrap Week, review, document completion) -> ClipboardCheck /
+ *     FileCheck, not a magic-wand/sparkle icon.
+ *   - Status/feature badges (tier, upsell, Vault/Pad/Room Chat cards) ->
+ *     whatever icon names the actual feature, not a generic AI-ish glyph.
  */
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { cn } from "@/lib/utils";

@@ -118,6 +118,12 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        // CDO audit radius tiers -- named by component family rather than
+        // size, so a call site says what it is (rounded-control) instead
+        // of guessing a size (rounded-xl).
+        control: "var(--radius-control)",
+        panel: "var(--radius-panel)",
+        pill: "var(--radius-pill)",
       },
       keyframes: {
         "credits-drift": {
