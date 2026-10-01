@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { CtaButton } from "@/components/ui/cta-button";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
 import {
   Camera, PencilLine, MapPin, ShieldCheck, Share2, QrCode, FileDown, Gauge, Fingerprint,
@@ -46,9 +46,8 @@ interface PassportHeroProps {
  * Replaces the old ProfileHero + PassportClaimHero pair (two separate hero
  * blocks, duplicated bio/stats/Share). Owns identity (image, name, roles,
  * location, bio), trust/evidence status, strongest credits, stamps, skills,
- * Passport Strength, one primary action (Share) and one intelligent next
- * action (Standing's own next-best-move, already computed elsewhere —
- * reused here, not reinvented).
+ * and Passport Strength. Edit Profile is the primary action (this is the
+ * owner-only view); Share/QR/Download EPK are secondary, one level down.
  */
 export function PassportHero({
   profile,
@@ -124,22 +123,6 @@ export function PassportHero({
             </div>
           )}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="secondary"
-                className="absolute right-3 top-3 z-10 h-10 w-10 rounded-md border border-border bg-card/90 text-foreground shadow-md backdrop-blur-md hover:bg-card focus-visible:ring-ring"
-                onClick={onEdit}
-                aria-label="Edit profile"
-              >
-                 <PencilLine className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-sm">Edit profile</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
 
         <div className="relative px-5 pb-5 -mt-8 space-y-4">
@@ -292,24 +275,33 @@ export function PassportHero({
             </div>
           </div>
 
-          {/* One primary action + secondary icon row — neutral Liquid Glass,
-              not a loud fill. The k-g-2 violet (#A516C5) shows only on
-              hover/focus/active, same as everywhere else in the app. */}
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={onShare}
-              variant="outline"
-               className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-foreground/50 focus-visible:ring-ring"
-            >
-              <Share2 className="h-4 w-4" />
-              Share Passport
-            </Button>
-            <Button onClick={onShowQR} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Show QR code">
-              <QrCode className="h-4 w-4" />
-            </Button>
-            <Button onClick={onDownloadEPK} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Download press kit PDF">
-              <FileDown className="h-4 w-4" />
-            </Button>
+          {/* Edit Profile is the clear primary action on this owner-only
+              view (PassportHero only renders on the protected /profile
+              route; the public /profile/:userId view uses
+              PublicPassportHero instead, so it never competes with
+              collaboration CTAs there). Share/QR/Download recede to a
+              secondary row beneath it. */}
+          <div className="grid gap-2">
+            <CtaButton onClick={onEdit} className="h-11 gap-1.5">
+              <PencilLine className="h-4 w-4" />
+              Edit Profile
+            </CtaButton>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={onShare}
+                variant="outline"
+                 className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-foreground/50 focus-visible:ring-ring"
+              >
+                <Share2 className="h-4 w-4" />
+                Share Passport
+              </Button>
+              <Button onClick={onShowQR} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Show QR code">
+                <QrCode className="h-4 w-4" />
+              </Button>
+              <Button onClick={onDownloadEPK} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Download press kit PDF">
+                <FileDown className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
            {profile.user_id && <SocialStatsInline userId={profile.user_id} />}

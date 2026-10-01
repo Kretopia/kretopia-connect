@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { ArrowLeft } from "lucide-react";
 import { PageTip } from "@/components/PageTip";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +50,13 @@ import { TIER_LIMITS, SubscriptionTier } from "@/lib/subscriptionLimits";
 
 const ProfileContent = () => {
   const navigate = useNavigate();
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/today");
+    }
+  };
   const {
     profile,
     portfolioItems,
@@ -417,13 +425,28 @@ const ProfileContent = () => {
         className="hidden"
       />
 
-      <FeaturePageHeader
-        eyebrow="Passport"
-        title="Passport."
-        accentTitle="Your work, verified."
-        subtitle="Your identity, your strongest credits, and every co-sign — one card you actually control."
-        tutorial={{ featureKey: "passport", label: "How Passport works", steps: PASSPORT_TUTORIAL }}
-      />
+      <div className="relative">
+        {/* Quiet back control -- mirrors the tutorial trigger's corner
+            placement (top-4) on the opposite side. Own absolutely-positioned
+            element rather than a FeaturePageHeader prop, since that template
+            is shared by ~17 feature pages and this is Passport-specific. */}
+        <button
+          type="button"
+          onClick={handleBack}
+          aria-label="Go back"
+          className="absolute left-4 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm transition-colors hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          style={{ top: "calc(1rem + env(safe-area-inset-top))" }}
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden />
+        </button>
+        <FeaturePageHeader
+          eyebrow="Passport"
+          title="Passport."
+          accentTitle="Your work, verified."
+          subtitle="Your identity, your strongest credits, and every co-sign — one card you actually control."
+          tutorial={{ featureKey: "passport", label: "How Passport works", steps: PASSPORT_TUTORIAL }}
+        />
+      </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
 

@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { KretoMark } from "@/components/brand/KretoMark";
+import { CtaButton } from "@/components/ui/cta-button";
 import { cn } from "@/lib/utils";
 
 /**
@@ -52,15 +53,20 @@ export function PassportKretoEntry({ className }: PassportKretoEntryProps) {
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
+            {/* Was bg-[hsl(var(--accent-passport))] text-white -- once
+                --accent-passport was neutralized to var(--energy) (white
+                in dark mode) this rendered white-on-white, unreadable.
+                Canonical primary CTA instead, same system as Today. */}
+            <CtaButton
               type="button"
+              size="sm"
               onClick={() => open(AUDIT_PROMPT)}
-              className="group inline-flex items-center gap-1.5 rounded-full bg-[hsl(var(--accent-passport))] px-3.5 py-1.5 text-xs font-bold text-white hover:brightness-110 hover:scale-[1.02] transition-all"
+              className="group h-auto gap-1.5 rounded-full px-3.5 py-1.5 text-xs"
             >
               <Sparkles className="h-3 w-3" />
               Audit my Passport
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </button>
+            </CtaButton>
             <button
               type="button"
               onClick={() => open()}
