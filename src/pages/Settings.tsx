@@ -9,7 +9,9 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Loader2, Settings as SettingsIcon, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight } from "lucide-react";
+import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Loader2, Settings as SettingsIcon, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
+import { SettingsShell } from "@/components/settings/SettingsShell";
+import type { SettingsDomain } from "@/components/settings/SettingsNav";
 import { CreatorSiteSettings } from "@/components/settings/CreatorSiteSettings";
 import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { ManualMergeAccountPanel } from "@/components/account/ManualMergeAccountPanel";
@@ -80,6 +82,19 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+/* CDO audit "Information architecture: group settings into coherent
+   domains" -- these replace the prior single scrolling column of 11
+   unrelated Cards. Each card below is unchanged internally, just tagged
+   with the domain it now renders under. */
+const SETTINGS_DOMAINS: SettingsDomain[] = [
+  { id: "account", label: "Account", icon: User },
+  { id: "preferences", label: "Preferences", icon: Palette },
+  { id: "connections", label: "Connections", icon: Plug },
+  { id: "billing", label: "Billing", icon: CreditCard },
+  { id: "data", label: "Data & Apps", icon: Download },
+  { id: "about", label: "About", icon: Info },
+];
+
 interface SettingsProps {
   /** Render just the settings sections, without the full-page header/back
    *  button/container — used when mounted inside SettingsDrawer's Sheet,
@@ -95,6 +110,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   const [loading, setLoading] = useState(false);
   const [accountType, setAccountType] = useState<"individual" | "company">("individual");
   const [showPassword, setShowPassword] = useState(false);
+  const [activeDomain, setActiveDomain] = useState(SETTINGS_DOMAINS[0].id);
   
   // PWA Install
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -424,8 +440,9 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   };
 
   const sections = (
-        <div className="space-y-6">
+        <SettingsShell domains={SETTINGS_DOMAINS} active={activeDomain} onSelect={setActiveDomain}>
           {/* Account Type Switcher */}
+          {(embedded || activeDomain === "account") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -440,8 +457,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               <AccountSwitcher currentAccountType={accountType} variant="settings" />
             </CardContent>
           </Card>
+          )}
 
           {/* Appearance — Vibe picker */}
+          {(embedded || activeDomain === "preferences") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -456,8 +475,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               <VibePicker />
             </CardContent>
           </Card>
+          )}
 
           {/* Kreto Memory */}
+          {(embedded || activeDomain === "preferences") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -479,8 +500,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
           {/* Billing & Subscription */}
+          {(embedded || activeDomain === "billing") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -500,8 +523,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
           {/* Language & Region */}
+          {(embedded || activeDomain === "preferences") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -520,7 +545,9 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               <CaribbeanVoiceToggle />
             </CardContent>
           </Card>
+          )}
 
+          {(embedded || activeDomain === "account") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -584,8 +611,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
           {/* Email Settings */}
+          {(embedded || activeDomain === "account") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -630,8 +659,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
           {/* Notification Preferences */}
+          {(embedded || activeDomain === "preferences") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -740,20 +771,22 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </Button>
             </CardContent>
           </Card>
+          )}
 
           {/* Creator Site (My Website) — included in Creator+ subscription */}
-          <CreatorSiteSettings />
+          {(embedded || activeDomain === "connections") && <CreatorSiteSettings />}
 
           {/* Privacy toggles hidden for MVP — were never persisted (local state only). Re-add when wired to backend. */}
 
           {/* Telegram bot */}
-          <TelegramConnectCard />
+          {(embedded || activeDomain === "connections") && <TelegramConnectCard />}
           {/* Status card hidden from users — admin/debug only */}
 
           {/* Blocked Users */}
-          <BlockedUsersCard />
+          {(embedded || activeDomain === "account") && <BlockedUsersCard />}
 
           {/* Install App */}
+          {(embedded || activeDomain === "data") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -831,8 +864,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               )}
             </CardContent>
           </Card>
+          )}
 
           {/* Data Management */}
+          {(embedded || activeDomain === "data") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -902,8 +937,10 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </AlertDialog>
             </CardContent>
           </Card>
+          )}
 
           {/* About & Links */}
+          {(embedded || activeDomain === "about") && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -1008,7 +1045,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </p>
             </CardContent>
           </Card>
-        </div>
+          )}
+        </SettingsShell>
   );
 
   if (embedded) return sections;
