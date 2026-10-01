@@ -109,7 +109,7 @@ export function TodayCommandCenter({
               <h2 className="mt-4 text-xl font-bold text-foreground">Make your work visible.</h2>
               <p className="mt-2 text-sm text-muted-foreground">Your Passport will appear here once your profile is ready.</p>
               <div className="mt-auto space-y-3 border-t border-border pt-5">
-                <Button asChild className="w-full justify-between"><Link to="/passport">Build my Passport <ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+                <CtaButton asChild className="w-full justify-between"><Link to="/passport">Build my Passport <ArrowRight className="h-4 w-4" aria-hidden /></Link></CtaButton>
                 <Button type="button" variant="outline" onClick={openKretoChat} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
               </div>
             </section>
@@ -170,7 +170,7 @@ function PassportKretoCard({
             <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={56} floatAmplitude={1} floatDuration={8} /></div>
           </div>
            <div className="mt-auto grid gap-2 pt-6">
-             <Button asChild className="w-full justify-between"><Link to="/passport">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+             <CtaButton asChild className="w-full justify-between"><Link to="/passport">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></CtaButton>
              <Button type="button" variant="outline" onClick={onKreto} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
           </div>
       </section>
@@ -203,7 +203,10 @@ function TodayActivityCard({ signals }: { signals: TodaySignals }) {
           {(signals.stamps?.waitingForCoSign ?? 0) > 0 && <p><span className="font-bold text-foreground">{signals.stamps?.waitingForCoSign}</span> credit{signals.stamps?.waitingForCoSign === 1 ? "" : "s"} awaiting co-sign</p>}
           {nextMilestone && <p>Next milestone: <span className="font-medium text-foreground">{nextMilestone.title}</span> · {nextMilestone.projectTitle} · {new Date(`${nextMilestone.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</p>}
         </div>
-        <Button asChild className="mt-auto w-full justify-between"><Link to={signals.unreadMessages > 0 ? "/messages" : "/desk"}>{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></Button>
+        <div className="mt-auto grid gap-2">
+          <CtaButton asChild className="w-full justify-between"><Link to={signals.unreadMessages > 0 ? "/messages" : "/desk"}>{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}<ArrowRight className="h-4 w-4" aria-hidden /></Link></CtaButton>
+          <Button type="button" variant="outline" onClick={openKretoChat} className="w-full gap-2"><MessageCircle className="h-4 w-4" aria-hidden /> Ask Kreto</Button>
+        </div>
       </section>
     </HoloCard>
   );
@@ -328,10 +331,10 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
              <p className="mt-4 border-t border-border pt-4 text-xs text-muted-foreground">Due {new Date(`${priority.task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "long", day: "numeric" })}</p>
 
              <PriorityActions>
-               <Button type="button" onClick={handleComplete} className="w-full justify-between gap-1.5">
+               <CtaButton type="button" onClick={handleComplete} className="w-full justify-between gap-1.5">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Complete
-              </Button>
+              </CtaButton>
 
               <Button type="button" size="sm" variant="outline" onClick={handleSnooze}>
                 Snooze
@@ -364,10 +367,10 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
             <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{priority.approval.body}</p>
 
             <PriorityActions>
-               <Button type="button" onClick={handleAccept} className="w-full justify-between gap-1.5">
+               <CtaButton type="button" onClick={handleAccept} className="w-full justify-between gap-1.5">
                 <Check className="h-3.5 w-3.5" aria-hidden />
                 Review
-              </Button>
+              </CtaButton>
 
               <Button type="button" size="sm" variant="ghost" onClick={handleDismiss} className="gap-1.5">
                 <X className="h-3.5 w-3.5" aria-hidden />
