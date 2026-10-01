@@ -62,7 +62,7 @@ export default function ThriveGenerate() {
 
   const generate = async () => {
     if (!brief.trim() && !project) {
-      toast.error("Tell Kreto what this is for.");
+      toast.error("Tell us what this is for.");
       return;
     }
     setLoading(true);
@@ -171,7 +171,7 @@ export default function ThriveGenerate() {
             <Textarea
               value={brief}
               onChange={(e) => setBrief(e.target.value)}
-              placeholder={`Paste your prompt, talking points, or just tell Kreto what you need.\n\ne.g. "Sponsor deck for our 500-person summit in Aug. Target: lifestyle brands. Tone: bold, no fluff."`}
+              placeholder={`Paste your prompt, talking points, or just tell us what you need.\n\ne.g. "Sponsor deck for our 500-person summit in Aug. Target: lifestyle brands. Tone: bold, no fluff."`}
               className="mt-2 min-h-[160px] text-sm"
             />
             <Button onClick={generate} disabled={loading} className="w-full mt-3">
@@ -179,7 +179,7 @@ export default function ThriveGenerate() {
               {loading ? "Drafting…" : doc ? "Regenerate" : "Draft it"}
             </Button>
             <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-              Kreto pulls your Passport, recent credits and memory automatically. Mention only what's new.
+              This pulls your Passport, recent credits and memory automatically. Mention only what's new.
             </p>
             {projectId && (
               <div className="mt-2 flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function ThriveGenerate() {
           {content?.next_steps && content.next_steps.length > 0 && (
             <Card className="p-4">
               <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Wand2 className="h-3 w-3" /> Kreto suggests next
+                <Wand2 className="h-3 w-3" /> Suggested next
               </div>
               <ul className="space-y-2">
                 {content.next_steps.map((s: string, i: number) => (
