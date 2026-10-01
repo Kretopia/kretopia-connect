@@ -16,6 +16,7 @@ import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
 import { SessionsSection } from "@/components/sessions/SessionsSection";
 import { NearbyInline } from "@/components/discover/NearbyInline";
 import { KretoTip } from "@/components/agent/KretoTip";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { supabase } from "@/integrations/supabase/client";
 
 type Tab = "people" | "opps" | "live" | "events";
@@ -225,7 +226,10 @@ export default function Discover() {
               </Card>
               <Card className="rounded-xl border-border/60 shadow-none">
                 <CardContent className="p-4 space-y-2">
-                  <p className="font-semibold text-sm">Ask Kreto to find leads</p>
+                  <div className="flex items-center gap-2">
+                    <KretoMark size="xs" />
+                    <p className="font-semibold text-sm">Ask Kreto to find leads</p>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Tell Kreto who you want to work with — sponsors, brands, agencies — and she scouts in the background.
                   </p>

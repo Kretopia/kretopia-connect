@@ -1,8 +1,9 @@
 import { useLocation } from "react-router-dom";
-import { Mic, Sparkles, ArrowUp } from "lucide-react";
+import { Mic, ArrowUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { inferSurface } from "@/lib/thriveCopilot";
+import { KretoMark } from "@/components/brand/KretoMark";
 
 /**
  * The Thrive Bar — a persistent composer docked above the mobile bottom nav.
@@ -73,12 +74,7 @@ export const ThriveBar = () => {
           "bg-card border border-border shadow-lg",
         )}
       >
-        <span
-          className="h-8 w-8 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center"
-          aria-hidden
-        >
-          <Sparkles className="h-4 w-4" />
-        </span>
+        <KretoMark size="sm" />
         <button
           type="button"
           onClick={() => openChat("chat")}
