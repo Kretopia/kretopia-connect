@@ -5,6 +5,7 @@ import { FramedAvatar } from "@/components/ui/framed-avatar";
 import { HoloCard } from "./HoloCard";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
+import { classifyCreditEvidence } from "@/lib/passport/creditEvidence";
 import { cn } from "@/lib/utils";
 import {
   Calendar,
@@ -174,12 +175,24 @@ export function PublicPassportHero({
             <div className="space-y-1.5">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Strongest credits</p>
               <div className="grid grid-cols-2 gap-2">
-                {strongestCredits.map((credit, index) => (
-                  <div key={`${credit.project_name || credit.title}-${index}`} className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
-                    <p className="truncate text-xs font-semibold">{credit.project_name || credit.title}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{credit.role}{(credit.isVerified || credit.verification_status === "verified") && <span className="text-[hsl(var(--signal-teal))]"> · Verified</span>}</p>
-                  </div>
-                ))}
+                {strongestCredits.map((credit, index) => {
+                  const evidence = classifyCreditEvidence({
+                    verification_status: credit.isVerified ? "verified" : credit.verification_status,
+                  });
+                  return (
+                    <div key={`${credit.project_name || credit.title}-${index}`} className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
+                      <p className="truncate text-xs font-semibold">{credit.project_name || credit.title}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        {credit.role}
+                        {evidence === "verified" ? (
+                          <span className="text-[hsl(var(--signal-teal))]"> · Verified</span>
+                        ) : (
+                          <span> · Self-claimed</span>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
