@@ -168,7 +168,12 @@ export function UnifiedSearchDropdown({
 
       // Real DB records only — creators, credits and gigs that actually
       // exist. No web/AI-guessed suggestions when nothing matches.
-      const [profiles, credits, opps] = await Promise.all([
+      const profileSource = user ? "profiles" : "public_profiles_safe";
+      const [nameMatches, profiles, credits, opps] = await Promise.all([
+        supabase.from(profileSource)
+          .select(user ? "user_id, full_name, avatar_url, role, bio, location, is_claimed" : "user_id, full_name, avatar_url, role, bio, location")
+          .ilike("full_name", `${q}%`)
+          .limit(24),
         user ? supabase
           .from("profiles")
           .select("user_id, full_name, avatar_url, role, bio, location, is_claimed")
@@ -195,9 +200,9 @@ export function UnifiedSearchDropdown({
       if (controller.signal.aborted) return;
 
       // A failed people query must not look like a legitimate empty search.
-      if (profiles.error) throw profiles.error;
+      if (profiles.error && nameMatches.error) throw profiles.error;
       let connectedIds = new Set<string>();
-      if (user?.id && profiles.data?.length) {
+      if (user?.id && (profiles.data?.length || nameMatches.data?.length)) {
         const { data: links } = await supabase.from("connections")
           .select("user_id, connected_user_id")
           .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
@@ -208,7 +213,10 @@ export function UnifiedSearchDropdown({
 
       const dbResults: SearchResult[] = [];
 
-      const sortedProfiles = [...(profiles.data || [])].filter(p => p.user_id && p.full_name)
+      const dedupedProfiles = [...(nameMatches.data || []), ...(profiles.data || [])]
+        .filter(p => p.user_id && p.full_name)
+        .filter((p, index, all) => all.findIndex(other => other.user_id === p.user_id) === index);
+      const sortedProfiles = dedupedProfiles
         .sort((a, b) => Number(connectedIds.has(b.user_id)) - Number(connectedIds.has(a.user_id))
           || Number(b.full_name?.toLowerCase().startsWith(q.toLowerCase())) - Number(a.full_name?.toLowerCase().startsWith(q.toLowerCase()))
           || (a.full_name || "").localeCompare(b.full_name || ""));
