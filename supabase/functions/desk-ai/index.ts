@@ -1,6 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+
+// Bounds time-to-first-byte on the gateway call, not total response
+// duration -- see _shared/fetchWithTimeout.ts.
+const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -167,14 +172,26 @@ Today's date: ${new Date().toISOString().slice(0, 10)}. Keep replies under 250 w
       ];
     }
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: GEMINI_3_FLASH,
-        messages: [{ role: "system", content: systemPrompt }, ...userMessages],
-      }),
-    });
+    let aiResp: Response;
+    try {
+      aiResp = await fetchWithTimeout(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: GEMINI_3_FLASH,
+            messages: [{ role: "system", content: systemPrompt }, ...userMessages],
+          }),
+        },
+        GATEWAY_CONNECT_TIMEOUT_MS,
+      );
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return new Response(JSON.stringify({ error: "AI response timed out. Please try again." }), { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      throw e;
+    }
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {

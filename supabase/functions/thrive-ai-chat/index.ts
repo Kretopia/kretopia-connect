@@ -7,6 +7,14 @@ import {
 } from "../_shared/copilotContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+
+// Bounds time-to-first-byte on the gateway call, not total streaming
+// duration (the timer clears as soon as fetch() resolves, i.e. once headers
+// arrive) -- a slow-but-actively-streaming reply is never cut off mid-stream.
+// Generous because this is a single call, not a multi-turn loop like
+// agent-orchestrator's, but still well under the ~150s edge function budget.
+const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -572,21 +580,36 @@ Short replies like "yes", "no", "ok", "sure", "do it", "go ahead", "nope", "let'
       }),
     ];
 
-    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // Use the pro-preview model everywhere — flash drops <action>/<plan> tags
-        // under load, which surfaces as Thrive saying "I'll do X" with no card
-        // appearing. Pro-preview reliably follows the tag protocol.
-        model: GEMINI_3_1_PRO,
-        messages: modelMessages,
-        stream: stream,
-      }),
-    });
+    let upstream: Response;
+    try {
+      upstream = await fetchWithTimeout(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            // Use the pro-preview model everywhere — flash drops <action>/<plan> tags
+            // under load, which surfaces as Thrive saying "I'll do X" with no card
+            // appearing. Pro-preview reliably follows the tag protocol.
+            model: GEMINI_3_1_PRO,
+            messages: modelMessages,
+            stream: stream,
+          }),
+        },
+        GATEWAY_CONNECT_TIMEOUT_MS,
+      );
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return new Response(
+          JSON.stringify({ error: "AI response timed out. Please try again." }),
+          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      throw e;
+    }
 
     if (!upstream.ok) {
       if (upstream.status === 429) {
