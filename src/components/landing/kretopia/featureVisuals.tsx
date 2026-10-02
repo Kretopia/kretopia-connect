@@ -413,9 +413,14 @@ export const SoundStagesVisual = ({ activeStep, inView }: { activeStep: number; 
           <AnimatePresence mode="wait">
             {activeStep === 0 && (
               <motion.div key="s0" {...fade(reducedMotion)} className="space-y-2.5">
+                {/* CDO audit "Choice hierarchy": Speed Session and Audition
+                    are peer options (the user picks one, neither is the
+                    "main" path), so both get the identical treatment --
+                    previously Speed Session had a solid fill and Audition a
+                    dim outline, implying a hierarchy neither should have. */}
                 <div className="flex gap-2.5">
-                  <span className="flex-1 rounded-xl px-4 py-2.5 text-center text-sm font-semibold" style={{ backgroundColor: ACCENT, color: "#ffffff" }}>Speed Session</span>
-                  <span className="flex-1 rounded-xl border border-white/15 px-4 py-2.5 text-center text-sm text-white/70">Audition</span>
+                  <span className="flex-1 rounded-xl border border-white/20 px-4 py-2.5 text-center text-sm font-semibold text-white">Speed Session</span>
+                  <span className="flex-1 rounded-xl border border-white/20 px-4 py-2.5 text-center text-sm font-semibold text-white">Audition</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 text-[10px] text-white/40">
                   <p className="text-center">Live, rotating — show up</p>
