@@ -55,7 +55,7 @@ export function AuthPrompt({ open, onOpenChange, action = "do this" }: AuthPromp
         <div className="flex flex-col gap-2 mt-2">
           <Button
             onClick={handleSignup}
-            className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold gap-2"
+            className="w-full cta-primary font-semibold gap-2"
           >
             <Sparkles className="h-4 w-4" />
             Sign Up Free

@@ -37,7 +37,7 @@ export function GuestBanner() {
           <Button
             size="sm"
             onClick={() => navigate("/auth")}
-            className="shrink-0 bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground font-semibold"
+            className="shrink-0 cta-primary font-semibold"
           >
             Sign Up
           </Button>

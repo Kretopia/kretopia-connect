@@ -176,7 +176,7 @@ export function WhoViewedProfile({ userId, isPro }: WhoViewedProfileProps) {
               <Button
                 onClick={() => navigate("/subscription")}
                 size="sm"
-                className="bg-gradient-to-r from-primary to-accent hover:opacity-90 text-primary-foreground gap-2"
+                className="cta-primary gap-2"
               >
                 <Sparkles className="h-4 w-4" />
                 See Who's Viewing — Go Creator
