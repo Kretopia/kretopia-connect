@@ -10,9 +10,7 @@ export type FeatureFlag =
   | "FEATURE_AI_DRAFTS"
   | "FEATURE_ACTIVATION_CENTER_V2"
   | "FEATURE_RECOMMENDATIONS"
-  | "FEATURE_OPPORTUNITIES_V2"
-  | "FEATURE_NEBIUS_INFERENCE"
-  | "FEATURE_MINIMAX_INFERENCE";
+  | "FEATURE_OPPORTUNITIES_V2";
 
 function readFlag(flag: FeatureFlag): boolean {
   return import.meta.env[`VITE_${flag}`] === "true";
