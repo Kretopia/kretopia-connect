@@ -715,13 +715,19 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
     const next = (selected.submission_files ?? []).filter((_, i) => i !== idx);
     const heroImg = next.find((s) => s.kind === "image");
     const hero = heroImg ?? next[0];
+    const patch: Record<string, unknown> = {
+      submission_files: next as unknown as never,
+      file_url: hero?.url ?? null,
+      thumbnail_url: heroImg?.url ?? null,
+    };
+    // Changing submitted files invalidates a prior approval — it must not stay
+    // "approved" against content that no longer matches what was reviewed.
+    if (selected.status === "approved") {
+      patch.status = "submitted";
+    }
     const { error } = await supabase
       .from("project_deliverables")
-      .update({
-        submission_files: next as unknown as never,
-        file_url: hero?.url ?? null,
-        thumbnail_url: heroImg?.url ?? null,
-      })
+      .update(patch as never)
       .eq("id", selected.id);
     if (error) toast({ title: "Couldn't remove", description: error.message, variant: "destructive" });
   };
