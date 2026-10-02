@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Mic, Square } from "lucide-react";
+import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Mic, Square, MapPin, Wand2, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { searchCatalog, CATALOG_KIND_LABEL, type CatalogEntry, type CatalogKind } from "@/lib/searchCatalog";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +40,17 @@ interface UnifiedSearchDropdownProps {
    *  otherwise this floating solid-bg panel duplicates that page's own
    *  suggestions and visually sits on top of them. */
   showEmptyState?: boolean;
+  /** Instant roles / skills / locations / work-type suggestions from one
+   *  letter. Defaults to true for the hero variant. */
+  showCatalog?: boolean;
 }
+
+const CATALOG_ICON: Record<CatalogKind, typeof User> = {
+  role: User,
+  skill: Wand2,
+  location: MapPin,
+  work: Briefcase,
+};
 
 const TYPE_META = {
   creator: { label: "Creator", icon: User, color: "text-primary" },
@@ -67,8 +79,12 @@ export function UnifiedSearchDropdown({
   onSelect,
   onQuerySubmit,
   showEmptyState = true,
+  showCatalog,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const catalogEnabled = showCatalog ?? variant === "hero";
+  const minChars = catalogEnabled ? 1 : 2;
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -106,7 +122,7 @@ export function UnifiedSearchDropdown({
   // Debounced search
   useEffect(() => {
     const trimmedQuery = query.trim();
-    if (trimmedQuery.length < 2) {
+    if (trimmedQuery.length < minChars) {
       setOpen(false);
       onOpenChange?.(false);
       setResults([]);
@@ -116,6 +132,12 @@ export function UnifiedSearchDropdown({
     }
     setOpen(true);
     onOpenChange?.(true);
+    if (trimmedQuery.length < 2) {
+      setResults([]);
+      setHighlightedCreator(null);
+      setLoading(false);
+      return;
+    }
     const timer = setTimeout(() => doSearch(trimmedQuery), 350);
     return () => clearTimeout(timer);
   }, [query]);
@@ -236,7 +258,32 @@ export function UnifiedSearchDropdown({
     }
   }, []);
 
+  const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
+
+  // Guests can browse the vocabulary, but people's data needs an account.
+  const requireAuthFor = (target: string) => {
+    if (user) return false;
+    sessionStorage.setItem("thrivein_post_auth_redirect", target);
+    setOpen(false);
+    onOpenChange?.(false);
+    navigate("/auth?tab=signup");
+    return true;
+  };
+
+  const handleCatalogSelect = (entry: CatalogEntry) => {
+    const target = `/search?q=${encodeURIComponent(entry.label)}`;
+    if (requireAuthFor(target)) return;
+    setOpen(false);
+    onOpenChange?.(false);
+    setQuery("");
+    navigate(target);
+  };
+
   const handleSelect = (r: SearchResult) => {
+    if (catalogEnabled && !onSelect) {
+      const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
+      if (requireAuthFor(target)) return;
+    }
     setOpen(false);
     setQuery("");
     setResults([]);
@@ -370,7 +417,7 @@ export function UnifiedSearchDropdown({
                 suppressReopenRef.current = false;
                 return;
               }
-              if (query.trim().length >= 2) {
+              if (query.trim().length >= minChars) {
                 setOpen(true);
                 onOpenChange?.(true);
               }
@@ -496,7 +543,7 @@ export function UnifiedSearchDropdown({
       </form>
 
       {/* ═══ DROPDOWN ═══ */}
-      {open && query.trim().length >= 2 && (showEmptyState || loading || error || !!highlightedCreator || results.length > 0) && (
+      {open && query.trim().length >= minChars && (catalogMatches.length > 0 || showEmptyState || loading || error || !!highlightedCreator || results.length > 0) && (
         <div
           id={listboxId}
           role="region"
@@ -513,6 +560,53 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="overflow-y-auto max-h-[inherit]">
+            {catalogMatches.length > 0 && (
+              <div className="border-b border-border px-2 py-2">
+                <div className="flex items-center justify-between px-2 pb-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Explore Kretopia
+                  </p>
+                  {!user && (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+                      <Lock className="h-2.5 w-2.5" />
+                      Sign up to see people and details
+                    </span>
+                  )}
+                </div>
+                <div className="grid gap-x-2 sm:grid-cols-2">
+                  {(["role", "skill", "location", "work"] as const).map((kind) => {
+                    const items = catalogMatches.filter((e) => e.kind === kind);
+                    if (items.length === 0) return null;
+                    const Icon = CATALOG_ICON[kind];
+                    return (
+                      <div key={kind} className="py-1">
+                        <p className="px-2 pb-0.5 text-[10px] font-medium text-muted-foreground/70">
+                          {CATALOG_KIND_LABEL[kind]}
+                        </p>
+                        {items.map((e) => (
+                          <button
+                            key={`${kind}-${e.label}`}
+                            type="button"
+                            data-search-result
+                            onKeyDown={handleResultKeyDown}
+                            onClick={() => handleCatalogSelect(e)}
+                            className="group w-full flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+                          >
+                            <span className="h-7 w-7 shrink-0 rounded-lg border border-border bg-muted/40 flex items-center justify-center text-foreground/80 group-hover:border-primary/40 group-hover:text-primary transition-colors">
+                              <Icon className="h-3.5 w-3.5" />
+                            </span>
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium text-foreground truncate">{e.label}</span>
+                              <span className="block text-[11px] text-muted-foreground truncate">{e.description}</span>
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {/* Loading state */}
             {loading && (
               <div className="px-4 py-6 flex flex-col items-center gap-3">
@@ -773,7 +867,7 @@ export function UnifiedSearchDropdown({
 
             {/* Empty state — no fallback suggestions, no navigation anywhere.
                 If nothing real matches, we say so and stop. */}
-            {showEmptyState && !loading && !error && results.length === 0 && query.trim().length >= 2 && (
+            {showEmptyState && !loading && !error && results.length === 0 && catalogMatches.length === 0 && query.trim().length >= 2 && (
               <div className="px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">No results found</p>
