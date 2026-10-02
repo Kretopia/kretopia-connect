@@ -663,7 +663,7 @@ const Auth = () => {
                     <p className="text-foreground/50 text-xs">Search your name — we'll pull the credits and build your Passport.</p>
                   </div>
                 </div>
-                <FunnelStepper current="signup" />
+                <FunnelStepper current="signup" authStyle />
               </div>
             )}
 

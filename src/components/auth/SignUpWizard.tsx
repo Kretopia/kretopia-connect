@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, Loader2, ArrowRight, ArrowLeft, User, Briefcase, Eye, EyeOff } from "lucide-react";
+import { AlertCircle, Loader2, ArrowRight, ArrowLeft, User, Briefcase } from "lucide-react";
+import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { SocialLoginButtons, OrDivider } from "./SocialLoginButtons";
@@ -156,9 +157,7 @@ export const SignUpWizard = ({
                 required minLength={8} className={`h-11 text-base pr-10 ${passwordError ? "border-destructive" : ""}`}
                 autoComplete="new-password" autoFocus
               />
-              <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-                {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-              </Button>
+              <PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
             </div>
             {passwordError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {passwordError}</p>}
             <PasswordStrengthIndicator password={password} />
@@ -173,9 +172,7 @@ export const SignUpWizard = ({
                 required className={`h-11 text-base pr-10 ${confirmPasswordError ? "border-destructive" : ""}`}
                 autoComplete="new-password"
               />
-              <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-                {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-              </Button>
+              <PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="confirmation password" />
             </div>
             {confirmPasswordError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {confirmPasswordError}</p>}
           </div>

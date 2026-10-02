@@ -16,6 +16,7 @@ export interface FunnelStep {
 
 interface FunnelStepperProps {
   current: string;
+  authStyle?: boolean;
   /** Defaults to the onboarding funnel's own 3 steps for backward
    *  compatibility -- pass a different array to reuse this same stepper
    *  (identical grid math, connector line, done/active/upcoming states)
@@ -46,18 +47,18 @@ interface FunnelStepperProps {
  * `left-[16.667%] right-[16.667%]` inset points to — no per-label
  * measurement needed for the two to agree.
  */
-export function FunnelStepper({ current, steps = ONBOARDING_STEPS, className }: FunnelStepperProps) {
+export function FunnelStepper({ current, steps = ONBOARDING_STEPS, className, authStyle = false }: FunnelStepperProps) {
   const currentIdx = steps.findIndex((s) => s.key === current);
 
   return (
     <div className={cn("w-full", className)}>
       <div className="relative grid" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
         <div
-          className="pointer-events-none absolute top-4 h-0.5 -translate-y-1/2 rounded-full bg-muted overflow-hidden"
+          className={cn("pointer-events-none absolute top-4 h-px -translate-y-1/2 bg-border overflow-hidden", !authStyle && "h-0.5 rounded-full bg-muted")}
           style={{ left: `${50 / steps.length}%`, right: `${50 / steps.length}%` }}
         >
           <div
-            className="h-full bg-[hsl(var(--signal-teal))] transition-all duration-500"
+            className={cn("h-full transition-all duration-500", authStyle ? "bg-energy" : "bg-[hsl(var(--signal-teal))]")}
             style={{ width: `${(currentIdx / (steps.length - 1)) * 100}%` }}
           />
         </div>
@@ -68,10 +69,11 @@ export function FunnelStepper({ current, steps = ONBOARDING_STEPS, className }: 
             <div key={step.key} className="relative z-10 flex flex-col items-center gap-1.5">
               <div
                 className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-[12px] font-bold transition-all",
-                  done && "bg-[hsl(var(--signal-teal))] text-white",
-                  active && "bg-[hsl(var(--signal-teal))] text-white ring-4 ring-[hsl(var(--signal-teal))]/20 scale-110 shadow-[0_0_0_1px_hsl(var(--signal-teal))]",
-                  !done && !active && "bg-muted text-muted-foreground border border-border",
+                  "h-8 w-8 flex items-center justify-center text-[12px] font-bold transition-all",
+                  authStyle ? "rounded-md border" : "rounded-full",
+                  done && (authStyle ? "bg-energy/10 border-energy text-energy" : "bg-[hsl(var(--signal-teal))] text-white"),
+                  active && (authStyle ? "bg-card border-energy text-foreground ring-2 ring-energy/20 shadow-sm" : "bg-[hsl(var(--signal-teal))] text-white ring-4 ring-[hsl(var(--signal-teal))]/20 scale-110 shadow-[0_0_0_1px_hsl(var(--signal-teal))]"),
+                  !done && !active && (authStyle ? "bg-card border-border text-muted-foreground" : "bg-muted text-muted-foreground border border-border"),
                 )}
                 aria-current={active ? "step" : undefined}
               >
@@ -80,7 +82,7 @@ export function FunnelStepper({ current, steps = ONBOARDING_STEPS, className }: 
               <span
                 className={cn(
                   "text-[10px] font-semibold whitespace-nowrap transition-colors",
-                  active && "text-[hsl(var(--signal-teal))]",
+                  active && (authStyle ? "text-foreground" : "text-[hsl(var(--signal-teal))]"),
                   done && "text-foreground",
                   !done && !active && "text-muted-foreground",
                 )}
