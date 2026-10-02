@@ -62,7 +62,12 @@ export default function SearchResults() {
       setLoading(true);
       try {
         const likeQ = escapePostgrestValue(`%${q}%`);
-        const [profilesRes, creditsRes, oppsRes] = await Promise.all([
+        const profileSource = user ? "profiles" : "public_profiles_safe";
+        const [nameMatches, profilesRes, creditsRes, oppsRes] = await Promise.all([
+          supabase.from(profileSource)
+            .select("user_id, full_name, avatar_url, role, location")
+            .ilike("full_name", `${q}%`)
+            .limit(48),
           user ? supabase
             .from("profiles")
             .select("user_id, full_name, avatar_url, role, location, is_claimed")
@@ -89,7 +94,7 @@ export default function SearchResults() {
         if (cancelled) return;
 
         let connectedIds = new Set<string>();
-        if (user?.id && profilesRes.data?.length) {
+        if (user?.id && (profilesRes.data?.length || nameMatches.data?.length)) {
           const { data: links } = await supabase.from("connections")
             .select("user_id, connected_user_id")
             .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
@@ -110,8 +115,10 @@ export default function SearchResults() {
         }
 
         if (!cancelled) {
-          setCreators(((profilesRes.data || []) as CreatorResult[])
+          const merged = [...(nameMatches.data || []), ...(profilesRes.data || [])] as CreatorResult[];
+          setCreators(merged
             .filter(profile => profile.user_id && profile.full_name)
+            .filter((profile, index, all) => all.findIndex(other => other.user_id === profile.user_id) === index)
             .map(profile => ({ ...profile, is_connected: connectedIds.has(profile.user_id) }))
             .sort((a, b) => Number(b.is_connected) - Number(a.is_connected)
               || Number(b.full_name?.toLowerCase().startsWith(q.toLowerCase())) - Number(a.full_name?.toLowerCase().startsWith(q.toLowerCase()))
