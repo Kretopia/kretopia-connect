@@ -1578,8 +1578,8 @@ svg.k-gradient-icon {
 /* The two navbar "Get Started" CTAs keep a solid primary fill, as they
    had before the CTA sweep -- they must not inherit surrounding text
    color from the rule above. */
-[data-nav-chrome] .nav-btn-plain,
-[data-nav-chrome] .nav-btn-plain:hover {
+[data-nav-chrome] .btn-glass.nav-btn-plain,
+[data-nav-chrome] .btn-glass.nav-btn-plain:hover {
   color: hsl(var(--primary-foreground)) !important;
 }
 
