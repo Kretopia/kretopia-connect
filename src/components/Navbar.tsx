@@ -752,7 +752,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       }}
                     >
                       <Sparkles className="h-4 w-4" aria-hidden />
-                      Build Your Passport
+                      Create Passport
                     </Button>
                   </div>
                 </SheetContent>
@@ -778,7 +778,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                   className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold"
                 >
                   <Sparkles className="h-4 w-4" aria-hidden />
-                  Build Your Passport
+                  Create Passport
                 </Button>
               </Link>
             </>

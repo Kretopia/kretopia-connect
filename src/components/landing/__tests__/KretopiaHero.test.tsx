@@ -54,7 +54,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
 
   it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
     renderHero();
-    const primary = screen.getByRole("link", { name: /build your passport/i });
+    const primary = screen.getByRole("link", { name: /create passport/i });
     expect(primary).toHaveAttribute("href", "/passport");
     // CtaButton = the same btn-glass-primary as "Explore Verified Credits".
     expect(primary.className).toMatch(/\bbtn-glass\b/);
@@ -71,12 +71,12 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
 
   it("clicking the primary CTA fires exactly one analytics event with the signal_field variant", () => {
     renderHero();
-    fireEvent.click(screen.getByRole("link", { name: /build your passport/i }));
+    fireEvent.click(screen.getByRole("link", { name: /create passport/i }));
     expect(trackLandingCta).toHaveBeenCalledTimes(1);
     expect(trackLandingCta).toHaveBeenCalledWith(
       "hero_build_passport",
       "hero",
-      { label: "Build Your Passport", variant: "signal_field" },
+      { label: "Create Passport", variant: "signal_field" },
     );
   });
 
@@ -101,7 +101,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("does not throw and still renders the field under prefers-reduced-motion", () => {
     reducedMotion = true;
     renderHero();
-    expect(screen.getByRole("link", { name: /build your passport/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /create passport/i })).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
     const section = document.getElementById("kretopia-hero")!;
     expect(() => fireEvent.mouseMove(section, { clientX: 10, clientY: 10 })).not.toThrow();

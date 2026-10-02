@@ -288,13 +288,13 @@ export const KretopiaHero = () => {
               size="lg"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
-                  label: "Build Your Passport",
+                  label: "Create Passport",
                   variant: "signal_field",
                 })
               }
-              className="w-full sm:w-auto"
+              className="hero-passport-cta w-full sm:w-auto"
             >
-              Build Your Passport
+              Create Passport
             </GlassCta>
 
             <Link

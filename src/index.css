@@ -59,6 +59,7 @@ All colors MUST be HSL.
        sitting on a cream backdrop. Light mode's glass tints dark instead. */
     --btn-glass-text: 15, 15, 18;
     --btn-glass-neutral-tint: 15, 15, 18;
+    --landing-hero-foreground: 0 0% 100%;
 
     /* Energy = Kretopia brand accent (primary highlight/CTA signal).
        Was flat magenta (327 100% 59% / #FF2DA1), then briefly the logo's
@@ -1406,6 +1407,9 @@ svg.k-gradient-icon {
   color: rgb(var(--btn-glass-text)) !important;
   text-decoration: none;
 }
+.btn-glass.hero-passport-cta {
+  color: hsl(var(--landing-hero-foreground)) !important;
+}
 .btn-glass > * {
   position: relative;
   z-index: 2;
@@ -1578,8 +1582,8 @@ svg.k-gradient-icon {
 /* The two navbar "Get Started" CTAs keep a solid primary fill, as they
    had before the CTA sweep -- they must not inherit surrounding text
    color from the rule above. */
-[data-nav-chrome] .nav-btn-plain,
-[data-nav-chrome] .nav-btn-plain:hover {
+[data-nav-chrome] .btn-glass.nav-btn-plain,
+[data-nav-chrome] .btn-glass.nav-btn-plain:hover {
   color: hsl(var(--primary-foreground)) !important;
 }
 
