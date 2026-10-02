@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, Eye, EyeOff, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, Loader2, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
+import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -217,9 +218,7 @@ export const SignInForm = ({
               className={`h-12 text-base pr-10 ${passwordError ? "border-destructive" : ""}`}
               autoComplete="current-password"
             />
-            <Button type="button" variant="ghost" size="sm" className="absolute right-0 top-0 h-full px-3 hover:bg-transparent" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
-              {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
-            </Button>
+            <PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
           </div>
           {passwordError && (
             <p className="text-sm text-destructive flex items-center gap-1">
