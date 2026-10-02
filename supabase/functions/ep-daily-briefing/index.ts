@@ -8,6 +8,7 @@
 // of 30 min via row created_at.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -243,6 +244,7 @@ Deno.serve(async (req) => {
                 },
                 { role: "user", content: compact },
               ],
+              max_tokens: TOKENS_SHORT_DRAFT,
             }),
           },
         );

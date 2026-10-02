@@ -15,3 +15,10 @@
 // one-sentence reasoning string, as plain text or a small JSON object.
 // Typical real output is well under 50 tokens.
 export const TOKENS_SHORT_LABEL = 200;
+
+// A short prose draft explicitly bounded to a handful of sentences in its
+// own prompt (a bio, a gig description, a daily-briefing line, a chat reply,
+// a negotiation/outreach message) -- typical real output is 50-180 tokens.
+// Not for anything whose real length is open-ended or caller-controlled
+// (a voice transcript, a document, a multi-paragraph draft).
+export const TOKENS_SHORT_DRAFT = 500;
