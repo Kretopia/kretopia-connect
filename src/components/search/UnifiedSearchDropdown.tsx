@@ -168,10 +168,9 @@ export function UnifiedSearchDropdown({
 
       // Real DB records only — creators, credits and gigs that actually
       // exist. No web/AI-guessed suggestions when nothing matches.
-      const profileSource = user ? "profiles" : "public_profiles_safe";
       const [nameMatches, profiles, credits, opps] = await Promise.all([
-        supabase.from(profileSource)
-          .select(user ? "user_id, full_name, avatar_url, role, bio, location, is_claimed" : "user_id, full_name, avatar_url, role, bio, location")
+        (user ? supabase.from("profiles") : supabase.from("public_profiles_safe"))
+          .select("user_id, full_name, avatar_url, role, bio, location")
           .ilike("full_name", `${q}%`)
           .limit(24),
         user ? supabase
