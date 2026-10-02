@@ -15,7 +15,6 @@ export const InlineSignupBar = () => (
   <section
     id="inline-signup"
     className="relative"
-    style={{ backgroundColor: "#05070D" }}
     aria-labelledby="inline-signup-title"
   >
     <div className="mx-auto flex max-w-[1100px] flex-col items-center gap-5 px-5 py-14 text-center sm:flex-row sm:justify-between sm:gap-8 sm:px-8 sm:text-left lg:px-12">

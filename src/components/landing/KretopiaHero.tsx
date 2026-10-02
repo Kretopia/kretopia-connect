@@ -46,7 +46,7 @@ const LINE_2 = ["what", "you", "do"];
 const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
 
 const ctaFocusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const wordVariants = (reducedMotion: boolean, gradientText = false) =>
   reducedMotion
@@ -89,7 +89,6 @@ export const KretopiaHero = () => {
     <section
       id="kretopia-hero"
       className="relative flex min-h-[calc(100svh-4rem)] items-center sm:min-h-[calc(100svh-5rem)]"
-      style={{ backgroundColor: "#05070D" }}
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
@@ -232,19 +231,8 @@ export const KretopiaHero = () => {
           <UnifiedSearchDropdown variant="hero" placeholder="Search by role, skill, location, type of work…" />
         </motion.div>
 
-        {/* CTA pair — the primary is the site-wide GlassCta (the same
-            frosted-glass button as "Explore Verified Credits", just at the
-            "lg" size so it stays level with its sibling). The secondary
-            used to carry its own gradient BORDER (two-layer background-image
-            trick), which the CDO audit flagged as a gradient secondary
-            competing with the adjacent primary -- "reserve gradients for
-            selective brand moments, not default controls". Now a plain
-            restrained outline instead -- NOT the generic .cta-secondary
-            class, since that reads hsl(var(--foreground))/(--border)) and
-            this section has no forced dark-theme wrapper (just a literal
-            #05070D inline background); a guest in light mode would get
-            near-invisible dark-on-dark text. Same literal white-based
-            idiom the rest of this hero already uses instead. */}
+        {/* Neutral secondary action follows the active theme; the title
+            remains the only gradient text in this hero. */}
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -274,14 +262,14 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3.5 text-base font-semibold text-white/90 transition-colors duration-200 hover:-translate-y-0.5 hover:border-white/35 hover:text-white ${ctaFocusRing} focus-visible:ring-white/50`}
+              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-border px-7 py-3.5 text-base font-semibold text-foreground transition-colors duration-200 hover:-translate-y-0.5 hover:border-foreground/35 ${ctaFocusRing} focus-visible:ring-foreground/50`}
               style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
             >
               Explore Opportunities
             </Link>
           </div>
 
-          <p className="text-xs text-white/45" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
             Free to start. No credit card needed.
           </p>
         </motion.div>
@@ -300,7 +288,7 @@ export const KretopiaHero = () => {
         aria-hidden
         className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
         style={{
-          background: "linear-gradient(to bottom, transparent, rgba(5,7,13,1))",
+          background: "linear-gradient(to bottom, transparent, hsl(var(--background)))",
         }}
       />
     </section>

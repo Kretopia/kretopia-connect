@@ -59,7 +59,7 @@ All colors MUST be HSL.
        sitting on a cream backdrop. Light mode's glass tints dark instead. */
     --btn-glass-text: 15, 15, 18;
     --btn-glass-neutral-tint: 15, 15, 18;
-    --landing-hero-foreground: 0 0% 100%;
+    --landing-hero-foreground: var(--foreground);
 
     /* Energy = Kretopia brand accent (primary highlight/CTA signal).
        Was flat magenta (327 100% 59% / #FF2DA1), then briefly the logo's
@@ -1070,6 +1070,24 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
     0 0 24px rgba(255, 45, 161, 0.18),
     0 0 60px rgba(255, 45, 161, 0.08);
 }
+
+/* Landing follows the same Daylight/Midnight tokens as the feature pages.
+   Only the editorial shell is recolored; images and their overlaid captions
+   retain their photographic contrast. The title gradient stays untouched. */
+.landing-theme section, .landing-theme footer { background-color: hsl(var(--background)); }
+.landing-theme .landing-h1, .landing-theme .landing-h2 { color: hsl(var(--foreground)); }
+.landing-theme .landing-sub { color: hsl(var(--muted-foreground)); }
+:root:not(.dark) .landing-theme .landing-glow { text-shadow: none; }
+:root:not(.dark) .landing-theme :is(section, footer) :where(.text-white, [class*="text-white/"]):not(.k-gradient-fill *):not(.k-gradient-fill):not(.absolute *) { color: hsl(var(--foreground)); }
+:root:not(.dark) .landing-theme :is(section, footer) :where([class*="text-white/"]):not(.absolute *):not(.k-gradient-fill *) { color: hsl(var(--muted-foreground)); }
+:root:not(.dark) .landing-theme :is(section, footer) :where([class*="border-white/"]) { border-color: hsl(var(--border)); }
+:root:not(.dark) .landing-theme :is(section, footer) :where([class*="bg-white/"]) { background-color: hsl(var(--foreground) / 0.03); }
+:root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.055)"], [style*="rgba(255,255,255,0.055)"]) { background: hsl(var(--card)); border-color: hsl(var(--border)) !important; }
+:root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.02)"], [style*="rgba(255,255,255,0.02)"]) { background-color: hsl(var(--card)); border-color: hsl(var(--border)) !important; }
+:root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.7)"], [style*="rgba(255,255,255,0.7)"], [style*="rgba(255, 255, 255, 0.5)"], [style*="rgba(255,255,255,0.5)"]) { color: hsl(var(--muted-foreground)) !important; }
+:root:not(.dark) .landing-theme .k-gradient-text,
+:root:not(.dark) .landing-theme .landing-accent { color: transparent; }
+:root:not(.dark) .landing-theme #kretopia-hero > [aria-hidden="true"] > :first-child { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .landing-glow { text-shadow: none; }
 }
