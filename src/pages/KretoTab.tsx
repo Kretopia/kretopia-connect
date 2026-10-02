@@ -48,7 +48,6 @@ interface RecentAction {
   id: string;
   title: string;
   status: string;
-  action_type: string;
 }
 
 interface PassportSnapshot {
@@ -95,16 +94,22 @@ export default function KretoTab() {
           .order("fit_score", { ascending: false })
           .limit(1),
         supabase
-          .from("agent_actions")
-          .select("id, title, status, action_type")
+          .from("orch_actions")
+          .select("id, preview_title, tool_name, status")
           .eq("user_id", user.id)
-          .order("created_at", { ascending: false })
+          .order("proposed_at", { ascending: false })
           .limit(3),
       ]);
       if (cancelled) return;
       setPassport(profile ?? null);
       setGig(gigs?.[0] ?? null);
-      setActions(actionRows ?? []);
+      setActions(
+        (actionRows ?? []).map((r) => ({
+          id: r.id,
+          title: r.preview_title || r.tool_name,
+          status: r.status,
+        })),
+      );
       setLoadingContext(false);
     })();
     return () => { cancelled = true; };
@@ -212,7 +217,12 @@ export default function KretoTab() {
                 <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/40 font-semibold mb-2.5">Recent proposed actions</p>
                 <div className="space-y-2">
                   {actions.map((a) => {
-                    const Icon = a.status === "completed" ? CheckCircle2 : a.status === "pending" ? ShieldQuestion : Clock;
+                    const Icon =
+                      a.status === "executed" || a.status === "auto_executed"
+                        ? CheckCircle2
+                        : a.status === "proposed"
+                          ? ShieldQuestion
+                          : Clock;
                     return (
                       <div key={a.id} className="flex items-center gap-2.5 text-sm">
                         <Icon className="h-3.5 w-3.5 text-foreground/40 shrink-0" aria-hidden />
