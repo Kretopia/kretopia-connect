@@ -74,7 +74,6 @@ export const EditorialFooter = () => {
   return (
     <footer
       className="relative border-t border-white/[0.08]"
-      style={{ backgroundColor: "#05070D" }}
     >
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-8">
         <div className="grid gap-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,auto))] lg:gap-x-16">

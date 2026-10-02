@@ -89,7 +89,6 @@ export const KretopiaHero = () => {
     <section
       id="kretopia-hero"
       className="relative flex min-h-[calc(100svh-4rem)] items-center sm:min-h-[calc(100svh-5rem)]"
-      style={{ backgroundColor: "#05070D" }}
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
@@ -274,14 +273,14 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-white/20 px-7 py-3.5 text-base font-semibold text-white/90 transition-colors duration-200 hover:-translate-y-0.5 hover:border-white/35 hover:text-white ${ctaFocusRing} focus-visible:ring-white/50`}
+              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-border px-7 py-3.5 text-base font-semibold text-foreground transition-colors duration-200 hover:-translate-y-0.5 hover:border-foreground/35 ${ctaFocusRing} focus-visible:ring-foreground/50`}
               style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
             >
               Explore Opportunities
             </Link>
           </div>
 
-          <p className="text-xs text-white/45" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
             Free to start. No credit card needed.
           </p>
         </motion.div>
@@ -300,7 +299,7 @@ export const KretopiaHero = () => {
         aria-hidden
         className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
         style={{
-          background: "linear-gradient(to bottom, transparent, rgba(5,7,13,1))",
+          background: "linear-gradient(to bottom, transparent, hsl(var(--background)))",
         }}
       />
     </section>

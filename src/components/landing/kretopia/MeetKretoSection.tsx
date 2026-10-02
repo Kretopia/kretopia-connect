@@ -67,7 +67,6 @@ export const MeetKretoSection = () => {
     <section
       id="chapter-kreto"
       className="landing-section relative overflow-hidden border-t border-white/[0.06]"
-      style={{ backgroundColor: "#05070D" }}
       aria-labelledby="kreto-title"
     >
       <div

@@ -103,7 +103,6 @@ export const ChapterSection = ({
     <section
       id={id}
       className="relative overflow-hidden border-t border-white/[0.05]"
-      style={{ backgroundColor: "#05070D" }}
     >
       <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 py-20 sm:py-28 lg:py-36">
         <div className={`grid lg:grid-cols-12 gap-10 lg:gap-16 items-center ${reverse ? "lg:[&>*:first-child]:order-2" : ""}`}>
@@ -163,7 +162,7 @@ export const ChapterSection = ({
               <div
                 aria-hidden
                 className="absolute inset-x-0 bottom-0 h-1/4"
-                style={{ background: "linear-gradient(to top, #05070D, transparent)" }}
+                style={{ background: "linear-gradient(to top, hsl(var(--background)), transparent)" }}
               />
               {/* Subtle Kreto touch — sits inside this frame's own
                   overflow-hidden clip, so it's automatically contained on
@@ -246,7 +245,8 @@ export const ChapterSection = ({
             {closingLine && (
               <p
                 className="mt-6 text-sm font-semibold italic"
-                style={{ color: "rgba(255,255,255,0.8)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                className="mt-6 text-sm font-semibold italic text-foreground/80"
+                style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
               >
                 {closingLine}
               </p>

@@ -45,7 +45,6 @@ export const ForOrganisationsSection = () => {
     <section
       id="chapter-organisations"
       className="relative pt-12 sm:pt-14 pb-16 sm:pb-20"
-      style={{ backgroundColor: "#05070D" }}
       aria-labelledby="for-orgs-title"
     >
       {/* Very subtle brand silhouette — desktop only, purely decorative,

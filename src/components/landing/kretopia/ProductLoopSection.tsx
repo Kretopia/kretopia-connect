@@ -35,7 +35,6 @@ export const ProductLoopSection = () => {
     <section
       id="chapter-loop"
       className="landing-section relative border-t border-white/[0.05]"
-      style={{ backgroundColor: "#05070D" }}
       aria-labelledby="product-loop-title"
     >
       <div className="relative mx-auto max-w-[1320px]">

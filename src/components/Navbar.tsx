@@ -104,7 +104,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // --background like everything else, so that workaround is gone -- only
   // the true guest landing page (a separate, still-intentionally-dark
   // hero) still forces dark chrome here.
-  const isDarkChromeRoute = isLandingPage;
+  const isDarkChromeRoute = false;
   const isPro = subscriptionInfo.subscribed;
   const tierName = getTierDisplayName(subscriptionInfo.tier as any);
   const { unreadCount } = useNotifications();
@@ -208,7 +208,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // Guest navigation items — each carries an icon that reflects the actual
   // destination (no icons implying features the route doesn't have).
   const guestNavItems = [
-    { path: "/credits", label: "Verified Credits", icon: BadgeCheck },
+    { path: "/credits", label: "Credits", icon: BadgeCheck },
     { path: "/spotlight", label: "Spotlight", icon: Sparkles },
     { path: "/about", label: "About Us", icon: Info },
   ];
@@ -359,7 +359,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
               triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
             />
           )}
-          {!user && !isLandingPage && <ThemeToggle />}
+          <ThemeToggle />
 
           {user ? (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>

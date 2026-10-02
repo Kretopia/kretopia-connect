@@ -56,7 +56,6 @@ export const VerifiedCreditsChapterSection = () => {
     <section
       id="chapter-verified-credits"
       className="landing-section relative overflow-hidden border-t border-white/[0.06]"
-      style={{ backgroundColor: "#05070D" }}
       aria-labelledby="verified-credits-title"
     >
       <div
