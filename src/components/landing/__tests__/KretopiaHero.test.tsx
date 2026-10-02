@@ -50,6 +50,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("renders exactly one H1", () => {
     renderHero();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Findworkthatfitswhatyoudo");
   });
 
   it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
