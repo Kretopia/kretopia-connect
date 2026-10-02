@@ -46,7 +46,7 @@ const LINE_2 = ["what", "you", "do"];
 const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
 
 const ctaFocusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05070D]";
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const wordVariants = (reducedMotion: boolean, gradientText = false) =>
   reducedMotion
@@ -231,19 +231,8 @@ export const KretopiaHero = () => {
           <UnifiedSearchDropdown variant="hero" placeholder="Search by role, skill, location, type of work…" />
         </motion.div>
 
-        {/* CTA pair — the primary is the site-wide GlassCta (the same
-            frosted-glass button as "Explore Verified Credits", just at the
-            "lg" size so it stays level with its sibling). The secondary
-            used to carry its own gradient BORDER (two-layer background-image
-            trick), which the CDO audit flagged as a gradient secondary
-            competing with the adjacent primary -- "reserve gradients for
-            selective brand moments, not default controls". Now a plain
-            restrained outline instead -- NOT the generic .cta-secondary
-            class, since that reads hsl(var(--foreground))/(--border)) and
-            this section has no forced dark-theme wrapper (just a literal
-            #05070D inline background); a guest in light mode would get
-            near-invisible dark-on-dark text. Same literal white-based
-            idiom the rest of this hero already uses instead. */}
+        {/* Neutral secondary action follows the active theme; the title
+            remains the only gradient text in this hero. */}
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

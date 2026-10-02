@@ -97,13 +97,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // renders literally everywhere else, "/" included (which is their Today
   // dashboard, a different page from this one despite the shared name).
   const isLandingPage = location.pathname === "/landing";
-  // Spotlight/Verified Credits/About used to force a #05070D background on
-  // their own hero (EditorialPageHero) regardless of theme, so the navbar
-  // had to force-match dark chrome on those three routes too or the two
-  // wouldn't line up. EditorialPageHero/FeaturePageHeader now resolve
-  // --background like everything else, so that workaround is gone -- only
-  // the true guest landing page (a separate, still-intentionally-dark
-  // hero) still forces dark chrome here.
+  // Landing chrome follows the active theme, just like the feature pages.
   const isDarkChromeRoute = false;
   const isPro = subscriptionInfo.subscribed;
   const tierName = getTierDisplayName(subscriptionInfo.tier as any);
