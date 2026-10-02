@@ -62,9 +62,8 @@ export default function SearchResults() {
       setLoading(true);
       try {
         const likeQ = escapePostgrestValue(`%${q}%`);
-        const profileSource = user ? "profiles" : "public_profiles_safe";
         const [nameMatches, profilesRes, creditsRes, oppsRes] = await Promise.all([
-          supabase.from(profileSource)
+          (user ? supabase.from("profiles") : supabase.from("public_profiles_safe"))
             .select("user_id, full_name, avatar_url, role, location")
             .ilike("full_name", `${q}%`)
             .limit(48),
