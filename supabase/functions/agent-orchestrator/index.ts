@@ -19,6 +19,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { GEMINI_FLASH_LITE, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,17 +32,6 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-
-// Wrap a fetch with a hard timeout so we never hang the 150s edge budget.
-async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
-  const ac = new AbortController();
-  const id = setTimeout(() => ac.abort(), ms);
-  try {
-    return await fetch(url, { ...init, signal: ac.signal });
-  } finally {
-    clearTimeout(id);
-  }
-}
 
 type Tool = {
   tool_name: string;

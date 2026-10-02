@@ -3,6 +3,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+
+// Bounds time-to-first-byte on the gateway call, not total response
+// duration -- see _shared/fetchWithTimeout.ts.
+const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -569,23 +574,38 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       delete (directArgs as any).message;
       toolCalls = [{ function: { name: requestedTool, arguments: JSON.stringify(directArgs) } }];
     } else {
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GEMINI_3_FLASH,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...historyMsgs,
-          { role: "user", content: message },
-        ],
-        tools: TOOLS,
-        tool_choice: "auto",
-      }),
-    });
+    let aiResp: Response;
+    try {
+      aiResp = await fetchWithTimeout(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: GEMINI_3_FLASH,
+            messages: [
+              { role: "system", content: systemPrompt },
+              ...historyMsgs,
+              { role: "user", content: message },
+            ],
+            tools: TOOLS,
+            tool_choice: "auto",
+          }),
+        },
+        GATEWAY_CONNECT_TIMEOUT_MS,
+      );
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        return new Response(
+          JSON.stringify({ error: "AI response timed out. Please try again." }),
+          { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      throw e;
+    }
 
     if (aiResp.status === 429) {
       return new Response(JSON.stringify({ error: "Rate limited, try again shortly." }), {
