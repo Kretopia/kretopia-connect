@@ -11,6 +11,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -34,6 +35,7 @@ async function llm(prompt: string, model = GEMINI_FLASH): Promise<string> {
         { role: "system", content: SYSTEM },
         { role: "user", content: prompt },
       ],
+      max_tokens: TOKENS_SHORT_DRAFT,
     }),
   });
   if (!r.ok) throw new Error(`LLM ${r.status}: ${await r.text()}`);

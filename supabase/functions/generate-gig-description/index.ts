@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser } from "../_shared/require-user.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +44,7 @@ Keep it concise, professional, and appealing to creative freelancers. Include wh
       body: JSON.stringify({
         model: GEMINI_3_FLASH,
         messages: [{ role: "user", content: prompt }],
+        max_tokens: TOKENS_SHORT_DRAFT,
       }),
     });
 

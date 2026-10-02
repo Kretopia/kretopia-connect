@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -64,6 +65,7 @@ serve(async (req) => {
           ...messages,
         ],
         stream: false,
+        max_tokens: TOKENS_SHORT_DRAFT,
       }),
     });
 
