@@ -4,6 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -120,7 +121,7 @@ Return ONLY this JSON shape (no prose, no fences):
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3.1-pro-preview",
+        model: GEMINI_3_1_PRO,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: goal },

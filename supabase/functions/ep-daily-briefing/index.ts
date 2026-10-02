@@ -7,6 +7,7 @@
 // Auth: end-user JWT. Idempotent per (user_id, today). Server-side throttle
 // of 30 min via row created_at.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -233,7 +234,7 @@ Deno.serve(async (req) => {
               "Lovable-API-Key": LOVABLE_API_KEY,
             },
             body: JSON.stringify({
-              model: "google/gemini-3-flash-preview",
+              model: GEMINI_3_FLASH,
               messages: [
                 {
                   role: "system",

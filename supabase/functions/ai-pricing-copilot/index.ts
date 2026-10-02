@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { GEMINI_3_1_PRO, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -205,7 +206,7 @@ REMINDER: You can make mistakes. When you're not sure (rate, currency, unit, sco
       body: JSON.stringify({
         // Vision/extraction needs a stronger model when the user scans a brief —
         // 2.5-pro is far less prone to hallucinating units/rates than flash.
-        model: hasScan ? "google/gemini-3.1-pro-preview" : "google/gemini-3-flash-preview",
+        model: hasScan ? GEMINI_3_1_PRO : GEMINI_3_FLASH,
         messages: aiMessages,
         tools: [
           {

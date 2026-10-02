@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { requireUser } from "../_shared/require-user.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +41,7 @@ Keep it concise, professional, and appealing to creative freelancers. Include wh
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [{ role: "user", content: prompt }],
       }),
     });

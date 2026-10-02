@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -208,7 +209,7 @@ Generate the strongest 8-15 pair recommendations. Use the EXACT user_id strings 
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

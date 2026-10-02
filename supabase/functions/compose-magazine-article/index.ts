@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,7 +82,7 @@ Lay this out as a premium magazine article. Use the available images. Pick the c
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3.1-pro-preview",
+        model: GEMINI_3_1_PRO,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

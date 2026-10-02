@@ -11,6 +11,7 @@
 // Never throws to the caller; logs failures and exits 200.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,7 +83,7 @@ async function extract(message: string): Promise<Memory[]> {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: GEMINI_3_FLASH,
       messages: [
         { role: "system", content: SYSTEM },
         { role: "user", content: message },

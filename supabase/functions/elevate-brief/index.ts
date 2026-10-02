@@ -7,6 +7,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -155,7 +156,7 @@ async function callGemini(parts: unknown[], systemPrompt: string, apiKey: string
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3.1-pro-preview",
+      model: GEMINI_3_1_PRO,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: parts },
