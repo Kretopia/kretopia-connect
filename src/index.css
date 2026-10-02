@@ -1078,8 +1078,8 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
 .landing-theme .landing-h1, .landing-theme .landing-h2 { color: hsl(var(--foreground)); }
 .landing-theme .landing-sub { color: hsl(var(--muted-foreground)); }
 :root:not(.dark) .landing-theme .landing-glow { text-shadow: none; }
-:root:not(.dark) .landing-theme :is(section, footer) :where(.text-white, [class*="text-white/"]) { color: hsl(var(--foreground)); }
-:root:not(.dark) .landing-theme :is(section, footer) :where([class*="text-white/"]) { color: hsl(var(--muted-foreground)); }
+:root:not(.dark) .landing-theme :is(section, footer) :where(.text-white, [class*="text-white/"]):not(.k-gradient-fill *):not(.k-gradient-fill):not(.absolute *) { color: hsl(var(--foreground)); }
+:root:not(.dark) .landing-theme :is(section, footer) :where([class*="text-white/"]):not(.absolute *):not(.k-gradient-fill *) { color: hsl(var(--muted-foreground)); }
 :root:not(.dark) .landing-theme :is(section, footer) :where([class*="border-white/"]) { border-color: hsl(var(--border)); }
 :root:not(.dark) .landing-theme :is(section, footer) :where([class*="bg-white/"]) { background-color: hsl(var(--foreground) / 0.03); }
 :root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.055)"], [style*="rgba(255,255,255,0.055)"]) { background: hsl(var(--card)); border-color: hsl(var(--border)) !important; }
@@ -1087,7 +1087,7 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
 :root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.7)"], [style*="rgba(255,255,255,0.7)"], [style*="rgba(255, 255, 255, 0.5)"], [style*="rgba(255,255,255,0.5)"]) { color: hsl(var(--muted-foreground)) !important; }
 :root:not(.dark) .landing-theme .k-gradient-text,
 :root:not(.dark) .landing-theme .landing-accent { color: transparent; }
-:root:not(.dark) .landing-theme #kretopia-hero [aria-hidden="true"] .text-white { color: hsl(var(--foreground)); }
+:root:not(.dark) .landing-theme #kretopia-hero > [aria-hidden="true"] > :first-child { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .landing-glow { text-shadow: none; }
 }

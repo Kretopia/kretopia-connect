@@ -244,7 +244,6 @@ export const ChapterSection = ({
 
             {closingLine && (
               <p
-                className="mt-6 text-sm font-semibold italic"
                 className="mt-6 text-sm font-semibold italic text-foreground/80"
                 style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
               >
