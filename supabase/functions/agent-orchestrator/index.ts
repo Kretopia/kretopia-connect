@@ -20,6 +20,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { GEMINI_FLASH_LITE, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,6 +114,7 @@ async function classifyIntent(
             { role: "user", content: intent },
           ],
           response_format: { type: "json_object" },
+          max_tokens: TOKENS_SHORT_LABEL,
         }),
       },
       20000,

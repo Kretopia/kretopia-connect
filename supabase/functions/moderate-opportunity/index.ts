@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
+import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,6 +53,7 @@ serve(async (req) => {
             content: content
           }
         ],
+        max_tokens: TOKENS_SHORT_LABEL,
       }),
     });
 

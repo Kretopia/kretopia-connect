@@ -5,6 +5,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,6 +64,7 @@ Available folders: ${JSON.stringify(folderNames)}`;
           { role: "user", content: user },
         ],
         response_format: { type: "json_object" },
+        max_tokens: TOKENS_SHORT_LABEL,
       }),
     });
     if (!r.ok) throw new Error(`gateway ${r.status}`);

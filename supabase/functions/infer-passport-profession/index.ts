@@ -6,6 +6,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
+import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -89,6 +90,7 @@ serve(async (req) => {
           { role: "user", content: `Profile:\n${JSON.stringify(snapshot, null, 2)}` },
         ],
         response_format: { type: "json_object" },
+        max_tokens: TOKENS_SHORT_LABEL,
       }),
     });
 
