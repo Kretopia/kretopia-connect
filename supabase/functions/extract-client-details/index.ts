@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,6 +44,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: GEMINI_FLASH,
         response_format: { type: "json_object" },
+        max_tokens: TOKENS_STRUCTURED_SMALL,
         messages: [
           {
             role: "system",

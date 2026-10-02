@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -71,6 +72,7 @@ async function generateForUser(supabase: any, userId: string) {
             },
           ],
           response_format: { type: "json_object" },
+          max_tokens: TOKENS_STRUCTURED_SMALL,
         }),
       });
       if (res.ok) {

@@ -7,6 +7,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
 const corsHeaders = {
@@ -80,6 +81,7 @@ ${gigContent}`;
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
+        max_tokens: TOKENS_STRUCTURED_SMALL,
       }),
     });
     if (!r.ok) {

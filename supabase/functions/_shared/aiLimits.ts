@@ -22,3 +22,13 @@ export const TOKENS_SHORT_LABEL = 200;
 // Not for anything whose real length is open-ended or caller-controlled
 // (a voice transcript, a document, a multi-paragraph draft).
 export const TOKENS_SHORT_DRAFT = 500;
+
+// A structured JSON object with a handful of scalar/short-string fields,
+// optionally including one small bounded array (a short fixed-size list, or
+// a pick from a small fixed set of category tags) -- typical real output is
+// 80-250 tokens. Not for a field whose length genuinely scales with the
+// input (e.g. "every line item on this receipt", "every name on this page")
+// -- capping that risks truncating mid-JSON and breaking the parse entirely,
+// which is worse than no cap; that case needs its own sized-for-the-input
+// budget, not this tier.
+export const TOKENS_STRUCTURED_SMALL = 600;

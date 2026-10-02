@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { RateLimiter } from "../_shared/rate-limiter.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,6 +146,7 @@ Return JSON only (no markdown):
           { role: "user", content: prompt }
         ],
         temperature: 0.3,
+        max_tokens: TOKENS_STRUCTURED_SMALL,
       }),
     });
 
