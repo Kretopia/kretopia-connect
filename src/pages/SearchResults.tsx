@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { BriefcaseBusiness } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
@@ -19,6 +19,7 @@ interface CreatorResult {
   avatar_url: string | null;
   role: string | null;
   location: string | null;
+  is_connected?: boolean;
 }
 
 interface CreditResult {
@@ -50,7 +51,7 @@ export default function SearchResults() {
 
   useEffect(() => {
     let cancelled = false;
-    if (q.length < 2) {
+    if (q.length < 1) {
       setLoading(false);
       setCreators([]);
       setCredits([]);
@@ -62,25 +63,40 @@ export default function SearchResults() {
       try {
         const likeQ = escapePostgrestValue(`%${q}%`);
         const [profilesRes, creditsRes, oppsRes] = await Promise.all([
-          supabase
+          user ? supabase
             .from("profiles")
             .select("user_id, full_name, avatar_url, role, location, is_claimed")
             .or(`full_name.ilike.${likeQ},role.ilike.${likeQ},location.ilike.${likeQ}`)
             .or("onboarding_completed.eq.true,is_claimed.eq.false")
-            .limit(24),
-          supabase
+            .limit(48) : supabase
+            .from("public_profiles_safe")
+            .select("user_id, full_name, avatar_url, role, location")
+            .eq("onboarding_completed", true)
+            .or(`full_name.ilike.${likeQ},role.ilike.${likeQ},location.ilike.${likeQ}`)
+            .limit(48),
+          q.length >= 2 ? supabase
             .from("credits")
             .select("id, project_name, role, year, thumbnail_url")
             .or(`project_name.ilike.${likeQ},role.ilike.${likeQ}`)
-            .limit(18),
-          supabase
+            .limit(18) : Promise.resolve({ data: [] }),
+          q.length >= 2 ? supabase
             .from("opportunities")
             .select(OPPORTUNITY_PUBLIC_COLUMNS)
             .eq("status", "active")
             .or(`title.ilike.${likeQ},location.ilike.${likeQ},type.ilike.${likeQ}`)
-            .limit(18),
+            .limit(18) : Promise.resolve({ data: [] }),
         ]);
         if (cancelled) return;
+
+        let connectedIds = new Set<string>();
+        if (user?.id && profilesRes.data?.length) {
+          const { data: links } = await supabase.from("connections")
+            .select("user_id, connected_user_id")
+            .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
+            .eq("status", "accepted");
+          if (cancelled) return;
+          connectedIds = new Set((links || []).map(link => link.user_id === user.id ? link.connected_user_id : link.user_id));
+        }
 
         const oppRows = (oppsRes.data || []) as unknown as GigOpportunity[];
         let creatorLookup: Record<string, GigCreatorProfile> = {};
@@ -94,7 +110,12 @@ export default function SearchResults() {
         }
 
         if (!cancelled) {
-          setCreators((profilesRes.data || []) as CreatorResult[]);
+          setCreators(((profilesRes.data || []) as CreatorResult[])
+            .filter(profile => profile.user_id && profile.full_name)
+            .map(profile => ({ ...profile, is_connected: connectedIds.has(profile.user_id) }))
+            .sort((a, b) => Number(b.is_connected) - Number(a.is_connected)
+              || Number(b.full_name?.toLowerCase().startsWith(q.toLowerCase())) - Number(a.full_name?.toLowerCase().startsWith(q.toLowerCase()))
+              || (a.full_name || "").localeCompare(b.full_name || "")));
           setCredits((creditsRes.data || []) as CreditResult[]);
           setGigs(oppRows);
           setGigCreators(creatorLookup);
@@ -106,7 +127,7 @@ export default function SearchResults() {
     return () => {
       cancelled = true;
     };
-  }, [q]);
+  }, [q, user?.id]);
 
   const hasResults = creators.length + credits.length + gigs.length > 0;
 
@@ -120,7 +141,7 @@ export default function SearchResults() {
       <SearchV2 initialQuery={q} />
 
       <div className="relative z-0 mx-auto max-w-5xl bg-background px-4 py-10 sm:px-6 lg:px-8">
-        {q.length < 2 ? (
+        {q.length < 1 ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
             Search creators, credits and opportunities across Kretopia.
           </p>
@@ -145,12 +166,14 @@ export default function SearchResults() {
                         <AvatarImage src={c.avatar_url || ""} />
                         <AvatarFallback>{(c.full_name || "?")[0]}</AvatarFallback>
                       </Avatar>
-                      <div className="min-w-0">
+                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-semibold text-foreground">{c.full_name}</p>
                         <p className="truncate text-xs text-muted-foreground">
                           {[c.role, c.location].filter(Boolean).join(" · ")}
                         </p>
+                        {c.is_connected && <p className="mt-1 text-xs font-semibold text-energy">Connected</p>}
                       </div>
+                       <span className="shrink-0 text-xs font-semibold text-primary">{user ? "View Passport" : "Sign up to view"} <ArrowRight className="inline h-3 w-3" /></span>
                     </Link>
                   ))}
                 </div>
