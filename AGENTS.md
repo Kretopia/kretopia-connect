@@ -15,3 +15,4 @@
 - Reuse the shared KretopiaQRCode for Passport QR previews and exports, because one branded generator preserves the same scannable code across surfaces.
 - Keep Today in three equal-size cards for Passport/Kreto, one real next action, and supporting live activity; deeper Passport metrics belong in Passport, because duplicate dashboards obscure the creator's priority.
 - Keep legacy backend schema types and the client adapter in separate authored files mapped by exact import aliases, because Cloud regenerates its empty schema files and production still uses the legacy backend.
+- Search people through the public-safe profile view for guests and rank accepted viewer connections before other name matches for signed-in users, because discovery must work without login while relationship priority stays private.

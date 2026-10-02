@@ -20,6 +20,7 @@ interface SearchResult {
   bio?: string;
   credits?: { project: string; role: string }[];
   is_claimed?: boolean;
+  is_connected?: boolean;
 }
 
 interface UnifiedSearchDropdownProps {
@@ -132,12 +133,6 @@ export function UnifiedSearchDropdown({
     }
     setOpen(true);
     onOpenChange?.(true);
-    if (trimmedQuery.length < 2) {
-      setResults([]);
-      setHighlightedCreator(null);
-      setLoading(false);
-      return;
-    }
     const timer = setTimeout(() => doSearch(trimmedQuery), 350);
     return () => clearTimeout(timer);
   }, [query]);
@@ -173,30 +168,58 @@ export function UnifiedSearchDropdown({
 
       // Real DB records only — creators, credits and gigs that actually
       // exist. No web/AI-guessed suggestions when nothing matches.
-      const [profiles, credits, opps] = await Promise.all([
-        supabase
+      const [nameMatches, profiles, credits, opps] = await Promise.all([
+        (user ? supabase.from("profiles") : supabase.from("public_profiles_safe"))
+          .select("user_id, full_name, avatar_url, role, bio, location")
+          .ilike("full_name", `${q}%`)
+          .limit(24),
+        user ? supabase
           .from("profiles")
           .select("user_id, full_name, avatar_url, role, bio, location, is_claimed")
           .or(fuzzyFilters)
           .or("onboarding_completed.eq.true,is_claimed.eq.false")
-          .limit(8),
-        supabase
+          .limit(24) : supabase
+          .from("public_profiles_safe")
+          .select("user_id, full_name, avatar_url, role, bio, location")
+          .eq("onboarding_completed", true)
+          .or(`full_name.ilike.${likeQEscaped},role.ilike.${likeQEscaped}`)
+          .limit(24),
+        q.length >= 2 ? supabase
           .from("credits")
           .select("id, project_name, role, year, project_type, thumbnail_url")
           .or(`project_name.ilike.${likeQEscaped},role.ilike.${likeQEscaped}`)
-          .limit(5),
-        supabase
+          .limit(5) : Promise.resolve({ data: [] }),
+        q.length >= 2 ? supabase
           .from("opportunities")
           .select("id, title, type, compensation, location")
           .eq("status", "active")
           .ilike("title", likeQ)
-          .limit(3),
+          .limit(3) : Promise.resolve({ data: [] }),
       ]);
       if (controller.signal.aborted) return;
 
+      // A failed people query must not look like a legitimate empty search.
+      if (profiles.error && nameMatches.error) throw profiles.error;
+      let connectedIds = new Set<string>();
+      if (user?.id && (profiles.data?.length || nameMatches.data?.length)) {
+        const { data: links } = await supabase.from("connections")
+          .select("user_id, connected_user_id")
+          .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
+          .eq("status", "accepted");
+        if (controller.signal.aborted) return;
+        connectedIds = new Set((links || []).map(link => link.user_id === user.id ? link.connected_user_id : link.user_id));
+      }
+
       const dbResults: SearchResult[] = [];
 
-      for (const p of profiles.data || []) {
+      const dedupedProfiles = [...(nameMatches.data || []), ...(profiles.data || [])]
+        .filter(p => p.user_id && p.full_name)
+        .filter((p, index, all) => all.findIndex(other => other.user_id === p.user_id) === index);
+      const sortedProfiles = dedupedProfiles
+        .sort((a, b) => Number(connectedIds.has(b.user_id)) - Number(connectedIds.has(a.user_id))
+          || Number(b.full_name?.toLowerCase().startsWith(q.toLowerCase())) - Number(a.full_name?.toLowerCase().startsWith(q.toLowerCase()))
+          || (a.full_name || "").localeCompare(b.full_name || ""));
+      for (const p of sortedProfiles.slice(0, 8)) {
         dbResults.push({
           type: "creator",
           id: p.user_id,
@@ -204,7 +227,8 @@ export function UnifiedSearchDropdown({
           subtitle: [p.role, p.location].filter(Boolean).join(" · "),
           avatar: p.avatar_url,
           bio: p.bio || undefined,
-          is_claimed: p.is_claimed !== false,
+          is_claimed: "is_claimed" in p ? p.is_claimed !== false : true,
+          is_connected: connectedIds.has(p.user_id),
         });
       }
 
@@ -232,7 +256,7 @@ export function UnifiedSearchDropdown({
 
       // Highlight first creator
       const firstCreator = dbResults.find((r) => r.type === "creator");
-      if (firstCreator) {
+      if (firstCreator && user) {
         const { data: creatorCredits } = await supabase
           .from("credits")
           .select("project_name, role")
@@ -256,7 +280,7 @@ export function UnifiedSearchDropdown({
         setLoading(false);
       }
     }
-  }, []);
+  }, [user?.id]);
 
   const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
 
@@ -559,9 +583,9 @@ export function UnifiedSearchDropdown({
             isNavbar ? "max-h-[70vh]" : "max-h-[60vh]"
           )}
         >
-          <div ref={resultsRef} className="overflow-y-auto max-h-[inherit]">
+          <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
             {catalogMatches.length > 0 && (
-              <div className="border-b border-border px-2 py-2">
+              <div className="order-3 border-b border-border px-2 py-2">
                 <div className="flex items-center justify-between px-2 pb-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Explore Kretopia
@@ -609,7 +633,7 @@ export function UnifiedSearchDropdown({
             )}
             {/* Loading state */}
             {loading && (
-              <div className="px-4 py-6 flex flex-col items-center gap-3">
+              <div className="order-4 px-4 py-6 flex flex-col items-center gap-3">
                 <div className="relative">
                   <div className="h-10 w-10 rounded-full border-2 border-primary/20 flex items-center justify-center">
                     <Search className="h-4 w-4 text-primary animate-pulse" />
@@ -627,7 +651,7 @@ export function UnifiedSearchDropdown({
 
             {/* Highlighted creator card (from DB) */}
             {highlightedCreator && (
-              <div className="border-b border-border">
+              <div className="order-1 border-b border-border">
                 <button
                   data-search-result
                   onKeyDown={handleResultKeyDown}
@@ -646,7 +670,9 @@ export function UnifiedSearchDropdown({
                         <p className="text-sm font-bold text-foreground truncate">
                           {highlightedCreator.title}
                         </p>
-                        {highlightedCreator.is_claimed === false ? (
+                        {highlightedCreator.is_connected ? (
+                          <Badge variant="outline" className="shrink-0 border-energy/40 text-energy text-[9px]">Connected</Badge>
+                        ) : highlightedCreator.is_claimed === false ? (
                           <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10 shrink-0">
                             Unclaimed
                           </Badge>
@@ -656,7 +682,7 @@ export function UnifiedSearchDropdown({
                           </Badge>
                         )}
                       </div>
-                      {highlightedCreator.subtitle && (
+                       {highlightedCreator.subtitle && (
                         <p className="text-xs text-muted-foreground mt-0.5">{highlightedCreator.subtitle}</p>
                       )}
                       {highlightedCreator.bio && (
@@ -678,7 +704,8 @@ export function UnifiedSearchDropdown({
                           )}
                         </div>
                       )}
-                    </div>
+                     </div>
+                     <span className="shrink-0 self-center text-xs font-semibold text-primary">{user ? "View Passport" : "Sign up to view"} <ArrowRight className="inline h-3 w-3" /></span>
                   </div>
                 </button>
 
@@ -728,7 +755,7 @@ export function UnifiedSearchDropdown({
               );
               if (otherCreators.length === 0) return null;
               return (
-                <div className="border-b border-border">
+                <div className="order-2 border-b border-border">
                   <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                     Other potential matches
                   </p>
@@ -752,15 +779,14 @@ export function UnifiedSearchDropdown({
                           <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
                         )}
                       </div>
-                      {r.is_claimed === false ? (
+                      {r.is_connected ? (
+                        <Badge variant="outline" className="shrink-0 border-energy/40 text-energy text-[9px]">Connected</Badge>
+                      ) : r.is_claimed === false ? (
                         <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10 shrink-0">
                           Unclaimed
                         </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[9px] text-primary border-primary/30 shrink-0">
-                          Creator
-                        </Badge>
-                      )}
+                      ) : null}
+                      <span className="shrink-0 text-[10px] font-semibold text-primary">{user ? "View Passport" : "Sign up to view"}</span>
                     </button>
                   ))}
                 </div>
@@ -780,7 +806,7 @@ export function UnifiedSearchDropdown({
               });
               if (items.length === 0) return null;
               return (
-                <div key={groupType} className="border-b border-border last:border-b-0">
+                <div key={groupType} className="order-2 border-b border-border last:border-b-0">
                   <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
                     {RESULT_GROUP_LABEL[groupType]}
                   </p>
@@ -812,7 +838,9 @@ export function UnifiedSearchDropdown({
                             <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
                           )}
                         </div>
-                        {r.type === "creator" && r.is_claimed === false ? (
+                        {r.type === "creator" && r.is_connected ? (
+                          <span className="shrink-0 text-[10px] font-semibold text-energy">Connected · View Passport</span>
+                        ) : r.type === "creator" && r.is_claimed === false ? (
                           <div className="flex items-center gap-1.5 shrink-0">
                             <Badge variant="outline" className="text-[9px] text-amber-500 border-amber-500/30 bg-amber-500/10">
                               Unclaimed
@@ -832,6 +860,8 @@ export function UnifiedSearchDropdown({
                               Claim
                             </button>
                           </div>
+                        ) : r.type === "creator" ? (
+                          <span className="shrink-0 text-[10px] font-semibold text-primary">{user ? "View Passport" : "Sign up to view"}</span>
                         ) : (
                           <Badge
                             variant="outline"
@@ -850,7 +880,7 @@ export function UnifiedSearchDropdown({
             {/* Error state — distinct from "no results" so a failed search
                 isn't mistaken for a genuinely empty result set. */}
             {!loading && error && (
-              <div className="px-4 py-4 text-center">
+              <div className="order-5 px-4 py-4 text-center">
                 <p className="text-sm text-destructive">Search failed</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
                   Something went wrong reaching search — check your connection and try again.
@@ -868,7 +898,7 @@ export function UnifiedSearchDropdown({
             {/* Empty state — no fallback suggestions, no navigation anywhere.
                 If nothing real matches, we say so and stop. */}
             {showEmptyState && !loading && !error && results.length === 0 && catalogMatches.length === 0 && query.trim().length >= 2 && (
-              <div className="px-4 py-4 text-center">
+              <div className="order-5 px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">No results found</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
