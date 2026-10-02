@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -107,6 +108,7 @@ Consider: Is this a real project/event that existed? Is the role plausible? Does
               }
             ],
             response_format: { type: 'json_object' },
+            max_tokens: TOKENS_STRUCTURED_SMALL,
           }),
         });
 

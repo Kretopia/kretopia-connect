@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,6 +66,7 @@ Return ONLY valid JSON.`;
           { role: "user", content: prompt },
         ],
         response_format: { type: "json_object" },
+        max_tokens: TOKENS_STRUCTURED_SMALL,
       }),
     });
 

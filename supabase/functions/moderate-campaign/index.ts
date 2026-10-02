@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
+import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -152,6 +153,7 @@ Categories examples: scam, unrealistic_goal, vague_story, prohibited_category, p
               { role: "user", content: prompt },
             ],
             response_format: { type: "json_object" },
+            max_tokens: TOKENS_STRUCTURED_SMALL,
           }),
         });
         if (r.ok) {
