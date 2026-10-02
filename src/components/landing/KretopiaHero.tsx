@@ -292,7 +292,7 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className="w-full sm:w-auto"
+              className="hero-passport-cta w-full sm:w-auto"
             >
               Create Passport
             </GlassCta>
