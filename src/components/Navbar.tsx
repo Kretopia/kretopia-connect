@@ -621,7 +621,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         />
                         <MenuGridTile
                           icon={Database}
-                          label="Verified Credits"
+                          label="Credits"
                           onClick={() => handleNavigation("/credits")}
                           path="/credits"
                         />

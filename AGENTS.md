@@ -16,3 +16,4 @@
 - Keep Today in three equal-size cards for Passport/Kreto, one real next action, and supporting live activity; deeper Passport metrics belong in Passport, because duplicate dashboards obscure the creator's priority.
 - Keep legacy backend schema types and the client adapter in separate authored files mapped by exact import aliases, because Cloud regenerates its empty schema files and production still uses the legacy backend.
 - Search people through the public-safe profile view for guests and rank accepted viewer connections before other name matches for signed-in users, because discovery must work without login while relationship priority stays private.
+- Keep Landing's editorial shell on the shared theme tokens and preserve photographic overlays separately, because the navbar Daylight/Midnight control must affect the whole page without reducing image-caption contrast.
