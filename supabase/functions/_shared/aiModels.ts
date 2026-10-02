@@ -23,3 +23,4 @@ export const GEMINI_FLASH_IMAGE_PREVIEW = "google/gemini-2.5-flash-image-preview
 // value here (not at each call site) once Google ships the GA successor.
 export const GEMINI_3_FLASH = "google/gemini-3-flash-preview";
 export const GEMINI_3_1_PRO = "google/gemini-3.1-pro-preview";
+export const GEMINI_3_1_FLASH_IMAGE = "google/gemini-3.1-flash-image-preview";

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +47,7 @@ Each location must have coordinates within ${radius_km}km of the center point. M
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [
           { role: "system", content: "You are a creative industry location database specialist. Generate realistic location data." },
           { role: "user", content: prompt },

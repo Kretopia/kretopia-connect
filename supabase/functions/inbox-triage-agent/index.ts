@@ -11,6 +11,7 @@
 // Throttle: skip messages already in inbox_triage_classifications.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -213,7 +214,7 @@ Be decisive. confidence = 0.5 means truly uncertain.`;
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: GEMINI_3_FLASH,
       messages: [
         { role: "system", content: sysPrompt },
         { role: "user", content: `Inbound message:\n"""\n${content.slice(0, 2000)}\n"""` },

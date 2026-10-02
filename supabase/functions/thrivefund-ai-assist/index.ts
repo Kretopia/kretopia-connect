@@ -2,6 +2,7 @@ import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -90,7 +91,7 @@ Deno.serve(async (req) => {
       : `Title: ${title}\nCategory: ${category}\nTagline: ${tagline}\nFunding goal: $${goal}\n\nDesign 3-5 pledge tiers, ascending in price and value.`;
 
     const payload: any = {
-      model: "google/gemini-3-flash-preview",
+      model: GEMINI_3_FLASH,
       messages: [
         { role: "system", content: systemByAction[action] },
         { role: "user", content: userMsg },

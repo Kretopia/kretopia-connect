@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -58,7 +59,7 @@ Return ONLY valid JSON.`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: GEMINI_3_FLASH,
         messages: [
           { role: "system", content: "You extract creative project credits from descriptions, URLs, or filenames. Cover the FULL creative and content industry: film, TV, music, theatre, dance, fashion, events, concerts, tours, carnival, pageants, podcasts, digital content, commercial work, art, photography, and more. Always respond with valid JSON only." },
           { role: "user", content: prompt },
