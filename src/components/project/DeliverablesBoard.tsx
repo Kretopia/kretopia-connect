@@ -38,6 +38,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AssigneePicker } from "./board/AssigneePicker";
 import { notifyDeliverableAssigned } from "./board/notifyAssignee";
+import { evaluateApproval } from "@/lib/approvalValidity";
 
 type Status = "pending" | "in_progress" | "submitted" | "approved" | "rejected";
 
@@ -71,6 +72,7 @@ interface Deliverable {
   created_at: string;
   submitted_by: string | null;
   reviewed_by: string | null;
+  reviewed_at?: string | null;
   review_note: string | null;
   file_url: string | null;
   thumbnail_url: string | null;
@@ -134,6 +136,42 @@ function coverFor(d: Deliverable): { src: string; isWip: boolean } | null {
   if (firstImg) return { src: (firstImg.thumbnail_url || firstImg.url)!, isWip: false };
   return null;
 }
+
+// Read-only note next to the status badge: says which files an approval
+// covers and, when newer files exist, that it no longer applies. It never
+// changes the stored status (see lib/approvalValidity.ts).
+const ApprovalNote = ({ d }: { d: Deliverable }) => {
+  const v = evaluateApproval(d);
+  if (v.state === "not_approved") return null;
+  if (v.state === "unknown") {
+    return (
+      <p className="text-xs text-muted-foreground" title="This approval has no recorded review time, so it can't be matched to the current files.">
+        Approved — review time not recorded, so it can't be matched to the current files.
+      </p>
+    );
+  }
+  const when = new Date(v.reviewedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  if (v.state === "stale") {
+    return (
+      <p
+        className="flex items-start gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400"
+        title={`${v.newerFiles} file${v.newerFiles === 1 ? " was" : "s were"} uploaded after this was approved on ${when}. Review the new files before relying on this approval.`}
+      >
+        <Clock className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+        Approval no longer applies (new version uploaded). Last approved {when}.
+      </p>
+    );
+  }
+  return (
+    <p
+      className="flex items-start gap-1.5 text-xs text-emerald-600 dark:text-emerald-400"
+      title="Based on file upload times. No formal version number is recorded yet."
+    >
+      <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+      Approved {when} — covers the {v.coveredFiles} file{v.coveredFiles === 1 ? "" : "s"} uploaded up to then.
+    </p>
+  );
+};
 
 const initials = (n: string | null | undefined) =>
   (n ?? "?").split(/\s+/).map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
@@ -396,7 +434,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
     setLoading(true);
     const { data, error } = await supabase
       .from("project_deliverables")
-      .select("id,project_id,title,description,status,due_date,source,sort_order,created_at,submitted_by,reviewed_by,review_note,file_url,thumbnail_url,moodboard,kind,submission_files,assignee_id")
+      .select("id,project_id,title,description,status,due_date,source,sort_order,created_at,submitted_by,reviewed_by,reviewed_at,review_note,file_url,thumbnail_url,moodboard,kind,submission_files,assignee_id")
       .eq("project_id", projectId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
@@ -915,6 +953,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
                     <Badge variant="outline">via {selected.source}</Badge>
                   )}
                 </div>
+                <ApprovalNote d={selected} />
 
                 {/* Submitted work */}
                 {(selected.submission_files?.length ?? 0) > 0 && (
