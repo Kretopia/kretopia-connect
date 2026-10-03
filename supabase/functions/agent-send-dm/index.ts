@@ -15,6 +15,7 @@
 // pattern applied to copilot-collaborator-tools.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,44 +54,61 @@ serve(async (req) => {
 
     // Require proof that a human approved this specific send -- see module
     // doc above. The referenced orch_actions row just has to belong to this
-    // user and be approved/executed; we don't require its tool_name to be
+    // user and be approved (an already-executed action is rejected so it can't
+    // be replayed); we don't require its tool_name to be
     // exactly "send_dm" because the only legitimate caller today
     // (executeSpinUpProject) sends its kickoff DM as one step of an
     // already-approved "spin_up_project" bundle, not a standalone action.
+    //
+    // The decision itself lives in _shared/executionGuard.ts: the action must
+    // belong to the caller, be exactly 'approved' (an already 'executed' action
+    // can no longer be replayed), and carry an orch_approvals record by the
+    // caller with no rejected/revoked/cancelled record. When that can't be
+    // proven nothing is sent: the caller gets a "needs approval" result that
+    // includes the draft, so the user can still see what would have gone out.
     const agentActionId = body._agent_action_id ? String(body._agent_action_id) : null;
+    const draft = {
+      to_user_id: String(body.to_user_id ?? "").trim(),
+      body: String(body.body ?? "").trim(),
+    };
+    const blocked = (status: number, reason: string, needsApproval: boolean, message: string) =>
+      new Response(
+        JSON.stringify({ ok: false, executed: false, needs_approval: needsApproval, reason, error: message, draft }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
     if (!agentActionId) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "This endpoint requires an approved agent action (_agent_action_id). " +
-            "Route DM sends through agent-orchestrator's proposal/approval flow.",
-        }),
-        { status: 428, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      return blocked(
+        428,
+        "no_action",
+        true,
+        "This endpoint requires an approved agent action (_agent_action_id). " +
+          "Route DM sends through agent-orchestrator's proposal/approval flow.",
       );
     }
     {
       const SERVICE_KEY_CHECK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const adminCheck = createClient(SUPABASE_URL, SERVICE_KEY_CHECK);
-      const { data: approvedAction, error: actionLookupErr } = await adminCheck
-        .from("orch_actions")
-        .select("id, user_id, status")
-        .eq("id", agentActionId)
-        .maybeSingle();
-      if (actionLookupErr || !approvedAction) {
-        return new Response(JSON.stringify({ error: "Referenced agent action not found." }), {
-          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      const [actionRes, approvalsRes] = await Promise.all([
+        adminCheck.from("orch_actions").select("id, user_id, status, tool_name").eq("id", agentActionId).maybeSingle(),
+        adminCheck.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", agentActionId),
+      ]);
+      // A failed approvals lookup must not read as "no revocation": deny.
+      if (approvalsRes.error) {
+        return blocked(503, "approval_lookup_failed", false, "Could not verify the approval for this action.");
       }
-      if (approvedAction.user_id !== senderId) {
-        return new Response(JSON.stringify({ error: "Approved action does not belong to this user." }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (approvedAction.status !== "approved" && approvedAction.status !== "executed") {
-        return new Response(
-          JSON.stringify({ error: `Action is '${approvedAction.status}', not approved -- cannot send.` }),
-          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+      const verdict = evaluateExecutionGuard({
+        action: actionRes.error ? null : actionRes.data,
+        approvals: approvalsRes.data,
+        userId: senderId,
+        actionId: agentActionId,
+      });
+      if (!verdict.allowed) {
+        const status =
+          verdict.reason === "action_not_found" ? 404
+          : verdict.reason === "wrong_owner" || verdict.reason === "wrong_tool" ? 403
+          : verdict.needsApproval ? 428
+          : 409;
+        return blocked(status, verdict.reason, verdict.needsApproval, verdict.message);
       }
     }
 
