@@ -6,6 +6,7 @@ import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotCon
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
@@ -54,6 +55,13 @@ Deno.serve(async (req) => {
     const projectId: string | null = body.project_id ?? null;
     const surface: string = body.surface ?? "desk";
     if (!goal || goal.length < 4) return json({ error: "goal required" }, 400);
+
+    // The project lookup below runs with the service role, so a supplied
+    // project_id must be proven (owner / accepted collaborator) first.
+    if (projectId) {
+      const guard = await guardProjectAccess(admin, projectId, userId, corsHeaders);
+      if (!guard.ok) return guard.response;
+    }
 
     // Load tool catalog from registry — these are the only tools the planner can use
     const { data: tools } = await admin

@@ -5,6 +5,7 @@
 // exposed as a manual "Sync now" button on /recordings.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { userMayActOnCall } from "../_shared/projectAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,11 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const roomName: string | undefined = body?.room_name;
+    // Daily room names are [A-Za-z0-9_-]; reject anything else before it is
+    // interpolated into the Daily URL.
+    if (roomName !== undefined && (typeof roomName !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(roomName))) {
+      return json({ error: "invalid room_name" }, 400);
+    }
     // How many recent Daily recordings to scan when no room_name is given.
     const limit = Math.min(Math.max(Number(body?.limit ?? 25), 1), 100);
 
@@ -58,19 +64,29 @@ serve(async (req) => {
 
     const results: Array<{ recording_id: string; transcript_id?: string; skipped?: string; error?: string }> = [];
 
+    // The Daily key is account-wide, so the listing contains EVERY user's
+    // recordings. Only recordings of calls the caller may act on are touched or
+    // reported; everything else is skipped silently so ids don't leak.
+    const projectAccessCache = new Map<string, boolean>();
+    let scanned = 0;
+
     for (const rec of recordings) {
       const recordingId = rec.id;
       const rName = rec.room_name;
       if (!recordingId || !rName) continue;
+
+      const ctx = await findCall(admin, rName);
+      if (!ctx) continue;
+      const mayAct = await userMayActOnCall(admin, userId, ctx, {
+        allowParticipant: true,
+        cache: projectAccessCache,
+      });
+      if (!mayAct) continue;
+      scanned++;
+
       // Only recordings that have finished processing have a downloadable link.
       if (rec.status && rec.status !== "finished") {
         results.push({ recording_id: recordingId, skipped: `status=${rec.status}` });
-        continue;
-      }
-
-      const ctx = await findCall(admin, rName);
-      if (!ctx) {
-        results.push({ recording_id: recordingId, skipped: "no matching call" });
         continue;
       }
 
@@ -147,7 +163,7 @@ serve(async (req) => {
       results.push({ recording_id: recordingId, transcript_id: transcriptId });
     }
 
-    return json({ ok: true, scanned: recordings.length, results });
+    return json({ ok: true, scanned, results });
   } catch (e) {
     console.error("[sync-daily-recordings]", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);

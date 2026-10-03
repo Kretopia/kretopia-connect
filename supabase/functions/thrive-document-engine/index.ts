@@ -5,6 +5,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_PRO } from "../_shared/aiModels.ts";
+import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -527,6 +528,14 @@ serve(async (req) => {
 
     if (!intent || !INTENT_SKELETONS[intent]) {
       return new Response(JSON.stringify({ error: "Invalid intent" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // Every project read below uses the service role, so a supplied
+    // project_id must be proven (owner / accepted collaborator) first. This
+    // also rejects non-UUID values before they reach the .or() filter.
+    if (project_id) {
+      const guard = await guardProjectAccess(admin, project_id, user.id, corsHeaders);
+      if (!guard.ok) return guard.response;
     }
 
     const [profileRes, creditsRes, memoryRes, projectRes, factsRes, entitiesRes, brandRes, filesRes] = await Promise.all([

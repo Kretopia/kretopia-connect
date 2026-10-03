@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
@@ -51,15 +52,12 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Verify project access
-    const { data: hasAccess } = await admin.rpc("user_has_project_access", {
-      project_id_param: project_id, user_id_param: user.id,
-    });
-    if (!hasAccess) {
-      return new Response(JSON.stringify({ error: "No access to this project" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Verify project access: owner or ACCEPTED collaborator only. The old
+    // user_has_project_access RPC also admits 'pending' invitees, and this
+    // function reads with the service role below.
+    const guard = await guardProjectAccess(admin, project_id, user.id, corsHeaders);
+    if (!guard.ok) return guard.response;
+    const access = guard.access;
 
     // Daily limit check (free tier) -- tier is looked up server-side from
     // profiles.subscription_tier, never trusted from the client. Previously
@@ -94,9 +92,12 @@ Deno.serve(async (req) => {
 
     // Gather project context AND unified user identity (parallel)
     const [projectRes, tasksRes, milestonesRes, filesRes, messagesRes, notesRes, copilotCtx] = await Promise.all([
-      admin.from("projects").select("id, title, description, status, deadline, budget, currency, created_by").eq("id", project_id).single(),
+      // Money columns only for roles that may see money (owner / creative /
+      // collaborator) -- the service role would otherwise hand client and
+      // guest members budget and milestone amounts through the prompt.
+      admin.from("projects").select(access.canSeeMoney ? "id, title, description, status, deadline, budget, currency, created_by" : "id, title, description, status, deadline, currency, created_by").eq("id", project_id).single(),
       admin.from("project_tasks").select("title, status, due_date, assigned_to, priority").eq("project_id", project_id).order("created_at", { ascending: false }).limit(50),
-      admin.from("milestones").select("title, status, due_date, amount").eq("project_id", project_id).order("created_at").limit(20),
+      admin.from("milestones").select(access.canSeeMoney ? "title, status, due_date, amount" : "title, status, due_date").eq("project_id", project_id).order("created_at").limit(20),
       admin.from("project_files").select("file_name, file_type, created_at").eq("project_id", project_id).order("created_at", { ascending: false }).limit(20),
       admin.from("project_messages").select("user_id, message, created_at").eq("project_id", project_id).order("created_at", { ascending: false }).limit(30),
       admin.from("project_notes").select("title, content").eq("project_id", project_id).limit(10),
