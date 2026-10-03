@@ -5,6 +5,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
+import { projectHasExplicitShare, requireProjectAccess } from "../_shared/projectAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -165,42 +166,78 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { data: project, error } = await supabase
-      .from("projects")
-      .select("title, mood, workspace_type, created_by")
-      .eq("id", projectId)
-      .maybeSingle();
+    // This endpoint is public by design (link previews can't send a JWT), but
+    // it uses the service role, so project details are disclosed only when the
+    // project was deliberately put up for sharing (live guest link or pending
+    // invitation) or the caller is a proven owner / accepted collaborator.
+    // Anything else -- unknown id, unshared project, lookup error -- gets the
+    // same neutral card, so neither existence nor title leaks.
+    let mayDisclose = await projectHasExplicitShare(supabase, projectId);
+    if (!mayDisclose) {
+      const authHeader = req.headers.get("Authorization") ?? "";
+      if (authHeader.startsWith("Bearer ")) {
+        const userClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+          { global: { headers: { Authorization: authHeader } } },
+        );
+        const { data: userData } = await userClient.auth.getUser();
+        try {
+          await requireProjectAccess(supabase, projectId, userData?.user?.id);
+          mayDisclose = true;
+        } catch (_) {
+          mayDisclose = false;
+        }
+      }
+    }
 
-    if (error || !project) {
-      return new Response(JSON.stringify({ error: "Project not found" }), {
-        status: 404,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let svg: string;
+    if (!mayDisclose) {
+      svg = buildSvg({
+        title: "Project invitation",
+        workspaceLabel: "Project",
+        inviterName: null,
+        collaboratorCount: 0,
+        bg: moodColors(null),
+      });
+    } else {
+      const { data: project, error } = await supabase
+        .from("projects")
+        .select("title, mood, workspace_type, created_by")
+        .eq("id", projectId)
+        .maybeSingle();
+
+      if (error || !project) {
+        return new Response(JSON.stringify({ error: "Project not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let inviterName: string | null = null;
+      if (project.created_by) {
+        const { data: inviter } = await supabase
+          .from("public_profiles_safe")
+          .select("full_name")
+          .eq("user_id", project.created_by)
+          .maybeSingle();
+        inviterName = inviter?.full_name || null;
+      }
+
+      const { count: collaboratorCount } = await supabase
+        .from("project_collaborators")
+        .select("id", { count: "exact", head: true })
+        .eq("project_id", projectId)
+        .eq("status", "accepted");
+
+      svg = buildSvg({
+        title: project.title || "Untitled Project",
+        workspaceLabel: WORKSPACE_LABELS[project.workspace_type || "general"] || "Project",
+        inviterName,
+        collaboratorCount: collaboratorCount || 0,
+        bg: moodColors(project.mood),
       });
     }
-
-    let inviterName: string | null = null;
-    if (project.created_by) {
-      const { data: inviter } = await supabase
-        .from("public_profiles_safe")
-        .select("full_name")
-        .eq("user_id", project.created_by)
-        .maybeSingle();
-      inviterName = inviter?.full_name || null;
-    }
-
-    const { count: collaboratorCount } = await supabase
-      .from("project_collaborators")
-      .select("id", { count: "exact", head: true })
-      .eq("project_id", projectId)
-      .eq("status", "accepted");
-
-    const svg = buildSvg({
-      title: project.title || "Untitled Project",
-      workspaceLabel: WORKSPACE_LABELS[project.workspace_type || "general"] || "Project",
-      inviterName,
-      collaboratorCount: collaboratorCount || 0,
-      bg: moodColors(project.mood),
-    });
 
     await ensureWasm();
     const resvg = new Resvg(svg, { fitTo: { mode: "width", value: 1200 } });

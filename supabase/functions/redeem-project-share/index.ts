@@ -131,6 +131,43 @@ Deno.serve(async (req) => {
       if (!["approved", "revision_requested"].includes(decision)) {
         return json({ error: "invalid_decision" }, 400);
       }
+
+      // Bind the target to the link. This function writes with the service
+      // role, so without these checks any holder of ANY valid link could
+      // approve a deliverable (or record an approval for a file) in an
+      // unrelated project by sending its id.
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (deliverable_id != null && (typeof deliverable_id !== "string" || !UUID_RE.test(deliverable_id))) {
+        return json({ error: "invalid_deliverable" }, 400);
+      }
+      if (file_id != null && (typeof file_id !== "string" || !UUID_RE.test(file_id))) {
+        return json({ error: "invalid_file" }, 400);
+      }
+      if (deliverable_id) {
+        const { data: target, error: targetErr } = await supabase
+          .from("project_deliverables")
+          .select("id, project_id")
+          .eq("id", deliverable_id)
+          .maybeSingle();
+        if (targetErr || !target || target.project_id !== link.project_id) {
+          return json({ error: "deliverable_not_in_scope" }, 403);
+        }
+        // A deliverable-scoped link covers exactly that one deliverable.
+        if (link.scope === "deliverable" && link.scope_ref_id && link.scope_ref_id !== deliverable_id) {
+          return json({ error: "deliverable_not_in_scope" }, 403);
+        }
+      }
+      if (file_id) {
+        const { data: fileRow, error: fileErr } = await supabase
+          .from("project_files")
+          .select("id, project_id")
+          .eq("id", file_id)
+          .maybeSingle();
+        if (fileErr || !fileRow || fileRow.project_id !== link.project_id) {
+          return json({ error: "file_not_in_scope" }, 403);
+        }
+      }
+
       const { error: insErr } = await supabase
         .from("share_link_approvals")
         .insert({
@@ -151,7 +188,8 @@ Deno.serve(async (req) => {
           .update({
             status: decision === "approved" ? "approved" : "revision_requested",
           })
-          .eq("id", deliverable_id);
+          .eq("id", deliverable_id)
+          .eq("project_id", link.project_id);
       }
 
       return json({ ok: true });

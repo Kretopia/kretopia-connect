@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { userMayActOnCall } from "../_shared/projectAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,7 +56,9 @@ serve(async (req) => {
     const roomName = String(body.room_name ?? "").trim();
     const action = body.action === "stop" ? "stop" : "start";
     const stageId = body.stage_id ? String(body.stage_id) : null;
-    if (!roomName) {
+    // Daily room names are [A-Za-z0-9_-]; anything else is rejected before it
+    // reaches a query filter or the Daily URL.
+    if (!roomName || !/^[A-Za-z0-9_-]{1,128}$/.test(roomName)) {
       return new Response(JSON.stringify({ error: "room_name required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -82,6 +85,55 @@ serve(async (req) => {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Not a stage: this used to fall through and let ANY authenticated user
+    // start/stop paid Daily transcription on any room name. Fail closed -- the
+    // room must resolve to a call the caller hosts, or to a project call /
+    // meeting of a project where they are an accepted non-guest member.
+    if (!hostUserId) {
+      const escaped = roomName.replace(/_/g, "\\_");
+      let call: { host_id?: string | null; project_id?: string | null } | null = null;
+
+      const { data: mtg } = await admin
+        .from("meetings")
+        .select("host_id, project_id")
+        .eq("room_name", roomName)
+        .maybeSingle();
+      if (mtg) call = { host_id: mtg.host_id, project_id: mtg.project_id };
+
+      if (!call) {
+        const { data: pCall } = await admin
+          .from("project_video_calls")
+          .select("started_by, project_id")
+          .ilike("room_url", `%/${escaped}`)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (pCall) call = { host_id: pCall.started_by, project_id: pCall.project_id };
+      }
+      if (!call) {
+        for (const t of ["direct_video_calls", "circle_video_calls"]) {
+          const { data: row } = await admin
+            .from(t)
+            .select("started_by")
+            .eq("room_name", roomName)
+            .order("started_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (row) {
+            call = { host_id: row.started_by };
+            break;
+          }
+        }
+      }
+
+      if (!call || !(await userMayActOnCall(admin, userId, call))) {
+        return new Response(JSON.stringify({ error: "Not allowed to control this room" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const url = `${DAILY_API}/rooms/${encodeURIComponent(roomName)}/transcription/${action}`;
