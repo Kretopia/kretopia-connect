@@ -13,6 +13,7 @@ import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureS
 import { KRETO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { InlineKretoChat } from "@/components/kreto/InlineKretoChat";
 import { KretoConversationHistory } from "@/components/kreto/KretoConversationHistory";
+import { summarizeRunApproval, type ApprovalTone } from "../../supabase/functions/_shared/executionGuard";
 
 const QUICK_ACTIONS = [
   {
@@ -48,7 +49,17 @@ interface RecentAction {
   id: string;
   title: string;
   status: string;
+  runLabel: string;
+  approvalLabel: string;
+  tone: ApprovalTone;
 }
+
+const TONE_CLASS: Record<ApprovalTone, string> = {
+  ok: "text-foreground/45",
+  waiting: "text-amber-600 dark:text-amber-400",
+  blocked: "text-destructive",
+  unknown: "text-foreground/45",
+};
 
 interface PassportSnapshot {
   full_name: string | null;
@@ -95,7 +106,7 @@ export default function KretoTab() {
           .limit(1),
         supabase
           .from("orch_actions")
-          .select("id, preview_title, tool_name, status")
+          .select("id, preview_title, tool_name, status, orch_runs(status), orch_approvals(decision, user_id)")
           .eq("user_id", user.id)
           .order("proposed_at", { ascending: false })
           .limit(3),
@@ -104,11 +115,24 @@ export default function KretoTab() {
       setPassport(profile ?? null);
       setGig(gigs?.[0] ?? null);
       setActions(
-        (actionRows ?? []).map((r) => ({
-          id: r.id,
-          title: r.preview_title || r.tool_name,
-          status: r.status,
-        })),
+        (actionRows ?? []).map((r) => {
+          // Recorded state only (existing orch_runs / orch_approvals columns);
+          // an RLS-hidden or missing run reads as "Unknown", never as success.
+          const run = Array.isArray(r.orch_runs) ? r.orch_runs[0] : r.orch_runs;
+          const summary = summarizeRunApproval({
+            runStatus: run?.status,
+            actionStatus: r.status,
+            approvals: r.orch_approvals ?? [],
+          });
+          return {
+            id: r.id,
+            title: r.preview_title || r.tool_name,
+            status: r.status,
+            runLabel: summary.runLabel,
+            approvalLabel: summary.approvalLabel,
+            tone: summary.tone,
+          };
+        }),
       );
       setLoadingContext(false);
     })();
@@ -224,10 +248,15 @@ export default function KretoTab() {
                           ? ShieldQuestion
                           : Clock;
                     return (
-                      <div key={a.id} className="flex items-center gap-2.5 text-sm">
-                        <Icon className="h-3.5 w-3.5 text-foreground/40 shrink-0" aria-hidden />
-                        <span className="truncate flex-1">{a.title}</span>
-                        <span className="text-[10px] uppercase tracking-wider text-foreground/40 shrink-0">{a.status}</span>
+                      <div key={a.id}>
+                        <div className="flex items-center gap-2.5 text-sm">
+                          <Icon className="h-3.5 w-3.5 text-foreground/40 shrink-0" aria-hidden />
+                          <span className="truncate flex-1">{a.title}</span>
+                          <span className="text-[10px] uppercase tracking-wider text-foreground/40 shrink-0">{a.status}</span>
+                        </div>
+                        <p className={`pl-6 text-[11px] ${TONE_CLASS[a.tone]}`}>
+                          Run: {a.runLabel} · Approval: {a.approvalLabel}
+                        </p>
                       </div>
                     );
                   })}
