@@ -7,6 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,9 +49,59 @@ serve(async (req) => {
       .maybeSingle();
 
     if (dErr || !draft) return json({ error: "Draft not found" }, 404);
+
+    // Agent-initiated sends (agent-orchestrator passes _agent_action_id and
+    // _source) must carry proof that a human approved this action; the rule
+    // lives in _shared/executionGuard.ts. Nothing is sent otherwise -- the
+    // caller gets a "needs approval" result with the draft instead. A person
+    // pressing Send in the app (no agent markers) is their own approval, as in
+    // _shared/agentAuthority.ts. NOTE: the markers are caller-asserted, so this
+    // gates well-behaved agent callers, not a caller that omits them.
+    const agentActionId = body?._agent_action_id ? String(body._agent_action_id) : null;
+    const claimedSource = String(body?._source ?? "").trim();
+    const agentInitiated =
+      !!agentActionId || claimedSource === "agent_orchestrator" || claimedSource === "desk_agent";
+    if (agentInitiated) {
+      const preview = { draft_id: draft.id, to: draft.recipient_email ?? null, subject: draft.subject, body: draft.body };
+      const blocked = (status: number, reason: string, needsApproval: boolean, message: string) =>
+        json({ ok: false, executed: false, needs_approval: needsApproval, reason, error: message, draft: preview }, status);
+      if (!agentActionId) {
+        return blocked(428, "no_action", true, "This send requires an approved agent action (_agent_action_id).");
+      }
+      const [actionRes, approvalsRes] = await Promise.all([
+        admin.from("orch_actions").select("id, user_id, status, tool_name, tool_args").eq("id", agentActionId).maybeSingle(),
+        admin.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", agentActionId),
+      ]);
+      // A failed approvals lookup must not read as "no revocation": deny.
+      if (approvalsRes.error) {
+        return blocked(503, "approval_lookup_failed", false, "Could not verify the approval for this action.");
+      }
+      const verdict = evaluateExecutionGuard({
+        action: actionRes.error ? null : actionRes.data,
+        approvals: approvalsRes.data,
+        userId,
+        actionId: agentActionId,
+      });
+      if (!verdict.allowed) {
+        const status =
+          verdict.reason === "action_not_found" ? 404
+          : verdict.reason === "wrong_owner" || verdict.reason === "wrong_tool" ? 403
+          : verdict.needsApproval ? 428
+          : 409;
+        return blocked(status, verdict.reason, verdict.needsApproval, verdict.message);
+      }
+      // The approval must be for THIS draft, not another one.
+      const approvedDraftId = (actionRes.data?.tool_args as Record<string, unknown> | null)?.draft_id;
+      if (typeof approvedDraftId === "string" && approvedDraftId !== String(draftId)) {
+        return blocked(403, "wrong_draft", false, "The approved action is for a different draft.");
+      }
+    }
+
     if (draft.status === "sent") return json({ ok: true, alreadySent: true });
 
-    const recipient = recipientOverride || draft.recipient_email;
+    // An approved agent send goes to the address that was previewed; only a
+    // person in the app may override the recipient.
+    const recipient = agentInitiated ? draft.recipient_email : (recipientOverride || draft.recipient_email);
     if (!recipient) {
       await admin.from("outreach_drafts").update({ status: "failed", send_error: "No recipient email" }).eq("id", draftId);
       return json({ error: "No recipient email on draft. Add one then retry." }, 400);
