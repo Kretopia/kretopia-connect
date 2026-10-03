@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
@@ -222,7 +223,7 @@ const TOOLS = [
     function: {
       name: "add_collaborator",
       description:
-        "Add a user to a project as a collaborator (Auto-Accept — they land in the project immediately). Caller MUST be the project owner. Defaults to the CURRENT project_id unless target_project_id is given.",
+        "Propose adding a user to a project as a collaborator (queued for the user's explicit approval, never executes immediately — they only get access once the user taps Approve). Caller MUST be the project owner. Defaults to the CURRENT project_id unless target_project_id is given.",
       parameters: {
         type: "object",
         properties: {
@@ -528,7 +529,7 @@ DECISION RULES:
    - LOW (ambiguous) → call ask_clarification with one short question.
 4. Multi-step: chain 2 tool calls max per turn (e.g. summary + suggested task). For "wrap up project" type requests, prefer get_project_summary + one concrete next action.
 5. Never invent collaborator ids — only use ones from the list above.
-6. SAFETY: draft_invoice creates a DRAFT only — never auto-send. add_credit logs to the user's own profile (safe). start_video_call posts a join link in chat (safe). remove_collaborator is NEVER executed immediately — it is queued for the user's explicit approval (tap-to-confirm), since it revokes someone's access.
+6. SAFETY: draft_invoice creates a DRAFT only — never auto-send. add_credit logs to the user's own profile (safe). start_video_call posts a join link in chat (safe). remove_collaborator and add_collaborator are NEVER executed immediately — they are queued for the user's explicit approval (tap-to-confirm), since they change who has access.
 7. Money rule: if the user asks for an invoice without an amount, ask_clarification for amount + brief description. If the only source for an amount is a STUDIO BRAIN fact marked [UNVERIFIED], do NOT pass it straight to draft_invoice or draft_quote -- ask_clarification to have the user restate or confirm the number in this conversation first, even if they didn't ask you to double-check it.
 8. Keep tool arg \`message\` / \`title\` / \`question\` natural, friendly, under 200 chars.
 9. Treat USER FACTS as the only ground truth — never invent projects, invoices, or activity not listed.
@@ -868,17 +869,124 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
               });
             }
           }
+        } else if (name === "add_collaborator") {
+          // add_collaborator gives a person full project access and notifies
+          // them. Its registry risk level is requires_approval, but this door
+          // used to run it straight from the model's tool call. It now runs
+          // only when approval is PROVEN for this exact person and project
+          // (_shared/executionGuard.ts: caller's approved orch_actions row +
+          // caller's orch_approvals record, no rejected/revoked/cancelled
+          // record, not already executed). Otherwise nothing is added and the
+          // request is queued as a proposal, like remove_collaborator above.
+          const targetProjectId = String(args.target_project_id || project_id);
+          const addUserId = String(args.user_id_to_add || "");
+          const addRole = String(args.role || "collaborator");
+          const agentActionId = typeof body?._agent_action_id === "string" ? body._agent_action_id : null;
+          const alreadyAddedThisTurn = actions.some(
+            (x) => x.tool === "add_collaborator" && x.ok && !(x.result as any)?.needs_approval,
+          );
+
+          if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(addUserId)) {
+            actions.push({
+              tool: name,
+              args,
+              result: { error: "I need to find that person first, so I can't add them yet." },
+              ok: false,
+            });
+          } else {
+            let approvalProven = false;
+            if (agentActionId && !alreadyAddedThisTurn) {
+              const [actionRes, approvalsRes] = await Promise.all([
+                admin.from("orch_actions").select("id, user_id, status, tool_name, tool_args").eq("id", agentActionId).maybeSingle(),
+                admin.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", agentActionId),
+              ]);
+              // A failed lookup of either record means "not proven": no side effect.
+              if (!approvalsRes.error && !actionRes.error) {
+                const verdict = evaluateExecutionGuard({
+                  action: actionRes.data,
+                  approvals: approvalsRes.data,
+                  userId: user.id,
+                  expectedTool: "add_collaborator",
+                  actionId: agentActionId,
+                });
+                // The approval must be for exactly this person and project.
+                const approvedArgs = (actionRes.data?.tool_args ?? {}) as Record<string, unknown>;
+                approvalProven =
+                  verdict.allowed &&
+                  String(approvedArgs.user_id_to_add ?? approvedArgs.user_id ?? "") === addUserId &&
+                  String(approvedArgs.project_id ?? approvedArgs.target_project_id ?? "") === targetProjectId;
+              }
+            }
+
+            if (approvalProven) {
+              const { data, error } = await admin.functions.invoke("copilot-collaborator-tools", {
+                body: { _tool: name, ...args, target_project_id: targetProjectId, _source: "desk_agent", _agent_action_id: agentActionId },
+                headers: { Authorization: authHeader },
+              });
+              if (error) throw error;
+              const ok = (data as any)?.ok !== false && !(data as any)?.error;
+              actions.push({ tool: name, args, result: data, ok });
+            } else {
+              const { data: addProfile } = await admin
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", addUserId)
+                .maybeSingle();
+              const inviteeName = (addProfile as any)?.full_name ?? null;
+              const projectLabel = targetProjectId === project_id ? `"${project?.title ?? "this project"}"` : "another project";
+              const { data: proposalRun, error: runErr } = await admin
+                .from("orch_runs")
+                .insert({
+                  user_id: user.id,
+                  agent_kind: "project_manager",
+                  intent_text: message,
+                  intent_classified: "ThriveDesk — add_collaborator (needs approval)",
+                  context: { project_id: targetProjectId, source: "desk_agent" },
+                  status: "awaiting_approval",
+                  source: "desk_agent",
+                  model: GEMINI_3_FLASH,
+                  tool_call_count: 1,
+                  tool_names: ["add_collaborator"],
+                })
+                .select("id")
+                .single();
+              if (runErr || !proposalRun) {
+                actions.push({ tool: name, args, result: { error: "Could not queue that for approval." }, ok: false });
+              } else {
+                const { data: proposalAction, error: actionErr } = await admin
+                  .from("orch_actions")
+                  .insert({
+                    run_id: proposalRun.id,
+                    user_id: user.id,
+                    tool_name: "add_collaborator",
+                    tool_args: { project_id: targetProjectId, user_id_to_add: addUserId, role: addRole },
+                    risk_level: "requires_approval",
+                    status: "proposed",
+                    source: "desk_agent",
+                    preview_title: `Add ${inviteeName ?? "collaborator"} to ${projectLabel}`,
+                    preview_body: `${inviteeName ?? "They"} will get full access to this project's chat, tasks, files and calls, and be notified.`,
+                  })
+                  .select("*")
+                  .single();
+                if (actionErr || !proposalAction) {
+                  actions.push({ tool: name, args, result: { error: "Could not queue that for approval." }, ok: false });
+                } else {
+                  actions.push({
+                    tool: name,
+                    args,
+                    result: { needs_approval: true, action: proposalAction, invitee_name: inviteeName },
+                    ok: true,
+                  });
+                }
+              }
+            }
+          }
         } else if (
           name === "find_user" ||
-          name === "list_my_projects" ||
-          name === "add_collaborator"
+          name === "list_my_projects"
         ) {
           // Delegate to copilot-collaborator-tools (runs under caller's JWT, RLS-safe)
           const payload: Record<string, unknown> = { _tool: name, ...args, _source: "desk_agent" };
-          if (name === "add_collaborator") {
-            // Default target_project_id to current project_id when null/missing
-            if (!payload.target_project_id) payload.target_project_id = project_id;
-          }
           const { data, error } = await admin.functions.invoke("copilot-collaborator-tools", {
             body: payload,
             headers: { Authorization: authHeader },
@@ -928,7 +1036,9 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
         finalReply = `Credit added: ${a.result.role} on "${a.result.project_name}".`;
       else if (a.tool === "add_collaborator" && a.ok) {
         const r: any = a.result || {};
-        finalReply = `Added ${r.invitee_name ?? "them"} to ${r.project_title ?? "the project"}. They'll see it in their Desk.`;
+        finalReply = r.needs_approval
+          ? `Queued adding ${r.invitee_name ?? "them"} — tap Approve to confirm, they get access as soon as you do.`
+          : `Added ${r.invitee_name ?? "them"} to ${r.project_title ?? "the project"}. They'll see it in their Desk.`;
       }
       else if (a.tool === "remove_collaborator" && a.ok) {
         const r: any = a.result || {};
