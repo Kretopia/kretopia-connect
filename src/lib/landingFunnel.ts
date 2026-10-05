@@ -21,9 +21,7 @@ import { trackEvent, EventCategory } from "@/lib/analytics";
 export const LANDING_SECTION_ORDER = [
   "kretopia-hero",
   "chapter-loop",
-  "inline-signup",
   "chapter-passport",
-  "chapter-verified-credits",
   "chapter-scout",
   "chapter-match",
   "chapter-studio",

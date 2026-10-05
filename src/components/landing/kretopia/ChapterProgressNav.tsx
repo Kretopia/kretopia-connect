@@ -1,6 +1,6 @@
 /**
  * ChapterProgressNav — persistent progress + jump navigation for the
- * landing tutorial. Tracks which of the 8 tutorial chapters is currently
+ * landing tutorial. Tracks which of the tutorial chapters is currently
  * in view (via IntersectionObserver, observed by element id rather than
  * React refs since chapters live in different component subtrees — some
  * eager, most lazy-loaded via LandingBelowFold), highlights the active one
@@ -15,11 +15,6 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { CHAPTER_REGISTRY as CHAPTERS } from "./chapterRegistry";
-import { kGlow } from "@/lib/kGradient";
-
-// Focus-outline only (see usage below) -- a solid stop from the Kretopia
-// logo gradient, not the retired flat pink/magenta.
-const ACCENT = "#A516C5";
 
 interface ChapterProgressNavProps {
   /** Whether the below-fold chapters have mounted yet — re-scans anchors once true. */
@@ -77,7 +72,7 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
         },
         { rootMargin: "-45% 0px -45% 0px" }, // fires when a chapter crosses the vertical center
       );
-      els.forEach((el) => activeIO!.observe(el));
+       els.forEach((el) => activeIO?.observe(el));
     };
 
     trySetup();
@@ -112,23 +107,15 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
               onClick={() => jumpTo(c.id)}
               aria-current={active ? "true" : undefined}
               aria-label={`Jump to ${c.label} chapter`}
-              className="group flex items-center gap-2.5 focus:outline-none"
+               className="group flex items-center gap-2.5 focus-visible:outline-none"
             >
               <span
-                className={`text-[10px] font-medium uppercase tracking-[0.18em] whitespace-nowrap opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0${active ? " text-foreground" : ""}`}
-                style={{ color: active ? undefined : "rgba(255,255,255,0.6)", fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                 className="text-[10px] font-medium uppercase whitespace-nowrap text-foreground opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0"
               >
                 {c.label}
               </span>
               <span
-                className={`block rounded-full transition-all duration-200 group-focus-visible:ring-2 group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-transparent${active ? " k-gradient-fill" : ""}`}
-                style={{
-                  width: active ? "8px" : "6px",
-                  height: active ? "8px" : "6px",
-                  backgroundColor: active ? undefined : "rgba(255,255,255,0.3)",
-                  boxShadow: active ? `0 0 0 4px ${kGlow(18)}` : "none",
-                  outlineColor: ACCENT,
-                }}
+                 className={`block rounded-full bg-[image:var(--k-text-gradient)] transition-all duration-300 group-hover:scale-125 group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background ${active ? "h-2 w-2 opacity-100 shadow-[0_0_0_4px_hsl(var(--background))]" : "h-1.5 w-1.5 opacity-65 group-hover:opacity-100"}`}
               />
             </button>
           );

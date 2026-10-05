@@ -17,7 +17,6 @@ export interface ChapterMeta {
 export const CHAPTER_REGISTRY: ChapterMeta[] = [
   { id: "kretopia-hero", label: "Search" },
   { id: "chapter-passport", label: "Passport" },
-  { id: "chapter-verified-credits", label: "Verified Credits" },
   { id: "chapter-scout", label: "Scout" },
   { id: "chapter-match", label: "Match" },
   { id: "chapter-studio", label: "Studio" },

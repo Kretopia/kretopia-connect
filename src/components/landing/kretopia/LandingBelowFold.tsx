@@ -12,9 +12,7 @@
  * or reordering a chapter here never requires hand-patching a number
  * anywhere else.
  */
-import { InlineSignupBar } from "@/components/landing/kretopia/InlineSignupBar";
 import { ChapterSection } from "@/components/landing/kretopia/ChapterSection";
-import { VerifiedCreditsChapterSection } from "@/components/landing/kretopia/VerifiedCreditsChapterSection";
 import { ProductLoopSection } from "@/components/landing/kretopia/ProductLoopSection";
 import { MeetKretoSection } from "@/components/landing/kretopia/MeetKretoSection";
 import { ForOrganisationsSection } from "@/components/landing/kretopia/ForOrganisationsSection";
@@ -26,8 +24,7 @@ import {
   STUDIO_TUTORIAL, SOUNDSTAGES_TUTORIAL,
 } from "@/components/landing/kretopia/tutorialContent";
 import {
-  PassportVisual, ScoutVisual, MatchVisual,
-  StudioVisual, SoundStagesVisual,
+  PassportVisual, ScoutVisual, StudioVisual,
 } from "@/components/landing/kretopia/featureVisuals";
 
 import passportImg    from "@/assets/kretopia/chapter-passport.jpg";
@@ -54,9 +51,6 @@ export const LandingBelowFold = () => {
           the persistent navbar itself, see Navbar.tsx). Shows how a Passport
           becomes discovery becomes execution becomes a stronger Passport. */}
       <ProductLoopSection />
-
-      {/* First conversion beat — most visitors never reach the closing CTA */}
-      <InlineSignupBar />
 
       {/* Passport */}
       <ChapterSection
@@ -95,11 +89,6 @@ export const LandingBelowFold = () => {
         tutorialVisual={PassportVisual}
         discreetTutorial
       />
-
-      {/* Verified Credits — the canonical tutorial reference. Its own
-          closing beat now carries the one Trust line that used to be a
-          separate, un-tracked section restating this same evidence data. */}
-      <VerifiedCreditsChapterSection />
 
       {/* Scout */}
       <ChapterSection
@@ -158,7 +147,7 @@ export const LandingBelowFold = () => {
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"
         tutorialSteps={MATCH_TUTORIAL}
-        tutorialVisual={MatchVisual}
+        discreetTutorial
       />
 
       {/* Studio */}
@@ -213,7 +202,7 @@ export const LandingBelowFold = () => {
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"
         tutorialSteps={SOUNDSTAGES_TUTORIAL}
-        tutorialVisual={SoundStagesVisual}
+        discreetTutorial
         kretoVariant="connector"
       />
 
