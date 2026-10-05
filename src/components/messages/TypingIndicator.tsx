@@ -6,24 +6,76 @@ interface TypingIndicatorProps {
   currentUserId: string;
 }
 
+type RealtimeChannel = ReturnType<typeof supabase.channel>;
+type Listener = (channel: RealtimeChannel) => void;
+
+interface SharedTypingChannel {
+  channel: RealtimeChannel;
+  listeners: Set<Listener>;
+  refs: number;
+  subscribed: boolean;
+  onSubscribed: Set<() => void>;
+}
+
+// One realtime channel per conversation, shared by the indicator and the
+// sender hook. Supabase reuses channels by topic, so registering presence
+// callbacks on a second instance after subscribe() throws and crashes Messages.
+const sharedChannels = new Map<string, SharedTypingChannel>();
+
+const acquireTypingChannel = (a: string, b: string): { name: string; entry: SharedTypingChannel } => {
+  const name = `typing:${[a, b].sort().join("-")}`;
+  let entry = sharedChannels.get(name);
+  if (!entry) {
+    const channel = supabase.channel(name);
+    const created: SharedTypingChannel = {
+      channel,
+      listeners: new Set(),
+      refs: 0,
+      subscribed: false,
+      onSubscribed: new Set(),
+    };
+    channel.on("presence", { event: "sync" }, () => {
+      created.listeners.forEach((fn) => fn(channel));
+    });
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") {
+        created.subscribed = true;
+        created.onSubscribed.forEach((fn) => fn());
+      }
+    });
+    entry = created;
+    sharedChannels.set(name, entry);
+  }
+  entry.refs += 1;
+  return { name, entry };
+};
+
+const releaseTypingChannel = (name: string) => {
+  const entry = sharedChannels.get(name);
+  if (!entry) return;
+  entry.refs -= 1;
+  if (entry.refs <= 0) {
+    sharedChannels.delete(name);
+    supabase.removeChannel(entry.channel);
+  }
+};
+
 export const TypingIndicator = ({ recipientId, currentUserId }: TypingIndicatorProps) => {
   const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
-    // Subscribe to presence channel for typing indicators
-    const channel = supabase.channel(`typing:${[currentUserId, recipientId].sort().join('-')}`)
-      .on('presence', { event: 'sync' }, () => {
-        const state = channel.presenceState();
-        const allPresences = Object.values(state).flat();
-        const recipientTyping = allPresences.some(
-          (presence: any) => presence.userId === recipientId && presence.typing
-        );
-        setIsTyping(recipientTyping);
-      })
-      .subscribe();
-
+    if (!recipientId || !currentUserId) return;
+    const { name, entry } = acquireTypingChannel(currentUserId, recipientId);
+    const listener: Listener = (channel) => {
+      const allPresences = Object.values(channel.presenceState()).flat();
+      setIsTyping(
+        allPresences.some((p: any) => p.userId === recipientId && p.typing)
+      );
+    };
+    entry.listeners.add(listener);
     return () => {
-      supabase.removeChannel(channel);
+      entry.listeners.delete(listener);
+      releaseTypingChannel(name);
     };
   }, [recipientId, currentUserId]);
 
@@ -43,32 +95,29 @@ export const TypingIndicator = ({ recipientId, currentUserId }: TypingIndicatorP
 
 // Hook for sending typing status
 export const useTypingStatus = (recipientId: string, currentUserId: string) => {
-  const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null);
-  
+  const [channel, setChannel] = useState<RealtimeChannel | null>(null);
+
   useEffect(() => {
     if (!recipientId || !currentUserId) return;
-    
-    const channelName = `typing:${[currentUserId, recipientId].sort().join('-')}`;
-    const ch = supabase.channel(channelName);
-    
-    ch.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await ch.track({ userId: currentUserId, typing: false });
-      }
-    });
-    
-    setChannel(ch);
-    
+    const { name, entry } = acquireTypingChannel(currentUserId, recipientId);
+    const announce = () => {
+      entry.channel.track({ userId: currentUserId, typing: false }).catch(() => {});
+    };
+    if (entry.subscribed) announce();
+    else entry.onSubscribed.add(announce);
+    setChannel(entry.channel);
     return () => {
-      supabase.removeChannel(ch);
+      entry.onSubscribed.delete(announce);
+      setChannel(null);
+      releaseTypingChannel(name);
     };
   }, [recipientId, currentUserId]);
-  
+
   const setTyping = async (typing: boolean) => {
     if (channel) {
-      await channel.track({ userId: currentUserId, typing });
+      await channel.track({ userId: currentUserId, typing }).catch(() => {});
     }
   };
-  
+
   return { setTyping };
 };
