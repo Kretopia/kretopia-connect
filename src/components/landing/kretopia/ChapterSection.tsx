@@ -251,8 +251,9 @@ export const ChapterSection = ({
               </p>
             )}
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <div className="mt-9 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
               <GlassCta
+                className="h-12 w-full py-0"
                 to={`${href}${href.includes("?") ? "&" : "?"}tab=signup&src=${sectionId}`}
                 onClick={() =>
                   trackLandingCtaClick({
