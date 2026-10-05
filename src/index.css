@@ -1026,12 +1026,6 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
   color: hsl(var(--muted-foreground));
 }
 
-/* Feature chapters keep the tour action out of the eyebrow's reading line. */
-.feature-reference-header .feature-tutorial-trigger {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-}
 
 .landing-h1 {
   font-family: var(--font-family-brand);
