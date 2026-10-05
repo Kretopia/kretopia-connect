@@ -107,7 +107,7 @@ export const ProactiveCards = ({
   useEffect(() => {
     if (!project?.id) return;
     const ch = supabase
-      .channel(`proposals:${project.id}`)
+      .channel(`proposals:${project.id}:${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         {
