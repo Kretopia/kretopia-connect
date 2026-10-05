@@ -77,21 +77,20 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         align="center"
         oneLine={oneLine}
         compact={compact}
-        footer={
-          <div className="mt-5 flex flex-col items-center gap-5">
-            {/* The tutorial trigger sits centered, directly under the main
-                title/subtitle block — same placement as Perks' own header. */}
-            {tutorial && (
-              <FeatureAITutorial
-                featureKey={tutorial.featureKey}
-                label={tutorial.label}
-                steps={tutorial.steps}
-                className="mt-0"
-              />
-            )}
-            {tabs && <div className="w-full">{tabs}</div>}
-          </div>
+        cornerSlot={
+          // The tutorial trigger floats in the header's corner instead of
+          // sitting between the subtitle and the first card — no sandwich.
+          tutorial && (
+            <FeatureAITutorial
+              featureKey={tutorial.featureKey}
+              label={tutorial.label}
+              steps={tutorial.steps}
+              variant="floating"
+              className="feature-tutorial-trigger z-10"
+            />
+          )
         }
+        footer={tabs && <div className="mt-6">{tabs}</div>}
       />
     </div>
   );
