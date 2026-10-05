@@ -44,10 +44,10 @@ import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { GlassCta } from "@/components/ui/glass-cta";
-// Assets imported through Vite (src/components/kreto/): hashed URL in production,
+// Reflected artwork imported through Vite: hashed URL in production,
 // no hand-written path to maintain. Both files are well over 4 KB, so never inlined as base64.
-import kretoBodyUrl from "@/components/kreto/Kreto_06_Waving_body.webp";
-import kretoArmUrl from "@/components/kreto/Kreto_06_Waving_arm.webp";
+import kretoBodyUrl from "@/assets/brand/kreto/hero-reflection-body.webp";
+import kretoArmUrl from "@/assets/brand/kreto/hero-reflection-arm.webp";
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
