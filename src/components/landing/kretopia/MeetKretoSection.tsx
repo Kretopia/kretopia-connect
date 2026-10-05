@@ -88,7 +88,7 @@ export const MeetKretoSection = () => {
             transition={{ duration: 0.7 }}
             className="lg:col-span-7"
           >
-            <p className="landing-eyebrow mb-4">{chapterRoman("chapter-kreto")} · Kreto</p>
+            <p className="landing-eyebrow mb-4">{chapterRoman("chapter-kreto")}. Kreto</p>
 
             <h2 id="kreto-title" className="landing-h2 landing-glow">
               The Executive Producer for your{" "}

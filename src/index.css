@@ -808,6 +808,11 @@ All colors MUST be HSL.
   }
 }
 
+/* Keep chapter jumps and in-page anchors fluid without changing other routes. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.landing-theme) { scroll-behavior: smooth; }
+}
+
 /* Scrollbar hide utility */
 .scrollbar-hide {
   -ms-overflow-style: none;

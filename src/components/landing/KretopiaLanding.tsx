@@ -8,12 +8,11 @@
  *
  *   I.    Search           — the Hero's live search bar + its tutorial
  *   II.   Passport
- *   III.  Verified Credits — the canonical tutorial reference
- *   IV.   Scout
- *   V.    Match
- *   VI.   Studio
- *   VII.  SoundStages
- *   VIII. Kreto             — the Executive Producer
+  *   III.  Scout
+  *   IV.   Match
+  *   V.    Studio
+  *   VI.   Kreto             — the Executive Producer
+  *   VII.  Community
  *
  * Chapter numbers are computed from chapterRegistry.ts, not hand-typed —
  * see that file for the single source of truth ChapterProgressNav also
