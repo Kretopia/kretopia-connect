@@ -63,7 +63,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         }}
       />
       <CinematicHeaderPlate
-        eyebrow={eyebrow}
+        eyebrow={tutorial ? undefined : eyebrow}
         title={title}
         accentTitle={accentTitle}
         subtitle={subtitle}
@@ -77,16 +77,13 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         align="center"
         oneLine={oneLine}
         compact={compact}
-        cornerSlot={
-          // The tutorial trigger floats in the header's corner instead of
-          // sitting between the subtitle and the first card — no sandwich.
+        preTitle={
           tutorial && (
             <FeatureAITutorial
               featureKey={tutorial.featureKey}
               label={tutorial.label}
               steps={tutorial.steps}
-              variant="floating"
-              className="feature-tutorial-trigger z-10"
+              className="mt-0 relative z-10"
             />
           )
         }

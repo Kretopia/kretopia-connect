@@ -40,4 +40,12 @@ describe("CinematicHeaderPlate", () => {
     expect(accent).toHaveTextContent("Find your people.");
     expect(accent?.children).toHaveLength(0);
   });
+
+  it("places a tutorial action above the heading instead of the eyebrow", () => {
+    render(<CinematicHeaderPlate eyebrow="Scout" preTitle={<button>How this works</button>} title="Scout." />);
+    const action = screen.getByRole("button", { name: "How this works" });
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(action.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByText("Scout")).not.toBeInTheDocument();
+  });
 });

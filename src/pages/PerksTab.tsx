@@ -56,10 +56,7 @@ export default function PerksTab() {
           <PageBackButton />
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
           <div className="relative flex flex-col items-center text-center">
-            <p className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[hsl(var(--energy))] mb-3 px-2.5 py-1 rounded-full border border-[hsl(var(--energy)/0.35)] bg-[hsl(var(--energy)/0.06)] backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--energy))] shadow-[0_0_8px_hsl(var(--energy)/0.8)]" />
-              ThriveStatus
-            </p>
+            <FeatureAITutorial featureKey="perks" label="How Perks works" steps={PERKS_TUTORIAL} className="mb-4 mt-0" />
             <div ref={titleWrapperRef} className="w-full max-w-3xl">
               <h1
                 ref={titleRef}
@@ -73,7 +70,6 @@ export default function PerksTab() {
               What each ThriveStatus tier unlocks. Perks stack as your verified credits and
               reputation grow.
             </p>
-            <FeatureAITutorial featureKey="perks" label="How Perks works" steps={PERKS_TUTORIAL} />
           </div>
         </div>
 

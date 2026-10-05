@@ -2,7 +2,7 @@
  * CinematicHeaderPlate — the shared render core behind FeaturePageHeader and
  * EditorialPageHero. Both components wrap this with their own outer element
  * and backdrop layers (aurora/grid/grain) and pass through their own extras
- * (tutorial trigger, tabs, children) via `cornerSlot`/`footer` — but the
+ * (tutorial trigger, tabs, children) via `preTitle`/`footer` — but the
  * eyebrow, title, subtitle and reveal motion render from exactly one
  * place now, instead of being duplicated between the two files. See
  * TITLE_ANIMATION_AUDIT.md for why this split existed and was normalized:
@@ -18,7 +18,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 // transparent words when background-clip paints only the parent's text.
 
 export interface CinematicHeaderPlateProps {
-  eyebrow: string;
+  eyebrow?: string;
   title: ReactNode;
   accentTitle?: ReactNode;
   subtitle?: string;
@@ -31,8 +31,8 @@ export interface CinematicHeaderPlateProps {
    *  long enough that it reads better wrapped at `max-w-xl`; opt in only
    *  when the copy was written short and punchy on purpose (see About). */
   subtitleOneLine?: boolean;
-  /** Absolutely-positioned extra (eg. a tutorial trigger) anchored to this plate's own container. */
-  cornerSlot?: ReactNode;
+  /** Centered action replacing the small eyebrow above the heading. */
+  preTitle?: ReactNode;
   /** Content below the subtitle (tabs, search bar, CTA row) -- renders outside the title's own fade-up so it's immediately interactive. */
   footer?: ReactNode;
   /** Tighter top padding (pt-3/sm:pt-4 instead of pt-10/sm:pt-14) for a
@@ -44,14 +44,13 @@ export interface CinematicHeaderPlateProps {
 }
 
 export function CinematicHeaderPlate({
-  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = false, subtitleOneLine = false, cornerSlot, footer, compact = false,
+  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = false, subtitleOneLine = false, preTitle, footer, compact = false,
 }: CinematicHeaderPlateProps) {
   const reducedMotion = useReducedMotion();
   const centered = align === "center";
 
   return (
     <div className={`relative container mx-auto max-w-5xl px-4 pb-8 sm:pb-12 ${compact ? "pt-3 sm:pt-4" : "pt-10 sm:pt-14"}`}>
-      {cornerSlot}
       <motion.div
         initial={reducedMotion ? false : { opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
@@ -59,10 +58,11 @@ export function CinematicHeaderPlate({
         className={centered ? "flex flex-col items-center gap-4 text-center" : "flex flex-col gap-4"}
       >
         <div className={`flex flex-col w-full ${centered ? "items-center" : ""}`}>
-          {/* The landing chapter uses a bare, neutral eyebrow. */}
-          <div className={`flex items-center mb-6 ${centered ? "justify-center" : ""}`}>
-            <span className="landing-eyebrow">{eyebrow}</span>
-          </div>
+          {(preTitle || eyebrow) && (
+            <div className={`flex items-center mb-6 ${preTitle ? "justify-center" : centered ? "justify-center" : ""}`}>
+              {preTitle ?? <span className="landing-eyebrow">{eyebrow}</span>}
+            </div>
+          )}
           {/* Font size is a fixed, moderate clamp regardless of `oneLine` --
               `oneLine` only toggles wrap behaviour (sm:whitespace-nowrap).
               It used to also gate this size override, so once its default
