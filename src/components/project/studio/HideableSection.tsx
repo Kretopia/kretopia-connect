@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { EyeOff, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WidgetErrorBoundary } from "./WidgetErrorBoundary";
 
 const KEY = (projectId: string) => `thrivedesk:hidden-sections:${projectId}`;
 
@@ -93,7 +94,7 @@ export function HideableSection({
           <EyeOff className="h-3.5 w-3.5" />
         </button>
       )}
-      {children}
+      <WidgetErrorBoundary name={sectionId}>{children}</WidgetErrorBoundary>
     </div>
   );
 }
