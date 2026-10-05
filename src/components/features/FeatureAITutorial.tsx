@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { TutorialStepper } from "@/components/landing/kretopia/TutorialStepper";
+import { Dialog } from "@/components/ui/dialog";
+import { FeatureTutorialDialogContent } from "./FeatureTutorialDialogContent";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -43,7 +42,6 @@ export function FeatureAITutorial({
 }: FeatureAITutorialProps) {
   const storageKey = `kretopia-tutorial-seen:${featureKey}`;
   const [open, setOpen] = useState(false);
-  const reducedMotion = useReducedMotion();
   const { isFirstTime, loading } = useFirstTimeUser();
 
   useEffect(() => {
@@ -101,32 +99,7 @@ export function FeatureAITutorial({
       )}
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : dismiss())}>
-        <DialogContent
-          className="max-w-lg overflow-hidden border-border bg-background p-0 text-foreground"
-        >
-          <DialogTitle className="sr-only">{label}</DialogTitle>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{ background: "radial-gradient(60% 50% at 50% 0%, hsl(var(--foreground) / 0.06), transparent 65%)" }}
-          />
-          <div className="relative p-6">
-            <p className="landing-eyebrow mb-1">AI-guided tour</p>
-            <h2 className="mb-5 text-2xl font-semibold text-foreground">
-              {label}
-              .
-            </h2>
-            <TutorialStepper steps={steps} label={label} autoPlay={!reducedMotion} />
-            <Button
-              type="button"
-              variant="outline"
-              onClick={dismiss}
-              className="mt-6 w-full rounded-full border-border text-sm font-semibold"
-            >
-              Got it
-            </Button>
-          </div>
-        </DialogContent>
+        <FeatureTutorialDialogContent label={label} steps={steps} onDismiss={dismiss} />
       </Dialog>
     </>
   );
