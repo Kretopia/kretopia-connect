@@ -1,6 +1,19 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
+ * v8: Kreto mascot = Kreto_06_Waving, body perfectly still, only the hand waves.
+ *
+ * MASCOT — replaces the former <KretoCharacter variant="hero-wave" />, with
+ * the exact same box and position: 180px from `lg`, 300px from 1440px,
+ * `bottom-4`, `right-6` / `right-16`, hidden below `lg` (unchanged).
+ * The 6-frame animated WebP bobbed the whole body and ran at ~4 fps, so it
+ * looked jumpy. Kreto is now two lossless layers cut from the very same HD
+ * art (768px): the BODY (never moves) and the raised forearm + HAND, which
+ * pivots around the elbow with a compositor-driven transform (60 fps, no
+ * decoding, no timers, no blob). At rest, body + arm are pixel-identical to
+ * the original frame. Hover (mouse) or touch plays one fast wave. ~185 KB
+ * in total instead of ~1.3 MB. See <KretoWave /> below.
+ *
  * v6: hero-scoped logo-accurate gradient + gradient-text clipping fix.
  *
  * GRADIENT — sampled directly from the actual Kretopia "K" logo (pixel
@@ -22,16 +35,19 @@
  * background-clip:text parent disappears in Chromium after the animation.
  * Its own padding preserves the gradient's glyph edges.
  */
-import { useEffect } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
-import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { GlassCta } from "@/components/ui/glass-cta";
+// Assets imported through Vite (src/components/kreto/): hashed URL in production,
+// no hand-written path to maintain. Both files are well over 4 KB, so never inlined as base64.
+import kretoBodyUrl from "@/components/kreto/Kreto_06_Waving_body.webp";
+import kretoArmUrl from "@/components/kreto/Kreto_06_Waving_arm.webp";
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
@@ -55,6 +71,126 @@ const wordVariants = (reducedMotion: boolean, gradientText = false) =>
         hidden: { opacity: 0, y: 18, ...(gradientText ? {} : { filter: "blur(8px)" }) },
         show: { opacity: 1, y: 0, ...(gradientText ? {} : { filter: "blur(0px)" }), transition: { duration: 0.6, ease: [0.2, 0.65, 0.3, 0.95] as const } },
       };
+
+/* -------------------------------------------------------------------------- */
+/*  Kreto mascot — Kreto_06_Waving (HD): still body, waving hand              */
+/* -------------------------------------------------------------------------- */
+
+/** Source art is 768×768 px. `body` = Kreto without his raised forearm + hand;
+ *  `arm` = that forearm + hand only (194×174 crop of the same art, same pixels). */
+const ART = 768;
+const ARM = { x: 487, y: 318, w: 194, h: 174, pivotX: 500, pivotY: 452 } as const; // pivot = elbow
+
+const pct = (n: number, of: number) => `${(n / of) * 100}%`;
+
+/** The arm sits exactly over the body at rest. Everything is in % of the 768px art,
+ *  so it follows the 180px / 300px box with no JS measuring. `will-change` keeps this
+ *  tiny layer on the compositor, so the wave stays at full frame rate. */
+const ARM_STYLE: CSSProperties = {
+  left: pct(ARM.x, ART),
+  top: pct(ARM.y, ART),
+  width: pct(ARM.w, ART),
+  height: pct(ARM.h, ART),
+  transformOrigin: `${pct(ARM.pivotX - ARM.x, ARM.w)} ${pct(ARM.pivotY - ARM.y, ARM.h)}`,
+  willChange: "transform",
+};
+
+/** One fast wave (~1.1 s, ~3 swings, fading out): [time ms, degrees].
+ *  Negative = toward Kreto's head, positive = outward; the pose at rest (0°) is the outer limit
+ *  of the swing, so the part of the head hidden behind the thumb is never uncovered. */
+const WAVE_STEPS: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [120, -13],
+  [270, 2],
+  [420, -12],
+  [570, 2],
+  [720, -10],
+  [860, 1],
+  [990, -6],
+  [1120, 0],
+];
+const WAVE_MS = WAVE_STEPS[WAVE_STEPS.length - 1][0];
+const WAVE_EASE = "cubic-bezier(0.37, 0, 0.63, 1)"; // ease-in-out sine: natural pendulum feel
+const WAVE_KEYFRAMES: Keyframe[] = WAVE_STEPS.map(([t, deg]) => ({
+  offset: t / WAVE_MS,
+  transform: `rotate(${deg}deg)`,
+  easing: WAVE_EASE,
+}));
+
+const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: boolean }) {
+  const bodyRef = useRef<HTMLImageElement>(null);
+  const armRef = useRef<HTMLImageElement>(null);
+  const waveRef = useRef<Animation | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Show Kreto only once both layers are decoded, so the hand never pops in late.
+  const checkReady = useCallback(() => {
+    const body = bodyRef.current;
+    const arm = armRef.current;
+    if (body?.complete && body.naturalWidth > 0 && arm?.complete && arm.naturalWidth > 0) setReady(true);
+  }, []);
+
+  useEffect(() => {
+    checkReady(); // covers images already in cache
+    return () => waveRef.current?.cancel();
+  }, [checkReady]);
+
+  /** Hover (mouse) / touch (finger, pen): one wave at a time, starts instantly. */
+  const play = useCallback(() => {
+    const arm = armRef.current;
+    if (!ready || reducedMotion || waveRef.current || !arm || typeof arm.animate !== "function") return;
+    const wave = arm.animate(WAVE_KEYFRAMES, { duration: WAVE_MS });
+    waveRef.current = wave;
+    wave.onfinish = wave.oncancel = () => {
+      waveRef.current = null;
+    };
+  }, [ready, reducedMotion]);
+
+  return (
+    // No opacity / transform / z-index on this wrapper on purpose: that keeps it
+    // out of its own stacking context, so the hit zone below (z-[2]) can sit above
+    // the hero content (z-[1]) for hover, while the figure stays *under* the
+    // bottom dissolve overlay exactly like the former one did.
+    <div
+      aria-hidden
+      className="pointer-events-none absolute bottom-4 right-6 hidden h-[180px] w-[180px] select-none lg:block min-[1440px]:right-16 min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
+    >
+      {/* The figure: still body + waving arm (opacity-95 lives here, as before). */}
+      <div className={`absolute inset-0 transition-opacity duration-300 ${ready ? "opacity-95" : "opacity-0"}`}>
+        <img
+          ref={bodyRef}
+          src={kretoBodyUrl}
+          alt=""
+          width={ART}
+          height={ART}
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onLoad={checkReady}
+          className="absolute inset-0 h-full w-full select-none object-contain"
+        />
+        <img
+          ref={armRef}
+          src={kretoArmUrl}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          onLoad={checkReady}
+          style={ARM_STYLE}
+          className="absolute select-none"
+        />
+      </div>
+
+      {/* Invisible hit zone: the wrapper is pointer-events-none like before. */}
+      <div
+        className="pointer-events-auto absolute inset-0 z-[2] touch-manipulation [-webkit-tap-highlight-color:transparent]"
+        onPointerEnter={play}
+        onPointerDown={play}
+      />
+    </div>
+  );
+});
 
 export const KretopiaHero = () => {
   const reducedMotion = useReducedMotion();
@@ -197,7 +333,7 @@ export const KretopiaHero = () => {
                   // word silently disappears while "what"/"you" (which
                   // have breathing room from their own trailing margin)
                   // render fine. padding-inline gives the clip area
-                   // slack; margin-inline cancels the size increase.
+                  // slack; margin-inline cancels the size increase.
                   paddingInline: "0.16em",
                   marginInline: "-0.16em",
                   paddingBlock: "0.22em",
@@ -208,7 +344,7 @@ export const KretopiaHero = () => {
                   <motion.span
                     key={wi}
                     className={`inline-block${wi < LINE_2.length - 1 ? " mr-[0.28em]" : ""}`}
-                     variants={wordVariants(reducedMotion, true)}
+                    variants={wordVariants(reducedMotion, true)}
                   >
                     {word}
                   </motion.span>
@@ -275,13 +411,9 @@ export const KretopiaHero = () => {
         </motion.div>
       </div>
 
-      {/* Big main Kreto figure — unchanged. */}
-      <div className="pointer-events-none absolute bottom-4 right-6 hidden lg:block min-[1440px]:hidden opacity-95">
-        <KretoCharacter variant="hero-wave" size={180} floatAmplitude={0} />
-      </div>
-      <div className="pointer-events-none absolute bottom-4 right-16 hidden min-[1440px]:block opacity-95">
-        <KretoCharacter variant="hero-wave" size={300} floatAmplitude={0} />
-      </div>
+      {/* Big main Kreto figure — Kreto_06_Waving (HD), still body + waving hand, same
+          sizes and position as the former KretoCharacter: 180px (lg) → 300px (≥1440px). */}
+      <KretoWave reducedMotion={reducedMotion} />
 
       {/* bottom dissolve to next section */}
       <div
