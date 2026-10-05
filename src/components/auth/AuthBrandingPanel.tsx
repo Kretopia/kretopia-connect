@@ -41,15 +41,15 @@ export const AuthBrandingPanel = () => {
   const reducedMotion = useReducedMotion();
 
   return (
-    <div className="hidden lg:flex lg:w-1/2 relative overflow-x-hidden overflow-y-auto bg-[hsl(var(--k-midnight))]">
+    <div className="auth-branding-panel hidden lg:flex lg:w-1/2 relative overflow-x-hidden overflow-y-auto bg-background text-foreground">
       {/* Sunset wash behind */}
       <div
         className="pointer-events-none absolute -top-32 -left-32 h-[560px] w-[560px] rounded-full opacity-50 blur-[140px]"
-        style={{ background: "var(--kretopia-sunset, hsl(289 80% 43%))" }}
+        style={{ background: "var(--k-text-gradient)" }}
       />
       <div className="pointer-events-none absolute -bottom-40 -right-20 h-[420px] w-[420px] rounded-full opacity-30 blur-[120px]"
-           style={{ background: "hsl(289 80% 43%)" }} />
-      <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-white/15 to-transparent" />
+           style={{ background: "hsl(var(--k-purple) / 0.15)" }} />
+      <div className="absolute inset-y-0 right-0 w-px bg-border" />
 
       {/* pt-8 sm:pt-12 matches the right column's own py-8 sm:py-12 exactly —
           both columns are top-aligned (not vertically centered) so the logo
@@ -75,22 +75,22 @@ export const AuthBrandingPanel = () => {
         Where creativity<br />
         <span className="landing-accent">lives.</span>
       </h2>
-        <p className="text-white/65 mb-6 max-w-md leading-relaxed">
+        <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
           One Passport. Every credit. Every opportunity. Kretopia is the professional
           home for creators — and Kreto, your Executive Producer, runs point.
         </p>
 
-        <div className="mb-7 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-3.5 max-w-md">
+        <div className="mb-7 flex items-center gap-3 rounded-lg border border-border bg-card/60 backdrop-blur-sm p-3.5 max-w-md">
           <KretoMark size="md" />
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--energy))] mb-0.5">Kreto</p>
-            <p className="text-sm text-white/90 leading-snug">
+            <p className="text-sm text-foreground leading-snug">
               "I'll line up your first three opportunities the moment you sign in."
             </p>
           </div>
         </div>
 
-        <p className="landing-eyebrow mb-3" style={{ color: "rgba(255,255,255,0.4)" }}>
+        <p className="landing-eyebrow mb-3">
           What happens when you sign up
         </p>
         <div className="max-w-md">
@@ -102,11 +102,11 @@ export const AuthBrandingPanel = () => {
         </div>
 
         <div className="mt-7">
-          <p className="flex items-center gap-1.5 text-xs text-white/55">
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <Zap className="h-3 w-3 text-[hsl(var(--energy))]" />
             60-second setup · No credit card · Free forever to start
           </p>
-          <p className="mt-2 text-[10px] uppercase tracking-[0.25em] text-white/35">
+          <p className="mt-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
             Kretopia · by Thrive Collective
           </p>
         </div>

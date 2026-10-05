@@ -57,12 +57,12 @@ export function BrandLogo({
         <img
           src={wordmarkAsset.url}
           alt="kretopia"
-          className={cn(cfg.text, "w-auto select-none object-contain")}
+          className={cn(cfg.text, "brand-wordmark w-auto select-none object-contain")}
           draggable={false}
         />
       )}
       {showBeta && (
-        <span className="hidden sm:inline-flex items-center border border-white/20 text-white/70 text-[9px] uppercase tracking-[0.18em] font-semibold px-1.5 py-0.5 rounded-md leading-none">
+        <span className="hidden sm:inline-flex items-center border border-border text-muted-foreground text-[9px] uppercase tracking-[0.18em] font-semibold px-1.5 py-0.5 rounded-md leading-none">
           Beta
         </span>
       )}

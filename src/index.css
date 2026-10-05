@@ -1072,6 +1072,9 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
 /* Landing follows the same Daylight/Midnight tokens as the feature pages.
    Only the editorial shell is recolored; images and their overlaid captions
    retain their photographic contrast. The title gradient stays untouched. */
+:root:not(.dark) .brand-wordmark { filter: brightness(0.22); }
+:root:not(.dark) :is(.dark-surface, .force-dark) .brand-wordmark { filter: none; }
+.auth-branding-panel .landing-h2 { color: hsl(var(--foreground)); }
 .landing-theme section, .landing-theme footer { background-color: hsl(var(--background)); }
 .landing-theme .landing-h1, .landing-theme .landing-h2 { color: hsl(var(--foreground)); }
 .landing-theme .landing-sub { color: hsl(var(--muted-foreground)); }
