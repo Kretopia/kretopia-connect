@@ -67,7 +67,7 @@ export const EventGuestMatchesSection = ({ project, currentUserId }: Props) => {
   useEffect(() => {
     if (!eventId) return;
     const ch = supabase
-      .channel(`event-matches:${eventId}`)
+      .channel(`event-matches:${eventId}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "event_guest_matches", filter: `event_id=eq.${eventId}` }, () => {
         load().catch(() => {});
       })
