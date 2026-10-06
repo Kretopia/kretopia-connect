@@ -173,7 +173,7 @@ serve(async (req) => {
         project_id: d.project_id,
         kind: "draft_invoice",
         title: `Invoice ${project.client_name || "client"} for "${d.title}"?`,
-        body: `Deliverable just approved. Want Thrive to draft the milestone invoice?`,
+        body: `Deliverable just approved. Want Kreto to draft the milestone invoice?`,
         status: "pending",
         source_signal: { deliverable_id: d.id, milestone_id: d.milestone_id },
         action_intent: { tool: "draft_milestone_invoice", args: { project_id: d.project_id, deliverable_id: d.id } },

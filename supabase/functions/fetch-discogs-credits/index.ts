@@ -65,14 +65,14 @@ serve(async (req) => {
       // Get artist details
       const artistRes = await fetch(
         `https://api.discogs.com/artists/${artistId}?token=${DISCOGS_TOKEN}`,
-        { headers: { 'User-Agent': 'ThriveIN/1.0 +https://thrivein.io' } }
+        { headers: { 'User-Agent': 'Kretopia/1.0 +https://www.kretopia.com' } }
       );
       artistData = await artistRes.json();
       
       // Get artist releases
       const releasesRes = await fetch(
         `https://api.discogs.com/artists/${artistId}/releases?sort=year&sort_order=desc&per_page=100&token=${DISCOGS_TOKEN}`,
-        { headers: { 'User-Agent': 'ThriveIN/1.0 +https://thrivein.io' } }
+        { headers: { 'User-Agent': 'Kretopia/1.0 +https://www.kretopia.com' } }
       );
       const releasesData = await releasesRes.json();
       
@@ -81,7 +81,7 @@ serve(async (req) => {
       // Search for artist
       const searchRes = await fetch(
         `https://api.discogs.com/database/search?q=${encodeURIComponent(artistName)}&type=artist&token=${DISCOGS_TOKEN}`,
-        { headers: { 'User-Agent': 'ThriveIN/1.0 +https://thrivein.io' } }
+        { headers: { 'User-Agent': 'Kretopia/1.0 +https://www.kretopia.com' } }
       );
       const searchData = await searchRes.json();
       
@@ -107,7 +107,7 @@ serve(async (req) => {
         // Get artist releases
         const releasesRes = await fetch(
           `https://api.discogs.com/artists/${artistData.id}/releases?sort=year&sort_order=desc&per_page=100&token=${DISCOGS_TOKEN}`,
-          { headers: { 'User-Agent': 'ThriveIN/1.0 +https://thrivein.io' } }
+          { headers: { 'User-Agent': 'Kretopia/1.0 +https://www.kretopia.com' } }
         );
         const releasesData = await releasesRes.json();
 

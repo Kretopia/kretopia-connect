@@ -150,7 +150,7 @@ Deno.serve(async (req) => {
               ? "1 fresh gig matched you"
               : fresh!.length + " fresh gigs matched you") +
             " in the last 24h",
-          body: `Top pick: "${(top.title ?? "Untitled").slice(0, 90)}". Review and let Thrive draft your reply.`,
+          body: `Top pick: "${(top.title ?? "Untitled").slice(0, 90)}". Review and let Kreto draft your reply.`,
           action_intent: { href: "/scout?tab=scouted", cta: "Open Scout" },
         });
       }
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
           kind: "rate_optimize",
           title: "Set your day rate",
           body:
-            "Without a rate Thrive can't auto-draft quotes or shortlist gigs at your level. Takes 30 seconds.",
+            "Without a rate Kreto can't auto-draft quotes or shortlist gigs at your level. Takes 30 seconds.",
           action_intent: { href: "/profile?edit=1#rate", cta: "Set rate" },
         });
       }
@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
               ? `Invoice #${overdue![0].invoice_number} is overdue`
               : `${count} invoices overdue (${cur} ${totalAmt.toLocaleString()})`,
           body:
-            "Let Thrive draft a warm chase email so cash keeps moving without the awkward.",
+            "Let Kreto draft a warm chase email so cash keeps moving without the awkward.",
           action_intent: {
             href: "/thrivepay?tab=invoices&filter=overdue",
             cta: "Open Pay",

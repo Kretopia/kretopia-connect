@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
           .from('notifications')
           .insert({
             user_id: profile.user_id,
-            title: '🚀 Complete Your ThriveIN Profile',
+            title: '🚀 Complete Your Kretopia Profile',
             message: 'You\'re almost there — finish setting up to start connecting with creators.',
             type: 'reminder',
             link: '/onboarding',

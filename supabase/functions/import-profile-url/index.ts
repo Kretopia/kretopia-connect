@@ -25,7 +25,7 @@ serve(async (req) => {
     let pageContent = "";
     try {
       const res = await fetch(url, {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; ThriveIN/1.0)" },
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; Kretopia/1.0)" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const html = await res.text();

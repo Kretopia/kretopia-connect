@@ -107,7 +107,7 @@ serve(async (req) => {
       .single();
     if (mErr) throw mErr;
 
-    const appUrl = Deno.env.get("APP_URL") || "https://www.thrivein.io";
+    const appUrl = Deno.env.get("APP_URL") || "https://www.kretopia.com";
     const shareUrl = `${appUrl}/meet/${meeting.id}?t=${meeting.share_token}`;
 
     await admin

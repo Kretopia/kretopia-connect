@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const APP_URL = "https://www.thrivein.io";
+const APP_URL = "https://www.kretopia.com";
 
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function toBasicUTC(iso: string) {
@@ -20,7 +20,7 @@ function googleCal(s: { title: string; starts_at: string; duration_min: number; 
     action: "TEMPLATE",
     text: s.title,
     dates: `${toBasicUTC(s.starts_at)}/${toBasicUTC(end)}`,
-    details: [s.theme, "Speed networking for creators on ThriveIN.", `${APP_URL}/circle/speed/${s.id}`].filter(Boolean).join("\n\n"),
+    details: [s.theme, "Speed networking for creators on Kretopia.", `${APP_URL}/circle/speed/${s.id}`].filter(Boolean).join("\n\n"),
     location: `${APP_URL}/circle/speed/${s.id}`,
   });
   return `https://calendar.google.com/calendar/render?${u.toString()}`;

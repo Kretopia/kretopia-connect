@@ -29,7 +29,7 @@ interface Event {
   category: string;
 }
 
-const APP_URL = "https://www.thrivein.io";
+const APP_URL = "https://www.kretopia.com";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -253,7 +253,7 @@ async function runPostEvent(
         project_name: ev.title,
         role: "Event Host",
         year: new Date(ev.start_time).getFullYear(),
-        platform: "ThriveIN",
+        platform: "Kretopia",
         url: `${APP_URL}/event/${ev.id}`,
         verification_status: "verified",
         credit_category: "events",

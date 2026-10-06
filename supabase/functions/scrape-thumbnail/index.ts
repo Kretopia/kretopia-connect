@@ -12,7 +12,7 @@ async function extractOgImage(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; ThriveIN/1.0; +https://thrivein.io)',
+        'User-Agent': 'Mozilla/5.0 (compatible; Kretopia/1.0; +https://www.kretopia.com)',
         'Accept': 'text/html',
       },
       redirect: 'follow',
