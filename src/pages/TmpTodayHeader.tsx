@@ -11,17 +11,35 @@ const TODAY_TUTORIAL: TutorialStep[] = [
 ];
 
 export default function TmpTodayHeader() {
+  // Mirror the real mount: a loading gate first (like signals.loading),
+  // then TodayDashboard's motion.div wrapper around the header.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setReady(true), 900);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-6xl px-4 pt-4">
-        <FeaturePageHeader
-          eyebrow="Today"
-          title="Noé,"
-          accentTitle="here's what moves you forward today."
-          subtitle="One thing matters most right now."
-          tutorial={{ featureKey: "today", label: "How Today works", steps: TODAY_TUTORIAL }}
-          compact
-        />
+        {!ready ? (
+          <div className="py-16 text-center text-muted-foreground">loading…</div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
+          >
+            <FeaturePageHeader
+              eyebrow="Today"
+              title="Noé,"
+              accentTitle="here's what moves you forward today."
+              subtitle="One thing matters most right now."
+              tutorial={{ featureKey: "today", label: "How Today works", steps: TODAY_TUTORIAL }}
+              compact
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );
