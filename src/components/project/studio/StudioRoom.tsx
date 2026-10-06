@@ -533,11 +533,11 @@ export const StudioRoom = ({
         )}
         {mobileWorkColumn(!isEvent)}
         {mobileSideColumn}
-        <div className="h-12" />
+        <div className="h-28" />
       </div>
 
       {/* Desktop: 2-column draggable widget board */}
-      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-4 lg:px-6 lg:py-4 lg:max-w-[1500px] lg:mx-auto">
+      <div className="hidden lg:grid lg:grid-cols-12 lg:gap-4 lg:px-6 lg:pt-4 lg:pb-28 lg:max-w-[1500px] lg:mx-auto">
         <div className="col-span-12 xl:col-span-8 space-y-3 min-w-0">
           {isOwner && (
             <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">

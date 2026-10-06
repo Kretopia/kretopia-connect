@@ -19,7 +19,8 @@ import { useAgentRole } from "@/hooks/useAgentRole";
 
 import { MobileProjectHub } from "@/components/project/mobile/MobileProjectHub";
 import { StudioRoom } from "@/components/project/studio/StudioRoom";
-import { StudioPhaseRail } from "@/components/project/studio/StudioPhaseRail";
+import { StudioStages } from "@/components/project/studio/StudioStages";
+import { StudioMoveDock } from "@/components/project/studio/StudioMoveDock";
 import { ProjectCompleteDialog } from "@/components/project/studio/ProjectCompleteDialog";
 import { DeskCommandPalette } from "@/components/desk/DeskCommandPalette";
 import { VoiceCommandSheet } from "@/components/desk/VoiceCommandSheet";
@@ -299,17 +300,16 @@ const ThriveDesk = () => {
           />
         </header>
 
-        {/* Phase rail — a real header row (not a sticky trick over a
-            scrolling child), so it's genuinely always visible: same
-            instance across every tab, including rolling back to an
-            earlier one, instead of only existing on the "today" tab and
-            vanishing the moment its own markers navigate you elsewhere. */}
+        {/* Stages — Make (Kickoff + Build) and Deliver (Wrap + Complete). A real
+            header row (not a sticky trick over a scrolling child), so it is
+            genuinely always visible: same instance across every tab, including
+            rolling back to an earlier one. The "Move to…" action is the dock
+            at the bottom-right of the room (see StudioMoveDock). */}
         <div className="bg-background/95 border-b border-border/60 shrink-0">
-          <StudioPhaseRail
+          <StudioStages
             flow={flow}
             onPhaseClick={goToTabWithIntent}
             onPinStage={handlePinStage}
-            onValidateStep={handleValidateStep}
           />
         </div>
 
@@ -408,6 +408,14 @@ const ThriveDesk = () => {
           )}
         </div>
       </div>
+
+      {/* "Move to…" — docked bottom-right. On mobile it only floats over the room
+          itself: on tool tabs (chat, files…) it would sit on top of composers. */}
+      <StudioMoveDock
+        flow={flow}
+        onValidateStep={handleValidateStep}
+        className={isStudioRoom ? undefined : "hidden lg:flex"}
+      />
 
       {/* Kreto is mounted globally via ThriveAgentFab — no per-page launcher needed. */}
 

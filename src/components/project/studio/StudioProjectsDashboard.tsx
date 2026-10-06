@@ -166,6 +166,7 @@ export const StudioProjectsDashboard = ({
   const [boardView, setBoardView] = useState<BoardView>("board");
 
   const pay = (id: string): PayState => invoicesByProject[id] ?? "unsent";
+  const canMove = Boolean(onMoveToFolder) && folders.length > 0;
 
   const moneyVisible = (id: string): boolean =>
     moneyVisibleByProject ? (moneyVisibleByProject[id] ?? false) : canSeeMoney;
@@ -961,7 +962,12 @@ export const StudioProjectsDashboard = ({
                         <ArrowRight className="h-3.5 w-3.5 text-primary" />
                         <p className="text-[11px] font-semibold text-foreground/80">{nextAction(p)}</p>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+                      <div
+                        className={cn(
+                          "flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground",
+                          canMove && "pr-24",
+                        )}
+                      >
                         {p.deadline && (
                           <span className="inline-flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -984,52 +990,25 @@ export const StudioProjectsDashboard = ({
                     </div>
                   </button>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-1 border-t border-border/60 bg-card p-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 flex-1 gap-1 text-xs"
-                      onClick={() => navigate(`/desk/${p.id}`)}
+                  {/* "Move to…": the only action left on a card. Open is the card itself;
+                      Call / Ask live in the Room, where they have context. Sits bottom-right,
+                      outside the card's own <button> (no nested buttons). */}
+                  {canMove && (
+                    <button
+                      type="button"
+                      onClick={() => setMoveTarget(p)}
+                      aria-label={`Move ${p.title} to a folder`}
+                      className={cn(
+                        "absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1.5 rounded-full",
+                        "border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground shadow-sm",
+                        "transition-colors hover:border-[hsl(var(--energy)/0.6)] hover:text-[hsl(var(--energy))]",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                      )}
                     >
-                      Open
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 flex-1 gap-1 text-xs"
-                      onClick={() => navigate(`/desk/${p.id}?joinCall=1`)}
-                    >
-                      <Video className="h-3 w-3" />
-                      Call
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 flex-1 gap-1 text-xs"
-                      onClick={() =>
-                        window.dispatchEvent(
-                          new CustomEvent("thrive-copilot:open", {
-                            detail: { projectId: p.id },
-                          }),
-                        )
-                      }
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      Ask
-                    </Button>
-                    {onMoveToFolder && folders.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0"
-                        aria-label={`Move ${p.title} to a folder`}
-                        onClick={() => setMoveTarget(p)}
-                      >
-                        <FolderInput className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
+                      <FolderInput className="h-3 w-3" aria-hidden />
+                      Move to…
+                    </button>
+                  )}
                 </HoloCard>
               </li>
             );
