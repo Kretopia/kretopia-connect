@@ -28,17 +28,14 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 // TODO product decision: real values per feature/tier. -1 = unlimited
 // (count-only) so wiring this in changes no current behavior.
 export const DEFAULT_DAILY_CAP = -1;
 
-export type AiRateLimitResult =
-  | { allowed: true; used: number; cap: number }
-  | { allowed: false; response: Response };
+export type AiRateLimitResult = { allowed: true; used: number; cap: number } | { allowed: false; response: Response };
 
 function json(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
