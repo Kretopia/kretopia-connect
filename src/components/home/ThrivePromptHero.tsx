@@ -407,7 +407,7 @@ export function ThrivePromptHero({ firstName }: { firstName?: string } = {}) {
 
         <p className="mt-2 text-[11px] text-muted-foreground">
           <span className="font-semibold text-foreground/70">{chipContextLabel}</span>
-          {planMode && <span className="ml-1.5">· Thrive will wait for your approval before each step.</span>}
+          {planMode && <span className="ml-1.5">· Kreto will wait for your approval before each step.</span>}
         </p>
 
         <AnimatePresence>

@@ -91,7 +91,7 @@ export const TelegramConnectCard = () => {
           )}
         </CardTitle>
         <CardDescription>
-          Talk to Thrive from Telegram. Send messages, get updates, run actions on the go.
+          Talk to Kreto from Telegram. Send messages, get updates, run actions on the go.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">

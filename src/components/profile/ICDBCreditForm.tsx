@@ -564,7 +564,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId }: ICDBCr
           </DialogTitle>
           <DialogDescription className="text-xs">
             {step === "search"
-              ? "Upload, paste a link, or search — Thrive fills in the rest"
+              ? "Upload, paste a link, or search — Kreto fills in the rest"
               : "Confirm your role and details"
             }
           </DialogDescription>

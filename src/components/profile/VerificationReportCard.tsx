@@ -309,7 +309,7 @@ export function VerificationReportCard({
               <ul className="text-xs text-muted-foreground space-y-1.5">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  Thrive searches industry databases (IMDB, Discogs, Grammy)
+                  Kretopia searches industry databases (IMDB, Discogs, Grammy)
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>

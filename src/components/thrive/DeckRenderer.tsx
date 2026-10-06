@@ -118,7 +118,7 @@ export function DeckRenderer({ doc, theme, coverImageUrl, authorName, showQualit
         <div className="flex flex-col h-full justify-between relative z-10">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className={t.eyebrow}>{doc.subtitle || (brand?.name ? `Prepared by ${brand.name}` : "Prepared by Thrive")}</div>
+              <div className={t.eyebrow}>{doc.subtitle || (brand?.name ? `Prepared by ${brand.name}` : "Prepared by Kretopia")}</div>
               <h1 className={t.heading} style={headingStyle}>{doc.title}</h1>
               {brand?.tagline && (
                 <p className="text-sm opacity-70 mt-2 italic">{brand.tagline}</p>

@@ -32,8 +32,8 @@ export const CoreValueBlocks = () => {
     {
       icon: Briefcase,
       eyebrow: "Pillar 3",
-      title: "ThriveDesk Workspace & Secure Milestone Payments",
-      body: "ThriveDesk is the project management workspace built for creatives — collaborative task boards, briefs, files, chat, and video calls in one room. Every project ships with built-in milestone-based escrow so client funds are protected and released only as deliverables are approved.",
+      title: "Studio Workspace & Secure Milestone Payments",
+      body: "Studio is the project management workspace built for creatives — collaborative task boards, briefs, files, chat, and video calls in one room. Every project ships with built-in milestone-based escrow so client funds are protected and released only as deliverables are approved.",
       bullets: [
         "Collaborative task boards, briefs, files, and video calls per project",
         "Milestone-based escrow holds client funds until work is approved",

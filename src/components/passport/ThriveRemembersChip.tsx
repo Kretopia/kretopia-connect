@@ -100,14 +100,14 @@ export function ThriveRemembersChip() {
               What Kreto remembers
             </SheetTitle>
             <SheetDescription>
-              The notes, rates, clients and vendors Thrive keeps on hand so you never have to re-explain yourself.
+              The notes, rates, clients and vendors Kreto keeps on hand so you never have to re-explain yourself.
             </SheetDescription>
           </SheetHeader>
 
           <div className="mt-4 space-y-5 pb-8">
             {loading && <div className="text-sm text-muted-foreground">Pulling your notes…</div>}
             {!loading && rows.length === 0 && (
-              <div className="text-sm text-muted-foreground">Nothing yet. Drop a brief or chat with Thrive — it'll start remembering the important bits.</div>
+              <div className="text-sm text-muted-foreground">Nothing yet. Drop a brief or chat with Kreto — it'll start remembering the important bits.</div>
             )}
             {Object.entries(grouped).map(([kind, items]) => (
               <div key={kind}>

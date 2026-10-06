@@ -48,7 +48,7 @@ export const PERSONAS: Record<AgentPersona, PersonaMeta> = {
   },
   orchestrator: {
     id: "orchestrator",
-    label: "Thrive",
+    label: "Kreto",
     tagline: "Your operator",
     icon: Sparkles,
     accent: "text-primary",

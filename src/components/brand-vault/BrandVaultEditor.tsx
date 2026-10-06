@@ -188,7 +188,7 @@ export function BrandVaultEditor({ projectId = null, vaultId = null, onSaved }: 
         saved = data;
         setVault((v) => ({ ...v, id: saved.id }));
       }
-      toast({ title: "Brand Vault saved", description: "Thrive will use this for every doc it generates." });
+      toast({ title: "Brand Vault saved", description: "Kreto will use this for every doc it generates." });
       window.dispatchEvent(new CustomEvent("brand-vault:updated"));
       onSaved?.(saved);
     } catch (e: any) {
@@ -230,7 +230,7 @@ export function BrandVaultEditor({ projectId = null, vaultId = null, onSaved }: 
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {vault.project_id
                 ? "Used by every doc generated inside this Studio."
-                : "Used by Thrive everywhere unless a Studio has its own brand."}
+                : "Used by Kreto everywhere unless a Studio has its own brand."}
             </p>
           </div>
           {vault.id && (

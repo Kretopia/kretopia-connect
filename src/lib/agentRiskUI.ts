@@ -110,8 +110,8 @@ export function draftTrigger(
       return { label: "You drafted this", reason: "You started this draft with Kreto." };
     default:
       return {
-        label: "Suggested by Thrive",
-        reason: "Thrive surfaced this based on recent activity.",
+        label: "Suggested by Kreto",
+        reason: "Kreto surfaced this based on recent activity.",
       };
   }
 }

@@ -51,7 +51,7 @@ export function FirstStampReveal({ open, onContinue, credit, total }: FirstStamp
         <div className="relative z-10 px-6 pt-8 pb-6 text-center space-y-5">
           {/* Thrive presence — active tone */}
           <div className="flex justify-center">
-            <ThrivePresence size="xl" tone="active" label="Thrive found your first Stamp" />
+            <ThrivePresence size="xl" tone="active" label="Kreto found your first Stamp" />
           </div>
 
           {/* Eyebrow */}
@@ -63,7 +63,7 @@ export function FirstStampReveal({ open, onContinue, credit, total }: FirstStamp
               Your {BRAND.passport} just came alive.
             </h2>
             <p className="text-sm text-muted-foreground">
-              Thrive verified your first piece of work. This is how the world will see you.
+              Kreto verified your first piece of work. This is how the world will see you.
             </p>
           </div>
 

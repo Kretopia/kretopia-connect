@@ -305,7 +305,7 @@ export function CampaignStudioSection({ project, currentUserId }: Props) {
           {assets.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/80 p-5 text-center">
               <p className="text-sm font-semibold">No assets yet</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Save a brief and let Thrive draft a paid + organic matrix.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Save a brief and let Kreto draft a paid + organic matrix.</p>
             </div>
           ) : (
             <ul className="space-y-2">

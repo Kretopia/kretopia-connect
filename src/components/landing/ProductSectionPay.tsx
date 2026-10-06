@@ -18,7 +18,7 @@ export const ProductSectionPay = () => (
             <span className="text-energy-glow">in one chat.</span>
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-5 max-w-md">
-            Tell Thrive what the job is. It pulls your project context, drafts the line items, suggests rates from your past invoices, and sends a pro-grade quote your client can pay in one tap.
+            Tell Kreto what the job is. It pulls your project context, drafts the line items, suggests rates from your past invoices, and sends a pro-grade quote your client can pay in one tap.
           </p>
           <ul className="space-y-2 mb-6">
             {[
@@ -63,7 +63,7 @@ export const ProductSectionPay = () => (
             <div className="rounded-2xl border border-energy/40 bg-card shadow-xl p-3.5 flex flex-col">
               <div className="flex items-center gap-1.5 mb-2.5">
                 <Sparkles className="h-3.5 w-3.5 text-energy" />
-                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-foreground">Chat · Thrive</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-foreground">Chat · Kreto</p>
               </div>
               <div className="space-y-2 flex-1">
                 <div className="rounded-xl bg-muted/40 px-2.5 py-1.5 max-w-[90%]">

@@ -67,7 +67,7 @@ export function RecentIntentsDrawer({ onPick, className = "" }: Props) {
       <div className="flex items-center gap-1.5 mb-2 px-1">
         <History className="h-3 w-3 text-muted-foreground" />
         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-          Recent with Thrive
+          Recent with Kreto
         </p>
       </div>
       <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">

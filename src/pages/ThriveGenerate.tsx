@@ -121,7 +121,7 @@ export default function ThriveGenerate() {
 
   return (
     <div className="min-h-screen bg-background accent-scout">
-      <SEO title="Thrive · Executive Producer" description="Generate decks, proposals, rate cards, and treatments inside your Studio." />
+      <SEO title="Kreto · Executive Producer" description="Generate decks, proposals, rate cards, and treatments inside your Studio." />
 
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">

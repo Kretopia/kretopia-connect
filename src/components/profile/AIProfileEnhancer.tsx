@@ -147,7 +147,7 @@ Return as JSON array of strings only: ["skill1", "skill2", ...]`
           Smart Profile Enhancer
         </CardTitle>
         <CardDescription>
-          Let Thrive help you create a standout profile
+          Let Kreto help you create a standout profile
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
