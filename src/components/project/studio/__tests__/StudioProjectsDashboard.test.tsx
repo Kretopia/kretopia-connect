@@ -98,6 +98,39 @@ describe("StudioProjectsDashboard", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("network down");
   });
 
+  describe("card actions", () => {
+    const folders = [{ id: "f1", name: "Clients" }] as any;
+
+    it("has no Open / Call / Ask toolbar under the project title", () => {
+      renderDash({ folders, onMoveToFolder: vi.fn() });
+      expect(screen.queryByRole("button", { name: /^Open$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Call$/ })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /^Ask$/ })).not.toBeInTheDocument();
+    });
+
+    it("keeps one \"Move to…\" per card, docked bottom-right and outside the card's own button", () => {
+      renderDash({ folders, onMoveToFolder: vi.fn() });
+      const moves = screen.getAllByRole("button", { name: /Move .* to a folder/ });
+      expect(moves).toHaveLength(2);
+      expect(moves[0]).toHaveTextContent("Move to…");
+      expect(moves[0]).toHaveClass("absolute", "bottom-2.5", "right-2.5");
+      // not nested inside the card's navigation button (no button-in-button)
+      expect(moves[0].parentElement?.closest("button")).toBeNull();
+    });
+
+    it("opens the folder picker for that project without opening the project", () => {
+      renderDash({ folders, onMoveToFolder: vi.fn() });
+      fireEvent.click(screen.getByRole("button", { name: "Move Carnival Film to a folder" }));
+      expect(mocks.navigate).not.toHaveBeenCalled();
+      expect(screen.getByText("Move to folder")).toBeInTheDocument();
+    });
+
+    it("shows no Move to… when there is nowhere to move to", () => {
+      renderDash({ folders: [], onMoveToFolder: vi.fn() });
+      expect(screen.queryByRole("button", { name: /to a folder/ })).not.toBeInTheDocument();
+    });
+  });
+
   it("navigates to the Project on row click, using its real id", () => {
     renderDash();
     fireEvent.click(screen.getByText("Carnival Film"));

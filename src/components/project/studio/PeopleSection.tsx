@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Crown, Hand, Clock, Link2, Share2, Loader2 } from "lucide-react";
+import { KretoMark } from "@/components/brand/KretoMark";
 import { InviteCollaboratorDialog } from "@/components/project/InviteCollaboratorDialog";
 import { GuestStudioShareDialog } from "@/components/project/GuestStudioShareDialog";
 import { PendingInvitations } from "@/components/project/PendingInvitations";
@@ -237,9 +238,7 @@ ${url}`;
 
       {isOwner && collaborators.length <= 1 && pending.length === 0 && (
         <div className="rounded-xl border-2 border-dashed border-[hsl(var(--energy)/0.4)] bg-[hsl(var(--energy)/0.05)] p-3 flex items-center gap-3">
-          <div className="h-9 w-9 rounded-full bg-[hsl(var(--energy)/0.15)] flex items-center justify-center shrink-0">
-            <span aria-hidden className="text-base">👋</span>
-          </div>
+          <KretoMark variant="compact" size="md" className="shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold leading-tight">It's just you in here</p>
             <p className="text-[11px] text-muted-foreground leading-tight">

@@ -12,6 +12,7 @@ import { format } from "date-fns";
 
 
 import { ProjectClientChip } from "@/components/clients/ProjectClientChip";
+import { KretoMark } from "@/components/brand/KretoMark";
 
 interface VibeHeaderProps {
   project: {
@@ -104,8 +105,9 @@ export const VibeHeader = ({
       <div className="px-4 pt-3 relative z-10 space-y-3">
         {/* Eyebrow + Status row */}
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-            Studio Room
+          <p className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+            <KretoMark variant="compact" size="xs" />
+            Kretopia · Studio Room
           </p>
           <span
             className={cn(
