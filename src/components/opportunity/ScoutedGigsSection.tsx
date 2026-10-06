@@ -20,6 +20,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useNavigate } from "react-router-dom";
+import { extractInvokeError } from "@/lib/extractInvokeError";
+import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
@@ -111,6 +114,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   // Chasing down real 404s: image_url values can go stale (source page
   // took the image down, hotlink blocked, etc.) after a gig was already
   // scouted -- the old onError handler just hid the broken <img> outright,
@@ -170,6 +174,27 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const reducedMotion = useReducedMotion();
 
+  // Guarantee the For You tab is never a dead end: when nothing has been
+  // scouted yet (new account, first scan running, or scan failed), surface
+  // real open gigs from the Kretopia marketplace instead of an empty card.
+  const { data: fallbackOpps = [] } = useQuery({
+    queryKey: ["scout-fallback-opps"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("opportunities")
+        .select(OPPORTUNITY_PUBLIC_COLUMNS)
+        .in("status", ["active", "open"])
+        .order("created_at", { ascending: false })
+        .limit(6);
+      return (data || []) as {
+        id: string; title: string; type: string | null;
+        location: string | null; compensation: string | null;
+      }[];
+    },
+    enabled: !limit && !loading && gigs.length === 0,
+    staleTime: 5 * 60_000,
+  });
+
   const scanNow = async () => {
     if (!user) return;
     setScanning(true);
@@ -183,7 +208,14 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     setScanning(false);
 
     if (error) {
-      toast({ title: "Scout failed", description: error.message, variant: "destructive" });
+      // The SDK's own message is a generic "non-2xx status code" — the
+      // function's real error (config, auth, rate limit) lives in the body.
+      const detail = await extractInvokeError(error);
+      toast({
+        title: "Scout failed",
+        description: detail || "The scan could not complete. Try again in a moment.",
+        variant: "destructive",
+      });
       return;
     }
     if (data?.gated) {
@@ -472,9 +504,47 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
       )}
 
       {gigs.length === 0 && !scanning ? (
-        <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
-          No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to find real jobs across the web matched to your skills.
-        </Card>
+        fallbackOpps.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-[11px] text-muted-foreground">
+              Your first personalized scan is warming up — meanwhile, these open gigs on Kretopia match your world:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {fallbackOpps.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => navigate("/scout?tab=marketplace")}
+                  className="text-left rounded-2xl border border-border bg-card p-4 transition-all hover:border-energy/40 hover:shadow-lg hover:shadow-energy/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-sm leading-tight line-clamp-2 text-foreground">{o.title}</h3>
+                    {o.type && (
+                      <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0 capitalize">
+                        {o.type}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                    {o.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{o.location}
+                      </span>
+                    )}
+                    {hasRealCompensation(o.compensation) && <span>· {o.compensation}</span>}
+                  </div>
+                  <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-energy">
+                    View in Open Gigs <ExternalLink className="h-3 w-3" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
+            No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to find real jobs across the web matched to your skills.
+          </Card>
+        )
       ) : limit ? (
         <>
         {/* Compact embed (e.g. Today's "More from today") — carousel only, no hero. */}

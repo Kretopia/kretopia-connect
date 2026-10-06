@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
-import { ShieldCheck, MapPin, Star, MessageCircle, Handshake } from "lucide-react";
+import { ShieldCheck, MapPin, Star, MessageCircle, Handshake, Sparkles } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.png";
 
@@ -88,15 +88,47 @@ export function DiscoverCreativesRail() {
     return () => { cancelled = true; };
   }, []);
 
+  // No dragging required: hovering (desktop) or touching (mobile) the rail
+  // starts a slow continuous glide through the cards; leaving stops it.
+  useEffect(() => {
+    if (!api || reducedMotion) return;
+    let timer: number | undefined;
+    const start = () => {
+      if (timer !== undefined) return;
+      timer = window.setInterval(() => api.scrollNext(), 2400);
+    };
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+    };
+    const node = api.rootNode();
+    node.addEventListener("pointerenter", start);
+    node.addEventListener("pointerleave", stop);
+    node.addEventListener("touchstart", start, { passive: true });
+    node.addEventListener("touchend", stop);
+    node.addEventListener("touchcancel", stop);
+    return () => {
+      stop();
+      node.removeEventListener("pointerenter", start);
+      node.removeEventListener("pointerleave", stop);
+      node.removeEventListener("touchstart", start);
+      node.removeEventListener("touchend", stop);
+      node.removeEventListener("touchcancel", stop);
+    };
+  }, [api, reducedMotion]);
+
   if (loading || rows.length === 0) return null;
 
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-base font-bold">Discover Creatives</h2>
-        <p className="text-xs text-muted-foreground">Real Passports from across the industry, worldwide.</p>
+        <h2 className="text-base font-bold flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[hsl(var(--signal-teal))]" />
+          Discover Creatives
+        </h2>
+        <p className="text-xs text-muted-foreground">Real Passports from across the industry, worldwide — hover or touch to glide through them.</p>
       </div>
-      <Carousel setApi={setApi} opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="Discover creatives">
+      <Carousel setApi={setApi} opts={{ align: "start", dragFree: true, loop: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="Discover creatives">
         <CarouselContent className="-ml-3">
           {rows.map((p) => {
             if (!p.user_id) return null;
@@ -115,7 +147,7 @@ export function DiscoverCreativesRail() {
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(profileHref); } }}
                     className="rounded-2xl bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal-teal))]"
                   >
-                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-muted">
+                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-card">
                       {p.cover_image_url && !brokenCoverIds.has(p.user_id!) ? (
                         <img
                           src={p.cover_image_url}
@@ -125,20 +157,25 @@ export function DiscoverCreativesRail() {
                           onError={() => markCoverBroken(p.user_id!)}
                         />
                       ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-transparent flex items-center justify-center">
+                        <div className="h-full w-full flex items-center justify-center">
                           <img src={kretoConnector} alt="" className="h-16 w-16 object-contain opacity-90" />
                         </div>
                       )}
+                      {/* Melt the cover into the card body — no hard cut between two backgrounds */}
+                      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       {standing && (
                         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--signal-teal))] backdrop-blur-sm">
                           <ShieldCheck className="h-3 w-3" />
                           {standing}
                         </span>
                       )}
-                      <Avatar className="absolute -bottom-6 left-4 h-14 w-14 ring-2 ring-card">
-                        <AvatarImage src={p.avatar_url ?? undefined} />
-                        <AvatarFallback>{(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
+                      <div className="absolute -bottom-6 left-4">
+                        <div aria-hidden className="absolute -inset-1 rounded-full bg-gradient-to-br from-[hsl(var(--signal-teal))] to-[hsl(var(--signal-pink,320_100%_60%))] opacity-70 blur-[3px]" />
+                        <Avatar className="relative h-14 w-14 ring-2 ring-card">
+                          <AvatarImage src={p.avatar_url ?? undefined} />
+                          <AvatarFallback>{(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </div>
                     </div>
                     <div className="p-4 pt-8 space-y-1.5">
                       <p className="font-semibold text-foreground truncate">{p.full_name || p.username}</p>
