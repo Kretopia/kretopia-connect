@@ -88,7 +88,7 @@ serve(async (req) => {
 
       // Send verification email to brand
       const verifyUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.supabase.co').replace('https://', 'https://')}`;
-      const siteUrl = Deno.env.get('SITE_URL') || 'https://thrivein-new-beta.lovable.app';
+      const siteUrl = Deno.env.get('SITE_URL') || 'https://www.kretopia.com';
       const verificationLink = `${siteUrl}/verify-credit?token=${data.verification_token}`;
 
       const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
@@ -123,7 +123,7 @@ serve(async (req) => {
                   This link is unique and can only be used once. If you did not expect this email, you can safely ignore it.
                 </p>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-                <p style="color: #999; font-size: 11px;">ThriveIN — The Professional Network for Creatives</p>
+                <p style="color: #999; font-size: 11px;">Kretopia — The Creative Economy OS</p>
               </div>
             `,
           }),

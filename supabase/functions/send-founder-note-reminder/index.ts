@@ -7,7 +7,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 const corsHeaders = adminGuardCorsHeaders;
 
-const baseUrl = "https://www.thrivein.io";
+const baseUrl = "https://www.kretopia.com";
 
 // Sends a Sunday reminder email to all admins to write the weekly founder note.
 // Triggered by pg_cron Sundays at 18:00 UTC. Also callable by admins for preview.

@@ -92,7 +92,7 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
     const hostName =
-      hostProfile?.full_name || hostProfile?.username || "A ThriveIN host";
+      hostProfile?.full_name || hostProfile?.username || "A Kretopia host";
     const ref = refUsername || hostProfile?.username || null;
 
     // Normalize / dedupe / validate emails

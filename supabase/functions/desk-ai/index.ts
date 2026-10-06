@@ -148,7 +148,7 @@ ${(notesRes.data || []).slice(0, 5).map((n: any) => `- ${n.title}: ${(n.content 
       ? renderContextPreamble(copilotCtx, "desk", { project_id })
       : "";
 
-    const systemPrompt = `You are DeskAI, the in-project assistant for ThriveDesk — a creative project workspace. You are part of the same Thrive Copilot family the user already knows. The USER FACTS block below is ALREADY loaded — never claim "I don't have your context".
+    const systemPrompt = `You are DeskAI, the in-project assistant for Studio — a creative project workspace. You are part of the same Kreto family the user already knows. The USER FACTS block below is ALREADY loaded — never claim "I don't have your context".
 ${roleGuidance}
 
 ${userPreamble || "(no profile loaded — proceed without a name)"}

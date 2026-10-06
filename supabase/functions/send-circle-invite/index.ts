@@ -38,7 +38,7 @@ serve(async (req) => {
       .single();
 
     const senderName = senderProfile?.full_name || "Someone";
-    const inviteLink = `https://www.thrivein.io/circle/${circleId}`;
+    const inviteLink = `https://www.kretopia.com/circle/${circleId}`;
 
     // For now, log the invites. In production, integrate with email service.
     console.log(`[SEND-CIRCLE-INVITE] ${senderName} inviting ${emails.length} people to "${circleTitle}"`);

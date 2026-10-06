@@ -32,11 +32,11 @@ serve(async (req) => {
     
     const emailTypes = [
       { type: 'welcome', data: { userName: 'Test User' } },
-      { type: 'opportunity', data: { userName: 'Test User', opportunityTitle: 'Music Video Director Needed', opportunityUrl: 'https://thrivein.io/discover' } },
+      { type: 'opportunity', data: { userName: 'Test User', opportunityTitle: 'Music Video Director Needed', opportunityUrl: 'https://www.kretopia.com/discover' } },
       { type: 'match', data: { userName: 'Test User', matchName: 'Creative Partner' } },
       { type: 'application', data: { userName: 'Test User', projectName: 'Brand Campaign', applicationStatus: 'Interview' } },
       { type: 're-engagement', data: { userName: 'Test User', daysInactive: 7 } },
-      { type: 'weekly-digest', data: { userName: 'Test User', opportunities: [{ title: 'Video Editor', type: 'Paid', compensation: '$500', url: 'https://thrivein.io' }] } },
+      { type: 'weekly-digest', data: { userName: 'Test User', opportunities: [{ title: 'Video Editor', type: 'Paid', compensation: '$500', url: 'https://www.kretopia.com' }] } },
       { type: 'activity-digest', data: { userName: 'Test User', totalUnread: 5, matches: 2, messages: 3, connections: 1 } },
       { type: 'streak-warning', data: { userName: 'Test User', streakCount: 7, hasFreezes: true, freezesAvailable: 2 } },
     ];

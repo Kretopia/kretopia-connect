@@ -78,8 +78,8 @@ const handler = async (req: Request): Promise<Response> => {
           .single();
 
         const unsubscribeUrl = prefs?.unsubscribe_token 
-          ? `https://www.thrivein.io/unsubscribe?token=${prefs.unsubscribe_token}`
-          : `https://www.thrivein.io/unsubscribe`;
+          ? `https://www.kretopia.com/unsubscribe?token=${prefs.unsubscribe_token}`
+          : `https://www.kretopia.com/unsubscribe`;
 
         const emailResult = await resend.emails.send({
           from: "Kretopia <info@kretopia.com>",
@@ -110,7 +110,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </p>
                 
                 <div style="text-align: center; margin: 30px 0;">
-                  <a href="https://www.thrivein.io/circle" 
+                  <a href="https://www.kretopia.com/circle" 
                      style="background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); 
                             color: white; 
                             padding: 16px 40px; 

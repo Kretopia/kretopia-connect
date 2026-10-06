@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const APP_URL = "https://www.thrivein.io";
+const APP_URL = "https://www.kretopia.com";
 const MIN_FOR_PAIRS = 5;
 
 Deno.serve(async (req) => {

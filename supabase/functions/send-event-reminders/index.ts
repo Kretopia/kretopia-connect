@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
                 eventDate,
                 eventTime,
                 eventVenue: venue,
-                eventUrl: `https://thrivein.io/event/${event.id}`,
+                eventUrl: `https://www.kretopia.com/event/${event.id}`,
                 checkInToken: participant.check_in_token,
                 isTicketed: !!event.is_ticketed,
               },

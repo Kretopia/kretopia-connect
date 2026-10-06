@@ -9,7 +9,7 @@ const corsHeaders = {
 // MusicBrainz is 100% free - no API key required!
 // Rate limit: 1 request per second with User-Agent header
 const MB_API_BASE = 'https://musicbrainz.org/ws/2';
-const USER_AGENT = 'ThriveIN/1.0 (https://thrivein.io)';
+const USER_AGENT = 'Kretopia/1.0 (https://www.kretopia.com)';
 
 interface MusicBrainzArtist {
   id: string;

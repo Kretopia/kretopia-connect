@@ -293,7 +293,7 @@ serve(async (req) => {
                   newPress: counts.press,
                   newAwards: counts.award,
                   newUploads: counts.upload,
-                  reviewUrl: `https://www.thrivein.io${link}`,
+                  reviewUrl: `https://www.kretopia.com${link}`,
                 },
               },
             }).catch((e) => console.error("email notify failed", e));
