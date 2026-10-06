@@ -13,6 +13,15 @@ import { KretoTip } from "../KretoTip";
  * once" would be exactly the regression this suite exists to catch.
  */
 
+/** The embodied-presence SVG inside the card artwork slot. The small robot in
+ *  the "Kreto · X" label (KretoLabel) is the same component at `micro` size,
+ *  but it is a label on EVERY tip by design, so it is excluded here: this
+ *  suite guards where the large card artwork may appear. */
+const cardPresence = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('svg[viewBox="0 0 100 100"]')).filter((el) => !el.closest("[data-kreto-label]"));
+const labelRobots = (container: HTMLElement) =>
+  container.querySelectorAll('[data-kreto-label] svg[viewBox="0 0 100 100"]');
+
 function renderTip(surface: "today" | "discover" | "desk" | "match" | "pay" | "passport") {
   return render(
     <MemoryRouter>
@@ -36,43 +45,50 @@ describe("KretoTip — Kreto presence rollout scope", () => {
   it("Studio (desk) renders the miniature 3D Kreto artwork", () => {
     const { container } = renderTip("desk");
     expect(container.querySelector('img[src*="kreto-producer-hd"]')).toBeInTheDocument();
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).not.toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(0);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Studio/i)).toBeInTheDocument();
   });
 
   it("Scout (discover) renders the embodied KretoPresence -- the first rollout surface", () => {
     const { container } = renderTip("discover");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Scout/i)).toBeInTheDocument();
   });
 
   it("Passport renders the embodied KretoPresence -- the second rollout surface", () => {
     const { container } = renderTip("passport");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Passport/i)).toBeInTheDocument();
   });
 
   it("Events (/events route) renders the embodied KretoPresence -- the third rollout surface", () => {
     const { container } = renderTipAtRoute("/events");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Events/i)).toBeInTheDocument();
   });
 
   it("/meetup route also resolves to the Events group and renders the embodied presence", () => {
     const { container } = renderTipAtRoute("/meetup");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Events/i)).toBeInTheDocument();
   });
 
   it("Circle (/circle route) renders the embodied KretoPresence -- the fourth rollout surface", () => {
     const { container } = renderTipAtRoute("/circle");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Circle/i)).toBeInTheDocument();
   });
 
   it("/stages route also resolves to the Circle group and renders the embodied presence", () => {
     const { container } = renderTipAtRoute("/stages");
-    expect(container.querySelector('svg[viewBox="0 0 100 100"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(1);
+    expect(labelRobots(container)).toHaveLength(1);
     expect(screen.getByText(/Kreto · Circle/i)).toBeInTheDocument();
   });
 
@@ -80,8 +96,10 @@ describe("KretoTip — Kreto presence rollout scope", () => {
     "%s still renders the flat KretoMark, not the embodied presence -- rollout is scoped, not global",
     (surface) => {
       const { container } = renderTip(surface);
-      expect(container.querySelector('svg[viewBox="0 0 100 100"]')).not.toBeInTheDocument();
+      expect(cardPresence(container)).toHaveLength(0);
       expect(container.querySelector("img")).toBeInTheDocument();
+      // The header label carries the mini robot on every tip.
+      expect(labelRobots(container)).toHaveLength(1);
     },
   );
 });

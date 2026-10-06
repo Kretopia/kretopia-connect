@@ -13,6 +13,7 @@ import { useLocation } from "react-router-dom";
 import { ArrowRight, X } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretoPresence } from "@/components/brand/KretoPresence";
+import { KretoLabel } from "@/components/brand/KretoLabel";
 import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -202,7 +203,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
 
         <div className="min-w-0 flex-1 pr-6">
           <p className="landing-eyebrow mb-1">
-            Kreto · {tip.eyebrow}
+            <KretoLabel context={tip.eyebrow} />
           </p>
           <p className={cn("text-card-foreground/90 leading-snug", compact ? "text-sm" : "text-sm sm:text-[15px]")}>
             {tip.line}
