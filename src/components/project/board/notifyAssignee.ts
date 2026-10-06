@@ -1,8 +1,13 @@
-import { supabase } from "@/integrations/supabase/client";
+import { notifyDeliverableAssignedTo } from "@/lib/studioNotifications";
 
 /**
  * Pings a collaborator that a deliverable was assigned to them.
  * Silent on failure — assignment shouldn't block on notification delivery.
+ *
+ * This used to insert straight into `notifications` from the browser, which
+ * RLS rejects for another user's row (and the error was swallowed), so the
+ * assignee was never actually notified. It now goes through the
+ * create_notification RPC like every other cross-user notification.
  */
 export async function notifyDeliverableAssigned(params: {
   projectId: string;
@@ -12,23 +17,11 @@ export async function notifyDeliverableAssigned(params: {
   assigneeId: string;
   actorId: string | null;
 }) {
-  if (params.assigneeId === params.actorId) return;
-  await supabase
-    .from("notifications")
-    .insert({
-      user_id: params.assigneeId,
-      type: "deliverable_assigned",
-      title: "You've got a new deliverable",
-      message: `"${params.deliverableTitle}" in ${params.projectTitle}`,
-      action_url: `/desk/${params.projectId}?focus=deliverable&id=${params.deliverableId}`,
-      action_text: "Open deliverable",
-      category: "project",
-      priority: "normal",
-    } as never)
-    .then(
-      () => {},
-      () => {
-        /* non-blocking */
-      },
-    );
+  await notifyDeliverableAssignedTo({
+    projectId: params.projectId,
+    projectTitle: params.projectTitle,
+    deliverableTitle: params.deliverableTitle,
+    assigneeId: params.assigneeId,
+    actorId: params.actorId,
+  });
 }

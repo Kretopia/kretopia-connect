@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { notifyTaskAssigned } from "@/lib/studioNotifications";
 import { Plus, GripVertical, Calendar, CheckSquare } from "lucide-react";
 import { 
   DndContext, 
@@ -378,6 +379,9 @@ export function TaskBoard({ tasks: externalTasks, projectId, onUpdate, collabora
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Task created!" });
+      if (newTask.assigned_to !== 'unassigned') {
+        void notifyTaskAssigned({ projectId, taskTitle: newTask.title, assigneeId: newTask.assigned_to, actorId: user.id });
+      }
       setNewTask({ title: '', description: '', due_date: '', status: 'todo', assigned_to: 'unassigned' });
       setCreateDialogOpen(false);
       onUpdate();

@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "@/components/ui/empty-state";
 import { VoiceTaskCapture } from "@/components/project/mobile/VoiceTaskCapture";
 import { enhanceTaskInBackground } from "@/lib/taskEnhancer";
+import { notifyTaskAssigned } from "@/lib/studioNotifications";
 
 interface Task {
   id: string;
@@ -72,6 +73,10 @@ export const SimpleTaskList = ({ projectId, tasks, onTasksChanged, currentUserId
         .single();
 
       if (error) throw error;
+
+      if (userPickedAssignee) {
+        void notifyTaskAssigned({ projectId, taskTitle: rawTitle, assigneeId: assignTo, actorId: currentUserId });
+      }
 
       setNewTask("");
       setAssignTo("unassigned");
@@ -155,6 +160,10 @@ export const SimpleTaskList = ({ projectId, tasks, onTasksChanged, currentUserId
         .eq('id', taskId);
 
       if (error) throw error;
+      const assigned = optimisticTasks.find((t) => t.id === taskId);
+      if (assignedTo && assigned && assigned.assigned_to !== assignedTo) {
+        void notifyTaskAssigned({ projectId, taskTitle: assigned.title, assigneeId: assignedTo, actorId: currentUserId });
+      }
       onTasksChanged();
     } catch (error: any) {
       console.error('Assign task error:', error);

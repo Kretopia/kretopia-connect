@@ -28,6 +28,7 @@ import { useProjectData } from "@/hooks/useProjectData";
 import { useProjectFlow, PROJECT_FLOW_STAGES, STUDIO_PHASES, stageToPhase, type ProjectFlowStageId } from "@/hooks/useProjectFlow";
 import { useProjectFlowExtras } from "@/hooks/useProjectFlowExtras";
 import { notifyPhaseAdvanced } from "@/lib/notifyPhaseAdvanced";
+import { parseDeepLinkTab } from "@/lib/studioNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 
@@ -82,6 +83,20 @@ const ThriveDesk = () => {
     window.addEventListener("thrivedesk:set-tab", handler);
     return () => window.removeEventListener("thrivedesk:set-tab", handler);
   }, []);
+
+  // Deep links from notifications (/desk/:id?tab=messages|tasks|brief|...).
+  // These links were already being sent but the page never read ?tab=, so
+  // every one of them landed on Today. Only the tabs in DEEP_LINK_TABS are
+  // honoured; the param is dropped once applied so Back/refresh stay clean.
+  useEffect(() => {
+    const tab = parseDeepLinkTab(searchParams.get("tab"));
+    if (!project || !tab) return;
+    setActiveTab(tab);
+    const next = new URLSearchParams(searchParams);
+    next.delete("tab");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [project?.id, searchParams]);
 
   useEffect(() => {
     if (!project || searchParams.get("section") !== "sponsors") return;
