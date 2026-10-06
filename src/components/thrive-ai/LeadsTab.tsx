@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,6 +56,16 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "bg-muted text-muted-foreground",
 };
 
+// Only the columns this tab reads (the Lead type above). `select("*")` also
+// pulled avatar_url, profile_url, updated_at and user_id for every lead.
+const LEAD_COLUMNS =
+  "id, name, type, stage, email, company, role, notes, tags, source, priority, last_contacted_at, next_follow_up_at, created_at";
+
+type NewLead = {
+  name: string; type: string; email?: string | null; company?: string | null; role?: string | null;
+  notes?: string | null; priority: string; source?: string | null;
+};
+
 const LeadsTab = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -83,7 +93,7 @@ const LeadsTab = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leads")
-        .select("*")
+        .select(LEAD_COLUMNS)
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -92,8 +102,32 @@ const LeadsTab = () => {
     enabled: !!user,
   });
 
+  // Many rows in one request, then ONE refetch of the leads list. Saving or
+  // importing N leads one at a time meant N inserts, each followed by a full
+  // refetch of every lead. Chunked at 200 rows to stay inside request limits.
+  const addManyMutation = useMutation({
+    mutationFn: async (rows: NewLead[]) => {
+      const payload = rows.map((lead) => ({
+        user_id: user!.id,
+        name: lead.name,
+        type: lead.type,
+        email: lead.email || null,
+        company: lead.company || null,
+        role: lead.role || null,
+        notes: lead.notes || null,
+        priority: lead.priority,
+        source: lead.source || null,
+      }));
+      for (let i = 0; i < payload.length; i += 200) {
+        const { error } = await supabase.from("leads").insert(payload.slice(i, i + 200));
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["leads"] }),
+  });
+
   const addMutation = useMutation({
-    mutationFn: async (lead: { name: string; type: string; email?: string | null; company?: string | null; role?: string | null; notes?: string | null; priority: string; source?: string | null }) => {
+    mutationFn: async (lead: NewLead) => {
       const { error } = await supabase.from("leads").insert({
         user_id: user!.id,
         name: lead.name,
@@ -152,7 +186,13 @@ const LeadsTab = () => {
 
   const resetForm = () => setForm({ name: "", type: "client", email: "", company: "", role: "", notes: "", priority: "medium", source: "" });
 
-  const leadsPerStage = (stage: string) => leads.filter((l) => l.stage === stage);
+  // Grouped once per change to `leads` (one pass), not re-filtered per stage on every render.
+  const leadsByStage = useMemo(() => {
+    const groups: Record<string, Lead[]> = {};
+    for (const l of leads) (groups[l.stage] ||= []).push(l);
+    return groups;
+  }, [leads]);
+  const leadsPerStage = (stage: string) => leadsByStage[stage] ?? [];
 
   // AI Scout
   const handleScout = async () => {
@@ -198,12 +238,30 @@ const LeadsTab = () => {
   };
 
   const saveAllScouted = async () => {
-    for (let i = 0; i < scoutResults.length; i++) {
-      if (!savedIds.has(i)) {
-        await saveScoutedLead(scoutResults[i], i);
-      }
+    const pending = scoutResults.map((lead, idx) => ({ lead, idx })).filter(({ idx }) => !savedIds.has(idx));
+    if (pending.length === 0) return;
+    try {
+      await addManyMutation.mutateAsync(
+        pending.map(({ lead }) => ({
+          name: lead.name,
+          type: lead.type || "client",
+          email: lead.email,
+          company: lead.company,
+          role: lead.role,
+          notes: lead.notes,
+          priority: lead.priority || "medium",
+          source: "AI Scout",
+        })),
+      );
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        pending.forEach(({ idx }) => next.add(idx));
+        return next;
+      });
+      toast.success("All leads saved");
+    } catch {
+      toast.error("Failed to save leads");
     }
-    toast.success("All leads saved");
   };
 
   // CSV Import
@@ -230,12 +288,12 @@ const LeadsTab = () => {
         return;
       }
 
-      let imported = 0;
+      const rows: NewLead[] = [];
       for (let i = 1; i < lines.length; i++) {
         const cols = lines[i].split(",").map((c) => c.trim());
         const name = cols[nameIdx];
         if (!name) continue;
-        await addMutation.mutateAsync({
+        rows.push({
           name,
           type: "client",
           email: emailIdx >= 0 ? cols[emailIdx] || null : null,
@@ -245,9 +303,13 @@ const LeadsTab = () => {
           priority: "medium",
           source: "CSV Import",
         });
-        imported++;
       }
-      toast.success(`Imported ${imported} leads`);
+      try {
+        await addManyMutation.mutateAsync(rows);
+        toast.success(`Imported ${rows.length} leads`);
+      } catch {
+        toast.error("Import failed — some rows may already have been added");
+      }
       if (fileRef.current) fileRef.current.value = "";
     };
     reader.readAsText(file);
