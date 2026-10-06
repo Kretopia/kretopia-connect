@@ -38,6 +38,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { AssigneePicker } from "./board/AssigneePicker";
 import { notifyDeliverableAssigned } from "./board/notifyAssignee";
+import { notifyDeliverableDecision, notifyReviewRequested } from "@/lib/studioNotifications";
 import { evaluateApproval } from "@/lib/approvalValidity";
 
 type Status = "pending" | "in_progress" | "submitted" | "approved" | "rejected";
@@ -586,9 +587,25 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
         prev.map((d) => (d.id === activeIdStr ? { ...d, status: toStatus, sort_order: insertIdx } : d)),
       );
 
+      let moved = true;
       await supabase.from("project_deliverables").update(patch as any).eq("id", activeIdStr).then(({ error }) => {
-        if (error) toast({ title: "Move failed", description: error.message, variant: "destructive" });
+        if (error) {
+          moved = false;
+          toast({ title: "Move failed", description: error.message, variant: "destructive" });
+        }
       });
+
+      // Tell the right people about the move (best-effort, never throws).
+      if (moved) {
+        if (toStatus === "submitted") {
+          void notifyReviewRequested({ projectId, projectTitle, deliverableTitle: moving.title, actorId: currentUserId });
+        } else if (toStatus === "approved" || toStatus === "rejected") {
+          void notifyDeliverableDecision({
+            projectId, projectTitle, deliverableTitle: moving.title,
+            decision: toStatus, recipientIds: [moving.submitted_by, moving.assignee_id], actorId: currentUserId,
+          });
+        }
+      }
 
       // Re-number sort_order in target column
       await Promise.all(
@@ -738,6 +755,10 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
         title: list.length === 1 ? "Submitted for review" : `Submitted ${list.length} files for review`,
         description: "The client will see your upload on the board.",
       });
+      // Ask the people who review (owner, clients) -- best-effort, never throws.
+      void notifyReviewRequested({
+        projectId, projectTitle, deliverableTitle: selected.title, actorId: currentUserId,
+      });
     } catch (e) {
       toast({ title: "Upload failed", description: e instanceof Error ? e.message : "Try again", variant: "destructive" });
     } finally {
@@ -820,6 +841,12 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
     toast({
       title: to === "approved" ? "Approved ✓" : to === "rejected" ? "Marked for changes" : "Updated",
     });
+    if (to === "approved" || to === "rejected") {
+      void notifyDeliverableDecision({
+        projectId, projectTitle, deliverableTitle: selected.title,
+        decision: to, note: reviewNote, recipientIds: [selected.submitted_by, selected.assignee_id], actorId: currentUserId,
+      });
+    }
     if (to === "approved") setSelected(null);
     setReviewNote("");
   };

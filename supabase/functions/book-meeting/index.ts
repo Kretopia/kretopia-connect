@@ -152,13 +152,22 @@ serve(async (req) => {
 
     // Notification to host
     try {
-      await admin.from("notifications").insert({
+      const { error: notifyError } = await admin.from("notifications").insert({
         user_id: ownerId,
         type: "new_booking",
         title: `New booking: ${name}`,
-        body: `${start.toUTCString().slice(0, 22)} · ${dur}m${body.brief ? ` — ${body.brief.slice(0, 100)}` : ""}`,
+        // notifications.message is NOT NULL and there is no `body` column: the
+        // old `body:` key made this insert fail every time (swallowed below),
+        // so hosts never saw a booking notification.
+        message: `${start.toUTCString().slice(0, 22)} · ${dur}m${body.brief ? ` — ${body.brief.slice(0, 100)}` : ""}`,
+        link: `/meet/${meeting.id}`,
         action_url: `/meet/${meeting.id}`,
+        action_text: "Open booking",
+        category: "general",
       });
+      // supabase-js returns errors instead of throwing, so the catch below
+      // alone could never see a failed insert.
+      if (notifyError) console.warn("[book-meeting] host notification failed:", notifyError.message);
     } catch { /* ignore */ }
 
     return json({
