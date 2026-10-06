@@ -8,7 +8,53 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const corsHeaders = adminGuardCorsHeaders;
 
 
-const baseUrl = "https://www.thrivein.io";
+const baseUrl = "https://www.kretopia.com";
+const FROM = "Kretopia <info@kretopia.com>";
+const TEMPLATE_NAME = "weekly-update"; // email_send_log.template_name for this email
+const TIME_BUDGET_MS = 120_000; // stop before the edge runtime limit; a re-run resumes
+
+// PostgREST returns at most 1000 rows per request; page through the rest.
+async function fetchAllRows<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>,
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; from < 200_000; from += 1000) {
+    const { data, error } = await build(from, from + 999);
+    if (error) throw error;
+    out.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+// One unsubscribe token per address, same scheme as send-transactional-email
+// (email_unsubscribe_tokens + the /unsubscribe page). Returns null when the
+// address already used its token or no token can be stored: this email is
+// never sent without a working unsubscribe link.
+async function getUnsubscribeToken(admin: any, email: string): Promise<string | null> {
+  const normalized = email.toLowerCase();
+  const { data: existing, error } = await admin
+    .from("email_unsubscribe_tokens")
+    .select("token, used_at")
+    .eq("email", normalized)
+    .maybeSingle();
+  if (error) return null;
+  if (existing) return existing.used_at ? null : existing.token;
+
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  const token = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  const { error: upsertError } = await admin
+    .from("email_unsubscribe_tokens")
+    .upsert({ token, email: normalized }, { onConflict: "email", ignoreDuplicates: true });
+  if (upsertError) return null;
+  const { data: stored } = await admin
+    .from("email_unsubscribe_tokens")
+    .select("token")
+    .eq("email", normalized)
+    .maybeSingle();
+  return stored?.token ?? null;
+}
 
 function escapeHtml(s: string): string {
   return s
@@ -85,8 +131,9 @@ const handler = async (req: Request): Promise<Response> => {
       .order("created_at", { ascending: false })
       .limit(5);
 
-    // 4. Featured Thriver — most credits added in last 30 days
-    const { data: featuredThriver } = await supabaseAdmin
+    // 4. Newest member with a public profile (labelled "New to Kretopia" -- this
+    //    is the most recent signup, not a curated or ranked pick)
+    const { data: newestMember } = await supabaseAdmin
       .from("public_profiles_safe")
       .select("user_id, full_name, site_headline, avatar_url, role")
       .not("full_name", "is", null)
@@ -143,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
     const gigsSection = gigs && gigs.length > 0
       ? `
         <div style="margin: 28px 0;">
-          <h3 style="color: #ffffff; margin: 0 0 14px; font-size: 18px;">💼 Top Gigs This Week</h3>
+          <h3 style="color: #ffffff; margin: 0 0 14px; font-size: 18px;">💼 New Opportunities This Week</h3>
           ${gigs.map((g) => `
             <a href="${baseUrl}/opportunity/${g.id}" style="display: block; text-decoration: none; background: rgba(255,255,255,0.04); border-left: 3px solid #4338CA; padding: 12px 14px; margin-bottom: 8px; border-radius: 8px;">
               <div style="color: #ffffff; font-weight: 600; font-size: 15px;">${escapeHtml(g.title)}</div>
@@ -158,14 +205,14 @@ const handler = async (req: Request): Promise<Response> => {
       `
       : "";
 
-    const featuredSection = featuredThriver
+    const featuredSection = newestMember
       ? `
         <div style="margin: 28px 0; background: rgba(255,255,255,0.04); border-radius: 12px; padding: 18px; text-align: center;">
-          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #fbbf24; font-weight: 600; margin-bottom: 12px;">⭐ Featured Thriver</div>
-          ${featuredThriver.avatar_url ? `<img src="${featuredThriver.avatar_url}" alt="" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px; display: block;" />` : ""}
-          <div style="color: #ffffff; font-size: 17px; font-weight: 600;">${escapeHtml(featuredThriver.full_name || "")}</div>
-          ${featuredThriver.site_headline ? `<div style="color: #a0a0a0; font-size: 13px; margin-top: 4px;">${escapeHtml(featuredThriver.site_headline)}</div>` : ""}
-          <a href="${baseUrl}/profile/${featuredThriver.user_id}" style="display: inline-block; margin-top: 12px; padding: 8px 18px; background: rgba(99,102,241,0.2); color: #a5b4fc; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">View profile →</a>
+          <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #fbbf24; font-weight: 600; margin-bottom: 12px;">⭐ New to Kretopia</div>
+          ${newestMember.avatar_url ? `<img src="${newestMember.avatar_url}" alt="" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin: 0 auto 10px; display: block;" />` : ""}
+          <div style="color: #ffffff; font-size: 17px; font-weight: 600;">${escapeHtml(newestMember.full_name || "")}</div>
+          ${newestMember.site_headline ? `<div style="color: #a0a0a0; font-size: 13px; margin-top: 4px;">${escapeHtml(newestMember.site_headline)}</div>` : ""}
+          <a href="${baseUrl}/profile/${newestMember.user_id}" style="display: inline-block; margin-top: 12px; padding: 8px 18px; background: rgba(99,102,241,0.2); color: #a5b4fc; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500;">View profile →</a>
         </div>
       `
       : "";
@@ -191,7 +238,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="text-align: center; padding: 4px;">
               <div style="color: #ffffff; font-size: 22px; font-weight: 700;">${newUsers || 0}</div>
-              <div style="color: #a0a0a0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">New Thrivers</div>
+              <div style="color: #a0a0a0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;">New Members</div>
             </td>
             <td style="text-align: center; padding: 4px;">
               <div style="color: #ffffff; font-size: 22px; font-weight: 700;">${newGigs || 0}</div>
@@ -206,10 +253,10 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
-    const buildEmailHtml = (greetingName: string) => `
+    const buildEmailHtml = (greetingName: string, unsubscribeUrl: string) => `
       <div style="font-family: 'Inter', -apple-system, Arial, sans-serif; max-width: 620px; margin: 0 auto; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #ffffff; padding: 36px 28px; border-radius: 16px;">
         <div style="text-align: center; margin-bottom: 28px;">
-          <h1 style="color: #ffffff; font-size: 26px; margin: 0; font-weight: 700;">Monday Drop 🎯</h1>
+          <h1 style="color: #ffffff; font-size: 26px; margin: 0; font-weight: 700;">This week at Kretopia</h1>
           <p style="color: #818cf8; font-size: 12px; margin-top: 6px; text-transform: uppercase; letter-spacing: 2px;">Kretopia · The Creative OS</p>
         </div>
         <p style="font-size: 16px; line-height: 1.6; margin: 0 0 8px;">Hey ${escapeHtml(greetingName)},</p>
@@ -221,17 +268,20 @@ const handler = async (req: Request): Promise<Response> => {
         ${eventsSection}
         ${statsSection}
         <div style="text-align: center; margin: 32px 0 12px;">
-          <a href="${baseUrl}/discover" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #4338CA, #6366f1); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Open Kretopia →</a>
+          <a href="${baseUrl}/" style="display: inline-block; padding: 14px 36px; background: linear-gradient(135deg, #4338CA, #6366f1); color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">Open Today →</a>
         </div>
         <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 28px; padding-top: 16px; text-align: center;">
+          <p style="color: #666; font-size: 12px; margin: 0 0 6px;">You're receiving this weekly update because you have a Kretopia account or subscribed to our newsletter.</p>
           <p style="color: #666; font-size: 12px; margin: 0;">
-            <a href="${baseUrl}/notification-settings" style="color: #818cf8; text-decoration: none;">Manage email preferences</a>
+            <a href="${unsubscribeUrl}" style="color: #818cf8; text-decoration: underline;">Unsubscribe</a>
+            &nbsp;·&nbsp;
+            <a href="${baseUrl}/settings" style="color: #818cf8; text-decoration: none;">Manage email preferences</a>
           </p>
         </div>
       </div>
     `;
 
-    const subjectLine = `Monday Drop 🎯 ${new Date().toLocaleDateString("en-US", { month: "short", day: "numeric" })}${founderNote?.title ? ` — ${founderNote.title}` : ""}`;
+    const subjectLine = `This week at Kretopia${founderNote?.title ? ` — ${founderNote.title}` : ""}`;
 
     // === PREVIEW MODE: send single email to caller ===
     if (isPreview) {
@@ -251,11 +301,15 @@ const handler = async (req: Request): Promise<Response> => {
           .maybeSingle();
         if (prof?.full_name) previewName = prof.full_name.split(" ")[0];
       }
+      // A preview is not logged or deduped, and goes out even to a suppressed
+      // address (it is the admin looking at their own copy); the unsubscribe
+      // link falls back to preferences if no token can be made.
+      const previewToken = await getUnsubscribeToken(supabaseAdmin, recipient);
       const { error } = await resend.emails.send({
-        from: "Kretopia <info@kretopia.com>",
+        from: FROM,
         to: [recipient],
         subject: `[PREVIEW] ${subjectLine}`,
-        html: buildEmailHtml(previewName),
+        html: buildEmailHtml(previewName, previewToken ? `${baseUrl}/unsubscribe?token=${previewToken}` : `${baseUrl}/settings`),
       });
       if (error) throw error;
       return new Response(JSON.stringify({ success: true, preview: true, sent_to: recipient }), {
@@ -264,67 +318,125 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // === FULL SEND: opted-in users + newsletter subscribers ===
-    const { data: profiles } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id, full_name")
-      .eq("onboarding_completed", true);
+    const startedAt = Date.now();
+    const force = body?.force === true; // re-send even to people who already got this week's update
 
-    const { data: subscribers } = await supabaseAdmin
-      .from("newsletter_subscribers")
-      .select("email")
-      .eq("is_active", true);
+    const profiles = await fetchAllRows<{ user_id: string; full_name: string | null }>((from, to) =>
+      supabaseAdmin.from("profiles").select("user_id, full_name").eq("onboarding_completed", true).range(from, to));
+    const subscribers = await fetchAllRows<{ email: string }>((from, to) =>
+      supabaseAdmin.from("newsletter_subscribers").select("email").eq("is_active", true).range(from, to));
 
-    let success = 0, errors = 0, skipped = 0;
-    const sentEmails = new Set<string>();
+    // Looked up once, not per person: users who turned this email off,
+    // addresses on the suppression list (unsubscribed, bounced, complained),
+    // and addresses that already got THIS week's update.
+    const optedOut = new Set(
+      (await fetchAllRows<{ user_id: string }>((from, to) =>
+        supabaseAdmin.from("notification_preferences").select("user_id").eq("email_opportunities", false).range(from, to)))
+        .map((r) => r.user_id),
+    );
+    const suppressed = new Set(
+      (await fetchAllRows<{ email: string }>((from, to) =>
+        supabaseAdmin.from("suppressed_emails").select("email").range(from, to)))
+        .map((r) => r.email.toLowerCase()),
+    );
+    const alreadySent = force
+      ? new Set<string>()
+      : new Set(
+          (await fetchAllRows<{ recipient_email: string }>((from, to) =>
+            supabaseAdmin.from("email_send_log").select("recipient_email")
+              .eq("template_name", TEMPLATE_NAME).eq("status", "sent")
+              .gte("created_at", `${mondayISO}T00:00:00.000Z`).range(from, to)))
+            .map((r) => r.recipient_email.toLowerCase()),
+        );
 
-    // Send to platform users (check opt-in)
-    for (const profile of profiles || []) {
+    let success = 0, errors = 0, skipped = 0, deduped = 0, suppressedCount = 0;
+    let timedOut = false;
+    const seen = new Set<string>();
+    const logRows: Array<Record<string, unknown>> = [];
+
+    // Send log (existing email_send_log). Flushed in small batches so a runtime
+    // kill can't lose it: the 'sent' rows are what make a re-run skip people who
+    // already have this week's update. Best effort -- a logging failure must
+    // not hide that the emails went out.
+    const flushLog = async () => {
+      if (!logRows.length) return;
+      const batch = logRows.splice(0, logRows.length);
+      const { error: logError } = await supabaseAdmin.from("email_send_log").insert(batch);
+      if (logError) console.error("[weekly-update] could not write send log:", logError.message);
+    };
+
+    // user id -> email, from the auth list in pages (one request per 1000 users
+    // instead of one per user); anything missing falls back to a single lookup.
+    const emailById = new Map<string, string>();
+    for (let page = 1; page <= 200; page++) {
+      const { data: pageData, error: pageError } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+      if (pageError || !pageData?.users?.length) break;
+      for (const u of pageData.users) if (u.email) emailById.set(u.id, u.email);
+      if (pageData.users.length < 1000) break;
+    }
+
+    const deliver = async (email: string, firstName: string) => {
+      const key = email.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      if (suppressed.has(key)) { suppressedCount++; return; }
+      if (alreadySent.has(key)) { deduped++; return; }
+
+      const token = await getUnsubscribeToken(supabaseAdmin, email);
+      if (!token) { skipped++; return; } // no working unsubscribe link -> no email
+      const unsubscribeUrl = `${baseUrl}/unsubscribe?token=${token}`;
       try {
-        const { data: prefs } = await supabaseAdmin
-          .from("notification_preferences")
-          .select("email_opportunities")
-          .eq("user_id", profile.user_id)
-          .maybeSingle();
-        if (prefs && prefs.email_opportunities === false) { skipped++; continue; }
-
-        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(profile.user_id);
-        const email = userData?.user?.email;
-        if (!email || sentEmails.has(email.toLowerCase())) continue;
-        sentEmails.add(email.toLowerCase());
-
-        const { error } = await resend.emails.send({
-          from: "Kretopia <info@kretopia.com>",
+        const { data, error } = await resend.emails.send({
+          from: FROM,
           to: [email],
           subject: subjectLine,
-          html: buildEmailHtml(profile.full_name?.split(" ")[0] || "Creative"),
+          html: buildEmailHtml(firstName, unsubscribeUrl),
+          headers: { "List-Unsubscribe": `<${unsubscribeUrl}>` },
         });
-        if (error) { errors++; console.error(`[monday] ${email}:`, error); }
-        else success++;
-        await new Promise((r) => setTimeout(r, 80));
-      } catch (err) { errors++; console.error(`[monday] user ${profile.user_id}:`, err); }
-    }
+        if (error) {
+          errors++;
+          console.error(`[weekly-update] ${email}:`, error);
+          logRows.push({ template_name: TEMPLATE_NAME, recipient_email: email, status: "failed", error_message: String((error as any)?.message ?? error).slice(0, 500) });
+        } else {
+          success++;
+          logRows.push({ message_id: (data as any)?.id ?? null, template_name: TEMPLATE_NAME, recipient_email: email, status: "sent" });
+        }
+      } catch (err) {
+        errors++;
+        console.error(`[weekly-update] ${email}:`, err);
+        logRows.push({ template_name: TEMPLATE_NAME, recipient_email: email, status: "failed", error_message: String((err as any)?.message ?? err).slice(0, 500) });
+      }
+      if (logRows.length >= 25) await flushLog();
+      await new Promise((r) => setTimeout(r, 80));
+    };
 
-    // Newsletter subscribers (not in platform)
-    for (const sub of subscribers || []) {
-      const e = sub.email.toLowerCase();
-      if (sentEmails.has(e)) continue;
-      sentEmails.add(e);
+    // Platform users who have not turned this email off
+    for (const profile of profiles) {
+      if (Date.now() - startedAt > TIME_BUDGET_MS) { timedOut = true; break; }
+      if (optedOut.has(profile.user_id)) { skipped++; continue; }
       try {
-        const { error } = await resend.emails.send({
-          from: "Kretopia <info@kretopia.com>",
-          to: [sub.email],
-          subject: subjectLine,
-          html: buildEmailHtml("Creative"),
-        });
-        if (error) { errors++; } else success++;
-        await new Promise((r) => setTimeout(r, 80));
-      } catch (err) { errors++; console.error(`[monday] sub ${sub.email}:`, err); }
+        const email = emailById.get(profile.user_id)
+          ?? (await supabaseAdmin.auth.admin.getUserById(profile.user_id)).data?.user?.email;
+        if (email) await deliver(email, profile.full_name?.split(" ")[0] || "Creative");
+      } catch (err) { errors++; console.error(`[weekly-update] user ${profile.user_id}:`, err); }
     }
 
-    console.log(`[monday-digest] sent=${success} errors=${errors} skipped=${skipped} unique=${sentEmails.size}`);
+    // Newsletter subscribers who are not platform users
+    for (const sub of subscribers) {
+      if (timedOut || Date.now() - startedAt > TIME_BUDGET_MS) { timedOut = true; break; }
+      await deliver(sub.email, "Creative");
+    }
+
+    await flushLog();
+
+    console.log(`[weekly-update] sent=${success} errors=${errors} skipped=${skipped} deduped=${deduped} suppressed=${suppressedCount} partial=${timedOut} unique=${seen.size}`);
 
     return new Response(
-      JSON.stringify({ success: true, sent: success, failed: errors, skipped, unique_recipients: sentEmails.size }),
+      JSON.stringify({
+        success: true, sent: success, failed: errors, skipped, already_sent: deduped,
+        suppressed: suppressedCount, unique_recipients: seen.size,
+        partial: timedOut, // true -> run again to continue; people already sent are skipped
+      }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
