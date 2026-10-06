@@ -5,7 +5,8 @@ Written 2026-10-06. Companion file: [`leads-duplicates-report.sql`](./leads-dupl
 
 ## Why there are no numbers here
 
-The Lead Scout fix (PR #68, `fix/lead-scout-duplicates`) stops *new* duplicates. It does nothing for rows
+The Lead Scout fix (PR #70, which re-lands #68: that one merged into a stale base branch, not `main`) stops
+*new* duplicates once it is merged and deployed. It does nothing for rows
 that were saved twice before it, and that data lives only in the production database.
 
 When this was written, the Supabase connector available to the authoring session listed 14 projects, **all
@@ -35,7 +36,7 @@ Confidence, strongest first:
   has no name). Two different people called "John Smith" look identical here. Never treat this bucket as
   duplicates without a look.
 
-Query 2's `scout_autosave_plus_button = true` marks the exact bug PR #68 closes: a lead saved automatically by the
+Query 2's `scout_autosave_plus_button = true` marks the exact bug PR #70 closes: a lead saved automatically by the
 search (`source` starts with `thrive-research:`) and again by Save / Save All (`source = 'AI Scout'`). Those pairs
 are the safest to believe. `rows_with_progress > 0` means someone already worked one of the copies (stage past
 `cold`, contacted, or follow-up set), and `linked_sequences > 0` means an `outreach_sequences` row points at it.
