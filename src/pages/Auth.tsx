@@ -18,6 +18,7 @@ import { AuthBrandingPanel } from "@/components/auth/AuthBrandingPanel";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpWizard } from "@/components/auth/SignUpWizard";
 import { UniversalClaimFlow } from "@/components/onboarding/claim-flow/UniversalClaimFlow";
+import { getAuthOrigin, getPostSignupUrl } from "@/lib/authRedirect";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -39,12 +40,11 @@ const OAUTH_TEMPORARILY_DISABLED = true;
 
 const PASSWORD_MIN_LENGTH = 12;
 
+// Canonical host (kretopia.com), not whatever host the person happens to be on: the
+// link in the email must never open a *.lovable.app preview. Query string is kept.
 const getAuthRedirectUrl = () => {
   if (typeof window === "undefined") return undefined;
-  const url = new URL(window.location.href);
-  url.pathname = "/auth";
-  url.hash = "";
-  return url.toString();
+  return `${getAuthOrigin()}/auth${window.location.search}`;
 };
 
 const validatePassword = (value: string) => {
@@ -517,9 +517,10 @@ const Auth = () => {
     const { data: signUpData, error } = await supabase.auth.signUp({
       email: normalizedEmail, password,
       options: {
-        // Land verified users directly in onboarding so the profile setup picks up where they left off.
-        // window.location.origin handles preview, custom-domain, and prod automatically.
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        // After confirming their email, a new member lands straight on their profile,
+        // always on kretopia.com (never a *.lovable.app preview host). The profile page
+        // invites them to finish setup if they haven't yet.
+        emailRedirectTo: getPostSignupUrl(),
         data: { account_type: accountType, invite_code: inviteCode },
       },
     });
@@ -681,14 +682,20 @@ const Auth = () => {
                 <h2 className="font-semibold text-lg">Confirm your email to continue</h2>
                 <p className="text-sm text-muted-foreground mt-1">
                   We sent a verification link to <span className="font-medium text-foreground">{pendingVerificationEmail}</span>.
-                  Click it to finish signing up and start onboarding.
+                  Click it to finish signing up and open your profile.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={async () => {
                   try {
-                    await supabase.auth.resend({ type: "signup", email: pendingVerificationEmail });
+                    // Without emailRedirectTo the resent link falls back to the server's default
+                    // site URL (a *.lovable.app host) instead of the profile on kretopia.com.
+                    await supabase.auth.resend({
+                      type: "signup",
+                      email: pendingVerificationEmail,
+                      options: { emailRedirectTo: getPostSignupUrl() },
+                    });
                     toast({ title: "Verification email resent" });
                   } catch (err: any) {
                     toast({ title: "Could not resend", description: err?.message || "Try again in a moment.", variant: "destructive" });

@@ -7,6 +7,7 @@ import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getAuthOrigin } from "@/lib/authRedirect";
 import {
   lookupAuthProviders,
   getLastSignInMethod,
@@ -83,7 +84,7 @@ export const SignInForm = ({
     try {
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: window.location.origin, shouldCreateUser: false },
+        options: { emailRedirectTo: getAuthOrigin(), shouldCreateUser: false },
       });
       if (error) {
         toast({ title: "Couldn't send link", description: error.message, variant: "destructive" });
