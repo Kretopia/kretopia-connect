@@ -91,8 +91,8 @@ export const MeetKretoSection = () => {
             <p className="landing-eyebrow mb-4">{chapterRoman("chapter-kreto")}. Kreto</p>
 
             <h2 id="kreto-title" className="landing-h2 landing-glow">
-              The Executive Producer for your{" "}
-              <span className="italic k-gradient-text">creative career</span>.
+              The Executive Producer<br />
+              <span className="italic k-gradient-text">for your creative career</span>
             </h2>
 
             <p className="landing-sub mt-6 max-w-xl">

@@ -67,7 +67,8 @@ export const ForOrganisationsSection = () => {
         >
           <p className="landing-eyebrow mb-4">Hiring creative talent?</p>
           <h2 id="for-orgs-title" className="landing-h2 landing-glow">
-            Find people through the work <span className="landing-accent">they've actually done.</span>
+            Find people through the work<br />
+            <span className="landing-accent">they've actually done</span>
           </h2>
           <p className="landing-sub mt-4 max-w-xl">
             Kretopia helps hotels, agencies, festivals, production companies, brands and creative teams discover talent through verified creative context, not just profiles and follower counts.

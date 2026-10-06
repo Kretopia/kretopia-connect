@@ -85,7 +85,8 @@ export const FAQSection = () => {
         >
           <p className="landing-eyebrow mb-4">Frequently asked</p>
           <h2 id="faq-heading" className="landing-h2 landing-glow">
-            Everything about <span className="landing-accent">Kretopia</span>
+            Everything about<br />
+            <span className="landing-accent">Kretopia</span>
           </h2>
           <p className="landing-sub mt-4 mx-auto max-w-lg">
             Straight answers about credits, EPKs, and getting paid.
