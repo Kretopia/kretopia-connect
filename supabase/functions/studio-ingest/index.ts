@@ -33,8 +33,7 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -43,31 +42,72 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const ALLOWED_SOURCE_KINDS = new Set([
-  "pdf", "image", "voice", "email", "link", "deck",
-  "contract", "budget", "brief", "message", "manual",
+  "pdf",
+  "image",
+  "voice",
+  "email",
+  "link",
+  "deck",
+  "contract",
+  "budget",
+  "brief",
+  "message",
+  "manual",
 ]);
 
 const ALLOWED_FACT_KINDS = new Set([
   // money
-  "budget_total", "budget_line", "payment_terms", "rate", "deposit",
-  "invoice_amount", "currency",
+  "budget_total",
+  "budget_line",
+  "payment_terms",
+  "rate",
+  "deposit",
+  "invoice_amount",
+  "currency",
   // dates
-  "event_date", "deadline", "load_in", "load_out", "doors", "show_start",
+  "event_date",
+  "deadline",
+  "load_in",
+  "load_out",
+  "doors",
+  "show_start",
   // places
-  "venue_name", "venue_address", "capacity", "city", "country",
+  "venue_name",
+  "venue_address",
+  "capacity",
+  "city",
+  "country",
   // people / orgs
-  "client", "sponsor_tier", "contact_email", "contact_phone",
+  "client",
+  "sponsor_tier",
+  "contact_email",
+  "contact_phone",
   // creative
-  "key_message", "tagline", "brand_color", "asset_spec",
+  "key_message",
+  "tagline",
+  "brand_color",
+  "asset_spec",
   // legal
-  "exclusivity", "deliverable_clause", "cancellation",
+  "exclusivity",
+  "deliverable_clause",
+  "cancellation",
   // catch-all
   "note",
 ]);
 
 const ALLOWED_ENTITY_KINDS = new Set([
-  "person", "org", "sponsor", "venue", "brand", "client", "talent",
-  "supplier", "date", "deliverable", "product", "other",
+  "person",
+  "org",
+  "sponsor",
+  "venue",
+  "brand",
+  "client",
+  "talent",
+  "supplier",
+  "date",
+  "deliverable",
+  "product",
+  "other",
 ]);
 
 // Money/contact facts are the highest-value target for an injected
@@ -83,8 +123,14 @@ const ALLOWED_ENTITY_KINDS = new Set([
 // downstream consumer that checks it treats them as unverified rather than
 // silent ground truth.
 const SENSITIVE_FACT_KINDS = new Set([
-  "payment_terms", "deposit", "invoice_amount", "budget_total", "budget_line",
-  "rate", "contact_email", "contact_phone",
+  "payment_terms",
+  "deposit",
+  "invoice_amount",
+  "budget_total",
+  "budget_line",
+  "rate",
+  "contact_email",
+  "contact_phone",
 ]);
 const TRUSTED_SOURCE_KINDS = new Set(["manual"]);
 
@@ -96,12 +142,14 @@ function json(body: unknown, status = 200) {
 }
 
 function slugify(s: string): string {
-  return String(s ?? "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 80) || "x";
+  return (
+    String(s ?? "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 80) || "x"
+  );
 }
 
 const EXTRACT_TOOL = {
@@ -173,7 +221,9 @@ Deno.serve(async (req) => {
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
-    const { data: { user } } = await userClient.auth.getUser();
+    const {
+      data: { user },
+    } = await userClient.auth.getUser();
     if (!user) return json({ error: "Invalid session" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -209,13 +259,8 @@ Deno.serve(async (req) => {
       return json({ error: "text, url, image, or audio required" }, 400);
     }
 
-
     // Membership check (owner or collaborator)
-    const { data: project } = await admin
-      .from("projects")
-      .select("id, created_by")
-      .eq("id", project_id)
-      .maybeSingle();
+    const { data: project } = await admin.from("projects").select("id, created_by").eq("id", project_id).maybeSingle();
     if (!project) return json({ error: "project not found" }, 404);
 
     let isMember = project.created_by === user.id;
@@ -241,7 +286,8 @@ Deno.serve(async (req) => {
       "You are the Studio Brain for an Executive Producer working on " +
       `"${project_title}". A creative just dropped a piece of source material ` +
       `(${source_kind}${file_name ? ` — ${file_name}` : ""}${hint ? `; hint: ${hint}` : ""}).` +
-      visionHint + audioHint +
+      visionHint +
+      audioHint +
       " Extract ONLY the things that will be reusable later: budgets, dates, " +
       "venues, sponsors, contacts, deliverables, brand guidance, payment terms, " +
       "key messages. Be concise. Never invent. If something isn't in the source, " +
@@ -271,28 +317,24 @@ Deno.serve(async (req) => {
     }
 
     // Vision/audio needs Pro for reliable extraction; text-only stays on flash for speed/cost
-    const model = (hasVision || hasAudio) ? GEMINI_PRO : GEMINI_FLASH;
+    const model = hasVision || hasAudio ? GEMINI_PRO : GEMINI_FLASH;
 
-
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userContent },
-          ],
-          tools: [EXTRACT_TOOL],
-          tool_choice: { type: "function", function: { name: "record_studio_brain" } },
-        }),
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userContent },
+        ],
+        tools: [EXTRACT_TOOL],
+        tool_choice: { type: "function", function: { name: "record_studio_brain" } },
+      }),
+    });
 
     if (!aiResp.ok) {
       const t = await aiResp.text();
@@ -304,9 +346,7 @@ Deno.serve(async (req) => {
 
     const aiData = await aiResp.json();
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
-    const args = toolCall?.function?.arguments
-      ? JSON.parse(toolCall.function.arguments)
-      : null;
+    const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
     if (!args) return json({ error: "No structured output" }, 500);
 
     const facts: any[] = Array.isArray(args.facts) ? args.facts.slice(0, 24) : [];
@@ -319,15 +359,11 @@ Deno.serve(async (req) => {
       .map((f) => {
         const kind = ALLOWED_FACT_KINDS.has(String(f.kind)) ? String(f.kind) : "note";
         const importance = Math.max(1, Math.min(5, Number(f.importance ?? 3)));
-        const valueDate = typeof f.value_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f.value_date)
-          ? f.value_date
-          : null;
-        const valueNum = typeof f.value_numeric === "number" && Number.isFinite(f.value_numeric)
-          ? f.value_numeric
-          : null;
-        const confidence = SENSITIVE_FACT_KINDS.has(kind) && !TRUSTED_SOURCE_KINDS.has(source_kind)
-          ? 0.4
-          : 0.75;
+        const valueDate =
+          typeof f.value_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f.value_date) ? f.value_date : null;
+        const valueNum =
+          typeof f.value_numeric === "number" && Number.isFinite(f.value_numeric) ? f.value_numeric : null;
+        const confidence = SENSITIVE_FACT_KINDS.has(kind) && !TRUSTED_SOURCE_KINDS.has(source_kind) ? 0.4 : 0.75;
         return {
           project_id,
           kind,
