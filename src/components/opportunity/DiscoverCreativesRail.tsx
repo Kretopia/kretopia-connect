@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
-import { ShieldCheck, MapPin, Star, MessageCircle, Handshake } from "lucide-react";
+import { ShieldCheck, MapPin, Star, MessageCircle, Handshake, Sparkles } from "lucide-react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.png";
 
@@ -88,15 +88,47 @@ export function DiscoverCreativesRail() {
     return () => { cancelled = true; };
   }, []);
 
+  // No dragging required: hovering (desktop) or touching (mobile) the rail
+  // starts a slow continuous glide through the cards; leaving stops it.
+  useEffect(() => {
+    if (!api || reducedMotion) return;
+    let timer: number | undefined;
+    const start = () => {
+      if (timer !== undefined) return;
+      timer = window.setInterval(() => api.scrollNext(), 2400);
+    };
+    const stop = () => {
+      if (timer !== undefined) window.clearInterval(timer);
+      timer = undefined;
+    };
+    const node = api.rootNode();
+    node.addEventListener("pointerenter", start);
+    node.addEventListener("pointerleave", stop);
+    node.addEventListener("touchstart", start, { passive: true });
+    node.addEventListener("touchend", stop);
+    node.addEventListener("touchcancel", stop);
+    return () => {
+      stop();
+      node.removeEventListener("pointerenter", start);
+      node.removeEventListener("pointerleave", stop);
+      node.removeEventListener("touchstart", start);
+      node.removeEventListener("touchend", stop);
+      node.removeEventListener("touchcancel", stop);
+    };
+  }, [api, reducedMotion]);
+
   if (loading || rows.length === 0) return null;
 
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="text-base font-bold">Discover Creatives</h2>
-        <p className="text-xs text-muted-foreground">Real Passports from across the industry, worldwide.</p>
+        <h2 className="text-base font-bold flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[hsl(var(--signal-teal))]" />
+          Discover Creatives
+        </h2>
+        <p className="text-xs text-muted-foreground">Real Passports from across the industry, worldwide — hover or touch to glide through them.</p>
       </div>
-      <Carousel setApi={setApi} opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="Discover creatives">
+      <Carousel setApi={setApi} opts={{ align: "start", dragFree: true, loop: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="Discover creatives">
         <CarouselContent className="-ml-3">
           {rows.map((p) => {
             if (!p.user_id) return null;
