@@ -293,12 +293,19 @@ Deno.serve(async (req) => {
     )
   }
 
-  // 4. Render React Email template to HTML and plain text
+  // 4. Render React Email template to HTML and plain text.
+  // Templates may opt in to a visible one-click unsubscribe link by reading
+  // `unsubscribeUrl`; it is set here, after caller data, so a caller can't
+  // override it. Templates that don't read it are unaffected.
+  const renderData = {
+    ...templateData,
+    unsubscribeUrl: `https://www.kretopia.com/unsubscribe?token=${unsubscribeToken}`,
+  }
   const html = await renderAsync(
-    React.createElement(template.component, templateData)
+    React.createElement(template.component, renderData)
   )
   const plainText = await renderAsync(
-    React.createElement(template.component, templateData),
+    React.createElement(template.component, renderData),
     { plainText: true }
   )
 
