@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { Camera, CheckCircle, XCircle, Loader2, Shield, Sparkles, UserCheck, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getPostSignupUrl } from "@/lib/authRedirect";
 
 interface ClaimProfileDialogProps {
   open: boolean;
@@ -112,7 +113,7 @@ export function ClaimProfileDialog({ open, onOpenChange, profile, onSuccess }: C
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: getPostSignupUrl(),
           data: {
             full_name: profile.full_name,
             account_type: 'individual'
@@ -273,7 +274,7 @@ export function ClaimProfileDialog({ open, onOpenChange, profile, onSuccess }: C
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: getPostSignupUrl(),
           data: {
             full_name: profile.full_name,
             account_type: 'individual'

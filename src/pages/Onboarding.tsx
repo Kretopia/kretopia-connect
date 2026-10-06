@@ -23,6 +23,7 @@ import { LOCATION_HIERARCHY } from "@/lib/locationGroups";
 import { IntentPicker } from "@/components/intent/IntentPicker";
 import { FunnelStepper, type StepKey } from "@/components/onboarding/FunnelStepper";
 import { BRAND } from "@/lib/brandLexicon";
+import { getPostSignupUrl } from "@/lib/authRedirect";
 
 // Wave 1 reframe: Find your work → Confirm credits → Launch profile
 // (internal phase ids unchanged for analytics continuity)
@@ -715,7 +716,11 @@ export default function Onboarding() {
     if (!emailToVerify) return;
     setResendingEmail(true);
     try {
-      const { error } = await supabase.auth.resend({ type: "signup", email: emailToVerify });
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: emailToVerify,
+        options: { emailRedirectTo: getPostSignupUrl() },
+      });
       if (error) throw error;
       toast({ title: "Email sent!", description: "Check your inbox for the verification link." });
     } catch (error: any) {

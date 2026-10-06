@@ -18,6 +18,8 @@ import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 // Components
 import { PassportHero } from "@/components/passport/PassportHero";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { PASSPORT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { CompanyProfileView } from "@/components/profile/CompanyProfileView";
 import { CompanyProfileEditDialog } from "@/components/profile/CompanyProfileEditDialog";
@@ -80,6 +82,7 @@ const ProfileContent = () => {
 
   const { toast } = useToast();
   const { user } = useAuth();
+  const { isComplete: onboardingComplete, loading: onboardingLoading } = useOnboarding();
   const { fetchData } = useProfileData();
   const { uploadAvatar, isUploading: isUploadingAvatar } = useAvatarUpload();
   const { count: taggedCount } = useTaggedCredits(profile?.user_id);
@@ -436,6 +439,8 @@ const ProfileContent = () => {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
+        {/* New members land here right after confirming their email. */}
+        {!onboardingLoading && !onboardingComplete && <FinishProfileBanner />}
 
         {/* Passport reveal — the reward moment right after Kreto builds the
             Passport. Uses the real Passport UI below it, doesn't replace it. */}

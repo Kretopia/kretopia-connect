@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getPostSignupUrl } from "@/lib/authRedirect";
 
 interface TrustSignalsProps {
   emailVerified?: boolean;
@@ -64,6 +65,7 @@ export function TrustSignals({ emailVerified, phoneVerified, idVerified, payment
       const { error } = await supabase.auth.resend({
         type: "signup",
         email: user.email,
+        options: { emailRedirectTo: getPostSignupUrl() },
       });
       if (error) throw error;
       toast({ title: "Verification email sent!", description: `Check ${user.email} for the confirmation link.` });
