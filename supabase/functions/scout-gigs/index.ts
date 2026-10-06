@@ -15,6 +15,44 @@ const corsHeaders = {
 const FIRECRAWL = "https://api.firecrawl.dev/v2/search";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// True only for the daily cron job, which proves itself with the shared
+// x-cron-secret header (same secret requireAdminOrCron checks in the other
+// cron-called functions). Constant-time comparison.
+function isCronRequest(req: Request): boolean {
+  const expected = Deno.env.get("CRON_SECRET");
+  const given = req.headers.get("x-cron-secret");
+  if (!expected || !given || expected.length !== given.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ given.charCodeAt(i);
+  return diff === 0;
+}
+
+// Whose Scout run is this? The request body is attacker-controlled, so a
+// body.user_id must never be trusted on its own: it used to be accepted from
+// anyone holding the public anon key, letting them trigger (and spend the
+// Firecrawl / AI budget of) a run for any user. A signed-in user can only scout
+// for themselves; acting for another user is reserved for the cron job.
+function resolveActingUser(
+  bodyUserId: unknown,
+  jwtUserId: string | null,
+  viaCron: boolean,
+): { ok: true; userId: string } | { ok: false; status: number; error: string } {
+  const requested = typeof bodyUserId === "string" && bodyUserId ? bodyUserId : null;
+  if (viaCron) {
+    if (requested) {
+      return UUID_RE.test(requested)
+        ? { ok: true, userId: requested }
+        : { ok: false, status: 400, error: "Invalid user_id" };
+    }
+    return jwtUserId ? { ok: true, userId: jwtUserId } : { ok: false, status: 401, error: "Unauthorized" };
+  }
+  if (!jwtUserId) return { ok: false, status: 401, error: "Unauthorized" };
+  if (requested && requested !== jwtUserId) return { ok: false, status: 403, error: "Forbidden" };
+  return { ok: true, userId: jwtUserId };
+}
+
 interface Profile {
   user_id: string;
   full_name: string | null;
@@ -334,20 +372,22 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     trigger = body.trigger || "manual";
 
-    // Resolve user from JWT (manual) or body (cron)
-    if (body.user_id) {
-      userId = body.user_id;
-    } else {
-      const auth = req.headers.get("Authorization") || "";
-      const token = auth.replace("Bearer ", "");
+    // Resolve the user: their own JWT (manual run), or body.user_id when the
+    // call carries the cron secret (daily job) -- see resolveActingUser.
+    const auth = req.headers.get("Authorization") || "";
+    const token = auth.replace("Bearer ", "");
+    let jwtUserId: string | null = null;
+    if (token) {
       const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
+      jwtUserId = user?.id || null;
     }
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    const acting = resolveActingUser(body.user_id, jwtUserId, isCronRequest(req));
+    if (!acting.ok) {
+      return new Response(JSON.stringify({ error: acting.error }), {
+        status: acting.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    userId = acting.userId;
 
     const rateLimit = await checkAiFeatureRateLimit(supabase, userId, "scout-gigs");
     if (!rateLimit.allowed) return rateLimit.response;
