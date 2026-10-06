@@ -1182,6 +1182,17 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
    margin-inline: 0;
    padding-block: 0.22em;
    margin-block: -0.22em;
+   /* Persistent clip fix: without `clone`, an inline element's padding only
+      paints at the START of its first line fragment and the END of its last
+      one. When a gradiented phrase wraps mid-sentence, the fragment ending
+      the line has no right/bottom slack, so background-clip:text cuts the
+      italic overhang and descenders right at the break (Chromium paints
+      anything past the fragment box as transparent). `clone` gives EVERY
+      line fragment the full padding box, so wrapped gradient titles can't
+      be cut at the break regardless of viewport, font-swap timing, or GPU
+      rasterization differences. */
+   -webkit-box-decoration-break: clone;
+   box-decoration-break: clone;
  }
 
 /* ------------------------------------------------------------
