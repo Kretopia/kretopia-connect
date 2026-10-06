@@ -66,8 +66,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
         .select(`
           *,
           projects!inner(id, title, description),
-          inviter:profiles!invited_by(full_name, avatar_url),
-          invitee:profiles!user_id(full_name, avatar_url)
+          inviter:profiles!invited_by(full_name, avatar_url)
         `)
         .eq('status', 'pending');
 
@@ -85,7 +84,22 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
       const { data, error } = await query.order('invited_at', { ascending: false });
 
       if (error) throw error;
-      setInvitations(data || []);
+
+      // project_collaborators.user_id has no relationship to profiles in the
+      // live schema, so embedding `profiles!user_id` made this whole query
+      // fail and the pending list (Resend / Revoke / Cancel) never rendered.
+      // Look the invitees up separately instead.
+      const rows: any[] = data || [];
+      const inviteeIds = [...new Set(rows.map((r) => r.user_id).filter(Boolean))] as string[];
+      let inviteeById = new Map<string, { full_name: string | null; avatar_url: string | null }>();
+      if (inviteeIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('public_profiles_safe')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', inviteeIds);
+        inviteeById = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+      }
+      setInvitations(rows.map((r) => ({ ...r, invitee: r.user_id ? inviteeById.get(r.user_id) ?? null : null })));
     } catch (error: any) {
       console.error('Error fetching invitations:', error);
     } finally {
