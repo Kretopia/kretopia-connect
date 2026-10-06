@@ -1,5 +1,7 @@
 // TEMPORARY debug page — reproduces the exact Today header for visual QA.
 // Remove this file and its route after verification.
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Sparkles, ArrowRight, Check } from "lucide-react";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import type { TutorialStep } from "@/components/features/FeatureAITutorial";
