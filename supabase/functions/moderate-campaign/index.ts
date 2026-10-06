@@ -7,14 +7,23 @@ import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 const PROHIBITED = [
-  "weapons", "firearms", "drugs", "gambling", "pyramid", "mlm",
-  "crypto giveaway", "investment returns", "guaranteed profit",
-  "adult content", "sexual services", "hate", "extremist",
+  "weapons",
+  "firearms",
+  "drugs",
+  "gambling",
+  "pyramid",
+  "mlm",
+  "crypto giveaway",
+  "investment returns",
+  "guaranteed profit",
+  "adult content",
+  "sexual services",
+  "hate",
+  "extremist",
 ];
 
 interface ModerationVerdict {
@@ -33,30 +42,45 @@ serve(async (req) => {
     const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (!authHeader)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
 
     const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    const {
+      data: { user },
+    } = await userClient.auth.getUser();
+    if (!user)
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
 
     const rateLimit = await checkAiFeatureRateLimit(admin, user.id, "moderate-campaign");
     if (!rateLimit.allowed) return rateLimit.response;
 
     const { campaignId } = await req.json();
     if (!campaignId) {
-      return new Response(JSON.stringify({ error: "campaignId required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "campaignId required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Load campaign + creator profile (admin-bypass RLS)
-    const { data: campaign, error: cErr } = await admin
-      .from("campaigns").select("*").eq("id", campaignId).single();
+    const { data: campaign, error: cErr } = await admin.from("campaigns").select("*").eq("id", campaignId).single();
     if (cErr || !campaign) throw new Error("Campaign not found");
     if (campaign.creator_id !== user.id) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { data: profile } = await admin
@@ -102,10 +126,22 @@ serve(async (req) => {
     const heuristicCategories: string[] = [];
     let heuristicScore = 0;
 
-    if (accountAgeDays < 7) { heuristicCategories.push("new_account"); heuristicScore += 25; }
-    if (!profile?.id_verified) { heuristicCategories.push("unverified_identity"); heuristicScore += 15; }
-    if (Number(campaign.goal_amount) > 50000) { heuristicCategories.push("high_goal"); heuristicScore += 15; }
-    if (Number(campaign.goal_amount) > 250000) { heuristicCategories.push("very_high_goal"); heuristicScore += 25; }
+    if (accountAgeDays < 7) {
+      heuristicCategories.push("new_account");
+      heuristicScore += 25;
+    }
+    if (!profile?.id_verified) {
+      heuristicCategories.push("unverified_identity");
+      heuristicScore += 15;
+    }
+    if (Number(campaign.goal_amount) > 50000) {
+      heuristicCategories.push("high_goal");
+      heuristicScore += 15;
+    }
+    if (Number(campaign.goal_amount) > 250000) {
+      heuristicCategories.push("very_high_goal");
+      heuristicScore += 25;
+    }
 
     const haystack = `${campaign.title} ${campaign.tagline ?? ""} ${campaign.story ?? ""}`.toLowerCase();
     for (const term of PROHIBITED) {
@@ -149,7 +185,12 @@ Categories examples: scam, unrealistic_goal, vague_story, prohibited_category, p
           body: JSON.stringify({
             model: GEMINI_FLASH,
             messages: [
-              { role: "system", content: "You are a strict crowdfunding trust & safety reviewer. Respond with JSON only." + PROMPT_INJECTION_DEFENSE_CLAUSE },
+              {
+                role: "system",
+                content:
+                  "You are a strict crowdfunding trust & safety reviewer. Respond with JSON only." +
+                  PROMPT_INJECTION_DEFENSE_CLAUSE,
+              },
               { role: "user", content: prompt },
             ],
             response_format: { type: "json_object" },
@@ -186,7 +227,13 @@ Categories examples: scam, unrealistic_goal, vague_story, prohibited_category, p
       decision,
       risk_score: finalScore,
       risk_categories: finalCategories,
-      reason: aiReason || (decision === "approve" ? "Looks good." : decision === "review" ? "Flagged for human review." : "Blocked by safety policy."),
+      reason:
+        aiReason ||
+        (decision === "approve"
+          ? "Looks good."
+          : decision === "review"
+            ? "Flagged for human review."
+            : "Blocked by safety policy."),
       ai_summary: aiSummary,
     };
 
@@ -194,12 +241,16 @@ Categories examples: scam, unrealistic_goal, vague_story, prohibited_category, p
     return new Response(JSON.stringify(verdict), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("moderate-campaign error", e);
-    return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: (e as Error).message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
 
 async function applyVerdict(admin: ReturnType<typeof createClient>, campaignId: string, v: ModerationVerdict) {
-  const moderation_status = v.decision === "approve" ? "approved" : v.decision === "review" ? "pending_review" : "blocked";
+  const moderation_status =
+    v.decision === "approve" ? "approved" : v.decision === "review" ? "pending_review" : "blocked";
   // Block decision also forces campaign back to draft
   const patch: Record<string, unknown> = {
     moderation_status,

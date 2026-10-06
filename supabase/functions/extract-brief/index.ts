@@ -23,7 +23,7 @@ const corsHeaders = {
 type Source = "text" | "csv" | "sheet" | "doc" | "audio";
 
 interface MoodboardItem {
-  url: string;                 // link to image, Pinterest, IG, Behance, Drive, etc.
+  url: string; // link to image, Pinterest, IG, Behance, Drive, etc.
   thumbnail_url?: string | null; // direct image URL if known (used for card preview)
   caption?: string | null;
   kind?: "image" | "link" | "video" | null;
@@ -33,8 +33,8 @@ interface DeliverableOut {
   title: string;
   description?: string;
   due_date?: string | null; // ISO date
-  reference_url?: string | null;        // legacy single ref (kept for back-compat)
-  references?: MoodboardItem[];         // NEW: full moodboard
+  reference_url?: string | null; // legacy single ref (kept for back-compat)
+  references?: MoodboardItem[]; // NEW: full moodboard
   notes?: string | null;
 }
 
@@ -55,65 +55,86 @@ interface BriefOut {
 // workspaceConfigs.ts's own "Podcast, YouTube series, IG/TikTok content"
 // description) in case anything still sends them.
 type WorkspaceType =
-  | "photo_shoot" | "video_shoot" | "music_project" | "fashion_show"
-  | "event_production" | "commissioned_art" | "brand_collab" | "dj_live_gig"
-  | "edit_job" | "content_series" | "general" | "podcast" | "client";
+  | "photo_shoot"
+  | "video_shoot"
+  | "music_project"
+  | "fashion_show"
+  | "event_production"
+  | "commissioned_art"
+  | "brand_collab"
+  | "dj_live_gig"
+  | "edit_job"
+  | "content_series"
+  | "general"
+  | "podcast"
+  | "client";
 
 const PERSONAS: Record<WorkspaceType, { role: string; lens: string; example: string }> = {
   photo_shoot: {
     role: "a senior photo producer who has run editorial, commercial and lifestyle shoots",
     lens: "Think call sheet, shot list, location/permits, talent and glam booking, lighting notes, and the selects-to-retouch pipeline.",
-    example: 'Lock shoot date & location, build shot list, confirm talent + glam, scout/confirm permits, build call sheet, shoot day, cull to selects, send for retouch, deliver final retouched set.',
+    example:
+      "Lock shoot date & location, build shot list, confirm talent + glam, scout/confirm permits, build call sheet, shoot day, cull to selects, send for retouch, deliver final retouched set.",
   },
   video_shoot: {
     role: "a senior film/video producer who has run music videos, shorts, commercials and docs",
     lens: "Think treatment, scene/shot breakdown, crew and cast, call sheet, equipment list, shoot days, and the edit milestone chain to final export.",
-    example: "Lock treatment & scenes, confirm crew + cast, build call sheet, shoot day(s), assemble rough cut, client/self review, picture lock, color & sound, deliver final exports.",
+    example:
+      "Lock treatment & scenes, confirm crew + cast, build call sheet, shoot day(s), assemble rough cut, client/self review, picture lock, color & sound, deliver final exports.",
   },
   music_project: {
     role: "an A&R / release manager",
     lens: "Think writing & production, stems, mix, master, artwork, splits, distribution, pre-save, press kit, release-day promo.",
-    example: "Lock final mix, deliver master, finalize artwork, register splits, distribute via partner, pre-save campaign, press kit, release-day socials.",
+    example:
+      "Lock final mix, deliver master, finalize artwork, register splits, distribute via partner, pre-save campaign, press kit, release-day socials.",
   },
   fashion_show: {
     role: "a fashion show producer who has run runway shows and lookbook drops",
     lens: "Think model casting and lineup, looks and changes, run-of-show, backstage roll call, glam call times, and vendor/venue coordination.",
-    example: "Finalize model lineup, confirm looks per model, map backstage changes, build runway run of show, confirm glam call times, day-of backstage lead, post-show recap assets.",
+    example:
+      "Finalize model lineup, confirm looks per model, map backstage changes, build runway run of show, confirm glam call times, day-of backstage lead, post-show recap assets.",
   },
   event_production: {
     role: "a senior event producer who has run festivals, conferences, brand activations and weddings",
     lens: "Think like a producer: venue & vendor lock, run-of-show, talent/lineup, sponsors, marketing & comms, ticketing/RSVP, content capture, day-of logistics, post-event recap.",
-    example: 'For "Bali Carnival" you would draft: "Lock concept & creative direction", "Scout & confirm venue/site permits", "Book lineup (DJs, performers, hosts)", "Confirm key vendors (stage, sound, lights, security)", "Build run-of-show document", "Open RSVP/ticketing & launch comms", "Sponsor outreach pack", "Content & social capture plan", "Day-of crew brief", "Post-event recap & thank-yous".',
+    example:
+      'For "Bali Carnival" you would draft: "Lock concept & creative direction", "Scout & confirm venue/site permits", "Book lineup (DJs, performers, hosts)", "Confirm key vendors (stage, sound, lights, security)", "Build run-of-show document", "Open RSVP/ticketing & launch comms", "Sponsor outreach pack", "Content & social capture plan", "Day-of crew brief", "Post-event recap & thank-yous".',
   },
   commissioned_art: {
     role: "a producer managing a commissioned art piece (illustration, design, painting, custom work)",
     lens: "Think concept rounds, sketch/mockup approval, milestone check-ins, revision tracking, licensing/usage terms, and final handoff packaging.",
-    example: "Confirm concept & size, share initial sketch/mockup, get direction approved, work-in-progress check-in, revision round, final approval, package final files for handoff.",
+    example:
+      "Confirm concept & size, share initial sketch/mockup, get direction approved, work-in-progress check-in, revision round, final approval, package final files for handoff.",
   },
   brand_collab: {
     role: "a creator-brand collaboration manager running sponsored content and UGC deals",
     lens: "Think brief alignment, usage rights, deliverable tracking (per platform/format), approval rounds, and payment milestones.",
-    example: "Confirm brief & usage rights, draft content concepts, submit first cut, revision round, secure final approval, deliver final assets, send invoice.",
+    example:
+      "Confirm brief & usage rights, draft content concepts, submit first cut, revision round, secure final approval, deliver final assets, send invoice.",
   },
   dj_live_gig: {
     role: "a producer managing a DJ set or live performance gig",
     lens: "Think set time and tech rider, setlist, load-in/out logistics, payment terms, and post-gig recap content.",
-    example: "Confirm set time & rider, build setlist, confirm load-in time, confirm payment terms, day-of set, upload recap clips, send invoice.",
+    example:
+      "Confirm set time & rider, build setlist, confirm load-in time, confirm payment terms, day-of set, upload recap clips, send invoice.",
   },
   edit_job: {
     role: "a post-production editor managing a photo retouch, video edit or audio mix job",
     lens: "Think raw asset ingestion and organization, version control, revision rounds against reference, and final delivery in the right formats.",
-    example: "Collect raw footage/photos + references, create first pass, send review link, revision round, second review, export final deliverables in requested formats.",
+    example:
+      "Collect raw footage/photos + references, create first pass, send review link, revision round, second review, export final deliverables in requested formats.",
   },
   content_series: {
     role: "an executive producer for an ongoing content series (podcast, YouTube series, or IG/TikTok content)",
     lens: "Think episode/entry planning, guest or topic research, production calendar, batch recording, edit pass, thumbnails/cover art, and publishing cadence.",
-    example: "Outline episodes/entries, book guests or lock topics, build production calendar, batch-record assets, edit pass, design thumbnails/cover art, schedule publishing, extract social clips.",
+    example:
+      "Outline episodes/entries, book guests or lock topics, build production calendar, batch-record assets, edit pass, design thumbnails/cover art, schedule publishing, extract social clips.",
   },
   podcast: {
     role: "an executive podcast producer",
     lens: "Think guest research, outreach + booking, prep doc, recording session, edit, show notes, cover art, episode publish, clip extraction for socials, sponsor outreach.",
-    example: "Confirm guest, send prep doc, record episode, rough cut, final mix, write show notes, design cover, schedule release, generate 3-5 social clips.",
+    example:
+      "Confirm guest, send prep doc, record episode, rough cut, final mix, write show notes, design cover, schedule release, generate 3-5 social clips.",
   },
   client: {
     role: "a producer running a paid client engagement",
@@ -187,24 +208,21 @@ async function fetchPublicSheetAsCsv(url: string): Promise<string> {
 }
 
 async function callGemini(parts: unknown[], systemPrompt: string, apiKey: string): Promise<BriefOut> {
-  const res = await fetch(
-    "https://ai.gateway.lovable.dev/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: GEMINI_FLASH,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: parts },
-        ],
-        response_format: { type: "json_object" },
-      }),
+  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
     },
-  );
+    body: JSON.stringify({
+      model: GEMINI_FLASH,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: parts },
+      ],
+      response_format: { type: "json_object" },
+    }),
+  });
 
   if (!res.ok) {
     // Friendlier copy for the two AI-gateway failure modes a user can
@@ -248,10 +266,14 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token);
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseAuth.auth.getUser(token);
     if (authError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -284,22 +306,28 @@ serve(async (req) => {
     if (source === "text") {
       const text: string = body.text ?? "";
       if (!text.trim()) throw new Error("text is required for source=text");
-      parts = [{ type: "text", text: `${ctx}Brief (free-form):\n\n${wrapUntrustedContent("user-provided brief text", text)}` }];
+      parts = [
+        { type: "text", text: `${ctx}Brief (free-form):\n\n${wrapUntrustedContent("user-provided brief text", text)}` },
+      ];
     } else if (source === "csv") {
       const csv: string = body.csv ?? "";
       if (!csv.trim()) throw new Error("csv is required for source=csv");
-      parts = [{
-        type: "text",
-        text: `${ctx}Brief delivered as CSV/spreadsheet rows. Treat each row (after the header) as ONE deliverable:\n\n${wrapUntrustedContent("pasted CSV", csv)}`,
-      }];
+      parts = [
+        {
+          type: "text",
+          text: `${ctx}Brief delivered as CSV/spreadsheet rows. Treat each row (after the header) as ONE deliverable:\n\n${wrapUntrustedContent("pasted CSV", csv)}`,
+        },
+      ];
     } else if (source === "sheet") {
       const url: string = body.url ?? "";
       if (!url) throw new Error("url is required for source=sheet");
       const csv = await fetchPublicSheetAsCsv(url);
-      parts = [{
-        type: "text",
-        text: `${ctx}Brief delivered as a public Google Sheet (exported to CSV). Treat each row as ONE deliverable:\n\n${wrapUntrustedContent("Google Sheet export", csv)}`,
-      }];
+      parts = [
+        {
+          type: "text",
+          text: `${ctx}Brief delivered as a public Google Sheet (exported to CSV). Treat each row as ONE deliverable:\n\n${wrapUntrustedContent("Google Sheet export", csv)}`,
+        },
+      ];
     } else if (source === "doc") {
       const dataBase64: string = body.data_base64 ?? "";
       const mimeType: string = body.mime_type ?? "application/pdf";
