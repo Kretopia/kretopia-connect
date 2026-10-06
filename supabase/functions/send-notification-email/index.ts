@@ -388,6 +388,49 @@ const generateEmailContent = (type: string, data: any, unsubscribeToken?: string
   }
 };
 
+// A new user's welcome email is sent by the signup trigger through the queued
+// "welcome" template (send-transactional-email: suppression list, unsubscribe
+// token, send log). The app also calls this function when onboarding
+// completes, which used to send a SECOND, different welcome through Resend.
+// That call now goes through the same queued template, and is skipped when
+// the address already has a welcome sent, or pending within the last 24h.
+// If the lookup itself fails nothing is sent: a missed welcome is better than
+// a duplicate one.
+async function sendWelcomeOnce(to: string, userId: string, userName?: string) {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const authHeaders = { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` };
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const addresses = Array.from(new Set([to, to.toLowerCase()]));
+  const recipientFilter = `or(${addresses.map((a) => `recipient_email.eq.${encodeURIComponent(a)}`).join(",")})`;
+  const statusFilter = `or(status.eq.sent,and(status.eq.pending,created_at.gte.${encodeURIComponent(since)}))`;
+  const lookup = await fetch(
+    `${supabaseUrl}/rest/v1/email_send_log?template_name=eq.welcome&and=(${recipientFilter},${statusFilter})&select=id&limit=1`,
+    { headers: authHeaders },
+  );
+  if (!lookup.ok) {
+    console.error("welcome dedupe lookup failed -- not sending", lookup.status);
+    return { skipped: "lookup_failed" };
+  }
+  const existing = await lookup.json();
+  if (Array.isArray(existing) && existing.length > 0) return { skipped: "already_sent" };
+
+  const name = userName && userName.trim() && userName.trim().toLowerCase() !== "there" ? userName.trim() : undefined;
+  const res = await fetch(`${supabaseUrl}/functions/v1/send-transactional-email`, {
+    method: "POST",
+    headers: { ...authHeaders, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      templateName: "welcome",
+      recipientEmail: to,
+      idempotencyKey: `welcome-${userId}`,
+      templateData: { name },
+    }),
+  });
+  if (!res.ok) throw new Error(`Welcome email could not be queued (${res.status})`);
+  return await res.json().catch(() => ({ queued: true }));
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -486,6 +529,28 @@ const handler = async (req: Request): Promise<Response> => {
     
     if (!to || !type) {
       throw new Error("Missing required fields: to or recipientId, type");
+    }
+
+    // Self-service welcome (the app's onboarding-completion call): one queued
+    // welcome per address -- see sendWelcomeOnce. Service-role and admin
+    // callers (e.g. test sends) keep the direct path below, unchanged.
+    if (type === 'welcome') {
+      const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+      const claims = parseJwtClaims(bearer);
+      const callerId = typeof claims?.sub === "string" ? claims.sub : null;
+      const callerEmail = typeof claims?.email === "string" ? claims.email : null;
+      const isServiceRole = claims?.role === "service_role";
+      const isSelf =
+        !isServiceRole && !!callerId &&
+        ((!!body.recipientId && body.recipientId === callerId) ||
+          (!!callerEmail && to.toLowerCase() === callerEmail.toLowerCase()));
+      if (isSelf) {
+        const result = await sendWelcomeOnce(to, callerId!, data.userName);
+        return new Response(JSON.stringify({ success: true, ...result }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
     }
 
     const { subject, html } = generateEmailContent(type, data, unsubscribeToken);
