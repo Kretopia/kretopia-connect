@@ -20,6 +20,9 @@ import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useNavigate } from "react-router-dom";
+import { extractInvokeError } from "@/lib/extractInvokeError";
+import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
@@ -111,6 +114,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   // Chasing down real 404s: image_url values can go stale (source page
   // took the image down, hotlink blocked, etc.) after a gig was already
   // scouted -- the old onError handler just hid the broken <img> outright,
