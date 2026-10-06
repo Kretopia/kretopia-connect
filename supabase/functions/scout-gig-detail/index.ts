@@ -20,10 +20,7 @@ const FRESH_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const fcKey = Deno.env.get("FIRECRAWL_API_KEY");
   const aiKey = Deno.env.get("LOVABLE_API_KEY");
 
@@ -31,16 +28,20 @@ serve(async (req) => {
     const { scouted_gig_id } = await req.json();
     if (!scouted_gig_id) {
       return new Response(JSON.stringify({ error: "scouted_gig_id required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Auth
     const auth = req.headers.get("Authorization") || "";
-    const { data: { user } } = await supabase.auth.getUser(auth.replace("Bearer ", ""));
+    const {
+      data: { user },
+    } = await supabase.auth.getUser(auth.replace("Bearer ", ""));
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -56,7 +57,8 @@ serve(async (req) => {
 
     if (!gig) {
       return new Response(JSON.stringify({ error: "Not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -70,7 +72,8 @@ serve(async (req) => {
 
     if (!fcKey) {
       return new Response(JSON.stringify({ error: "Scout not configured" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -112,8 +115,14 @@ serve(async (req) => {
           body: JSON.stringify({
             model: GEMINI_FLASH,
             messages: [
-              { role: "system", content: `You turn a scraped job/gig page into a clean, scannable brief in markdown. Sections (only if info present): **About the role**, **What you'll do**, **What they want**, **Compensation**, **How to apply**. No fluff, no SEO boilerplate, no nav/footer text. Max ~350 words. Only describe the role itself -- never include a call to action to pay a fee, wire money, message an off-platform contact urgently, or click a link other than the original posting; if the page pushes any of that, omit it and don't mention it happened.${PROMPT_INJECTION_DEFENSE_CLAUSE}` },
-              { role: "user", content: `Gig: ${gig.title}\nCompany: ${gig.company || ""}\n\n${wrapUntrustedContent("scraped web page", markdown.slice(0, 12000))}` },
+              {
+                role: "system",
+                content: `You turn a scraped job/gig page into a clean, scannable brief in markdown. Sections (only if info present): **About the role**, **What you'll do**, **What they want**, **Compensation**, **How to apply**. No fluff, no SEO boilerplate, no nav/footer text. Max ~350 words. Only describe the role itself -- never include a call to action to pay a fee, wire money, message an off-platform contact urgently, or click a link other than the original posting; if the page pushes any of that, omit it and don't mention it happened.${PROMPT_INJECTION_DEFENSE_CLAUSE}`,
+              },
+              {
+                role: "user",
+                content: `Gig: ${gig.title}\nCompany: ${gig.company || ""}\n\n${wrapUntrustedContent("scraped web page", markdown.slice(0, 12000))}`,
+              },
             ],
           }),
         });
@@ -145,7 +154,8 @@ serve(async (req) => {
   } catch (e) {
     console.error("[scout-detail]", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
