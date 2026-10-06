@@ -174,6 +174,27 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const reducedMotion = useReducedMotion();
 
+  // Guarantee the For You tab is never a dead end: when nothing has been
+  // scouted yet (new account, first scan running, or scan failed), surface
+  // real open gigs from the Kretopia marketplace instead of an empty card.
+  const { data: fallbackOpps = [] } = useQuery({
+    queryKey: ["scout-fallback-opps"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("opportunities")
+        .select(OPPORTUNITY_PUBLIC_COLUMNS)
+        .in("status", ["active", "open"])
+        .order("created_at", { ascending: false })
+        .limit(6);
+      return (data || []) as {
+        id: string; title: string; type: string | null;
+        location: string | null; compensation: string | null;
+      }[];
+    },
+    enabled: !limit && !loading && gigs.length === 0,
+    staleTime: 5 * 60_000,
+  });
+
   const scanNow = async () => {
     if (!user) return;
     setScanning(true);
@@ -187,7 +208,14 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     setScanning(false);
 
     if (error) {
-      toast({ title: "Scout failed", description: error.message, variant: "destructive" });
+      // The SDK's own message is a generic "non-2xx status code" — the
+      // function's real error (config, auth, rate limit) lives in the body.
+      const detail = await extractInvokeError(error);
+      toast({
+        title: "Scout failed",
+        description: detail || "The scan could not complete. Try again in a moment.",
+        variant: "destructive",
+      });
       return;
     }
     if (data?.gated) {
