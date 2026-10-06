@@ -752,16 +752,32 @@ export const ThriveAgentFab = () => {
   const surfaceLabel = SURFACE_LABEL[surface];
 
   // showClose: the desktop panel has no other chrome around it, so it needs
-  // its own close button. It's positioned absolutely (not dropped into the
-  // action row below) because that row -- badge + "What can I do?" + Reset --
-  // is already close to the panel's 380px width; a fourth item pushed it
-  // past the panel's own right edge, clipped by its overflow-hidden. Fixed
-  // width/inset instead, with the header's own padding widened on the right
-  // so its content never runs under it. The mobile Sheet already renders its
-  // own top-right close affordance, so this stays false there to avoid a
+  // its own close button. It gets its OWN top row, right-aligned on the same
+  // edge as the header controls below it, rather than sitting in (or being
+  // absolutely positioned over) that action row: the row -- badge + "What can
+  // I do?" + Reset -- is already close to the panel's 380px width, and an
+  // absolutely positioned X (which also had to fight the global .btn-glass
+  // `position: relative`) sat beside those controls at a slightly different
+  // height, reading as misaligned and too low. In its own row it is clearly
+  // above the title and controls, cannot overlap them at any width, and needs
+  // no positioning override. The mobile Sheet already renders its own
+  // top-right close affordance, so this stays false there to avoid a
   // duplicate.
   const chatHeader = (showClose: boolean) => (
-    <div className={cn("relative pl-5 pt-5 pb-3 border-b border-border shrink-0", showClose ? "pr-16" : "pr-5")}>
+    <div className={cn("relative pl-5 pr-5 pb-3 border-b border-border shrink-0", showClose ? "pt-2" : "pt-5")}>
+      {showClose && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => setOpen(false)}
+            aria-label="Close Kreto"
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-3">
         <h2 className="flex items-center gap-2 text-base font-semibold text-foreground">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -797,23 +813,6 @@ export const ThriveAgentFab = () => {
           )}
         </div>
       </div>
-      {showClose && (
-        <Button
-          variant="ghost"
-          size="icon"
-          // Inline position, not the `absolute` utility class: every ghost
-          // Button carries the global .btn-glass class (index.css), which
-          // sets `position: relative` outside Tailwind's cascade layers --
-          // unlayered CSS beats a plain utility class regardless of source
-          // order, so `className="absolute ..."` here silently loses.
-          style={{ position: "absolute" }}
-          className="right-3 top-3 h-7 w-7 text-muted-foreground hover:text-foreground"
-          onClick={() => setOpen(false)}
-          aria-label="Close Kreto"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      )}
     </div>
   );
 
