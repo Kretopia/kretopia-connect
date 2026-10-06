@@ -6,6 +6,7 @@ import { Loader2, Users, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
+import { acceptInvitation } from "@/lib/acceptInvitation";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -109,6 +110,28 @@ const AcceptInvite = () => {
           navigate("/circle");
           return;
         }
+
+        // Claim on the server first. An invitation sent to an email address has no
+        // user_id, so the browser can neither read nor update it (row-level security):
+        // the lookup below reported "not found" for it, or a success that changed nothing.
+        const claim = await acceptInvitation(supabase, projectId!);
+        if (claim.ok) {
+          toast(
+            claim.status === "accepted"
+              ? { title: "Welcome to the project!", description: "You've successfully joined the project team." }
+              : { title: "Already a member", description: "You're already part of this project." },
+          );
+          navigate(`/desk/${projectId}`);
+          return;
+        }
+        // ("code" in claim: this project's tsconfig isn't strict, so `ok` alone doesn't narrow the union)
+        if ("code" in claim && claim.code === "email_not_confirmed") {
+          toast({ title: "Confirm your email first", description: claim.message, variant: "destructive" });
+          navigate("/circle");
+          return;
+        }
+        // Otherwise (no invitation for this account, or the service isn't reachable yet)
+        // fall through to the direct lookup below, which still handles in-app invites.
 
         // Look up the invitation. Prefer matching by user_id (new flow); fall back to email.
         let invitationQuery = supabase
