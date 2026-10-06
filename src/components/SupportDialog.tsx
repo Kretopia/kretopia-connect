@@ -282,7 +282,7 @@ export const SupportDialog = ({ open: controlledOpen, onOpenChange }: SupportDia
         </div>
 
         <p className="text-xs text-muted-foreground text-center pt-2">
-          Powered by Thrive • Free during beta
+          Powered by Kretopia • Free during beta
         </p>
       </DialogContent>
     </Dialog>

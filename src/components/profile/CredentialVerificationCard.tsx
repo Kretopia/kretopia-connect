@@ -118,7 +118,7 @@ export function CredentialVerificationCard({
               Smart Credential Verification
             </CardTitle>
             <CardDescription>
-              Thrive verifies your credentials across industry databases
+              Kretopia verifies your credentials across industry databases
             </CardDescription>
           </div>
         </CardHeader>
@@ -142,7 +142,7 @@ export function CredentialVerificationCard({
               <div className="text-sm">
                 <p className="font-medium">Get Verified by AI</p>
                 <p className="text-muted-foreground mt-1">
-                  Watch as Thrive scans IMDB, Grammy, Spotify, and 7 other databases to verify your professional credentials in real-time.
+                  Watch as Kretopia scans IMDB, Grammy, Spotify, and 7 other databases to verify your professional credentials in real-time.
                 </p>
               </div>
             </div>

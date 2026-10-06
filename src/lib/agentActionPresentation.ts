@@ -197,7 +197,7 @@ export const resultCardForAction = (action: OrchAction): AgentResultCardData | n
         title: p.added_name
           ? `${p.added_name} added to ${projectTitle}`
           : `Collaborator added to ${projectTitle}`,
-        subtitle: "They'll see the Studio next time they open Thrive.",
+        subtitle: "They'll see the Studio next time they open Kretopia.",
         href: p.action_url || projectHref,
         cta: "Open Studio",
       };
@@ -286,7 +286,7 @@ export const resultCardForAction = (action: OrchAction): AgentResultCardData | n
         id: action.id,
         icon: "talent",
         title: matches ? `${matches} match${matches === 1 ? "" : "es"} found` : "No match found",
-        subtitle: matches ? "Tell Thrive which one — she'll continue from there." : undefined,
+        subtitle: matches ? "Tell Kreto which one — Kreto will continue from there." : undefined,
         href: null,
       };
     }

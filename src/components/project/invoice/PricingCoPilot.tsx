@@ -836,7 +836,7 @@ export function PricingCoPilot({
             <div className="flex-1 min-w-0">
               <div className="text-[12px] font-medium truncate">{pendingScan.name}</div>
               <div className="text-[10px] text-muted-foreground">
-                Add a note (optional), then send to let Thrive read it.
+                Add a note (optional), then send to let Kreto read it.
               </div>
             </div>
             <Button
@@ -895,7 +895,7 @@ export function PricingCoPilot({
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground/70 mt-1.5 text-center leading-relaxed">
-          Thrive can make mistakes — always sanity-check rates, currency &amp; totals
+          Kreto can make mistakes — always sanity-check rates, currency &amp; totals
           against your local market before sending. You're the final approver.
         </p>
       </div>

@@ -139,7 +139,7 @@ export function EventStudioSection({ project, currentUserId }: Props) {
           <div>
             <h3 className="text-sm font-bold leading-tight">Event Run Sheet</h3>
             <p className="text-[11px] text-muted-foreground leading-tight">
-              Minute-by-minute timeline. Drafted by Thrive, edited by you.
+              Minute-by-minute timeline. Drafted by Kreto, edited by you.
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export function EventStudioSection({ project, currentUserId }: Props) {
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Draft my run sheet
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Thrive will sketch a realistic timeline from your brief. You edit from there.
+            Kreto will sketch a realistic timeline from your brief. You edit from there.
           </p>
         </button>
       ) : (

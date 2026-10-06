@@ -109,7 +109,7 @@ export default function PartnerSubmit() {
             <CheckCircle className="h-16 w-16 mx-auto mb-4 text-primary" />
             <h2 className="text-2xl font-bold mb-2">Application Submitted!</h2>
             <p className="text-muted-foreground mb-6">
-              Your partnership discount is now live! Thrive members can now access your exclusive offer on the platform.
+              Your partnership discount is now live! Kretopia members can now access your exclusive offer on the platform.
             </p>
             <Button onClick={() => navigate('/')} variant="outline">
               Return to Home
@@ -126,7 +126,7 @@ export default function PartnerSubmit() {
         <div className="mb-8 text-center">
           <h1 className="text-4xl font-bold mb-2 flex items-center justify-center gap-2">
             <Sparkles className="h-8 w-8" />
-            Become a Thrive Partner
+            Become a Kretopia Partner
           </h1>
           <p className="text-muted-foreground">
             Offer exclusive discounts to our creative community
@@ -137,7 +137,7 @@ export default function PartnerSubmit() {
           <CardHeader>
             <CardTitle>Partner Application</CardTitle>
             <CardDescription>
-              Fill out this form to offer your services to Thrive members. Your discount will go live immediately upon submission.
+              Fill out this form to offer your services to Kretopia members. Your discount will go live immediately upon submission.
             </CardDescription>
           </CardHeader>
           <CardContent>

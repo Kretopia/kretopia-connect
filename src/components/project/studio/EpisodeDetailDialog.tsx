@@ -172,7 +172,7 @@ export function EpisodeDetailDialog({ open, onOpenChange, episode, projectId, cu
           </div>
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Transcript</label>
-            <Textarea rows={6} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste or upload your transcript here. Thrive uses this to make clips." />
+            <Textarea rows={6} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste or upload your transcript here. Kreto uses this to make clips." />
           </div>
           <Button size="sm" onClick={save} disabled={saving}>
             {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Save

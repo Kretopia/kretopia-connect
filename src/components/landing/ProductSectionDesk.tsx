@@ -23,7 +23,7 @@ export const ProductSectionDesk = () => (
             <div className="p-4 border-b border-border/50">
               <div className="flex items-center gap-1.5 mb-2">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-foreground">Brief · drafted by Thrive</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-foreground">Brief · drafted by Kreto</p>
               </div>
               <p className="text-xs text-foreground leading-relaxed">
                 Editorial fashion shoot · 3 days · 4 looks (denim, eveningwear, athleisure, swim).
@@ -37,7 +37,7 @@ export const ProductSectionDesk = () => (
                 {[
                   { done: true, label: "Lock location · Eko Atlantic" },
                   { done: false, label: "Confirm DP rate", assignee: "You" },
-                  { done: false, label: "Send call sheet to crew", assignee: "Thrive draft ready" },
+                  { done: false, label: "Send call sheet to crew", assignee: "Kreto draft ready" },
                   { done: false, label: "Approve moodboard v2", assignee: "Maya · client" },
                 ].map((t) => (
                   <li key={t.label} className="flex items-center gap-2.5">
@@ -83,7 +83,7 @@ export const ProductSectionDesk = () => (
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.03em] leading-[1.05] text-foreground mb-4">
             Talk it out.<br />
-            <span className="text-energy-glow">Thrive builds the studio.</span>
+            <span className="text-energy-glow">Kreto builds the studio.</span>
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-5 max-w-md">
             One voice note becomes a real project — brief, task list, file vault, crew chat, money tracking. Built around how creatives actually run shoots, releases, campaigns, and events.

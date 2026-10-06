@@ -239,7 +239,7 @@ export const StudioRoom = ({
       {/* Brand + Brain — what Thrive knows and how it'll style every output */}
       {isOwner && (
         <div className="px-4 pt-2 flex items-center gap-2 flex-wrap">
-          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground w-full sm:w-auto">Thrive uses</span>
+          <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground w-full sm:w-auto">Kreto uses</span>
           <BrandVaultChip projectId={project.id} />
           <StudioBrainPanel projectId={project.id} isOwner={isOwner} />
         </div>
@@ -464,7 +464,7 @@ export const StudioRoom = ({
           <FirstTimeHint
             storageKey={`desk.studio-intro:${project.id}`}
             title="This is your Studio"
-            description="Add the first task, paste a brief, or @mention a collaborator. Thrive will help you turn it into a plan."
+            description="Add the first task, paste a brief, or @mention a collaborator. Kreto will help you turn it into a plan."
             tone="energy"
             className="mb-3"
           />

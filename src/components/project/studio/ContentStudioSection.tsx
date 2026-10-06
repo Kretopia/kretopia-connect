@@ -329,7 +329,7 @@ export function ContentStudioSection({ project, currentUserId }: Props) {
           ) : shots.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border/80 p-5 text-center">
               <p className="text-sm font-semibold">No shots yet</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Add manually or let Thrive draft a list from your brief.</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Add manually or let Kreto draft a list from your brief.</p>
             </div>
           ) : (
             <ul className="space-y-2">

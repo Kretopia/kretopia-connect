@@ -118,7 +118,7 @@ export function BrandVaultChip({ projectId }: Props) {
         links: defaultVault.links,
       });
       if (error) throw error;
-      toast({ title: "Pinned to this Studio", description: "Thrive will use this brand for every doc here." });
+      toast({ title: "Pinned to this Studio", description: "Kreto will use this brand for every doc here." });
       window.dispatchEvent(new CustomEvent("brand-vault:updated"));
       if (user) await load(user.id);
     } catch (e: any) {
@@ -162,7 +162,7 @@ export function BrandVaultChip({ projectId }: Props) {
       <PopoverTrigger asChild>
         <button
           className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-border bg-card hover:border-primary/50 transition text-[11px] group"
-          title={`Thrive will use this brand: ${vault.name}`}
+          title={`Kreto will use this brand: ${vault.name}`}
         >
           {vault.logo_url ? (
             <img src={vault.logo_url} alt="" className="h-3.5 w-3.5 rounded-sm object-contain" />

@@ -16,7 +16,7 @@ const LABELS: Record<Screen, { eyebrow: string; tag: string }> = {
   match: { eyebrow: "Smart Match", tag: "Matchmaker" },
   desk: { eyebrow: "Studios", tag: "Project OS" },
   pay: { eyebrow: "KrePay", tag: "Get paid" },
-  thrive: { eyebrow: "Thrive", tag: "Does the work" },
+  thrive: { eyebrow: "Kreto", tag: "Does the work" },
 };
 
 export const HeroPhoneCarousel = () => {
@@ -184,7 +184,7 @@ export const DeskScreen = () => (
     <div className="mt-auto rounded-xl bg-gradient-to-r from-energy/15 to-primary/15 border border-energy/30 p-2.5">
       <div className="flex items-center gap-1.5 mb-0.5">
         <Sparkles className="h-3 w-3 text-energy" />
-        <p className="text-[9px] font-black uppercase tracking-wider text-foreground">Thrive built this workspace</p>
+        <p className="text-[9px] font-black uppercase tracking-wider text-foreground">Kreto built this workspace</p>
       </div>
       <p className="text-[10px] text-muted-foreground leading-snug">Brief, tasks &amp; vault generated from your voice note.</p>
     </div>
@@ -210,7 +210,7 @@ export const PayScreen = () => (
     </div>
     {/* Chat with Thrive */}
     <div className="rounded-xl border border-border bg-card/60 p-2.5 flex-1 flex flex-col gap-1.5">
-      <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Chat · Thrive</p>
+      <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Chat · Kreto</p>
       <div className="rounded-lg bg-muted/40 px-2 py-1.5 self-start max-w-[85%]">
         <p className="text-[10px] text-foreground leading-snug">Add a 15% rush fee — turnaround is 5 days.</p>
       </div>
@@ -234,7 +234,7 @@ export const ThriveScreen = () => (
   <div className="h-full w-full px-3 pt-8 pb-3 flex flex-col gap-2">
     <div className="flex items-center gap-2 px-1">
       <div className="h-5 w-5 rounded-md bg-gradient-to-br from-primary to-energy flex items-center justify-center"><Sparkles className="h-3 w-3 text-primary-foreground" /></div>
-      <p className="text-[11px] font-black text-foreground">Thrive · doing the work</p>
+      <p className="text-[11px] font-black text-foreground">Kreto · doing the work</p>
     </div>
     {/* Action 1 — scouted gig */}
     <div className="rounded-xl border border-energy/40 bg-card p-2.5">
@@ -264,7 +264,7 @@ export const ThriveScreen = () => (
     {/* Tap to approve */}
     <div className="mt-auto rounded-xl bg-gradient-to-r from-primary/20 to-energy/20 border border-primary/40 p-2.5">
       <p className="text-[9px] font-black uppercase tracking-wider text-foreground/80 mb-0.5">3 actions waiting</p>
-      <p className="text-[10px] text-foreground leading-snug font-medium">Tap to approve — Thrive sends, schedules &amp; updates everything.</p>
+      <p className="text-[10px] text-foreground leading-snug font-medium">Tap to approve — Kreto sends, schedules &amp; updates everything.</p>
     </div>
   </div>
 );

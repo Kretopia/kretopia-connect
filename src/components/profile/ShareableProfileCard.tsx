@@ -306,8 +306,7 @@ export const ShareableProfileCard = ({
                 <div className="flex items-center justify-between pt-2 border-t border-white/10">
                   <div>
                     <div className="flex items-baseline gap-0.5">
-                      <span className="text-white font-bold text-base tracking-tight">Thrive</span>
-                      <span className="font-bold text-base tracking-tight text-primary">IN</span>
+                      <span className="text-white font-bold text-base tracking-tight">Kretopia</span>
                     </div>
                     <p className="text-white/40 text-[8px]">
                       kretopia.com

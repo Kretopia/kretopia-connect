@@ -33,7 +33,7 @@ async function load(): Promise<Metric[]> {
     { label: "Gigs scouted (all-time)", value: String(scoutedTotal), sub: `${scoutedRecent} last 30d` },
     { label: "Sponsor leads", value: String(sponsors), sub: "Sponsor Radar agent" },
     { label: "Autonomous agent actions (30d)", value: String(agentRuns), sub: "agent_runs log" },
-    { label: "Studios / projects", value: String(projects), sub: "ThriveDesk" },
+    { label: "Studios / projects", value: String(projects), sub: "Studio" },
   ];
 }
 

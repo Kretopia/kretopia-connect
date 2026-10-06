@@ -84,8 +84,8 @@ export default function DemoAgent() {
         <p className="text-xs uppercase tracking-wider text-muted-foreground">Public Agent Demo</p>
         <h1 className="font-serif text-3xl md:text-4xl mt-1">Drop a brief. Watch the agents work.</h1>
         <p className="text-sm text-muted-foreground mt-2 max-w-prose">
-          Type any creative brief. Thrive's agents will index it, draft tasks, draft a quote, scan for sponsors, and
-          surface related gigs — exactly how they run inside a live ThriveDesk Studio.
+          Type any creative brief. Kreto's agents will index it, draft tasks, draft a quote, scan for sponsors, and
+          surface related gigs — exactly how they run inside a live Studio.
         </p>
       </header>
 

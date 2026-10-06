@@ -160,7 +160,7 @@ export function PodcastStudioSection({ project, currentUserId }: Props) {
         >
           <p className="text-sm font-semibold">Add your first episode</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Plan a guest, schedule a recording, and let Thrive draft your interview questions.
+            Plan a guest, schedule a recording, and let Kreto draft your interview questions.
           </p>
         </button>
       ) : (
@@ -243,7 +243,7 @@ export function PodcastStudioSection({ project, currentUserId }: Props) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>New episode</DialogTitle>
-            <DialogDescription>Title it, list guests, schedule. Thrive will draft questions on tap.</DialogDescription>
+            <DialogDescription>Title it, list guests, schedule. Kreto will draft questions on tap.</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>

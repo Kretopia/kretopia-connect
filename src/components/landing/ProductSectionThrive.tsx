@@ -19,7 +19,7 @@ export const ProductSectionThrive = () => (
                 <div className="h-7 w-7 rounded-md bg-gradient-to-br from-primary to-energy flex items-center justify-center">
                   <Sparkles className="h-3.5 w-3.5 text-primary-foreground" />
                 </div>
-                <p className="text-[11px] font-black text-foreground">Thrive · Inbox</p>
+                <p className="text-[11px] font-black text-foreground">Kreto · Inbox</p>
               </div>
               <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-energy/15 text-energy">3 new</span>
             </div>
@@ -75,7 +75,7 @@ export const ProductSectionThrive = () => (
             </ul>
 
             <div className="px-4 py-3 bg-gradient-to-r from-primary/10 to-energy/10 border-t border-primary/20 text-center">
-              <p className="text-[11px] text-foreground/90 font-medium">Tap any card · Thrive sends, schedules &amp; updates everything.</p>
+              <p className="text-[11px] text-foreground/90 font-medium">Tap any card · Kreto sends, schedules &amp; updates everything.</p>
             </div>
           </div>
         </div>
@@ -83,7 +83,7 @@ export const ProductSectionThrive = () => (
         {/* Copy */}
         <div className="order-1 lg:order-2">
           <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-primary mb-4 px-3 py-1 rounded-full border border-primary/30 bg-primary/5">
-            <Sparkles className="h-3 w-3" /> Thrive · The operator
+            <Sparkles className="h-3 w-3" /> Kreto · The operator
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.03em] leading-[1.05] text-foreground mb-4">
             You don't ask.<br />
@@ -96,7 +96,7 @@ export const ProductSectionThrive = () => (
             {[
               "Scouts real gigs across the web · LinkedIn, IG, ATS, agencies",
               "Drafts pitches, quotes, follow-ups in your voice",
-              "Free for everyone · talk to Thrive 20× a day on Spark",
+              "Free for everyone · talk to Kreto 20× a day on Spark",
             ].map((t) => (
               <li key={t} className="flex items-start gap-2 text-sm text-foreground/90">
                 <CheckCircle className="h-4 w-4 text-energy mt-0.5 shrink-0" />
@@ -108,7 +108,7 @@ export const ProductSectionThrive = () => (
             to="/auth?tab=signup"
             className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-energy transition-colors"
           >
-            Get Thrive working for you <ArrowRight className="h-4 w-4" />
+            Get Kreto working for you <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>

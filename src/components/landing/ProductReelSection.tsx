@@ -44,7 +44,7 @@ const TILES: Tile[] = [
     icon: MessageSquare,
     eyebrow: "Kreto",
     title: "Drafts intros, quotes, and gig replies — while you sleep.",
-    body: "Tell Thrive what you want to make. It plans the project, finds the people, and writes the first draft.",
+    body: "Tell Kreto what you want to make. It plans the project, finds the people, and writes the first draft.",
     chip: "Pro",
     href: "/auth?tab=signup&intent=copilot",
     accent: "from-energy/20 via-energy/5 to-transparent",

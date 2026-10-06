@@ -26,13 +26,13 @@ export const ProductSectionMatch = () => {
               <span className="text-energy-glow">Get scouted.</span>
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed mb-5 max-w-md">
-              Tell Thrive what you're shooting. We surface the top 3 collaborators in your city — ranked by verified credits, distance, and past work that fits your brief. No endless scrolling.
+              Tell Kreto what you're shooting. We surface the top 3 collaborators in your city — ranked by verified credits, distance, and past work that fits your brief. No endless scrolling.
             </p>
             <ul className="space-y-2 mb-6">
               {[
                 "Top 3 picked from your network + the wider creator economy",
                 "Tap a card to open their verified profile",
-                "Thrive drafts the intro DM for you",
+                "Kreto drafts the intro DM for you",
               ].map((t) => (
                 <li key={t} className="flex items-start gap-2 text-sm text-foreground/90">
                   <Verified className="h-4 w-4 text-energy mt-0.5 shrink-0" />
