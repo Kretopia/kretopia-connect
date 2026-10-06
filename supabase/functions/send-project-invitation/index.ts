@@ -247,7 +247,6 @@ const handler = async (req: Request): Promise<Response> => {
         success: true,
         emailSent,
         emailError,
-        guestUrl: projectUrl,
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
