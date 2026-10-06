@@ -203,7 +203,9 @@ async function addCollaborator(userId: string, body: any) {
   const newUserId = String(body.user_id_to_add ?? body.user_id ?? "");
   const role = String(body.role ?? "member").toLowerCase();
   const allowedRoles = ["member", "creative", "client", "collaborator"];
-  const finalRole = allowedRoles.includes(role) ? role : "member";
+  // project_collaborators.role only accepts member | client | creative | guest:
+  // the UI's "collaborator" is stored as "member", otherwise the insert violates the check constraint.
+  const finalRole = role === "collaborator" ? "member" : allowedRoles.includes(role) ? role : "member";
 
   if (!projectId || !newUserId) {
     return json({ ok: false, error: "project_id and user_id_to_add are required" }, 400);

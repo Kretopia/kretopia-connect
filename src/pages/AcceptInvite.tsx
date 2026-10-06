@@ -124,22 +124,38 @@ const AcceptInvite = () => {
           invitationQuery = invitationQuery.eq('user_id', user.id);
         }
 
-        const { data: invitation, error: inviteError } = await invitationQuery.maybeSingle();
+        // Duplicate rows for one person used to make .maybeSingle() throw, so the
+        // invitee landed on /circle with an error. Take the live one: an open
+        // invitation first, then an accepted membership.
+        const { data: invitationRows, error: inviteError } = await invitationQuery
+          .order("created_at", { ascending: false })
+          .limit(10);
 
         if (inviteError) throw inviteError;
+        const invitation =
+          invitationRows?.find((r) => r.status === "pending") ??
+          invitationRows?.find((r) => r.status === "accepted") ??
+          invitationRows?.[0] ??
+          null;
 
         if (invitation) {
           if (invitation.status === 'pending') {
-            const { error: updateError } = await supabase
+            const { data: accepted, error: updateError } = await supabase
               .from('project_collaborators')
               .update({
                 status: 'accepted',
                 user_id: user.id,
                 accepted_at: new Date().toISOString(),
               })
-              .eq('id', invitation.id);
+              .eq('id', invitation.id)
+              .select('id');
 
             if (updateError) throw updateError;
+            // A row-level-security block updates zero rows without raising an error;
+            // don't announce "Welcome" when nothing actually changed.
+            if (!accepted || accepted.length === 0) {
+              throw new Error("We couldn't confirm this invitation yet. Ask the person who invited you to send it again.");
+            }
 
             // Notify the inviter (owner) that the email invite was accepted
             if (invitation.invited_by && invitation.invited_by !== user.id) {

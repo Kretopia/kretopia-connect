@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { storedRoleFor } from "@/lib/projectInvites";
 
 interface InviteToProjectDialogProps {
   open: boolean;
@@ -50,7 +51,7 @@ export const InviteToProjectDialog = ({
         const ownedRes: any = await sb
           .from("projects")
           .select("id, title, status, created_at")
-          .eq("user_id", user.id)
+          .eq("created_by", user.id)
           .order("created_at", { ascending: false });
         const collabRes: any = await sb
           .from("project_collaborators")
@@ -121,7 +122,7 @@ export const InviteToProjectDialog = ({
         user_id: recipientUserId,
         email: null,
         invited_by: user.id,
-        role: "member",
+        role: storedRoleFor(selectedRole),
         agent_role: selectedRole,
         status: "pending",
       });

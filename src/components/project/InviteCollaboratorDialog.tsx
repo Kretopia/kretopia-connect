@@ -12,25 +12,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { getShareUrl } from "@/lib/constants";
-
-const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-const extractEmails = (text: string): string[] => {
-  const matches = text.match(EMAIL_RE) || [];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const m of matches) {
-    const v = m.toLowerCase();
-    if (!seen.has(v)) { seen.add(v); out.push(v); }
-  }
-  return out;
-};
+import {
+  describeOutcome,
+  extractEmails,
+  inviteByEmail,
+  inviteMember,
+  type InviteRole,
+} from "@/lib/projectInvites";
 
 interface InviteCollaboratorDialogProps {
   projectId: string;
   onInvite: () => void;
 }
-
-type InviteRole = "client" | "creative" | "collaborator";
 
 const ROLE_OPTIONS: { value: InviteRole; label: string; description: string; icon: typeof Briefcase }[] = [
   { value: "creative", label: "Creative", description: "Doing the work", icon: Sparkles },
@@ -44,6 +37,8 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
   const [sending, setSending] = useState(false);
   const [open, setOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<InviteRole>("creative");
+  // user_id -> "accepted" | "pending": people who must not be offered "Invite" again.
+  const [memberStatus, setMemberStatus] = useState<Record<string, string>>({});
   const { toast } = useToast();
 
   // Filter connected users based on search
@@ -67,136 +62,75 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
   const loadConnectedUsers = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        console.log("No user found for loading connections");
-        return;
+      if (!user) return;
+
+      const [outgoing, incoming, matches, members] = await Promise.all([
+        supabase.from("connections").select("connected_user_id").eq("user_id", user.id).eq("status", "accepted"),
+        supabase.from("connections").select("user_id").eq("connected_user_id", user.id).eq("status", "accepted"),
+        supabase
+          .from("matches")
+          .select("user1_id, user2_id")
+          .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+          .eq("status", "matched"),
+        supabase
+          .from("project_collaborators")
+          .select("user_id, status")
+          .eq("project_id", projectId)
+          .in("status", ["accepted", "pending"]),
+      ]);
+
+      const status: Record<string, string> = {};
+      for (const row of members.data ?? []) {
+        if (!row.user_id) continue;
+        // accepted beats pending if both ever exist
+        if (status[row.user_id] !== "accepted") status[row.user_id] = row.status;
       }
-
-      console.log("Loading connections for user:", user.id);
-
-      // Get all accepted connections where user is the initiator
-      const { data: outgoing, error: outgoingError } = await supabase
-        .from("connections")
-        .select("connected_user_id")
-        .eq("user_id", user.id)
-        .eq("status", "accepted");
-
-      console.log("Outgoing connections:", outgoing, outgoingError);
-
-      // Get all accepted connections where user is the recipient
-      const { data: incoming, error: incomingError } = await supabase
-        .from("connections")
-        .select("user_id")
-        .eq("connected_user_id", user.id)
-        .eq("status", "accepted");
-
-      console.log("Incoming connections:", incoming, incomingError);
-
-      // Get all matches
-      const { data: matches, error: matchesError } = await supabase
-        .from("matches")
-        .select("user1_id, user2_id")
-        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-        .eq("status", "matched");
-
-      console.log("Matches:", matches, matchesError);
+      setMemberStatus(status);
 
       const connectedIds = new Set<string>();
-      outgoing?.forEach((c) => connectedIds.add(c.connected_user_id));
-      incoming?.forEach((c) => connectedIds.add(c.user_id));
-      matches?.forEach((m) => {
-        connectedIds.add(m.user1_id === user.id ? m.user2_id : m.user1_id);
-      });
-
-      // Remove current user from the set (in case of self-references)
+      outgoing.data?.forEach((c) => connectedIds.add(c.connected_user_id));
+      incoming.data?.forEach((c) => connectedIds.add(c.user_id));
+      matches.data?.forEach((m) => connectedIds.add(m.user1_id === user.id ? m.user2_id : m.user1_id));
       connectedIds.delete(user.id);
 
-      console.log("Connected user IDs:", Array.from(connectedIds));
-
-      if (connectedIds.size > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, avatar_url, role, professional_skills")
-          .in("user_id", Array.from(connectedIds));
-
-        console.log("Loaded profiles:", profiles, profilesError);
-        setConnectedUsers(profiles || []);
-      } else {
-        console.log("No connected IDs found");
+      if (connectedIds.size === 0) {
         setConnectedUsers([]);
+        return;
       }
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url, role, professional_skills")
+        .in("user_id", Array.from(connectedIds));
+      setConnectedUsers(profiles || []);
     } catch (error) {
       console.error("Error loading connected users:", error);
     }
   };
 
+  const finishInvite = () => {
+    setSearchInput("");
+    setOpen(false);
+    onInvite();
+  };
+
   const handleInviteByEmail = async (emailToInvite: string) => {
     if (!emailToInvite) return;
-    
     setSending(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
-      // Get user profile for inviter name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', user.id)
-        .single();
-
-      // Get project details
-      const { data: project } = await supabase
-        .from('projects')
-        .select('title')
-        .eq('id', projectId)
-        .single();
-
-      const { error } = await supabase
-        .from('project_collaborators')
-        .insert({
-          project_id: projectId,
-          email: emailToInvite.toLowerCase(),
-          invited_by: user.id,
-          role: 'member',
-          agent_role: selectedRole,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-
-      // Send invitation email
-      console.log('Invoking send-project-invitation function for:', emailToInvite);
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-project-invitation', {
-        body: {
-          email: emailToInvite.toLowerCase(),
-          projectTitle: project?.title || 'Untitled Project',
-          projectId,
-          inviterName: profile?.full_name || 'A Kretopia user',
-        }
+      const outcome = await inviteByEmail({
+        client: supabase,
+        projectId,
+        role: selectedRole,
+        inviterId: user.id,
+        email: emailToInvite,
       });
-
-      if (emailError) {
-        console.error('Edge function error:', emailError);
-        throw new Error(`Failed to send email: ${emailError.message}`);
-      }
-
-      console.log('Email sent successfully:', emailData);
-
-      toast({
-        title: "Invite sent!",
-        description: `Invitation sent to ${emailToInvite}`,
-      });
-      setSearchInput("");
-      setOpen(false);
-      onInvite();
+      toast(describeOutcome(outcome, emailToInvite.trim().toLowerCase(), "email"));
+      // A saved invitation changes the pending list even when the email didn't go out.
+      if (outcome.kind !== "error") finishInvite();
     } catch (error: any) {
-      console.error('Error inviting collaborator:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send invitation. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Couldn't send the invitation", description: error.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -205,48 +139,35 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
   const handleBulkInviteByEmail = async (emails: string[]) => {
     if (!emails.length) return;
     setSending(true);
-    let ok = 0;
-    let fail = 0;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-      const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', user.id).single();
-      const { data: project } = await supabase.from('projects').select('title').eq('id', projectId).single();
 
+      let sent = 0;
+      let notEmailed = 0;
+      let skipped = 0;
+      let failed = 0;
       for (const email of emails) {
-        try {
-          const { error } = await supabase.from('project_collaborators').insert({
-            project_id: projectId,
-            email,
-            invited_by: user.id,
-            role: 'member',
-            agent_role: selectedRole,
-            status: 'pending',
-          });
-          if (error) throw error;
-          await supabase.functions.invoke('send-project-invitation', {
-            body: {
-              email,
-              projectTitle: project?.title || 'Untitled Project',
-              projectId,
-              inviterName: profile?.full_name || 'A Kretopia user',
-            },
-          }).catch((e) => console.warn('email send failed', email, e));
-          ok++;
-        } catch (e) {
-          console.warn('bulk invite failed for', email, e);
-          fail++;
-        }
+        const outcome = await inviteByEmail({ client: supabase, projectId, role: selectedRole, inviterId: user.id, email });
+        if (outcome.kind === "invited") (outcome.emailSent ? sent++ : notEmailed++);
+        else if (outcome.kind === "error") failed++;
+        else skipped++; // already in the room / already invited
       }
+
+      const parts = [
+        sent > 0 && `${sent} sent`,
+        notEmailed > 0 && `${notEmailed} saved but not emailed (Resend from Pending invitations)`,
+        skipped > 0 && `${skipped} already in or already invited`,
+        failed > 0 && `${failed} failed`,
+      ].filter(Boolean);
       toast({
-        title: `Sent ${ok} invite${ok === 1 ? '' : 's'}`,
-        description: fail > 0 ? `${fail} couldn't be sent (already invited?)` : 'They\'ll get an email with the studio link.',
+        title: sent + notEmailed > 0 ? "Invitations processed" : "No new invitations",
+        description: parts.join(" · "),
+        variant: failed > 0 || notEmailed > 0 ? "destructive" : undefined,
       });
-      setSearchInput("");
-      setOpen(false);
-      onInvite();
+      if (sent + notEmailed > 0) finishInvite();
     } catch (e: any) {
-      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      toast({ title: "Couldn't send the invitations", description: e.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -257,69 +178,17 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
-
-      // Get user profile for inviter name
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', user.id)
-        .single();
-
-      // Get project details
-      const { data: project } = await supabase
-        .from('projects')
-        .select('title')
-        .eq('id', projectId)
-        .single();
-
-      // Existing users are linked by user_id; email is optional
-      const { error } = await supabase
-        .from('project_collaborators')
-        .insert({
-          project_id: projectId,
-          user_id: userId,
-          email: null,
-          invited_by: user.id,
-          role: 'member',
-          agent_role: selectedRole,
-          status: 'pending'
-        });
-
-      if (error) throw error;
-
-      // Always send invitation notification for existing users
-      console.log('Invoking send-project-invitation function for user:', userId);
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('send-project-invitation', {
-        body: {
-          projectTitle: project?.title || 'Untitled Project',
-          projectId,
-          inviterName: profile?.full_name || 'A Kretopia user',
-          inviteeUserId: userId, // This triggers in-app notification
-        }
+      const outcome = await inviteMember({
+        client: supabase,
+        projectId,
+        role: selectedRole,
+        inviterId: user.id,
+        userId,
       });
-
-      if (emailError) {
-        console.error('Edge function error:', emailError);
-        // Don't throw for existing users - they got the in-app notification
-        console.warn('Email notification failed but in-app notification was sent');
-      } else {
-        console.log('Notification sent successfully:', emailData);
-      }
-
-      toast({
-        title: "Invite sent!",
-        description: `${userName} has been invited to the project`,
-      });
-      setSearchInput("");
-      setOpen(false);
-      onInvite();
+      toast(describeOutcome(outcome, userName, "account"));
+      if (outcome.kind !== "error") finishInvite();
     } catch (error: any) {
-      console.error('Error inviting user:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send invitation. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Couldn't send the invitation", description: error.message, variant: "destructive" });
     } finally {
       setSending(false);
     }
@@ -431,14 +300,11 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
                       <p className="font-medium text-sm truncate">{user.full_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.role}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleInviteUser(user.user_id, user.full_name)}
-                      disabled={sending}
-                      variant="default"
-                    >
-                      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
-                    </Button>
+                    <InviteRowAction
+                      status={memberStatus[user.user_id]}
+                      sending={sending}
+                      onInvite={() => handleInviteUser(user.user_id, user.full_name)}
+                    />
                   </div>
                 ))}
               </div>
@@ -531,14 +397,11 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
                       <p className="font-medium text-sm truncate">{user.full_name}</p>
                       <p className="text-xs text-muted-foreground truncate">{user.role}</p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleInviteUser(user.user_id, user.full_name)}
-                      disabled={sending}
-                      variant="default"
-                    >
-                      Invite
-                    </Button>
+                    <InviteRowAction
+                      status={memberStatus[user.user_id]}
+                      sending={sending}
+                      onInvite={() => handleInviteUser(user.user_id, user.full_name)}
+                    />
                   </div>
                 ))}
               </div>
@@ -558,6 +421,36 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
         </Tabs>
       </DialogContent>
     </Dialog>
+  );
+};
+
+const InviteRowAction = ({
+  status,
+  sending,
+  onInvite,
+}: {
+  status?: string;
+  sending: boolean;
+  onInvite: () => void;
+}) => {
+  if (status === "accepted") {
+    return (
+      <Badge variant="secondary" className="gap-1 shrink-0">
+        <Check className="h-3 w-3" /> In Studio
+      </Badge>
+    );
+  }
+  if (status === "pending") {
+    return (
+      <Badge variant="outline" className="shrink-0">
+        Invited
+      </Badge>
+    );
+  }
+  return (
+    <Button size="sm" onClick={onInvite} disabled={sending} variant="default">
+      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
+    </Button>
   );
 };
 
