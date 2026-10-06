@@ -8,6 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -22,6 +24,37 @@ serve(async (req) => {
     if (!opportunityId || !title) {
       return new Response(JSON.stringify({ error: "opportunityId and title required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (typeof opportunityId !== "string" || !UUID_RE.test(opportunityId)) {
+      return new Response(JSON.stringify({ error: "opportunityId must be a valid UUID" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // The writes below run with the service role, which bypasses RLS, so the
+    // caller must own the opportunity. Checked before the AI call and the
+    // upload so a non-owner can neither overwrite a cover nor spend AI credits.
+    const { data: opportunity, error: lookupErr } = await supabase
+      .from("opportunities")
+      .select("id, created_by")
+      .eq("id", opportunityId)
+      .maybeSingle();
+
+    if (lookupErr) throw lookupErr;
+    if (!opportunity) {
+      return new Response(JSON.stringify({ error: "Opportunity not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (opportunity.created_by !== guard.userId) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -59,11 +92,6 @@ serve(async (req) => {
     // Upload to storage
     const base64Data = imageDataUrl.replace(/^data:image\/\w+;base64,/, "");
     const imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
 
     const filePath = `gig-covers/${opportunityId}-${Date.now()}.png`;
     const { error: uploadErr } = await supabase.storage
