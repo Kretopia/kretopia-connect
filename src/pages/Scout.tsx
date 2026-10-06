@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
 import { DiscoverCreativesRail } from "@/components/opportunity/DiscoverCreativesRail";
-import { Radar, Store, UserSearch, ArrowRight, Bookmark } from "lucide-react";
+import { Radar, Store, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
@@ -87,27 +87,6 @@ const Scout = () => {
                 );
               })}
             </div>
-
-            {/* Secondary navigation — deliberately not styled as tabs: these leave the page */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <Link
-                to="/circle"
-                className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Find collaborators in Circle"
-              >
-                Looking for collaborators? Open Circle
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-              <Link
-                to={contextQuery ? `/talent-finder?q=${encodeURIComponent(contextQuery)}` : "/talent-finder"}
-                className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
-                aria-label="Open Talent Scout to hire talent"
-              >
-                <UserSearch className="h-3 w-3" />
-                Hiring? Open Talent Scout
-                <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
           </div>
         }
       />
@@ -129,9 +108,8 @@ const Scout = () => {
         {tab === "scouted" && <ScoutedGigsSection />}
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
-        {/* People-discovery still lives primarily in /circle (Scout's own
-            header link above says so) -- this is a small cross-tab taste of
-            it, not a duplicate directory, and doesn't replace that link. */}
+        {/* People-discovery lives primarily in /circle -- this is a small
+            cross-tab taste of it, not a duplicate directory. */}
         <DiscoverCreativesRail />
         <SurfaceProactiveCards surface="scout" className="px-0" />
         <KretoTip compact />
