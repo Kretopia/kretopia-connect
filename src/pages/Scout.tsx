@@ -16,10 +16,11 @@ import { Button } from "@/components/ui/button";
 
 type Tab = "scouted" | "shortlist" | "marketplace";
 
-// CEO overhaul: "Open Gigs" first (was third) -- the brief's explicit ask.
+// Tab order: For You first (the personalized scout is the reason to open
+// this page), then the open marketplace, then saved gigs.
 const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
-  { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
   { id: "scouted", label: "For You", icon: Radar, hint: "Real gigs scouted from across the web" },
+  { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
   { id: "shortlist", label: "Shortlist", icon: Bookmark, hint: "Gigs you saved for later" },
 ];
 
@@ -30,7 +31,7 @@ const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
 const Scout = () => {
   const [params, setParams] = useSearchParams();
   const requestedTab = params.get("tab");
-  const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "marketplace";
+  const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "scouted";
   const contextQuery = params.get("q") || "";
   const [tab, setTab] = useState<Tab>(initial);
 
