@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { dedupeLeads, splitEvenly } from "../../../supabase/functions/_shared/leadExtraction";
+import {
+  dedupeLeads, isKnownLead, knownLeadKeys, leadKey, leadKeys, rememberLead, splitByExisting, splitEvenly,
+} from "../../../supabase/functions/_shared/leadExtraction";
 
 const range = (n: number) => Array.from({ length: n }, (_, i) => i);
 
@@ -50,5 +52,63 @@ describe("dedupeLeads", () => {
   it("drops leads with no usable identity and keeps distinct people with the same name", () => {
     expect(dedupeLeads([{ name: "", company: "", email: "" }, { name: "  " }])).toEqual([]);
     expect(dedupeLeads([{ name: "Sam", email: "a@x.com" }, { name: "Sam", email: "b@x.com" }])).toHaveLength(2);
+  });
+});
+
+describe("leadKey / leadKeys", () => {
+  it("uses the email when there is one, otherwise name + company", () => {
+    expect(leadKey({ name: "Ann", company: "Acme", email: " Ann@Co.com " })).toBe("e:ann@co.com");
+    expect(leadKey({ name: " Ann Lee ", company: "ACME" })).toBe("n:ann lee|acme");
+    expect(leadKey({})).toBe("");
+    expect(leadKey({ name: "  ", email: "" })).toBe("");
+  });
+  it("lists every way a lead can be recognised", () => {
+    expect(leadKeys({ name: "Ann", company: "Acme", email: "a@co.com" })).toEqual(["e:a@co.com", "n:ann|acme"]);
+    expect(leadKeys({ name: "Ann" })).toEqual(["n:ann|"]);
+    expect(leadKeys({ email: "a@co.com" })).toEqual(["e:a@co.com"]);
+  });
+  it("copes with missing or non-string fields from the model", () => {
+    expect(leadKey({ name: 42 as any, company: null, email: undefined })).toBe("n:42|");
+  });
+});
+
+describe("splitByExisting (already in the user's leads)", () => {
+  const saved = knownLeadKeys([
+    { name: "Ann Lee", company: "Acme", email: "ann@acme.com" },
+    { name: "Bo Chan", company: "Zed", email: null },
+  ]);
+
+  it("recognises a saved lead by email, ignoring case", () => {
+    expect(isKnownLead({ name: "Someone Else", email: "ANN@acme.com" }, saved)).toBe(true);
+  });
+  it("recognises a saved lead by name + company even when the new copy has an email and the saved one has none", () => {
+    expect(isKnownLead({ name: "bo chan", company: "ZED", email: "bo@zed.com" }, saved)).toBe(true);
+  });
+  it("recognises a saved lead by name + company when the new copy has no email", () => {
+    expect(isKnownLead({ name: "Ann Lee", company: "Acme" }, saved)).toBe(true);
+  });
+  it("does not confuse the same name at a different company", () => {
+    expect(isKnownLead({ name: "Ann Lee", company: "Other" }, saved)).toBe(false);
+  });
+  it("splits results into new and already-there, keeping order", () => {
+    const { fresh, existing } = splitByExisting(
+      [{ name: "New One", email: "n1@x.com" }, { name: "Ann Lee", company: "Acme" }, { name: "New Two" }, { name: "Bo", email: "ann@acme.com" }],
+      saved,
+    );
+    expect(fresh.map((l) => l.name)).toEqual(["New One", "New Two"]);
+    expect(existing.map((l) => l.name)).toEqual(["Ann Lee", "Bo"]);
+  });
+  it("rememberLead lets later items in the same batch be compared against earlier ones", () => {
+    const seen = new Set<string>();
+    const rows = [{ name: "A", email: "a@x.com" }, { name: "A2", email: "a@x.com" }, { name: "B" }];
+    const kept = rows.filter((r) => {
+      if (isKnownLead(r, seen)) return false;
+      rememberLead(r, seen);
+      return true;
+    });
+    expect(kept.map((r) => r.name)).toEqual(["A", "B"]);
+  });
+  it("treats an empty list of saved leads as nothing known", () => {
+    expect(splitByExisting([{ name: "A" }], new Set()).fresh).toHaveLength(1);
   });
 });

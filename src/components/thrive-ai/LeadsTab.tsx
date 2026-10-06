@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { isKnownLead, knownLeadKeys, rememberLead, splitByExisting } from "../../../supabase/functions/_shared/leadExtraction";
 import { Plus, User, Building2, Mail, Trash2, Edit2, ArrowRight, Sparkles, Upload, Download, Check, ExternalLink, Loader2 } from "lucide-react";
 
 type Lead = {
@@ -40,6 +41,8 @@ type ScoutedLead = {
   notes: string;
   type: string;
   priority: string;
+  /** Set by scout-leads: already in (or just added to) the user's leads. */
+  in_leads?: boolean;
 };
 
 const STAGES = [
@@ -84,6 +87,8 @@ const LeadsTab = () => {
   const [scoutSources, setScoutSources] = useState<string[]>([]);
   const [scouting, setScouting] = useState(false);
   const [savedIds, setSavedIds] = useState<Set<number>>(new Set());
+  // What the search itself already put in the pipeline (scout-leads saves new finds automatically).
+  const [scoutSaved, setScoutSaved] = useState<{ added: number; existing: number }>({ added: 0, existing: 0 });
 
   // Import state
   const fileRef = useRef<HTMLInputElement>(null);
@@ -186,6 +191,10 @@ const LeadsTab = () => {
 
   const resetForm = () => setForm({ name: "", type: "client", email: "", company: "", role: "", notes: "", priority: "medium", source: "" });
 
+  // Who is already in the pipeline (email, else name + company). Every way of adding
+  // leads below skips these, so the same person is never added twice.
+  const existingKeys = useMemo(() => knownLeadKeys(leads), [leads]);
+
   // Grouped once per change to `leads` (one pass), not re-filtered per stage on every render.
   const leadsByStage = useMemo(() => {
     const groups: Record<string, Lead[]> = {};
@@ -200,6 +209,7 @@ const LeadsTab = () => {
     setScouting(true);
     setScoutResults([]);
     setSavedIds(new Set());
+    setScoutSaved({ added: 0, existing: 0 });
     try {
       const { data, error } = await supabase.functions.invoke("scout-leads", {
         body: { query: scoutQuery, industry: scoutIndustry, location: scoutLocation },
@@ -209,8 +219,14 @@ const LeadsTab = () => {
         toast.error(data.error);
         return;
       }
-      setScoutResults(data.leads || []);
+      const found: ScoutedLead[] = data.leads || [];
+      setScoutResults(found);
       setScoutSources(data.sources || []);
+      // scout-leads already saved the new people it found: show them as saved
+      // (instead of offering to save them again) and refresh the pipeline.
+      setSavedIds(new Set(found.flatMap((l, i) => (l.in_leads ? [i] : []))));
+      setScoutSaved({ added: data.saved_count ?? 0, existing: data.already_saved_count ?? 0 });
+      if ((data.saved_count ?? 0) > 0) queryClient.invalidateQueries({ queryKey: ["leads"] });
       if ((data.leads || []).length === 0) {
         toast.info("No leads found — try a different query");
       }
@@ -223,6 +239,12 @@ const LeadsTab = () => {
   };
 
   const saveScoutedLead = async (lead: ScoutedLead, idx: number) => {
+    if (isLoading) return toast.info("Still loading your leads — try again in a moment");
+    if (isKnownLead(lead, existingKeys)) {
+      setSavedIds((prev) => new Set(prev).add(idx));
+      toast.info(`${lead.name} is already in your leads`);
+      return;
+    }
     await addMutation.mutateAsync({
       name: lead.name,
       type: lead.type || "client",
@@ -238,27 +260,33 @@ const LeadsTab = () => {
   };
 
   const saveAllScouted = async () => {
+    if (isLoading) return toast.info("Still loading your leads — try again in a moment");
     const pending = scoutResults.map((lead, idx) => ({ lead, idx })).filter(({ idx }) => !savedIds.has(idx));
     if (pending.length === 0) return;
+    // Anyone already in the pipeline is marked saved, not inserted again.
+    const { fresh } = splitByExisting(pending.map((p) => p.lead), existingKeys);
     try {
-      await addManyMutation.mutateAsync(
-        pending.map(({ lead }) => ({
-          name: lead.name,
-          type: lead.type || "client",
-          email: lead.email,
-          company: lead.company,
-          role: lead.role,
-          notes: lead.notes,
-          priority: lead.priority || "medium",
-          source: "AI Scout",
-        })),
-      );
+      if (fresh.length > 0) {
+        await addManyMutation.mutateAsync(
+          fresh.map((lead) => ({
+            name: lead.name,
+            type: lead.type || "client",
+            email: lead.email,
+            company: lead.company,
+            role: lead.role,
+            notes: lead.notes,
+            priority: lead.priority || "medium",
+            source: "AI Scout",
+          })),
+        );
+      }
       setSavedIds((prev) => {
         const next = new Set(prev);
         pending.forEach(({ idx }) => next.add(idx));
         return next;
       });
-      toast.success("All leads saved");
+      const skipped = pending.length - fresh.length;
+      toast.success(skipped > 0 ? `${fresh.length} leads saved (${skipped} already in your leads)` : "All leads saved");
     } catch {
       toast.error("Failed to save leads");
     }
@@ -304,9 +332,22 @@ const LeadsTab = () => {
           source: "CSV Import",
         });
       }
+      if (isLoading) {
+        toast.info("Still loading your leads — try again in a moment");
+        if (fileRef.current) fileRef.current.value = "";
+        return;
+      }
+      // Skip rows already in the pipeline and repeats inside the file itself.
+      const seen = new Set(existingKeys);
+      const fresh = rows.filter((r) => {
+        if (!r.name || isKnownLead(r, seen)) return false;
+        rememberLead(r, seen);
+        return true;
+      });
+      const skipped = rows.length - fresh.length;
       try {
-        await addManyMutation.mutateAsync(rows);
-        toast.success(`Imported ${rows.length} leads`);
+        if (fresh.length > 0) await addManyMutation.mutateAsync(fresh);
+        toast.success(skipped > 0 ? `Imported ${fresh.length} leads (${skipped} already in your leads)` : `Imported ${fresh.length} leads`);
       } catch {
         toast.error("Import failed — some rows may already have been added");
       }
@@ -462,8 +503,18 @@ const LeadsTab = () => {
           {scoutResults.length > 0 && (
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">{scoutResults.length} leads found</p>
-                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={saveAllScouted}>
+                <div>
+                  <p className="text-sm font-medium">{scoutResults.length} leads found</p>
+                  {(scoutSaved.added > 0 || scoutSaved.existing > 0) && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {scoutSaved.added > 0 ? `${scoutSaved.added} added to your pipeline` : ""}
+                      {scoutSaved.added > 0 && scoutSaved.existing > 0 ? " · " : ""}
+                      {scoutSaved.existing > 0 ? `${scoutSaved.existing} already there` : ""}
+                    </p>
+                  )}
+                </div>
+                <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={saveAllScouted}
+                  disabled={savedIds.size >= scoutResults.length || addManyMutation.isPending}>
                   <Download className="h-3 w-3" /> Save All
                 </Button>
               </div>
@@ -492,7 +543,7 @@ const LeadsTab = () => {
                         )}
                       </div>
                       <Button size="sm" variant={savedIds.has(idx) ? "secondary" : "default"} className="shrink-0 gap-1 text-xs h-7"
-                        onClick={() => saveScoutedLead(lead, idx)} disabled={savedIds.has(idx)}>
+                        onClick={() => saveScoutedLead(lead, idx)} disabled={savedIds.has(idx) || addMutation.isPending}>
                         {savedIds.has(idx) ? <><Check className="h-3 w-3" /> Saved</> : <><Plus className="h-3 w-3" /> Save</>}
                       </Button>
                     </div>
