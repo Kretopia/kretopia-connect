@@ -38,6 +38,9 @@ export const ProjectInviteAcceptBanner = ({ projectId, onAccepted }: ProjectInvi
           .eq("project_id", projectId)
           .eq("user_id", user.id)
           .eq("status", "pending")
+          // A duplicate pending row made .maybeSingle() error and hid the banner.
+          .order("invited_at", { ascending: false })
+          .limit(1)
           .maybeSingle();
 
         if (cancelled || !data) {

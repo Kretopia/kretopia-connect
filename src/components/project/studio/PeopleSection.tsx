@@ -46,6 +46,9 @@ export const PeopleSection = ({
   const [shareOpen, setShareOpen] = useState(false);
   const [projectTitle, setProjectTitle] = useState<string>("");
   const [quickSharing, setQuickSharing] = useState(false);
+  // Bumped after every invite: pending people are not in `collaborators` (accepted only),
+  // so without this the new invitee stayed invisible until a full reload.
+  const [pendingNonce, setPendingNonce] = useState(0);
   const { toast } = useToast();
 
   const quickShareGuestLink = async () => {
@@ -174,7 +177,7 @@ ${url}`;
     return () => {
       cancelled = true;
     };
-  }, [projectId, collaborators.length]);
+  }, [projectId, collaborators.length, pendingNonce]);
 
   const onlineCount = collaborators.filter(
     (c) => c.id !== currentUserId && onlineUserIds?.has(c.id),
@@ -224,7 +227,13 @@ ${url}`;
             >
               <Link2 className="h-3.5 w-3.5" />
             </Button>
-            <InviteCollaboratorDialog projectId={projectId} onInvite={onUpdated} />
+            <InviteCollaboratorDialog
+              projectId={projectId}
+              onInvite={() => {
+                setPendingNonce((n) => n + 1);
+                onUpdated();
+              }}
+            />
           </div>
         )}
       </header>
