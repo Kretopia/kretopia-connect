@@ -43,6 +43,7 @@ import { ThriveBar } from "./components/agent/ThriveBar";
 // Lazy load active page components
 const Auth = lazy(() => import("./pages/Auth"));
 const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
+const TmpTodayHeader = lazy(() => import("./pages/TmpTodayHeader"));
 const PayLink = lazy(() => import("./pages/PayLink"));
 const PayInvoice = lazy(() => import("./pages/PayInvoice"));
 const CopilotMemory = lazy(() => import("./pages/CopilotMemory"));
@@ -310,6 +311,7 @@ const AppContent = () => {
             <Route path="/landing" element={<Welcome />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+            <Route path="/tmp-today-header" element={<TmpTodayHeader />} />
             <Route path="/claim" element={<Claim />} />
             <Route path="/agents" element={<AgentsActivity />} />
             <Route path="/demo/agent" element={<DemoAgent />} />
