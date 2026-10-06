@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { AgentApprovalCard } from "./AgentApprovalCard";
-import { ThriveMark } from "./ThriveMark";
+import { KretoLabel } from "@/components/brand/KretoLabel";
 import { usePendingAgentActions } from "@/hooks/usePendingAgentActions";
 import { draftTrigger, riskPill } from "@/lib/agentRiskUI";
 import { cn } from "@/lib/utils";
@@ -103,9 +103,8 @@ export const ApprovalsHub = ({ limit = 4 }: { limit?: number }) => {
       <div className="flex items-start justify-between mb-2.5 px-1 gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <ThriveMark size="sm" />
             <h3 className="text-xs font-bold uppercase tracking-wider text-primary">
-              Kreto · Waiting on you
+              <KretoLabel context="Waiting on you" />
             </h3>
             <Badge variant="secondary" className="text-[10px] h-4 px-1.5">
               {total}
