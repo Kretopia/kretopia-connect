@@ -54,6 +54,9 @@ are the safest to believe. `rows_with_progress > 0` means someone already worked
 
 ## If you then want them merged (proposal only — nothing here does it)
 
+The full proposal, with a preview, a backup export and a guarded merge script, is in
+[`leads-duplicates-merge-proposal.md`](./leads-duplicates-merge-proposal.md). In outline:
+
 No `UPDATE` or `DELETE` is included, deliberately. A safe merge would be a separate, approved step:
 
 1. Export the rows from query 2 (or back them up) first; nothing here is restorable once deleted.
