@@ -504,9 +504,47 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
       )}
 
       {gigs.length === 0 && !scanning ? (
-        <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
-          No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to find real jobs across the web matched to your skills.
-        </Card>
+        fallbackOpps.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-[11px] text-muted-foreground">
+              Your first personalized scan is warming up — meanwhile, these open gigs on Kretopia match your world:
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {fallbackOpps.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  onClick={() => navigate("/scout?tab=marketplace")}
+                  className="text-left rounded-2xl border border-border bg-card p-4 transition-all hover:border-energy/40 hover:shadow-lg hover:shadow-energy/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-sm leading-tight line-clamp-2 text-foreground">{o.title}</h3>
+                    {o.type && (
+                      <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0 capitalize">
+                        {o.type}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+                    {o.location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />{o.location}
+                      </span>
+                    )}
+                    {hasRealCompensation(o.compensation) && <span>· {o.compensation}</span>}
+                  </div>
+                  <span className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-energy">
+                    View in Open Gigs <ExternalLink className="h-3 w-3" />
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
+            No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to find real jobs across the web matched to your skills.
+          </Card>
+        )
       ) : limit ? (
         <>
         {/* Compact embed (e.g. Today's "More from today") — carousel only, no hero. */}
