@@ -147,7 +147,7 @@ export function DiscoverCreativesRail() {
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(profileHref); } }}
                     className="rounded-2xl bg-card cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal-teal))]"
                   >
-                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-muted">
+                    <div className="relative aspect-[16/9] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-card">
                       {p.cover_image_url && !brokenCoverIds.has(p.user_id!) ? (
                         <img
                           src={p.cover_image_url}
@@ -157,20 +157,25 @@ export function DiscoverCreativesRail() {
                           onError={() => markCoverBroken(p.user_id!)}
                         />
                       ) : (
-                        <div className="h-full w-full bg-gradient-to-br from-[hsl(var(--signal-teal))]/20 via-[hsl(var(--signal-teal))]/5 to-transparent flex items-center justify-center">
+                        <div className="h-full w-full flex items-center justify-center">
                           <img src={kretoConnector} alt="" className="h-16 w-16 object-contain opacity-90" />
                         </div>
                       )}
+                      {/* Melt the cover into the card body — no hard cut between two backgrounds */}
+                      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/50 to-transparent" />
                       {standing && (
                         <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--signal-teal))] backdrop-blur-sm">
                           <ShieldCheck className="h-3 w-3" />
                           {standing}
                         </span>
                       )}
-                      <Avatar className="absolute -bottom-6 left-4 h-14 w-14 ring-2 ring-card">
-                        <AvatarImage src={p.avatar_url ?? undefined} />
-                        <AvatarFallback>{(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
+                      <div className="absolute -bottom-6 left-4">
+                        <div aria-hidden className="absolute -inset-1 rounded-full bg-gradient-to-br from-[hsl(var(--signal-teal))] to-[hsl(var(--signal-pink,320_100%_60%))] opacity-70 blur-[3px]" />
+                        <Avatar className="relative h-14 w-14 ring-2 ring-card">
+                          <AvatarImage src={p.avatar_url ?? undefined} />
+                          <AvatarFallback>{(p.full_name || p.username || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                      </div>
                     </div>
                     <div className="p-4 pt-8 space-y-1.5">
                       <p className="font-semibold text-foreground truncate">{p.full_name || p.username}</p>
