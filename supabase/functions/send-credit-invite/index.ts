@@ -80,17 +80,29 @@ serve(async (req) => {
     for (const collab of external_collaborators) {
       const { name, email } = collab;
 
-      // Generate a claim token
-      const token = crypto.randomUUID();
-      
-      // Store the token in endorsements for claim tracking
-      await supabase.from('credit_endorsements').update({
-        token,
-      }).eq('credit_id', credit_id).eq('endorser_email', email);
+      // The invite must land on the one-tap confirmation page (/credit-verify),
+      // which needs no account and is keyed by the endorsement's own token.
+      // It used to point at /auth?claim=<new random token>, which the auth page
+      // reads as a *profile* to claim, so invited collaborators hit a sign-up
+      // wall and then a profile that doesn't exist, and could never confirm.
+      // Reuse the token the request row already has; only mint one if it has none.
+      const { data: existing } = await supabase
+        .from('credit_endorsements')
+        .select('token')
+        .eq('credit_id', credit_id)
+        .eq('endorser_email', email)
+        .limit(1)
+        .maybeSingle();
+      let token: string | null = existing?.token ?? null;
+      if (!token) {
+        token = crypto.randomUUID();
+        await supabase.from('credit_endorsements').update({ token })
+          .eq('credit_id', credit_id).eq('endorser_email', email);
+      }
 
-      const claimUrl = `${baseUrl}/auth?claim=${token}&credit=${credit_id}`;
+      const claimUrl = `${baseUrl}/credit-verify?token=${encodeURIComponent(token)}`;
       const whatsappText = encodeURIComponent(
-        `Hey ${name}! ${inviterName} credited you as part of "${project_name}" on Kretopia. Claim your credit and build your verified creative profile: ${claimUrl}`
+        `Hey ${name}! ${inviterName} credited you on "${project_name}" on Kretopia. Can you take 5 seconds to confirm you worked together? No account needed: ${claimUrl}`
       );
       const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
 
@@ -107,6 +119,7 @@ serve(async (req) => {
               projectName: project_name,
               role: role || 'Collaborator',
               claimUrl,
+              confirmUrl: claimUrl,
               whatsappUrl,
             },
           },

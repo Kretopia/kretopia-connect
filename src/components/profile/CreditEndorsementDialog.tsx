@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Send, Search, Loader2, ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
 import { getShareUrl } from "@/lib/constants";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
+import { notifyUser } from "@/lib/notifyUser";
 
 interface Credit {
   id: string;
@@ -97,7 +98,17 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
       const link = data?.token ? getShareUrl(`/credit-verify?token=${encodeURIComponent(data.token)}`) : '';
 
       if (endorserId && !endorserEmail) {
-        toast.success('Request sent!', { description: `${endorserName || 'They'} will see it in their inbox.` });
+        // The DB only notifies on acceptance, so tell the member now, or "in their inbox" is untrue.
+        void notifyUser({
+          userId: endorserId,
+          type: 'credit_confirmation_request',
+          title: 'Can you confirm a credit?',
+          message: `${requesterName || 'Someone'} says you worked together on ${credit.project_name}. One tap to confirm.`,
+          actionUrl: '/profile',
+          actionText: 'Review request',
+          category: 'credits',
+        });
+        toast.success('Request sent!', { description: `${endorserName || 'They'} will see it in their notifications.` });
         onOpenChange(false);
         resetForm();
         return;

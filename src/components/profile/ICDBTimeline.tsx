@@ -890,6 +890,7 @@ export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelinePr
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
         onSuccess={() => { fetchData(); onRefresh?.(); }}
+        onCreditAdded={(credit) => setEndorsementCredit(credit)}
         userId={userId}
       />
 
