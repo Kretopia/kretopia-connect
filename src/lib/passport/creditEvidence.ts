@@ -36,3 +36,31 @@ export function classifyCreditEvidence(credit: EvidenceInput): CreditEvidenceSta
 export function creditEvidenceLabel(status: CreditEvidenceStatus): string {
   return EVIDENCE_LABEL[status];
 }
+
+const PLATFORM_SOURCE_LABEL: Record<string, string> = {
+  youtube: "YouTube",
+  spotify: "Spotify",
+  imdb: "IMDb",
+  "imdb.com": "IMDb",
+  discogs: "Discogs",
+  musicbrainz: "MusicBrainz",
+};
+
+/**
+ * A reader weighing a hire needs to know WHY a credit counts as verified, not
+ * just that it does: a collaborator confirming it, a platform account, or a
+ * Kretopia review are three different strengths of evidence. Every non-verified
+ * state says plainly what it is, so none can pass for a confirmed credit.
+ */
+export function creditEvidenceBasis(credit: EvidenceInput & { source?: string | null }): string {
+  const status = classifyCreditEvidence(credit);
+  const peers = credit.endorsement_count || 0;
+  if (status === "verified") {
+    if (peers > 0) return `Confirmed by ${peers} collaborator${peers === 1 ? "" : "s"}`;
+    const platform = PLATFORM_SOURCE_LABEL[(credit.source || "").toLowerCase()];
+    return platform ? `Verified on ${platform}` : "Verified by Kretopia";
+  }
+  if (status === "publicly_sourced") return "Found in public records";
+  if (status === "pending") return "Awaiting confirmation";
+  return "Self-claimed";
+}
