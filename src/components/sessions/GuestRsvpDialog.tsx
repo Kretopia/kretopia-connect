@@ -213,7 +213,8 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
         body: {
           templateName: "event-registration-confirmation",
           recipientEmail: parsed.data.guest_email,
-          idempotencyKey: `guest-rsvp-${eventId}-${parsed.data.guest_email}`,
+          // "-v2": see eventConfirmationEmail.ts. Earlier keys were all burnt by failed sends.
+          idempotencyKey: `guest-rsvp-v2-${eventId}-${parsed.data.guest_email}`,
           templateData: {
             attendeeName: parsed.data.guest_name,
             attendeeEmail: parsed.data.guest_email,
