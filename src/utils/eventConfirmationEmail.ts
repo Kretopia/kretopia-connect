@@ -70,7 +70,10 @@ export const sendEventConfirmationEmail = async ({
       body: {
         templateName: 'event-registration-confirmation',
         recipientEmail: user.email,
-        idempotencyKey: `event-reg-${eventId}-${user.id}`,
+        // "-v2": every send under the previous key failed (sender_domain_mismatch, Aug 17 to Oct 7), and the
+        // email API refuses to retry a failed key ("already failed, send again with a new idempotency key").
+        // Nobody got a message under it, so a new suffix cannot duplicate one; it only unblocks re-sends.
+        idempotencyKey: `event-reg-v2-${eventId}-${user.id}`,
         templateData: {
           attendeeName: profile?.full_name || undefined,
           eventTitle,
