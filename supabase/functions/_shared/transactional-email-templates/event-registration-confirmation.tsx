@@ -73,8 +73,6 @@ const EventRegistrationConfirmationEmail = ({
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          <Section style={topBar} />
-
           <Section style={logoRow}>
             <Img src={LOGO_URL} width="150" alt={SITE_NAME} style={{ margin: '0 auto' }} />
           </Section>
@@ -86,7 +84,7 @@ const EventRegistrationConfirmationEmail = ({
               Congratulations{firstName ? `, ${firstName}` : ''}.<br />You're going!
             </Heading>
             <Text style={lead}>
-              Your spot at <strong style={{ color: '#ffffff' }}>{title}</strong> is saved. Kreto will remind you before it
+              Your spot at <strong style={{ color: WHITE }}>{title}</strong> is saved. Kreto will remind you before it
               starts. All that's left is one tap to confirm you're coming.
             </Text>
             <Button style={primaryButton} href={confirmUrl}>
@@ -99,7 +97,7 @@ const EventRegistrationConfirmationEmail = ({
             </Text>
           </Section>
 
-          <Section style={eventCard}>
+          <Section style={card}>
             <Text style={cardEyebrow}>The event</Text>
             <Text style={eventTitleStyle}>{title}</Text>
             <table role="presentation" width="100%" style={{ borderCollapse: 'collapse' }}>
@@ -125,26 +123,28 @@ const EventRegistrationConfirmationEmail = ({
           </Section>
 
           {qrUrl && (
-            <Section style={qrCard}>
+            <Section style={{ ...card, textAlign: 'center' as const }}>
               <Text style={cardEyebrow}>Your check-in pass</Text>
               <Text style={qrHint}>Show this QR code at the door for a quick check-in.</Text>
               <Img src={qrUrl} width="190" height="190" alt="Check-in QR code" style={qrImage} />
               {passUrl && (
-                <Link href={passUrl} style={passLink}>
-                  Open my pass in Kretopia
-                </Link>
+                <Section style={{ textAlign: 'center' as const, margin: '16px 0 0' }}>
+                  <Button style={secondaryButton} href={passUrl}>
+                    Open my pass in Kretopia
+                  </Button>
+                </Section>
               )}
             </Section>
           )}
 
           {isGuest && (
-            <Section style={claimCard}>
-              <Text style={claimEyebrow}>Unlock more on {SITE_NAME}</Text>
+            <Section style={{ ...card, textAlign: 'center' as const }}>
+              <Text style={cardEyebrow}>Unlock more on {SITE_NAME}</Text>
               <Heading style={claimH2}>Claim your creator profile</Heading>
               <Text style={claimText}>
                 Meet the other attendees, get reminders and showcase your work. Free, in 60 seconds.
               </Text>
-              <Button style={claimButton} href={claimUrl}>
+              <Button style={primaryButton} href={claimUrl}>
                 Claim my profile →
               </Button>
             </Section>
@@ -156,7 +156,10 @@ const EventRegistrationConfirmationEmail = ({
             Plans changed? You can release your spot any time from the event page. Cancelling takes one tap and frees the
             place for someone on the waitlist.
           </Text>
-          <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · Where Creativity Lives · kretopia.com</Text>
+          <Text style={footerBrand}>
+            © {new Date().getFullYear()} Kretopia · Where Creativity Lives ·{' '}
+            <Link href={SITE_URL} style={footerLink}>kretopia.com</Link>
+          </Text>
         </Container>
       </Body>
     </Html>
@@ -186,48 +189,60 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const PURPLE = '#7b2bf9'
-const PINK = '#ee2073'
-// Pure black on purpose: the hosted lockup PNG is opaque black, so any other page
-// colour shows it as a visible rectangle.
-const BG = '#000000'
-const CARD = '#111217'
-const LINE = '#26252b'
+// Kretopia dark theme, copied from src/index.css (.dark): email clients cannot read CSS variables.
+// The product's rule is "mainly white": one accent (#FF2DA1), and the brand violet is NOT used for UI.
+// Primary button = the canonical CTA (CtaButton / .cta-solid): flat --primary fill (white in dark) with
+// --primary-foreground text, lg radius (--radius = 1rem), semibold. No gradient: Outlook ignores them.
+const WHITE = '#FFFFFF'
+const BG = '#000000' // pure black on purpose: the hosted lockup PNG is opaque black
+const CARD = '#11141B' // --card
+const LINE = '#1A1E28' // --border / --secondary
+const INK = '#05070D' // --background, also --primary-foreground
+const MUTED = '#A8B0C0' // --muted-foreground
+const ACCENT = '#FF2DA1' // the single accent
 
 const main = { backgroundColor: BG, fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", margin: '0', padding: '0' }
 const container = { maxWidth: '520px', margin: '0 auto', backgroundColor: BG, padding: '0 20px 32px' }
-const topBar = { height: '4px', background: `linear-gradient(90deg, #5b2cf0 0%, ${PINK} 60%, #ff5521 100%)`, margin: '0 -20px 8px', fontSize: '0', lineHeight: '4px' }
-const logoRow = { textAlign: 'center' as const, padding: '24px 0 4px' }
+const logoRow = { textAlign: 'center' as const, padding: '28px 0 4px' }
 const hero = { textAlign: 'center' as const, padding: '8px 0 28px' }
-const eyebrow = { fontSize: '11px', fontWeight: '700' as const, letterSpacing: '2px', textTransform: 'uppercase' as const, color: PINK, margin: '0 0 10px' }
-const h1 = { fontSize: '30px', lineHeight: '38px', fontWeight: '800' as const, color: '#ffffff', margin: '0 0 14px' }
-const lead = { fontSize: '15px', lineHeight: '24px', color: '#a9a8b6', margin: '0 auto 24px', maxWidth: '420px' }
+const eyebrow = { fontSize: '11px', fontWeight: '700' as const, letterSpacing: '2px', textTransform: 'uppercase' as const, color: ACCENT, margin: '0 0 10px' }
+const h1 = { fontSize: '30px', lineHeight: '38px', fontWeight: '800' as const, color: WHITE, margin: '0 0 14px' }
+const lead = { fontSize: '15px', lineHeight: '24px', color: MUTED, margin: '0 auto 24px', maxWidth: '420px' }
 const primaryButton = {
-  backgroundColor: PURPLE,
-  backgroundImage: `linear-gradient(90deg, ${PURPLE} 0%, ${PINK} 100%)`,
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: '700' as const,
+  backgroundColor: WHITE,
+  color: INK,
+  fontSize: '14px',
+  lineHeight: '20px',
+  fontWeight: '600' as const,
+  borderRadius: '16px',
+  padding: '14px 32px',
+  textDecoration: 'none',
+  display: 'inline-block' as const,
+  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
+}
+const secondaryButton = {
+  backgroundColor: 'transparent',
+  color: WHITE,
+  fontSize: '13px',
+  lineHeight: '18px',
+  fontWeight: '600' as const,
+  border: '1px solid #3A4152', // glass-outline look: a visible hairline on --card
   borderRadius: '12px',
-  padding: '15px 32px',
+  padding: '10px 20px',
   textDecoration: 'none',
   display: 'inline-block' as const,
 }
-const microcopy = { fontSize: '12px', color: '#6d6c78', margin: '12px 0 0' }
-const eventCard = { backgroundColor: CARD, border: `1px solid ${LINE}`, borderTop: `2px solid ${PURPLE}`, borderRadius: '12px', padding: '18px 22px', margin: '0 0 16px' }
-const cardEyebrow = { fontSize: '10px', fontWeight: '700' as const, letterSpacing: '1.8px', textTransform: 'uppercase' as const, color: '#7c7e8d', margin: '0 0 6px' }
-const eventTitleStyle = { fontSize: '18px', fontWeight: '700' as const, color: '#ffffff', margin: '0 0 12px' }
-const detailLabelCell = { fontSize: '11px', fontWeight: '700' as const, letterSpacing: '1px', textTransform: 'uppercase' as const, color: '#7c7e8d', padding: '6px 12px 6px 0', width: '64px', verticalAlign: 'top' as const }
-const detailValueCell = { fontSize: '14px', fontWeight: '600' as const, color: '#f2f1f7', padding: '6px 0', verticalAlign: 'top' as const }
-const qrCard = { backgroundColor: CARD, border: `1px solid ${LINE}`, borderRadius: '12px', padding: '20px 22px', margin: '0 0 16px', textAlign: 'center' as const }
-const qrHint = { fontSize: '13px', color: '#8a8893', margin: '0 0 14px' }
-const qrImage = { margin: '0 auto', borderRadius: '12px', backgroundColor: '#ffffff', border: `2px solid ${PURPLE}` }
-const passLink = { display: 'inline-block', marginTop: '14px', fontSize: '13px', fontWeight: '700' as const, color: '#c8a6ff', textDecoration: 'underline' }
-const claimCard = { backgroundColor: '#100c23', border: '1px solid #302a44', borderRadius: '14px', padding: '24px 22px', margin: '8px 0 0', textAlign: 'center' as const }
-const claimEyebrow = { fontSize: '10px', color: '#C6FF00', fontWeight: '700' as const, letterSpacing: '1.8px', textTransform: 'uppercase' as const, margin: '0 0 8px' }
-const claimH2 = { fontSize: '20px', fontWeight: '700' as const, color: '#ffffff', margin: '0 0 8px' }
-const claimText = { fontSize: '14px', color: '#b8b8c5', lineHeight: '1.5', margin: '0 0 18px' }
-const claimButton = { backgroundColor: '#C6FF00', color: BG, fontSize: '14px', fontWeight: '700' as const, borderRadius: '12px', padding: '13px 26px', textDecoration: 'none', display: 'inline-block' as const }
+const microcopy = { fontSize: '12px', color: '#7C8393', margin: '12px 0 0' }
+const card = { backgroundColor: CARD, border: `1px solid ${LINE}`, borderRadius: '16px', padding: '18px 22px', margin: '0 0 16px' }
+const cardEyebrow = { fontSize: '10px', fontWeight: '700' as const, letterSpacing: '1.8px', textTransform: 'uppercase' as const, color: '#7C8393', margin: '0 0 6px' }
+const eventTitleStyle = { fontSize: '18px', fontWeight: '700' as const, color: WHITE, margin: '0 0 12px' }
+const detailLabelCell = { fontSize: '11px', fontWeight: '700' as const, letterSpacing: '1px', textTransform: 'uppercase' as const, color: '#7C8393', padding: '6px 12px 6px 0', width: '64px', verticalAlign: 'top' as const }
+const detailValueCell = { fontSize: '14px', fontWeight: '600' as const, color: '#F2F1F7', padding: '6px 0', verticalAlign: 'top' as const }
+const qrHint = { fontSize: '13px', color: MUTED, margin: '0 0 14px' }
+const qrImage = { margin: '0 auto', borderRadius: '12px', backgroundColor: WHITE }
+const claimH2 = { fontSize: '20px', fontWeight: '700' as const, color: WHITE, margin: '0 0 8px' }
+const claimText = { fontSize: '14px', color: MUTED, lineHeight: '1.5', margin: '0 0 18px' }
 const hr = { borderColor: LINE, margin: '24px 0 16px' }
-const footer = { fontSize: '12px', lineHeight: '19px', color: '#8a8893', margin: '0 0 10px', textAlign: 'center' as const }
-const footerBrand = { fontSize: '11px', color: '#55545f', margin: '0', textAlign: 'center' as const }
+const footer = { fontSize: '12px', lineHeight: '19px', color: '#7C8393', margin: '0 0 10px', textAlign: 'center' as const }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '0', textAlign: 'center' as const }
+const footerLink = { color: '#7C8393', textDecoration: 'underline' }
