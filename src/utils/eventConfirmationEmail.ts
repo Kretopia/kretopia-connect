@@ -79,7 +79,9 @@ export const sendEventConfirmationEmail = async ({
           eventVenue: venue,
           eventUrl: `https://www.kretopia.com/event/${eventId}`,
           checkInToken: participant.check_in_token,
+          attendeeEmail: user.email,
           isTicketed: !!isTicketed,
+          hasAccount: true,
         },
       },
     });

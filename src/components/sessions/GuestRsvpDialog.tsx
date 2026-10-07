@@ -227,6 +227,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
               : undefined,
             checkInToken: guestToken ?? undefined,
             isGuest: !user,
+            hasAccount: !!user,
           },
         },
       }).catch(() => {});

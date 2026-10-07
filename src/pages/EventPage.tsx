@@ -373,14 +373,29 @@ const EventPage = () => {
             <div className="mb-4 p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
               <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground">You're going! 🎉</p>
-                <p className="text-sm text-muted-foreground">
-                  Confirmation sent to{" "}
-                  <span className="text-foreground font-medium">
-                    {new URLSearchParams(window.location.search).get("email") || "your email"}
-                  </span>
-                  . Here's the full event below.
-                </p>
+                {new URLSearchParams(window.location.search).get("source") === "email" ? (
+                  <>
+                    <p className="font-semibold text-foreground">Attendance confirmed 🎉</p>
+                    <p className="text-sm text-muted-foreground">
+                      Great to have you
+                      {new URLSearchParams(window.location.search).get("name")
+                        ? `, ${new URLSearchParams(window.location.search).get("name")}`
+                        : ""}
+                      . Your spot is locked in. Here's the full event below.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-foreground">You're going! 🎉</p>
+                    <p className="text-sm text-muted-foreground">
+                      Confirmation sent to{" "}
+                      <span className="text-foreground font-medium">
+                        {new URLSearchParams(window.location.search).get("email") || "your email"}
+                      </span>
+                      . Here's the full event below.
+                    </p>
+                  </>
+                )}
               </div>
               <Button
                 variant="ghost"

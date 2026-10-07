@@ -9,8 +9,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HoloCard } from "@/components/passport/HoloCard";
 import {
   Calendar, MapPin, Users, Share2, Ticket, CheckCircle, CalendarPlus,
-  Navigation, Lock, ImagePlus, Loader2, X as XIcon,
+  Navigation, Lock, ImagePlus, Loader2, X as XIcon, XCircle,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
 import { downloadIcs, openDirections } from "@/lib/eventActions";
 import { APP_URL } from "@/lib/constants";
@@ -76,6 +80,7 @@ export function EventHeroCard({
   const { toast } = useToast();
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [coverImageFailed, setCoverImageFailed] = useState(false);
   // Reset the broken-image fallback whenever the cover actually changes
   // (e.g. the host replaces it) so a stale failure doesn't stick around.
@@ -257,15 +262,39 @@ export function EventHeroCard({
           )}
         </div>
         {!!participation && !isPast && !isCompleted && (
-          <button
-            type="button"
-            onClick={onCancelRsvp}
-            disabled={joining}
-            className="mt-2 text-xs text-muted-foreground hover:text-destructive underline underline-offset-2"
-          >
-            Cancel RSVP
-          </button>
+          <div className="mt-3 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmCancel(true)}
+              disabled={joining}
+              className="gap-1.5 rounded-full border-destructive/50 bg-destructive/10 px-5 font-semibold text-destructive shadow-[0_0_18px_-3px_hsl(var(--destructive)/0.55)] transition-shadow hover:border-destructive hover:bg-destructive/15 hover:text-destructive hover:shadow-[0_0_26px_-2px_hsl(var(--destructive)/0.75)]"
+            >
+              {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              Cancel RSVP
+            </Button>
+          </div>
         )}
+        <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
+          <AlertDialogContent className="max-w-sm rounded-2xl border-destructive/30 shadow-[0_0_40px_-8px_hsl(var(--destructive)/0.5)]">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Release your spot?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You won't be able to attend {event.title}. Your pass stops working and the place goes to the next person on the waitlist.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="gap-2 sm:gap-2">
+              <AlertDialogCancel>Keep my spot</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => { setConfirmCancel(false); onCancelRsvp(); }}
+                className="bg-destructive text-destructive-foreground shadow-[0_0_18px_-3px_hsl(var(--destructive)/0.6)] hover:bg-destructive/90"
+              >
+                Yes, cancel RSVP
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         {/* Event detail — when / where / capacity, same card */}
         <div className="mt-5 pt-5 border-t border-border/60 text-left space-y-4">
