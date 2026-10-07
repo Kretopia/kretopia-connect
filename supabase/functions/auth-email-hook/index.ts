@@ -40,7 +40,11 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 const SITE_NAME = "Kretopia"
 const SENDER_DOMAIN = "notify.thrivein.io"
 const ROOT_DOMAIN = "kretopia.com"
-const FROM_DOMAIN = "kretopia.com" // Domain shown in From address (may be root or sender subdomain)
+// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain
+// with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
+// this was "kretopia.com", whose own sender setup never finished DNS verification).
+// Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
+const FROM_DOMAIN = "thrivein.io"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.

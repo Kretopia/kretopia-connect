@@ -13,7 +13,11 @@ const SENDER_DOMAIN = "notify.thrivein.io"
 // FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
 // When display_from_root is enabled, this can be the root domain for cleaner branding,
 // even though actual sending uses the subdomain above.
-const FROM_DOMAIN = "kretopia.com"
+// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain
+// with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
+// this was "kretopia.com", whose own sender setup never finished DNS verification).
+// Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
+const FROM_DOMAIN = "thrivein.io"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
