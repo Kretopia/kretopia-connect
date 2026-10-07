@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,15 @@ interface CreditEndorsementDialogProps {
   credit: Credit;
   userId: string;
   requesterName?: string;
+  /**
+   * Reminder mode: a request for this credit is already waiting, so skip the
+   * form and go straight to sharing the SAME link again (a second request to
+   * the same person would be rejected as a duplicate).
+   */
+  reminder?: { link: string; name?: string | null } | null;
 }
 
-export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, requesterName }: CreditEndorsementDialogProps) {
+export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, requesterName, reminder }: CreditEndorsementDialogProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [relationship, setRelationship] = useState('collaborator');
@@ -35,6 +41,13 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
   const [sending, setSending] = useState(false);
   const [verifyLink, setVerifyLink] = useState('');
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (open && reminder?.link) {
+      setVerifyLink(reminder.link);
+      setName(reminder.name || '');
+    }
+  }, [open, reminder?.link, reminder?.name]);
 
   const searchUsers = async (query: string) => {
     setSearchQuery(query);
@@ -113,6 +126,9 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
   const buildMessage = () => {
     const who = requesterName || 'I';
     const target = name.trim() ? `Hey ${name.trim().split(' ')[0]}, ` : '';
+    if (reminder) {
+      return `${target}quick nudge: could you take 5 seconds to confirm we worked together on "${credit.project_name}" (${credit.role})? It's one tap and it really helps me.\n\n${verifyLink}\n\n(No account needed.)`;
+    }
     return `${target}${who === 'I' ? 'I' : who} added you to my "${credit.project_name}" project on Kretopia (${credit.role}). Can you take 5 seconds to confirm we worked together?\n\n${verifyLink}\n\n(No account needed — one tap.)`;
   };
 
@@ -163,7 +179,7 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
           className="text-[11px] text-white/60 hover:text-[#A516C5] w-full text-center underline transition-colors"
           onClick={resetForm}
         >
-          Send to someone else
+          {reminder ? 'Ask someone else instead' : 'Send to someone else'}
         </button>
       </div>
     );
@@ -175,10 +191,10 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
-            Get this verified
+            {reminder ? 'Send a reminder' : 'Get this verified'}
           </DialogTitle>
           <DialogDescription>
-            One tap for them to confirm your <strong>{credit.role}</strong> on <strong>{credit.project_name}</strong>. No account required.
+            {reminder ? 'Your request is still waiting. Nudge them with the same link: ' : ''}One tap for them to confirm your <strong>{credit.role}</strong> on <strong>{credit.project_name}</strong>. No account required.
           </DialogDescription>
         </DialogHeader>
 

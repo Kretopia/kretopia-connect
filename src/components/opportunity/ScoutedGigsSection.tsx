@@ -12,7 +12,7 @@ import { FirstTimeHint } from "@/components/ui/first-time-hint";
 import {
   Globe, Linkedin, Instagram, Sparkles, MapPin, ExternalLink,
   RefreshCw, Mail, Bookmark, X, Send, ShieldCheck, Briefcase, SlidersHorizontal,
-  CheckCircle2, Trophy,
+  CheckCircle2, Trophy, Banknote, Handshake,
 } from "lucide-react";
 import { ScoutPreferencesDialog } from "./ScoutPreferencesDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,9 @@ import { useNavigate } from "react-router-dom";
 import { extractInvokeError } from "@/lib/extractInvokeError";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { KretoMark } from "@/components/brand/KretoMark";
+import { cn } from "@/lib/utils";
+import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "@/lib/scoutPay";
+import { RecentlyWorkedWith } from "@/components/passport/RecentlyWorkedWith";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
 import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.png";
@@ -53,10 +56,29 @@ const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> =
   web: Globe, linkedin: Linkedin, instagram: Instagram, ats: Briefcase, gigboard: Briefcase,
 };
 
-// Scouted listings sometimes store a placeholder string instead of leaving
-// compensation null — don't surface those as if they were real information.
-const PLACEHOLDER_COMPENSATION = /^(not specified|unspecified|n\/?a|tbd|none|unknown|-)$/i;
-const hasRealCompensation = (comp: string | null) => !!comp && !PLACEHOLDER_COMPENSATION.test(comp.trim());
+// Pay chip -- the survey's #1 ask is "find suitable paid work", so what a gig
+// pays (or that it doesn't say) is the first thing on every card.
+function PayChip({ compensation, className }: { compensation: string | null; className?: string }) {
+  if (hasRealCompensation(compensation)) {
+    return (
+      <span
+        className={cn(
+          "inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400",
+          className,
+        )}
+        title={compensation}
+      >
+        <Banknote className="h-3 w-3 shrink-0" />
+        <span className="truncate">{compensation}</span>
+      </span>
+    );
+  }
+  return (
+    <span className={cn("inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground", className)}>
+      Pay not listed
+    </span>
+  );
+}
 
 // Lightweight markdown renderer for the brief (headings + paragraphs + lists)
 function MiniMarkdown({ md }: { md: string }) {
@@ -164,9 +186,13 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     enabled: !!user,
   });
   const [scanning, setScanning] = useState(false);
+  const [scanUnavailable, setScanUnavailable] = useState(false);
+  const [payFilter, setPayFilter] = useState<PayFilter>("all");
   const [scanElapsed, setScanElapsed] = useState(0);
   const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [openGig, setOpenGig] = useState<ScoutedGig | null>(null);
+  const paidCount = countPaid(gigs);
+  const visibleGigs = applyPayFilter(gigs, payFilter);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
@@ -195,7 +221,9 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     staleTime: 5 * 60_000,
   });
 
-  const scanNow = async () => {
+  // `auto` = the scan we kick off ourselves on first arrival. It must never greet
+  // someone with a red failure toast for something they didn't ask for.
+  const scanNow = async ({ auto = false }: { auto?: boolean } = {}) => {
     if (!user) return;
     setScanning(true);
     setScanElapsed(0);
@@ -211,6 +239,10 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
       // The SDK's own message is a generic "non-2xx status code" — the
       // function's real error (config, auth, rate limit) lives in the body.
       const detail = await extractInvokeError(error);
+      if (auto) {
+        setScanUnavailable(true);
+        return;
+      }
       toast({
         title: "Scout failed",
         description: detail || "The scan could not complete. Try again in a moment.",
@@ -223,6 +255,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
       return;
     }
 
+    setScanUnavailable(false);
     const found = data?.found ?? 0;
     const filteredCount = data?.filtered ?? found;
     const inserted = data?.inserted ?? 0;
@@ -231,6 +264,8 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         title: `Found ${inserted} new gig${inserted === 1 ? "" : "s"}`,
         description: `Matched ${filteredCount} across ${data?.queries || 0} searches — ${inserted} weren't already in your list.`,
       });
+    } else if (auto) {
+      // Nothing new on an automatic scan is not news worth a toast.
     } else if (filteredCount > 0) {
       toast({ title: "No new gigs", description: `Matched ${filteredCount} gigs, but you've already seen all of them.` });
     } else {
@@ -250,7 +285,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     if (hasAutoScannedRef.current) return;
     if (loading || scanning || !user || gigs.length > 0) return;
     hasAutoScannedRef.current = true;
-    scanNow();
+    scanNow({ auto: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, user, gigs.length]);
 
@@ -397,6 +432,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         </div>
 
         <div className="p-3 flex flex-col gap-2 flex-1">
+          <PayChip compensation={g.compensation} className="self-start" />
           {(g.company || g.location) && (
             <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
               {g.company && <span className="font-medium text-foreground/90">{g.company}</span>}
@@ -464,7 +500,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="ml-1.5 text-xs hidden sm:inline">Tune</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={scanNow} disabled={scanning}>
+          <Button size="sm" variant="outline" onClick={() => scanNow()} disabled={scanning}>
             {scanning ? <KretoMark size="xs" state="active" /> : <RefreshCw className="h-3.5 w-3.5" />}
             <span className="ml-1.5 text-xs">Scan now</span>
           </Button>
@@ -489,6 +525,44 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             <Trophy className="h-3.5 w-3.5 text-energy" /> <strong className="text-foreground">{progress.won}</strong> booked
           </span>
         </div>
+      )}
+
+      {gigs.length > 0 && (
+        <div role="group" aria-label="Pay filter" className="flex flex-wrap items-center gap-2">
+          {([
+            { id: "all" as const, label: `All ${gigs.length}` },
+            { id: "paid" as const, label: `Pay listed ${paidCount}` },
+          ]).map((f) => (
+            <Button
+              key={f.id}
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-pressed={payFilter === f.id}
+              onClick={() => setPayFilter(f.id)}
+              className={cn(
+                "h-7 rounded-full border px-3 text-xs font-semibold",
+                payFilter === f.id
+                  ? "border-energy/40 bg-energy/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {f.id === "paid" && <Banknote className="mr-1 h-3.5 w-3.5" />}
+              {f.label}
+            </Button>
+          ))}
+          {gigs.length - paidCount > 0 && payFilter === "all" && (
+            <span className="text-[11px] text-muted-foreground">
+              {gigs.length - paidCount} don't state their pay. Check before you spend time on a pitch.
+            </span>
+          )}
+        </div>
+      )}
+
+      {scanUnavailable && !scanning && (
+        <p className="rounded-xl border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground" role="status">
+          The automatic scan couldn't run just now. Showing what's already on Kretopia; try <span className="font-semibold text-foreground">Scan now</span> again in a few minutes.
+        </p>
       )}
 
       {scanning && (
@@ -567,27 +641,34 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           </a>
         )}
         </>
+      ) : visibleGigs.length === 0 ? (
+        <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
+          None of your {gigs.length} scouted gigs state their pay.{" "}
+          <button type="button" className="font-semibold text-foreground underline underline-offset-2" onClick={() => setPayFilter("all")}>
+            Show all
+          </button>
+        </Card>
       ) : (
         <>
         {/* One strongest opportunity first — gigs are already ordered by fit_score desc. */}
-        {gigs[0] && (
+        {visibleGigs[0] && (
           <HoloCard>
           <div
-            onClick={() => openDetail(gigs[0])}
+            onClick={() => openDetail(visibleGigs[0])}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(gigs[0]); } }}
-            aria-label={`View brief for ${gigs[0].title}, your strongest match`}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(visibleGigs[0]); } }}
+            aria-label={`View brief for ${visibleGigs[0].title}, your strongest match`}
             className="group relative rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
           >
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-64 shrink-0 overflow-hidden">
-              {gigs[0].image_url && !brokenImageIds.has(gigs[0].id) ? (
+              {visibleGigs[0].image_url && !brokenImageIds.has(visibleGigs[0].id) ? (
                 <img
-                  src={gigs[0].image_url}
-                  alt={gigs[0].title}
+                  src={visibleGigs[0].image_url}
+                  alt={visibleGigs[0].title}
                   loading="lazy"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  onError={() => markImageBroken(gigs[0].id)}
+                  onError={() => markImageBroken(visibleGigs[0].id)}
                 />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
@@ -602,37 +683,35 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             </div>
             <div className="p-4 flex flex-col gap-2.5 flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-lg leading-tight text-foreground">{gigs[0].title}</h3>
+                <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
                 <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0">
-                  {gigs[0].fit_score}% fit
+                  {visibleGigs[0].fit_score}% fit
                 </Badge>
               </div>
-              {(gigs[0].company || gigs[0].location || hasRealCompensation(gigs[0].compensation)) && (
-                <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                  {gigs[0].company && <span className="font-medium text-foreground/90">{gigs[0].company}</span>}
-                  {gigs[0].location && <><span>·</span><MapPin className="h-3 w-3" />{gigs[0].location}</>}
-                  {gigs[0].remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
-                  {hasRealCompensation(gigs[0].compensation) && <><span>·</span><span className="font-medium text-foreground/90">{gigs[0].compensation}</span></>}
-                </div>
-              )}
-              {gigs[0].fit_reason && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                <PayChip compensation={visibleGigs[0].compensation} />
+                {visibleGigs[0].company && <span className="font-medium text-foreground/90">{visibleGigs[0].company}</span>}
+                {visibleGigs[0].location && <><span>·</span><MapPin className="h-3 w-3" />{visibleGigs[0].location}</>}
+                {visibleGigs[0].remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
+              </div>
+              {visibleGigs[0].fit_reason && (
                 <div className="rounded-lg bg-energy/[0.06] border border-energy/20 px-3 py-2">
                   <div className="text-[9px] uppercase tracking-wider font-bold text-energy mb-0.5 flex items-center gap-1">
                     <Sparkles className="h-2.5 w-2.5" />
                     Why this fits you
                   </div>
-                  <p className="text-xs leading-relaxed text-foreground/80">{gigs[0].fit_reason}</p>
+                  <p className="text-xs leading-relaxed text-foreground/80">{visibleGigs[0].fit_reason}</p>
                 </div>
               )}
               <div className="mt-auto flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                <Button size="sm" onClick={() => openDetail(gigs[0])} className="gap-1.5">
+                <Button size="sm" onClick={() => openDetail(visibleGigs[0])} className="gap-1.5">
                   View full brief
                 </Button>
-                <Button size="sm" variant="outline" onClick={(e) => save(gigs[0].id, e)} className="gap-1.5">
+                <Button size="sm" variant="outline" onClick={(e) => save(visibleGigs[0].id, e)} className="gap-1.5">
                   <Bookmark className="h-3.5 w-3.5" />
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismiss(gigs[0].id); }} className="gap-1.5 text-muted-foreground">
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismiss(visibleGigs[0].id); }} className="gap-1.5 text-muted-foreground">
                   <X className="h-3.5 w-3.5" />
                   Dismiss
                 </Button>
@@ -643,11 +722,11 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         )}
 
         {/* Everything else — carousel, not a card wall. */}
-        {gigs.length > 1 && (
+        {visibleGigs.length > 1 && (
           <div className="relative">
             <Carousel setApi={setCarouselApi} opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="More scouted gigs">
               <CarouselContent className="-ml-3">
-                {gigs.slice(1).map((g) => (
+                {visibleGigs.slice(1).map((g) => (
                   <CarouselItem key={g.id} className="pl-3 basis-[85%] sm:basis-[46%] lg:basis-[31%]">
                     {renderGigCard(g)}
                   </CarouselItem>
@@ -660,6 +739,23 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           </div>
         )}
         </>
+      )}
+
+      {!limit && user && gigs.length > 0 && (
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-energy/10">
+              <Handshake className="h-4 w-4 text-energy" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-foreground">A warm intro beats a cold application</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Most creatives land work through someone they know. Message a past collaborator and ask who's hiring.
+              </p>
+              <RecentlyWorkedWith userId={user.id} compact className="mt-3" />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* In-app detail modal — compact, centered, no big hero/whitespace */}

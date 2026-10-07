@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
-import { ShieldCheck, Shield, Clock, Globe, ShieldQuestion } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { differenceInCalendarDays } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { getShareUrl } from "@/lib/constants";
+import { ShieldCheck, Shield, Clock, Globe, ShieldQuestion, BellRing, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
@@ -23,6 +28,13 @@ interface Credit {
 interface CoSignsSectionProps {
   credits: Credit[];
   userId: string;
+}
+
+interface PendingRequest {
+  credit_id: string;
+  token: string | null;
+  endorser_name: string | null;
+  requested_at: string;
 }
 
 const GROUP_META: Record<CreditEvidenceStatus, { label: string; description: string; icon: typeof ShieldCheck; badgeClass: string }> = {
@@ -66,7 +78,42 @@ const GROUP_ORDER: CreditEvidenceStatus[] = ["verified", "pending", "self_claime
  */
 export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
   const [endorsementCredit, setEndorsementCredit] = useState<Credit | null>(null);
+  const [reminder, setReminder] = useState<{ link: string; name?: string | null } | null>(null);
   const reducedMotion = useReducedMotion();
+
+  // Requests the user already sent and nobody has answered yet. Without this a
+  // pending credit was a dead end ("Awaiting response", no way to nudge anyone).
+  // If the read is blocked or empty the cards simply fall back to "ask someone".
+  const { data: pendingRequests = [] } = useQuery({
+    queryKey: ["credit-cosign-pending", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("credit_endorsements")
+        .select("credit_id, token, endorser_name, requested_at")
+        .eq("requested_by", userId)
+        .eq("status", "pending")
+        .order("requested_at", { ascending: false });
+      if (error) return [] as PendingRequest[];
+      return (data || []) as PendingRequest[];
+    },
+    enabled: !!userId,
+    staleTime: 60_000,
+  });
+  const pendingByCredit = useMemo(() => {
+    const m = new Map<string, PendingRequest>();
+    for (const r of pendingRequests) if (!m.has(r.credit_id)) m.set(r.credit_id, r);
+    return m;
+  }, [pendingRequests]);
+
+  const openRemind = (c: Credit) => {
+    const req = pendingByCredit.get(c.id);
+    setReminder(req?.token ? { link: getShareUrl(`/credit-verify?token=${encodeURIComponent(req.token)}`), name: req.endorser_name } : null);
+    setEndorsementCredit(c);
+  };
+  const openAsk = (c: Credit) => {
+    setReminder(null);
+    setEndorsementCredit(c);
+  };
 
   const groups = useMemo(() => {
     const buckets: Record<CreditEvidenceStatus, Credit[]> = {
@@ -89,8 +136,35 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
     );
   }
 
+  const verifiedCount = groups.verified.length;
+  const pct = Math.round((verifiedCount / credits.length) * 100);
+  const nextToConfirm = groups.self_claimed.find((c) => !pendingByCredit.has(c.id)) ?? groups.publicly_sourced.find((c) => !pendingByCredit.has(c.id));
+
   return (
     <div className="space-y-6">
+      <div className="rounded-2xl border border-border bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Confirmed work history</p>
+            <p className="mt-1 text-lg font-bold text-foreground">
+              {verifiedCount} of {credits.length} credits confirmed
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              A credit someone else confirmed is what lets a client trust your experience at a glance.
+            </p>
+          </div>
+          {nextToConfirm && (
+            <Button size="sm" className="shrink-0 gap-1.5" onClick={() => openAsk(nextToConfirm)}>
+              <UserPlus className="h-3.5 w-3.5" />
+              <span className="max-w-[10rem] truncate">Confirm {nextToConfirm.project_name}</span>
+            </Button>
+          )}
+        </div>
+        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Credits confirmed">
+          <div className="h-full rounded-full bg-gradient-to-r from-primary to-energy transition-all" style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+
       {GROUP_ORDER.map((status) => {
         const meta = GROUP_META[status];
         const Icon = meta.icon;
@@ -114,7 +188,9 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
                 status={status}
                 label={meta.label}
                 reducedMotion={reducedMotion}
-                onRequestCosign={(c) => setEndorsementCredit(c)}
+                pendingByCredit={pendingByCredit}
+                onRequestCosign={openAsk}
+                onRemind={openRemind}
               />
             )}
           </div>
@@ -124,9 +200,10 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
       {endorsementCredit && (
         <CreditEndorsementDialog
           open={!!endorsementCredit}
-          onOpenChange={(open) => !open && setEndorsementCredit(null)}
+          onOpenChange={(open) => { if (!open) { setEndorsementCredit(null); setReminder(null); } }}
           credit={endorsementCredit}
           userId={userId}
+          reminder={reminder}
         />
       )}
     </div>
@@ -138,13 +215,17 @@ function EvidenceCarousel({
   status,
   label,
   reducedMotion,
+  pendingByCredit,
   onRequestCosign,
+  onRemind,
 }: {
   items: Credit[];
   status: CreditEvidenceStatus;
   label: string;
   reducedMotion: boolean;
+  pendingByCredit: Map<string, PendingRequest>;
   onRequestCosign: (c: Credit) => void;
+  onRemind: (c: Credit) => void;
 }) {
   const [api, setApi] = useState<CarouselApi>();
 
@@ -167,18 +248,13 @@ function EvidenceCarousel({
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                       {[c.client_brand || c.platform, c.year].filter(Boolean).join(" · ")}
                     </p>
-                    {status !== "pending" && (
-                      <button
-                        type="button"
-                        onClick={() => onRequestCosign(c)}
-                        className="mt-auto pt-2 text-[11px] font-semibold text-white text-left hover:text-[#A516C5] hover:underline transition-colors"
-                      >
-                        Request Co-Sign
-                      </button>
-                    )}
-                    {status === "pending" && (
-                      <p className="mt-auto pt-2 text-[11px] text-muted-foreground">Awaiting response</p>
-                    )}
+                    <CardAction
+                      credit={c}
+                      status={status}
+                      request={pendingByCredit.get(c.id)}
+                      onAsk={onRequestCosign}
+                      onRemind={onRemind}
+                    />
                   </div>
                 </HoloCard>
               </div>
@@ -193,6 +269,57 @@ function EvidenceCarousel({
         )}
       </Carousel>
       {items.length > 1 && <CarouselPositionDots api={api} label={`${label} credits`} className="mt-2" />}
+    </div>
+  );
+}
+
+function CardAction({
+  credit,
+  status,
+  request,
+  onAsk,
+  onRemind,
+}: {
+  credit: Credit;
+  status: CreditEvidenceStatus;
+  request?: PendingRequest;
+  onAsk: (c: Credit) => void;
+  onRemind: (c: Credit) => void;
+}) {
+  // A request is out and unanswered: show how long, and make nudging one tap.
+  if (request || status === "pending") {
+    const days = request ? Math.max(0, differenceInCalendarDays(new Date(), new Date(request.requested_at))) : null;
+    const waiting = days === null ? "Awaiting response" : days === 0 ? "Asked today" : `Asked ${days} day${days === 1 ? "" : "s"} ago`;
+    return (
+      <div className="mt-auto pt-2">
+        <p className="text-[11px] text-muted-foreground">{waiting}</p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-1.5 h-8 w-full gap-1.5 text-xs"
+          onClick={() => (request?.token ? onRemind(credit) : onAsk(credit))}
+        >
+          <BellRing className="h-3.5 w-3.5" />
+          {request?.token ? "Send a reminder" : "Ask someone"}
+        </Button>
+      </div>
+    );
+  }
+  if (status === "verified") {
+    return (
+      <div className="mt-auto pt-2">
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] text-muted-foreground" onClick={() => onAsk(credit)}>
+          Add another co-sign
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-auto pt-2">
+      <Button size="sm" className="h-8 w-full gap-1.5 text-xs" onClick={() => onAsk(credit)}>
+        <ShieldCheck className="h-3.5 w-3.5" />
+        Ask for a co-sign
+      </Button>
     </div>
   );
 }
