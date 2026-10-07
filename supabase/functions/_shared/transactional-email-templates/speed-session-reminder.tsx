@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
 interface Props {
   attendeeName?: string
@@ -51,7 +51,7 @@ const SpeedReminder = ({
     <Preview>{previews[whenLabel](sessionTitle)}</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '20px' }} />
+        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
         <Heading style={h1}>{headlines[whenLabel]}</Heading>
         <Text style={text}>
           {attendeeName ? `Hey ${attendeeName} — ` : ''}<strong>{sessionTitle}</strong> · {startsWhen}.
@@ -133,23 +133,23 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
 const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#0a0a0f', margin: '0 0 12px' }
-const text = { fontSize: '15px', color: '#3a3a44', lineHeight: '1.6', margin: '0 0 20px' }
-const notice = { backgroundColor: '#fff8e6', border: '1px solid #ffe1a1', borderRadius: '12px', padding: '14px 16px', margin: '0 0 16px' }
-const noticeTitle = { fontSize: '13px', fontWeight: '700' as const, color: '#7a4a00', margin: '0 0 4px' }
-const noticeBody = { fontSize: '13px', color: '#7a4a00', margin: '0', lineHeight: '1.5' }
-const card = { backgroundColor: '#f8f8fc', borderRadius: '12px', padding: '16px 18px', margin: '0 0 20px' }
-const label = { fontSize: '11px', fontWeight: '700' as const, color: '#86868f', margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }
-const value = { fontSize: '14px', color: '#0a0a0f', margin: '0 0 10px', fontWeight: '500' as const }
+const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 12px' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px' }
+const notice = { backgroundColor: '#1F1A0E', border: '1px solid #4B3A12', borderRadius: '12px', padding: '14px 16px', margin: '0 0 16px' }
+const noticeTitle = { fontSize: '13px', fontWeight: '700' as const, color: '#F2C14E', margin: '0 0 4px' }
+const noticeBody = { fontSize: '13px', color: '#F2C14E', margin: '0', lineHeight: '1.5' }
+const card = { backgroundColor: '#11141B', borderRadius: '12px', padding: '16px 18px', margin: '0 0 20px' }
+const label = { fontSize: '11px', fontWeight: '700' as const, color: '#7C8393', margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }
+const value = { fontSize: '14px', color: '#FFFFFF', margin: '0 0 10px', fontWeight: '500' as const }
 const button = {
-  backgroundColor: '#0a0a0f', color: '#ffffff', fontSize: '15px', fontWeight: '600' as const,
-  borderRadius: '12px', padding: '14px 28px', textDecoration: 'none',
+  backgroundColor: '#FFFFFF', color: '#05070D', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const,
+  borderRadius: '16px', padding: '14px 32px', textDecoration: 'none',
   display: 'block' as const, textAlign: 'center' as const, marginTop: '8px',
 }
-const tip = { fontSize: '12px', color: '#86868f', margin: '16px 0 0', lineHeight: '1.5' }
-const hr = { borderColor: '#eee', margin: '24px 0' }
-const footer = { fontSize: '12px', color: '#86868f', margin: '0' }
-const footerLink = { color: '#0a0a0f', textDecoration: 'underline' }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '12px 0 0' }
+const tip = { fontSize: '12px', color: '#7C8393', margin: '16px 0 0', lineHeight: '1.5' }
+const hr = { borderColor: '#1A1E28', margin: '24px 0' }
+const footer = { fontSize: '12px', color: '#7C8393', margin: '0' }
+const footerLink = { color: '#FFFFFF', textDecoration: 'underline' }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

@@ -33,7 +33,7 @@ export const SignupEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={logoSection}>
-          <Img src={LOGO_URL} width="48" height="48" alt="Kretopia" style={{ borderRadius: '12px' }} />
+          <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
         </Section>
 
         <Heading style={h1}>Welcome to Kretopia</Heading>
@@ -62,16 +62,16 @@ export const SignupEmail = ({
 
 export default SignupEmail
 
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
 const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
 const logoSection = { marginBottom: '24px' }
-const h1 = { fontSize: '26px', fontWeight: '900' as const, color: '#0F0F14', margin: '0 0 4px', letterSpacing: '-0.03em' }
-const eyebrow = { fontSize: '11px', fontWeight: '900' as const, color: '#7B61FF', margin: '0 0 24px', letterSpacing: '0.18em', textTransform: 'uppercase' as const }
-const text = { fontSize: '15px', color: '#606068', lineHeight: '1.6', margin: '0 0 20px' }
-const link = { color: '#7B61FF', textDecoration: 'underline' }
+const h1 = { fontSize: '26px', fontWeight: '900' as const, color: '#FFFFFF', margin: '0 0 4px', letterSpacing: '-0.03em' }
+const eyebrow = { fontSize: '11px', fontWeight: '900' as const, color: '#FF2DA1', margin: '0 0 24px', letterSpacing: '0.18em', textTransform: 'uppercase' as const }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px' }
+const link = { color: '#C9CEDA', textDecoration: 'underline' }
 const buttonSection = { textAlign: 'center' as const, margin: '8px 0 32px' }
-const button = { backgroundColor: '#7B61FF', color: '#ffffff', fontSize: '15px', fontWeight: '700' as const, borderRadius: '12px', padding: '14px 28px', textDecoration: 'none' }
-const footer = { fontSize: '12px', color: '#999999', margin: '0 0 8px' }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '0' }
+const button = { backgroundColor: '#FFFFFF', color: '#05070D', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const, borderRadius: '16px', padding: '14px 32px', textDecoration: 'none' }
+const footer = { fontSize: '12px', color: '#7C8393', margin: '0 0 8px' }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '0' }

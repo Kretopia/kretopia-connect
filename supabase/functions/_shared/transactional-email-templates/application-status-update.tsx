@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
 type Status = 'accepted' | 'rejected' | 'shortlisted'
 
@@ -58,7 +58,7 @@ const ApplicationStatusUpdateEmail = ({
       <Preview>{copy.heading} — {gigTitle}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '24px' }} />
+          <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
           <Heading style={h1}>{copy.heading} {copy.emoji}</Heading>
           <Text style={text}>
             {applicantName ? `Hey ${applicantName},` : 'Hey there,'} <span dangerouslySetInnerHTML={{ __html: copy.intro(gigTitle) }} />
@@ -88,19 +88,19 @@ export const template = {
   previewData: { applicantName: 'Dee', gigTitle: 'AI Image Creator for Fashion E-commerce', gigUrl: 'https://www.kretopia.com/opportunity/123', status: 'accepted', projectUrl: 'https://www.kretopia.com/desk/abc' },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto', borderTop: '4px solid #C6FF00' }
-const h1 = { fontSize: '26px', fontWeight: '900' as const, color: '#0F0F14', margin: '0 0 16px', letterSpacing: '-0.03em' }
-const text = { fontSize: '15px', color: '#606068', lineHeight: '1.6', margin: '0 0 24px' }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto',}
+const h1 = { fontSize: '26px', fontWeight: '900' as const, color: '#FFFFFF', margin: '0 0 16px', letterSpacing: '-0.03em' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 24px' }
 const button = {
-  backgroundColor: '#7B61FF',
-  color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: '700' as const,
-  borderRadius: '12px',
-  padding: '14px 28px',
+  backgroundColor: '#FFFFFF',
+  color: '#05070D',
+  fontSize: '14px', lineHeight: '20px',
+  fontWeight: '600' as const,
+  borderRadius: '16px',
+  padding: '14px 32px',
   textDecoration: 'none',
-  boxShadow: '0 4px 14px #7B61FF55',
+  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0' }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '12px 0 0' }
+const footer = { fontSize: '12px', color: '#7C8393', margin: '32px 0 0' }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 const SETTINGS_URL = 'https://www.kretopia.com/settings'
 
@@ -40,7 +40,7 @@ const WelcomeEmail = ({ name, unsubscribeUrl }: Props) => (
     <Preview>Welcome to {SITE_NAME} — four ways to get started</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '24px' }} />
+        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
 
         <Heading style={h1}>
           {name ? `Welcome, ${name}` : 'Welcome to Kretopia'}
@@ -86,16 +86,16 @@ export const template = {
   previewData: { name: 'Jane', unsubscribeUrl: 'https://www.kretopia.com/unsubscribe?token=preview' },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
+const main = { backgroundColor: '#000000', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }
 const container = { padding: '32px 24px', maxWidth: '560px', margin: '0 auto' }
-const h1 = { fontSize: '26px', fontWeight: 700, color: '#0F172A', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#334155', lineHeight: '1.6', margin: '0 0 20px' }
-const highlightBox = { backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '8px 22px', margin: '24px 0' }
-const tipRow = { padding: '14px 0', borderBottom: '1px solid #E2E8F0' }
+const h1 = { fontSize: '26px', fontWeight: 700, color: '#FFFFFF', margin: '0 0 16px' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px' }
+const highlightBox = { backgroundColor: '#11141B', borderRadius: '12px', padding: '8px 22px', margin: '24px 0' }
+const tipRow = { padding: '14px 0', borderBottom: '1px solid #1A1E28' }
 const tipLast = { padding: '14px 0' }
-const tipTitle = { fontSize: '14px', fontWeight: 600, color: '#0F172A', margin: '0 0 4px' }
-const tipBody = { fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: 0 }
-const button = { backgroundColor: '#5B6BF5', color: '#ffffff', padding: '13px 28px', borderRadius: '10px', fontSize: '15px', fontWeight: 600, textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#E2E8F0', margin: '32px 0 20px' }
-const footer = { fontSize: '12px', color: '#94A3B8', lineHeight: '1.6', margin: '0 0 10px' }
-const footerLink = { color: '#64748B', textDecoration: 'underline' }
+const tipTitle = { fontSize: '14px', fontWeight: 600, color: '#FFFFFF', margin: '0 0 4px' }
+const tipBody = { fontSize: '13px', color: '#A8B0C0', lineHeight: '1.6', margin: 0 }
+const button = { backgroundColor: '#FFFFFF', color: '#05070D', padding: '14px 32px', borderRadius: '16px', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const, textDecoration: 'none', display: 'inline-block' }
+const hr = { borderColor: '#1A1E28', margin: '32px 0 20px' }
+const footer = { fontSize: '12px', color: '#7C8393', lineHeight: '1.6', margin: '0 0 10px' }
+const footerLink = { color: '#7C8393', textDecoration: 'underline' }

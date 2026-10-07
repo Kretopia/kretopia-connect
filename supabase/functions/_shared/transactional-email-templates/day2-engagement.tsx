@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
@@ -25,7 +25,7 @@ const Day2EngagementEmail = ({ name, gigCount = 0, profileViews = 0, role }: Pro
     </Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '24px' }} />
+        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
 
         <Heading style={h1}>
           {name ? `${name}, here's what's happening` : "Here's what's happening"}
@@ -38,12 +38,12 @@ const Day2EngagementEmail = ({ name, gigCount = 0, profileViews = 0, role }: Pro
         <Section style={statsBox}>
           {profileViews > 0 && (
             <Text style={statLine}>
-              <strong style={{ color: '#7B61FF' }}>{profileViews}</strong> {profileViews === 1 ? 'person has' : 'people have'} viewed your profile
+              <strong style={{ color: '#FFFFFF' }}>{profileViews}</strong> {profileViews === 1 ? 'person has' : 'people have'} viewed your profile
             </Text>
           )}
           {gigCount > 0 && (
             <Text style={statLine}>
-              <strong style={{ color: '#7B61FF' }}>{gigCount}</strong> active gig{gigCount === 1 ? '' : 's'} match{gigCount === 1 ? 'es' : ''} {role ? `your "${role}" role` : 'your profile'}
+              <strong style={{ color: '#FFFFFF' }}>{gigCount}</strong> active gig{gigCount === 1 ? '' : 's'} match{gigCount === 1 ? 'es' : ''} {role ? `your "${role}" role` : 'your profile'}
             </Text>
           )}
           {!profileViews && !gigCount && (
@@ -81,29 +81,29 @@ export const template = {
   previewData: { name: 'Marlon', gigCount: 3, profileViews: 12, role: 'Photographer' },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
 const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#0a0a0f', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#606068', lineHeight: '1.6', margin: '0 0 24px' }
+const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 16px' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 24px' }
 const statsBox = {
-  backgroundColor: '#f5f3ff',
+  backgroundColor: '#11141B',
   borderRadius: '12px',
   padding: '20px 24px',
   margin: '0 0 24px',
-  borderLeft: '4px solid #7B61FF',
+  border: '1px solid #1A1E28',
 }
-const statLine = { fontSize: '14px', color: '#3a3a44', lineHeight: '1.6', margin: '0 0 8px' }
+const statLine = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 8px' }
 const button = {
-  backgroundColor: '#7B61FF',
-  color: '#ffffff',
-  fontSize: '15px',
+  backgroundColor: '#FFFFFF',
+  color: '#05070D',
+  fontSize: '14px', lineHeight: '20px',
   fontWeight: '600' as const,
-  borderRadius: '12px',
-  padding: '14px 28px',
+  borderRadius: '16px',
+  padding: '14px 32px',
   textDecoration: 'none',
   display: 'block' as const,
   textAlign: 'center' as const,
 }
-const subtext = { fontSize: '13px', color: '#999999', margin: '12px 0 32px', textAlign: 'center' as const }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '12px 0 0' }
+const subtext = { fontSize: '13px', color: '#7C8393', margin: '12px 0 32px', textAlign: 'center' as const }
+const footer = { fontSize: '12px', color: '#7C8393', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

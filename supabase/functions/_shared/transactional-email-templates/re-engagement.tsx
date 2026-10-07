@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
@@ -20,7 +20,7 @@ const ReEngagementEmail = ({ name, activeGigsCount }: Props) => (
     <Preview>A quick note from Ethan, founder of Kretopia</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '24px', borderRadius: '12px' }} />
+        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
 
         <Heading style={h1}>
           {name ? `${name}, here's what's new` : "Here's what's new on Kretopia"}
@@ -60,7 +60,7 @@ const ReEngagementEmail = ({ name, activeGigsCount }: Props) => (
         <Text style={signature}>
           Thanks for being early.<br /><br />
           Ethan Auguste<br />
-          <span style={{ color: '#7B61FF' }}>Founder, Kretopia</span>
+          <span style={{ color: '#A8B0C0' }}>Founder, Kretopia</span>
         </Text>
 
         <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
@@ -76,16 +76,16 @@ export const template = {
   previewData: { name: 'Jane', daysInactive: 14, activeGigsCount: 14 },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
 const container = { padding: '32px 24px', maxWidth: '560px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold', color: '#0a0a0a', margin: '0 0 20px' }
-const text = { fontSize: '15px', color: '#404040', lineHeight: '1.6', margin: '0 0 16px' }
-const smallText = { fontSize: '14px', color: '#525252', lineHeight: '1.6', margin: '0 0 16px' }
-const highlightBox = { backgroundColor: '#F5F3FF', borderLeft: '3px solid #7B61FF', padding: '20px 22px', borderRadius: '8px', margin: '20px 0' }
-const highlightHeading = { fontSize: '15px', fontWeight: 'bold', color: '#0a0a0a', margin: '0 0 10px' }
-const highlightText = { fontSize: '14px', color: '#404040', lineHeight: '1.8', margin: '0' }
-const button = { backgroundColor: '#7B61FF', color: '#ffffff', padding: '14px 32px', borderRadius: '8px', fontWeight: '600', fontSize: '15px', textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#e5e5e5', margin: '28px 0' }
-const signature = { fontSize: '15px', color: '#0a0a0a', lineHeight: '1.6', margin: '24px 0 0' }
-const eyebrow = { fontSize: '11px', fontWeight: '900' as const, color: '#7B61FF', margin: '0 0 20px', letterSpacing: '0.18em', textTransform: 'uppercase' as const }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '24px 0 0' }
+const h1 = { fontSize: '24px', fontWeight: 'bold', color: '#FFFFFF', margin: '0 0 20px' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 16px' }
+const smallText = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 16px' }
+const highlightBox = { backgroundColor: '#11141B', border: '1px solid #1A1E28', padding: '20px 22px', borderRadius: '8px', margin: '20px 0' }
+const highlightHeading = { fontSize: '15px', fontWeight: 'bold', color: '#FFFFFF', margin: '0 0 10px' }
+const highlightText = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.8', margin: '0' }
+const button = { backgroundColor: '#FFFFFF', color: '#05070D', padding: '14px 32px', borderRadius: '16px', fontWeight: '600' as const, fontSize: '14px', lineHeight: '20px', textDecoration: 'none', display: 'inline-block' }
+const hr = { borderColor: '#1A1E28', margin: '28px 0' }
+const signature = { fontSize: '15px', color: '#FFFFFF', lineHeight: '1.6', margin: '24px 0 0' }
+const eyebrow = { fontSize: '11px', fontWeight: '900' as const, color: '#FF2DA1', margin: '0 0 20px', letterSpacing: '0.18em', textTransform: 'uppercase' as const }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '24px 0 0' }
