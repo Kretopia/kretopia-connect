@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import QRCodeStyling from "qr-code-styling";
-import { Loader2, Ticket, Check, Calendar, MapPin, CalendarPlus, Navigation } from "lucide-react";
+import { Loader2, Ticket, Check, Calendar, MapPin, CalendarPlus, Navigation, X } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
@@ -26,6 +26,8 @@ interface EventPassCardProps {
   onDownloadCalendar?: () => void;
   directionsHref?: string | null;
   className?: string;
+  /** When set, a close (X) control is drawn inside the card's top-right corner. */
+  onClose?: () => void;
 }
 
 /**
@@ -48,6 +50,7 @@ export const EventPassCard = ({
   onDownloadCalendar,
   directionsHref,
   className,
+  onClose,
 }: EventPassCardProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -118,6 +121,16 @@ export const EventPassCard = ({
             className="pointer-events-none absolute inset-0 ai-ambient-breathe"
             style={{ background: `radial-gradient(70% 60% at 50% 0%, ${ENERGY}26, transparent 65%)` }}
           />
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close pass"
+              className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/70 text-foreground/70 transition-colors hover:bg-background hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           <div className="relative flex flex-col items-center">
             <BrandLogo size="sm" lockup />
             <div

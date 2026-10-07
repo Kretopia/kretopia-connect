@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { EventPassCard } from "./EventPassCard";
 
@@ -64,7 +63,8 @@ export const GuestPassDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm p-0 overflow-hidden border-0 bg-transparent shadow-none">
+      {/* The dialog's default X sits on the transparent shell, outside the pass; the pass draws its own inside the card. */}
+      <DialogContent className="max-w-sm p-0 overflow-hidden border-0 bg-transparent shadow-none [&>button.absolute]:hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Your event pass</DialogTitle>
         </DialogHeader>
@@ -77,11 +77,8 @@ export const GuestPassDialog = ({
           token={token}
           loading={loading}
           checkedIn={checkedIn}
+          onClose={() => onOpenChange(false)}
         />
-
-        <Button variant="outline" className="w-full mt-3" onClick={() => onOpenChange(false)}>
-          Close
-        </Button>
       </DialogContent>
     </Dialog>
   );
