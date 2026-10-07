@@ -5,7 +5,6 @@ import { FramedAvatar } from "@/components/ui/framed-avatar";
 import { HoloCard } from "./HoloCard";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
-import { classifyCreditEvidence } from "@/lib/passport/creditEvidence";
 import { cn } from "@/lib/utils";
 import {
   Calendar,
@@ -58,7 +57,8 @@ interface PublicPassportProfile {
 
 interface PublicPassportHeroProps {
   profile: PublicPassportProfile;
-  credits: Array<{ project_name?: string; title?: string; role: string; verification_status?: string; isVerified?: boolean }>;
+  /** Experience + proof block (see PassportHiringGlance). */
+  glance?: ReactNode;
   connectionStatus: "none" | "pending" | "connected";
   isOwner: boolean;
   isSignedIn: boolean;
@@ -76,7 +76,7 @@ interface PublicPassportHeroProps {
 
 export function PublicPassportHero({
   profile,
-  credits,
+  glance,
   connectionStatus,
   isOwner,
   isSignedIn,
@@ -95,8 +95,6 @@ export function PublicPassportHero({
     () => profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—",
     [profile.user_id],
   );
-  const verifiedCredits = credits.filter((credit) => credit.isVerified || credit.verification_status === "verified");
-  const strongestCredits = (verifiedCredits.length ? verifiedCredits : credits).slice(0, 2);
   const skills = Array.isArray(profile.professional_skills)
     ? profile.professional_skills.map((skill: unknown) => {
         if (typeof skill === "string") return skill;
@@ -171,36 +169,8 @@ export function PublicPassportHero({
 
           <TrustSignals emailVerified={profile.email_verified} phoneVerified={profile.phone_verified} idVerified={profile.id_verified} paymentVerified={profile.payment_verified} isOwnProfile={false} compact />
 
-          {strongestCredits.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Strongest credits</p>
-              <div className="grid grid-cols-2 gap-2">
-                {strongestCredits.map((credit, index) => {
-                  const evidence = classifyCreditEvidence({
-                    verification_status: credit.isVerified ? "verified" : credit.verification_status,
-                  });
-                  return (
-                    <div key={`${credit.project_name || credit.title}-${index}`} className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
-                      <p className="truncate text-xs font-semibold">{credit.project_name || credit.title}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {credit.role}
-                        {evidence === "verified" ? (
-                          <span className="text-[hsl(var(--signal-teal))]"> · Verified</span>
-                        ) : (
-                          <span> · Self-claimed</span>
-                        )}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <CheckCircle2 className="h-3 w-3 text-[hsl(var(--signal-teal))]" />
-            <span>{credits.length} stamp{credits.length === 1 ? "" : "s"} · {verifiedCredits.length} verified</span>
-          </div>
+          {/* Experience + proof, with the basis for each "verified" spelled out. */}
+          {glance}
 
           {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
 

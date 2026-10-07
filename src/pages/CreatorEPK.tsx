@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
@@ -10,6 +10,10 @@ import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
+import { PassportHiringGlance } from "@/components/passport/PassportHiringGlance";
+import { HireMeTrustBar } from "@/components/passport/HireMeTrustBar";
+import { classifyCreditEvidence, creditEvidenceBasis, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { buildHiringGlance, type GlanceCounts } from "@/lib/passport/hiringGlance";
 import { ModelStrip } from "@/components/passport/model/ModelStrip";
 import { VideoIntroSection } from "@/components/profile/VideoIntroSection";
 import { RateCardSection } from "@/components/profile/RateCardSection";
@@ -112,6 +116,11 @@ interface Credit {
   thumbnail_url?: string;
   primary_media_url?: string;
   credit_category?: string;
+  verification_status?: string | null;
+  endorsement_count?: number | null;
+  /** How the evidence reads (verified / publicly sourced / pending / self-claimed). */
+  evidence?: CreditEvidenceStatus;
+  basis?: string;
   isVerified?: boolean;
   verificationTier?: 'icdb' | 'ai' | 'peer' | 'payment' | 'manual';
 }
@@ -145,6 +154,26 @@ const CreatorEPK = () => {
   const [pressLinks, setPressLinks] = useState<any[]>([]);
   const [awards, setAwards] = useState<any[]>([]);
   const [credits, setCredits] = useState<Credit[]>([]);
+  // True totals from the database: `credits` only holds the newest 12.
+  const [glanceCounts, setGlanceCounts] = useState<GlanceCounts>({});
+  const glance = useMemo(
+    () =>
+      buildHiringGlance(
+        credits
+          .filter((c) => c.source !== 'portfolio')
+          .map((c) => ({
+            id: c.id,
+            project_name: c.project_name,
+            title: c.title,
+            role: c.role,
+            year: c.year,
+            forcedEvidence: c.evidence,
+            forcedBasis: c.basis,
+          })),
+        glanceCounts,
+      ),
+    [credits, glanceCounts],
+  );
   const [industryStats, setIndustryStats] = useState<IndustryStat[]>([]);
   const [digitalProducts, setDigitalProducts] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -211,7 +240,9 @@ const CreatorEPK = () => {
         setProfile(profileData as Profile);
 
         // Fetch all data in parallel
-        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes] = await Promise.all([
+        // A portfolio piece is not a credit, and `source` can be NULL, which `.neq` would silently drop.
+        const notPortfolio = 'source.is.null,source.neq.portfolio';
+        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes, totalRes, confirmedRes, earliestRes] = await Promise.all([
           // Portfolio items (from credits with source=portfolio)
           supabase
             .from('credits')
@@ -274,7 +305,18 @@ const CreatorEPK = () => {
             .eq('status', 'published')
             .order('created_at', { ascending: false })
             .limit(5),
+
+          // True record size, confirmed count and earliest dated credit (the list above is capped at 12)
+          supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).or(notPortfolio),
+          supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('verification_status', 'verified').or(notPortfolio),
+          supabase.from('credits').select('year').eq('user_id', userId).not('year', 'is', null).or(notPortfolio).order('year', { ascending: true }).limit(1),
         ]);
+
+        setGlanceCounts({
+          total: totalRes.count ?? null,
+          confirmed: confirmedRes.count ?? null,
+          earliestYear: (earliestRes.data?.[0] as { year?: number } | undefined)?.year ?? null,
+        });
 
         setPortfolioItems((portfolioRes.data || []).map((c: any) => ({ id: c.id, title: c.project_name, description: c.description, media_url: c.primary_media_url, media_type: c.media_type, thumbnail_url: c.thumbnail_url })));
         setPressLinks(pressRes.data || []);
@@ -288,13 +330,16 @@ const CreatorEPK = () => {
         
         // Process credits with verification tiers
         const manualCredits = (creditsRes.data || []).map((c: any) => {
-          let tier: Credit['verificationTier'] = 'manual';
-          if (c.verification_status === 'verified' && c.endorsement_count >= 2) tier = 'peer';
-          else if (c.ai_confidence && c.ai_confidence >= 0.7) tier = 'ai';
-          else if (c.source && c.source !== 'manual' && c.source !== 'portfolio') tier = 'ai';
+          // "Verified" means the same thing here as on the owner's own Stamps tab. An
+          // AI-confidence score or an imported source is NOT confirmation; those
+          // read as publicly sourced / self-claimed, never as verified.
+          const evidence = classifyCreditEvidence(c);
+          const tier: Credit['verificationTier'] = evidence === 'verified' ? ((c.endorsement_count || 0) > 0 ? 'peer' : 'icdb') : 'manual';
           return {
             ...c,
-            isVerified: tier !== 'manual',
+            evidence,
+            basis: creditEvidenceBasis(c),
+            isVerified: evidence === 'verified',
             verificationTier: tier,
           };
         });
@@ -304,8 +349,11 @@ const CreatorEPK = () => {
           id: c.id,
           project_name: c.person_name || 'Claimed Credit',
           role: c.role_title,
-          isVerified: true,
-          verificationTier: 'icdb' as const,
+          // A claimed role on a project record is the person's own claim over a public record.
+          evidence: 'publicly_sourced' as const,
+          basis: 'Claimed from a project record',
+          isVerified: false,
+          verificationTier: 'manual' as const,
         }));
         
         // Combine and sort by year
@@ -469,8 +517,8 @@ const CreatorEPK = () => {
           </div>
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
             {[
-              { label: 'Credits', value: credits.length },
-              { label: 'Verified', value: credits.filter(c => c.isVerified).length },
+              { label: 'Credits', value: glance.total },
+              { label: 'Confirmed', value: glance.confirmed },
               { label: 'Features', value: pressLinks.length },
               { label: 'Awards', value: awards.length },
             ].map(({ label, value }) => (
@@ -581,7 +629,7 @@ const CreatorEPK = () => {
               </h3>
               <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
                 <Database className="h-3 w-3" />
-                {credits.filter(c => c.isVerified).length} verified
+                {glance.confirmed} confirmed
               </Badge>
             </div>
 
@@ -824,7 +872,19 @@ const CreatorEPK = () => {
         <div className="order-1 min-w-0 lg:order-2">
           <PublicPassportHero
             profile={profile}
-            credits={credits}
+            glance={
+              <div className="space-y-3">
+                <PassportHiringGlance glance={glance} firstName={firstName} />
+                <HireMeTrustBar
+                  userId={profile.user_id}
+                  avgResponseHours={profile.avg_response_hours}
+                  hourlyRate={profile.hourly_rate}
+                  projectRate={profile.project_rate}
+                  rateCurrency={profile.rate_currency}
+                  collabIntent={profile.collab_intent}
+                />
+              </div>
+            }
             connectionStatus={connectionStatus}
             isOwner={isOwner}
             isSignedIn={Boolean(currentUserId)}
