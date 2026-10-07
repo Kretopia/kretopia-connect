@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { notifyUser } from "@/lib/notifyUser";
 import { Plus, X, Search, Loader2, MapPin, Calendar, Link2, Users, Building2, Sparkles, ChevronRight, Wand2, ChevronDown, Mail, Database, ShieldCheck, UserPlus, Upload, Image as ImageIcon, Video, Music } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -126,11 +127,17 @@ interface ICDBCreditFormProps {
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
   userId: string;
+  /**
+   * Called when a credit was saved with nobody asked to confirm it yet, so the
+   * parent can go straight to "who can confirm this?" instead of leaving the
+   * creative with an unconfirmed credit and no next step.
+   */
+  onCreditAdded?: (credit: { id: string; project_name: string; role: string; year?: number }) => void;
 }
 
 type FormStep = "search" | "details";
 
-export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId }: ICDBCreditFormProps) {
+export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCreditAdded }: ICDBCreditFormProps) {
   const [step, setStep] = useState<FormStep>("search");
   const [saving, setSaving] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -470,7 +477,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId }: ICDBCr
 
         // Platform collaborator endorsements
         for (const collab of selectedCollaborators) {
-          await supabase.from('credit_endorsements').insert({
+          const { error: askError } = await supabase.from('credit_endorsements').insert({
             credit_id: insertedData.id,
             requested_by: userId,
             endorser_id: collab.user_id,
@@ -478,6 +485,19 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId }: ICDBCr
             status: 'pending',
             relationship: 'collaborator',
           });
+          // Nothing else tells a member they were asked (the only DB trigger fires on
+          // acceptance), so without this the request just sat there unseen.
+          if (!askError) {
+            void notifyUser({
+              userId: collab.user_id,
+              type: 'credit_confirmation_request',
+              title: 'Can you confirm a credit?',
+              message: `${form.project_name}: someone says you worked together. One tap to confirm.`,
+              actionUrl: '/profile',
+              actionText: 'Review request',
+              category: 'credits',
+            });
+          }
         }
 
         // Credit Chains — invite external collaborators
@@ -506,10 +526,19 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId }: ICDBCr
         }
       }
 
-      toast.success("Credit added — verification in progress");
+      const asked = selectedCollaborators.length + externalCollabs.length;
+      toast.success(
+        asked > 0
+          ? `Credit added. ${asked} confirmation request${asked === 1 ? "" : "s"} sent.`
+          : "Credit added. Now get it confirmed so it counts.",
+      );
+      const added = insertedData
+        ? { id: insertedData.id as string, project_name: form.project_name, role: form.role, year }
+        : null;
       resetForm();
       onOpenChange(false);
       onSuccess();
+      if (added && asked === 0) onCreditAdded?.(added);
     } catch (error: any) {
       console.error("Error adding credit:", error);
       const msg = error?.message || error?.error_description || error?.details || "Unknown error";
