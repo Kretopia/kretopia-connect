@@ -7,7 +7,9 @@ import { TEMPLATES } from './registry.ts'
 // expose sending to the browser.
 
 // Configuration baked in at scaffold time
-const SITE_NAME = "Kretopia Connect"
+// Single sender identity for every Kretopia Connect email: "Kretopia <noreply@kretopia.com>",
+// signed by notify.kretopia.com. Never point this at thrivein.io.
+const SITE_NAME = "Kretopia"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
 const SENDER_DOMAIN = "notify.kretopia.com"
