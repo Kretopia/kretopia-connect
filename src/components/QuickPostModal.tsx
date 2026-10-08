@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { CalendarDays, Loader2, MapPin } from "lucide-react";
+import { CalendarDays, MapPin } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Dialog,
   DialogContent,
@@ -158,7 +159,7 @@ export function QuickPostModal({ open, onOpenChange, type }: QuickPostModalProps
             className="w-full h-11 font-semibold"
           >
             {submitting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4" />
             ) : !user ? (
               `Continue & Sign Up to Publish`
             ) : (

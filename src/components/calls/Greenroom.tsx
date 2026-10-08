@@ -4,8 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Mic, MicOff, Video, VideoOff, Loader2, Settings2, ChevronDown,
+  Mic, MicOff, Video, VideoOff, Settings2, ChevronDown,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Device = { deviceId: string; label: string };
 
@@ -247,7 +248,7 @@ export const Greenroom = ({
         >
           {joining ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
               Joining…
             </>
           ) : (

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Loader2, Sparkles, Plus, Settings as SettingsIcon } from "lucide-react";
+import { Sparkles, Plus, Settings as SettingsIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -97,7 +98,7 @@ export function AIHostEventCard({ onPrefilled, onManage, hostingCount = 0 }: Pro
 
       <div className="flex flex-wrap items-center gap-2 mt-3">
         <Button onClick={run} disabled={busy} variant="gradient" className="gap-1.5 rounded-full">
-          {busy ? <><Loader2 className="h-4 w-4 animate-spin" /> Drafting…</> : <><Sparkles className="h-4 w-4" /> Draft with Kreto</>}
+          {busy ? <><KretopiaSpinner className="h-4 w-4" /> Drafting…</> : <><Sparkles className="h-4 w-4" /> Draft with Kreto</>}
         </Button>
         <Button onClick={() => onPrefilled(null)} variant="ghost" size="sm" className="gap-1.5 rounded-full">
           <Plus className="h-4 w-4" /> Start from blank

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Briefcase, Star, Award, Zap, Handshake, DollarSign } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { ICDBTimeline } from "@/components/profile/ICDBTimeline";
 import { ReviewsSection } from "@/components/profile/ReviewsSection";
 import { SkillsSection } from "@/components/profile/SkillsSection";
@@ -32,7 +33,7 @@ const HireTabContent = ({ userId, creatorName }: { userId: string; creatorName?:
     check();
   }, [userId]);
 
-  if (hasContent === null) return <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>;
+  if (hasContent === null) return <KretopiaLoader size="sm" label="Loading..." className="py-8" />;
 
   return (
     <>

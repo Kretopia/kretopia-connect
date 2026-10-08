@@ -10,8 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Bug, Lightbulb, Palette, MessageCircle, CheckCircle2, Clock,
-  AlertTriangle, ArrowRight, X, Loader2, ChevronDown
+  AlertTriangle, ArrowRight, X, ChevronDown
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -138,7 +139,7 @@ const FeedbackAdmin = () => {
     setSaving(false);
   };
 
-  if (isAdmin === null) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+  if (isAdmin === null) return <div className="flex items-center justify-center min-h-screen"><KretopiaSpinner className="h-6 w-6" /></div>;
   if (isAdmin === false) return <Navigate to="/circle" replace />;
 
   const filtered = filter === "all" ? items : items.filter(i => i.category === filter || i.status === filter);
@@ -187,7 +188,7 @@ const FeedbackAdmin = () => {
 
         {/* Feedback list */}
         {loading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+          <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6" /></div>
         ) : (
           <div className="space-y-3">
             {filtered.map(item => {
@@ -378,7 +379,7 @@ const FeedbackAdmin = () => {
                     onClick={() => saveNotes(selectedItem.id)}
                     disabled={saving}
                   >
-                    {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    {saving ? <KretopiaSpinner className="h-4 w-4 mr-1" /> : null}
                     Save Notes
                   </Button>
                 </div>

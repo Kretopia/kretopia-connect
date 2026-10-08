@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -26,7 +27,7 @@ export const AddEmailStepDialog = ({
         <div className="space-y-3">
           <div className="flex justify-end">
             <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={onGenerate} disabled={generating}>
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
               AI Generate
             </Button>
           </div>

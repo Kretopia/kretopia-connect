@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Star, Loader2 } from "lucide-react";
+import { Star } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -134,7 +135,7 @@ export const ProductReviewDialog = ({
               Cancel
             </Button>
             <Button onClick={handleSubmit} disabled={loading || rating === 0} className="flex-1">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && <KretopiaSpinner className="mr-2 h-4 w-4" />}
               Submit Review
             </Button>
           </div>

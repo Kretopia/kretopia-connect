@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Camera, Loader2, ShieldCheck, ArrowLeft, Sparkles } from "lucide-react";
+import { Camera, ShieldCheck, ArrowLeft, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { ClaimedCredit, DraftProfile } from "./types";
@@ -161,7 +162,7 @@ export const OptionalFaceVerifyStep = ({ profile, credits, onSkip, onVerified, o
   if (step === "verifying") {
     return (
       <div className="py-12 flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
         <p className="text-sm text-muted-foreground">Comparing photos…</p>
       </div>
     );

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ShieldOff, Loader2 } from "lucide-react";
+import { ShieldOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useUserBlocks } from "@/hooks/useUserBlocks";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +55,7 @@ export const BlockedUsersCard = () => {
       <CardContent>
         {loading || fetching ? (
           <div className="flex items-center justify-center py-6 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+            <KretopiaSpinner className="h-4 w-4 mr-2" /> Loading…
           </div>
         ) : profiles.length === 0 ? (
           <p className="text-sm text-muted-foreground py-2">You haven't blocked anyone.</p>

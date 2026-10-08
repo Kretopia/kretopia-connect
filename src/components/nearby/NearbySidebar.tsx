@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Camera, Sparkles } from "lucide-react";
+import { Plus, Camera, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { CreatorListItem, type NearbyCreator, formatDistance, getSkills } from "./NearbyCreatorCard";
 import { SessionListItem, type NearbySession } from "./NearbySessionListItem";
 import { SessionCard } from "@/components/sessions/SessionCard";
@@ -55,7 +56,7 @@ export const NearbySidebar = ({
         </div>
         <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
           {loading ? (
-            <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-4"><KretopiaSpinner className="h-5 w-5 text-primary" /></div>
           ) : (
             creators.slice(0, 10).map((c) => (
               <CreatorListItem
@@ -80,7 +81,7 @@ export const NearbySidebar = ({
         </div>
         <div className="space-y-2 max-h-[250px] overflow-y-auto pr-1">
           {loading ? (
-            <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-4"><KretopiaSpinner className="h-5 w-5 text-primary" /></div>
           ) : sessions.length === 0 ? (
             <Card className="p-3">
               <p className="text-xs text-muted-foreground text-center mb-2">No sessions nearby</p>

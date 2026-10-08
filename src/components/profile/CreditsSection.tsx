@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Film } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AchievementCard } from "./AchievementCard";
@@ -148,7 +149,7 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading credits...</div>;
+    return <KretopiaLoader size="sm" label="Loading credits..." className="py-8" />;
   }
 
   if (credits.length === 0 && !isOwnProfile) {

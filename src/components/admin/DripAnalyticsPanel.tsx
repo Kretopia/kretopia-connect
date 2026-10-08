@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-  Loader2, CheckCircle, XCircle, Clock, Mail, TrendingUp, AlertTriangle, RefreshCw, BarChart3
+import { CheckCircle, XCircle, Clock, Mail, TrendingUp, AlertTriangle, RefreshCw, BarChart3
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Analytics {
   totals: { sent: number; failed: number; pending: number; total: number };
@@ -39,7 +39,7 @@ export const DripAnalyticsPanel = () => {
   useEffect(() => { load(); }, []);
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-8 w-8 text-primary" /></div>;
   }
 
   if (!data) return <p className="text-center text-muted-foreground py-8">Failed to load analytics</p>;
@@ -59,7 +59,7 @@ export const DripAnalyticsPanel = () => {
           <BarChart3 className="h-5 w-5 text-primary" /> Campaign Analytics
         </h3>
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          {loading ? <KretopiaSpinner className="h-3 w-3 mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />} Refresh
         </Button>
       </div>
 

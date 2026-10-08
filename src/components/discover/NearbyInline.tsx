@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, MapPin, Navigation } from "lucide-react";
+import { MapPin, Navigation } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -115,7 +116,7 @@ export const NearbyInline = () => {
             </p>
           </div>
           <Button onClick={detect} disabled={locating} size="sm" className="gap-1.5">
-            {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+            {locating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Navigation className="h-3.5 w-3.5" />}
             Use my location
           </Button>
         </CardContent>

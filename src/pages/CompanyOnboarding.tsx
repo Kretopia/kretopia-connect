@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
-import { Building2, Camera, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Globe, MapPin, Users, Briefcase, Sparkles, Upload } from "lucide-react";
+import { Building2, Camera, ArrowRight, ArrowLeft, CheckCircle2, Globe, MapPin, Users, Briefcase, Sparkles, Upload } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 const STEPS = [
@@ -187,7 +188,7 @@ export default function CompanyOnboarding() {
                   <Avatar className="h-24 w-24 rounded-2xl border-2 border-dashed border-border group-hover:border-primary transition-colors">
                     <AvatarImage src={logoUrl} className="object-cover rounded-2xl" />
                     <AvatarFallback className="rounded-2xl bg-muted">
-                      {uploadingLogo ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6 text-muted-foreground" />}
+                      {uploadingLogo ? <KretopiaSpinner className="h-6 w-6" /> : <Camera className="h-6 w-6 text-muted-foreground" />}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
@@ -331,7 +332,7 @@ export default function CompanyOnboarding() {
                   <ArrowLeft className="h-4 w-4" /> Back
                 </Button>
                 <Button onClick={handleFinish} disabled={loading} className="flex-1 h-12 text-base font-semibold gap-2" size="lg">
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {loading ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                   {loading ? "Saving…" : "Launch Profile"}
                 </Button>
               </div>

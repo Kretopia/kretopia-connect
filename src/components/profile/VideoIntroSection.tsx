@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Play, Video, Upload, X, Loader2 } from "lucide-react";
+import { Play, Video, Upload, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -114,7 +115,7 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
         <label className="flex flex-col items-center gap-3 p-8 cursor-pointer hover:bg-muted/50 transition-colors">
           <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
             {uploading ? (
-              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+              <KretopiaSpinner className="h-6 w-6 text-primary" />
             ) : (
               <Upload className="h-6 w-6 text-primary" />
             )}

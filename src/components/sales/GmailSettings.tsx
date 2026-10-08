@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Mail, CheckCircle2, AlertCircle, Loader2, ExternalLink, Unplug, Eye, EyeOff } from "lucide-react";
+import { Mail, CheckCircle2, AlertCircle, ExternalLink, Unplug, Eye, EyeOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 export function GmailSettings() {
@@ -188,7 +189,7 @@ export function GmailSettings() {
             >
               {testing ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                   Testing connection...
                 </>
               ) : (

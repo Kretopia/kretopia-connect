@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Newspaper, Trash2 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -155,7 +156,7 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading press links...</div>;
+    return <KretopiaLoader size="sm" label="Loading press links..." className="py-8" />;
   }
 
   if (pressLinks.length === 0 && !isOwnProfile) {

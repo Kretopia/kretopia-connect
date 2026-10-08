@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, Sparkles, Users, MessageSquare, ArmchairIcon, AlertCircle } from "lucide-react";
+import { Plus, Trash2, Sparkles, Users, MessageSquare, ArmchairIcon, AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -250,7 +251,7 @@ export const EventHostToolsDialog = ({
                     onClick={addQuestion}
                     disabled={!newQ.trim() || savingQ}
                   >
-                    {savingQ ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+                    {savingQ ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
                     Add
                   </Button>
                 </div>
@@ -296,7 +297,7 @@ export const EventHostToolsDialog = ({
               onClick={runMatchmaker}
               disabled={runningMatch || attendeeCount < 2}
             >
-              {runningMatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {runningMatch ? <KretopiaSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
               {matchCount && matchCount > 0 ? "Re-run matchmaker" : "Run matchmaker"}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">
@@ -348,7 +349,7 @@ export const EventHostToolsDialog = ({
               onClick={runSeating}
               disabled={runningSeat || attendeeCount < 2}
             >
-              {runningSeat ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArmchairIcon className="h-4 w-4" />}
+              {runningSeat ? <KretopiaSpinner className="h-4 w-4" /> : <ArmchairIcon className="h-4 w-4" />}
               {seatCount && seatCount > 0 ? "Re-arrange seats" : "Generate seating"}
             </Button>
           </TabsContent>

@@ -3,7 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Calendar, Clock, Users, Check, Loader2, Ticket, Share2 } from "lucide-react";
+import { MapPin, Calendar, Clock, Users, Check, Ticket, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
@@ -194,7 +195,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
           {!isCreator && !isPast && (
             <Button onClick={handleJoin} disabled={loading || (isFull && !participation)}
               variant={participation ? "outline" : "gradient"} size="sm" className="flex-1 text-xs h-8">
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : participation ? (
+              {loading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : participation ? (
                 <><Check className="h-3.5 w-3.5 mr-1" /> Going</>
               ) : isTicketed ? (
                 <><Ticket className="h-3.5 w-3.5 mr-1" /> Get Ticket</>

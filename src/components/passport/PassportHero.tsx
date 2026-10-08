@@ -6,6 +6,7 @@ import { FramedAvatar } from "@/components/ui/framed-avatar";
 import {
   Camera, PencilLine, MapPin, ShieldCheck, Share2, QrCode, FileDown, Gauge, Fingerprint,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { HoloCard } from "./HoloCard";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
@@ -151,7 +152,7 @@ export function PassportHero({
                 aria-label="Change avatar"
               >
                 {isUploadingAvatar ? (
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-background border-t-foreground" />
+                  <KretopiaSpinner className="h-3 w-3" />
                 ) : (
                   <Camera className="h-3 w-3" />
                 )}

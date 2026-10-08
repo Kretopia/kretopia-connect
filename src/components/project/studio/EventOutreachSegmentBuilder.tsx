@@ -9,7 +9,8 @@ import { Slider } from "@/components/ui/slider";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Mail, Target, Users, Filter } from "lucide-react";
+import { Mail, Target, Users, Filter } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BlastComposerDialog } from "@/components/meetup/BlastComposerDialog";
 
 interface Props {
@@ -195,7 +196,7 @@ export function EventOutreachSegmentBuilder({ project, currentUserId }: Props) {
 
       {loading ? (
         <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading guests…
+          <KretopiaSpinner className="h-4 w-4 mr-2" /> Loading guests…
         </div>
       ) : (
         <>

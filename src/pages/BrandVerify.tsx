@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, CheckCircle2, Loader2, XCircle } from "lucide-react";
+import { ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Helmet } from "react-helmet-async";
 
 const BrandVerify = () => {
@@ -39,7 +40,7 @@ const BrandVerify = () => {
           <CardContent className="text-center py-10 space-y-4">
             {status === "loading" && (
               <>
-                <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+                <KretopiaSpinner className="h-12 w-12 text-primary mx-auto" />
                 <p className="text-sm text-muted-foreground">Verifying credit...</p>
               </>
             )}

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, UserPlus, X, Search, Crown } from "lucide-react";
+import { UserPlus, X, Search, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -132,7 +133,7 @@ export const EventCohosts = ({ eventId, isCreator }: EventCohostsProps) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-6">
-        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
       </div>
     );
   }
@@ -188,7 +189,7 @@ export const EventCohosts = ({ eventId, isCreator }: EventCohostsProps) => {
 
           {searching && (
             <div className="flex items-center justify-center py-3">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
 

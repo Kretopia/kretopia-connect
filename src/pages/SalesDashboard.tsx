@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Search, Send, Target, Users, TrendingUp, Mail, Crown, Lock, Kanban, BarChart3 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import LeadsTab from "@/components/thrive-ai/LeadsTab";
 import OutreachTab from "@/components/thrive-ai/OutreachTab";
@@ -78,7 +79,7 @@ const SalesDashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-muted-foreground">Loading...</div>
+        <KretopiaLoader size="sm" label="Loading..." />
       </div>
     );
   }

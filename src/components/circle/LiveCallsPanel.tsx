@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 import {
   LinkIcon,
-  Loader2,
   Radio,
   Calendar,
   Sparkles,
   CalendarPlus,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { HoloCard } from "@/components/passport/HoloCard";
 import type { SoundStage } from "./SoundStagesRail";
 import { GoLiveSheet } from "./GoLiveSheet";
@@ -323,7 +323,7 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
             disabled={joining || !joinUrl.trim()}
             variant="outline"
           >
-            {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join"}
+            {joining ? <KretopiaSpinner className="h-4 w-4" /> : "Join"}
           </Button>
         </div>
       </div>

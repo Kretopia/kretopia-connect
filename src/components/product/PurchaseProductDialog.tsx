@@ -10,13 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { 
   CreditCard, 
   Download, 
-  Shield, 
-  Loader2,
+  Shield,
   Package,
   Star,
   ExternalLink,
   AlertCircle
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface DigitalProduct {
   id: string;
@@ -194,7 +194,7 @@ export const PurchaseProductDialog = ({
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Processing...
               </>
             ) : (

@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, MessageCircle, Paperclip, Loader2, Play, Music, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { Flame, MessageCircle, Paperclip, Play, Music, Volume2, VolumeX, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -272,7 +273,7 @@ export const SparkWall = () => {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <KretopiaSpinner className="h-6 w-6 text-primary" />
       </div>
     );
   }

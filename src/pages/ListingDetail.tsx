@@ -8,8 +8,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
   ArrowLeft, Download, Package, Wrench, MapPin, Clock, MessageCircle,
-  ShieldAlert, Share2, Flag, Heart, ChevronLeft, ChevronRight, ShoppingCart, Loader2, Lock
+  ShieldAlert, Share2, Flag, Heart, ChevronLeft, ChevronRight, ShoppingCart, Lock
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -125,7 +126,7 @@ const ListingDetail = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        <KretopiaSpinner className="h-8 w-8" />
       </div>
     );
   }
@@ -346,7 +347,7 @@ const ListingDetail = () => {
                     disabled={purchasing}
                   >
                     {purchasing ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                     ) : (
                       <ShoppingCart className="h-4 w-4" />
                     )}

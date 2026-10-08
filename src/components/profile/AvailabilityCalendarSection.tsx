@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format, parseISO, isWithinInterval, startOfDay } from "date-fns";
-import { CalendarDays, Plus, Trash2, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Lock, Eye, EyeOff } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import type { DateRange } from "react-day-picker";
 
 import { Button } from "@/components/ui/button";
@@ -212,7 +213,7 @@ export const AvailabilityCalendarSection = ({ userId, isOwner }: Props) => {
               <DialogFooter>
                 <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
                 <Button onClick={handleSave} disabled={saving || !range?.from || !range?.to}>
-                  {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                  {saving && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />}
                   Save block
                 </Button>
               </DialogFooter>
@@ -238,7 +239,7 @@ export const AvailabilityCalendarSection = ({ userId, isOwner }: Props) => {
 
       {/* Blocks list */}
       {loading ? (
-        <div className="text-center text-xs text-muted-foreground py-3">Loading…</div>
+        <KretopiaLoader size="sm" label="Loading…" className="py-3" />
       ) : visibleBlocks.length === 0 ? (
         <p className="text-xs text-muted-foreground text-center py-3">
           {isOwner ? "No blocked dates — you're showing as fully open." : "Open for bookings."}

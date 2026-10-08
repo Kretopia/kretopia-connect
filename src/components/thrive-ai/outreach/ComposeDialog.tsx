@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Image, Loader2, Mail, Paperclip, Send, Sparkles, Video } from "lucide-react";
+import { Image, Mail, Paperclip, Send, Sparkles, Video } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import type { Lead } from "./types";
 
 interface Props {
@@ -44,7 +45,7 @@ export const ComposeDialog = ({
           </div>
           <div className="flex justify-end">
             <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={onGenerate} disabled={generating}>
-              {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
               AI Generate
             </Button>
           </div>
@@ -70,7 +71,7 @@ export const ComposeDialog = ({
                   <Video className="h-3 w-3" /> Add Video Link
                 </Badge>
               </label>
-              {mediaUploading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              {mediaUploading && <KretopiaSpinner className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
           </div>
           <div>
@@ -92,7 +93,7 @@ export const ComposeDialog = ({
           </div>
           <Button className="w-full gap-1.5" onClick={onSend}
             disabled={!composeForm.to.trim() || !composeForm.subject.trim() || !composeForm.body.trim() || sending === "compose"}>
-            {sending === "compose" ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending...</> : <><Send className="h-4 w-4" /> Send Email</>}
+            {sending === "compose" ? <><KretopiaSpinner className="h-4 w-4" /> Sending...</> : <><Send className="h-4 w-4" /> Send Email</>}
           </Button>
         </div>
       </DialogContent>

@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
-import { Calendar, MapPin, CheckCircle2, ArrowRight, Loader2, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, CheckCircle2, ArrowRight, AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 
 const ClaimEvent = () => {
@@ -195,7 +196,7 @@ const ClaimEvent = () => {
         {!isClaimed ? (
           <div className="space-y-3">
             <Button size="lg" className="w-full gap-2" onClick={handleClaim} disabled={claiming}>
-              {claiming ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              {claiming ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
               {user ? "Claim this event" : "Sign in to claim"}
               <ArrowRight className="h-4 w-4" />
             </Button>

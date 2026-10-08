@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Trash2, GripVertical, Loader2, Clock } from "lucide-react";
+import { Plus, Trash2, GripVertical, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props { projectId: string; currentUserId: string; }
@@ -51,7 +52,7 @@ export function RunOfShowTab({ projectId, currentUserId }: Props) {
     void load();
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">

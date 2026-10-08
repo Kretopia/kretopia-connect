@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { analytics } from "@/lib/analytics";
-import { Sparkles, Check, X, ExternalLink, Loader2, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { Sparkles, Check, X, ExternalLink, ChevronDown, ChevronUp, Pencil } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Discovery {
   id: string;
@@ -191,7 +192,7 @@ export const DiscoveriesInbox = ({ userId, onApproved, onBulkConfirmed }: Props)
                 onClick={handleConfirmSelected}
               >
                 {bulkActioning ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  <KretopiaSpinner className="h-3 w-3 mr-1" />
                 ) : null}
                 Add selected credits to my Passport ({selected.size})
               </Button>
@@ -272,7 +273,7 @@ export const DiscoveriesInbox = ({ userId, onApproved, onBulkConfirmed }: Props)
                     onClick={() => handleApprove(d.id)}
                   >
                     {actioning === d.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      <KretopiaSpinner className="h-3.5 w-3.5" />
                     ) : (
                       <>
                         <Check className="h-3.5 w-3.5 mr-1" /> Add to credits

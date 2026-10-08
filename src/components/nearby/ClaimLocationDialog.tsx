@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { BadgeCheck, Loader2, Building2, Link, FileText } from "lucide-react";
+import { BadgeCheck, Building2, Link, FileText } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ClaimLocationDialogProps {
   open: boolean;
@@ -133,7 +134,7 @@ export function ClaimLocationDialog({ open, onOpenChange, locationId, locationNa
             disabled={loading || !businessName.trim()}
             className="w-full"
           >
-            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <BadgeCheck className="h-4 w-4 mr-2" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <BadgeCheck className="h-4 w-4 mr-2" />}
             Submit Claim
           </Button>
 

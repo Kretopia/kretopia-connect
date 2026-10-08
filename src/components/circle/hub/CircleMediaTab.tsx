@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Image as ImageIcon, Award, Loader2 } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Award } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   circleId: string;
@@ -59,7 +60,7 @@ export function CircleMediaTab({ circleId, members }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <KretopiaSpinner className="h-5 w-5 text-primary" />
       </div>
     );
   }

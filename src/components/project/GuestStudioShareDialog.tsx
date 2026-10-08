@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Copy, Link2, Loader2, Trash2, Users, Share2, Check } from "lucide-react";
+import { Copy, Link2, Trash2, Users, Share2, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Dialog,
   DialogContent,
@@ -211,7 +212,7 @@ ${url}`;
             <p className="text-[10px] text-muted-foreground">{ROLE_PRESETS[role].hint}</p>
           </div>
           <Button onClick={create} disabled={creating} className="w-full">
-            {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Link2 className="h-4 w-4 mr-2" />}
+            {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Link2 className="h-4 w-4 mr-2" />}
             Create guest link
           </Button>
         </div>
@@ -219,7 +220,7 @@ ${url}`;
         <div className="space-y-2 max-h-72 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : links.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, X, Download, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Download, MessageSquare, ChevronLeft, ChevronRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getProjectFileSignedUrl } from "@/lib/projectFiles";
 
 // Module-level cache shared across mounts to avoid refetching signed URLs
@@ -132,7 +133,7 @@ export const MoodboardViewer = ({
         {/* Image */}
         <div className="flex-1 flex items-center justify-center min-h-0 h-full">
           {loading || !url ? (
-            <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+            <KretopiaSpinner className="h-8 w-8 text-white/70" />
           ) : (
             <img
               src={url}

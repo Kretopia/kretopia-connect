@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Wand2 } from "lucide-react";
+import { Wand2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { FreeTierGate } from "@/components/FreeTierGate";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
@@ -129,7 +130,7 @@ Make it professional but approachable. Use language that appeals to creative pro
       >
         {generating ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="h-4 w-4" />
             Generating...
           </>
         ) : (

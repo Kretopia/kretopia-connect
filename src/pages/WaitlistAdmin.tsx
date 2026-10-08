@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, ExternalLink, Mail, User } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 interface WaitlistEntry {
   id: string;
@@ -246,7 +247,7 @@ const WaitlistAdmin = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p>Loading waitlist...</p>
+        <KretopiaLoader size="sm" label="Loading waitlist..." />
       </div>
     );
   }

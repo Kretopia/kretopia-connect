@@ -32,7 +32,6 @@ import {
   ExternalLink,
   MessageSquare,
   TrendingUp,
-  Loader2,
   ImageIcon,
   MapPin,
   Download,
@@ -49,6 +48,7 @@ import { BlastComposerDialog } from "@/components/meetup/BlastComposerDialog";
 import { EventAnalyticsDialog } from "@/components/sessions/EventAnalyticsDialog";
 import { EventResponsesDialog } from "@/components/sessions/EventResponsesDialog";
 import { Mail, UserPlus, MessageCircle, Scan, BarChart3, FileQuestion } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Dialog,
   DialogContent,
@@ -666,7 +666,7 @@ const EventBackstage = () => {
                       disabled={convertingId === ev.id}
                     >
                       {convertingId === ev.id ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" />
                       ) : (
                         <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                       )}
@@ -697,7 +697,7 @@ const EventBackstage = () => {
                       disabled={convertingId === ev.id}
                     >
                       {convertingId === ev.id ? (
-                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" />
                       ) : (
                         <MessageCircle className="h-3.5 w-3.5 mr-1.5" />
                       )}
@@ -1010,7 +1010,7 @@ const EventBackstage = () => {
               disabled={!messageText.trim() || sendingMessage}
             >
               {sendingMessage ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
               ) : (
                 <MessageSquare className="h-4 w-4 mr-2" />
               )}

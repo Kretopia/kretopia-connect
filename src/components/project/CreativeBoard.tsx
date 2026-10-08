@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Image, StickyNote, Sparkles, Plus, Trash2, ExternalLink,
-  Loader2, X, Upload, Palette, Search, LayoutGrid, List, Pencil, RefreshCw, MoreVertical
+  Image, StickyNote, Sparkles, Plus, Trash2, ExternalLink, X, Upload, Palette, Search, LayoutGrid, List, Pencil, RefreshCw, MoreVertical
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
@@ -222,7 +222,7 @@ export function CreativeBoard({ projectId, currentUserId }: CreativeBoardProps) 
   });
 
   if (loading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
   }
 
   return (
@@ -258,7 +258,7 @@ export function CreativeBoard({ projectId, currentUserId }: CreativeBoardProps) 
                   <Input value={pinUrl} onChange={(e) => setPinUrl(e.target.value)} placeholder="https://..." />
                 </div>
                 <Button onClick={handleAddPin} disabled={uploading} className="w-full gap-2">
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  {uploading ? <KretopiaSpinner className="h-4 w-4" /> : <Upload className="h-4 w-4" />}
                   Add Pin
                 </Button>
               </div>
@@ -325,7 +325,7 @@ export function CreativeBoard({ projectId, currentUserId }: CreativeBoardProps) 
                   />
                 </div>
                 <Button onClick={handleAIGenerate} disabled={aiGenerating} className="w-full gap-2">
-                  {aiGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  {aiGenerating ? <KretopiaSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                   {aiGenerating ? "Generating..." : "Generate Image"}
                 </Button>
               </div>

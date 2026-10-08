@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, Sparkles, Download, Share2, RefreshCw, ArrowLeft, Wand2 } from "lucide-react";
+import { Sparkles, Download, Share2, RefreshCw, ArrowLeft, Wand2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { DeckRenderer, type DeckContent } from "@/components/thrive/DeckRenderer";
 import { DECK_THEMES, defaultThemeFor, type DeckTheme } from "@/lib/deckThemes";
 import { exportDeckToPDF } from "@/lib/deckExport";
@@ -175,7 +176,7 @@ export default function ThriveGenerate() {
               className="mt-2 min-h-[160px] text-sm"
             />
             <Button onClick={generate} disabled={loading} className="w-full mt-3">
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : doc ? <RefreshCw className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : doc ? <RefreshCw className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
               {loading ? "Drafting…" : doc ? "Regenerate" : "Draft it"}
             </Button>
             <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">

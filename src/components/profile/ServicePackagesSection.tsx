@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Package, Clock, RefreshCw, Check, Plus, Trash2, Loader2, ShoppingCart } from "lucide-react";
+import { Package, Clock, RefreshCw, Check, Plus, Trash2, ShoppingCart } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -278,7 +279,7 @@ export const ServicePackagesSection = ({ userId, isOwnProfile }: ServicePackages
               <Textarea value={form.features} onChange={(e) => setForm({ ...form, features: e.target.value })} placeholder="3 social posts&#10;1 reel&#10;Caption writing" rows={3} />
             </div>
             <Button onClick={handleSave} disabled={saving || !form.title || !form.price} className="w-full">
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+              {saving ? <KretopiaSpinner className="h-4 w-4 mr-1" /> : null}
               {editingId ? "Update" : "Create"} Package
             </Button>
           </div>

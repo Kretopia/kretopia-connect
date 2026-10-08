@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Briefcase, Loader2, X } from "lucide-react";
+import { Briefcase, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { AIJobDescriptionGenerator } from "@/components/opportunity/AIJobDescriptionGenerator";
 import { useAuth } from "@/hooks/useAuth";
 import { hasProAccess } from "@/lib/subscriptionConfig";
@@ -240,7 +241,7 @@ export function PostAsOpportunityDialog({
             <Button onClick={handlePost} className="flex-1" disabled={posting}>
               {posting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="mr-2 h-4 w-4" />
                   Posting...
                 </>
               ) : (

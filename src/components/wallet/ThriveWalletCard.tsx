@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Landmark, ArrowDownToLine, Plus, ShieldCheck, Loader2 } from "lucide-react";
+import { Landmark, ArrowDownToLine, Plus, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { WalletAddBankSheet } from "./WalletAddBankSheet";
 import { WalletPayoutSheet } from "./WalletPayoutSheet";
@@ -52,7 +53,7 @@ export function ThriveWalletCard() {
 
   if (loading) {
     return (
-      <Card className="p-6 flex items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></Card>
+      <Card className="p-6 flex items-center justify-center"><KretopiaSpinner className="h-5 w-5 text-muted-foreground" /></Card>
     );
   }
 

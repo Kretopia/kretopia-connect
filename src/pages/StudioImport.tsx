@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -235,7 +236,7 @@ export default function StudioImport() {
 
       {step === 2 && provider && (
         busy && scopes.length === 0
-          ? <div className="flex items-center gap-2 p-8 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Reading your source…</div>
+          ? <div className="flex items-center gap-2 p-8 text-sm text-muted-foreground"><KretopiaSpinner className="h-4 w-4" /> Reading your source…</div>
           : <ScopeStep provider={provider} scopes={scopes} value={scope} onChange={setScope} />
       )}
 
@@ -282,7 +283,7 @@ export default function StudioImport() {
               disabled={!canAdvance() || busy}
               onClick={() => (step === 2 ? handleAnalyze() : step === 3 ? handleRun() : setStep(step + 1))}
             >
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {busy ? <KretopiaSpinner className="mr-2 h-4 w-4" /> : null}
               {step === 3 ? "Bring it in" : step === 2 ? "Preview" : "Continue"}
             </Button>
           )}

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyCredits } from "@/hooks/useMyCredits";
 import { CreditsPermissionState } from "@/components/credits/CreditsPermissionState";
@@ -19,6 +18,7 @@ import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 import { User, Briefcase, Award, Activity, FileText, Sparkles as SparklesIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type OwnProfile = IdentityProfile & HireMeProfile;
 
@@ -126,7 +126,7 @@ export default function CreditsDashboard() {
   if (userId === undefined) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Loading" />
+        <KretopiaSpinner className="h-6 w-6 text-primary" aria-label="Loading" />
       </div>
     );
   }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Check, X, Sparkles, Loader2, CircleDot, CircleCheck, CircleX, Clock } from "lucide-react";
+import { Check, X, Sparkles, CircleDot, CircleCheck, CircleX, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +39,7 @@ const statusIcon = (s: PlanStep["status"]) => {
   switch (s) {
     case "succeeded": return <CircleCheck className="h-3.5 w-3.5 text-primary" />;
     case "failed":    return <CircleX className="h-3.5 w-3.5 text-destructive" />;
-    case "running":   return <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />;
+    case "running":   return <KretopiaSpinner className="h-3.5 w-3.5 text-primary" />;
     case "skipped":   return <Clock className="h-3.5 w-3.5 text-muted-foreground/50" />;
     default:          return <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />;
   }
@@ -142,7 +143,7 @@ export const CopilotPlanCard = ({ plan: initial, onResolved }: Props) => {
       <div className="flex items-start gap-3 mb-2">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/15">
           {isRunning
-            ? <Loader2 className="h-4 w-4 text-primary animate-spin" />
+            ? <KretopiaSpinner className="h-4 w-4 text-primary" />
             : <Sparkles className="h-4 w-4 text-primary" />}
         </div>
         <div className="flex-1 min-w-0">
@@ -206,11 +207,11 @@ export const CopilotPlanCard = ({ plan: initial, onResolved }: Props) => {
             onClick={() => handle("approved")}
             disabled={busy !== null || selected.size === 0}
           >
-            {busy === "approve" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            {busy === "approve" ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
             Run {selected.size}/{plan.steps.length}
           </Button>
           <Button size="sm" variant="ghost" className="h-8" onClick={() => handle("rejected")} disabled={busy !== null}>
-            {busy === "reject" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+            {busy === "reject" ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <X className="h-3.5 w-3.5" />}
             Cancel
           </Button>
           {selected.size < plan.steps.length && (

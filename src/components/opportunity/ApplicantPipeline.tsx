@@ -22,7 +22,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Mail, Sparkles, GripVertical, FileText, Loader2 } from "lucide-react";
+import { Eye, Mail, Sparkles, GripVertical, FileText } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -210,7 +211,7 @@ function SortableApplicantCard({ applicant }: { applicant: Applicant }) {
               disabled={genLoading}
               title="Generate Deal Memo PDF"
             >
-              {genLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <FileText className="w-3 h-3" />}
+              {genLoading ? <KretopiaSpinner className="w-3 h-3" /> : <FileText className="w-3 h-3" />}
               <span className="hidden sm:inline">Deal Memo</span>
             </Button>
           )}

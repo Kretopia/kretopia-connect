@@ -6,10 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import { validateApplication, sanitizeInput, isValidUrl, handleSupabaseError } from "@/lib/errorHandling";
 import { AIOpportunityInsights } from "@/components/discover/AIOpportunityInsights";
 import { APP_URL } from "@/lib/constants";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ApplyToOpportunityDialogProps {
   open: boolean;
@@ -257,7 +257,7 @@ export const ApplyToOpportunityDialog = ({
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting && <KretopiaSpinner className="mr-2 h-4 w-4" />}
             Submit Application
           </Button>
         </div>

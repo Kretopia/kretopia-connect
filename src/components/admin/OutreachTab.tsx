@@ -20,6 +20,7 @@ import {
   Clock,
   MessageSquare
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 interface UnclaimedProfile {
   user_id: string;
@@ -283,7 +284,7 @@ Let me know if you have any questions 🙌`;
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading profiles...</div>
+            <KretopiaLoader size="sm" label="Loading profiles..." className="py-8" />
           ) : (
             <ScrollArea className="h-[500px]">
               <div className="space-y-2">

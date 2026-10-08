@@ -7,7 +7,8 @@ import { PartnerCard } from "@/components/membership/PartnerCard";
 import { DigitalMembershipCard } from "@/components/membership/DigitalMembershipCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 
@@ -183,7 +184,7 @@ export default function PartnerDirectory() {
                 {filteredPartners.length === 0 && (
                   <div className="text-center py-12 px-4">
                     <div className="rounded-full bg-muted/50 p-5 mb-4 inline-flex">
-                      <Loader2 className="h-8 w-8 text-muted-foreground" />
+                      <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <h3 className="font-semibold mb-2">No partners yet</h3>
                     <p className="text-sm text-muted-foreground max-w-xs mx-auto">

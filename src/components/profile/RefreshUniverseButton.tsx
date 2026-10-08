@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -146,7 +147,7 @@ export const RefreshUniverseButton = ({ lastScanAt }: Props) => {
           disabled={scanning}
         >
           {scanning ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <KretopiaSpinner className="h-3.5 w-3.5" />
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}

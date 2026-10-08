@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Film, Music, Youtube, Instagram, Globe, Loader2, CheckCircle2, ArrowRight } from "lucide-react";
+import { Link2, Film, Music, Youtube, Instagram, Globe, CheckCircle2, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -110,7 +111,7 @@ export const CrossPlatformImport = ({ currentUserId, onImported }: CrossPlatform
               className="h-9 text-xs flex-1"
             />
             <Button size="sm" className="h-9 gap-1 text-xs" onClick={handleImport} disabled={loading || !url.trim()}>
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRight className="h-3 w-3" />}
+              {loading ? <KretopiaSpinner className="h-3 w-3" /> : <ArrowRight className="h-3 w-3" />}
               Link
             </Button>
           </div>

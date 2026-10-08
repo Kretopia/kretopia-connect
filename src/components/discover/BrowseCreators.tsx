@@ -15,9 +15,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
-  Search, SlidersHorizontal, Sparkles, Loader2, Star, Verified, MapPin,
+  Search, SlidersHorizontal, Sparkles, Star, Verified, MapPin,
   Bell, BellOff, Bookmark, X, Trash2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { ProfileActivationGate } from "@/components/ProfileActivationGate";
 import { getDiscoveryMissingFields } from "@/lib/profileCompletion";
@@ -370,7 +371,7 @@ export function BrowseCreators() {
             </PopoverContent>
           </Popover>
           <Button onClick={handleSearch} disabled={loading} size="sm" variant="gradient" className="h-9 px-3">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Go"}
+            {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Go"}
           </Button>
         </div>
 
@@ -432,7 +433,7 @@ export function BrowseCreators() {
 
       {/* Results grid */}
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-primary" /></div>
       ) : results.length === 0 ? (
         <Card className="py-12 px-6 text-center space-y-3">
           <p className="text-sm text-muted-foreground">

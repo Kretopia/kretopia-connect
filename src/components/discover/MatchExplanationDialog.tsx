@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, MapPin, Briefcase, Heart, Loader2, Lightbulb } from "lucide-react";
+import { Sparkles, MapPin, Briefcase, Heart, Lightbulb } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -169,7 +170,7 @@ export const MatchExplanationDialog = ({
             {loading ? (
               <div className="flex items-center justify-center py-6">
                 <div className="flex flex-col items-center gap-2">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <KretopiaSpinner className="h-6 w-6 text-primary" />
                   <p className="text-xs text-muted-foreground">AI analyzing compatibility...</p>
                 </div>
               </div>

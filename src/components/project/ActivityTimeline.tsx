@@ -15,6 +15,7 @@ import {
   Trash2,
   Archive
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface ActivityEvent {
@@ -249,9 +250,7 @@ export function ActivityTimeline({ projectId }: ActivityTimelineProps) {
       <CardContent className="p-0">
         <ScrollArea className="h-[400px]">
           {loading ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              Loading activities...
-            </div>
+            <KretopiaLoader size="sm" label="Loading activities..." className="p-4" />
           ) : activities.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <Clock className="h-12 w-12 mx-auto mb-2 opacity-30" />

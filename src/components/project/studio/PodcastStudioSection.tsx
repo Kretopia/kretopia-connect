@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Mic, Plus, Sparkles, Calendar, ChevronDown, ChevronUp, Loader2, Users } from "lucide-react";
+import { Mic, Plus, Sparkles, Calendar, ChevronDown, ChevronUp, Users } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -151,7 +152,7 @@ export function PodcastStudioSection({ project, currentUserId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-xs text-muted-foreground py-6 text-center">Loading episodes…</div>
+        <KretopiaLoader size="sm" label="Loading episodes…" className="py-6" />
       ) : episodes.length === 0 ? (
         <button
           type="button"
@@ -197,7 +198,7 @@ export function PodcastStudioSection({ project, currentUserId }: Props) {
                         disabled={genBusy === ep.id}
                         className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-primary hover:underline disabled:opacity-50"
                       >
-                        {genBusy === ep.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        {genBusy === ep.id ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                         {ep.ai_questions ? "Regenerate" : "Draft"} questions
                       </button>
                       {ep.ai_questions && ep.ai_questions.length > 0 && (
@@ -262,7 +263,7 @@ export function PodcastStudioSection({ project, currentUserId }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenCompose(false)}>Cancel</Button>
             <Button onClick={create} disabled={!title.trim() || creating}>
-              {creating && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Add episode
+              {creating && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />} Add episode
             </Button>
           </DialogFooter>
         </DialogContent>

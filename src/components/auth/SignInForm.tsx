@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,7 +164,7 @@ export const SignInForm = ({
             autoComplete="email"
           />
           {lookupLoading && (
-            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           )}
         </div>
         {emailError && (
@@ -231,7 +232,7 @@ export const SignInForm = ({
 
       {!oauthOnlyProvider && (
         <Button type="submit" variant="hero" size="lg" className="w-full h-12" disabled={loading}>
-          {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</> : "Sign in"}
+          {loading ? <><KretopiaSpinner className="mr-2 h-4 w-4" />Signing in...</> : "Sign in"}
         </Button>
       )}
 
@@ -257,7 +258,7 @@ export const SignInForm = ({
             onClick={() => handleOAuthClick("google", onGoogleSignIn)}
             disabled={googleLoading}
           >
-            {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Chrome className="h-4 w-4" />}
+            {googleLoading ? <KretopiaSpinner className="h-4 w-4" /> : <Chrome className="h-4 w-4" />}
             Google
             {lastMethod === "google" && <LastUsedPill />}
           </Button>
@@ -279,7 +280,7 @@ export const SignInForm = ({
             disabled={magicLoading}
             className="w-full text-center text-xs text-muted-foreground hover:text-primary underline-offset-4 hover:underline pt-1 disabled:opacity-50 flex items-center justify-center gap-1.5"
           >
-            {magicLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {magicLoading ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
             Can't remember your password? Email me a sign-in link
           </button>
         )

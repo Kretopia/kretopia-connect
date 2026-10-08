@@ -11,7 +11,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
-import { Camera, Upload, Loader2, CheckCircle2, ArrowRight, Mail, X, Sparkles, Search, Globe, Link2, Edit3, AlertCircle, IdCard } from "lucide-react";
+import { Camera, Upload, CheckCircle2, ArrowRight, Mail, X, Sparkles, Search, Globe, Link2, Edit3, AlertCircle, IdCard } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Textarea } from "@/components/ui/textarea";
 import { SEO } from "@/components/SEO";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
@@ -905,7 +906,7 @@ export default function Onboarding() {
               >
                 {searching ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <KretopiaSpinner className="h-5 w-5" />
                     <span>Searching the web for your profile...</span>
                   </>
                 ) : (
@@ -1044,7 +1045,7 @@ export default function Onboarding() {
                       className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md hover:opacity-90 transition-opacity"
                       aria-label={avatarUrl ? "Change photo" : "Add a profile photo"}
                     >
-                      {uploadingAvatar ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+                      {uploadingAvatar ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Camera className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                   <div className="flex-1 space-y-2">
@@ -1141,7 +1142,7 @@ export default function Onboarding() {
                       }}
                       className="text-xs font-medium inline-flex items-center gap-1 text-white hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      {generatingBio ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                      {generatingBio ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                       {bio ? "Rewrite for me" : "Suggest a bio"}
                     </button>
                   </div>
@@ -1210,7 +1211,7 @@ export default function Onboarding() {
                 {/* Launch profile (Step 3) */}
                 <Button onClick={handleSaveProfile} disabled={loading} className="w-full h-12 text-base gap-2" size="lg">
                   {loading ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" /> Launching your {BRAND.passport}...</>
+                    <><KretopiaSpinner className="h-5 w-5" /> Launching your {BRAND.passport}...</>
                   ) : (
                     <>Launch my {BRAND.passport} <ArrowRight className="h-4 w-4" /></>
                   )}
@@ -1247,7 +1248,7 @@ export default function Onboarding() {
               </div>
               <div className="flex flex-col gap-2">
                 <Button variant="outline" onClick={handleResendVerification} disabled={resendingEmail} className="gap-2">
-                  {resendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {resendingEmail ? <KretopiaSpinner className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                   Resend Email
                 </Button>
                 <Button 

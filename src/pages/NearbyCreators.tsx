@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, MapPin, Navigation, Users, Plus, Sparkles, List, Map, Search, SlidersHorizontal, RefreshCw, Share2 } from "lucide-react";
+import { MapPin, Navigation, Users, Plus, Sparkles, List, Map, Search, SlidersHorizontal, RefreshCw, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { InviteDialog } from "@/components/InviteDialog";
 import { UnifiedNearbyMap, type MapItemType } from "@/components/nearby/UnifiedNearbyMap";
@@ -239,14 +240,14 @@ const NearbyCreators = () => {
                         <Switch checked={locationVisible} onCheckedChange={toggleVisibility} />
                       </div>
                       <Button variant="outline" size="sm" className="w-full text-xs" onClick={fetchNearbyData} disabled={loading}>
-                        <RefreshCw className={`h-3 w-3 mr-1.5 ${loading ? 'animate-spin' : ''}`} />Refresh
+                        {loading ? <KretopiaSpinner className="h-3 w-3 mr-1.5" /> : <RefreshCw className="h-3 w-3 mr-1.5" />}Refresh
                       </Button>
                     </PopoverContent>
                   </Popover>
                 </>
               )}
               <Button onClick={detectLocation} disabled={locating} variant="gradient" size="sm" className="h-8 text-xs px-3">
-                {locating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+                {locating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Navigation className="h-3.5 w-3.5" />}
                 <span className="ml-1.5 hidden xs:inline">{userLocation ? 'Update' : 'Locate'}</span>
               </Button>
             </div>
@@ -302,7 +303,7 @@ const NearbyCreators = () => {
                   Find creators, events, studios, and creative spots near you. Enable location to get started.
                 </p>
                 <Button onClick={detectLocation} disabled={locating} variant="gradient" size="lg">
-                  {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Navigation className="h-4 w-4 mr-2" />}
+                  {locating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Navigation className="h-4 w-4 mr-2" />}
                   Enable Location
                 </Button>
               </CardContent>
@@ -460,7 +461,7 @@ const NearbyCreators = () => {
                 {/* Mobile: scrollable cards below map */}
                 <div className="lg:hidden">
                   {loading ? (
-                    <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+                    <div className="flex justify-center py-8"><KretopiaSpinner className="h-6 w-6 text-primary" /></div>
                   ) : totalResults === 0 ? (
                     <Card>
                       <CardContent className="py-8 text-center">
@@ -490,7 +491,7 @@ const NearbyCreators = () => {
               /* List view */
               <div className="space-y-3">
                 {loading ? (
-                  <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+                  <div className="flex justify-center py-12"><KretopiaSpinner className="h-8 w-8 text-primary" /></div>
                 ) : atlasFilter === 'sessions' ? (
                   <Events embedded />
                 ) : totalResults === 0 ? (

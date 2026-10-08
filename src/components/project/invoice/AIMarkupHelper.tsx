@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sparkles, Calculator, TrendingUp, Loader2, ArrowRight, Percent } from "lucide-react";
+import { Sparkles, Calculator, TrendingUp, ArrowRight, Percent } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -201,7 +202,7 @@ export function AIMarkupHelper({ lineItems, currency, onApplyMarkup }: AIMarkupH
               disabled={loading}
             >
               {loading ? (
-                <><Loader2 className="h-3 w-3 animate-spin" /> Analyzing rates...</>
+                <><KretopiaSpinner className="h-3 w-3" /> Analyzing rates...</>
               ) : (
                 <><Sparkles className="h-3 w-3" /> Get AI Pricing Suggestion</>
               )}

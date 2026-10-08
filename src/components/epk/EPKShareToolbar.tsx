@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Share2, Copy, Check, MessageCircle, Send, FileDown, Loader2, Crown } from "lucide-react";
+import { Share2, Copy, Check, MessageCircle, Send, FileDown, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { hasProAccess } from "@/lib/subscriptionConfig";
 import { useNavigate } from "react-router-dom";
@@ -114,7 +115,7 @@ export const EPKShareToolbar = ({ profileName, profileRole, userId, epkPdfData }
             disabled={generating}
           >
             {generating ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <KretopiaSpinner className="h-3.5 w-3.5" />
             ) : (
               <FileDown className="h-3.5 w-3.5" />
             )}

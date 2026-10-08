@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Shield, ExternalLink, ArrowRightLeft, X, Clock } from "lucide-react";
+import { Shield, ExternalLink, ArrowRightLeft, X, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -171,7 +172,7 @@ export default function AdminDisputes() {
           <p className="text-sm text-muted-foreground">Review credit ownership disputes.</p>
         </div>
         <Button variant="outline" size="sm" onClick={runAutoResolve} disabled={running}>
-          {running ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
+          {running ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Clock className="h-4 w-4 mr-2" />}
           Run auto-resolve sweep
         </Button>
       </div>

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
-import { Briefcase, CheckCircle2, UserPlus, ArrowRight, Loader2 } from "lucide-react";
+import { Briefcase, CheckCircle2, UserPlus, ArrowRight } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 const ClaimGig = () => {
   const { token } = useParams<{ token: string }>();
@@ -99,7 +100,7 @@ const ClaimGig = () => {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Briefcase className="mx-auto mb-4 h-16 w-16 animate-pulse text-primary" />
-          <p className="text-muted-foreground">Loading gig...</p>
+          <KretopiaLoader size="sm" label="Loading gig..." />
         </div>
       </div>
     );
@@ -175,7 +176,7 @@ const ClaimGig = () => {
           <div className="space-y-3">
             <Button size="lg" className="w-full gap-2" onClick={handleClaim} disabled={claiming}>
               {claiming ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <KretopiaSpinner className="h-5 w-5" />
               ) : user ? (
                 <CheckCircle2 className="h-5 w-5" />
               ) : (

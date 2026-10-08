@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search,
-  Loader2,
   Link2,
   Check,
   Video,
@@ -14,6 +13,7 @@ import {
   Globe,
   MessageCircle,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -225,7 +225,7 @@ export const StartCallSheet = ({
             className="flex-1 h-11 rounded-full gap-2 justify-center"
           >
             {generatingLink ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4" />
             ) : (
               <MessageCircle className="h-4 w-4" />
             )}
@@ -283,7 +283,7 @@ export const StartCallSheet = ({
             </div>
           ) : searching ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center px-8 text-muted-foreground gap-2 py-12">
@@ -352,7 +352,7 @@ export const StartCallSheet = ({
             className="w-full h-12 rounded-full gap-2 text-base font-semibold"
           >
             {starting ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4" />
             ) : (
               <Video className="h-4 w-4" />
             )}

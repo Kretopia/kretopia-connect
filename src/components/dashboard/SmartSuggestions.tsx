@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, TrendingUp, Users, Briefcase, ArrowRight, Loader2 } from "lucide-react";
+import { Sparkles, TrendingUp, Users, Briefcase, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
@@ -229,7 +230,7 @@ Return ONLY valid JSON array:
         >
           {loading ? (
             <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
               Refreshing...
             </>
           ) : (

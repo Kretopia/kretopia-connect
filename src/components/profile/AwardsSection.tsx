@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Award } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AchievementCard } from "./AchievementCard";
@@ -115,7 +116,7 @@ export const AwardsSection = ({ userId, isOwnProfile, onRefresh }: AwardsSection
   };
 
   if (loading) {
-    return <div className="text-center py-8 text-muted-foreground">Loading awards...</div>;
+    return <KretopiaLoader size="sm" label="Loading awards..." className="py-8" />;
   }
 
   if (awards.length === 0 && !isOwnProfile) {

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Landmark, CheckCircle2, Loader2 } from "lucide-react";
+import { Landmark, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface Beneficiary {
@@ -75,7 +76,7 @@ export function InvoiceSepaBeneficiaryCard() {
     return (
       <Card className="rounded-2xl border-border/60 shadow-none">
         <CardContent className="p-6 flex justify-center">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -122,7 +123,7 @@ export function InvoiceSepaBeneficiaryCard() {
             </div>
             <div className="flex gap-2">
               <Button onClick={handleSave} disabled={saving || !name.trim() || !iban.trim()} size="sm">
-                {saving && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                {saving && <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" />}
                 Save
               </Button>
               {existing && (

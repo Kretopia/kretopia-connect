@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
-  MapPin, Calendar, Clock, Users, Check, Loader2, 
+  MapPin, Calendar, Clock, Users, Check, 
   MessageCircle, Share2, Ticket, X, ExternalLink, Pencil, MoreVertical, Crown, Sparkles, Ban, CheckCircle
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -292,7 +293,7 @@ export const SessionDetailDialog = ({
                   size="sm"
                   className="flex-1"
                 >
-                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : participation ? (
+                  {loading ? <KretopiaSpinner className="h-4 w-4" /> : participation ? (
                     <><Check className="h-4 w-4 mr-1.5" /> Going</>
                   ) : isTicketed ? (
                     <>{session.external_ticket_url ? <ExternalLink className="h-4 w-4 mr-1.5" /> : <Ticket className="h-4 w-4 mr-1.5" />} Get Ticket — {currencySymbol}{session.ticket_price}</>

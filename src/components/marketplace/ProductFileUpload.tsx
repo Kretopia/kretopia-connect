@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, X, Loader2, FileIcon } from "lucide-react";
+import { Upload, X, FileIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -136,7 +137,7 @@ const ProductFileUpload = ({ userId, files, onFilesChange, maxFiles = 5 }: Produ
           className="w-full p-4 rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center gap-1 transition-colors"
         >
           {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           ) : (
             <>
               <Upload className="h-5 w-5 text-muted-foreground" />

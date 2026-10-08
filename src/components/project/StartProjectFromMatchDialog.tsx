@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Sparkles, Rocket, Calendar, DollarSign, Crown } from "lucide-react";
+import { Sparkles, Rocket, Calendar, DollarSign, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { trackEvent, EventCategory } from "@/lib/analytics";
 import { z } from "zod";
 import { useProjectLimit } from "@/hooks/useProjectLimit";
@@ -478,7 +479,7 @@ export function StartProjectFromMatchDialog({
             >
               {creating ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <KretopiaSpinner className="h-5 w-5" />
                   Creating...
                 </>
               ) : (

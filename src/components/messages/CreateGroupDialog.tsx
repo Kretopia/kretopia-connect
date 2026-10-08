@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users, Search } from "lucide-react";
+import { Users, Search } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 interface Connection {
   id: string;
@@ -163,7 +164,7 @@ export const CreateGroupDialog = ({ open, onOpenChange, currentUserId, onCreated
             <div className="rounded-md border border-border overflow-hidden">
               <ScrollArea className="h-[40vh] sm:h-[260px]">
                 {loading ? (
-                  <div className="p-6 text-center text-sm text-muted-foreground">Loading connections…</div>
+                  <KretopiaLoader size="sm" label="Loading connections…" className="p-6" />
                 ) : connections.length === 0 ? (
                   <div className="p-6 text-center text-sm text-muted-foreground">
                     No connections yet. Match with creators in Circle first.
@@ -211,7 +212,7 @@ export const CreateGroupDialog = ({ open, onOpenChange, currentUserId, onCreated
             disabled={submitting || !title.trim() || selected.size === 0}
             className="flex-1 sm:flex-initial"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             Create Group
           </Button>
         </DialogFooter>

@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { awardCredits } from "@/lib/creditSystem";
 import { NFCReader } from "@/lib/nfcUtils";
 import { Smartphone, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface NFCScannerProps {
   onClose: () => void;
@@ -218,7 +219,7 @@ export const NFCScanner = ({ onClose, onSuccess }: NFCScannerProps) => {
           </div>
         ) : verifying ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+            <KretopiaSpinner className="h-12 w-12 mb-4" />
             <p className="text-sm text-muted-foreground">Verifying location...</p>
           </div>
         ) : location ? (

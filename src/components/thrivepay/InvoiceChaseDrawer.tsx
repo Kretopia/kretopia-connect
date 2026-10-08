@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, Send, CheckCircle2 } from "lucide-react";
+import { Sparkles, Send, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -128,7 +129,7 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
 
         {phase === "drafting" && (
           <div className="py-10 flex flex-col items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <KretopiaSpinner className="h-5 w-5" />
             Drafting a reminder…
           </div>
         )}
@@ -199,7 +200,7 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
           <SheetFooter className="flex-row gap-2 sm:justify-end">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={handleSend} disabled={sending || !subject.trim() || !body.trim()} className="gap-1.5">
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
               Send reminder
             </Button>
           </SheetFooter>

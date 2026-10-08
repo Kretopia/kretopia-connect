@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Send, Search, AlertCircle } from "lucide-react";
+import { Send, Search, AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -260,7 +261,7 @@ export function WalletTransferDialog({ open, onOpenChange, walletBalance, onTran
             disabled={loading || !selectedRecipient || !amount || Number(amount) <= 0}
           >
             {loading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</>
+              <><KretopiaSpinner className="mr-2 h-4 w-4" />Sending...</>
             ) : (
               <><Send className="mr-2 h-4 w-4" />Send {amount ? `$${Number(amount).toFixed(2)}` : ""}</>
             )}

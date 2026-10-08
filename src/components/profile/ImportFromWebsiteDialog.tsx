@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Globe, CheckCircle2, ExternalLink, ImageIcon } from "lucide-react";
+import { Globe, CheckCircle2, ExternalLink, ImageIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -137,7 +138,7 @@ export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: Import
                 disabled={isLoading}
               />
               <Button onClick={handleAnalyze} disabled={isLoading || !url}>
-                {isLoading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Analyzing</> : "Analyze"}
+                {isLoading ? <><KretopiaSpinner className="h-4 w-4 mr-2" />Analyzing</> : "Analyze"}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">

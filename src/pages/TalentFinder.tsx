@@ -22,6 +22,7 @@ import {
   Eye, UserPlus, MessageSquare, Zap, Send,
   FileText, CheckCircle2, RefreshCw, Crown, Briefcase
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 const ACCENT = "hsl(var(--energy))";
@@ -206,7 +207,7 @@ export default function TalentFinder() {
                 >
                   {loading ? (
                     <>
-                      <span className="h-4 w-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                       Finding top matches...
                     </>
                   ) : (

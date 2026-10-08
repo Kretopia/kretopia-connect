@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Wand2, Target, Loader2 } from "lucide-react";
+import { Sparkles, Wand2, Target } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface AIProfileEnhancerProps {
   currentBio?: string;
@@ -186,7 +187,7 @@ Return as JSON array of strings only: ["skill1", "skill2", ...]`
             >
               {generating ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                   Generating...
                 </>
               ) : (
@@ -211,7 +212,7 @@ Return as JSON array of strings only: ["skill1", "skill2", ...]`
             >
               {generating ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                   Generating...
                 </>
               ) : (

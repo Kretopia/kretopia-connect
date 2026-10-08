@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DripAnalyticsPanel } from "./DripAnalyticsPanel";
 import {
-  Upload, Send, Loader2, FolderPlus, Play, Pause, BarChart3, Mail, Users, CheckCircle, XCircle, Clock
+  Upload, Send, FolderPlus, Play, Pause, BarChart3, Mail, Users, CheckCircle, XCircle, Clock
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Segment {
   id: string;
@@ -247,7 +248,7 @@ export const DripCampaignTab = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-8 w-8 text-primary" /></div>;
   }
 
   const totalContacts = segments.reduce((sum, s) => sum + s.contact_count, 0);
@@ -291,7 +292,7 @@ export const DripCampaignTab = () => {
         <Card className="border-green-500/30 bg-green-500/5">
           <CardContent className="pt-4">
             <Button onClick={processBatch} disabled={processing} className="w-full bg-green-600 hover:bg-green-700">
-              {processing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Sending Batch...</> : <><Play className="h-4 w-4 mr-2" />Send Next Batch (up to 95 emails)</>}
+              {processing ? <><KretopiaSpinner className="h-4 w-4 mr-2" />Sending Batch...</> : <><Play className="h-4 w-4 mr-2" />Send Next Batch (up to 95 emails)</>}
             </Button>
             <p className="text-xs text-muted-foreground mt-2 text-center">Run this once per day to send the next batch. Can also be automated via cron.</p>
           </CardContent>
@@ -308,7 +309,7 @@ export const DripCampaignTab = () => {
           <div className="flex gap-2">
             <Input placeholder="Segment name (e.g. Bali Creatives)" value={newSegmentName} onChange={e => setNewSegmentName(e.target.value)} />
             <Button onClick={createSegment} disabled={creatingSegment || !newSegmentName.trim()} size="sm">
-              {creatingSegment ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
+              {creatingSegment ? <KretopiaSpinner className="h-4 w-4" /> : <FolderPlus className="h-4 w-4" />}
             </Button>
           </div>
           <Input placeholder="Description (optional)" value={newSegmentDesc} onChange={e => setNewSegmentDesc(e.target.value)} />
@@ -347,7 +348,7 @@ export const DripCampaignTab = () => {
 
           {uploading && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Importing contacts...
+              <KretopiaSpinner className="h-4 w-4" /> Importing contacts...
             </div>
           )}
 
@@ -405,7 +406,7 @@ export const DripCampaignTab = () => {
           </div>
 
           <Button onClick={createCampaign} disabled={creatingCampaign} className="w-full">
-            {creatingCampaign ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : <><Send className="h-4 w-4 mr-2" />Launch Campaign</>}
+            {creatingCampaign ? <><KretopiaSpinner className="h-4 w-4 mr-2" />Creating...</> : <><Send className="h-4 w-4 mr-2" />Launch Campaign</>}
           </Button>
         </CardContent>
       </Card>

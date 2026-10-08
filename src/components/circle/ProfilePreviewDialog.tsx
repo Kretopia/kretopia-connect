@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MapPin, Briefcase, Award, Users } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -113,7 +114,7 @@ export const ProfilePreviewDialog = ({
         <ScrollArea className="h-[70vh] pr-4">
           {showLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-pulse text-muted-foreground">Loading profile...</div>
+              <KretopiaLoader size="sm" label="Loading profile..." />
             </div>
           ) : displayProfile ? (
             <div className="space-y-6">

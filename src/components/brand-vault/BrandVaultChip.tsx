@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Palette, Plus, Pin, PinOff, Pencil, Loader2 } from "lucide-react";
+import { Palette, Plus, Pin, PinOff, Pencil } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -193,12 +194,12 @@ export function BrandVaultChip({ projectId }: Props) {
         <div className="flex flex-col gap-1.5">
           {isPinned ? (
             <Button size="sm" variant="outline" onClick={unpinFromStudio} disabled={busy} className="justify-start gap-1.5 h-8 text-xs">
-              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <PinOff className="h-3 w-3" />}
+              {busy ? <KretopiaSpinner className="h-3 w-3" /> : <PinOff className="h-3 w-3" />}
               Unpin from this Studio
             </Button>
           ) : (
             <Button size="sm" variant="outline" onClick={pinToStudio} disabled={busy} className="justify-start gap-1.5 h-8 text-xs">
-              {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Pin className="h-3 w-3" />}
+              {busy ? <KretopiaSpinner className="h-3 w-3" /> : <Pin className="h-3 w-3" />}
               Pin a Studio version
             </Button>
           )}

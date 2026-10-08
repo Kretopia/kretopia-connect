@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Briefcase, Loader2, Upload, X, ArrowRightLeft, Handshake, Zap, Target, GraduationCap, UtensilsCrossed, Hotel, Gift, Instagram, Youtube, Music, Shield, Building2, UserSearch, ArrowRight } from "lucide-react";
+import { Briefcase, Upload, X, ArrowRightLeft, Handshake, Zap, Target, GraduationCap, UtensilsCrossed, Hotel, Gift, Instagram, Youtube, Music, Shield, Building2, UserSearch, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Switch } from "@/components/ui/switch";
 import { AIJobDescriptionGenerator } from "@/components/opportunity/AIJobDescriptionGenerator";
 import { useAuth } from "@/hooks/useAuth";
@@ -803,7 +804,7 @@ export const PostOpportunityDialog = ({
 
               <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Posting...</>
+                  <><KretopiaSpinner className="mr-2 h-4 w-4" /> Posting...</>
                 ) : (
                   isBarter ? "Post Barter Gig" : isPaid ? "Post Paid Gig" : isCollab ? "Post Collaboration" : "Post Gig"
                 )}

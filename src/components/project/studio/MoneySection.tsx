@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Wallet, Loader2, FileText, CheckCircle2, Circle } from "lucide-react";
+import { Wallet, FileText, CheckCircle2, Circle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,7 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
             </p>
             <p className="font-semibold flex items-center gap-1 mt-0.5">
               {loading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <KretopiaSpinner className="h-3 w-3" />
               ) : invoice ? (
                 <>
                   <CheckCircle2 className="h-3 w-3 text-primary" /> Sent
@@ -162,7 +163,7 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
               )}
             >
               {loading ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
+                <KretopiaSpinner className="h-3 w-3" />
               ) : isPaid ? (
                 <>
                   <CheckCircle2 className="h-3 w-3" /> Paid
@@ -193,7 +194,7 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
                   disabled={marking}
                   className="gap-1.5 bg-[hsl(var(--energy))] text-[hsl(var(--background))] hover:bg-[hsl(var(--energy)/0.9)] shadow-[0_0_12px_hsl(var(--energy)/0.4)]"
                 >
-                  {marking ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {marking ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                   Mark Paid
                 </Button>
               </div>

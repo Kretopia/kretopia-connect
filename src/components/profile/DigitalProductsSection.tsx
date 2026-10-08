@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Package, Download, Star } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -98,7 +99,7 @@ export const DigitalProductsSection = ({ userId, isOwner }: DigitalProductsSecti
           <Package className="h-5 w-5" />
           <h3 className="text-lg font-semibold">Products & Services</h3>
         </div>
-        <p className="text-sm text-muted-foreground">Loading products...</p>
+        <KretopiaLoader size="sm" label="Loading products..." />
       </Card>
     );
   }

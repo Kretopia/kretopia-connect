@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
+import { CheckCircle2, AlertCircle, Lock, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 
 interface PayLinkData {
@@ -100,7 +101,7 @@ export default function PayLink() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }
@@ -193,7 +194,7 @@ export default function PayLink() {
           {error && <p className="text-sm text-destructive text-center">{error}</p>}
 
           <Button onClick={handlePay} disabled={submitting} className="w-full h-12 text-base">
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+            {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
             Pay securely
           </Button>
 

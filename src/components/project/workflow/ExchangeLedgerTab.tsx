@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowRightLeft, Save, Check } from "lucide-react";
+import { ArrowRightLeft, Save, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props { projectId: string; currentUserId: string; }
@@ -66,7 +67,7 @@ export function ExchangeLedgerTab({ projectId, currentUserId }: Props) {
     else { toast({ title: "Exchange terms saved" }); void load(); }
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
@@ -127,7 +128,7 @@ export function ExchangeLedgerTab({ projectId, currentUserId }: Props) {
           </button>
         </div>
         <Button onClick={save} disabled={saving} className="gap-2">
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {saving ? <KretopiaSpinner className="h-4 w-4" /> : <Save className="h-4 w-4" />}
           Save terms
         </Button>
       </div>

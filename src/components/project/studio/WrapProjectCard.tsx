@@ -12,7 +12,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, Sparkles, Loader2, Share2 } from "lucide-react";
+import { CheckCircle2, Sparkles, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PublishRecapDialog } from "./PublishRecapDialog";
 
 interface WrapProjectCardProps {
@@ -229,7 +230,7 @@ export function WrapProjectCard({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleWrap} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {submitting && <KretopiaSpinner className="h-4 w-4 mr-2" />}
               Wrap it up
             </AlertDialogAction>
           </AlertDialogFooter>

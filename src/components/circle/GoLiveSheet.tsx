@@ -9,7 +9,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mic, Video, Users, User, Theater, Loader2 } from "lucide-react";
+import { Mic, Video, Users, User, Theater } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import type { LucideIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -232,7 +233,7 @@ export function GoLiveSheet({ open, onOpenChange, onCreated }: Props) {
             variant="lime"
             className="w-full rounded-full"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : backstage ? "Enter backstage" : "Go live now"}
+            {busy ? <KretopiaSpinner className="h-4 w-4" /> : backstage ? "Enter backstage" : "Go live now"}
           </Button>
         </div>
       </SheetContent>

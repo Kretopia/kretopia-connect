@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Loader2, FolderKanban, Plus, Video } from "lucide-react";
+import { FolderKanban, Plus, Video } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface Props {
@@ -53,7 +54,7 @@ export function CircleStudiosTab({ circleId, isMember }: Props) {
   }, [circleId]);
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-5 w-5 text-muted-foreground" /></div>;
   }
 
   if (projects.length === 0) {

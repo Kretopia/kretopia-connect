@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Loader2, ImagePlus, Sparkles, Upload, Plus, Type, Image, Quote, Trash2, GripVertical, MoveUp, MoveDown, Eye, Wand2, Wand, X, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ImagePlus, Sparkles, Upload, Plus, Type, Image, Quote, Trash2, GripVertical, MoveUp, MoveDown, Eye, Wand2, Wand, X, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
@@ -315,7 +316,7 @@ export const MagazineEditor = ({ onClose, onPublished, articleId }: Props) => {
     <div className="space-y-4 animate-in fade-in duration-200">
       {loadingArticle && (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
         </div>
       )}
       {!loadingArticle && (
@@ -328,7 +329,7 @@ export const MagazineEditor = ({ onClose, onPublished, articleId }: Props) => {
         </Button>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handlePolish} disabled={polishing}>
-            {polishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5 text-primary" />}
+            {polishing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5 text-primary" />}
             <span className="hidden sm:inline">Polish</span>
           </Button>
           <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => setPreview(true)}>
@@ -336,7 +337,7 @@ export const MagazineEditor = ({ onClose, onPublished, articleId }: Props) => {
             <span className="hidden sm:inline">Preview</span>
           </Button>
           <Button onClick={handlePublish} disabled={publishing || !title.trim()} size="sm" className="gap-1.5">
-            {publishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {publishing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
             {isEditing ? "Save" : isEditorOrAdmin ? "Publish" : "Submit for review"}
           </Button>
         </div>
@@ -446,7 +447,7 @@ export const MagazineEditor = ({ onClose, onPublished, articleId }: Props) => {
         onClick={handleAIGenerate}
         disabled={generating || !title.trim()}
       >
-        {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
+        {generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5 text-primary" />}
         {generating ? "Generating article..." : "AI Generate from title only"}
       </Button>
 

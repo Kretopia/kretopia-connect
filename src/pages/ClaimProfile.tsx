@@ -17,13 +17,13 @@ import {
   Share2, 
   Shield, 
   CheckCircle,
-  Loader2,
   UserCheck,
   AlertTriangle,
   ExternalLink,
   Sparkles,
   ArrowRight
 } from 'lucide-react';
+import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 import { SEO } from '@/components/SEO';
 
 interface UnclaimedProfile {
@@ -293,7 +293,7 @@ export default function ClaimProfile() {
                   disabled={submitting}
                 >
                   {submitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                   ) : (
                     <UserCheck className="h-4 w-4 mr-2" />
                   )}
@@ -416,7 +416,7 @@ export default function ClaimProfile() {
                 disabled={submitting}
               >
                 {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                 ) : (
                   <UserCheck className="h-4 w-4 mr-2" />
                 )}

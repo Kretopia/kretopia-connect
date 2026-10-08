@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Loader2, Users, ArrowRight } from "lucide-react";
+import { Users, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,7 @@ const JoinGuestStudio = () => {
 
         {status === "joining" && (
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="h-4 w-4" />
             Hold tight, setting up your guest seat
           </div>
         )}

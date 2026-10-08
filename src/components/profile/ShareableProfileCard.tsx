@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Download, Share2, Loader2, CheckCircle, Shield, Award, Copy, Check } from "lucide-react";
+import { Download, Share2, CheckCircle, Shield, Award, Copy, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -340,7 +341,7 @@ export const ShareableProfileCard = ({
             variant="outline"
           >
             {isGenerating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
             ) : (
               <Download className="h-4 w-4 mr-2" />
             )}
@@ -352,7 +353,7 @@ export const ShareableProfileCard = ({
             className="flex-1"
           >
             {isGenerating ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
             ) : (
               <Share2 className="h-4 w-4 mr-2" />
             )}

@@ -3,27 +3,29 @@
  *
  * Use as:
  *   <BrandDots />                                  // static brand mark
- *   <BrandDots animated />                         // rhythmic loading pulse
  *   <BrandLoader label="Loading your Passport…" /> // full-bleed loading state
  *
- * Reserve `animated` for loading / pending states across the platform.
- * Do NOT use it as a permanent decoration inside Studios or Soundstages —
- * those rooms have their own presence + typing indicators.
+ * The dots are a static brand mark only. Every loading / pending state in
+ * the product uses the Kretopia loader (the K-mark in a rotating brand ring,
+ * see KretopiaLoader.tsx), so `animated` and BrandLoader both render that
+ * instead of pulsing dots.
  */
 
 import { cn } from "@/lib/utils";
+import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Size = "xs" | "sm" | "md" | "lg";
 
-const SIZE_MAP: Record<Size, { dot: string; gap: string }> = {
-  xs: { dot: "h-1.5 w-1.5", gap: "gap-1" },
-  sm: { dot: "h-2 w-2", gap: "gap-1.5" },
-  md: { dot: "h-2.5 w-2.5", gap: "gap-2" },
-  lg: { dot: "h-3.5 w-3.5", gap: "gap-2.5" },
+const SIZE_MAP: Record<Size, { dot: string; gap: string; spinner: string }> = {
+  xs: { dot: "h-1.5 w-1.5", gap: "gap-1", spinner: "h-4 w-4" },
+  sm: { dot: "h-2 w-2", gap: "gap-1.5", spinner: "h-5 w-5" },
+  md: { dot: "h-2.5 w-2.5", gap: "gap-2", spinner: "h-6 w-6" },
+  lg: { dot: "h-3.5 w-3.5", gap: "gap-2.5", spinner: "h-8 w-8" },
 };
 
 interface BrandDotsProps {
   size?: Size;
+  /** Loading state: renders the Kretopia loader spinner instead of the dots. */
   animated?: boolean;
   className?: string;
   ariaLabel?: string;
@@ -35,28 +37,18 @@ export const BrandDots = ({
   className,
   ariaLabel,
 }: BrandDotsProps) => {
-  const { dot, gap } = SIZE_MAP[size];
+  const { dot, gap, spinner } = SIZE_MAP[size];
+
+  if (animated) {
+    return <KretopiaSpinner className={cn(spinner, className)} aria-label={ariaLabel ?? "Loading"} />;
+  }
 
   return (
-    <div
-      className={cn("inline-flex items-center", gap, className)}
-      role={animated ? "status" : undefined}
-      aria-label={animated ? ariaLabel ?? "Loading" : undefined}
-      aria-hidden={animated ? undefined : true}
-    >
+    <div className={cn("inline-flex items-center", gap, className)} aria-hidden>
       {/* Kretopia signature — Violet · Magenta · Amber (echoes the K-mark gradient) */}
-      <span
-        className={cn(dot, "rounded-full bg-[#9413D2]", animated && "animate-brand-dot")}
-        style={animated ? { animationDelay: "0ms" } : undefined}
-      />
-      <span
-        className={cn(dot, "rounded-full bg-[#E0179C]", animated && "animate-brand-dot")}
-        style={animated ? { animationDelay: "150ms" } : undefined}
-      />
-      <span
-        className={cn(dot, "rounded-full bg-[#FEA61A]", animated && "animate-brand-dot")}
-        style={animated ? { animationDelay: "300ms" } : undefined}
-      />
+      <span className={cn(dot, "rounded-full bg-[#9413D2]")} />
+      <span className={cn(dot, "rounded-full bg-[#E0179C]")} />
+      <span className={cn(dot, "rounded-full bg-[#FEA61A]")} />
     </div>
   );
 };
@@ -68,9 +60,11 @@ interface BrandLoaderProps {
   className?: string;
 }
 
+const LOADER_SIZE = { xs: "sm", sm: "sm", md: "lg", lg: "lg" } as const;
+
 /**
- * BrandLoader — drop-in replacement for spinner-based loading fallbacks.
- * Renders the animated BrandDots above an optional label.
+ * BrandLoader — the loading fallback used by routes and pages. Renders the
+ * Kretopia loader (K-mark in the brand ring) with an optional label.
  */
 export const BrandLoader = ({
   label,
@@ -78,16 +72,12 @@ export const BrandLoader = ({
   fullscreen = true,
   className,
 }: BrandLoaderProps) => (
-  <div
-    className={cn(
-      "flex flex-col items-center justify-center gap-3",
-      fullscreen ? "min-h-screen w-full" : "py-12",
-      className,
-    )}
-  >
-    <BrandDots animated size={size} ariaLabel={label ?? "Loading"} />
-    {label && <p className="text-xs text-muted-foreground font-medium">{label}</p>}
-  </div>
+  <KretopiaLoader
+    size={LOADER_SIZE[size]}
+    label={label}
+    fullscreen={fullscreen}
+    className={cn(!fullscreen && "py-12", className)}
+  />
 );
 
 export default BrandDots;

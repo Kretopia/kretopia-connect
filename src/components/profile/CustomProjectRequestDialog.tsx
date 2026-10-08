@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Send } from "lucide-react";
+import { Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -155,7 +156,7 @@ export const CustomProjectRequestDialog = ({
           </div>
 
           <Button onClick={handleSubmit} disabled={saving} className="w-full gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {saving ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             Send Request
           </Button>
         </div>

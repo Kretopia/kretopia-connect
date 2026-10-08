@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, X, Copy, Megaphone, ExternalLink } from "lucide-react";
+import { Check, X, Copy, Megaphone, ExternalLink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Application {
   id: string;
@@ -167,7 +168,7 @@ export function AmbassadorsTab() {
 
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No {tab} applications.</p>
@@ -226,7 +227,7 @@ export function AmbassadorsTab() {
                             onClick={() => decide(app, "approved")}
                           >
                             {busyId === app.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <KretopiaSpinner className="h-4 w-4" />
                             ) : (
                               <Check className="h-4 w-4 mr-1" />
                             )}

@@ -5,7 +5,8 @@ import {
   SheetTitle,
   SheetDescription,
 } from "@/components/ui/sheet";
-import { Link as LinkIcon, Video, Loader2 } from "lucide-react";
+import { Link as LinkIcon, Video } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -77,7 +78,7 @@ export const CallStartChooser = ({
           >
             <span className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
               {starting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <KretopiaSpinner className="h-5 w-5" />
               ) : (
                 <Video className="h-5 w-5" />
               )}

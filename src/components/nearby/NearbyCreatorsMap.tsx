@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface NearbyCreator {
   user_id: string;
@@ -182,7 +182,7 @@ export const NearbyCreatorsMap = ({
       
       {loading && (
         <div className="absolute inset-0 bg-background/50 backdrop-blur-sm flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <KretopiaSpinner className="h-8 w-8 text-primary" />
         </div>
       )}
 

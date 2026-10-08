@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ScanLine, Loader2, Upload } from "lucide-react";
+import { ScanLine, Upload } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { extractInvokeError } from "@/lib/extractInvokeError";
@@ -194,7 +195,7 @@ export const ScanFlyerDialog = ({ open, onOpenChange, onExtracted }: ScanFlyerDi
           disabled={scanning}
         >
           {scanning ? (
-            <><Loader2 className="h-4 w-4 animate-spin" /> Reading flyer…</>
+            <><KretopiaSpinner className="h-4 w-4" /> Reading flyer…</>
           ) : (
             <><Upload className="h-4 w-4" /> Choose flyer image</>
           )}

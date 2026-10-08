@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { AlertCircle, Loader2, ArrowRight, ArrowLeft, User, Briefcase } from "lucide-react";
+import { AlertCircle, ArrowRight, ArrowLeft, User, Briefcase } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
@@ -182,7 +183,7 @@ export const SignUpWizard = ({
               <ArrowLeft className="mr-2 h-4 w-4" />Back
             </Button>
             <Button type="submit" variant="gradient" className="flex-1" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating...</> : "Create Account"}
+              {loading ? <><KretopiaSpinner className="mr-2 h-4 w-4" />Creating...</> : "Create Account"}
             </Button>
           </div>
         </form>

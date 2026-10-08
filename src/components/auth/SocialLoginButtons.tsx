@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Loader2, Chrome } from "lucide-react";
+import { Chrome } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface SocialLoginButtonsProps {
   onGoogleSignIn: () => void;
@@ -8,7 +9,7 @@ interface SocialLoginButtonsProps {
 
 export const SocialLoginButtons = ({ onGoogleSignIn, googleLoading }: SocialLoginButtonsProps) => (
   <Button type="button" variant="outline" className="w-full h-11 gap-2" onClick={onGoogleSignIn} disabled={googleLoading}>
-    {googleLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Chrome className="h-4 w-4" />}
+    {googleLoading ? <KretopiaSpinner className="h-4 w-4" /> : <Chrome className="h-4 w-4" />}
     Google
   </Button>
 );

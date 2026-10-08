@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PhoneIncoming, PhoneOutgoing, PhoneMissed, Phone, Video, Sparkles } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { useCallHistory } from "@/hooks/useCallHistory";
 import { useStartDirectCall } from "@/hooks/useStartDirectCall";
@@ -36,7 +37,7 @@ export const CallHistoryPanel = () => {
     <div className="flex-1 flex flex-col min-h-0">
       <ScrollArea className="flex-1">
         {loading ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">Loading calls…</div>
+          <KretopiaLoader size="sm" label="Loading calls…" className="p-6" />
         ) : calls.length === 0 ? (
           <div className="p-8 text-center">
             <Phone className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />

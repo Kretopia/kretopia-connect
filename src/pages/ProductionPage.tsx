@@ -41,7 +41,6 @@ import {
   ExternalLink,
   Users,
   UserPlus,
-  Loader2,
   Globe,
   Music,
   Film,
@@ -63,6 +62,7 @@ import {
   Share2,
   Zap,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
 import { AuthPrompt, useAuthPrompt } from "@/components/AuthPrompt";
 import { parseMediaUrl } from "@/lib/mediaUtils";
@@ -610,7 +610,7 @@ const ProductionPage = () => {
     return (
       <PageTransition>
         <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <KretopiaSpinner className="h-8 w-8 text-primary" />
           <p className="text-xs text-muted-foreground animate-pulse">
             Loading production details...
           </p>

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, Users, Loader2, Ticket, X, Trash2 } from "lucide-react";
+import { CalendarIcon, Clock, Users, Ticket, X, Trash2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PayoutsConnectWarning } from "./PayoutsConnectWarning";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -240,7 +241,7 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-lg">
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <KretopiaSpinner className="h-6 w-6 text-primary" />
           </div>
         </DialogContent>
       </Dialog>
@@ -444,7 +445,7 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                    {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    {deleting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -453,7 +454,7 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
             <div className="flex-1" />
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit" disabled={loading || !date || !formData.title} variant="gradient">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               Save Changes
             </Button>
           </div>

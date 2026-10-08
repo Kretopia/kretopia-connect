@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Crown, Hand, Clock, Link2, Share2, Loader2 } from "lucide-react";
+import { Crown, Hand, Clock, Link2, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { InviteCollaboratorDialog } from "@/components/project/InviteCollaboratorDialog";
 import { GuestStudioShareDialog } from "@/components/project/GuestStudioShareDialog";
@@ -216,7 +217,7 @@ ${url}`;
               disabled={quickSharing}
               title="Share guest link instantly"
             >
-              {quickSharing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Share2 className="h-3.5 w-3.5" />}
+              {quickSharing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Share2 className="h-3.5 w-3.5" />}
               Share link
             </Button>
             <Button

@@ -4,13 +4,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import {
   ImagePlus,
-  Loader2,
   Send,
   Sparkles,
   X,
   Mic,
   Link2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 interface Person {
@@ -289,7 +289,7 @@ export const StudioPulseFeed = ({ projectId, currentUserId }: Props) => {
                 disabled={posting || (!draft.trim() && files.length === 0)}
               >
                 {posting ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <KretopiaSpinner className="h-3 w-3" />
                 ) : (
                   <Send className="h-3 w-3" />
                 )}

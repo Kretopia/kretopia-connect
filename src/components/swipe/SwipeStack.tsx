@@ -8,6 +8,7 @@ import { FirstTimeHint } from '@/components/ui/first-time-hint';
 import { useAccountTone } from '@/hooks/useAccountTone';
 import { useTrinidadVoice } from '@/hooks/useTrinidadVoice';
 import { X, Heart, RotateCcw, Eye, MessageCircle, Hand, Search, UserPlus, Sparkles } from 'lucide-react';
+import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 import { cn } from '@/lib/utils';
 
 interface SwipeStackProps {
@@ -181,7 +182,7 @@ export function SwipeStack({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[500px]">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        <KretopiaSpinner className="h-8 w-8" />
       </div>
     );
   }

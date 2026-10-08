@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { CalendarClock, CheckCircle2, Clapperboard, ListChecks, Loader2, Music2, Shirt, Sparkles, UserCheck, Wand2 } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clapperboard, ListChecks, Music2, Shirt, Sparkles, UserCheck, Wand2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -110,7 +111,7 @@ export function ProductionPrepSection({ project, tasks, currentUserId, onOpenToo
       )}
 
       <Button variant={missing.length ? "default" : "outline"} size="sm" className="w-full gap-2" onClick={seedChecklist} disabled={seeding || missing.length === 0}>
-        {seeding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+        {seeding ? <KretopiaSpinner className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
         {missing.length ? `Add ${missing.length} production tasks` : "Checklist already added"}
       </Button>
     </section>

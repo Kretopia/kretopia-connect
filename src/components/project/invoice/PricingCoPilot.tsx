@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Sparkles, Send, Check, RefreshCw, ArrowRight, X, Wand2, ChevronDown, ChevronUp, Pencil, ScanLine, Loader2 } from "lucide-react";
+import { Sparkles, Send, Check, RefreshCw, ArrowRight, X, Wand2, ChevronDown, ChevronUp, Pencil, ScanLine } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -869,7 +870,7 @@ export function PricingCoPilot({
             disabled={isLoading || isScanning}
             title="Scan a brief or flyer"
           >
-            {isScanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
+            {isScanning ? <KretopiaSpinner className="h-4 w-4" /> : <ScanLine className="h-4 w-4" />}
           </Button>
           <textarea
             ref={inputRef}

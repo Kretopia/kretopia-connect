@@ -10,9 +10,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import {
-  Sparkles, Mic, Loader2, Square, PenLine, Lightbulb, ListChecks,
+  Sparkles, Mic, Square, PenLine, Lightbulb, ListChecks,
   CheckCircle2, ArrowLeft, Send, Wand2, Upload, FileText, Clock, Users, Mic2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { extractTextFromFile } from "@/lib/extractBriefDocument";
 import { StudioComingAliveLoader } from "@/components/onboarding/claim-flow/StudioComingAliveLoader";
 
@@ -541,7 +542,7 @@ export const SmartBriefBuilder = ({ projectId, projectTitle, onSent }: SmartBrie
                 maxLength={3000}
               />
               <Button onClick={elevate} disabled={busy || !text.trim()} className="w-full">
-                {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                {busy ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                 Elevate this brief
               </Button>
             </TabsContent>
@@ -561,7 +562,7 @@ export const SmartBriefBuilder = ({ projectId, projectTitle, onSent }: SmartBrie
                   <>
                     <audio controls src={URL.createObjectURL(voiceBlob)} className="w-full" />
                     <Button onClick={elevate} disabled={busy} className="w-full">
-                      {busy ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                      {busy ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
                       Elevate this brief
                     </Button>
                   </>
@@ -852,7 +853,7 @@ export const SmartBriefBuilder = ({ projectId, projectTitle, onSent }: SmartBrie
 
       <div className="sticky bottom-2 z-10">
         <Button onClick={sendToTeam} disabled={sending || !brief} size="lg" className="w-full shadow-lg">
-          {sending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+          {sending ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
           Send brief & assign work
         </Button>
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Camera, FileText, Calendar as CalIcon, CheckSquare, Plus, Sparkles, Loader2, Trash2, Save, ExternalLink, Check, X, MessageSquare } from "lucide-react";
+import { Camera, FileText, Calendar as CalIcon, CheckSquare, Plus, Sparkles, Trash2, Save, ExternalLink, Check, X, MessageSquare } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -320,7 +321,7 @@ export function ContentStudioSection({ project, currentUserId }: Props) {
               <Plus className="h-3.5 w-3.5 mr-1" /> Shot
             </Button>
             <Button size="sm" onClick={generateShotList} disabled={genShots} className="flex-1">
-              {genShots ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {genShots ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Draft from brief
             </Button>
           </div>
@@ -378,7 +379,7 @@ export function ContentStudioSection({ project, currentUserId }: Props) {
             placeholder="Open on a wide of the workshop. NARRATOR (V.O.):..." className="text-sm font-mono" />
           <div className="flex gap-2">
             <Button size="sm" onClick={saveScript} disabled={savingScript} className="flex-1">
-              {savingScript ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+              {savingScript ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
               Save
             </Button>
             {script && (

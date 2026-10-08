@@ -12,7 +12,6 @@ import {
   Radio,
   X,
   Users,
-  Loader2,
   Video,
   VideoOff,
   Crown,
@@ -28,6 +27,7 @@ import {
   Link2,
   UserPlus,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
 import {
   DropdownMenu,
@@ -1174,7 +1174,7 @@ export function SoundStageRoom({
             />
           ) : joining ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <KretopiaSpinner className="h-6 w-6" />
               <p className="text-sm">Walking on stage…</p>
             </div>
           ) : (
@@ -1435,7 +1435,7 @@ export function SoundStageRoom({
                 title={captionsOn ? "Live captions on — tap to stop" : "Turn on live captions"}
               >
                 {captionsStarting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <KretopiaSpinner className="h-3.5 w-3.5" />
                 ) : captionsOn ? (
                   <Captions className="h-3.5 w-3.5" />
                 ) : (
@@ -1456,7 +1456,7 @@ export function SoundStageRoom({
                 title={recording ? "Recording — tap to stop" : "Record this stage"}
               >
                 {recordingBusy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <KretopiaSpinner className="h-3.5 w-3.5" />
                 ) : recording ? (
                   <Square className="h-3.5 w-3.5 fill-current" />
                 ) : (
@@ -2143,7 +2143,7 @@ function MicCheckScreen({
             <CamPreview stream={camStream} mirror />
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-xs text-white/70">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Warming up
+              <KretopiaSpinner className="h-4 w-4 mr-2" /> Warming up
               camera…
             </div>
           )}

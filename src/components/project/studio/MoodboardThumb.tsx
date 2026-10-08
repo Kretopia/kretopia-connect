@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ImageIcon, Loader2 } from "lucide-react";
+import { ImageIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getProjectFileSignedUrl } from "@/lib/projectFiles";
 import { cn } from "@/lib/utils";
 
@@ -55,7 +56,7 @@ export const MoodboardThumb = ({ storedUrl, alt, className }: MoodboardThumbProp
   if (!url) {
     return (
       <div className={cn("flex items-center justify-center bg-muted", className)}>
-        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
       </div>
     );
   }

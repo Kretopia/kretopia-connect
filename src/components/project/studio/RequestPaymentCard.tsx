@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { HandCoins, Loader2 } from "lucide-react";
+import { HandCoins } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -102,7 +103,7 @@ export function RequestPaymentCard({ project, currentUserId }: RequestPaymentCar
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)} disabled={busy}>Cancel</Button>
             <Button onClick={submit} disabled={busy} className="gap-2">
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <HandCoins className="h-4 w-4" />}
+              {busy ? <KretopiaSpinner className="h-4 w-4" /> : <HandCoins className="h-4 w-4" />}
               Send request
             </Button>
           </DialogFooter>

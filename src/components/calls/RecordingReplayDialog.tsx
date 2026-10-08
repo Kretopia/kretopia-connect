@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface RecordingReplayDialogProps {
   open: boolean;
@@ -46,7 +47,7 @@ export function RecordingReplayDialog({ open, onOpenChange, title, subtitle, url
         <div className="rounded-xl overflow-hidden bg-black aspect-video flex items-center justify-center">
           {loading ? (
             <div className="flex flex-col items-center gap-2 text-white/70">
-              <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+              <KretopiaSpinner className="h-6 w-6" aria-hidden />
               <span className="text-sm">Loading recording…</span>
             </div>
           ) : error ? (

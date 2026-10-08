@@ -6,7 +6,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Users, Mic, Video, Loader2, Check, Plus } from "lucide-react";
+import { Calendar, Users, Mic, Video, Check, Plus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format as fmt } from "date-fns";
 import { SpeedSessionCreateDialog } from "./SpeedSessionCreateDialog";
 
@@ -91,7 +92,7 @@ export function CallSheetUpcoming() {
   if (loading) {
     return (
       <div className="text-xs text-muted-foreground flex items-center gap-2 py-3">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading the call sheet…
+        <KretopiaSpinner className="h-3.5 w-3.5" /> Reading the call sheet…
       </div>
     );
   }
@@ -162,7 +163,7 @@ export function CallSheetUpcoming() {
                 onClick={() => toggleRsvp(s)}
                 disabled={busy === s.id}
               >
-                {busy === s.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
+                {busy === s.id ? <KretopiaSpinner className="h-3.5 w-3.5" /> :
                   s.my_rsvp ? <><Check className="h-3.5 w-3.5" /> Saved</> : "Save spot"}
               </Button>
             </CardContent>

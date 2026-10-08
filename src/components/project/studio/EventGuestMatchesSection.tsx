@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, Loader2, Users, RefreshCw } from "lucide-react";
+import { Sparkles, Users, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -111,14 +112,14 @@ export const EventGuestMatchesSection = ({ project, currentUserId }: Props) => {
           </p>
         </div>
         <Button size="sm" onClick={generate} disabled={generating} variant="outline">
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
+          {generating ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
           {matches.length > 0 ? "Refresh" : "Generate"}
         </Button>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading…
+          <KretopiaSpinner className="h-4 w-4 mr-2" /> Loading…
         </div>
       ) : matches.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border/60 p-5 text-center">

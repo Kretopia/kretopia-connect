@@ -15,13 +15,13 @@ import {
   ArrowRight,
   ArrowLeft,
   ExternalLink,
-  Loader2,
   Eye,
   EyeOff,
   Sparkles,
   Lock,
   Copy,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -328,7 +328,7 @@ export function EmailSetupWizard({ onComplete }: { onComplete?: () => void }) {
                 >
                   {testing ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                       Testing connection...
                     </>
                   ) : (

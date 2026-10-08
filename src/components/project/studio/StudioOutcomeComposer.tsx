@@ -1,6 +1,7 @@
 import { useState, KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ArrowRight, Wand2 } from "lucide-react";
+import { ArrowRight, Wand2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
@@ -147,7 +148,7 @@ export function StudioOutcomeComposer({ projectId, projectTitle }: Props) {
             onClick={() => fire(prompt)}
             className="h-10 px-3 shrink-0 gap-1"
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
             <span className="hidden sm:inline">Make it</span>
           </Button>
         </div>

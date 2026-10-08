@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Image, Video, Music, X, Loader2, Upload } from "lucide-react";
+import { Image, Video, Music, X, Upload } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface CreatePostDialogProps {
   open: boolean;
@@ -278,7 +279,7 @@ export const CreatePostDialog = ({ open, onOpenChange, onPostCreated }: CreatePo
           >
             {uploading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Posting...
               </>
             ) : (

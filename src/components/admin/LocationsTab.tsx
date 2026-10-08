@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2, MapPin, QrCode } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { LocationDialog } from "./LocationDialog";
 import { QRCodeDisplay } from "./QRCodeDisplay";
 import {
@@ -108,7 +109,7 @@ export function LocationsTab() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <KretopiaLoader size="sm" label="Loading..." />;
   }
 
   return (

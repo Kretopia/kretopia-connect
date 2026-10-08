@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Send, Loader2, CheckCircle2, Unlink } from "lucide-react";
+import { Send, CheckCircle2, Unlink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -97,7 +98,7 @@ export const TelegramConnectCard = () => {
       <CardContent className="space-y-3">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+            <KretopiaSpinner className="h-4 w-4" /> Loading…
           </div>
         ) : linked ? (
           <>
@@ -122,7 +123,7 @@ export const TelegramConnectCard = () => {
               One tap opens @Thrivecopilotbot and links it to your account. Link expires in 15 minutes.
             </p>
             <Button onClick={handleConnect} disabled={busy}>
-              {busy ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              {busy ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
               Connect Telegram
             </Button>
           </>

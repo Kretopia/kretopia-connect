@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Trophy, Coins, Users, Copy, Check, Loader2 } from "lucide-react";
+import { Sparkles, Trophy, Coins, Users, Copy, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { Navigate } from "react-router-dom";
 import { SEO } from "@/components/SEO";
@@ -120,7 +121,7 @@ export default function Ambassador() {
   if (loading) {
     return (
       <div className="container max-w-2xl mx-auto py-16 flex justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }
@@ -310,7 +311,7 @@ export default function Ambassador() {
               <Textarea id="pitch" rows={4} placeholder="Tell us about the creators you'd bring on and how you'd promote Kretopia." value={pitch} onChange={(e) => setPitch(e.target.value)} required />
             </div>
             <Button type="submit" disabled={submitting} className="w-full">
-              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {submitting && <KretopiaSpinner className="h-4 w-4 mr-2" />}
               Submit application
             </Button>
           </form>

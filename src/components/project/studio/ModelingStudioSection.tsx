@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Plus, Trash2, Calendar, MapPin, Shield, Loader2, GripVertical } from "lucide-react";
+import { Camera, Plus, Trash2, Calendar, MapPin, Shield, GripVertical } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props { project: any; currentUserId: string; }
 
@@ -158,7 +159,7 @@ export function ModelingStudioSection({ project, currentUserId }: Props) {
             ><MapPin className="h-3 w-3" />Get directions</a>
           )}
           <Button onClick={saveCallSheet} disabled={savingCs} className="w-full">
-            {savingCs ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {savingCs ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             {callSheet ? "Update call sheet" : "Save call sheet"}
           </Button>
         </TabsContent>

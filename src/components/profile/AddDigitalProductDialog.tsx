@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, X, FileIcon, ImageIcon, AlertCircle } from "lucide-react";
+import { Upload, X, FileIcon, ImageIcon, AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface AddDigitalProductDialogProps {
@@ -287,7 +288,7 @@ export const AddDigitalProductDialog = ({ open, onOpenChange, onSuccess }: AddDi
               <label htmlFor="product-files" className="cursor-pointer">
                 {uploadingFile ? (
                   <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <KretopiaSpinner className="h-5 w-5" />
                     <span>Uploading...</span>
                   </div>
                 ) : (
@@ -350,7 +351,7 @@ export const AddDigitalProductDialog = ({ open, onOpenChange, onSuccess }: AddDi
               <label htmlFor="preview-images" className="cursor-pointer">
                 {uploadingPreview ? (
                   <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <KretopiaSpinner className="h-5 w-5" />
                     <span>Uploading...</span>
                   </div>
                 ) : (
@@ -426,7 +427,7 @@ export const AddDigitalProductDialog = ({ open, onOpenChange, onSuccess }: AddDi
               disabled={loading || formData.file_urls.length === 0} 
               className="flex-1"
             >
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {loading && <KretopiaSpinner className="mr-2 h-4 w-4" />}
               Add Product
             </Button>
           </div>

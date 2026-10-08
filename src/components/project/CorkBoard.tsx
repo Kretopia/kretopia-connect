@@ -7,11 +7,11 @@ import {
   Image as ImageIcon,
   StickyNote,
   Trash2,
-  Loader2,
   Pin,
   ListChecks,
   Layers,
 } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useDeskIntent } from "@/hooks/useDeskIntent";
@@ -497,7 +497,7 @@ export function CorkBoard({ projectId, currentUserId }: CorkBoardProps) {
           disabled={adding}
           className="gap-1.5 h-8"
         >
-          {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <StickyNote className="h-3.5 w-3.5" />}
+          {adding ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <StickyNote className="h-3.5 w-3.5" />}
           <span className="text-xs font-semibold">Sticky</span>
         </Button>
         <Button
@@ -529,7 +529,7 @@ export function CorkBoard({ projectId, currentUserId }: CorkBoardProps) {
           className="gap-1.5 h-8 text-primary hover:bg-primary/10 ml-auto"
         >
           {sparking ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <KretopiaSpinner className="h-3.5 w-3.5" />
           ) : (
             <Sparkles className="h-3.5 w-3.5" />
           )}
@@ -580,9 +580,7 @@ export function CorkBoard({ projectId, currentUserId }: CorkBoardProps) {
           style={{ position: "relative", width: `max(100%, ${BOARD_MIN_WIDTH}px)`, height: BOARD_HEIGHT }}
         >
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">
-              Loading board…
-            </div>
+            <KretopiaLoader size="sm" label="Loading board…" className="absolute inset-0 flex items-center justify-center" />
           )}
 
           {!loading && pins.length === 0 && (

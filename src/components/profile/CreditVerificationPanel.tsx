@@ -8,7 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
-import { ShieldCheck, Check, X, Loader2, Clock, XCircle, History, ArrowRight } from "lucide-react";
+import { ShieldCheck, Check, X, Clock, XCircle, History, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { HoloCard } from "@/components/passport/HoloCard";
 
 interface PendingEndorsement {
@@ -286,7 +287,7 @@ export function CreditVerificationPanel({ userId }: CreditVerificationPanelProps
                   disabled={respondingId === openEndorsement.id}
                 >
                   {respondingId === openEndorsement.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                    <KretopiaSpinner className="h-4 w-4 mr-1" />
                   ) : (
                     <Check className="h-4 w-4 mr-1" />
                   )}

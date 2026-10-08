@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Radar, Users, FileText, Loader2, Check, X, Copy, ArrowLeft, Send, Inbox, Wand2 } from "lucide-react";
+import { Sparkles, Radar, Users, FileText, Check, X, Copy, ArrowLeft, Send, Inbox, Wand2 } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 const Intel = () => {
@@ -174,7 +175,7 @@ const Intel = () => {
 
           <TabsContent value="matches" className="mt-4 space-y-3">
             <Button size="sm" onClick={generateMatches} disabled={busy === "matches"} className="w-full">
-              {busy === "matches" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+              {busy === "matches" ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
               Refresh today's brief
             </Button>
             {loading && <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>}
@@ -209,7 +210,7 @@ const Intel = () => {
 
           <TabsContent value="sponsors" className="mt-4 space-y-3">
             <Button size="sm" onClick={generateSponsors} disabled={busy === "sponsors"} className="w-full">
-              {busy === "sponsors" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Radar className="h-4 w-4 mr-2" />}
+              {busy === "sponsors" ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Radar className="h-4 w-4 mr-2" />}
               Scan for sponsor leads
             </Button>
             {loading && <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>}
@@ -246,7 +247,7 @@ const Intel = () => {
                 )}
                 <div className="flex gap-1.5 pt-1 flex-wrap">
                   <Button size="sm" className="h-7 text-xs flex-1" onClick={() => draftPitch(l)} disabled={busy === `draft-${l.id}`}>
-                    {busy === `draft-${l.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Wand2 className="h-3 w-3 mr-1" />}
+                    {busy === `draft-${l.id}` ? <KretopiaSpinner className="h-3 w-3 mr-1" /> : <Wand2 className="h-3 w-3 mr-1" />}
                     Draft pitch
                   </Button>
                   <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { navigator.clipboard.writeText(l.pitch_draft || ""); toast.success("Pitch copied"); }}>
@@ -261,7 +262,7 @@ const Intel = () => {
 
           <TabsContent value="outbox" className="mt-4 space-y-3">
             <p className="text-xs text-muted-foreground">Drafts Kreto prepared on your behalf. Edit, then approve to send.</p>
-            {loading && <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>}
+            {loading && <KretopiaLoader size="sm" label="Loading…" className="py-8" />}
             {!loading && drafts.length === 0 && (
               <Card className="p-6 text-center space-y-2">
                 <Inbox className="h-8 w-8 mx-auto text-muted-foreground" />
@@ -287,7 +288,7 @@ const Intel = () => {
                   <Textarea value={edit.body} onChange={(e) => setEdit({ body: e.target.value })} rows={6} className="text-xs leading-relaxed resize-none" />
                   <div className="flex gap-1.5">
                     <Button size="sm" className="h-8 text-xs flex-1" disabled={busy === `send-${d.id}` || !edit.recipient_email} onClick={() => sendDraft(d)}>
-                      {busy === `send-${d.id}` ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Send className="h-3 w-3 mr-1" />}
+                      {busy === `send-${d.id}` ? <KretopiaSpinner className="h-3 w-3 mr-1" /> : <Send className="h-3 w-3 mr-1" />}
                       Approve & send
                     </Button>
                     <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => { navigator.clipboard.writeText(`${edit.subject}\n\n${edit.body}`); toast.success("Copied"); }}>
@@ -319,7 +320,7 @@ const Intel = () => {
 
           <TabsContent value="epk" className="mt-4 space-y-3">
             <Button size="sm" onClick={generateEpk} disabled={busy === "epk"} className="w-full">
-              {busy === "epk" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
+              {busy === "epk" ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <FileText className="h-4 w-4 mr-2" />}
               Generate EPK suggestions
             </Button>
             {loading && <p className="text-sm text-muted-foreground text-center py-8">Loading…</p>}

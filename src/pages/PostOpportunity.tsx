@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Briefcase, Building2, CheckCircle2, Loader2, Mail, X, Upload, Crop, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { Briefcase, Building2, CheckCircle2, Mail, X, Upload, Crop, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
@@ -738,7 +739,7 @@ const PostOpportunity = () => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                   <Button type="submit" size="lg" className="flex-1 gap-2 h-12 text-base" disabled={posting}>
                     {posting ? (
-                      <><Loader2 className="h-5 w-5 animate-spin" /> {user ? "Posting..." : "Submitting..."}</>
+                      <><KretopiaSpinner className="h-5 w-5" /> {user ? "Posting..." : "Submitting..."}</>
                     ) : (
                       <><CheckCircle2 className="h-5 w-5" /> {user ? "Post Opportunity" : "Post Opportunity (Free)"}</>
                     )}

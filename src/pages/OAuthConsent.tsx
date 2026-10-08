@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 // Supabase auth.oauth is beta; type it locally rather than depending on the SDK typings.
 type OAuthNs = {
@@ -92,7 +93,7 @@ export default function OAuthConsent() {
   if (!details) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6 bg-background">
-        <p className="text-muted-foreground">Loading…</p>
+        <KretopiaLoader size="sm" label="Loading…" />
       </main>
     );
   }

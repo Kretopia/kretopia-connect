@@ -11,8 +11,9 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger 
 } from "@/components/ui/dialog";
 import { 
-  Plus, Loader2, MessageSquare, Users, Search, Send, ArrowLeft, Flame 
+  Plus, MessageSquare, Users, Search, Send, ArrowLeft, Flame 
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,7 @@ export const RoomsTab = () => {
 
       {loading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <KretopiaSpinner className="h-6 w-6 text-primary" />
         </div>
       ) : filteredRooms.length === 0 ? (
         <Card className="p-8 text-center">
@@ -294,7 +295,7 @@ const RoomDetail = ({ room, onBack }: { room: Room; onBack: () => void }) => {
       <div className="flex-1 overflow-y-auto py-3 space-y-3">
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <KretopiaSpinner className="h-5 w-5 text-primary" />
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-12">
@@ -451,7 +452,7 @@ const CreateRoomDialog = ({
             onClick={handleCreate} 
             disabled={!title.trim() || creating}
           >
-            {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             Create Room
           </Button>
         </div>

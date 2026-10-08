@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Upload, Plus, X, Check, Save, Trash2, Palette as PaletteIcon, Type, Megaphone, Link as LinkIcon } from "lucide-react";
+import { Upload, Plus, X, Check, Save, Trash2, Palette as PaletteIcon, Type, Megaphone, Link as LinkIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -213,7 +214,7 @@ export function BrandVaultEditor({ projectId = null, vaultId = null, onSaved }: 
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+        <KretopiaSpinner className="h-5 w-5 mx-auto text-muted-foreground" />
       </div>
     );
   }
@@ -448,7 +449,7 @@ export function BrandVaultEditor({ projectId = null, vaultId = null, onSaved }: 
 
       <div className="sticky bottom-0 bg-background/95 backdrop-blur-none border-t border-border -mx-4 px-4 py-3 flex gap-2 z-10">
         <Button onClick={save} disabled={saving} className="flex-1">
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
           Save brand
         </Button>
       </div>

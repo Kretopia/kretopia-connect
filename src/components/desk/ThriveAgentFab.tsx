@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Sparkles, Send, Loader2, Trash2, HelpCircle, Mic, Square, Volume2, VolumeX, Crown, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { Sparkles, Send, Trash2, HelpCircle, Mic, Square, Volume2, VolumeX, Crown, CheckCircle2, AlertCircle, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import {
   startRecording,
@@ -876,7 +877,7 @@ export const ThriveAgentFab = () => {
                 {m.role === "assistant" && activityByMsg[i]?.length ? (
                   <div className="space-y-1.5 max-w-[95%]">
                     {activityByMsg[i].map((item) => {
-                      const Icon = item.status === "running" ? Loader2 : item.status === "failed" ? AlertCircle : CheckCircle2;
+                      const Icon = item.status === "running" ? KretopiaSpinner : item.status === "failed" ? AlertCircle : CheckCircle2;
                       return (
                         <div
                           key={item.id}
@@ -886,7 +887,7 @@ export const ThriveAgentFab = () => {
                             <Icon
                               className={cn(
                                 "h-3.5 w-3.5",
-                                item.status === "running" && "animate-spin text-primary",
+                                item.status === "running" && "text-primary",
                                 item.status === "done" && "text-primary",
                                 item.status === "failed" && "text-destructive",
                               )}
@@ -1057,7 +1058,7 @@ export const ThriveAgentFab = () => {
                   aria-label="Talk to Kreto"
                   title="Tap to talk · 60s max"
                 >
-                  {voiceBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                  {voiceBusy ? <KretopiaSpinner className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
                 </Button>
                 <Button
                   onClick={() => send()}
@@ -1066,7 +1067,7 @@ export const ThriveAgentFab = () => {
                   className="h-11 w-11 shrink-0"
                 >
                   {sending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4" />
                   ) : (
                     <Send className="h-4 w-4" />
                   )}

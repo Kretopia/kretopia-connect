@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { MapPin, Loader2, Search, Link2 } from "lucide-react";
+import { MapPin, Search, Link2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -243,7 +244,7 @@ export const LocationSearchInput = ({ value, onSelect, onChange, placeholder }: 
           className="pl-10 pr-10"
         />
         {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         )}
       </div>
 
@@ -295,7 +296,7 @@ export const LocationSearchInput = ({ value, onSelect, onChange, placeholder }: 
             onClick={handlePasteLink}
             disabled={!linkValue.trim() || !isGoogleMapsLink(linkValue) || linkLoading}
           >
-            {linkLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Set"}
+            {linkLoading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : "Set"}
           </Button>
         </div>
       )}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, RefreshCw, Loader2 } from "lucide-react";
+import { Sparkles, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 interface IceBreakersProps {
@@ -77,7 +78,7 @@ export const IceBreakers = ({
           className="h-7 text-xs"
         >
           {isLoading ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <KretopiaSpinner className="h-3 w-3" />
           ) : (
             <>
               <RefreshCw className="h-3 w-3 mr-1" />

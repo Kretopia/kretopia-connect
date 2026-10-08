@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Loader2, Search, Sparkles, MapPin, ArrowRight, Send } from "lucide-react";
+import { Search, Sparkles, MapPin, ArrowRight, Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -202,7 +203,7 @@ export const TalentCopilot = () => {
         >
           {searching ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
               Finding the right people…
             </>
           ) : (
@@ -254,7 +255,7 @@ export const TalentCopilot = () => {
               className="gap-1.5"
             >
               {drafting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <KretopiaSpinner className="h-3.5 w-3.5" />
               ) : (
                 <ArrowRight className="h-3.5 w-3.5" />
               )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Loader2, Mail, FileText, Sparkles, Copy, Check, RefreshCcw } from "lucide-react";
+import { Mail, FileText, Sparkles, Copy, Check, RefreshCcw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Sheet,
   SheetContent,
@@ -149,7 +150,7 @@ export const WrapMyWeekSheet = ({ open, onOpenChange, projectId }: WrapMyWeekShe
 
         {loading && !data && (
           <div className="py-12 text-center space-y-3">
-            <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+            <KretopiaSpinner className="h-6 w-6 text-primary mx-auto" />
             <p className="text-sm text-muted-foreground">
               Reading the week's tasks, files, and notes…
             </p>

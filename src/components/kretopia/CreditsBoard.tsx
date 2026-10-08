@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { ChevronRight, ShieldCheck, ImageIcon, Loader2, Info, Sparkles, ExternalLink } from "lucide-react";
+import { ChevronRight, ShieldCheck, ImageIcon, Info, Sparkles, ExternalLink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { Reveal } from "./Reveal";
 import { SmartCardTitle } from "@/components/typography/Heading";
@@ -134,7 +135,7 @@ export function CreditsBoard({
 
         {loading ? (
           <div className="flex justify-center py-14">
-            <Loader2 className="h-5 w-5 animate-spin" style={{ color: "hsl(var(--energy))" }} />
+            <KretopiaSpinner className="h-5 w-5" style={{ color: "hsl(var(--energy))" }} />
           </div>
         ) : visible.length === 0 ? (
           <div className="py-14 text-center">

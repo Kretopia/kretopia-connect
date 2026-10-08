@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Loader2, Send, Link2 } from "lucide-react";
+import { Copy, Send, Link2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -139,7 +140,7 @@ export function InviteToStageDialog({
               </div>
 
               <Button onClick={sendInvites} disabled={sending || !emails.length} className="w-full" size="lg">
-                {sending ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</> : <><Send className="h-4 w-4 mr-2" /> Send {emails.length || ""} invite{emails.length === 1 ? "" : "s"}</>}
+                {sending ? <><KretopiaSpinner className="h-4 w-4 mr-2" /> Sending…</> : <><Send className="h-4 w-4 mr-2" /> Send {emails.length || ""} invite{emails.length === 1 ? "" : "s"}</>}
               </Button>
             </>
           )}

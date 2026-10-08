@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Plus, Zap, ListChecks } from "lucide-react";
+import { Plus, Zap, ListChecks } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -110,7 +111,7 @@ export const AIAutomation = ({ projectId, projectTitle, projectDescription, onUp
           disabled={generating}
         >
           {generating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="h-4 w-4" />
           ) : (
             <Zap className="h-4 w-4" />
           )}
@@ -126,7 +127,7 @@ export const AIAutomation = ({ projectId, projectTitle, projectDescription, onUp
 
       {generating && (
         <div className="text-center py-8">
-          <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary mb-2" />
+          <KretopiaSpinner className="h-8 w-8 mx-auto text-primary mb-2" />
           <p className="text-sm text-muted-foreground">AI is analyzing your project...</p>
         </div>
       )}

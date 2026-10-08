@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ImagePlus, X, Sparkles, Loader2, Crop, Check } from "lucide-react";
+import { ImagePlus, X, Sparkles, Crop, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import Cropper from "react-easy-crop";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -263,7 +264,7 @@ export const EventCoverPicker = ({
               disabled={generating}
             >
               {generating ? (
-                <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                <><KretopiaSpinner className="h-4 w-4" /> Generating...</>
               ) : (
                 <><Sparkles className="h-4 w-4" /> Generate Image</>
               )}

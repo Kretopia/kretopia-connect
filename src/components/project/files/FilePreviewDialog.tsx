@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, X } from "lucide-react";
+import { Download, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getProjectFileSignedUrl } from "@/lib/projectFiles";
 
 interface ProjectFileLite {
@@ -64,7 +65,7 @@ export const FilePreviewDialog = ({ file, onClose }: FilePreviewDialogProps) => 
         </div>
         <div className="flex-1 flex items-center justify-center bg-muted/20 overflow-auto min-h-0">
           {loading || !url ? (
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
           ) : isImage ? (
             <img src={url} alt={file?.file_name} className="max-w-full max-h-full object-contain" />
           ) : isVideo ? (

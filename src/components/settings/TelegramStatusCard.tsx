@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, AlertTriangle, Loader2, RefreshCw, Bot, Webhook } from "lucide-react";
+import { CheckCircle2, XCircle, AlertTriangle, RefreshCw, Bot, Webhook } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 type Status = {
@@ -79,7 +80,7 @@ export const TelegramStatusCard = () => {
       <CardContent className="space-y-5">
         {loading ? (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking…
+            <KretopiaSpinner className="h-4 w-4" /> Checking…
           </div>
         ) : !status?.connector_linked ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
@@ -151,7 +152,7 @@ export const TelegramStatusCard = () => {
         )}
 
         <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+          {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
           Re-check
         </Button>
       </CardContent>

@@ -3,7 +3,8 @@ import { useParams, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, AlertCircle, Lock, ShieldCheck, Landmark, Copy, Check, Clock } from "lucide-react";
+import { CheckCircle2, AlertCircle, Lock, ShieldCheck, Landmark, Copy, Check, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { cn } from "@/lib/utils";
 
@@ -85,7 +86,7 @@ export default function PayInvoice() {
     }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   if (status === "success") {
     return (
@@ -233,13 +234,13 @@ export default function PayInvoice() {
                     variant="outline"
                     className="w-full h-11"
                   >
-                    {reporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Landmark className="h-4 w-4 mr-2" />}
+                    {reporting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Landmark className="h-4 w-4 mr-2" />}
                     I've sent this transfer
                   </Button>
                 </div>
               ) : (
                 <Button onClick={handlePay} disabled={submitting} className="w-full h-12 text-base">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                  {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
                   Pay {fmt(total, invoice.currency)}
                 </Button>
               )}

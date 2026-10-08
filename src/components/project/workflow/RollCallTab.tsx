@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, UserCheck, UserX, Check } from "lucide-react";
+import { UserCheck, UserX, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import type { Collaborator } from "@/hooks/useProjectData";
 
@@ -69,7 +70,7 @@ export function RollCallTab({ projectId, collaborators, currentUserId }: Props) 
 
   const getAvatar = (e: Entry) => collaborators.find((c) => c.id === e.person_user_id)?.avatar_url;
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   const counts = {
     arrived: entries.filter((e) => e.status === "arrived").length,

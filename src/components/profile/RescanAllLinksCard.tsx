@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Loader2, CheckCircle2, AlertCircle, Sparkles, ShieldAlert, X } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertCircle, Sparkles, ShieldAlert, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -282,7 +283,7 @@ export const RescanAllLinksCard = ({ profile, onRefresh }: RescanAllLinksCardPro
             <div key={r.key} className="flex items-center justify-between gap-2 text-xs">
               <span className="font-medium">{r.label}</span>
               <span className="flex items-center gap-1 text-muted-foreground">
-                {r.status === 'syncing' && <Loader2 className="h-3 w-3 animate-spin" />}
+                {r.status === 'syncing' && <KretopiaSpinner className="h-3 w-3" />}
                 {r.status === 'done' && <CheckCircle2 className="h-3 w-3 text-success" />}
                 {r.status === 'error' && <AlertCircle className="h-3 w-3 text-destructive" />}
                 {r.status === 'syncing' && 'Syncing…'}
@@ -309,7 +310,7 @@ export const RescanAllLinksCard = ({ profile, onRefresh }: RescanAllLinksCardPro
                 Dismiss all
               </Button>
               <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={applyAllDrafts} disabled={applying}>
-                {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                {applying ? <KretopiaSpinner className="h-3 w-3" /> : null}
                 Apply all
               </Button>
             </div>
@@ -355,7 +356,7 @@ export const RescanAllLinksCard = ({ profile, onRefresh }: RescanAllLinksCardPro
           onClick={handleRescanAll}
         >
           {running
-            ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning…</>
+            ? <><KretopiaSpinner className="h-3.5 w-3.5" /> Scanning…</>
             : <><RefreshCw className="h-3.5 w-3.5" /> Re-scan all</>}
         </CtaButton>
       )}

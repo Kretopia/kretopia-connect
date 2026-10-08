@@ -12,7 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrandLoader } from "@/components/brand/BrandDots";
 import { Card, CardContent } from "@/components/ui/card";
-import { Video, Copy, Share2, DoorOpen, Loader2, Check, Fingerprint } from "lucide-react";
+import { Video, Copy, Share2, DoorOpen, Check, Fingerprint } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { APP_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
@@ -213,7 +214,7 @@ export default function PersonalRoom() {
                 Visitors knock — you decide who comes in.
               </p>
               <Button onClick={openMyRoom} disabled={opening} className="w-full h-11" variant="hero">
-                {opening ? <Loader2 className="h-4 w-4 animate-spin" /> : <DoorOpen className="h-4 w-4" />}
+                {opening ? <KretopiaSpinner className="h-4 w-4" /> : <DoorOpen className="h-4 w-4" />}
                 Open my room now
               </Button>
               <div className="grid grid-cols-2 gap-2">
@@ -269,7 +270,7 @@ export default function PersonalRoom() {
                 variant="hero"
                 className="w-full h-11"
               >
-                {knocking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                {knocking ? <KretopiaSpinner className="h-4 w-4" /> : <Video className="h-4 w-4" />}
                 Knock
               </Button>
             </CardContent>

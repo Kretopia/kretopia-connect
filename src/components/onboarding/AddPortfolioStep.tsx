@@ -5,10 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { 
-  Loader2, Link, Upload, Video, Image as ImageIcon, Music, 
+import { Link, Upload, Video, Image as ImageIcon, Music, 
   ExternalLink, X, Sparkles, Search, FileUp, Plus
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -352,7 +352,7 @@ export const AddPortfolioStep = ({ userId, onComplete, onSkip }: AddPortfolioSte
         />
         {uploading ? (
           <div className="flex flex-col items-center gap-2">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <KretopiaSpinner className="w-8 h-8 text-primary" />
             <p className="text-sm text-muted-foreground">Uploading...</p>
           </div>
         ) : (
@@ -381,7 +381,7 @@ export const AddPortfolioStep = ({ userId, onComplete, onSkip }: AddPortfolioSte
           onClick={() => fetchFromUrl(urlInput)}
           disabled={isLoading || !urlInput}
         >
-          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link className="w-4 h-4" />}
+          {isLoading ? <KretopiaSpinner className="w-4 h-4" /> : <Link className="w-4 h-4" />}
         </Button>
       </div>
 
@@ -432,7 +432,7 @@ export const AddPortfolioStep = ({ userId, onComplete, onSkip }: AddPortfolioSte
               onKeyDown={(e) => e.key === "Enter" && handleAIImport()}
             />
             <Button size="sm" onClick={handleAIImport} disabled={aiSearching || !aiSearchUrl.trim()}>
-              {aiSearching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              {aiSearching ? <KretopiaSpinner className="w-4 h-4" /> : <Search className="w-4 h-4" />}
             </Button>
           </div>
         </Card>
@@ -566,7 +566,7 @@ export const AddPortfolioStep = ({ userId, onComplete, onSkip }: AddPortfolioSte
             <Button variant="ghost" size="sm" onClick={onSkip}>Skip</Button>
           )}
           <Button size="sm" onClick={saveAndContinue} disabled={isLoading}>
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
+            {isLoading && <KretopiaSpinner className="w-4 h-4 mr-1" />}
             {items.length === 0 ? "Continue" : "Save & Continue"}
           </Button>
         </div>

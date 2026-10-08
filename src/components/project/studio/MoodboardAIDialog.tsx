@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Dialog,
   DialogContent,
@@ -116,7 +117,7 @@ export const MoodboardAIDialog = ({ open, onOpenChange, projectId, onGenerated }
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" /> Generating…
+                <KretopiaSpinner className="h-4 w-4" /> Generating…
               </>
             ) : (
               <>

@@ -5,7 +5,6 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   PhoneOff,
-  Loader2,
   UserPlus,
   Circle,
   ScreenShare,
@@ -16,6 +15,7 @@ import {
   ShieldAlert,
   MicOff,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -452,7 +452,7 @@ export const VideoCallSheet = ({
                 <div ref={containerRef} className="absolute inset-0" />
                 {joining && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b0b0f] text-white gap-3 z-10">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <KretopiaSpinner className="h-8 w-8 text-primary" />
                     <p className="text-sm font-medium text-white">Connecting to the room…</p>
                   </div>
                 )}

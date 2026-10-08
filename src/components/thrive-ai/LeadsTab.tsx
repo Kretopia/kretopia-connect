@@ -13,7 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { isKnownLead, knownLeadKeys, rememberLead, splitByExisting } from "../../../supabase/functions/_shared/leadExtraction";
-import { Plus, User, Building2, Mail, Trash2, Edit2, ArrowRight, Sparkles, Upload, Download, Check, ExternalLink, Loader2 } from "lucide-react";
+import { Plus, User, Building2, Mail, Trash2, Edit2, ArrowRight, Sparkles, Upload, Download, Check, ExternalLink } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 type Lead = {
   id: string;
@@ -446,7 +447,7 @@ const LeadsTab = () => {
         <TabsContent value="pipeline" className="mt-3">
           <p className="text-xs text-muted-foreground mb-3">{leads.length} total leads</p>
           {isLoading ? (
-            <div className="text-center py-12 text-muted-foreground text-sm">Loading leads...</div>
+            <KretopiaLoader size="sm" label="Loading leads..." className="py-12" />
           ) : (
             <div className="space-y-4">
               {STAGES.map((stage) => {
@@ -495,7 +496,7 @@ const LeadsTab = () => {
                 <Input value={scoutLocation} onChange={(e) => setScoutLocation(e.target.value)} placeholder="Location (optional)" />
               </div>
               <Button className="w-full gap-1.5" onClick={handleScout} disabled={scouting || !scoutQuery.trim()}>
-                {scouting ? <><Loader2 className="h-4 w-4 animate-spin" /> Scouting the web...</> : <><Sparkles className="h-4 w-4" /> Find Leads</>}
+                {scouting ? <><KretopiaSpinner className="h-4 w-4" /> Scouting the web...</> : <><Sparkles className="h-4 w-4" /> Find Leads</>}
               </Button>
             </div>
           </Card>

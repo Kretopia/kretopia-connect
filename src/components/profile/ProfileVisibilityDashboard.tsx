@@ -10,6 +10,7 @@ import {
   Eye, EyeOff, TrendingUp, Users, Search, 
   Target, AlertCircle, CheckCircle2, Sparkles 
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { checkProfileCompletion } from "@/lib/profileCompletion";
 
 interface ProfileVisibilityDashboardProps {
@@ -80,7 +81,7 @@ export const ProfileVisibilityDashboard = ({
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <KretopiaSpinner className="h-8 w-8" />
         </CardContent>
       </Card>
     );

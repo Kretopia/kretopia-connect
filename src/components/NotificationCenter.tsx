@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Bell, Check, CheckCheck, Trash2, ExternalLink, MessageCircle, ThumbsUp, X, Sparkles } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -124,7 +125,7 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
         <ScrollArea className="h-[calc(100vh-140px)] mt-6">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-muted-foreground">Loading...</div>
+              <KretopiaLoader size="sm" label="Loading..." />
             </div>
           ) : unreadNotifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">

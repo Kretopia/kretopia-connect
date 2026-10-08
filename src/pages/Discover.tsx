@@ -3,6 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { PageHeader } from "@/components/ui/page-header";
 import { Compass, Users, Briefcase, Radio, Calendar, Map, LayoutGrid, Sparkles, Search, Radar, Store, Plus, Handshake, UserSearch } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PostOpportunityDialog } from "@/components/PostOpportunityDialog";
@@ -260,7 +261,6 @@ export default function Discover() {
 
 // Lazy-load Browse to avoid hitting profiles table when user starts on Swipe
 import { lazy, Suspense } from "react";
-import { Loader2 } from "lucide-react";
 const BrowseCreators = lazy(() =>
   import("@/components/discover/BrowseCreators").then((m) => ({ default: m.BrowseCreators }))
 );
@@ -268,7 +268,7 @@ const BrowseCreatorsLazy = () => (
   <Suspense
     fallback={
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-10 justify-center">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading creators…
+        <KretopiaSpinner className="h-3.5 w-3.5" /> Loading creators…
       </div>
     }
   >

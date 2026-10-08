@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Briefcase, MapPin, DollarSign, User, Users, Star, Sparkles, Mail, Eye, Edit, Crown, Trophy, TrendingUp, Filter, LayoutGrid, List, BarChart3, ChevronDown, ChevronUp, ExternalLink, Clock, Share2, ArrowLeft, Video, Loader2 } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, User, Users, Star, Sparkles, Mail, Eye, Edit, Crown, Trophy, TrendingUp, Filter, LayoutGrid, List, BarChart3, ChevronDown, ChevronUp, ExternalLink, Clock, Share2, ArrowLeft, Video } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ShareProfileDialog } from "@/components/profile/ShareProfileDialog";
 import { useStartDirectCall } from "@/hooks/useStartDirectCall";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
@@ -997,7 +998,7 @@ const ApplicantCard = ({
               title="Start a quick video interview"
             >
               {callStarting ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                <KretopiaSpinner className="w-3 h-3 mr-1" />
               ) : (
                 <Video className="w-3 h-3 mr-1" />
               )}

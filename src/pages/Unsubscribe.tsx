@@ -6,7 +6,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Mail, CheckCircle, XCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 const Unsubscribe = () => {
   const [searchParams] = useSearchParams();
@@ -122,7 +123,7 @@ const Unsubscribe = () => {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
             <p className="mt-4 text-muted-foreground">Loading preferences...</p>
           </CardContent>
         </Card>
@@ -233,7 +234,7 @@ const Unsubscribe = () => {
             <Button onClick={handleSavePreferences} disabled={saving}>
               {saving ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="mr-2 h-4 w-4" />
                   Saving...
                 </>
               ) : (

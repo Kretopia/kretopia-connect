@@ -13,8 +13,8 @@ import { ProducerTemplate } from "@/components/creator-site/ProducerTemplate";
 import { AgencyTemplate } from "@/components/creator-site/AgencyTemplate";
 import { MinimalCleanTemplate } from "@/components/creator-site/MinimalCleanTemplate";
 import { PhotographerTemplate } from "@/components/creator-site/PhotographerTemplate";
-import { Loader2 } from "lucide-react";
 import { useSiteViewTracker } from "@/hooks/useSiteAnalytics";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 export interface CreatorSiteData {
   profile: {
@@ -149,7 +149,7 @@ const CreatorSite = () => {
   if (loading) {
     return (
       <div className="min-h-dvh bg-[#0a0a0c] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-white/50" />
+        <KretopiaSpinner className="h-8 w-8 text-white/50" />
       </div>
     );
   }

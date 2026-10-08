@@ -12,7 +12,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { ClipboardList, Plus, Trash2, Loader2, Eye } from "lucide-react";
+import { ClipboardList, Plus, Trash2, Eye } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 interface Question {
   id: string;
@@ -137,7 +138,7 @@ export function EventRsvpQuestionsBuilder({ project, currentUserId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-xs text-muted-foreground py-2">Loading…</div>
+        <KretopiaLoader size="sm" label="Loading…" className="py-2" />
       ) : items.length === 0 ? (
         <div className="text-xs text-muted-foreground py-2 italic">
           No custom questions yet. Defaults (name + email) are always asked.
@@ -203,7 +204,7 @@ export function EventRsvpQuestionsBuilder({ project, currentUserId }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
             <Button onClick={create} disabled={creating || !q.trim()}>
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add question"}
+              {creating ? <KretopiaSpinner className="h-4 w-4" /> : "Add question"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Loader2, RotateCcw, Check, Clock } from "lucide-react";
+import { Plus, RotateCcw, Check, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -59,7 +60,7 @@ export function RevisionsTab({ projectId, currentUserId }: Props) {
     void load();
   };
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-4 max-w-2xl mx-auto">

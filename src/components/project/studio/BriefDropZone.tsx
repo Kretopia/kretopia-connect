@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Upload, Loader2, X, Link2, Sparkles, AlertCircle, ImagePlus, Mic, Send, FileEdit, ArrowRight, MessageSquarePlus } from "lucide-react";
+import { Upload, X, Link2, Sparkles, AlertCircle, ImagePlus, Mic, Send, FileEdit, ArrowRight, MessageSquarePlus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -628,7 +629,7 @@ export const BriefDropZone = ({
               disabled={applyingElevation}
               className="h-8 text-xs gap-1.5 rounded-full"
             >
-              {applyingElevation ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+              {applyingElevation ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
               Add to Project
             </Button>
             <Button

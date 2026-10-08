@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, UserPlus, ArrowRight, Lightbulb, Zap, Users, Loader2, CheckCheck } from "lucide-react";
+import { Sparkles, UserPlus, ArrowRight, Lightbulb, Zap, Users, CheckCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface MatchedProfile {
   user_id: string;
@@ -278,7 +279,7 @@ export const MatchedProfilesStep = ({ onComplete }: MatchedProfilesStepProps) =>
                 >
                   {connectingAll ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                       Connecting...
                     </>
                   ) : (

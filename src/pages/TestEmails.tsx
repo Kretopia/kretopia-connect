@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 const TestEmails = () => {
   const [email, setEmail] = useState("thriveuae@gmail.com");
@@ -80,7 +81,7 @@ const TestEmails = () => {
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="mr-2 h-4 w-4" />
                 Sending Test Emails...
               </>
             ) : (

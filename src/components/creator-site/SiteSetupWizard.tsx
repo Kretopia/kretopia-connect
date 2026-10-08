@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, ArrowRight, ArrowLeft, Globe, Sparkles, Eye, Loader2, Lock, Crown } from "lucide-react";
+import { CheckCircle2, ArrowRight, ArrowLeft, Globe, Sparkles, Eye, Lock, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -334,7 +335,7 @@ export const SiteSetupWizard = ({ open, onOpenChange, onComplete }: SiteSetupWiz
           ) : (
             <Button size="sm" onClick={handlePublish} disabled={saving || !canProceed}>
               {saving ? (
-                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-1" />
               ) : (
                 <Globe className="h-4 w-4 mr-1" />
               )}

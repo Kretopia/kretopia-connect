@@ -4,7 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
-import { Zap, Loader2, CheckCircle2, MapPin, DollarSign, Briefcase, Image as ImageIcon, Send } from "lucide-react";
+import { Zap, CheckCircle2, MapPin, DollarSign, Briefcase, Image as ImageIcon, Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -192,7 +193,7 @@ export const EasyApplyButton = ({ opportunityId, opportunityTitle, className, si
         disabled={loading}
       >
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+          <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />
         ) : (
           <Zap className="h-3.5 w-3.5 mr-1" />
         )}
@@ -309,7 +310,7 @@ export const EasyApplyButton = ({ opportunityId, opportunityTitle, className, si
                 disabled={submitting}
               >
                 {submitting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}

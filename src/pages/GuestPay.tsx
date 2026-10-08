@@ -4,7 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Wallet, Plus, LogOut, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Wallet, Plus, LogOut, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import {
   clearGuestToken,
@@ -196,7 +197,7 @@ export default function GuestPay() {
                 )}
                 <Button type="submit" className="w-full" disabled={submitting}>
                   {submitting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Continuing…</>
+                    <><KretopiaSpinner className="mr-2 h-4 w-4" />Continuing…</>
                   ) : codeSent ? (
                     "Verify & continue"
                   ) : (
@@ -215,7 +216,7 @@ export default function GuestPay() {
               <CardContent className="space-y-1 p-5 text-center">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Balance</p>
                 {loading && !wallet ? (
-                  <Loader2 className="mx-auto my-2 h-6 w-6 animate-spin text-muted-foreground" />
+                  <KretopiaSpinner className="mx-auto my-2 h-6 w-6 text-muted-foreground" />
                 ) : (
                   <p className="text-4xl font-bold tabular-nums">
                     {formatCents(wallet?.balance_cents ?? 0, wallet?.currency)}
@@ -266,7 +267,7 @@ export default function GuestPay() {
 
                 <Button onClick={handleTopUp} className="w-full" disabled={redirecting}>
                   {redirecting ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Opening checkout…</>
+                    <><KretopiaSpinner className="mr-2 h-4 w-4" />Opening checkout…</>
                   ) : (
                     <><Plus className="mr-2 h-4 w-4" />Add ${amount || "0"}</>
                   )}

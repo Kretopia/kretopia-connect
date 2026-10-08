@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Users, Sparkles } from "lucide-react";
+import { Users, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
@@ -309,7 +310,7 @@ const AcceptInvite = () => {
           ) : null}
 
           <div className="text-center">
-            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-3 text-primary" />
+            <KretopiaSpinner className="h-8 w-8 mx-auto mb-3 text-primary" />
             <h2 className="text-lg font-bold mb-1">Setting up your access…</h2>
             <p className="text-sm text-muted-foreground">Hang tight, we're opening the workspace.</p>
           </div>

@@ -10,6 +10,7 @@ import { SEO } from "@/components/SEO";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 
 const ClientDetail = () => {
@@ -157,7 +158,7 @@ const ClientDetail = () => {
                   title={!client.contact_email ? "Add a client email first" : "Email client a one-tap Studio link"}
                 >
                   {sendingEmail && emailingProjectId === p.id ? (
-                    <LoadingSpinner size="sm" />
+                    <KretopiaSpinner className="h-3.5 w-3.5" />
                   ) : (
                     <Send className="h-3.5 w-3.5" />
                   )}

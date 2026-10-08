@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, User, ArrowRightLeft, Loader2, Users } from "lucide-react";
+import { Building2, User, ArrowRightLeft, Users } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -186,7 +187,7 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
               <AlertDialogAction onClick={handleSwitch} disabled={switching}>
                 {switching ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Switching...
                   </>
                 ) : (
@@ -255,7 +256,7 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
             <AlertDialogAction onClick={handleSwitch} disabled={switching}>
               {switching ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                   Switching...
                 </>
               ) : (

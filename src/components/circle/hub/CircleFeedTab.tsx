@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Pin, Loader2, Send, MessageCircle, Trash2 } from "lucide-react";
+import { Pin, Send, MessageCircle, Trash2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -224,7 +225,7 @@ export const CircleFeedTab = ({ circleId, isMember, isAdmin, onOpenChat }: Props
   };
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
   }
 
   return (
@@ -243,7 +244,7 @@ export const CircleFeedTab = ({ circleId, isMember, isAdmin, onOpenChat }: Props
           <div className="flex justify-between items-center">
             <span className="text-[11px] text-muted-foreground">{draft.length}/5000</span>
             <Button size="sm" onClick={post} disabled={!draft.trim() || posting}>
-              {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Send className="h-3.5 w-3.5 mr-1" />Post</>}
+              {posting ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <><Send className="h-3.5 w-3.5 mr-1" />Post</>}
             </Button>
           </div>
         </div>
@@ -357,7 +358,7 @@ export const CircleFeedTab = ({ circleId, isMember, isAdmin, onOpenChat }: Props
                         className="h-9 text-sm"
                       />
                       <Button size="sm" onClick={() => sendComment(p.id)} disabled={!commentDraft.trim() || commentSending}>
-                        {commentSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                        {commentSending ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
                       </Button>
                     </div>
                   )}

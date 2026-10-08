@@ -5,7 +5,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Briefcase, Users, ArrowRight, Loader2, Radar } from "lucide-react";
+import { Sparkles, Briefcase, Users, ArrowRight, Radar } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 interface DigestPayload {
@@ -79,7 +80,7 @@ export const OpportunityIntelCard = ({ className }: { className?: string }) => {
             <p className="text-sm font-bold">Your Intel Brief</p>
             <p className="text-xs text-muted-foreground mt-0.5">Get a daily personalized snapshot of matches, gigs, and sponsor leads.</p>
             <Button size="sm" className="mt-3 h-8 text-xs" onClick={generateNow} disabled={generating}>
-              {generating ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
+              {generating ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" /> : <Sparkles className="h-3.5 w-3.5 mr-1.5" />}
               Generate brief
             </Button>
           </div>

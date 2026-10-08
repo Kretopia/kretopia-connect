@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   PenLine, IdCard, Compass, Send, ArrowUpRight,
-  CheckCircle2, Clock, ShieldQuestion, Loader2,
+  CheckCircle2, Clock, ShieldQuestion,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,7 +196,7 @@ export default function KretoTab() {
         {/* Live context: Passport, Scout, recent actions */}
         {loadingContext ? (
           <div className="flex items-center gap-2 text-foreground/40 text-sm py-6">
-            <Loader2 className="h-4 w-4 animate-spin" /> Loading your context…
+            <KretopiaSpinner className="h-4 w-4" /> Loading your context…
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">

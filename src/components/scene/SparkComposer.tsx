@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Image, Link2, Loader2, Send, X } from "lucide-react";
+import { Image, Link2, Send, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface SparkComposerProps {
@@ -176,7 +177,7 @@ export const SparkComposer = ({ userProfile, onPostCreated }: SparkComposerProps
                   onClick={handlePost}
                   disabled={posting || !hasContent}
                 >
-                  {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  {posting ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
                   Spark
                 </Button>
               </div>

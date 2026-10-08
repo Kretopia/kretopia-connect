@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { Loader2, ShieldAlert, ArrowLeft, ExternalLink, CheckCircle2, XCircle, FileText, Download } from "lucide-react";
+import { ShieldAlert, ArrowLeft, ExternalLink, CheckCircle2, XCircle, FileText, Download } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -339,7 +340,7 @@ const DisputeManage = () => {
 
             <div className="flex flex-col sm:flex-row gap-2">
               <Button onClick={saveResponse} disabled={submitting} className="flex-1">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
                 {dispute.owner_response ? "Update response" : "Submit response"}
               </Button>
               <Button
@@ -348,7 +349,7 @@ const DisputeManage = () => {
                 disabled={transferring}
                 className="flex-1"
               >
-                {transferring ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
+                {transferring ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
                 Transfer to challenger
               </Button>
             </div>

@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  Monitor, Smartphone, X, Save, Loader2, Eye, EyeOff,
+  Monitor, Smartphone, X, Save, Eye, EyeOff,
   GripVertical, ChevronDown, ChevronRight, ChevronLeft, Wand2,
   PanelLeft, ArrowLeft, Crown, Lock, FileDown, Palette, Star,
   Type, Image as ImageIcon, Plus, Trash2, LayoutTemplate, Check
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -222,7 +223,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
             <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Unsaved changes</Badge>
           )}
           <Button size="sm" onClick={handleDownload} disabled={generating} className="gap-1.5">
-            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileDown className="h-4 w-4" />}
+            {generating ? <KretopiaSpinner className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
             {generating ? "Generating..." : "Download PDF"}
           </Button>
           <Button variant="ghost" size="icon" onClick={onClose}>

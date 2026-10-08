@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, DollarSign, Calendar, CheckCircle2, Clock, AlertCircle, CreditCard, Send, Users, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, DollarSign, Calendar, CheckCircle2, Clock, AlertCircle, CreditCard, Send, Users, AlertTriangle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 // XP system removed
 import { analytics } from "@/lib/analytics";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
@@ -461,7 +462,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
                 className="gap-2"
               >
                 {batchLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                 ) : (
                   <Users className="h-4 w-4" />
                 )}
@@ -515,7 +516,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
                 <DialogFooter>
                   <Button onClick={handleSendGetPaidLink} disabled={getPaidLoading} className="gap-2">
                     {getPaidLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                     ) : (
                       <Send className="h-4 w-4" />
                     )}
@@ -726,7 +727,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
                                className="gap-2"
                              >
                                {payingMilestoneId === milestone.id ? (
-                                 <Loader2 className="h-4 w-4 animate-spin" />
+                                 <KretopiaSpinner className="h-4 w-4" />
                                ) : (
                                  <CreditCard className="h-4 w-4" />
                                )}

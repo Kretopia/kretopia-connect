@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Plus, CreditCard, Landmark } from "lucide-react";
+import { Plus, CreditCard, Landmark } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -151,7 +152,7 @@ export function WalletTopUpDialog({ open, onOpenChange }: WalletTopUpDialogProps
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleTopUp} disabled={loading || !amount || Number(amount) <= 0}>
             {loading ? (
-              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+              <><KretopiaSpinner className="mr-2 h-4 w-4" />Processing...</>
             ) : (
               <><Plus className="mr-2 h-4 w-4" />Add ${amount || "0.00"}</>
             )}

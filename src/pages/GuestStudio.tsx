@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Loader2, Sparkles, FileText, Folder, MessageCircle, UserPlus, ShieldCheck, Target, Send, Link2, Download, Lock } from "lucide-react";
+import { Sparkles, FileText, Folder, MessageCircle, UserPlus, ShieldCheck, Target, Send, Link2, Download, Lock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
@@ -261,7 +262,7 @@ export default function GuestStudio() {
               </p>
             </div>
             <Button className="w-full" onClick={handleEnter} disabled={submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Enter the Studio →"}
+              {submitting ? <KretopiaSpinner className="h-4 w-4" /> : "Enter the Studio →"}
             </Button>
             <p className="text-[10px] text-muted-foreground text-center">
               Bookmark this link to come back any time.
@@ -364,7 +365,7 @@ export default function GuestStudio() {
                 disabled={dropping || !dropText.trim()}
                 className="w-full mt-2 gap-1.5"
               >
-                {dropping ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {dropping ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 Drop 🎯
               </Button>
             </div>

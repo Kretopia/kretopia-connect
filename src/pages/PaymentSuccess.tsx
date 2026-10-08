@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Loader2, Sparkles, Crown } from "lucide-react";
+import { CheckCircle2, Sparkles, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function PaymentSuccess() {
@@ -79,7 +80,7 @@ export default function PaymentSuccess() {
       <div className="container mx-auto py-16 px-4 flex items-center justify-center min-h-screen">
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
-            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+            <KretopiaSpinner className="h-12 w-12 mx-auto mb-4 text-primary" />
             <p className="text-lg font-semibold">Verifying your payment...</p>
             <p className="text-sm text-muted-foreground mt-2">
               This will only take a moment

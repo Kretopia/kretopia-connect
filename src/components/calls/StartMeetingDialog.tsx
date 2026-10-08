@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Loader2,
   Video,
   UserPlus,
   Check,
@@ -26,6 +25,7 @@ import {
   Copy,
   Search,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -346,7 +346,7 @@ export const StartMeetingDialog = ({
               >
                 {creating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4" />
                     Working…
                   </>
                 ) : (
@@ -550,7 +550,7 @@ function PeoplePicker({
         <div className="space-y-1 max-h-56 overflow-y-auto rounded-md border border-border">
           {loading && merged.length === 0 ? (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="px-3 py-6 text-center text-xs text-muted-foreground">

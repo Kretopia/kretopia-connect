@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ApplyToStageSheetProps {
   open: boolean;
@@ -100,7 +100,7 @@ export function ApplyToStageSheet({
           </div>
 
           <Button onClick={submit} disabled={submitting} className="w-full" size="lg">
-            {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Sending…</> : "Send application"}
+            {submitting ? <><KretopiaSpinner className="h-4 w-4 mr-2" /> Sending…</> : "Send application"}
           </Button>
         </div>
       </SheetContent>

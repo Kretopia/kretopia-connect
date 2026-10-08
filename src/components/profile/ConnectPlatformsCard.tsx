@@ -17,7 +17,6 @@ import {
   Disc3, 
   CheckCircle2, 
   ExternalLink,
-  Loader2,
   RefreshCw,
   Unlink,
   Search,
@@ -25,6 +24,7 @@ import {
   Video,
   Link
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ConnectedPlatform {
   id: string;
@@ -508,7 +508,7 @@ export function ConnectPlatformsCard() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -598,7 +598,7 @@ export function ConnectPlatformsCard() {
                       disabled={connecting === platform.id}
                     >
                       {connecting === platform.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <KretopiaSpinner className="h-4 w-4" />
                       ) : (
                         <RefreshCw className="h-4 w-4" />
                       )}
@@ -684,7 +684,7 @@ export function ConnectPlatformsCard() {
                             >
                               {searching ? (
                                 <>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                                   Fetching...
                                 </>
                               ) : (
@@ -726,7 +726,7 @@ export function ConnectPlatformsCard() {
                             >
                               {searching ? (
                                 <>
-                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  <KretopiaSpinner className="h-4 w-4 mr-2" />
                                   Saving...
                                 </>
                               ) : (
@@ -748,7 +748,7 @@ export function ConnectPlatformsCard() {
                     size="sm"
                   >
                     {connecting === platform.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <KretopiaSpinner className="h-4 w-4 mr-2" />
                     ) : (
                       <ExternalLink className="h-4 w-4 mr-2" />
                     )}
@@ -794,7 +794,7 @@ export function ConnectPlatformsCard() {
                         >
                           {searching ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <KretopiaSpinner className="h-4 w-4 mr-2" />
                               Searching...
                             </>
                           ) : (

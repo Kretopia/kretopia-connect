@@ -6,10 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Film, Tv, Music, Disc3, Video, ExternalLink, CheckCircle2,
-  ChevronLeft, ChevronRight, Loader2, Trash2, Mic2, Drama,
+  ChevronLeft, ChevronRight, Trash2, Mic2, Drama,
   PersonStanding, CalendarDays, Sparkles, Crown, Shirt,
   Megaphone, Briefcase,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { CreditCoverPlaceholder } from "./CreditCoverPlaceholder";
 import { resolveCreditThumbnail } from "@/lib/thumbnailExtractor";
 import { cn } from "@/lib/utils";
@@ -245,7 +246,7 @@ function CreditCard({ credit, isOwnProfile, onDelete, isDeleting }: {
               disabled={isDeleting}
               className="h-6 w-6 rounded-full bg-destructive/80 backdrop-blur-sm flex items-center justify-center hover:bg-destructive transition-colors text-destructive-foreground"
             >
-              {isDeleting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+              {isDeleting ? <KretopiaSpinner className="h-3 w-3" /> : <Trash2 className="h-3 w-3" />}
             </button>
           )}
         </div>
@@ -339,7 +340,7 @@ export function VerifiedCreditsSection({ userId, isOwnProfile, onCreditsChanged 
     return (
       <Card aria-busy="true" aria-label="Loading verified credits">
         <CardContent className="flex flex-col items-center justify-center py-12 gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <KretopiaSpinner className="h-8 w-8 text-primary" />
           <p className="text-sm text-muted-foreground">Loading credits...</p>
         </CardContent>
       </Card>

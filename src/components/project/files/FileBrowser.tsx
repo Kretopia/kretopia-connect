@@ -31,11 +31,11 @@ import {
   Trash2,
   Pencil,
   Home,
-  Loader2,
   Search,
   Link2,
   ExternalLink,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { extractProjectFilePath, getProjectFileSignedUrl } from "@/lib/projectFiles";
 import { FileThumbnail } from "./FileThumbnail";

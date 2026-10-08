@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Video, Loader2 } from "lucide-react";
+import { Video } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -116,7 +117,7 @@ export const QuickCallButton = ({
         aria-label="Start a quick call"
       >
         {creating ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <KretopiaSpinner className="h-4 w-4" />
         ) : (
           <Video className="h-4 w-4" />
         )}

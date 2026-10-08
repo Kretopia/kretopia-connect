@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, ArrowLeft, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, Loader2, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone, Sparkles } from "lucide-react";
+import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, ArrowLeft, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone, Sparkles } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -394,7 +395,7 @@ const OpportunityDetail = () => {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Briefcase className="mx-auto mb-4 h-16 w-16 animate-pulse text-primary" />
-          <p className="text-muted-foreground">Loading gig details...</p>
+          <KretopiaLoader size="sm" label="Loading gig details..." />
         </div>
       </div>
     );
@@ -466,7 +467,7 @@ const OpportunityDetail = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" disabled={actionLoading}>
-                    {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MoreVertical className="h-4 w-4" />}
+                    {actionLoading ? <KretopiaSpinner className="h-4 w-4" /> : <MoreVertical className="h-4 w-4" />}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -875,7 +876,7 @@ const OpportunityDetail = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {actionLoading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -894,7 +895,7 @@ const OpportunityDetail = () => {
           <AlertDialogFooter>
             <AlertDialogCancel>Keep application</AlertDialogCancel>
             <AlertDialogAction onClick={handleWithdraw} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {actionLoading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               Withdraw
             </AlertDialogAction>
           </AlertDialogFooter>

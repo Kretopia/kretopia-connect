@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Search, Sparkles } from "lucide-react";
+import { Search, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import GigCard, { type GigOpportunity, type GigCreatorProfile } from "@/components/opportunity/GigCard";
@@ -202,7 +203,7 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
   if (loading) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <KretopiaSpinner className="h-6 w-6 text-primary" />
         <p className="text-sm text-muted-foreground">Finding what fits you…</p>
       </div>
     );

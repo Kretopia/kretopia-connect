@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Ticket, Tag, Check, X, Minus, Plus } from "lucide-react";
+import { Ticket, Tag, Check, X, Minus, Plus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -139,7 +140,7 @@ export const TicketPurchaseDialog = ({ open, onOpenChange, eventId, eventTitle, 
 
         {loading ? (
           <div className="py-12 flex justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
           </div>
         ) : tiers.length === 0 ? (
           <div className="py-12 text-center text-muted-foreground">
@@ -247,7 +248,7 @@ export const TicketPurchaseDialog = ({ open, onOpenChange, eventId, eventTitle, 
                     onClick={validatePromo}
                     disabled={!promoCode.trim() || validating}
                   >
-                    {validating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                    {validating ? <KretopiaSpinner className="h-4 w-4" /> : "Apply"}
                   </Button>
                 </div>
                 {promoState && (
@@ -289,7 +290,7 @@ export const TicketPurchaseDialog = ({ open, onOpenChange, eventId, eventTitle, 
               size="lg"
             >
               {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : total === 0 ? (
                 "Claim free ticket"
               ) : (

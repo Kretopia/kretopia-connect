@@ -7,7 +7,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import { Truck, Mic2, Plus, Loader2, Mail, Phone, DollarSign, Trash2 } from "lucide-react";
+import { Truck, Mic2, Plus, Mail, Phone, DollarSign, Trash2 } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 type Kind = "supplier" | "talent";
 
@@ -156,7 +157,7 @@ export function EventCrmSection({ project, currentUserId, kind }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-xs text-muted-foreground py-6 text-center">Loading…</div>
+        <KretopiaLoader size="sm" label="Loading…" className="py-6" />
       ) : rows.length === 0 ? (
         <button
           type="button"
@@ -275,7 +276,7 @@ export function EventCrmSection({ project, currentUserId, kind }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={create} disabled={!name.trim() || busy}>
-              {busy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Add
+              {busy && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />} Add
             </Button>
           </DialogFooter>
         </DialogContent>

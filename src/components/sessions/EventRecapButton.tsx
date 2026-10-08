@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -75,7 +76,7 @@ export const EventRecapButton = ({ eventId, eventTitle, eventCategory, venueName
 
   return (
     <Button variant="gradient" className="w-full gap-2" onClick={createRecap} disabled={posting}>
-      {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+      {posting ? <KretopiaSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
       Post Event Recap to Feed
     </Button>
   );

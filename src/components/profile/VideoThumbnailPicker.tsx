@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Image as ImageIcon, Loader2, Check } from "lucide-react";
+import { Image as ImageIcon, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 interface VideoThumbnailPickerProps {
@@ -170,7 +171,7 @@ export const VideoThumbnailPicker = ({
         {/* Preset thumbnails */}
         {generating && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <KretopiaSpinner className="h-3 w-3" />
             Generating preview frames...
           </div>
         )}

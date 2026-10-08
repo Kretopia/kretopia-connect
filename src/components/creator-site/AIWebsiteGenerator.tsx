@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Wand2, CheckCircle2, ArrowRight, Globe, Sparkles } from "lucide-react";
+import { Wand2, CheckCircle2, ArrowRight, Globe, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -181,7 +182,7 @@ export const AIWebsiteGenerator = ({ open, onOpenChange, onComplete }: Props) =>
           {step === 'generating' && (
             <div className="flex flex-col items-center justify-center py-16 space-y-4">
               <div className="relative">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <KretopiaSpinner className="h-10 w-10 text-primary" />
                 <Wand2 className="h-4 w-4 text-primary absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
               </div>
               <div className="text-center">
@@ -274,7 +275,7 @@ export const AIWebsiteGenerator = ({ open, onOpenChange, onComplete }: Props) =>
               </Button>
               <Button size="sm" onClick={handlePublish} disabled={publishing}>
                 {publishing ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4 mr-1" />
                 ) : (
                   <Globe className="h-4 w-4 mr-1" />
                 )}

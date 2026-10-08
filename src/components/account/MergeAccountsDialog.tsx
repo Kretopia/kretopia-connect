@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Shield, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Shield, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import type { DuplicateCandidate } from "@/hooks/useDuplicateAccounts";
 
 interface Props {
@@ -200,7 +201,7 @@ const Tag = ({ children }: { children: React.ReactNode }) => (
 
 const Spinner = ({ label }: { label: string }) => (
   <div className="py-10 flex flex-col items-center gap-3">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    <KretopiaSpinner className="h-8 w-8 text-primary" />
     <p className="text-sm text-muted-foreground">{label}</p>
   </div>
 );

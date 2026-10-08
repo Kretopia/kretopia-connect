@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCog, Loader2 } from "lucide-react";
+import { UserCog } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { MergeAccountsDialog } from "./MergeAccountsDialog";
@@ -67,7 +68,7 @@ export const ManualMergeAccountPanel = () => {
           onKeyDown={(e) => e.key === "Enter" && lookup()}
         />
         <Button onClick={lookup} disabled={loading}>
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Continue"}
+          {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Continue"}
         </Button>
       </div>
 

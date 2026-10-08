@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { MessageCircle, Loader2, ArrowRight, UserPlus2 } from "lucide-react";
+import { MessageCircle, ArrowRight, UserPlus2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -216,7 +217,7 @@ export const EventGroupChatCard = ({
 
           {isHost && (
             <div className="flex items-center gap-2 shrink-0">
-              {busy && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              {busy && <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />}
               <Switch checked={groupChatEnabled} onCheckedChange={handleToggle} disabled={busy} />
             </div>
           )}
@@ -233,7 +234,7 @@ export const EventGroupChatCard = ({
               </p>
             </div>
             <Button size="sm" variant="outline" onClick={handleAddAllRsvps} disabled={busy} className="shrink-0">
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add all"}
+              {busy ? <KretopiaSpinner className="h-3.5 w-3.5" /> : "Add all"}
             </Button>
           </div>
         )}

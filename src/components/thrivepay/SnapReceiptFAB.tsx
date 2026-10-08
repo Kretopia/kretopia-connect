@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Camera as CameraIcon, Loader2, Check, X, Sparkles, ImagePlus } from "lucide-react";
+import { Camera as CameraIcon, Check, X, Sparkles, ImagePlus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -442,7 +443,7 @@ export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.5rem)" }}
       >
         {scanning ? (
-          <Loader2 className="h-6 w-6 animate-spin text-primary-foreground" />
+          <KretopiaSpinner className="h-6 w-6 text-primary-foreground" />
         ) : (
           <CameraIcon className="h-6 w-6 text-primary-foreground" />
         )}
@@ -571,7 +572,7 @@ export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
 
               {scanning && (
                 <div className="flex items-center gap-2 rounded-lg border bg-card p-3 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <KretopiaSpinner className="h-4 w-4 text-primary" />
                   Capturing the breakdown…
                 </div>
               )}
@@ -681,7 +682,7 @@ export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
                 <X className="h-4 w-4 mr-1" /> Cancel
               </Button>
               <Button onClick={handleAdd} disabled={scanning || saving || !form.amount || !form.title.trim()} className="flex-1 bg-primary">
-                {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Check className="h-4 w-4 mr-1" />}
+                {saving ? <KretopiaSpinner className="h-4 w-4 mr-1" /> : <Check className="h-4 w-4 mr-1" />}
                 Add to expenses
               </Button>
             </div>

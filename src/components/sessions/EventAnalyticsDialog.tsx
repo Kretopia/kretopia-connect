@@ -16,9 +16,9 @@ import {
   ScanLine,
   DollarSign,
   Share2,
-  Loader2,
   MousePointerClick,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -207,7 +207,7 @@ export function EventAnalyticsDialog({
 
         {loading || !stats ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
           </div>
         ) : (
           <div className="space-y-4">

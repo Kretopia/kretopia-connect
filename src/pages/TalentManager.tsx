@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Copy, Users, DollarSign, Link2, TrendingUp, Loader2, Briefcase, ShieldCheck, ArrowRight, Plus } from "lucide-react";
+import { Copy, Users, DollarSign, Link2, TrendingUp, Briefcase, ShieldCheck, ArrowRight, Plus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { SEO } from "@/components/SEO";
 
@@ -153,7 +154,7 @@ export default function TalentManager() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -227,7 +228,7 @@ export default function TalentManager() {
                 <p className="text-xs text-muted-foreground">Leave blank for auto-generated code</p>
               </div>
               <Button onClick={createManagerProfile} disabled={creating} className="w-full">
-                {creating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Users className="h-4 w-4 mr-2" />}
+                {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Users className="h-4 w-4 mr-2" />}
                 Activate Manager Profile
               </Button>
             </CardContent>

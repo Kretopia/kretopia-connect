@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, X, Sparkles, Plus } from "lucide-react";
+import { X, Sparkles, Plus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -201,7 +202,7 @@ export function ScoutPreferencesDialog({ open, onOpenChange, onSaved }: Props) {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
         ) : (
           <div className="mt-4 space-y-6">
@@ -349,7 +350,7 @@ export function ScoutPreferencesDialog({ open, onOpenChange, onSaved }: Props) {
         <SheetFooter className="mt-6 gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={save} disabled={saving || loading}>
-            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+            {saving && <KretopiaSpinner className="h-4 w-4 mr-1.5" />}
             Save preferences
           </Button>
         </SheetFooter>

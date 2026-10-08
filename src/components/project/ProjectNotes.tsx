@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Save, Plus, Trash2, FileText, CheckSquare } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -189,7 +190,7 @@ export function ProjectNotes({ projectId }: ProjectNotesProps) {
     .filter((l) => /^\s*[-*•]\s+\S/.test(l));
 
   if (loading) {
-    return <div className="p-4">Loading notes...</div>;
+    return <KretopiaLoader size="sm" label="Loading notes..." className="p-4" />;
   }
 
   return (

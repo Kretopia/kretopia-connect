@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Landmark, ShieldCheck } from "lucide-react";
+import { Landmark, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -171,7 +172,7 @@ export function WalletAddBankSheet({ open, onOpenChange, onAdded }: Props) {
           </div>
 
           <Button className="w-full" onClick={submit} disabled={loading}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving</> : "Save bank account"}
+            {loading ? <><KretopiaSpinner className="mr-2 h-4 w-4" /> Saving</> : "Save bank account"}
           </Button>
         </div>
       </SheetContent>

@@ -12,7 +12,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useLocationCategories } from "@/hooks/useLocationCategories";
 import { SuggestCategoryDialog } from "./SuggestCategoryDialog";
-import { Loader2, MapPin, Camera, X, DollarSign } from "lucide-react";
+import { MapPin, Camera, X, DollarSign } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface AddCreativeLocationDialogProps {
   open: boolean;
@@ -377,7 +378,7 @@ export function AddCreativeLocationDialog({
           )}
 
           <Button onClick={handleSubmit} disabled={loading || !name.trim() || !defaultLocation} className="w-full">
-            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MapPin className="h-4 w-4 mr-2" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <MapPin className="h-4 w-4 mr-2" />}
             Pin This Spot
           </Button>
         </div>

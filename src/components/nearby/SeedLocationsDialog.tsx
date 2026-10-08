@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, MapPin } from "lucide-react";
+import { Sparkles, MapPin } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface SeedLocationsDialogProps {
   open: boolean;
@@ -80,7 +81,7 @@ export function SeedLocationsDialog({ open, onOpenChange, userLocation, onSeeded
           <Button onClick={handleSeed} disabled={loading || !city.trim()} className="w-full gap-2">
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
                 Discovering spots...
               </>
             ) : (

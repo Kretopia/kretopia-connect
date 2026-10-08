@@ -9,7 +9,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
   Sparkles, 
-  Loader2, 
   FileText, 
   Copy, 
   Check, 
@@ -20,6 +19,7 @@ import {
   Users,
   ListChecks
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -269,7 +269,7 @@ ${brief.communication_plan}
               >
                 {generating ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4" />
                     Generating Brief...
                   </>
                 ) : (

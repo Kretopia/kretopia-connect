@@ -2,10 +2,11 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Mic, Square, Loader2, X, ArrowRight, Sparkles, Maximize2,
+  Mic, Square, X, ArrowRight, Sparkles, Maximize2,
   MessageSquareText, FileEdit, Rocket, Upload, Link2, ShieldCheck,
   Wand2, FolderPlus, CheckCircle2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
 import { Textarea } from "@/components/ui/textarea";
@@ -1373,7 +1374,7 @@ export const VoiceFirstCreateModal = ({
                 >
                   <div className="h-14 w-14 shrink-0 rounded-md overflow-hidden bg-muted flex items-center justify-center">
                     {uploadingCover ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
                     ) : coverUrl ? (
                       <img src={coverUrl} alt="" className="h-full w-full object-cover" />
                     ) : (
@@ -1589,7 +1590,7 @@ export const VoiceFirstCreateModal = ({
               disabled={creating || uploadingCover || !coverUrl || !brief.project.title.trim() || paymentsInvolved === null}
               className="w-auto gap-1.5 px-6"
             >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+              {creating ? <KretopiaSpinner className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
               {brief.deliverables?.length ? "Create All & Open" : "Open the Room"}
             </CtaButton>
           </div>

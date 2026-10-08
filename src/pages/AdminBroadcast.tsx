@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Loader2, Send, Bell, TestTube } from "lucide-react";
+import { Send, Bell, TestTube } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import Navbar from "@/components/Navbar";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -281,7 +282,7 @@ Founder, Kretopia`);
                   variant="outline"
                 >
                   {testLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4" />
                   ) : (
                     "Send Test"
                   )}
@@ -300,7 +301,7 @@ Founder, Kretopia`);
             >
               {loading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="mr-2 h-4 w-4" />
                   Broadcasting...
                 </>
               ) : (

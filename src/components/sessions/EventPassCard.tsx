@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import QRCodeStyling from "qr-code-styling";
-import { Loader2, Ticket, Check, Calendar, MapPin, CalendarPlus, Navigation, X } from "lucide-react";
+import { Ticket, Check, Calendar, MapPin, CalendarPlus, Navigation, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
@@ -168,7 +169,7 @@ export const EventPassCard = ({
           <div className="relative flex flex-col items-center">
             {loading ? (
               <div className="h-[240px] w-[240px] flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <KretopiaSpinner className="h-6 w-6 text-primary" />
               </div>
             ) : token ? (
               <>

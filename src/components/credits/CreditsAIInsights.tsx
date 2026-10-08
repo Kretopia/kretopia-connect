@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, RefreshCw, Check, X, Pencil, Info } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { DashboardPanel, CreditsEmptyState } from "./CreditsPrimitives";
 import { cn } from "@/lib/utils";
@@ -119,7 +120,7 @@ export function CreditsAIInsights({
           disabled={loading}
           className="btn-glass btn-glass-outline inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold disabled:opacity-50"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} aria-hidden />
+          {loading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Refresh
         </button>
       }

@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { GripVertical, Eye, EyeOff, Save, Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { GripVertical, Eye, EyeOff, Save, ChevronDown, ChevronRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -198,7 +199,7 @@ export const CreatorSiteSectionEditor = ({ initialSections, initialHeadline, ini
         <BlockEditor blocks={customBlocks} onChange={setCustomBlocks} />
 
         <Button onClick={handleSave} disabled={saving} className="w-full">
-          {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />}
           Save Changes
         </Button>
       </CardContent>

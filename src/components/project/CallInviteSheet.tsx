@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Search,
-  Loader2,
   Link2,
   Check,
   Phone,
@@ -13,6 +12,7 @@ import {
   Share2,
   Copy,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -284,7 +284,7 @@ export const CallInviteSheet = ({ open, onOpenChange, callContext }: Props) => {
               className="flex-1 h-11 rounded-full gap-2"
             >
               {generatingLink ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : canShare ? (
                 <Share2 className="h-4 w-4" />
               ) : (
@@ -347,7 +347,7 @@ export const CallInviteSheet = ({ open, onOpenChange, callContext }: Props) => {
         <div className="flex-1 min-h-0 overflow-y-auto">
           {loadingContacts ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8 text-muted-foreground gap-2 py-10">
@@ -415,7 +415,7 @@ export const CallInviteSheet = ({ open, onOpenChange, callContext }: Props) => {
               className="w-full h-12 rounded-full gap-2 text-base font-semibold"
             >
               {ringing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : (
                 <Phone className="h-4 w-4" />
               )}

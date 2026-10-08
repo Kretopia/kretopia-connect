@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, RefreshCw, CheckCircle2, AlertTriangle, Link as LinkIcon } from "lucide-react";
+import { RefreshCw, CheckCircle2, AlertTriangle, Link as LinkIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   getAttributionStatus,
   retryAttachment,
@@ -118,7 +119,7 @@ export function AmbassadorAttributionVerifier({ ownAmbassadorCode }: Props) {
       <CardContent className="space-y-3 text-sm">
         {loading || !status ? (
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="h-4 w-4" />
             Checking…
           </div>
         ) : (
@@ -152,7 +153,7 @@ export function AmbassadorAttributionVerifier({ ownAmbassadorCode }: Props) {
               </Button>
               {user && status.stage === "captured" && (
                 <Button size="sm" onClick={onRetry} disabled={running}>
-                  {running && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
+                  {running && <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" />}
                   Run attach
                 </Button>
               )}

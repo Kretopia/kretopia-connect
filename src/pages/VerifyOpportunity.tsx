@@ -3,7 +3,8 @@ import { useSearchParams, Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Loader2, XCircle, Briefcase, UserPlus } from "lucide-react";
+import { CheckCircle2, XCircle, Briefcase, UserPlus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Helmet } from "react-helmet-async";
 
 const VerifyOpportunity = () => {
@@ -51,7 +52,7 @@ const VerifyOpportunity = () => {
         {status === "verifying" && (
           <CardHeader>
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Loader2 className="h-8 w-8 text-primary animate-spin" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">Verifying...</CardTitle>
             <CardDescription>Hang tight while we activate your listing.</CardDescription>

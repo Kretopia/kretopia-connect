@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Award, Newspaper, Briefcase, FileText } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 interface SavedSparksDialogProps {
@@ -132,7 +133,7 @@ export const SavedSparksDialog = ({ open, onOpenChange }: SavedSparksDialogProps
         <div className="space-y-3" role="list" aria-label="Saved items">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3" aria-busy="true">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+              <KretopiaSpinner className="h-8 w-8" />
               <p className="text-sm text-muted-foreground">Loading saved items...</p>
             </div>
           ) : savedSparks?.length === 0 ? (

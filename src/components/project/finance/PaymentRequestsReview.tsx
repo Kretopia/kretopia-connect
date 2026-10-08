@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { HandCoins, CheckCircle2, X, Loader2, FileText } from "lucide-react";
+import { HandCoins, CheckCircle2, X, FileText } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useDeskIntent } from "@/hooks/useDeskIntent";
 import { toast } from "sonner";
@@ -216,7 +217,7 @@ export function PaymentRequestsReview({ projectId, currentUserId, isOwner, colla
                     disabled={busy}
                     className="h-7 text-xs gap-1 bg-energy text-energy-foreground hover:bg-energy/90"
                   >
-                    {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                    {busy ? <KretopiaSpinner className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
                     Approve
                   </Button>
                   <Button

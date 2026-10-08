@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Clock, MapPin, Cloud, Users, Plus, Trash2, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Cloud, Users, Plus, Trash2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
@@ -77,7 +78,7 @@ export function CallSheetTab({ projectId, currentUserId }: CallSheetTabProps) {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
   }
 
   return (

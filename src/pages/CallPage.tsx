@@ -13,7 +13,8 @@ import { useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2, Copy } from "lucide-react";
+import { Copy } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { CallPreflightGate } from "@/components/calls/CallPreflightGate";
 import { Greenroom } from "@/components/calls/Greenroom";
@@ -57,7 +58,7 @@ export default function CallPage() {
   if (phase === "idle" || phase === "loading") {
     return (
       <FullScreen>
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
         <p className="mt-3 text-sm text-muted-foreground">Loading meeting…</p>
       </FullScreen>
     );

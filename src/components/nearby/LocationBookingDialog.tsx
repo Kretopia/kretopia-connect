@@ -8,7 +8,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, CalendarIcon, Clock, DollarSign } from "lucide-react";
+import { CalendarIcon, Clock, DollarSign } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import type { CreativeLocation } from "./LocationListItem";
 
 interface LocationBookingDialogProps {
@@ -138,7 +139,7 @@ export function LocationBookingDialog({ location, open, onOpenChange }: Location
             disabled={!date || submitting}
             className="w-full"
           >
-            {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             Send Booking Request
           </Button>
         </div>

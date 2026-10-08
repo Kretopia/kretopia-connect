@@ -7,10 +7,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  Sparkles, Search, Loader2, CheckCircle2, Music, Film, 
+  Sparkles, Search, CheckCircle2, Music, Film, 
   Palette, Award, Newspaper, Link2, ExternalLink, User,
   AlertCircle, RefreshCw
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 
@@ -367,7 +368,7 @@ export const AIProfileDiscoveryStep = ({
         >
           {isSearching ? (
             <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              <KretopiaSpinner className="mr-2 h-5 w-5" />
               Searching the web...
             </>
           ) : (
@@ -406,7 +407,7 @@ export const AIProfileDiscoveryStep = ({
               disabled={isImporting}
               className="shrink-0"
             >
-              {isImporting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Claim This Profile"}
+              {isImporting ? <KretopiaSpinner className="h-4 w-4" /> : "Claim This Profile"}
             </Button>
           </div>
         </Card>
@@ -515,7 +516,7 @@ export const AIProfileDiscoveryStep = ({
             >
               {isImporting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="mr-2 h-4 w-4" />
                   Importing...
                 </>
               ) : (

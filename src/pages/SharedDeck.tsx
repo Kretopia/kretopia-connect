@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { DeckRenderer, type DeckContent } from "@/components/thrive/DeckRenderer";
 import type { DeckTheme } from "@/lib/deckThemes";
-import { Loader2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 export default function SharedDeck() {
   const { token } = useParams<{ token: string }>();
@@ -35,7 +35,7 @@ export default function SharedDeck() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }

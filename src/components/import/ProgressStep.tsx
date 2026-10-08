@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, Loader2, RotateCcw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, RotateCcw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -47,7 +48,7 @@ export const ProgressStep = ({ jobId, onDone, onRetry }: Props) => {
         <div className="flex items-center gap-2">
           {job?.status === "completed"
             ? <CheckCircle2 className="h-4 w-4 text-[hsl(var(--accent-pay))]" />
-            : <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+            : <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />}
           <p className="text-sm font-semibold">
             {job?.status === "completed" ? "All brought in" : job?.status === "failed" ? "Something went wrong" : "Bringing your work in…"}
           </p>

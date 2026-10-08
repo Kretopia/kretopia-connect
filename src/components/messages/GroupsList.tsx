@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Users, Plus, MessageCircle } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 export interface GroupRoom {
@@ -63,7 +64,7 @@ export const GroupsList = ({ currentUserId, selectedGroupId, onSelect, onCreate,
         </Button>
       </div>
       {loading ? (
-        <div className="p-6 text-center text-sm text-muted-foreground">Loading groups…</div>
+        <KretopiaLoader size="sm" label="Loading groups…" className="p-6" />
       ) : groups.length === 0 ? (
         <div className="p-8 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 border-2 border-primary/30 flex items-center justify-center mb-4">

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ImagePlus, Wand2, X, Upload } from "lucide-react";
+import { ImagePlus, Wand2, X, Upload } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 export interface ComposedArticle {
@@ -162,7 +163,7 @@ export const MagicComposeDialog = ({ open, onOpenChange, onComposed, initialTitl
               ))}
               <label className="aspect-square flex flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-border cursor-pointer hover:border-primary/50 transition-colors">
                 {uploading ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
                 ) : (
                   <>
                     <ImagePlus className="h-5 w-5 text-muted-foreground/50" />
@@ -193,7 +194,7 @@ export const MagicComposeDialog = ({ open, onOpenChange, onComposed, initialTitl
               Cancel
             </Button>
             <Button onClick={handleCompose} disabled={composing || rawText.trim().length < 50} className="gap-1.5">
-              {composing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
+              {composing ? <KretopiaSpinner className="h-4 w-4" /> : <Wand2 className="h-4 w-4" />}
               {composing ? "Composing… (~20s)" : "Compose Article"}
             </Button>
           </div>

@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, X, Loader2 } from "lucide-react";
+import { Camera, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ReviewPhotoUploadProps {
   onPhotosUploaded: (urls: string[]) => void;
@@ -74,7 +75,7 @@ export function ReviewPhotoUpload({ onPhotosUploaded, existingPhotos = [] }: Rev
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
           >
-            {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Camera className="h-3 w-3" />}
+            {uploading ? <KretopiaSpinner className="h-3 w-3" /> : <Camera className="h-3 w-3" />}
             Add Photos ({photos.length}/5)
           </Button>
         </>

@@ -3,8 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-  ChevronDown, Clock, Link2, Loader2, Mail, Pause, Play, PlusCircle, Send, Sparkles, Trash2,
+  ChevronDown, Clock, Link2, Mail, Pause, Play, PlusCircle, Send, Sparkles, Trash2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { STATUS_STYLES, type Lead, type Sequence, type SequenceEmail } from "./types";
 
 interface Props {
@@ -60,7 +61,7 @@ export const SequenceCard = ({
             <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
               {pendingEmails > 0 && (linkedLead?.email || seq.recipient_email) && (
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onSendNext} disabled={sending === seq.id} title="Send next email">
-                  {sending === seq.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5 text-primary" />}
+                  {sending === seq.id ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5 text-primary" />}
                 </Button>
               )}
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={onLinkLead} title="Link lead">
@@ -123,7 +124,7 @@ export const SequenceCard = ({
                 <PlusCircle className="h-3.5 w-3.5" /> Add Step
               </Button>
               <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={onGenerate} disabled={generating}>
-                {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                 AI Draft
               </Button>
             </div>

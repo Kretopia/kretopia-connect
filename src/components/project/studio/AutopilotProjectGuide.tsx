@@ -52,9 +52,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
-  ArrowLeft, ArrowRight, Check, Loader2, Sparkles, UserPlus, Flag,
+  ArrowLeft, ArrowRight, Check, Sparkles, UserPlus, Flag,
   FileText, ListChecks, Rocket, PauseCircle, X,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type StepId = "project" | "team" | "tasks" | "finish";
 
@@ -386,7 +387,7 @@ export function AutopilotProjectGuide({ project, currentUserId, open, onOpenChan
                 </Label>
                 {!briefDraft ? (
                   <Button onClick={generateBrief} disabled={briefLoading || !title.trim()} size="sm" variant="secondary" className="gap-1.5">
-                    {briefLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                    {briefLoading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                     {briefLoading ? "Analyzing your project context…" : "Draft a brief with Kreto"}
                   </Button>
                 ) : (
@@ -435,7 +436,7 @@ export function AutopilotProjectGuide({ project, currentUserId, open, onOpenChan
                     onKeyDown={(e) => e.key === "Enter" && sendInvite()}
                   />
                   <Button onClick={sendInvite} disabled={!isEmail || inviting} size="sm" className="shrink-0 gap-1.5">
-                    {inviting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                    {inviting ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <UserPlus className="h-3.5 w-3.5" />}
                     Invite
                   </Button>
                 </div>
@@ -461,7 +462,7 @@ export function AutopilotProjectGuide({ project, currentUserId, open, onOpenChan
                   <div className="flex gap-2">
                     <Input placeholder="Amount (optional)" type="number" value={msAmount} onChange={(e) => setMsAmount(e.target.value)} />
                     <Button onClick={addMilestone} disabled={!msTitle.trim() || addingMilestone} size="sm" className="shrink-0 gap-1.5">
-                      {addingMilestone ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Flag className="h-3.5 w-3.5" />}
+                      {addingMilestone ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Flag className="h-3.5 w-3.5" />}
                       Add
                     </Button>
                   </div>
@@ -520,7 +521,7 @@ export function AutopilotProjectGuide({ project, currentUserId, open, onOpenChan
                   </p>
                   <div className="flex items-center gap-2">
                     <Button onClick={finishSetup} disabled={finishing} size="sm" className="gap-1.5">
-                      {finishing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Rocket className="h-3.5 w-3.5" />}
+                      {finishing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Rocket className="h-3.5 w-3.5" />}
                       {finishing ? "Finishing…" : "Finish setup"}
                     </Button>
                     <Button onClick={pauseForLater} disabled={pausing || finishing} size="sm" variant="ghost" className="gap-1.5">
@@ -554,7 +555,7 @@ export function AutopilotProjectGuide({ project, currentUserId, open, onOpenChan
                 that validates this step's required fields (disabled until
                 met), saves anything pending, and advances in one click. */}
             <Button size="sm" onClick={handleContinue} disabled={!stepIsValid || advancing} className="gap-1 w-fit">
-              {advancing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <>Continue <ArrowRight className="h-3.5 w-3.5" /></>}
+              {advancing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <>Continue <ArrowRight className="h-3.5 w-3.5" /></>}
             </Button>
           </div>
         )}
