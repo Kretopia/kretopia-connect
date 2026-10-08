@@ -72,7 +72,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Kretopia <info@kretopia.com>",
+          from: "Kretopia <noreply@kretopia.com>",
           to: [email],
           subject: `${generated} is your Kretopia wallet code`,
           html: `<p>Your Kretopia guest wallet verification code is:</p>

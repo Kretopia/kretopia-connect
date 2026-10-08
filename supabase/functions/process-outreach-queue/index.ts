@@ -171,7 +171,7 @@ serve(async (req) => {
             const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(seq.user_id);
             
             await resend.emails.send({
-              from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <info@kretopia.com>`,
+              from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
               to: [recipientEmail],
               subject: nextEmail.subject,
               html: htmlBody,

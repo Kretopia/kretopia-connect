@@ -235,7 +235,7 @@ const handler = async (req: Request): Promise<Response> => {
             `;
 
             const { error: emailError } = await resend.emails.send({
-              from: "Kretopia <info@kretopia.com>",
+              from: "Kretopia <noreply@kretopia.com>",
               to: [contact.email],
               subject: campaign.subject,
               html: emailHtml,

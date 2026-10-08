@@ -9,7 +9,7 @@ const SITE_NAME = "Kretopia"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers — never the root domain.
 // The email API looks up this exact domain; a mismatch causes "No email domain record found".
-const SENDER_DOMAIN = "notify.thrivein.io"
+const SENDER_DOMAIN = "notify.kretopia.com"
 // FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
 // When display_from_root is enabled, this can be the root domain for cleaner branding,
 // even though actual sending uses the subdomain above.
@@ -17,7 +17,7 @@ const SENDER_DOMAIN = "notify.thrivein.io"
 // with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
 // this was "kretopia.com", whose own sender setup never finished DNS verification).
 // Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
-const FROM_DOMAIN = "thrivein.io"
+const FROM_DOMAIN = "kretopia.com"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
     payload: {
       message_id: messageId,
       to: effectiveRecipient,
-      from: `${SITE_NAME} <info@${FROM_DOMAIN}>`,
+      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
       sender_domain: SENDER_DOMAIN,
       subject: resolvedSubject,
       html,

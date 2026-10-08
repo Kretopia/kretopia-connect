@@ -141,7 +141,7 @@ serve(async (req) => {
               try {
                 const resend = new Resend(resendApiKey);
                 await resend.emails.send({
-                  from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <info@kretopia.com>`,
+                  from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
                   to: [recipient.email],
                   subject: personalSubject,
                   html: htmlBody,

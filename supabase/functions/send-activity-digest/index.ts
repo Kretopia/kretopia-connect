@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
           : `https://www.kretopia.com/unsubscribe`;
 
         const emailResult = await resend.emails.send({
-          from: "Kretopia <info@kretopia.com>",
+          from: "Kretopia <noreply@kretopia.com>",
           to: [email],
           subject: `📬 ${userName}, you have ${unreadCount} notifications waiting`,
           html: `

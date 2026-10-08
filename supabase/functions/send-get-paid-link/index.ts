@@ -100,7 +100,7 @@ serve(async (req) => {
         : '';
 
       await resend.emails.send({
-        from: "Kretopia <info@kretopia.com>",
+        from: "Kretopia <noreply@kretopia.com>",
         to: [recipientEmail],
         subject: `${senderName} wants to pay you 💰`,
         html: `
