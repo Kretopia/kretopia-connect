@@ -64,9 +64,18 @@ export interface KretopiaEmailProps {
   actions?: React.ReactNode
   /** Small muted text at the bottom of the card. */
   note?: React.ReactNode
+  /**
+   * One-click unsubscribe URL (send-transactional-email injects `unsubscribeUrl` into every template's props).
+   * Pass it from every lifecycle / marketing e-mail: when set, a visible "Unsubscribe" link is shown in the card
+   * footer. Transactional e-mails (RSVP, sign-in...) leave it out.
+   */
+  unsubscribeUrl?: string
 }
 
-export const KretopiaEmail = ({ preview, eyebrow, title, subtitle, hero, children, actions, note }: KretopiaEmailProps) => (
+/** The Kreto mascot used in the card header (same image, size and alt as the RSVP confirmation). */
+export const KretoHero = () => <Img src={KRETO_WAVE_URL} width="130" alt="Kreto waving" style={{ margin: '0 auto' }} />
+
+export const KretopiaEmail = ({ preview, eyebrow, title, subtitle, hero, children, actions, note, unsubscribeUrl }: KretopiaEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head>
       <meta name="color-scheme" content="dark" />
@@ -141,6 +150,12 @@ export const KretopiaEmail = ({ preview, eyebrow, title, subtitle, hero, childre
 
             <div style={{ padding: '18px 26px 24px', textAlign: 'center' }}>
               {note && <div style={{ margin: '0 0 14px', fontSize: '12px', lineHeight: '19px', color: K.dim }}>{note}</div>}
+              {unsubscribeUrl && (
+                <div style={{ margin: '0 0 14px', fontSize: '12px', lineHeight: '19px', color: K.dim }}>
+                  You're receiving this because you have a Kretopia account.{' '}
+                  <Link href={unsubscribeUrl} style={{ color: K.muted, textDecoration: 'underline' }}>Unsubscribe</Link>
+                </div>
+              )}
               <div style={{ fontSize: '9px', fontWeight: 700, letterSpacing: '0.28em', textTransform: 'uppercase', color: K.faint }}>
                 Kretopia · Where Creativity Lives
               </div>

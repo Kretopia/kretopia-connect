@@ -38,13 +38,13 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 // SENDER_DOMAIN must match the subdomain actually verified/delegated with the
 // email provider — do not change without re-verifying DNS, or sending breaks.
 const SITE_NAME = "Kretopia"
-const SENDER_DOMAIN = "notify.kretopia.com"
+// Kretopia's own sender is the default; the pair can be pinned per backend with two OPTIONAL secrets, with no
+// redeploy (same switch as send-transactional-email): EMAIL_SENDER_DOMAIN=notify.thrivein.io and
+// EMAIL_FROM_DOMAIN=thrivein.io keep the previous sender; deleting both switches to Kretopia's.
+const SENDER_DOMAIN = Deno.env.get("EMAIL_SENDER_DOMAIN") || "notify.kretopia.com"
 const ROOT_DOMAIN = "kretopia.com"
-// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain
-// with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
-// this was "kretopia.com", whose own sender setup never finished DNS verification).
-// Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
-const FROM_DOMAIN = "kretopia.com"
+// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain with 400 sender_domain_mismatch.
+const FROM_DOMAIN = Deno.env.get("EMAIL_FROM_DOMAIN") || "kretopia.com"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.

@@ -9,15 +9,18 @@ const SITE_NAME = "Kretopia"
 // SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
 // It MUST match the subdomain delegated to Lovable's nameservers — never the root domain.
 // The email API looks up this exact domain; a mismatch causes "No email domain record found".
-const SENDER_DOMAIN = "notify.kretopia.com"
+//
+// Kretopia's own sender is the default. The pair can be pinned per backend with two OPTIONAL secrets, with no
+// redeploy: a backend whose notify.kretopia.com is not verified yet sets
+//   EMAIL_SENDER_DOMAIN=notify.thrivein.io   EMAIL_FROM_DOMAIN=thrivein.io
+// and deleting both secrets switches it to Kretopia's. That is also the instant rollback if a send ever fails with
+// sender_domain_mismatch / "No email domain record found" (every send failed that way from 2026-08-17 to 2026-10-07).
+const SENDER_DOMAIN = Deno.env.get('EMAIL_SENDER_DOMAIN') || "notify.kretopia.com"
 // FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
 // When display_from_root is enabled, this can be the root domain for cleaner branding,
 // even though actual sending uses the subdomain above.
-// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain
-// with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
-// this was "kretopia.com", whose own sender setup never finished DNS verification).
-// Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
-const FROM_DOMAIN = "kretopia.com"
+// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain with 400 sender_domain_mismatch.
+const FROM_DOMAIN = Deno.env.get('EMAIL_FROM_DOMAIN') || "kretopia.com"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',

@@ -1,5 +1,5 @@
 import * as React from 'npm:react@18.3.1'
-import { KretopiaEmail, P, B, Panel, Cta, Small } from '../email-kit.tsx'
+import { KretopiaEmail, KretoHero, P, B, Panel, Cta, Small } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
 
 const APP_URL = 'https://www.kretopia.com'
@@ -9,9 +9,11 @@ interface Props {
   gigCount?: number
   profileViews?: number
   role?: string
+  /** Injected by send-transactional-email (one-click unsubscribe for this address). */
+  unsubscribeUrl?: string
 }
 
-const Day2EngagementEmail = ({ name, gigCount = 0, profileViews = 0, role }: Props) => (
+const Day2EngagementEmail = ({ name, gigCount = 0, profileViews = 0, role, unsubscribeUrl }: Props) => (
   <KretopiaEmail
     preview={
       gigCount > 0
@@ -20,6 +22,8 @@ const Day2EngagementEmail = ({ name, gigCount = 0, profileViews = 0, role }: Pro
     }
     eyebrow="Your first days"
     title={name ? `${name}, here's what's happening` : "Here's what's happening"}
+    hero={<KretoHero />}
+    unsubscribeUrl={unsubscribeUrl}
     actions={
       <>
         <Cta href={`${APP_URL}/?utm_source=lifecycle&utm_campaign=day2`}>{gigCount > 0 ? 'See matching gigs' : 'Open Kretopia'}</Cta>

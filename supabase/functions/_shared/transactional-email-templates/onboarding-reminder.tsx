@@ -1,18 +1,22 @@
 import * as React from 'npm:react@18.3.1'
-import { KretopiaEmail, P, B, Panel, Cta, Small } from '../email-kit.tsx'
+import { KretopiaEmail, KretoHero, P, B, Panel, Cta, Small } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
 
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
   name?: string
+  /** Injected by send-transactional-email (one-click unsubscribe for this address). */
+  unsubscribeUrl?: string
 }
 
-const OnboardingReminderEmail = ({ name }: Props) => (
+const OnboardingReminderEmail = ({ name, unsubscribeUrl }: Props) => (
   <KretopiaEmail
     preview="Your creative profile is almost ready — finish setting up in 2 minutes"
     eyebrow="Almost there"
     title={name ? `${name}, you're almost there` : "You're almost there"}
+    hero={<KretoHero />}
+    unsubscribeUrl={unsubscribeUrl}
     actions={
       <>
         <Cta href={`${APP_URL}/onboarding`}>Complete Your Profile</Cta>
