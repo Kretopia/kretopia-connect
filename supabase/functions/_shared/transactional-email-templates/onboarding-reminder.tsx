@@ -1,11 +1,7 @@
 import * as React from 'npm:react@18.3.1'
-import {
-  Body, Button, Container, Head, Heading, Html, Img, Preview, Section, Text,
-} from 'npm:@react-email/components@0.0.22'
+import { KretopiaEmail, P, B, Panel, Cta, Small } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
 
-const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
@@ -13,49 +9,28 @@ interface Props {
 }
 
 const OnboardingReminderEmail = ({ name }: Props) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>Your creative profile is almost ready — finish setting up in 2 minutes</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
-        
-        <Heading style={h1}>
-          {name ? `${name}, you're almost there` : "You're almost there"}
-        </Heading>
-        
-        <Text style={text}>
-          You started setting up your Kretopia profile yesterday — and we saved your progress. Just a couple more steps and you'll be visible to creators, brands, and collaborators worldwide.
-        </Text>
-
-        <Section style={highlightBox}>
-          <Text style={highlightText}>
-            <strong>Here's what's waiting for you:</strong>
-          </Text>
-          <Text style={highlightText}>
-            🎯 Get matched with creators who complement your skills{'\n'}
-            📍 Discover sessions, meetups and gigs near you{'\n'}
-            🏆 Build your verified creative resume
-          </Text>
-        </Section>
-
-        <Button style={button} href={`${APP_URL}/onboarding`}>
-          Complete Your Profile
-        </Button>
-
-        <Text style={subtext}>
-          Takes less than 2 minutes — we'll walk you through it.
-        </Text>
-
-        <Text style={footer}>
-          See you on the other side,{'\n'}
-          The Kretopia Team
-        </Text>
-        <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
-
-      </Container>
-    </Body>
-  </Html>
+  <KretopiaEmail
+    preview="Your creative profile is almost ready — finish setting up in 2 minutes"
+    eyebrow="Almost there"
+    title={name ? `${name}, you're almost there` : "You're almost there"}
+    actions={
+      <>
+        <Cta href={`${APP_URL}/onboarding`}>Complete Your Profile</Cta>
+        <Small style={{ textAlign: 'center', margin: '6px 0 0' }}>Takes less than 2 minutes — we'll walk you through it.</Small>
+      </>
+    }
+    note={<span style={{ whiteSpace: 'pre-line' }}>{`See you on the other side,\nThe Kretopia Team`}</span>}
+  >
+    <P>
+      You started setting up your Kretopia profile yesterday — and we saved your progress. Just a couple more steps and you'll be visible to creators, brands, and collaborators worldwide.
+    </P>
+    <Panel>
+      <P style={{ margin: '0 0 8px' }}><B>Here's what's waiting for you:</B></P>
+      <P style={{ margin: 0, fontSize: '14px', lineHeight: '25px', whiteSpace: 'pre-line' }}>
+        {`🎯 Get matched with creators who complement your skills\n📍 Discover sessions, meetups and gigs near you\n🏆 Build your verified creative resume`}
+      </P>
+    </Panel>
+  </KretopiaEmail>
 )
 
 export const template = {
@@ -64,30 +39,3 @@ export const template = {
   displayName: 'Onboarding reminder (24h)',
   previewData: { name: 'Marlon' },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 24px' }
-const highlightBox = {
-  backgroundColor: '#11141B',
-  borderRadius: '12px',
-  padding: '20px 24px',
-  margin: '0 0 24px',
-  border: '1px solid #1A1E28',
-}
-const highlightText = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.8', margin: '0 0 8px', whiteSpace: 'pre-line' as const }
-const button = {
-  backgroundColor: '#FFFFFF',
-  color: '#05070D',
-  fontSize: '14px', lineHeight: '20px',
-  fontWeight: '600' as const,
-  borderRadius: '16px',
-  padding: '14px 32px',
-  textDecoration: 'none',
-  display: 'block' as const,
-  textAlign: 'center' as const,
-}
-const subtext = { fontSize: '13px', color: '#7C8393', margin: '12px 0 32px', textAlign: 'center' as const }
-const footer = { fontSize: '12px', color: '#7C8393', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
-const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

@@ -1,11 +1,6 @@
 import * as React from 'npm:react@18.3.1'
-import {
-  Body, Button, Container, Head, Heading, Hr, Html, Img, Preview, Text,
-} from 'npm:@react-email/components@0.0.22'
+import { KretopiaEmail, P, B, Cta } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
-
-const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
 interface Props {
   recipientName?: string
@@ -15,32 +10,22 @@ interface Props {
 }
 
 const CampaignFailedEmail = ({ recipientName, campaignTitle, isCreator, exploreUrl }: Props) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>Update on {campaignTitle || 'your ThriveFund campaign'}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
-        <Heading style={h1}>{isCreator ? 'Campaign closed' : 'Update on your pledge'}</Heading>
-        <Text style={text}>
-          {recipientName ? `Hey ${recipientName},` : 'Hey,'} <strong>{campaignTitle}</strong> didn't reach its funding goal by the deadline.
-        </Text>
-        <Text style={text}>
-          {isCreator
-            ? 'Because ThriveFund is all-or-nothing, no backers were charged. You can refine the pitch, lower the goal, or relaunch when ready — your verified profile and supporters are still here.'
-            : 'Because ThriveFund is all-or-nothing, your card was not charged. The authorization will be released by your bank within a few business days.'}
-        </Text>
-        {exploreUrl && (
-          <Button style={button} href={exploreUrl}>
-            {isCreator ? 'Plan your relaunch' : 'Explore other campaigns'}
-          </Button>
-        )}
-        <Text style={footer}>Thanks for being part of ThriveFund.</Text>
-        <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
-
-      </Container>
-    </Body>
-  </Html>
+  <KretopiaEmail
+    preview={`Update on ${campaignTitle || 'your ThriveFund campaign'}`}
+    eyebrow="ThriveFund"
+    title={isCreator ? 'Campaign closed' : 'Update on your pledge'}
+    actions={exploreUrl ? <Cta href={exploreUrl}>{isCreator ? 'Plan your relaunch' : 'Explore other campaigns'}</Cta> : undefined}
+    note="Thanks for being part of ThriveFund."
+  >
+    <P>
+      {recipientName ? `Hey ${recipientName},` : 'Hey,'} <B>{campaignTitle}</B> didn't reach its funding goal by the deadline.
+    </P>
+    <P>
+      {isCreator
+        ? 'Because ThriveFund is all-or-nothing, no backers were charged. You can refine the pitch, lower the goal, or relaunch when ready — your verified profile and supporters are still here.'
+        : 'Because ThriveFund is all-or-nothing, your card was not charged. The authorization will be released by your bank within a few business days.'}
+    </P>
+  </KretopiaEmail>
 )
 
 export const template = {
@@ -57,11 +42,3 @@ export const template = {
     exploreUrl: 'https://www.kretopia.com/fund',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px' }
-const button = { backgroundColor: '#FFFFFF', color: '#05070D', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const, borderRadius: '16px', padding: '14px 32px', textDecoration: 'none', display: 'block' as const, textAlign: 'center' as const, marginBottom: '24px' }
-const footer = { fontSize: '12px', color: '#7C8393', margin: '0' }
-const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

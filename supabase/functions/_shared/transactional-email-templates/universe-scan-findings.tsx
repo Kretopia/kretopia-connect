@@ -1,11 +1,8 @@
 import * as React from 'npm:react@18.3.1'
-import {
-  Body, Button, Container, Head, Heading, Html, Img, Preview, Section, Text,
-} from 'npm:@react-email/components@0.0.22'
+import { KretopiaEmail, P, B, Panel, Cta, Small } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
@@ -27,43 +24,30 @@ const UniverseScanFindingsEmail = ({
 }: Props) => {
   const total = newCredits + newPress + newAwards + newUploads
   const url = reviewUrl || `${APP_URL}/?openPendingDiscoveries=1`
+  const line = { margin: '0 0 8px', fontSize: '14px' }
   return (
-    <Html lang="en" dir="ltr">
-      <Head />
-      <Preview>{`${total} new item${total === 1 ? '' : 's'} ready to review on your profile`}</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
-          <Heading style={h1}>
-            {name ? `${name}, we found new things about you` : "We found new things about you"}
-          </Heading>
-          <Text style={text}>
-            Our weekly scan picked up {total} new item{total === 1 ? '' : 's'} across the web that look like they belong on your profile.
-          </Text>
-          <Section style={statsBox}>
-            {newCredits > 0 && (
-              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newCredits}</strong> new credit{newCredits === 1 ? '' : 's'}</Text>
-            )}
-            {newPress > 0 && (
-              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newPress}</strong> press mention{newPress === 1 ? '' : 's'}</Text>
-            )}
-            {newAwards > 0 && (
-              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newAwards}</strong> award{newAwards === 1 ? '' : 's'}</Text>
-            )}
-            {newUploads > 0 && (
-              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newUploads}</strong> new upload{newUploads === 1 ? '' : 's'}</Text>
-            )}
-          </Section>
-          <Button style={button} href={url}>Review findings</Button>
-          <Text style={subtext}>
-            Accept what's yours, dismiss what isn't. Takes about a minute.
-          </Text>
-          <Text style={footer}>The {SITE_NAME} Team</Text>
-        <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
-
-        </Container>
-      </Body>
-    </Html>
+    <KretopiaEmail
+      preview={`${total} new item${total === 1 ? '' : 's'} ready to review on your profile`}
+      eyebrow="Weekly scan"
+      title={name ? `${name}, we found new things about you` : 'We found new things about you'}
+      actions={
+        <>
+          <Cta href={url}>Review findings</Cta>
+          <Small style={{ textAlign: 'center', margin: '6px 0 0' }}>Accept what's yours, dismiss what isn't. Takes about a minute.</Small>
+        </>
+      }
+      note={`The ${SITE_NAME} Team`}
+    >
+      <P>
+        Our weekly scan picked up {total} new item{total === 1 ? '' : 's'} across the web that look like they belong on your profile.
+      </P>
+      <Panel>
+        {newCredits > 0 && <P style={line}><B>{newCredits}</B> new credit{newCredits === 1 ? '' : 's'}</P>}
+        {newPress > 0 && <P style={line}><B>{newPress}</B> press mention{newPress === 1 ? '' : 's'}</P>}
+        {newAwards > 0 && <P style={line}><B>{newAwards}</B> award{newAwards === 1 ? '' : 's'}</P>}
+        {newUploads > 0 && <P style={line}><B>{newUploads}</B> new upload{newUploads === 1 ? '' : 's'}</P>}
+      </Panel>
+    </KretopiaEmail>
   )
 }
 
@@ -76,30 +60,3 @@ export const template = {
   displayName: 'Universe scan findings',
   previewData: { name: 'Marlon', newCredits: 2, newPress: 1, newAwards: 0, newUploads: 3 },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 24px' }
-const statsBox = {
-  backgroundColor: '#11141B',
-  borderRadius: '12px',
-  padding: '20px 24px',
-  margin: '0 0 24px',
-  border: '1px solid #1A1E28',
-}
-const statLine = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 8px' }
-const button = {
-  backgroundColor: '#FFFFFF',
-  color: '#05070D',
-  fontSize: '14px', lineHeight: '20px',
-  fontWeight: '600' as const,
-  borderRadius: '16px',
-  padding: '14px 32px',
-  textDecoration: 'none',
-  display: 'block' as const,
-  textAlign: 'center' as const,
-}
-const subtext = { fontSize: '13px', color: '#7C8393', margin: '12px 0 32px', textAlign: 'center' as const }
-const footer = { fontSize: '12px', color: '#7C8393', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
-const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }
