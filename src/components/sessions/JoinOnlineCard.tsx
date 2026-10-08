@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Video, Loader2, Lock, Clock, Radio, CheckCircle2, Headphones } from "lucide-react";
+import { Video, Lock, Clock, Radio, CheckCircle2, Headphones } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -143,7 +144,7 @@ export const JoinOnlineCard = ({
         disabled={starting}
       >
         {starting ? (
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <KretopiaSpinner className="h-5 w-5" />
         ) : (
           <>
             <Video className="h-5 w-5" />

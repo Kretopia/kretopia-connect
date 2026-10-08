@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Star, ThumbsUp, CheckCircle, Loader2 } from "lucide-react";
+import { Star, ThumbsUp, CheckCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -111,7 +112,7 @@ export const ProductReviewsList = ({ productId, refreshTrigger }: ProductReviews
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }

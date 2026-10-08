@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, AlertCircle, ExternalLink, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, AlertCircle, ExternalLink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -294,7 +295,7 @@ export const VerificationTab = () => {
               size="sm"
             >
               {actionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : (
                 <>
                   <CheckCircle className="mr-2 h-4 w-4" />
@@ -324,7 +325,7 @@ export const VerificationTab = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
+        <KretopiaSpinner className="h-8 w-8" />
       </div>
     );
   }
@@ -433,7 +434,7 @@ export const VerificationTab = () => {
               disabled={actionLoading || !rejectionReason.trim()}
             >
               {actionLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : (
                 "Reject Profile"
               )}

@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Mic2, Loader2, Mic, Video, Globe, Lock, Link2 } from "lucide-react";
+import { Search, Mic2, Mic, Video, Globe, Lock, Link2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { AIStageBriefGenerator } from "./AIStageBriefGenerator";
 
 interface CreateStageSheetProps {
@@ -193,7 +194,7 @@ export function CreateStageSheet({ open, onOpenChange, onCreated }: CreateStageS
           />
 
           <Button onClick={submit} disabled={submitting} className="w-full" size="lg">
-            {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Scheduling…</> : "Schedule stage"}
+            {submitting ? <><KretopiaSpinner className="h-4 w-4 mr-2" /> Scheduling…</> : "Schedule stage"}
           </Button>
         </div>
       </SheetContent>

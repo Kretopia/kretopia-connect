@@ -16,7 +16,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Clock, Users, Target, Loader2, Heart, Share2 } from "lucide-react";
+import { Clock, Users, Target, Heart, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCampaignBySlug, useCampaignTiers, useCreatePledge } from "@/hooks/useThriveFund";
 import { TrustPanel } from "@/components/thrivefund/TrustPanel";
@@ -305,7 +306,7 @@ const FundCampaign = () => {
               Cancel
             </Button>
             <Button onClick={submitPledge} disabled={pledgeMut.isPending} className="gap-2">
-              {pledgeMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {pledgeMut.isPending && <KretopiaSpinner className="h-4 w-4" />}
               Continue to checkout
             </Button>
           </DialogFooter>

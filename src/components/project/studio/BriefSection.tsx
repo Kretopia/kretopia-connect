@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pencil, Loader2, Plus, ImageIcon, Mic, ListChecks, Sparkles, MessageSquare } from "lucide-react";
+import { Pencil, Plus, ImageIcon, Mic, ListChecks, Sparkles, MessageSquare } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -167,7 +168,7 @@ export const BriefSection = ({
           />
           <div className="flex gap-2">
             <Button size="sm" onClick={save} disabled={saving} className="rounded-full">
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save brief"}
+              {saving ? <KretopiaSpinner className="h-3.5 w-3.5" /> : "Save brief"}
             </Button>
             <Button
               size="sm"
@@ -208,7 +209,7 @@ export const BriefSection = ({
               disabled={breakingDown}
             >
               {breakingDown ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <KretopiaSpinner className="h-3.5 w-3.5" />
               ) : (
                 <ListChecks className="h-3.5 w-3.5" />
               )}

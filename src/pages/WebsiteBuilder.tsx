@@ -6,11 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import {
-  Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Save, Loader2,
+  Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Save,
   Eye, EyeOff, GripVertical, ChevronDown, ChevronRight, Wand2, Layout,
   PanelLeft, CheckCircle2, ArrowLeft, Copy, Globe, Crown, Lock, BarChart3,
   Settings2
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { APP_URL } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
@@ -211,7 +212,7 @@ const WebsiteBuilder = () => {
   if (loading) {
     return (
       <div className="min-h-dvh flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -324,7 +325,7 @@ const WebsiteBuilder = () => {
             Smart Build
           </Button>
           <Button size="sm" className="h-8 gap-1.5" onClick={handleSave} disabled={saving || !hasChanges}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">Save</span>
           </Button>
         </div>
@@ -588,7 +589,7 @@ const WebsiteBuilder = () => {
                 </div>
                 {usernameInput !== username && (
                   <Button size="sm" onClick={handleSaveUsername} disabled={savingUsername || usernameInput.length < 3}>
-                    {savingUsername ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+                    {savingUsername ? <KretopiaSpinner className="h-4 w-4" /> : "Save"}
                   </Button>
                 )}
               </div>
@@ -655,7 +656,7 @@ const WebsiteBuilder = () => {
           <Wand2 className="h-3.5 w-3.5 mr-1" /> AI
         </Button>
         <Button size="sm" className="flex-1 text-xs" onClick={handleSave} disabled={saving || !hasChanges}>
-          {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+          {saving ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
           Save
         </Button>
       </div>

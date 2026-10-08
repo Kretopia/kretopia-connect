@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, UserCheck } from "lucide-react";
+import { UserCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -426,7 +427,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
           ))}
 
           <Button type="submit" variant="gradient" className="w-full py-6 text-base" disabled={loading}>
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Confirm RSVP"}
+            {loading ? <KretopiaSpinner className="h-5 w-5" /> : "Confirm RSVP"}
           </Button>
         </form>
       </DialogContent>

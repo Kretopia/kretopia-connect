@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { WatchReplayButton } from "@/components/calls/WatchReplayButton";
 import {
-  Loader2,
   Sparkles,
   CheckCircle2,
   X,
@@ -17,6 +16,7 @@ import {
   ScrollText,
   Brain,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface Props {
@@ -187,7 +187,7 @@ export const CallRecapSheet = ({ open, onOpenChange, transcriptId }: Props) => {
 
         {loading && !t ? (
           <div className="flex-1 flex items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
           </div>
         ) : !t ? (
           <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
@@ -195,7 +195,7 @@ export const CallRecapSheet = ({ open, onOpenChange, transcriptId }: Props) => {
           </div>
         ) : isProcessing ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            <KretopiaSpinner className="h-7 w-7 text-primary" />
             <p className="text-sm font-medium">Kreto is listening…</p>
             <p className="text-xs text-muted-foreground max-w-xs">
               Transcribing the call and pulling out action items. This usually takes 1–3 minutes after the call ends.
@@ -274,7 +274,7 @@ export const CallRecapSheet = ({ open, onOpenChange, transcriptId }: Props) => {
                                     onClick={() => accept(item)}
                                   >
                                     {pushingId === item.id ? (
-                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                      <KretopiaSpinner className="h-3 w-3" />
                                     ) : item.kind === "task" ? "Add to project" : "Save"}
                                   </Button>
                                   <Button

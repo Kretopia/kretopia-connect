@@ -9,10 +9,11 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, Sparkles, Loader2, Users, ShieldCheck, CheckCircle2,
+  Search, Sparkles, Users, ShieldCheck, CheckCircle2,
   Film, Music, Palette, Camera, MapPin, Star, ArrowRight, Zap,
   TrendingUp, Filter,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 interface DiscoveryResult {
@@ -103,7 +104,7 @@ const ICDBDiscovery = () => {
                 />
               </div>
               <Button onClick={() => handleSearch()} disabled={loading || !query.trim()} className="h-11 gap-1.5">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
                 Find
               </Button>
             </div>
@@ -131,7 +132,7 @@ const ICDBDiscovery = () => {
         <div className="container mx-auto px-4 py-4">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
               <p className="text-sm text-muted-foreground">Analyzing verified credits...</p>
             </div>
           ) : hasSearched && results.length === 0 ? (

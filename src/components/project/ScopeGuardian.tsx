@@ -10,10 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Shield, ShieldAlert, ShieldCheck, ShieldQuestion,
-  Sparkles, Loader2, AlertTriangle, CheckCircle2,
+  Sparkles, AlertTriangle, CheckCircle2,
   Target, DollarSign, FileWarning, MessageSquareWarning,
   Copy, Check, Milestone, ArrowRight, Info
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { FreeTierGate } from "@/components/FreeTierGate";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -242,7 +243,7 @@ export function ScopeGuardian({ projectId, project, milestones, onMilestonesGene
           {/* ── ANALYZE BRIEF ── */}
           <TabsContent value="analyze" className="mt-3 space-y-3">
             <Button onClick={analyzeBrief} disabled={loading || !briefText.trim()} className="w-full gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
               {loading ? "Analyzing..." : "Analyze Brief for Risks"}
             </Button>
 
@@ -347,7 +348,7 @@ export function ScopeGuardian({ projectId, project, milestones, onMilestonesGene
           {/* ── GENERATE MILESTONES ── */}
           <TabsContent value="milestones" className="mt-3 space-y-3">
             <Button onClick={generateMilestones} disabled={loading || !briefText.trim()} className="w-full gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Milestone className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Milestone className="h-4 w-4" />}
               {loading ? "Generating..." : "Generate Smart Milestones"}
             </Button>
 
@@ -357,7 +358,7 @@ export function ScopeGuardian({ projectId, project, milestones, onMilestonesGene
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold">{milestoneResult.milestones.length} Milestones Generated</h4>
                     <Button size="sm" onClick={createMilestonesFromResult} disabled={loading} className="gap-1.5 text-xs">
-                      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                      {loading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <ArrowRight className="h-3.5 w-3.5" />}
                       Add to Project
                     </Button>
                   </div>
@@ -418,7 +419,7 @@ export function ScopeGuardian({ projectId, project, milestones, onMilestonesGene
             </div>
 
             <Button onClick={checkScopeDrift} disabled={loading || !clientMessage.trim() || !briefText.trim()} className="w-full gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquareWarning className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <MessageSquareWarning className="h-4 w-4" />}
               {loading ? "Analyzing..." : "Check if In Scope"}
             </Button>
 

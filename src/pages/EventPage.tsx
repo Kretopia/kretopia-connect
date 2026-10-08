@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Loader2,
   Sparkles, ArrowRight, Check, Share2, Ticket, ExternalLink, Pencil, XCircle, ScanLine,
   MoreVertical, Crown, Ban, CheckCircle, Download,
   X, ChevronDown
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -284,7 +284,7 @@ const EventPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -573,7 +573,7 @@ const EventPage = () => {
                   </Badge>
                 ) : (
                   <Button variant={isFull ? "outline" : "gradient"} onClick={handleJoinOrSignup} disabled={joining || isFull}>
-                    {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                    {joining ? <KretopiaSpinner className="h-4 w-4" /> : (
                       <>
                         {!isAuthenticated ? "Sign Up & Get Ticket" : isFull ? "Sold Out" : hasExternalTicket ? (
                           <><ExternalLink className="h-4 w-4 mr-1.5" /> Get Ticket</>
@@ -667,7 +667,7 @@ const EventPage = () => {
                 </div>
               ) : participation ? null : !isTicketed ? (
                 <Button variant={isFull ? "outline" : "gradient"} className="w-full py-6 text-lg" onClick={handleJoinOrSignup} disabled={joining || isFull}>
-                  {joining ? <Loader2 className="h-5 w-5 animate-spin" /> : !isAuthenticated ? (
+                  {joining ? <KretopiaSpinner className="h-5 w-5" /> : !isAuthenticated ? (
                     <>Save my spot <ArrowRight className="h-5 w-5 ml-2" /></>
                   ) : isFull ? "Sold Out" : (
                     <>Save my spot</>

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Video, X, Loader2, Sparkles } from "lucide-react";
+import { Video, X, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useStartDirectCall } from "@/hooks/useStartDirectCall";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 
@@ -75,7 +76,7 @@ export const VibeCheckPrompt = ({ conversationId, recipientId, recipientName }: 
                   disabled={starting}
                 >
                   {starting ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <KretopiaSpinner className="h-3.5 w-3.5" />
                   ) : (
                     <Video className="h-3.5 w-3.5" />
                   )}

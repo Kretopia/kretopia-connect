@@ -14,7 +14,8 @@ import { ApplyToStageSheet } from "@/components/circle/ApplyToStageSheet";
 import { StageHostConsole } from "@/components/circle/StageHostConsole";
 import { InviteToStageDialog } from "@/components/circle/InviteToStageDialog";
 import { StageDoorsCountdown } from "@/components/circle/StageDoorsCountdown";
-import { ArrowLeft, Calendar, Users, Radio, Mic2, Search, Loader2, CheckCircle2, Hand, Lock, Link2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNowStrict, format } from "date-fns";
 
 type Stage = {
@@ -305,7 +306,7 @@ const CuratedStage = () => {
         {isHost ? (
           <div className="space-y-2">
             <Button onClick={() => handleJoinLive()} disabled={joining} size="lg" className="w-full" variant={isLive ? "destructive" : "default"}>
-              {joining ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Radio className="h-4 w-4 mr-2" />}
+              {joining ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Radio className="h-4 w-4 mr-2" />}
               {isLive ? "Re-enter stage" : isEnded ? "Stage ended" : "Open doors & go live"}
             </Button>
             {!isLive && !isEnded && (
@@ -330,7 +331,7 @@ const CuratedStage = () => {
         ) : isLive ? (
           <div className="space-y-2">
             <Button onClick={() => handleJoinLive()} disabled={joining} size="lg" variant="lime" className="w-full">
-              {joining ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Radio className="h-4 w-4 mr-2" />}
+              {joining ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Radio className="h-4 w-4 mr-2" />}
               Walk in
             </Button>
             {!isHost && (
@@ -356,7 +357,7 @@ const CuratedStage = () => {
               </Card>
             ) : (
               <Button onClick={handleRsvp} disabled={rsvping} size="lg" className="w-full">
-                {rsvping ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                {rsvping ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
                 {stage.is_paid ? `Get ticket — $${((stage.price_cents ?? 0) / 100).toFixed(0)}` : isFull ? "Join the waitlist" : "Save my spot"}
               </Button>
             )}

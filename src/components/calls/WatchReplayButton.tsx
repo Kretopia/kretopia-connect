@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Loader2 } from "lucide-react";
+import { Play } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { RecordingReplayDialog } from "./RecordingReplayDialog";
 
@@ -65,7 +66,7 @@ export const WatchReplayButton = ({
         aria-label="Watch call replay"
       >
         {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <KretopiaSpinner className="h-3.5 w-3.5" />
         ) : (
           <Play className="h-3.5 w-3.5" />
         )}

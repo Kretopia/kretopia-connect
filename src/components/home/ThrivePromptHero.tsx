@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, ArrowUp, Loader2, ListChecks } from "lucide-react";
+import { Mic, ArrowUp, ListChecks } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -371,7 +372,7 @@ export function ThrivePromptHero({ firstName }: { firstName?: string } = {}) {
             aria-label="Send to Kreto"
             className="h-9 w-9 flex items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:scale-105 shrink-0"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
+            {busy ? <KretopiaSpinner className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" strokeWidth={2.5} />}
           </button>
         </form>
 

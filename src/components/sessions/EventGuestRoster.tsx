@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, MapPin, Briefcase, ExternalLink, Loader2, Check, Clock, UserPlus, MessageCircle } from "lucide-react";
+import { Users, MapPin, Briefcase, ExternalLink, Check, Clock, UserPlus, MessageCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -214,7 +215,7 @@ export const EventGuestRoster = ({
 
           {loading ? (
             <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
-              <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading guests…
+              <KretopiaSpinner className="h-4 w-4 mr-2" /> Loading guests…
             </div>
           ) : guests.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">No guests yet — be the first.</p>
@@ -349,7 +350,7 @@ export const EventGuestRoster = ({
                   }
                   return (
                     <Button variant="gradient" className="w-full" onClick={() => handleConnect(selected)} disabled={acting}>
-                      {acting ? <Loader2 className="h-4 w-4 animate-spin" /> : (
+                      {acting ? <KretopiaSpinner className="h-4 w-4" /> : (
                         <><UserPlus className="h-4 w-4 mr-2" /> Connect · Met via {eventTitle.length > 18 ? eventTitle.slice(0, 18) + "…" : eventTitle}</>
                       )}
                     </Button>

@@ -26,6 +26,7 @@ import {
   Video as VideoIcon,
   Music as MusicIcon,
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { FileThumbnail } from "@/components/project/files/FileThumbnail";
 
@@ -162,7 +163,7 @@ export default function ProjectReview() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <p className="text-sm text-muted-foreground">Loading review…</p>
+        <KretopiaLoader size="sm" label="Loading review…" />
       </div>
     );
   }

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCheck, UserX, Loader2, Inbox } from "lucide-react";
+import { UserCheck, UserX, Inbox } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +134,7 @@ export const ProjectInviteAcceptBanner = ({ projectId, onAccepted }: ProjectInvi
             disabled={processing}
             className="flex-1 sm:flex-none"
           >
-            {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserCheck className="h-4 w-4 mr-1" />Accept</>}
+            {processing ? <KretopiaSpinner className="h-4 w-4" /> : <><UserCheck className="h-4 w-4 mr-1" />Accept</>}
           </Button>
           <Button
             size="sm"

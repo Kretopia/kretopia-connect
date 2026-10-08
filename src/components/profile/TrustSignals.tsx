@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, Phone, ShieldCheck, CreditCard, CheckCircle2, Circle, Loader2, Upload, X, MessageCircle, MessageSquare } from "lucide-react";
+import { Mail, Phone, ShieldCheck, CreditCard, CheckCircle2, Circle, Upload, X, MessageCircle, MessageSquare } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -281,7 +282,7 @@ export function TrustSignals({ emailVerified, phoneVerified, idVerified, payment
               Click the link in the email to verify.
             </p>
             <Button onClick={handleResendVerificationEmail} disabled={emailLoading} className="w-full gap-2">
-              {emailLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+              {emailLoading ? <KretopiaSpinner className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
               Send Verification Email
             </Button>
           </div>
@@ -348,7 +349,7 @@ export function TrustSignals({ emailVerified, phoneVerified, idVerified, payment
                   </div>
                 </div>
                 <Button onClick={handlePhoneSendOtp} disabled={phoneLoading || !phoneNumber.trim()} className="w-full gap-2">
-                  {phoneLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Phone className="h-4 w-4" />}
+                  {phoneLoading ? <KretopiaSpinner className="h-4 w-4" /> : <Phone className="h-4 w-4" />}
                   Send Verification Code
                 </Button>
               </>
@@ -370,7 +371,7 @@ export function TrustSignals({ emailVerified, phoneVerified, idVerified, payment
                   </p>
                 </div>
                 <Button onClick={handlePhoneVerifyOtp} disabled={phoneLoading || otpCode.length !== 6} className="w-full gap-2">
-                  {phoneLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {phoneLoading ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                   Verify Code
                 </Button>
                 <Button variant="ghost" className="w-full text-xs" onClick={() => { setPhoneStep("input"); setOtpCode(""); }}>
@@ -420,7 +421,7 @@ export function TrustSignals({ emailVerified, phoneVerified, idVerified, payment
               )}
             </div>
             <Button onClick={handleIdUpload} disabled={idLoading || !idFile} className="w-full gap-2">
-              {idLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+              {idLoading ? <KretopiaSpinner className="h-4 w-4" /> : <ShieldCheck className="h-4 w-4" />}
               Submit for Verification
             </Button>
           </div>

@@ -11,7 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mic, Square, Loader2, Sparkles, X } from "lucide-react";
+import { Mic, Square, Sparkles, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -329,7 +330,7 @@ export const VoiceTaskCapture = ({
 
           {phase === "processing" && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
               <div className="text-sm font-medium">Reading your memo…</div>
               <div className="text-xs text-muted-foreground">Pulling out the task, date, and assignee.</div>
             </div>
@@ -413,7 +414,7 @@ export const VoiceTaskCapture = ({
                   <X className="h-4 w-4 mr-1" /> Re-record
                 </Button>
                 <Button className="flex-1" onClick={handleSave} disabled={saving || !title.trim()}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Add task"}
+                  {saving ? <KretopiaSpinner className="h-4 w-4" /> : "Add task"}
                 </Button>
               </div>
             </div>

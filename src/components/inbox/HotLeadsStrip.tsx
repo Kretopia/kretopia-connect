@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Flame, MessageCircle, Sparkles, Copy, Loader2 } from "lucide-react";
+import { Flame, MessageCircle, Sparkles, Copy } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -224,7 +225,7 @@ export function HotLeadsStrip() {
                     onClick={() => requestDrafts(i)}
                     disabled={drafting[i]}
                   >
-                    {drafting[i] ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                    {drafting[i] ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                     Draft
                   </Button>
                   <Button

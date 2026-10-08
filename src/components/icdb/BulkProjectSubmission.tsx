@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Plus, Trash2, Upload, Loader2, CheckCircle2, X } from "lucide-react";
+import { Building2, Plus, Trash2, Upload, CheckCircle2, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -176,7 +177,7 @@ export const BulkProjectSubmission = ({ currentUserId }: BulkProjectSubmissionPr
             <Plus className="h-3 w-3" /> Add Project
           </Button>
           <Button size="sm" className="gap-1 text-xs ml-auto" onClick={handleSubmit} disabled={loading}>
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+            {loading ? <KretopiaSpinner className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
             Submit {projects.filter(p => p.title.trim()).length} Projects
           </Button>
         </div>

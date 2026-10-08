@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { validatePassword } from "@/lib/validation";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 
@@ -52,7 +53,7 @@ export const PasswordResetForm = ({ loading, onSubmit }: PasswordResetFormProps)
         {confirmNewPasswordError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" />{confirmNewPasswordError}</p>}
       </div>
       <Button type="submit" variant="gradient" size="lg" className="w-full" disabled={loading}>
-        {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting Password...</> : "Reset Password"}
+        {loading ? <><KretopiaSpinner className="mr-2 h-4 w-4" />Resetting Password...</> : "Reset Password"}
       </Button>
     </form>
   );

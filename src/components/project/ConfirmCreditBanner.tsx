@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Award, Check, X, Loader2 } from "lucide-react";
+import { Award, Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -123,7 +124,7 @@ export const ConfirmCreditBanner = ({
           disabled={acting}
         >
           {acting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="h-4 w-4" />
           ) : (
             <Check className="h-4 w-4 mr-1" />
           )}

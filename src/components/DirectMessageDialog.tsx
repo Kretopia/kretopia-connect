@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Send, Loader2, X } from "lucide-react";
+import { Send, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -246,7 +247,7 @@ export const DirectMessageDialog = ({
             {isLoading && (
               <div className="flex gap-3">
                 <div className="flex-1 p-3 rounded-lg bg-muted max-w-[80%]">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                 </div>
               </div>
             )}

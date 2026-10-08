@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Award, Loader2, Check, X } from "lucide-react";
+import { Award, Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -245,7 +246,7 @@ export const ProjectCreditsDialog = ({
               onClick={handleSubmit}
               disabled={submitting || !assignments.some((a) => a.role.trim())}
             >
-              {submitting && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              {submitting && <KretopiaSpinner className="h-4 w-4 mr-1.5" />}
               Assign Credits
             </Button>
           </DialogFooter>

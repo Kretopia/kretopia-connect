@@ -3,7 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Copy, Check, Film, MessageSquare, FileText } from "lucide-react";
+import { Sparkles, Copy, Check, Film, MessageSquare, FileText } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 
 interface Props {
@@ -81,7 +82,7 @@ export const EventPostRecapSection = ({ project, currentUserId }: Props) => {
           <p className="text-xs text-muted-foreground mt-0.5">AI drafts captions, sponsor reports, highlight ideas, and thank-yous.</p>
         </div>
         <Button onClick={generate} disabled={generating} size="sm" className="cta-primary font-bold gap-1.5">
-          {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
           {recap ? "Regenerate" : "Generate"}
         </Button>
       </div>

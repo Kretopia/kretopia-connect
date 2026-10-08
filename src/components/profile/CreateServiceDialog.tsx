@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Trash2, Sparkles, Loader2, ImagePlus, X, Wand2 } from "lucide-react";
+import { Plus, Trash2, Sparkles, ImagePlus, X, Wand2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -326,7 +327,7 @@ export const CreateServiceDialog = ({ open, onOpenChange, onCreated, editService
                   className="w-full aspect-[16/9] rounded-lg border-2 border-dashed border-border hover:border-[#A516C5]/50 transition-colors flex flex-col items-center justify-center gap-1.5 bg-muted/30"
                 >
                   {imageUploading ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
                   ) : (
                     <>
                       <ImagePlus className="h-6 w-6 text-muted-foreground" />
@@ -364,7 +365,7 @@ export const CreateServiceDialog = ({ open, onOpenChange, onCreated, editService
                         disabled={aiImageGenerating}
                       >
                         {aiImageGenerating ? (
-                          <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
+                          <><KretopiaSpinner className="h-3.5 w-3.5" /> Generating...</>
                         ) : (
                           <><Wand2 className="h-3.5 w-3.5" /> Generate</>
                         )}
@@ -406,7 +407,7 @@ export const CreateServiceDialog = ({ open, onOpenChange, onCreated, editService
             disabled={aiLoading}
             className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
           >
-            {aiLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            {aiLoading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
             Enhance with AI
           </Button>
 
@@ -554,7 +555,7 @@ export const CreateServiceDialog = ({ open, onOpenChange, onCreated, editService
 
           {/* Save */}
           <Button onClick={handleSave} disabled={saving} className="w-full">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+            {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             {isEditing ? "Update" : "Create"} Service
           </Button>
         </div>

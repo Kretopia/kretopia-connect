@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MoreVertical, Trash2, Briefcase, FolderPlus, Video, Loader2, Users } from "lucide-react";
+import { ArrowLeft, MoreVertical, Trash2, Briefcase, FolderPlus, Video, Users } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,7 +79,7 @@ export const ChatHeader = ({ otherUser, isOnline, onBack, onViewProfile, onStart
           aria-label={`Video call ${otherUser.name || 'user'}`}
           title="Start video call"
         >
-          {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+          {starting ? <KretopiaSpinner className="h-4 w-4" /> : <Video className="h-4 w-4" />}
         </Button>
       )}
       <Button variant="outline" size="sm" className="hidden sm:flex gap-2" onClick={onStartProject}>

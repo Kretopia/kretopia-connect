@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Instagram, Music, Twitter, Linkedin, Youtube, ExternalLink, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +77,7 @@ export const SocialStatsSection = ({
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-lg md:text-xl font-semibold">Social</h3>
           <Button size="sm" variant="outline" onClick={refresh} disabled={refreshing}>
-            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${refreshing ? "animate-spin" : ""}`} />
+            {refreshing ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1.5" /> : <RefreshCw className="h-3.5 w-3.5 mr-1.5" />}
             Fetch stats
           </Button>
         </div>
@@ -103,7 +104,7 @@ export const SocialStatsSection = ({
           )}
           {isOwner && (
             <Button size="sm" variant="ghost" onClick={refresh} disabled={refreshing} aria-label="Refresh stats">
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+              {refreshing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
             </Button>
           )}
         </div>

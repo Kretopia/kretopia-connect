@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Upload, Loader2, FileImage, X, CheckCircle2, Landmark } from "lucide-react";
+import { Upload, FileImage, X, CheckCircle2, Landmark } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -268,7 +269,7 @@ export function MarkPaidBankTransferDialog({
             disabled={submitting || !file}
           >
             {submitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+              <><KretopiaSpinner className="h-4 w-4" /> Saving…</>
             ) : (
               <><CheckCircle2 className="h-4 w-4" /> Mark paid</>
             )}

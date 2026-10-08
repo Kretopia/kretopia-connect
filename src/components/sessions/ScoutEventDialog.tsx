@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Scan, Upload, X, Loader2, Copy, Share2, ExternalLink, Calendar } from "lucide-react";
+import { Scan, Upload, X, Copy, Share2, ExternalLink, Calendar } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { APP_URL } from "@/lib/constants";
 
 interface ScoutEventDialogProps {
@@ -213,7 +214,7 @@ export const ScoutEventDialog = ({ trigger, open: controlledOpen, onOpenChange }
             </div>
 
             <Button className="w-full gap-2" onClick={handleExtract} disabled={loading}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Scan className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Scan className="h-4 w-4" />}
               {loading ? "Reading the details…" : "Scout this event"}
             </Button>
             <p className="text-[11px] text-muted-foreground text-center">

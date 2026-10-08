@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Bookmark, Plus, Check, Loader2 } from "lucide-react";
+import { Bookmark, Plus, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
@@ -141,7 +142,7 @@ export const SaveToShortlistButton = ({ creatorUserId, variant = "icon" }: SaveT
         <div className="max-h-56 overflow-y-auto -mx-1 px-1 space-y-1">
           {loading ? (
             <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
             </div>
           ) : shortlists.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-3">No lists yet — create one below</p>
@@ -178,7 +179,7 @@ export const SaveToShortlistButton = ({ creatorUserId, variant = "icon" }: SaveT
             onClick={createList}
             disabled={!newName.trim() || creating}
           >
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            {creating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
           </Button>
         </div>
       </PopoverContent>

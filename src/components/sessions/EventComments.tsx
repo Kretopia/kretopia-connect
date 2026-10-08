@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Send, Trash2, MessageSquare, ImagePlus, X } from "lucide-react";
+import { Send, Trash2, MessageSquare, ImagePlus, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -225,7 +226,7 @@ export const EventComments = ({ eventId, isCreator, creatorId, eventTitle, isPar
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
         ) : comments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -326,7 +327,7 @@ export const EventComments = ({ eventId, isCreator, creatorId, eventTitle, isPar
                 className="flex-1"
               />
               <Button type="submit" size="icon" disabled={sending || (!newComment.trim() && !attachedImage)}>
-                {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
               </Button>
             </form>
           </div>

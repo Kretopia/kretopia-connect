@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Camera, CameraOff, CheckCircle, Search, Users, Loader2, Ticket, Radio } from "lucide-react";
+import { Camera, CameraOff, CheckCircle, Search, Users, Ticket, Radio } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // check_in_guest_by_token (see supabase/migrations/20260512154211_...sql)
@@ -406,7 +407,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
               <div id={scannerContainerId} className="w-full" />
               {!scannerReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/80">
-                  <Loader2 className="h-6 w-6 animate-spin text-white" />
+                  <KretopiaSpinner className="h-6 w-6 text-white" />
                 </div>
               )}
             </div>
@@ -431,7 +432,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
               disabled={!manualToken.trim() || !!checkingIn}
               onClick={() => checkInByToken(manualToken.trim())}
             >
-              {checkingIn === manualToken ? <Loader2 className="h-4 w-4 animate-spin" /> : "Go"}
+              {checkingIn === manualToken ? <KretopiaSpinner className="h-4 w-4" /> : "Go"}
             </Button>
           </div>
         </div>
@@ -451,7 +452,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
         <ScrollArea className="max-h-[35vh]">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
             </div>
           ) : filteredAttendees.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No attendees yet</p>
@@ -504,7 +505,7 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
                         onClick={() => checkInById(a.id)}
                       >
                         {checkingIn === a.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <KretopiaSpinner className="h-3 w-3" />
                         ) : (
                           "Check In"
                         )}

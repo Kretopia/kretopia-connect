@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, Trash2, Send } from "lucide-react";
+import { Mic, Square, Trash2, Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -91,7 +92,7 @@ export const VoiceNoteRecorder = ({ onSend, disabled }: VoiceNoteRecorderProps) 
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
         <Button type="button" size="icon" className="h-8 w-8 rounded-full" onClick={send} disabled={uploading}>
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          {uploading ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
     );

@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import {
   Bug, Lightbulb, Palette, MessageCircle, CheckCircle2,
-  Clock, ArrowRight, X, Loader2, ChevronDown
+  Clock, ArrowRight, X, ChevronDown
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -116,7 +117,7 @@ export function FeedbackTab() {
   const filtered = filter === "all" ? items : items.filter(i => i.category === filter || i.status === filter);
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6" /></div>;
   }
 
   return (
@@ -298,7 +299,7 @@ export function FeedbackTab() {
                 <h3 className="text-sm font-semibold mb-2">Admin Notes</h3>
                 <Textarea value={adminNotes} onChange={e => setAdminNotes(e.target.value)} placeholder="Add internal notes..." className="text-sm" rows={3} />
                 <Button size="sm" className="mt-2" onClick={() => saveNotes(selectedItem.id)} disabled={saving}>
-                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                  {saving ? <KretopiaSpinner className="h-4 w-4 mr-1" /> : null}
                   Save Notes
                 </Button>
               </div>

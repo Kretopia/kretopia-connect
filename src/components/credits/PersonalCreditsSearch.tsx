@@ -1,4 +1,5 @@
-import { Search, Loader2, X } from "lucide-react";
+import { Search, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   value: string;
@@ -34,7 +35,7 @@ export function PersonalCreditsSearch({ value, onChange, searching, resultCount 
           style={{ borderColor: "hsl(var(--energy) / 0.25)" }}
         />
         <div className="absolute right-3 flex items-center gap-1.5">
-          {searching && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />}
+          {searching && <KretopiaSpinner className="h-4 w-4 text-muted-foreground" aria-hidden />}
           {value && (
             <button
               type="button"

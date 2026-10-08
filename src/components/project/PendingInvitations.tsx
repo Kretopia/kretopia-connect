@@ -6,7 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, UserCheck, UserX, Clock, Users, Send, Loader2 } from "lucide-react";
+import { Mail, UserCheck, UserX, Clock, Users, Send } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface PendingInvitationsProps {
@@ -182,7 +183,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <div className="animate-pulse text-muted-foreground">Loading...</div>
+            <KretopiaLoader size="sm" label="Loading..." />
           </div>
         </CardContent>
       </Card>
@@ -266,7 +267,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
                         className="h-7 text-xs"
                       >
                         {resendingId === invitation.id ? (
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          <KretopiaSpinner className="h-3 w-3 mr-1" />
                         ) : (
                           <Send className="h-3 w-3 mr-1" />
                         )}

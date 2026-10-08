@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Sparkles, TrendingUp, Receipt, Shield, AlertTriangle,
-  Lightbulb, Loader2, DollarSign
+  Lightbulb, DollarSign
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 interface Insight {
@@ -73,7 +74,7 @@ export function AIFinanceInsights({ expenses, invoices }: AIFinanceInsightsProps
             </p>
           </div>
           <Button onClick={generateInsights} disabled={loading} className="gap-2">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
             {loading ? "Analyzing..." : "Generate Insights"}
           </Button>
           {expenses.length === 0 && invoices.length === 0 && (
@@ -92,7 +93,7 @@ export function AIFinanceInsights({ expenses, invoices }: AIFinanceInsightsProps
             <Sparkles className="h-4 w-4 text-primary" /> Smart Insights
           </CardTitle>
           <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={generateInsights} disabled={loading}>
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            {loading ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
             Refresh
           </Button>
         </div>

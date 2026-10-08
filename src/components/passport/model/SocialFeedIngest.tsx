@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Instagram, Loader2, Plus, Sparkles, X } from "lucide-react";
+import { Instagram, Plus, Sparkles, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Preview = {
   url: string;
@@ -143,7 +144,7 @@ export function SocialFeedIngest({ userId, existingLinks, onIngested, trigger }:
           />
 
           <Button onClick={resolve} disabled={resolving || !raw.trim()} className="w-full" variant="secondary">
-            {resolving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+            {resolving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
             {resolving ? "Reading links…" : "Preview links"}
           </Button>
 
@@ -156,7 +157,7 @@ export function SocialFeedIngest({ userId, existingLinks, onIngested, trigger }:
                 >
                   <div className="h-14 w-14 shrink-0 rounded-md bg-muted overflow-hidden flex items-center justify-center">
                     {p.status === "pending" ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
                     ) : p.thumbnail ? (
                       <img src={p.thumbnail} alt="" className="h-full w-full object-cover" />
                     ) : (

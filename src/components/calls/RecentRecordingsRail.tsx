@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { WatchReplayButton } from "@/components/calls/WatchReplayButton";
 import { CallRecapSheet } from "@/components/calls/CallRecapSheet";
 import { formatDistanceToNow } from "date-fns";
-import { FileVideo, Sparkles, Loader2 } from "lucide-react";
+import { FileVideo, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
@@ -113,7 +114,7 @@ export const RecentRecordingsRail = ({ onLoad }: RecentRecordingsRailProps = {})
                 <p className="text-xs text-destructive/80">Transcription failed</p>
               ) : (
                 <p className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Transcribing…
+                  <KretopiaSpinner className="h-3 w-3" /> Transcribing…
                 </p>
               )}
             </div>

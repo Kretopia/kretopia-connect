@@ -8,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Crown, Search, Loader2, CheckCircle2 } from "lucide-react";
+import { Crown, Search, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface RecentSignup {
@@ -118,7 +119,7 @@ export function FounderGrantTab() {
             />
           </div>
           <Button variant="outline" onClick={loadRecentSignups} disabled={loading}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Refresh"}
+            {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Refresh"}
           </Button>
         </div>
 
@@ -138,7 +139,7 @@ export function FounderGrantTab() {
             className="bg-amber-500 hover:bg-amber-600 text-white"
           >
             {granting ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Granting…</>
+              <><KretopiaSpinner className="h-4 w-4 mr-2" /> Granting…</>
             ) : (
               <><Crown className="h-4 w-4 mr-2" /> Grant Founder Circle</>
             )}
@@ -149,7 +150,7 @@ export function FounderGrantTab() {
           <div className="divide-y">
             {loading ? (
               <div className="p-6 text-center text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Loading…
+                <KretopiaSpinner className="h-6 w-6 mx-auto mb-2" /> Loading…
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-6 text-center text-muted-foreground text-sm">No signups match.</div>

@@ -11,7 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BrandLoader } from "@/components/brand/BrandDots";
 import { Card, CardContent } from "@/components/ui/card";
-import { CalendarDays, Clock, Loader2, Check, Fingerprint, ExternalLink, Copy } from "lucide-react";
+import { CalendarDays, Clock, Check, Fingerprint, ExternalLink, Copy } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { downloadIcs, buildGoogleCalendarUrl } from "@/lib/calendarLinks";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -267,7 +268,7 @@ export default function BookingPage() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setSelectedSlot(null)} className="flex-1">Back</Button>
               <Button variant="hero" onClick={book} disabled={booking} className="flex-1">
-                {booking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                {booking ? <KretopiaSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                 Book it
               </Button>
             </div>

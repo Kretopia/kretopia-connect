@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Sun, AlertTriangle, Clock, Sparkles, ChevronRight, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 type Item = { id: string; label: string; detail?: string; href: string; due?: string | null };
@@ -101,7 +102,7 @@ export function DailyBriefingCard({ className }: { className?: string }) {
               className="text-muted-foreground hover:text-foreground"
               aria-label="Refresh briefing"
             >
-              <RefreshCw className={cn("w-3.5 h-3.5", refreshing && "animate-spin")} />
+              {refreshing ? <KretopiaSpinner className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5" />}
             </button>
           </div>
           <p className="text-sm text-foreground mt-1 leading-snug">

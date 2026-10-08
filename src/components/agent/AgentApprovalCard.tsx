@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Check, X, Loader2 } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -132,7 +133,7 @@ export const AgentApprovalCard = ({ action, onResolved, compact }: Props) => {
               disabled={busy !== null}
             >
               {busy === "approve" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <KretopiaSpinner className="h-3.5 w-3.5" />
               ) : (
                 <Check className="h-3.5 w-3.5" />
               )}
@@ -146,7 +147,7 @@ export const AgentApprovalCard = ({ action, onResolved, compact }: Props) => {
               disabled={busy !== null}
             >
               {busy === "reject" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <KretopiaSpinner className="h-3.5 w-3.5" />
               ) : (
                 <X className="h-3.5 w-3.5" />
               )}

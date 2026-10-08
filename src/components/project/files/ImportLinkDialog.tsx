@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Link2, Loader2, ExternalLink } from "lucide-react";
+import { Link2, ExternalLink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -149,7 +150,7 @@ export const ImportLinkDialog = ({
               onClick={fetchPreview}
               disabled={!url.trim() || loading || saving}
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Preview"}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Preview"}
             </Button>
           </div>
 
@@ -187,7 +188,7 @@ export const ImportLinkDialog = ({
             Cancel
           </Button>
           <Button onClick={save} disabled={!preview || saving}>
-            {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+            {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
             Add to Vault
           </Button>
         </DialogFooter>

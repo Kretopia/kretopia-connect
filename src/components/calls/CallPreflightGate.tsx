@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Loader2, ShieldAlert, Copy, ExternalLink, X, Check } from "lucide-react";
+import { ShieldAlert, Copy, ExternalLink, X, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { runCallPreflight, type PreflightResult } from "@/lib/callPreflight";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +44,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
   if (!result) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#05070D] text-white gap-3">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <KretopiaSpinner className="h-6 w-6 text-primary" />
         <p className="text-sm text-white/70">Checking your device…</p>
       </div>
     );

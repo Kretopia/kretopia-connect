@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, MapPin, Clock, Users, Loader2, Ticket, X, ScanLine, Sparkles, Zap, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { CalendarIcon, MapPin, Clock, Users, Ticket, X, ScanLine, Sparkles, Zap, MessageSquare, Plus, Trash2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PayoutsConnectWarning } from "./PayoutsConnectWarning";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -654,7 +655,7 @@ export const CreateSessionDialog = ({
               className="flex-1"
               variant="gradient"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               {createMode === "workspace"
                 ? "Open Production Workspace"
                 : `Create ${formData.event_type === "event" ? "Event" : "Session"}`}

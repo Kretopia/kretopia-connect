@@ -15,7 +15,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Send, ArrowLeft, MoreVertical, Briefcase, Users, Crown, Loader2, Trash2, Share2, Link2 } from "lucide-react";
+import { Send, ArrowLeft, MoreVertical, Briefcase, Users, Crown, Trash2, Share2, Link2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -260,7 +261,7 @@ export const GroupChatPanel = ({ group, currentUserId, onBack }: GroupChatPanelP
             onClick={turnIntoProject}
             disabled={promoting}
           >
-            {promoting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Briefcase className="h-4 w-4" />}
+            {promoting ? <KretopiaSpinner className="h-4 w-4" /> : <Briefcase className="h-4 w-4" />}
             Turn into Project
             {!isCreatorTier && <Crown className="h-3 w-3 text-energy" />}
           </Button>
@@ -325,7 +326,7 @@ export const GroupChatPanel = ({ group, currentUserId, onBack }: GroupChatPanelP
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete group"}
+              {deleting ? <KretopiaSpinner className="h-4 w-4" /> : "Delete group"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -415,7 +416,7 @@ export const GroupChatPanel = ({ group, currentUserId, onBack }: GroupChatPanelP
             className="rounded-full"
           />
           <Button type="submit" size="icon" disabled={sending || !newMessage.trim()}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
       </div>

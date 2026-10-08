@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { APP_URL } from "@/lib/constants";
 import { BoldElectricTemplate } from "@/components/creator-site/BoldElectricTemplate";
@@ -16,6 +15,7 @@ import { PhotographerTemplate } from "@/components/creator-site/PhotographerTemp
 import HandleResolver from "@/pages/HandleResolver";
 import { useSiteViewTracker } from "@/hooks/useSiteAnalytics";
 import type { CreatorSiteData } from "@/pages/CreatorSite";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 /**
  * Resolves /:username to the creator's site and renders it directly
@@ -139,7 +139,7 @@ const CreatorSiteByUsername = () => {
   if (loading) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
       </div>
     );
   }

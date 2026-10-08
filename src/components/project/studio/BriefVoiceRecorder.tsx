@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, Square, Loader2, X, Check, ListChecks } from "lucide-react";
+import { Mic, Square, X, Check, ListChecks } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -270,7 +271,7 @@ export const BriefVoiceRecorder = ({
 
           {phase === "processing" && (
             <div className="flex flex-col items-center gap-3 py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
               <p className="text-sm text-muted-foreground">Catching the vibe…</p>
             </div>
           )}
@@ -353,7 +354,7 @@ export const BriefVoiceRecorder = ({
                   disabled={saving || !draft.trim()}
                 >
                   {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4" />
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-1" />

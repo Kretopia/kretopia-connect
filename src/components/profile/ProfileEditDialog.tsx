@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, AlertCircle, Save, Sparkles, Loader2, Search, Video, Upload, X, RefreshCw } from "lucide-react";
+import { CheckCircle2, AlertCircle, Save, Sparkles, Search, Video, Upload, X, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { checkProfileCompletion } from "@/lib/profileCompletion";
@@ -580,7 +581,7 @@ export function ProfileEditDialog({
             onClick={handleAIAutoFill}
           >
             {autoFilling ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Searching the web...</>
+              <><KretopiaSpinner className="h-4 w-4" /> Searching the web...</>
             ) : (
               <><Search className="h-4 w-4" /> Auto-Fill from Web</>
             )}
@@ -680,7 +681,7 @@ export function ProfileEditDialog({
                           }
                         }}
                       >
-                        {inferringProfession ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                        {inferringProfession ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                         {formData.passport_profession ? "Re-detect" : "Auto-detect"}
                       </Button>
                     </div>
@@ -754,7 +755,7 @@ export function ProfileEditDialog({
                 ) : (
                   <label className="flex flex-col items-center gap-2 p-6 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 cursor-pointer transition-colors">
                     {uploadingCover ? (
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
                     ) : (
                       <Upload className="h-6 w-6 text-muted-foreground" />
                     )}
@@ -930,7 +931,7 @@ export function ProfileEditDialog({
                     disabled={!formData.website?.trim() || syncing.website}
                     onClick={() => triggerCreditSync('website', formData.website)}
                   >
-                    {syncing.website ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.website ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -960,7 +961,7 @@ export function ProfileEditDialog({
                     disabled={!formData.youtube_url?.trim() || syncing.youtube}
                     onClick={() => triggerCreditSync('youtube', formData.youtube_url)}
                   >
-                    {syncing.youtube ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.youtube ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -990,7 +991,7 @@ export function ProfileEditDialog({
                     disabled={!formData.spotify_url?.trim() || syncing.spotify}
                     onClick={() => triggerCreditSync('spotify', formData.spotify_url)}
                   >
-                    {syncing.spotify ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.spotify ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -1028,7 +1029,7 @@ export function ProfileEditDialog({
                     disabled={!formData.behance_url?.trim() || syncing.behance}
                     onClick={() => triggerCreditSync('behance', formData.behance_url)}
                   >
-                    {syncing.behance ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.behance ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -1050,7 +1051,7 @@ export function ProfileEditDialog({
                     disabled={!formData.imdb_url?.trim() || syncing.imdb}
                     onClick={() => triggerCreditSync('imdb', formData.imdb_url)}
                   >
-                    {syncing.imdb ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.imdb ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -1072,7 +1073,7 @@ export function ProfileEditDialog({
                     disabled={!formData.soundcloud_url?.trim() || syncing.soundcloud}
                     onClick={() => triggerCreditSync('soundcloud', formData.soundcloud_url)}
                   >
-                    {syncing.soundcloud ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.soundcloud ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -1094,7 +1095,7 @@ export function ProfileEditDialog({
                     disabled={!formData.vimeo_url?.trim() || syncing.vimeo}
                     onClick={() => triggerCreditSync('vimeo', formData.vimeo_url)}
                   >
-                    {syncing.vimeo ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                    {syncing.vimeo ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
                     Sync
                   </Button>
                 </div>
@@ -1115,7 +1116,7 @@ export function ProfileEditDialog({
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="mr-2 h-4 w-4" />
                 Saving...
               </>
             ) : (

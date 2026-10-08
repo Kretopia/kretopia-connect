@@ -8,9 +8,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Sparkles, UserCheck, UserPlus, Star, MapPin,
-  Loader2, RefreshCw, Eye, MessageSquare, Zap, ChevronRight
+  Sparkles, UserCheck, UserPlus, Star, MapPin, RefreshCw, Eye, MessageSquare, Zap, ChevronRight
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 
 interface TalentSuggestion {
@@ -178,7 +178,7 @@ export function AITalentSuggestions() {
           )}
 
           <Button onClick={generateSuggestions} disabled={loading} className="w-full gap-2" size="lg">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
             {loading ? "Finding top talent..." : "Find My Top Matches"}
           </Button>
         </div>
@@ -209,7 +209,7 @@ export function AITalentSuggestions() {
               </Select>
             )}
             <Button variant="ghost" size="icon" onClick={generateSuggestions} disabled={loading} className="h-8 w-8" aria-label="Refresh talent suggestions">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -277,7 +277,7 @@ export function AITalentSuggestions() {
 
         {suggestions.length > 0 && (
           <Button variant="ghost" size="sm" className="w-full text-xs gap-1" onClick={generateSuggestions} disabled={loading}>
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+            {loading ? <KretopiaSpinner className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
             Find more matches
           </Button>
         )}

@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   GripVertical, Trash2, Plus, ChevronDown, ChevronRight,
-  Image as ImageIcon, Loader2, X
+  Image as ImageIcon, X
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -295,7 +296,7 @@ export const BlockEditor = ({ blocks, onChange }: BlockEditorProps) => {
 const UploadZone = ({ blockId, uploading, onUpload, className, small }: { blockId: string; uploading: boolean; onUpload: (f: File) => void; className?: string; small?: boolean }) => (
   <label className={`flex items-center justify-center border-2 border-dashed border-border rounded-md cursor-pointer hover:border-primary/50 transition-colors ${small ? 'p-2' : 'h-24'} ${className || ''}`}>
     <div className="text-center">
-      {uploading ? <Loader2 className={`${small ? 'h-4 w-4' : 'h-5 w-5'} animate-spin text-muted-foreground mx-auto`} /> : <ImageIcon className={`${small ? 'h-4 w-4' : 'h-5 w-5'} text-muted-foreground mx-auto`} />}
+      {uploading ? <KretopiaSpinner className={`${small ? 'h-4 w-4' : 'h-5 w-5'} mx-auto`} /> : <ImageIcon className={`${small ? 'h-4 w-4' : 'h-5 w-5'} text-muted-foreground mx-auto`} />}
       {!small && <span className="text-xs text-muted-foreground block mt-1">{uploading ? 'Uploading...' : 'Upload'}</span>}
     </div>
     <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) onUpload(f); }} disabled={uploading} />

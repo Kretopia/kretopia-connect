@@ -4,7 +4,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Globe, ExternalLink, Copy, CheckCircle2, Loader2, PenLine, AtSign } from "lucide-react";
+import { Globe, ExternalLink, Copy, CheckCircle2, PenLine, AtSign } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { APP_URL } from "@/lib/constants";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -201,7 +202,7 @@ export const CreatorSiteSettings = () => {
               disabled={loading || savingUsername || !dirty}
               className="shrink-0"
             >
-              {savingUsername ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+              {savingUsername ? <KretopiaSpinner className="h-4 w-4" /> : "Save"}
             </Button>
           </div>
           {usernameError ? (

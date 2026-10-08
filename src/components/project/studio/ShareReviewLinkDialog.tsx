@@ -21,6 +21,7 @@ import {
   Trash2,
   ExternalLink,
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { APP_URL } from "@/lib/constants";
 
 interface ShareLink {
@@ -214,7 +215,7 @@ export function ShareReviewLinkDialog({
             Active links
           </p>
           {loading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
+            <KretopiaLoader size="sm" label="Loading…" />
           ) : links.length === 0 ? (
             <p className="text-xs text-muted-foreground">
               No links yet. Create one above to share with a client.

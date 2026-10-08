@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Lock, Shield, Zap, Award, Star, Crown, Sparkles, Loader2, TrendingUp, KeyRound } from "lucide-react";
+import { Check, Lock, Shield, Zap, Award, Star, Crown, Sparkles, TrendingUp, KeyRound } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateStatusFromCredits, getAllTiers } from "@/lib/statusEngine";
@@ -78,7 +79,7 @@ export default function PerksTab() {
 
         {loading ? (
           <div className="flex items-center gap-2 text-foreground/40 text-sm py-6">
-            <Loader2 className="h-4 w-4 animate-spin" /> Checking your status…
+            <KretopiaSpinner className="h-4 w-4" /> Checking your status…
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { Loader2, ShieldAlert, Upload, X, ExternalLink, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { ShieldAlert, Upload, X, ExternalLink, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -372,7 +373,7 @@ const DisputeCredit = () => {
             </div>
 
             <Button onClick={handleSubmit} disabled={submitting} className="w-full">
-              {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               Submit dispute
             </Button>
           </Card>

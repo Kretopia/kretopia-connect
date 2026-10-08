@@ -5,6 +5,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, RefreshCw, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { LocationPrivacySelect, type LocationPrecision } from "@/components/nearby/LocationPrivacySelect";
 
@@ -68,7 +69,7 @@ export const NearbyControls = ({
               <VisibilityToggle id="location-visible-mobile" />
               {locationVisible && <LocationPrivacySelect value={locationPrecision} onChange={onPrecisionChange} />}
               <Button variant="outline" size="sm" onClick={onRefresh} disabled={!hasLocation || loading} className="w-full">
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Refresh Results
               </Button>
             </CardContent>
@@ -84,7 +85,7 @@ export const NearbyControls = ({
             <VisibilityToggle id="location-visible-desktop" />
             {locationVisible && <LocationPrivacySelect value={locationPrecision} onChange={onPrecisionChange} />}
             <Button variant="ghost" size="icon" onClick={onRefresh} disabled={!hasLocation || loading} className="shrink-0">
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" />}
             </Button>
           </div>
         </CardContent>

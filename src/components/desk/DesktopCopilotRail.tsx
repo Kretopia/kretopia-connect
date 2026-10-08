@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { Send, Loader2, ChevronRight, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Send, ChevronRight, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -394,11 +395,11 @@ export function DesktopCopilotRail() {
               {m.role === "assistant" && activityByMsg[i]?.length ? (
                 <div className="space-y-1.5 max-w-[95%]">
                   {activityByMsg[i].map((item) => {
-                    const Icon = item.status === "running" ? Loader2 : item.status === "failed" ? AlertCircle : CheckCircle2;
+                    const Icon = item.status === "running" ? KretopiaSpinner : item.status === "failed" ? AlertCircle : CheckCircle2;
                     return (
                       <div key={item.id} className="flex items-start gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs">
                         <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                          <Icon className={cn("h-3.5 w-3.5", item.status === "running" && "animate-spin text-primary", item.status === "done" && "text-primary", item.status === "failed" && "text-destructive")} />
+                          <Icon className={cn("h-3.5 w-3.5", item.status === "running" && "text-primary", item.status === "done" && "text-primary", item.status === "failed" && "text-destructive")} />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-semibold leading-snug text-foreground">{item.title}</p>
@@ -467,7 +468,7 @@ export function DesktopCopilotRail() {
             disabled={streaming || !input.trim()}
             aria-label="Send"
           >
-            {streaming ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {streaming ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>

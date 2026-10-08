@@ -10,10 +10,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import {
   Film, Tv, Music, Disc3, Video, Mic2, CalendarDays, Sparkles, Crown,
-  Shirt, Megaphone, Briefcase, ShieldCheck, Loader2,
+  Shirt, Megaphone, Briefcase, ShieldCheck,
   Plus, Trash2, Play, UserPlus, ChevronLeft, ChevronRight, Pencil,
   Youtube, Headphones, Image as ImageIcon, Upload, CheckSquare, Square, XCircle,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ICDBCreditForm } from "./ICDBCreditForm";
@@ -464,7 +465,7 @@ function CategoryRow({
                       disabled={deletingId === credit.id}
                       onClick={(e) => { e.stopPropagation(); onDelete(credit.id, credit.source); }}
                     >
-                      {deletingId === credit.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                      {deletingId === credit.id ? <KretopiaSpinner className="h-3 w-3" /> : <Trash2 className="h-3 w-3" />}
                     </Button>
                   )}
                 </div>
@@ -706,7 +707,7 @@ export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelinePr
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -743,7 +744,7 @@ export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelinePr
                 </Button>
                 {selectedIds.size > 0 && (
                   <Button variant="destructive" size="sm" className="h-8 text-xs" onClick={handleBulkDelete} disabled={bulkDeleting}>
-                    {bulkDeleting ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Trash2 className="h-3.5 w-3.5 mr-1" />}
+                    {bulkDeleting ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Trash2 className="h-3.5 w-3.5 mr-1" />}
                     Delete {selectedIds.size}
                   </Button>
                 )}
@@ -965,7 +966,7 @@ export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelinePr
               <p className="text-[10px] text-muted-foreground">Choose which row this credit appears in</p>
             </div>
             <Button onClick={saveEdit} disabled={savingEdit} className="w-full">
-              {savingEdit && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Save Changes
+              {savingEdit && <KretopiaSpinner className="h-4 w-4 mr-1.5" />} Save Changes
             </Button>
           </div>
         </DialogContent>

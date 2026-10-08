@@ -4,7 +4,6 @@ import {
   Image as ImageIcon,
   FileText,
   AudioLines,
-  Loader2,
   Check,
   Flame,
   ChevronDown,
@@ -12,6 +11,7 @@ import {
   UserPlus,
   Trash2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -450,7 +450,7 @@ const TaskRow = ({
             )}
           >
             {busy ? (
-              <Loader2 className="h-3 w-3 animate-spin text-foreground" />
+              <KretopiaSpinner className="h-3 w-3 text-foreground" />
             ) : isDone ? (
               <Check className="h-3 w-3 text-primary-foreground" />
             ) : null}
@@ -500,7 +500,7 @@ const TaskRow = ({
                 onClick={(e) => e.stopPropagation()}
               >
                 {assigning ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
                 ) : assignee ? (
                   <Avatar className="h-6 w-6 ring-1 ring-border">
                     <AvatarImage src={assignee.avatar_url || undefined} />
@@ -742,7 +742,7 @@ const Section = ({
             />
             <div className="flex gap-1.5">
               <Button size="sm" className="h-8 text-xs" onClick={handleAdd} disabled={saving}>
-                {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : "Add"}
+                {saving ? <KretopiaSpinner className="h-3 w-3" /> : "Add"}
               </Button>
               <Button
                 size="sm"

@@ -12,12 +12,12 @@ import {
   Download,
   Package,
   ArrowRight,
-  Loader2,
   AlertCircle,
   Clock,
   Lock,
   MessageCircle,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 export default function PurchaseSuccess() {
   const [searchParams] = useSearchParams();
@@ -115,7 +115,7 @@ export default function PurchaseSuccess() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+            <KretopiaSpinner className="h-12 w-12 text-primary mb-4" />
             <p className="text-lg font-medium">Processing your purchase...</p>
             <p className="text-sm text-muted-foreground">Please wait a moment</p>
           </CardContent>

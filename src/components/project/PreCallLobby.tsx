@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Video, VideoOff, Loader2, X, Users } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, X, Users } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   projectName: string;
@@ -167,7 +168,7 @@ export const PreCallLobby = ({
         >
           {joining ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <KretopiaSpinner className="h-4 w-4 mr-2" />
               Starting…
             </>
           ) : (

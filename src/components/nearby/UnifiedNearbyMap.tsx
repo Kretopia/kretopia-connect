@@ -2,10 +2,10 @@ import { useEffect, useMemo, useRef } from "react";
 // Use namespace import to avoid Vite optimizeDeps "DomUtil export missing" error
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Loader2 } from "lucide-react";
 import type { CreativeLocation } from "./LocationListItem";
 import { fuzzyCoordinates } from "@/lib/fuzzyLocation";
 import { getMaskedName } from "./NearbyCreatorCard";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface NearbyCreator {
   user_id: string;
@@ -495,7 +495,7 @@ export const UnifiedNearbyMap = ({
 
       {(loading || !userLocation) && (
         <div className="absolute inset-0 z-[500] flex flex-col items-center justify-center gap-2 bg-background/75 backdrop-blur-[1px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <KretopiaSpinner className="h-8 w-8 text-primary" />
           <p className="text-xs text-muted-foreground font-medium">
             {!userLocation ? "Finding your area…" : "Loading map…"}
           </p>

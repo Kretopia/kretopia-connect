@@ -15,7 +15,8 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { Camera, CheckCircle, XCircle, Loader2, Shield, Sparkles, UserCheck, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Camera, CheckCircle, XCircle, Shield, Sparkles, UserCheck, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { getPostSignupUrl } from "@/lib/authRedirect";
 
@@ -471,7 +472,7 @@ export function ClaimProfileDialog({ open, onOpenChange, profile, onSuccess }: C
                 disabled={isCreatingAccount}
               >
                 {isCreatingAccount ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                 ) : (
                   <UserCheck className="h-4 w-4" />
                 )}
@@ -482,7 +483,7 @@ export function ClaimProfileDialog({ open, onOpenChange, profile, onSuccess }: C
 
           {step === 'creating' && (
             <div className="py-8 space-y-4 text-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+              <KretopiaSpinner className="h-12 w-12 text-primary mx-auto" />
               <div>
                 <p className="font-semibold">Creating your account...</p>
                 <p className="text-sm text-muted-foreground">Transferring your profile and achievements</p>
@@ -537,7 +538,7 @@ export function ClaimProfileDialog({ open, onOpenChange, profile, onSuccess }: C
                   </div>
                 )}
                 <div className="flex items-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <KretopiaSpinner className="h-6 w-6 text-primary" />
                 </div>
                 <div className="relative">
                   <Avatar className="h-20 w-20 border-2 border-muted">

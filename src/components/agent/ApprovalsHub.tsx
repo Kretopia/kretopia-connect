@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Loader2, Check, X, Mail, ChevronRight } from "lucide-react";
+import { Check, X, Mail, ChevronRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -176,7 +177,7 @@ export const ApprovalsHub = ({ limit = 4 }: { limit?: number }) => {
                       disabled={busy === item.draft.id}
                     >
                       {busy === item.draft.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <KretopiaSpinner className="h-3.5 w-3.5" />
                       ) : (
                         <Check className="h-3.5 w-3.5" />
                       )}

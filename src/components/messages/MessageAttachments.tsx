@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Paperclip, Image, X, Loader2, ImageOff } from "lucide-react";
+import { Paperclip, Image, X, ImageOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   Popover,
   PopoverContent,
@@ -114,7 +115,7 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
             className="rounded-full text-muted-foreground hover:text-foreground"
           >
             {isUploading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <KretopiaSpinner className="h-5 w-5" />
             ) : (
               <Paperclip className="h-5 w-5" />
             )}

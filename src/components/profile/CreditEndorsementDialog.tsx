@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, Loader2, ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
+import { Send, Search, ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { notifyUser } from "@/lib/notifyUser";
@@ -227,7 +228,7 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
               </div>
               {searching && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Searching...
+                  <KretopiaSpinner className="h-3 w-3" /> Searching...
                 </div>
               )}
               {searchResults.length > 0 && (
@@ -297,7 +298,7 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
               onClick={() => createLink(undefined, email || undefined, name)}
               disabled={sending || !name.trim()}
             >
-              {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <UserPlus className="h-4 w-4 mr-2" />}
+              {sending ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
               Create verify link
             </Button>
           </div>

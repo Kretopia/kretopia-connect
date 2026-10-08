@@ -3,7 +3,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, MessageCircle, Send, Trash2, Pin, Play } from "lucide-react";
+import { MessageCircle, Send, Trash2, Pin, Play } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -276,7 +277,7 @@ export const FileCommentsSheet = ({
               </>
             ) : (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-5 w-5 text-white/60 animate-spin" />
+                <KretopiaSpinner className="h-5 w-5 text-white/60" />
               </div>
             )}
           </div>
@@ -286,7 +287,7 @@ export const FileCommentsSheet = ({
         <div className="flex-1 min-h-0 overflow-y-auto px-4 py-3 space-y-3">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : comments.length === 0 ? (
             <div className="text-center py-10 text-sm text-muted-foreground">
@@ -396,7 +397,7 @@ export const FileCommentsSheet = ({
               onClick={handleSend}
               aria-label="Post note"
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>

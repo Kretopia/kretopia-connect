@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, UserMinus, MessageCircle, UserPlus, Crown, Download, EyeOff } from "lucide-react";
+import { UserMinus, MessageCircle, UserPlus, Crown, Download, EyeOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -198,7 +199,7 @@ export const SessionParticipants = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }
@@ -337,7 +338,7 @@ export const SessionParticipants = ({
                           disabled={removingId === participant.id}
                         >
                           {removingId === participant.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <KretopiaSpinner className="h-4 w-4" />
                           ) : (
                             <UserMinus className="h-4 w-4" />
                           )}

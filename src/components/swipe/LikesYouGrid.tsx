@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Heart, Loader2, Sparkles } from "lucide-react";
+import { Heart, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -100,7 +101,7 @@ export function LikesYouGrid() {
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-2 py-16 text-xs text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Loading likes…
+        <KretopiaSpinner className="h-4 w-4" /> Loading likes…
       </div>
     );
   }

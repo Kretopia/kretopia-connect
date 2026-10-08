@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { Loader2, ShieldCheck, Upload } from "lucide-react";
+import { ShieldCheck, Upload } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { IMPORT_PROVIDERS, type ProviderId } from "@/lib/studioImport";
@@ -28,7 +29,7 @@ export const ConnectStep = ({ provider, connected, busy, uploadName, onConnect, 
           written back to {meta.name}.
         </p>
         <Button onClick={onConnect} disabled={busy} className="w-full sm:w-auto">
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          {busy ? <KretopiaSpinner className="mr-2 h-4 w-4" /> : null}
           {connected ? `Reconnect ${meta.name}` : `Connect ${meta.name}`}
         </Button>
         {connected && (
@@ -61,7 +62,7 @@ export const ConnectStep = ({ provider, connected, busy, uploadName, onConnect, 
         onClick={() => inputRef.current?.click()}
         className="flex w-full flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-card p-8 text-center transition-colors hover:border-primary/60 disabled:opacity-50"
       >
-        {busy ? <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+        {busy ? <KretopiaSpinner className="h-6 w-6 text-muted-foreground" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
         <span className="text-sm font-semibold">{uploadName ?? `Choose your ${isSlack ? "Slack export .zip" : ".csv file"}`}</span>
         <span className="text-xs text-muted-foreground">Up to {limit}MB · stays private to you</span>
       </button>

@@ -9,7 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Calendar, Send, ArrowLeft } from "lucide-react";
+import { Calendar, Send, ArrowLeft } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 // Returns the date (YYYY-MM-DD) of the upcoming Monday in UTC.
 // If today IS Monday, returns today.
@@ -199,11 +200,11 @@ export default function AdminWeeklyNote() {
 
             <div className="flex flex-wrap gap-3 pt-2">
               <Button onClick={save} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                {saving ? <KretopiaSpinner className="w-4 h-4 mr-2" /> : null}
                 {existingId ? "Update note" : "Save note"}
               </Button>
               <Button variant="outline" onClick={sendPreview} disabled={sendingPreview}>
-                {sendingPreview ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Send className="w-4 h-4 mr-2" />}
+                {sendingPreview ? <KretopiaSpinner className="w-4 h-4 mr-2" /> : <Send className="w-4 h-4 mr-2" />}
                 Email me a preview
               </Button>
             </div>

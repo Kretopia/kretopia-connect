@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Check, AlertTriangle, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,7 +138,7 @@ Return as a JSON array of strings only, e.g. ["Skill 1","Skill 2"].`,
   const StageRow = ({ label, status }: { label: string; status: StageStatus }) => (
     <div className="flex items-center gap-3 text-sm">
       {status === "done" && <Check className="h-4 w-4 text-[hsl(var(--signal-teal))] shrink-0" />}
-      {status === "running" && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+      {status === "running" && <KretopiaSpinner className="h-4 w-4 text-muted-foreground shrink-0" />}
       {status === "pending" && <div className="h-4 w-4 rounded-full border border-border shrink-0" />}
       {status === "failed" && <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />}
       <span className={cn(status === "pending" ? "text-muted-foreground" : "text-foreground")}>{label}</span>

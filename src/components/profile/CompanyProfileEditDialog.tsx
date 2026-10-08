@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Camera, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { Building2, Camera, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface CompanyProfileEditDialogProps {
   open: boolean;
@@ -129,7 +130,7 @@ const CompanyEditForm = memo(({
             <div className="flex-1">
               <Input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onAvatarUpload} />
               <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploadingAvatar} size="sm">
-                {isUploadingAvatar ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</>) : (<><Camera className="mr-2 h-4 w-4" />Change Logo</>)}
+                {isUploadingAvatar ? (<><KretopiaSpinner className="mr-2 h-4 w-4" />Uploading...</>) : (<><Camera className="mr-2 h-4 w-4" />Change Logo</>)}
               </Button>
             </div>
           </div>

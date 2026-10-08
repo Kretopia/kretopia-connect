@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Link as LinkIcon, Copy, Plus, ExternalLink, Power } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 const APP_URL = "https://www.kretopia.com";
 
@@ -111,7 +112,7 @@ export function PaymentLinksSection() {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <KretopiaLoader size="sm" label="Loading…" />
         ) : links.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             No links yet. Create one to get paid in seconds — no invoice required.

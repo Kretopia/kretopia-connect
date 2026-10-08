@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import {
   History, Plus, Search, Pencil, Archive, Trash2, Check, X, MessageSquare,
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -153,7 +154,7 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
 
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-4 text-xs text-white/40">Loading…</div>
+          <KretopiaLoader size="sm" label="Loading…" className="p-4" />
         ) : filtered.length === 0 ? (
           <div className="p-4 text-xs text-white/40 flex flex-col items-center text-center gap-1.5 mt-4">
             <MessageSquare className="h-5 w-5 text-white/20" />

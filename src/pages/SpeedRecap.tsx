@@ -6,7 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, MessageSquare, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, MessageSquare, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { trackDeckEvent } from "@/lib/deckMetrics";
 
@@ -101,7 +102,7 @@ export default function SpeedRecap() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><KretopiaSpinner className="h-6 w-6" /></div>;
   }
 
   return (
@@ -155,7 +156,7 @@ export default function SpeedRecap() {
                     onClick={() => sayHi(p)}
                     disabled={sending === p.id}
                   >
-                    {sending === p.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                    {sending === p.id ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <MessageSquare className="h-3.5 w-3.5" />}
                     Say hi
                   </Button>
                 </CardContent>

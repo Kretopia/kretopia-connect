@@ -11,7 +11,8 @@ import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor,
   useSensor, useSensors, useDroppable, useDraggable,
 } from "@dnd-kit/core";
-import { Handshake, Plus, Loader2, Mail, Phone, DollarSign, Trash2, GripVertical } from "lucide-react";
+import { Handshake, Plus, Mail, Phone, DollarSign, Trash2, GripVertical } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 interface Sponsor {
   id: string;
@@ -182,7 +183,7 @@ export function EventSponsorsKanban({ project, currentUserId }: Props) {
       </div>
 
       {loading ? (
-        <div className="text-xs text-muted-foreground py-6 text-center">Loading…</div>
+        <KretopiaLoader size="sm" label="Loading…" className="py-6" />
       ) : sponsors.length === 0 ? (
         <button
           type="button"
@@ -266,7 +267,7 @@ export function EventSponsorsKanban({ project, currentUserId }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
             <Button onClick={create} disabled={!name.trim() || busy}>
-              {busy && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Add
+              {busy && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />} Add
             </Button>
           </DialogFooter>
         </DialogContent>

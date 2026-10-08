@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Loader2, Settings as SettingsIcon, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
+import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Settings as SettingsIcon, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
 import { SettingsShell } from "@/components/settings/SettingsShell";
 import type { SettingsDomain } from "@/components/settings/SettingsNav";
 import { CreatorSiteSettings } from "@/components/settings/CreatorSiteSettings";
@@ -26,6 +26,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTrinidadVoice } from "@/hooks/useTrinidadVoice";
 import { VibePicker } from "@/components/onboarding/VibePicker";
 import { Palette } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 
@@ -64,7 +65,7 @@ const RestartTourButton = () => {
     >
       {loading ? (
         <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <KretopiaSpinner className="h-4 w-4 mr-2" />
           Restarting...
         </>
       ) : (
@@ -599,7 +600,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Updating...
                   </>
                 ) : (
@@ -647,7 +648,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Updating...
                   </>
                 ) : (
@@ -762,7 +763,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               <Button onClick={saveNotificationPreferences} disabled={saving} className="w-full">
                 {saving ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Saving...
                   </>
                 ) : (
@@ -887,7 +888,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Exporting...
                   </>
                 ) : (
@@ -925,7 +926,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                     >
                       {loading ? (
                         <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          <KretopiaSpinner className="h-4 w-4 mr-2" />
                           Deleting...
                         </>
                       ) : (

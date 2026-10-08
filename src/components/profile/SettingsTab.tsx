@@ -9,7 +9,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Shield, Trash2, Download, Eye, EyeOff, Loader2, IdCard, Share2 } from "lucide-react";
+import { Lock, Mail, Bell, Shield, Trash2, Download, Eye, EyeOff, IdCard, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ShareableCreatorCard } from "./ShareableCreatorCard";
 import { useProfileContext } from "@/contexts/ProfileContext";
 import { StorageUsageCard } from "./StorageUsageCard";
@@ -304,7 +305,7 @@ export const SettingsTab = () => {
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Updating...
               </>
             ) : (
@@ -350,7 +351,7 @@ export const SettingsTab = () => {
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Updating...
               </>
             ) : (
@@ -463,7 +464,7 @@ export const SettingsTab = () => {
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Exporting...
               </>
             ) : (
@@ -503,7 +504,7 @@ export const SettingsTab = () => {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4 mr-2" />
                       Deleting...
                     </>
                   ) : (

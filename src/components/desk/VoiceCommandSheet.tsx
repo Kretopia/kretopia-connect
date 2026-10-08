@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Mic, Square, Loader2, Sparkles, CheckCircle2, X } from "lucide-react";
+import { Mic, Square, Sparkles, CheckCircle2, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -330,7 +331,7 @@ export const VoiceCommandSheet = ({ open, onOpenChange }: VoiceCommandSheetProps
 
           {phase === "thinking" && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
               <div className="text-sm font-medium">Reading…</div>
             </div>
           )}
@@ -373,7 +374,7 @@ export const VoiceCommandSheet = ({ open, onOpenChange }: VoiceCommandSheetProps
 
           {phase === "executing" && (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <KretopiaSpinner className="h-8 w-8 text-primary" />
               <div className="text-sm font-medium">Working on it…</div>
             </div>
           )}

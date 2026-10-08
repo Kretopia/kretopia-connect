@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { SEO } from "@/components/SEO";
 import { formatDistanceToNow } from "date-fns";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Memory = {
   id: string;
@@ -177,7 +178,7 @@ export default function CopilotMemory() {
               disabled={!newContent.trim() || adding}
               size="sm"
             >
-              {adding ? <LoadingSpinner size="sm" className="mr-1" /> : null}
+              {adding ? <KretopiaSpinner className="mr-1 h-4 w-4" /> : null}
               Save memory
             </Button>
           </CardContent>

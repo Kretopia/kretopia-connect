@@ -11,11 +11,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import {
-  Calendar, Clock, CheckCircle2, XCircle, Circle, Loader2,
+  Calendar, Clock, CheckCircle2, XCircle, Circle,
+  // static "In Progress" column glyph (see COLUMNS), not a loading state
+  // eslint-disable-next-line no-restricted-imports
+  Loader2,
   Sparkles, Inbox, Upload, ExternalLink, Image as ImageIcon, Plus,
   FolderUp, FileText, Music, Film, FileArchive, File as FileIcon, X,
   GripVertical,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getProjectFileSignedUrl } from "@/lib/projectFiles";
 import {
   DndContext,
@@ -854,7 +858,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }
@@ -1157,7 +1161,7 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
 
                     <div className="flex flex-wrap gap-2 justify-center">
                       <Button size="sm" variant="outline" onClick={() => wipInputRef.current?.click()} disabled={uploading} className="gap-1.5">
-                        {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                        {uploading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
                         {uploading ? "Uploading…" : "Choose files"}
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => folderInputRef.current?.click()} disabled={uploading} className="gap-1.5">

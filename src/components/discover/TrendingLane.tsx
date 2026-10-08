@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, ShieldCheck, Handshake, Loader2 } from "lucide-react";
+import { TrendingUp, ShieldCheck, Handshake } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TrendingCreator {
@@ -90,7 +91,7 @@ export const TrendingLane = () => {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-8 justify-center">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading the pulse…
+        <KretopiaSpinner className="h-3.5 w-3.5" /> Reading the pulse…
       </div>
     );
   }

@@ -9,6 +9,7 @@
 import { motion } from "framer-motion";
 import kretoSrc from "@/assets/kreto-executive-producer.png.asset.json";
 import { cn } from "@/lib/utils";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Size = "xs" | "sm" | "md" | "lg" | "xl";
 
@@ -22,7 +23,7 @@ const SIZE: Record<Size, { box: string; halo: string; ring: string }> = {
 
 /** "idle" is the default ambient breathing loop. The others each read as a
  *  visibly distinct kind of "active" so Kreto's own identity can stand in
- *  for the generic Loader2/Volume2/red-dot icons used for these moments
+ *  for the generic KretopiaSpinner/Volume2/red-dot icons used for these moments
  *  elsewhere:
  *   - "thinking": fast, bright pulse + a spinning gradient rim (a loading
  *     spinner folded into the avatar itself).

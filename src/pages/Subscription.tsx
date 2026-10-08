@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Sparkles, Zap, Crown, Briefcase, User, Check } from "lucide-react";
+import { Sparkles, Zap, Crown, Briefcase, User, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   SUBSCRIPTION_PRODUCTS,
   type AccountType, type BillingInterval,
@@ -164,7 +165,7 @@ export default function Subscription() {
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <KretopiaSpinner className="h-8 w-8" />
         </div>
       </div>
     );
@@ -242,7 +243,7 @@ export default function Subscription() {
           <div className="flex justify-end">
             <Button size="sm" onClick={handleManageSubscription} variant="outline" disabled={loading === "portal"}>
               {loading === "portal" ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</>
+                <><KretopiaSpinner className="mr-2 h-4 w-4" />Loading...</>
               ) : (
                 "Manage Subscription"
               )}
@@ -335,7 +336,7 @@ export default function Subscription() {
                     ) : plan.soldOut ? (
                       "Sold Out"
                     ) : isPlanLoading(plan) ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                     ) : (
                       plan.ctaLabel
                     )}

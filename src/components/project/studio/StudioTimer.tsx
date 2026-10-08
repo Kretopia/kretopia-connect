@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Timer, Play, Square, Receipt, Loader2, History, Pencil, Trash2, Plus, Check, X } from "lucide-react";
+import { Timer, Play, Square, Receipt, History, Pencil, Trash2, Plus, Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
@@ -322,7 +323,7 @@ export const StudioTimer = ({
 
           {loadingTotals ? (
             <div className="py-10 flex items-center justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : !totals || totals.count === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
@@ -388,7 +389,7 @@ export const StudioTimer = ({
                 className="w-full gap-2"
               >
                 {drafting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="h-4 w-4" />
                 ) : (
                   <Receipt className="h-4 w-4" />
                 )}
@@ -444,7 +445,7 @@ export const StudioTimer = ({
                     onClick={addManualEntry}
                     disabled={savingEntry || !parseFloat(addMinutes)}
                   >
-                    {savingEntry ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    {savingEntry ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
                     Save
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>
@@ -456,7 +457,7 @@ export const StudioTimer = ({
 
             {loadingEntries ? (
               <div className="py-10 flex items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
               </div>
             ) : entries.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">

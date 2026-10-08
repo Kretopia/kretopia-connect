@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { SEO } from "@/components/SEO";
 import { SPEED_VERTICALS, getVerticalMeta, type SpeedVertical } from "@/lib/speedVerticals";
 import { CalendarClock, Video, Mic, Users, ArrowRight, Sparkles } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { trackDeckEvent } from "@/lib/deckMetrics";
 
 interface Row {
@@ -114,7 +115,7 @@ export default function SpeedIndex() {
       </div>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-3">
-        {loading && <p className="text-sm text-muted-foreground">Loading upcoming nights…</p>}
+        {loading && <KretopiaLoader size="sm" label="Loading upcoming nights…" />}
         {!loading && filtered.length === 0 && (
           <Card className="p-8 text-center">
             <p className="font-medium">No sessions on the calendar yet for this theme.</p>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Link2, BadgeCheck } from "lucide-react";
+import { Search, Link2, BadgeCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { toast } from "sonner";
@@ -216,7 +217,7 @@ export const SearchOrPasteStep = ({ initialQuery = "", onResults }: Props) => {
             aria-autocomplete="list"
           />
           {suggestLoading && (
-            <Loader2 className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           )}
         </div>
 
@@ -288,7 +289,7 @@ export const SearchOrPasteStep = ({ initialQuery = "", onResults }: Props) => {
       >
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <KretopiaSpinner className="mr-2 h-4 w-4" />
             Searching the Creative Universe…
           </>
         ) : (

@@ -8,8 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Plus, Trash2, Rocket, Loader2, Lock, Sparkles, Wand2, ImagePlus, ChevronLeft, ChevronRight, Upload, Check,
+  Plus, Trash2, Rocket, Lock, Sparkles, Wand2, ImagePlus, ChevronLeft, ChevronRight, Upload, Check,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { useCreateCampaign, useMyCampaigns } from "@/hooks/useThriveFund";
 import { useAuth } from "@/contexts/AuthContext";
@@ -444,7 +445,7 @@ const FundNew = () => {
                   disabled={aiBusy === "tagline" || !title.trim()}
                   onClick={() => callAI("tagline")}
                 >
-                  {aiBusy === "tagline" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                  {aiBusy === "tagline" ? <KretopiaSpinner className="h-3 w-3" /> : <Wand2 className="h-3 w-3" />}
                   Smart write
                 </Button>
               </div>
@@ -494,7 +495,7 @@ const FundNew = () => {
                       onClick={() => fileRef.current?.click()}
                       disabled={coverUploading}
                     >
-                      {coverUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />}
+                      {coverUploading ? <KretopiaSpinner className="h-3 w-3" /> : <Upload className="h-3 w-3" />}
                       Upload
                     </Button>
                     <Button
@@ -505,7 +506,7 @@ const FundNew = () => {
                       onClick={() => callAI("image")}
                       disabled={aiBusy === "image" || !title.trim()}
                     >
-                      {aiBusy === "image" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ImagePlus className="h-3 w-3" />}
+                      {aiBusy === "image" ? <KretopiaSpinner className="h-3 w-3" /> : <ImagePlus className="h-3 w-3" />}
                       Smart generate
                     </Button>
                   </div>
@@ -532,7 +533,7 @@ const FundNew = () => {
                     onClick={() => callAI("story")}
                     disabled={aiBusy === "story" || !title.trim()}
                   >
-                    {aiBusy === "story" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                    {aiBusy === "story" ? <KretopiaSpinner className="h-3 w-3" /> : <Wand2 className="h-3 w-3" />}
                     Smart write
                   </Button>
                 </div>
@@ -566,7 +567,7 @@ const FundNew = () => {
                   onClick={() => callAI("tiers")}
                   disabled={aiBusy === "tiers" || !title.trim()}
                 >
-                  {aiBusy === "tiers" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wand2 className="h-3 w-3" />}
+                  {aiBusy === "tiers" ? <KretopiaSpinner className="h-3 w-3" /> : <Wand2 className="h-3 w-3" />}
                   Smart suggest
                 </Button>
                 <Button variant="outline" size="sm" onClick={addTier} className="gap-1">
@@ -691,7 +692,7 @@ const FundNew = () => {
                       className="flex-1"
                     />
                     <Button onClick={saveDob} disabled={!dob || savingDob} size="sm">
-                      {savingDob ? <Loader2 className="h-3 w-3 animate-spin" /> : "Confirm"}
+                      {savingDob ? <KretopiaSpinner className="h-3 w-3" /> : "Confirm"}
                     </Button>
                   </div>
                 </>
@@ -749,7 +750,7 @@ const FundNew = () => {
                 disabled={createMut.isPending || gated || !ageVerified}
                 className="gap-1.5"
               >
-                {createMut.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {createMut.isPending && <KretopiaSpinner className="h-4 w-4" />}
                 {gated ? <><Lock className="h-3.5 w-3.5" /> Upgrade to launch</> : !ageVerified ? <><Lock className="h-3.5 w-3.5" /> Verify age to launch</> : <>Launch <Rocket className="h-3.5 w-3.5" /></>}
               </Button>
             </div>

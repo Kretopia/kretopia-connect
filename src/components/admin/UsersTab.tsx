@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Search } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 
 export function UsersTab() {
@@ -107,7 +108,7 @@ export function UsersTab() {
   );
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <KretopiaLoader size="sm" label="Loading..." />;
   }
 
   return (

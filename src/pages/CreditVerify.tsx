@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BrandLogo } from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Loader2, ShieldCheck, XCircle, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
+import { CheckCircle2, ShieldCheck, XCircle, Sparkles, ArrowRight, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
 type CreditRequest = {
@@ -304,7 +305,7 @@ export default function CreditVerify() {
                 }
               }}
             >
-              {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              {submitting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
               Confirm & claim my role <ArrowRight className="h-4 w-4 ml-1" />
             </Button>
             <button
@@ -394,7 +395,7 @@ export default function CreditVerify() {
                 onClick={() => submitAccept(name.trim())}
               >
                 <span className="flex items-center gap-2 font-semibold">
-                  {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                  {submitting ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
                   Yes, we worked together
                 </span>
                 <span className="text-[11px] font-normal opacity-80">

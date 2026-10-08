@@ -13,9 +13,10 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   ArrowLeft, ShieldCheck, MapPin, CalendarDays, Building2,
-  ExternalLink, Users, UserPlus, Film, Loader2, Globe,
+  ExternalLink, Users, UserPlus, Film, Globe,
   CheckCircle2, Sparkles, Database, Link2,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
 
 interface ProjectRole {
@@ -292,7 +293,7 @@ const ICDBProjectPage = () => {
                           disabled={claiming === role.id}
                           onClick={() => handleClaim(role)}
                         >
-                          {claiming === role.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <UserPlus className="h-3 w-3" />}
+                          {claiming === role.id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
                           Claim
                         </Button>
                       )}

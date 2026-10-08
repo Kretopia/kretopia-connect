@@ -9,6 +9,7 @@ import {
   FolderOpen, FolderPlus, Upload, Search, Grid3X3, List, Tag, Image as ImageIcon,
   Film, Music, FileText, File, MoreVertical, ArrowLeft, Download, Trash2, Plus, X
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -343,7 +344,7 @@ export const CreativeAssetLibrary = ({ projectId, currentUserId }: CreativeAsset
                   signedUrls[selectedAsset.id] ? (
                     <img src={signedUrls[selectedAsset.id]} alt={selectedAsset.name} className="w-full max-h-96 object-contain" />
                   ) : (
-                    <div className="p-8 text-center text-muted-foreground text-sm">Loading preview…</div>
+                    <KretopiaLoader size="sm" label="Loading preview…" className="p-8" />
                   )
                 ) : selectedAsset.media_type === 'video' ? (
                   signedUrls[selectedAsset.id] && <video src={signedUrls[selectedAsset.id]} controls className="w-full max-h-96" />

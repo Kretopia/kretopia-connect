@@ -21,6 +21,20 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // One loader for every wait state: the K-mark in the brand ring.
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "lucide-react",
+              importNames: ["Loader", "Loader2", "LoaderCircle", "LoaderIcon", "Loader2Icon", "LoaderPinwheel"],
+              message:
+                "Use KretopiaSpinner (inline) or KretopiaLoader (block) from @/components/brand/KretopiaLoader for loading states.",
+            },
+          ],
+        },
+      ],
     },
   },
 );

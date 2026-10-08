@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mail, Send } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { GmailSettings } from "@/components/sales/GmailSettings";
 import { EmailSetupWizard } from "@/components/sales/EmailSetupWizard";
@@ -239,7 +240,7 @@ const OutreachTab = () => {
 
       {/* Sequences */}
       {sequencesLoading ? (
-        <div className="text-center py-12 text-muted-foreground text-sm">Loading sequences...</div>
+        <KretopiaLoader size="sm" label="Loading sequences..." className="py-12" />
       ) : sequences.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Send className="h-10 w-10 mx-auto mb-3 opacity-30" />

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, FileText, Image as ImageIcon, Film, Pin, Download } from "lucide-react";
+import { FileText, Image as ImageIcon, Film, Pin, Download } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 
 interface Props {
@@ -62,7 +63,7 @@ export const CircleLibraryTab = ({ circleId }: Props) => {
   useEffect(() => { load().catch(() => null); }, [load]);
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+    return <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
   }
 
   const pinned = items.filter(i => i.is_pinned);

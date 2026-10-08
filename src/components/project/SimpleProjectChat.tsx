@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MessageSquare, Send, Reply, Pin, PinOff, SmilePlus, X, ChevronDown, Pencil, Trash2, MoreVertical, Paperclip, FileIcon, ImageIcon, Loader2 } from "lucide-react";
+import { MessageSquare, Send, Reply, Pin, PinOff, SmilePlus, X, ChevronDown, Pencil, Trash2, MoreVertical, Paperclip, FileIcon, ImageIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -930,7 +931,7 @@ export const SimpleProjectChat = ({ projectId, messages, currentUserId, onMessag
                 })}
                 {mentionInviting && (
                   <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground border-t border-border/50">
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <KretopiaSpinner className="h-3 w-3" />
                     Inviting…
                   </div>
                 )}
@@ -958,7 +959,7 @@ export const SimpleProjectChat = ({ projectId, messages, currentUserId, onMessag
                 disabled={uploadingFiles}
                 aria-label="Attach files"
               >
-                {uploadingFiles ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                {uploadingFiles ? <KretopiaSpinner className="h-4 w-4" /> : <Paperclip className="h-4 w-4" />}
               </Button>
               <VoiceNoteRecorder onSend={handleSendVoiceNote} disabled={sending} />
               <div className="flex-1 relative">

@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Circle, Loader2, Sparkles, Shield, Award, Music, Users, Globe, Search, Database, Newspaper } from "lucide-react";
+import { CheckCircle2, Circle, Sparkles, Shield, Award, Music, Users, Globe, Search, Database, Newspaper } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 interface VerificationStep {
@@ -190,7 +191,7 @@ export function VerificationProgressModal({
       case 'complete':
         return <CheckCircle2 className="h-5 w-5 text-green-500" />;
       case 'running':
-        return <Loader2 className="h-5 w-5 text-primary animate-spin" />;
+        return <KretopiaSpinner className="h-5 w-5 text-primary" />;
       case 'skipped':
         return <Circle className="h-5 w-5 text-muted-foreground" />;
       default:

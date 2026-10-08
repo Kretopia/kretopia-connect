@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sparkles, Loader2, Plus, Trash2, Users, LayoutGrid } from "lucide-react";
+import { Sparkles, Plus, Trash2, Users, LayoutGrid } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import {
   DndContext,
@@ -237,7 +238,7 @@ export const EventSeatingPlanner = ({ project, currentUserId }: Props) => {
   if (loading) {
     return (
       <div className="rounded-2xl border border-border/60 bg-card/40 p-5 flex items-center justify-center text-muted-foreground text-sm">
-        <Loader2 className="h-4 w-4 animate-spin mr-2" /> Loading seating planner…
+        <KretopiaSpinner className="h-4 w-4 mr-2" /> Loading seating planner…
       </div>
     );
   }
@@ -271,7 +272,7 @@ export const EventSeatingPlanner = ({ project, currentUserId }: Props) => {
               <Plus className="h-3.5 w-3.5 mr-1" /> Table
             </Button>
             <Button size="sm" onClick={optimize} disabled={optimizing}>
-              {optimizing ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {optimizing ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Smart Seating
             </Button>
           </div>
@@ -282,7 +283,7 @@ export const EventSeatingPlanner = ({ project, currentUserId }: Props) => {
           <div className="flex items-center gap-2 mb-2">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
             <p className="text-xs font-medium">Unseated · {unseated.length}</p>
-            {saving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
+            {saving && <KretopiaSpinner className="h-3 w-3 text-muted-foreground" />}
           </div>
           {unseated.length === 0 ? (
             <p className="text-xs text-muted-foreground italic">Everyone has a seat.</p>

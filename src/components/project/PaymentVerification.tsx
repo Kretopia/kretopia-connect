@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, XCircle, Clock, Shield, DollarSign } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -89,7 +90,7 @@ export const PaymentVerification = ({ milestoneId, paymentIntentId }: PaymentVer
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <Clock className="h-8 w-8 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-8 w-8" />
           </div>
         </CardContent>
       </Card>

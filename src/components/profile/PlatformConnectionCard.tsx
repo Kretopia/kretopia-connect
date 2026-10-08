@@ -16,7 +16,6 @@ import {
   Disc3, 
   CheckCircle2, 
   ExternalLink,
-  Loader2,
   RefreshCw,
   Trash2,
   Search,
@@ -35,6 +34,7 @@ import {
   Gamepad2,
   BookOpen
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ConnectedPlatform {
   id: string;
@@ -751,7 +751,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
         </CardContent>
       </Card>
     );
@@ -838,7 +838,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                           />
                           <Button onClick={handleImportFromUrl} disabled={importingUrl || !importUrl.trim()}>
                             {importingUrl ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <KretopiaSpinner className="h-4 w-4" />
                             ) : (
                               <Search className="h-4 w-4" />
                             )}
@@ -900,7 +900,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                         <Button onClick={applyUrlImportData} disabled={importingUrl}>
                           {importingUrl ? (
                             <>
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              <KretopiaSpinner className="h-4 w-4 mr-2" />
                               Importing...
                             </>
                           ) : (
@@ -1053,7 +1053,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                             onClick={() => handleSearch(platform.id)}
                             disabled={searching || !searchQuery.trim()}
                           >
-                            {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                            {searching ? <KretopiaSpinner className="h-4 w-4" /> : <Search className="h-4 w-4" />}
                           </Button>
                         </div>
 
@@ -1103,7 +1103,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
 
                         {searching && (
                           <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
                           </div>
                         )}
                       </TabsContent>
@@ -1134,7 +1134,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                             disabled={searchingGuest || !searchQuery.trim()}
                             variant="default"
                           >
-                            {searchingGuest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic2 className="h-4 w-4" />}
+                            {searchingGuest ? <KretopiaSpinner className="h-4 w-4" /> : <Mic2 className="h-4 w-4" />}
                           </Button>
                         </div>
 
@@ -1190,7 +1190,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
 
                         {searchingGuest && (
                           <div className="flex flex-col items-center justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+                            <KretopiaSpinner className="h-6 w-6 text-muted-foreground mb-2" />
                             <p className="text-xs text-muted-foreground">Searching podcasts for "{searchQuery}"...</p>
                           </div>
                         )}
@@ -1211,7 +1211,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                           onClick={() => handleSearch(platform.id)}
                           disabled={searching || !searchQuery.trim()}
                         >
-                          {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                          {searching ? <KretopiaSpinner className="h-4 w-4" /> : <Search className="h-4 w-4" />}
                         </Button>
                       </div>
 
@@ -1257,7 +1257,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
 
                       {searching && (
                         <div className="flex items-center justify-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                          <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
 
@@ -1279,7 +1279,7 @@ export function PlatformConnectionCard({ onCreditsImported }: PlatformConnection
                     >
                       {importing ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <KretopiaSpinner className="h-4 w-4 mr-2" />
                           Importing Credits...
                         </>
                       ) : (

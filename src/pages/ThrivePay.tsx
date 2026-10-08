@@ -57,7 +57,6 @@ import {
   Percent,
   Landmark,
   Plus,
-  Loader2,
   Wallet,
   Sparkles,
   Send,
@@ -67,6 +66,7 @@ import {
   FilePlus,
   MoreHorizontal,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 const KREPAY_TUTORIAL: TutorialStep[] = [
   { icon: Wallet, title: "See what's coming in", body: "Your wallet balance, available funds, and pending payouts — all in one glance." },

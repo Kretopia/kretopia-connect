@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { ProGate } from "@/components/project/ProGate";
-import { ImageIcon, FileText, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { ImageIcon, FileText, Sparkles, Copy, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -173,7 +174,7 @@ export const StudioAICreate = ({ projectId, currentUserId, isPro }: StudioAICrea
             <Button onClick={generateImage} disabled={generatingImage || !imagePrompt.trim() || blocked} className="w-full gap-2">
               {generatingImage ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating Image...
+                  <KretopiaSpinner className="h-4 w-4" /> Generating Image...
                 </>
               ) : (
                 <>
@@ -201,7 +202,7 @@ export const StudioAICreate = ({ projectId, currentUserId, isPro }: StudioAICrea
             <Button onClick={generateCopy} disabled={generatingCopy || !copyPrompt.trim() || blocked} className="w-full gap-2">
               {generatingCopy ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" /> Generating Copy...
+                  <KretopiaSpinner className="h-4 w-4" /> Generating Copy...
                 </>
               ) : (
                 <>

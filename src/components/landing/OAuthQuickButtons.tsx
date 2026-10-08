@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface OAuthQuickButtonsProps {
   /** Optional external handler — if provided, internal sign-in logic is skipped */
@@ -87,7 +87,7 @@ export const OAuthQuickButtons = ({
         aria-label="Continue with Google"
       >
         {googleLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <KretopiaSpinner className="h-4 w-4" />
         ) : (
           <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>

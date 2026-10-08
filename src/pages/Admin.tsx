@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ShieldCheck, Settings, UserPlus, Send, Loader2, Leaf, CheckCircle, AlertCircle, Bot, Sparkles, Search, Megaphone, MessageSquare, Mail, Crown, Banknote, Activity, TrendingUp, type LucideIcon } from "lucide-react";
+import { Users, ShieldCheck, Settings, UserPlus, Send, Leaf, CheckCircle, AlertCircle, Bot, Sparkles, Search, Megaphone, MessageSquare, Mail, Crown, Banknote, Activity, TrendingUp, type LucideIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { ScoutFunnelTab } from "@/components/admin/ScoutFunnelTab";
 import { Input } from "@/components/ui/input";
@@ -348,7 +349,7 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <KretopiaSpinner className="h-12 w-12 text-primary" />
       </div>
     );
   }
@@ -495,7 +496,7 @@ export default function Admin() {
                 >
                   {importingOdos ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <KretopiaSpinner className="h-4 w-4 mr-2" />
                       Importing ODOS Members...
                     </>
                   ) : (
@@ -608,7 +609,7 @@ export default function Admin() {
                   >
                     {runningDiscovery ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <KretopiaSpinner className="h-4 w-4 mr-2" />
                         Discovering...
                       </>
                     ) : (
@@ -625,7 +626,7 @@ export default function Admin() {
                   >
                     {runningDiscovery ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <KretopiaSpinner className="h-4 w-4 mr-2" />
                         Discovering...
                       </>
                     ) : (
@@ -643,7 +644,7 @@ export default function Admin() {
                   >
                     {runningDiscovery ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <KretopiaSpinner className="h-4 w-4 mr-2" />
                         Discovering...
                       </>
                     ) : (
@@ -822,7 +823,7 @@ export default function Admin() {
                 >
                   {sendingBroadcast ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      <KretopiaSpinner className="h-4 w-4 mr-2" />
                       Sending to all users...
                     </>
                   ) : (

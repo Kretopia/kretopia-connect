@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Upload, ExternalLink, Trash2, Eye, Play, Lock, Crown, Music, Video, Image as ImageIcon, Mic2, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -493,7 +494,7 @@ export const PortfolioSection = ({ items, isOwnProfile, onRefresh, subscriptionT
                       >
                         {uploading ? (
                           <>
-                            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            <KretopiaSpinner className="h-5 w-5" />
                             <span className="text-sm text-muted-foreground">Uploading...</span>
                           </>
                         ) : (

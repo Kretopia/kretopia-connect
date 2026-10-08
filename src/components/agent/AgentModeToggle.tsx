@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,7 +97,7 @@ export function AgentModeToggle({
             {title}
           </Label>
           {loading || saving ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
           ) : (
             <Switch
               id={`agent-mode-${domain}`}

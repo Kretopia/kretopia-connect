@@ -17,9 +17,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   BarChart3, Users, MessageSquare, TrendingUp, Crown, Shield, User,
-  Settings, Calendar, DollarSign, Mail, Sparkles, Check, Loader2, UserPlus, ShieldCheck,
+  Settings, Calendar, DollarSign, Mail, Sparkles, Check, UserPlus, ShieldCheck,
   Trash2, UserMinus, AlertTriangle,
 } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { CircleInviteTools } from "./CircleInviteTools";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -542,7 +543,7 @@ export const CircleAdminPanel = ({ circle, onClose }: CircleAdminPanelProps) => 
             </Card>
 
             <Button className="w-full" variant="gradient" onClick={saveSettings} disabled={saving}>
-              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Check className="h-4 w-4 mr-2" />}
+              {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Check className="h-4 w-4 mr-2" />}
               Save Settings
             </Button>
 
@@ -559,7 +560,7 @@ export const CircleAdminPanel = ({ circle, onClose }: CircleAdminPanelProps) => 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="destructive" size="sm" className="w-full h-8 text-xs" disabled={deleting}>
-                      {deleting ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" /> : <Trash2 className="h-3.5 w-3.5 mr-2" />}
+                      {deleting ? <KretopiaSpinner className="h-3.5 w-3.5 mr-2" /> : <Trash2 className="h-3.5 w-3.5 mr-2" />}
                       Delete this Crew
                     </Button>
                   </AlertDialogTrigger>
@@ -624,7 +625,7 @@ const CircleEvents = ({ circleId, circleTitle }: { circleId: string; circleTitle
         Events linked to "{circleTitle}". Create events from the Events tab and link them here.
       </p>
       {loading ? (
-        <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+        <KretopiaLoader size="sm" label="Loading..." className="py-4" />
       ) : events.length === 0 ? (
         <Card className="p-6 text-center">
           <Calendar className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />

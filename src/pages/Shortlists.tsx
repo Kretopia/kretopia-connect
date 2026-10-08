@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bookmark, Plus, Trash2, ChevronRight, Users, Loader2 } from "lucide-react";
+import { Bookmark, Plus, Trash2, ChevronRight, Users } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -174,7 +175,7 @@ const Shortlists = () => {
 
         {itemsLoading ? (
           <div className="flex justify-center py-10">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
         ) : items.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground text-sm">
@@ -261,7 +262,7 @@ const Shortlists = () => {
 
       {loading ? (
         <div className="flex justify-center py-10">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
         </div>
       ) : lists.length === 0 ? (
         <Card className="p-8 text-center space-y-3">

@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Plus, Loader2, MapPin, Calendar, Clock, Users, Ticket,
+  Plus, MapPin, Calendar, Clock, Users, Ticket,
   Search, Sparkles, Share2, Check, X
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
 import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";

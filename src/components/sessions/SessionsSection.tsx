@@ -3,7 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Sparkles, MapPin, Calendar, Loader2 } from "lucide-react";
+import { Plus, Sparkles, MapPin, Calendar } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useAuth } from "@/hooks/useAuth";
@@ -297,7 +298,7 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
         <TabsContent value="nearby" className="mt-4">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <KretopiaSpinner className="h-6 w-6 text-primary" />
             </div>
           ) : nearbySessions.length === 0 ? (
             <Card>

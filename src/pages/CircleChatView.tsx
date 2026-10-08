@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   ArrowLeft, Hash, Megaphone, Calendar, ShoppingBag, Image,
-  Plus, Send, Settings, Users, Lock, Globe, DollarSign, Loader2,
+  Plus, Send, Settings, Users, Lock, Globe, DollarSign,
   Share2, Check, Pin, Reply, MessageSquare, Crown, BarChart3,
   Menu, ChevronDown, UserPlus, LogIn, Video,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { CircleMessageBubble, type CircleMessage } from "@/components/circle/CircleMessageBubble";
 import { CircleAdminPanel } from "@/components/circle/CircleAdminPanel";
 import { CirclePollCreator } from "@/components/circle/CirclePollCreator";
@@ -644,7 +645,7 @@ const CircleDetail = () => {
               aria-label="Start group video call"
               title="Start group video call"
             >
-              {startingCall ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+              {startingCall ? <KretopiaSpinner className="h-4 w-4" /> : <Video className="h-4 w-4" />}
             </Button>
           )}
           <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={() => { setShowSidebar(true); setShowMembers(true); }}>
@@ -676,7 +677,7 @@ const CircleDetail = () => {
           )}
 
           {msgLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-8"><KretopiaSpinner className="h-5 w-5 text-primary" /></div>
           ) : activeChannel?.channel_type === "events" ? (
             <div className="space-y-3 py-4">
               <div className="text-center">

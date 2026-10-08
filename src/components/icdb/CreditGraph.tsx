@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GitBranch, Users, Loader2, ZoomIn, ZoomOut } from "lucide-react";
+import { GitBranch, Users, ZoomIn, ZoomOut } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -170,7 +171,7 @@ export const CreditGraph = ({ userId, userName, avatarUrl }: CreditGraphProps) =
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <KretopiaSpinner className="h-6 w-6 text-primary" />
         </CardContent>
       </Card>
     );

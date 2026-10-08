@@ -7,7 +7,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Send, Loader2, Check, Link2, Share2, MessageCircle } from "lucide-react";
+import { Search, Send, Check, Link2, Share2, MessageCircle } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import type { SharedContentType } from "./SharedContentCard";
 import { getShareUrl } from "@/lib/constants";
 
@@ -219,7 +220,7 @@ export const ShareToMessageDialog = ({
         {/* Full list */}
         <ScrollArea className="flex-1 px-6 min-h-[180px]">
           {loading ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Loading…</div>
+            <KretopiaLoader size="sm" label="Loading…" className="py-8" />
           ) : filtered.length === 0 ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
               {connections.length === 0 ? "Connect with people to share with them." : "No matches"}
@@ -272,7 +273,7 @@ export const ShareToMessageDialog = ({
             className="w-full gap-2 rounded-full"
             size="lg"
           >
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             {selected.size === 0
               ? "Select people"
               : `Send separately to ${selected.size} ${selected.size === 1 ? "person" : "people"}`}

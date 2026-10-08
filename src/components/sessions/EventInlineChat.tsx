@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 
-import { Send, Loader2, ExternalLink } from "lucide-react";
+import { Send, ExternalLink } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -146,7 +147,7 @@ export const EventInlineChat = ({ roomId, currentUserId, archived = false }: Pro
           <div className="p-4 space-y-3">
             {loading ? (
               <div className="flex justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
               </div>
             ) : messages.length === 0 ? (
               <div className="text-center py-10 px-4">
@@ -205,7 +206,7 @@ export const EventInlineChat = ({ roomId, currentUserId, archived = false }: Pro
             disabled={sending}
           />
           <Button onClick={send} disabled={!draft.trim() || sending} size="icon">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </CardContent>

@@ -10,7 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Star, Loader2 } from "lucide-react";
+import { Star } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -141,7 +142,7 @@ export const ReviewPromptDialog = ({
               Skip
             </Button>
             <Button onClick={handleSubmit} disabled={rating === 0 || submitting}>
-              {submitting ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
+              {submitting ? <KretopiaSpinner className="h-4 w-4 mr-1.5" /> : null}
               Submit Review
             </Button>
           </DialogFooter>

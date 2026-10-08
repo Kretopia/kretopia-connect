@@ -1792,3 +1792,54 @@ svg.k-gradient-icon {
   .btn-landing-primary:hover { transform: none; }
 }
 
+
+/* Kretopia loader (KretopiaSpinner / KretopiaLoader) -- the K-mark breathing
+   inside a rotating brand-gradient ring. Sized by the consumer (`h-4 w-4`);
+   :where() keeps the 24px default at zero specificity so any size utility
+   wins. The ring is a conic gradient masked to an arc-thin band, 1.75px at
+   icon sizes growing to ~3px on page loaders. Under reduced motion nothing
+   moves; the mark just fades gently so the state still reads as "working". */
+:where(.k-spinner) {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+.k-spinner {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+.k-spinner__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, #9413d2, #e0179c, #fea61a, #9413d2);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - max(1.75px, 6%)), #000 calc(100% - max(1.75px, 6%)));
+  mask: radial-gradient(farthest-side, transparent calc(100% - max(1.75px, 6%)), #000 calc(100% - max(1.75px, 6%)));
+  animation: k-spinner-rotate 2.2s linear infinite;
+}
+.k-spinner__mark {
+  position: relative;
+  width: 56%;
+  height: 56%;
+  object-fit: contain;
+  user-select: none;
+  animation: k-spinner-breathe 1.6s ease-in-out infinite;
+}
+@keyframes k-spinner-rotate {
+  to { transform: rotate(360deg); }
+}
+@keyframes k-spinner-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+@keyframes k-spinner-fade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-spinner__ring { animation: none; }
+  .k-spinner__mark { animation: k-spinner-fade 1.6s ease-in-out infinite; }
+}

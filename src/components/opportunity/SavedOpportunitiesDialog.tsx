@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bookmark, ExternalLink, Trash2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -97,7 +98,7 @@ export const SavedOpportunitiesDialog = () => {
         <ScrollArea className="h-[60vh] pr-4">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              <KretopiaSpinner className="h-8 w-8" />
             </div>
           ) : savedOpportunities.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">

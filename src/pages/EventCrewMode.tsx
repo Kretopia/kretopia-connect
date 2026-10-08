@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, AlertTriangle, Clock, Radio, Loader2, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle, Clock, Radio, Maximize2, Minimize2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 
@@ -170,7 +171,7 @@ const EventCrewMode = () => {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
         </div>
       ) : items.length === 0 ? (
         <div className="px-6 py-16 text-center space-y-2">

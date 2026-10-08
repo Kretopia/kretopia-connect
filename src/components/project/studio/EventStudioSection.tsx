@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Calendar, Plus, Sparkles, Loader2, GripVertical, Clock } from "lucide-react";
+import { Calendar, Plus, Sparkles, GripVertical, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -154,7 +155,7 @@ export function EventStudioSection({ project, currentUserId }: Props) {
             <Clock className="h-3 w-3" /> Crew
           </a>
           <Button size="sm" variant="outline" onClick={generate} disabled={genBusy}>
-            {genBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+            {genBusy ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
             Draft
           </Button>
           <Button size="sm" variant="outline" onClick={() => setOpenAdd(true)}>
@@ -243,7 +244,7 @@ export function EventStudioSection({ project, currentUserId }: Props) {
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenAdd(false)}>Cancel</Button>
             <Button onClick={create} disabled={!title.trim() || creating}>
-              {creating && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Add
+              {creating && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />} Add
             </Button>
           </DialogFooter>
         </DialogContent>

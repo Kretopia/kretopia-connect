@@ -9,8 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { HoloCard } from "@/components/passport/HoloCard";
 import {
   Calendar, MapPin, Users, Share2, Ticket, CheckCircle, CalendarPlus,
-  Navigation, Lock, ImagePlus, Loader2, X as XIcon, XCircle,
+  Navigation, Lock, ImagePlus, X as XIcon, XCircle,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -271,7 +272,7 @@ export function EventHeroCard({
               disabled={joining}
               className="gap-1.5 rounded-full border-destructive/50 bg-destructive/10 px-5 font-semibold text-destructive shadow-[0_0_18px_-3px_hsl(var(--destructive)/0.55)] transition-shadow hover:border-destructive hover:bg-destructive/15 hover:text-destructive hover:shadow-[0_0_26px_-2px_hsl(var(--destructive)/0.75)]"
             >
-              {joining ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+              {joining ? <KretopiaSpinner className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               Cancel RSVP
             </Button>
           </div>
@@ -399,7 +400,7 @@ export function EventHeroCard({
                     onClick={() => galleryInputRef.current?.click()}
                     disabled={uploadingGallery}
                   >
-                    {uploadingGallery ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                    {uploadingGallery ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <ImagePlus className="h-3.5 w-3.5" />}
                     {galleryUrls.length}/{MAX_GALLERY}
                   </Button>
                 </>

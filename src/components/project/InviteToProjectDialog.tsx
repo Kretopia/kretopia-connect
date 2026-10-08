@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Briefcase, Sparkles, Handshake, FolderKanban, Check } from "lucide-react";
+import { Briefcase, Sparkles, Handshake, FolderKanban, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -201,7 +202,7 @@ export const InviteToProjectDialog = ({
             <ScrollArea className="h-[260px] rounded-md border">
               {loading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
                 </div>
               ) : availableProjects.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center px-4">
@@ -257,7 +258,7 @@ export const InviteToProjectDialog = ({
               onClick={handleSend}
               disabled={!selectedProjectId || sending}
             >
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send Invite"}
+              {sending ? <KretopiaSpinner className="h-4 w-4" /> : "Send Invite"}
             </Button>
           </div>
         </div>

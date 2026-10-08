@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Upload, X, Wand2, ImagePlus, Sparkles } from "lucide-react";
+import { Upload, X, Wand2, ImagePlus, Sparkles } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface EditOpportunityDialogProps {
   opportunityId: string;
@@ -228,7 +229,7 @@ export const EditOpportunityDialog = ({
         
         {initialLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+            <KretopiaSpinner className="h-8 w-8" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -242,7 +243,7 @@ export const EditOpportunityDialog = ({
                 disabled={enhancingText || generatingImage}
                 className="flex-1 gap-2 text-xs"
               >
-                {enhancingText ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
+                {enhancingText ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Wand2 className="h-3.5 w-3.5" />}
                 Smart Enhance
               </Button>
               <Button
@@ -253,7 +254,7 @@ export const EditOpportunityDialog = ({
                 disabled={enhancingText || generatingImage}
                 className="flex-1 gap-2 text-xs"
               >
-                {generatingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ImagePlus className="h-3.5 w-3.5" />}
+                {generatingImage ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <ImagePlus className="h-3.5 w-3.5" />}
                 Smart Cover
               </Button>
             </div>
@@ -369,7 +370,7 @@ export const EditOpportunityDialog = ({
 
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={loading || enhancingText || generatingImage}>
-                {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</>) : "Update Opportunity"}
+                {loading ? (<><KretopiaSpinner className="mr-2 h-4 w-4" />Updating...</>) : "Update Opportunity"}
               </Button>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             </div>

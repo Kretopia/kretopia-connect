@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, Check, X, Loader2, Sparkles, FileText, Award, Music, Newspaper } from "lucide-react";
+import { ExternalLink, Check, X, Sparkles, FileText, Award, Music, Newspaper } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -257,14 +258,14 @@ export const PendingDiscoveriesDialog = ({ open, onOpenChange, onChanged, onResc
         <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 pb-4 [scrollbar-gutter:stable] [-webkit-overflow-scrolling:touch] sm:px-6 sm:pb-6">
           {loading ? (
             <div className="py-12 flex justify-center">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             </div>
           ) : items.length === 0 ? (
             <div className="py-10 text-center space-y-3">
               <p className="text-sm text-muted-foreground">No pending finds. You're all caught up</p>
               {onRescan && (
                 <Button onClick={onRescan} disabled={scanning} size="sm" variant="outline" className="gap-2">
-                  {scanning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {scanning ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                   Scan again
                 </Button>
               )}
@@ -319,7 +320,7 @@ export const PendingDiscoveriesDialog = ({ open, onOpenChange, onChanged, onResc
                         disabled={actingId === item.id}
                       >
                         {actingId === item.id
-                          ? <Loader2 className="h-3 w-3 animate-spin" />
+                          ? <KretopiaSpinner className="h-3 w-3" />
                           : <Check className="h-3 w-3" />}
                         That's me
                       </Button>

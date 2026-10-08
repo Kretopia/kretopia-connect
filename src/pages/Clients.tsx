@@ -4,6 +4,7 @@ import { useClients, type Client } from "@/hooks/useClients";
 import { AIAddClientCard } from "@/components/clients/AIAddClientCard";
 import { Button } from "@/components/ui/button";
 import { Plus, Building2, ChevronRight, UserPlus, FolderKanban, ClipboardList, Clock3 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -51,7 +52,7 @@ const Clients = () => {
         />
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <KretopiaLoader size="sm" label="Loading…" />
       ) : clients.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border/60 p-8 text-center">
           <Building2 className="h-8 w-8 mx-auto text-muted-foreground mb-2" />

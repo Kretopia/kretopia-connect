@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Send, Trash2, MessageCircle, Megaphone, Pin } from "lucide-react";
+import { Send, Trash2, MessageCircle, Megaphone, Pin } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -234,7 +235,7 @@ export const SessionChat = ({ sessionId, isCreator }: SessionChatProps) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-6 w-6 text-muted-foreground" />
       </div>
     );
   }
@@ -356,7 +357,7 @@ export const SessionChat = ({ sessionId, isCreator }: SessionChatProps) => {
             />
             <Button type="submit" size="icon" disabled={sending || !newMessage.trim()}>
               {sending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : (
                 <Send className="h-4 w-4" />
               )}

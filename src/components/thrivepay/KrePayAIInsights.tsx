@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, AlertTriangle, ArrowRight, RefreshCw, Loader2 } from "lucide-react";
+import { Sparkles, AlertTriangle, ArrowRight, RefreshCw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { InvoiceChaseDrawer } from "./InvoiceChaseDrawer";
 
 interface OverdueInvoice {
@@ -81,13 +82,13 @@ export function KrePayAIInsights() {
             disabled={loading}
             aria-label="Refresh insight"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            {loading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
           </Button>
         </div>
 
         {loading && !insight && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Thinking about your numbers…
+            <KretopiaSpinner className="h-3.5 w-3.5" /> Thinking about your numbers…
           </div>
         )}
 

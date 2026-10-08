@@ -6,6 +6,7 @@ import {
   Plus, Sparkles, MessageSquarePlus, Clock, DollarSign, Download,
   Package, Pencil, Trash2, MoreVertical, Eye, Share2
 } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -133,7 +134,7 @@ export const WorkWithMeSection = ({ userId, isOwner, creatorName }: WorkWithMeSe
 
   const hasContent = services.length > 0 || products.length > 0;
 
-  if (loading) return <div className="text-center py-8 text-muted-foreground text-sm">Loading...</div>;
+  if (loading) return <KretopiaLoader size="sm" label="Loading..." className="py-8" />;
   if (!isOwner && !hasContent) return null;
 
   return (

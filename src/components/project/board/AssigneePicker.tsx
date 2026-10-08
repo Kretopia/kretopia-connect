@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { UserPlus, X, Check } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 
 export interface CollabLite {
@@ -191,9 +192,7 @@ export const AssigneePicker = ({
           <CommandInput placeholder="Search people…" />
           <CommandList>
             {loading ? (
-              <div className="text-xs text-muted-foreground p-3 text-center">
-                Loading…
-              </div>
+              <KretopiaLoader size="sm" label="Loading…" className="p-3" />
             ) : (
               <>
                 <CommandEmpty>No collaborators yet.</CommandEmpty>

@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Lock, Sparkles, User, Briefcase, Github, Mail, ShieldCheck } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { WaitlistForm } from "@/components/landing/WaitlistForm";
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
@@ -95,7 +96,7 @@ const OAuthButton = ({
       aria-label={`Continue with ${label}`}
       className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
     >
-      {loading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : icon}
+      {loading ? <KretopiaSpinner className="h-4 w-4" /> : icon}
       <span>{loading ? "Connecting…" : label}</span>
     </button>
   );

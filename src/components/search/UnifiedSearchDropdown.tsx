@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, Loader2, X, UserCheck, Mic, Square, MapPin, Wand2, Lock } from "lucide-react";
+import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { searchCatalog, CATALOG_KIND_LABEL, type CatalogEntry, type CatalogKind } from "@/lib/searchCatalog";
 import { supabase } from "@/integrations/supabase/client";
@@ -492,7 +493,7 @@ export function UnifiedSearchDropdown({
                 </>
               ) : (
                 <span className="flex items-center gap-1.5 px-1 text-[11px] text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" />
+                  <KretopiaSpinner className="h-3 w-3" />
                   Transcribing…
                 </span>
               )}
@@ -524,7 +525,7 @@ export function UnifiedSearchDropdown({
                   )}
                 >
                   {voice.status === "requesting" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    <KretopiaSpinner className="h-3.5 w-3.5" />
                   ) : (
                     <Mic className="h-3.5 w-3.5" />
                   )}
@@ -638,7 +639,7 @@ export function UnifiedSearchDropdown({
                   <div className="h-10 w-10 rounded-full border-2 border-primary/20 flex items-center justify-center">
                     <Search className="h-4 w-4 text-primary animate-pulse" />
                   </div>
-                  <Loader2 className="h-10 w-10 animate-spin text-primary/60 absolute inset-0" />
+                  <KretopiaSpinner className="h-10 w-10 text-primary/60 absolute inset-0" />
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium text-foreground">Searching Kretopia</p>

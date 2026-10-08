@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Loader2,
   PhoneOff,
   Video,
   VideoOff,
@@ -16,6 +15,7 @@ import {
   Circle,
   X,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { toast } from "sonner";
 import { extractInvokeError } from "@/lib/extractInvokeError";
@@ -238,7 +238,7 @@ export default function GuestCall() {
             <div ref={containerRef} className="absolute inset-0" />
             {joining && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
-                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                <KretopiaSpinner className="h-7 w-7 text-primary" />
                 <p className="text-sm text-white/80">Connecting to the room…</p>
               </div>
             )}

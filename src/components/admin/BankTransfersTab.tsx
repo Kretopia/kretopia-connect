@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Banknote, CheckCircle2, XCircle, ExternalLink, Loader2, Clock, FileImage } from "lucide-react";
+import { Banknote, CheckCircle2, XCircle, ExternalLink, Clock, FileImage } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 
 interface ManualTransfer {
@@ -255,7 +256,7 @@ export function BankTransfersTab() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <KretopiaSpinner className="h-5 w-5" />
           </div>
         ) : (
           <Tabs defaultValue="pending">
@@ -301,7 +302,7 @@ export function BankTransfersTab() {
               disabled={submitting}
               variant={actionType === "reject" ? "destructive" : "default"}
             >
-              {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {submitting && <KretopiaSpinner className="h-4 w-4 mr-2" />}
               {actionType === "confirm" ? "Confirm & Credit" : "Reject"}
             </Button>
           </DialogFooter>

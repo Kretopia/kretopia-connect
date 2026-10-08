@@ -166,7 +166,27 @@
   </head>
 
   <body class="bg-background text-foreground">
-    <div id="root"></div>
+    <div id="root">
+      <!-- Pre-React boot loader: the same Kretopia loader as
+           src/components/brand/KretopiaLoader.tsx (K-mark in the rotating
+           brand ring), shown from first paint until React mounts and
+           replaces this markup. Sizes are inline so it never flashes huge
+           before the stylesheet applies. -->
+      <div role="status" aria-label="Loading" style="display:flex;min-height:100vh;align-items:center;justify-content:center">
+        <span class="k-spinner" style="width:96px;height:96px">
+          <span class="k-spinner__ring" aria-hidden="true"></span>
+          <img
+            class="k-spinner__mark"
+            src="/__l5e/assets-v1/0b662b7c-ffb2-4428-a722-862dbee073a6/kretopia-k-mark.png"
+            alt=""
+            width="54"
+            height="54"
+            style="width:54px;height:54px"
+            onerror="this.style.visibility='hidden'"
+          />
+        </span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

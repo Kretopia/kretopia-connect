@@ -9,10 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  PenLine, Upload, Sheet as SheetIcon, Mic, Loader2,
+  PenLine, Upload, Sheet as SheetIcon, Mic,
   FileCheck2, Trash2, Plus, Sparkles, Square, Calendar as CalendarIcon,
   ShieldCheck,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   parseCsvToDeliverables,
   googleSheetCsvUrl,
@@ -334,7 +335,7 @@ export const BriefHub = ({ projectId, projectTitle, onCreated }: BriefHubProps) 
               {docFile && <p className="text-xs text-muted-foreground">Selected: {docFile.name}</p>}
               <p className="text-xs text-muted-foreground">PDF, image, or screenshot of the brief works best.</p>
               <Button onClick={handleDoc} disabled={extracting || !docFile} className="w-full">
-                {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileCheck2 className="h-4 w-4 mr-2" />}
+                {extracting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <FileCheck2 className="h-4 w-4 mr-2" />}
                 Extract deliverables
               </Button>
             </TabsContent>
@@ -355,7 +356,7 @@ export const BriefHub = ({ projectId, projectTitle, onCreated }: BriefHubProps) 
                   Tip: Share &rarr; "Anyone with the link — Viewer". One row = one deliverable.
                 </p>
                 <Button onClick={handleSheet} disabled={extracting || !sheetUrl.trim()} className="w-full">
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <SheetIcon className="h-4 w-4 mr-2" />}
+                  {extracting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <SheetIcon className="h-4 w-4 mr-2" />}
                   Import from Sheet
                 </Button>
               </div>
@@ -383,7 +384,7 @@ export const BriefHub = ({ projectId, projectTitle, onCreated }: BriefHubProps) 
               />
               {csvText && (
                 <Button onClick={handleCsvText} disabled={extracting} variant="outline" className="w-full">
-                  {extracting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {extracting ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
                   Import pasted rows
                 </Button>
               )}
@@ -480,7 +481,7 @@ export const BriefHub = ({ projectId, projectTitle, onCreated }: BriefHubProps) 
               <div className="flex-1" />
               <Button variant="ghost" size="sm" onClick={() => setDrafts([])}>Discard</Button>
               <Button size="sm" onClick={saveAll} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                {saving && <KretopiaSpinner className="h-4 w-4 mr-2" />}
                 Save to board
               </Button>
             </div>

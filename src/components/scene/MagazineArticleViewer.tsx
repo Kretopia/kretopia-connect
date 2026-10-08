@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Clock, Eye, ExternalLink, Pencil, Heart, MessageCircle, ChevronDown, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Clock, Eye, ExternalLink, Pencil, Heart, MessageCircle, ChevronDown, Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -325,7 +326,7 @@ export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, i
                       className="min-h-[44px] text-sm resize-none"
                     />
                     <Button size="icon" className="h-9 w-9 shrink-0" onClick={submitComment} disabled={posting || !commentDraft.trim()}>
-                      {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {posting ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                     </Button>
                   </div>
                 ) : (
@@ -336,7 +337,7 @@ export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, i
 
                 {commentsLoading ? (
                   <div className="flex justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <KretopiaSpinner className="h-4 w-4 text-muted-foreground" />
                   </div>
                 ) : comments.length === 0 ? (
                   <p className="text-xs text-muted-foreground text-center py-2">No comments yet — be the first.</p>

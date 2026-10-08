@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Loader2, Square } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
   streamCopilot, loadConversationMessages, createConversation, extractActions,
@@ -190,7 +191,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     <div className="rounded-2xl border border-[hsl(var(--energy)/0.3)] bg-white/[0.03] backdrop-blur-sm overflow-hidden">
       {!historyLoaded && messages.length === 0 && (
         <div className="px-4 py-4 text-xs text-white/40 flex items-center gap-1.5">
-          <Loader2 className="h-3 w-3 animate-spin" /> Loading your conversation…
+          <KretopiaSpinner className="h-3 w-3" /> Loading your conversation…
         </div>
       )}
       {messages.length > 0 && (
@@ -206,7 +207,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
             >
               {m.content || (
                 <span className="inline-flex items-center gap-1.5 text-white/50">
-                  <Loader2 className="h-3 w-3 animate-spin" /> {BRAND.agentName} is thinking…
+                  <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
                 </span>
               )}
             </div>

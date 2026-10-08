@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Film, Music, Palette, Code, Camera, Mic, Plus, Loader2 } from "lucide-react";
+import { Film, Music, Palette, Code, Camera, Mic, Plus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Template {
   id: string;
@@ -338,7 +339,7 @@ export const ProjectTemplates = ({ onSelect }: { onSelect?: () => void }) => {
               >
                 {creating ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Creating...
                   </>
                 ) : (

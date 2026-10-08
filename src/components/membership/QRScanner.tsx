@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { awardCredits } from "@/lib/creditSystem";
 import { Check, X, Camera } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface QRScannerProps {
   onClose: () => void;
@@ -320,12 +321,12 @@ export const QRScanner = ({ onClose, onSuccess }: QRScannerProps) => {
           </div>
         ) : !permissionGranted ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+            <KretopiaSpinner className="h-12 w-12 mb-4" />
             <p className="text-sm text-muted-foreground">Requesting camera access...</p>
           </div>
         ) : verifying ? (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+            <KretopiaSpinner className="h-12 w-12 mb-4" />
             <p className="text-sm text-muted-foreground">Verifying location...</p>
           </div>
         ) : location ? (
@@ -345,7 +346,7 @@ export const QRScanner = ({ onClose, onSuccess }: QRScannerProps) => {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+            <KretopiaSpinner className="h-12 w-12 mb-4" />
             <p className="text-sm text-muted-foreground">Initializing scanner...</p>
           </div>
         )}

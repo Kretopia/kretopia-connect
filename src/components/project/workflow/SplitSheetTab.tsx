@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Trash2, Loader2, Music } from "lucide-react";
+import { Plus, Trash2, Music } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type { Collaborator } from "@/hooks/useProjectData";
@@ -55,7 +56,7 @@ export function SplitSheetTab({ projectId, collaborators, currentUserId }: Props
   const total = splits.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0);
   const balanced = Math.abs(total - 100) < 0.01;
 
-  if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>;
+  if (loading) return <div className="flex items-center justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-3 max-w-3xl mx-auto">

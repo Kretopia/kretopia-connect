@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, DollarSign, Plus, Copy } from "lucide-react";
+import { Sparkles, DollarSign, Plus, Copy } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -175,7 +176,7 @@ export function EpisodeDetailDialog({ open, onOpenChange, episode, projectId, cu
             <Textarea rows={6} value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste or upload your transcript here. Kreto uses this to make clips." />
           </div>
           <Button size="sm" onClick={save} disabled={saving}>
-            {saving && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />} Save
+            {saving && <KretopiaSpinner className="h-3.5 w-3.5 mr-1" />} Save
           </Button>
         </div>
 
@@ -184,7 +185,7 @@ export function EpisodeDetailDialog({ open, onOpenChange, episode, projectId, cu
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-sm font-bold">Clips</h4>
             <Button size="sm" variant="outline" onClick={generateClips} disabled={genClipsBusy}>
-              {genClipsBusy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {genClipsBusy ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Make clips
             </Button>
           </div>

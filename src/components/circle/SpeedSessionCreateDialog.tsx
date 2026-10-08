@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Video, Mic } from "lucide-react";
+import { Video, Mic } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SPEED_VERTICALS, type SpeedVertical } from "@/lib/speedVerticals";
 
 interface EditingSession {
@@ -226,7 +227,7 @@ export function SpeedSessionCreateDialog({ open, onOpenChange, onCreated, onUpda
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
           <Button onClick={submit} disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : isEdit ? "Save changes" : "Schedule"}
+            {busy ? <KretopiaSpinner className="h-4 w-4" /> : isEdit ? "Save changes" : "Schedule"}
           </Button>
         </DialogFooter>
       </DialogContent>

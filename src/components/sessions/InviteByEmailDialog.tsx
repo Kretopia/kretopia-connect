@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Loader2, Send, Upload, Mail, FileSpreadsheet } from "lucide-react";
+import { Send, Upload, Mail, FileSpreadsheet } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -172,7 +173,7 @@ export const InviteByEmailDialog = ({ open, onOpenChange, eventId, eventTitle }:
               disabled={sending || testing}
               className="flex-1"
             >
-              {testing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+              {testing ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
               Send test to me
             </Button>
             <Button
@@ -181,7 +182,7 @@ export const InviteByEmailDialog = ({ open, onOpenChange, eventId, eventTitle }:
               disabled={sending || testing || validEmails.length === 0}
               className="flex-1"
             >
-              {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="h-4 w-4 mr-2" />}
+              {sending ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Send className="h-4 w-4 mr-2" />}
               {validEmails.length > 0 ? `Send ${validEmails.length} invite${validEmails.length === 1 ? "" : "s"}` : "Send invites"}
             </Button>
           </div>

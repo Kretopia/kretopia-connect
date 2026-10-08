@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Megaphone, FileText, LayoutGrid, CheckSquare, Plus, Sparkles, Loader2, Trash2, Save, Check, X } from "lucide-react";
+import { Megaphone, FileText, LayoutGrid, CheckSquare, Plus, Sparkles, Trash2, Save, Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -280,11 +281,11 @@ export function CampaignStudioSection({ project, currentUserId }: Props) {
           <Input placeholder="Budget" type="number" value={briefDraft.budget} onChange={(e) => setBriefDraft({ ...briefDraft, budget: e.target.value })} className="text-sm" />
           <div className="flex gap-2">
             <Button size="sm" onClick={saveBrief} disabled={savingBrief} className="flex-1">
-              {savingBrief ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+              {savingBrief ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
               {brief ? "Update brief" : "Save brief"}
             </Button>
             <Button size="sm" variant="outline" onClick={generateMatrix} disabled={genMatrix} className="flex-1">
-              {genMatrix ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {genMatrix ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Draft matrix
             </Button>
           </div>
@@ -298,7 +299,7 @@ export function CampaignStudioSection({ project, currentUserId }: Props) {
               <Plus className="h-3.5 w-3.5 mr-1" /> Asset
             </Button>
             <Button size="sm" onClick={generateMatrix} disabled={genMatrix} className="flex-1">
-              {genMatrix ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {genMatrix ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Draft from brief
             </Button>
           </div>

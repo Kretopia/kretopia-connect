@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -115,7 +116,7 @@ const ListingImageUpload = ({ userId, images, onImagesChange, maxImages = 6, lis
             className="aspect-square rounded-lg border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1 transition-colors"
           >
             {uploading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
             ) : (
               <>
                 <ImagePlus className="h-5 w-5 text-muted-foreground" />

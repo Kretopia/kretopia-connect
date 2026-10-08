@@ -10,10 +10,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Plus, Loader2, MessageSquare, Users, Search, Send, ArrowLeft,
+  Plus, MessageSquare, Users, Search, Send, ArrowLeft,
   Share2, Lock, Globe, Reply, Check, Settings, Pin, Crown,
   DollarSign, Calendar,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -120,7 +121,7 @@ export const CirclesTab = () => {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        <div className="flex justify-center py-12"><KretopiaSpinner className="h-6 w-6 text-primary" /></div>
       ) : filteredCircles.length === 0 ? (
         <Card className="p-8 text-center">
           <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/40 mb-4" />
@@ -507,7 +508,7 @@ const CircleDetail = ({ circle, onBack, onOpenFullPage }: { circle: CircleData; 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto py-3 space-y-1">
         {loading ? (
-          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          <div className="flex justify-center py-8"><KretopiaSpinner className="h-5 w-5 text-primary" /></div>
         ) : messages.length === 0 ? (
           <div className="text-center py-12">
             <MessageSquare className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
@@ -673,7 +674,7 @@ export const CreateCircleDialog = ({ open, onOpenChange, onCreated }: { open: bo
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-muted-foreground bg-gradient-to-br from-primary/5 via-transparent to-primary/5">
                   {uploadingCover ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <KretopiaSpinner className="h-5 w-5" />
                   ) : (
                     <>
                       <Plus className="h-5 w-5" />
@@ -741,7 +742,7 @@ export const CreateCircleDialog = ({ open, onOpenChange, onCreated }: { open: bo
           />
 
           <Button className="w-full" variant="gradient" onClick={handleCreate} disabled={!title.trim() || creating || (isPaid && !price)}>
-            {creating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            {creating && <KretopiaSpinner className="h-4 w-4 mr-2" />}
             {isPaid ? `Create paid Crew • $${price || '0'}/mo` : "Create Crew"}
           </Button>
         </div>

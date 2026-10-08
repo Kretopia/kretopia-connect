@@ -3,7 +3,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, ArrowDownToLine } from "lucide-react";
+import { ArrowDownToLine } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -86,7 +87,7 @@ export function WalletPayoutSheet({ open, onOpenChange, currency, availableCents
             </div>
           </div>
           <Button className="w-full" onClick={submit} disabled={loading || !amount}>
-            {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending</> : `Cash out ${amount ? fmt(Math.round(Number(amount) * 100)) : ""}`}
+            {loading ? <><KretopiaSpinner className="mr-2 h-4 w-4" /> Sending</> : `Cash out ${amount ? fmt(Math.round(Number(amount) * 100)) : ""}`}
           </Button>
           <p className="text-xs text-muted-foreground">Standard payouts arrive in 1–2 business days. Free.</p>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Music2, Disc3, Users, ListChecks, Plus, Sparkles, Loader2, Trash2, Save, Check } from "lucide-react";
+import { Music2, Disc3, Users, ListChecks, Plus, Sparkles, Trash2, Save, Check } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -293,7 +294,7 @@ export function MusicStudioSection({ project, currentUserId }: Props) {
           </div>
           <Textarea placeholder="Notes (concept, references, marketing angle)" rows={3} value={relDraft.notes} onChange={(e) => setRelDraft({ ...relDraft, notes: e.target.value })} className="text-sm" />
           <Button size="sm" onClick={saveRelease} disabled={savingRel} className="w-full">
-            {savingRel ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+            {savingRel ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
             {release ? "Update release" : "Save release"}
           </Button>
         </TabsContent>
@@ -410,7 +411,7 @@ export function MusicStudioSection({ project, currentUserId }: Props) {
               <Plus className="h-3.5 w-3.5 mr-1" /> Task
             </Button>
             <Button size="sm" onClick={generateChecklist} disabled={genCheck} className="flex-1">
-              {genCheck ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+              {genCheck ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
               Draft full plan
             </Button>
           </div>

@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
-import { CheckCircle2, MessageCircle, RefreshCw, Loader2, Eye } from "lucide-react";
+import { CheckCircle2, MessageCircle, RefreshCw, Eye } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,7 +207,7 @@ export const DeliverablesSection = ({
 
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -292,7 +293,7 @@ export const DeliverablesSection = ({
                               className="h-7 px-2 text-[11px] gap-1"
                             >
                               {isUpdating ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <KretopiaSpinner className="h-3 w-3" />
                               ) : (
                                 <RefreshCw className="h-3 w-3" />
                               )}
@@ -305,7 +306,7 @@ export const DeliverablesSection = ({
                               className="h-7 px-2.5 text-[11px] gap-1 bg-[hsl(var(--energy))] text-[hsl(var(--background))] hover:bg-[hsl(var(--energy)/0.9)] shadow-[0_0_10px_hsl(var(--energy)/0.35)]"
                             >
                               {isUpdating ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
+                                <KretopiaSpinner className="h-3 w-3" />
                               ) : (
                                 <CheckCircle2 className="h-3 w-3" />
                               )}

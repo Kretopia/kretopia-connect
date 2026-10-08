@@ -1,7 +1,8 @@
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { MessageCircle, Sparkles, Rocket, Send, Loader2, Check } from 'lucide-react';
+import { MessageCircle, Sparkles, Rocket, Send, Check } from 'lucide-react';
+import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 import { useNavigate } from 'react-router-dom';
 import Confetti from 'react-dom-confetti';
 import { useState, useEffect, useMemo } from 'react';
@@ -256,7 +257,7 @@ export function MatchModal({
                       )}
                     >
                       {isSending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <KretopiaSpinner className="h-4 w-4" />
                       ) : isSent ? (
                         <Check className="h-4 w-4" />
                       ) : (

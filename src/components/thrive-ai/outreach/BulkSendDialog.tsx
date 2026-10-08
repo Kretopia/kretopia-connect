@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  BarChart3, CalendarClock, Image, Loader2, Mail, Paperclip, Save, Send, Sparkles, Upload, Users, Video,
+  BarChart3, CalendarClock, Image, Mail, Paperclip, Save, Send, Sparkles, Upload, Users, Video,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { format } from "date-fns";
 import type { Lead } from "./types";
 
@@ -177,7 +178,7 @@ export const BulkSendDialog = (p: Props) => {
               <Save className="h-3 w-3" /> Save as Template
             </Button>
             <Button size="sm" variant="outline" className="gap-1 text-xs" onClick={p.onAiGenerate} disabled={p.generating}>
-              {p.generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+              {p.generating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
               AI Generate
             </Button>
           </div>
@@ -204,7 +205,7 @@ export const BulkSendDialog = (p: Props) => {
                   <Video className="h-3 w-3" /> Add Video Link
                 </Badge>
               </label>
-              {p.mediaUploading && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+              {p.mediaUploading && <KretopiaSpinner className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>
           </div>
 
@@ -252,7 +253,7 @@ export const BulkSendDialog = (p: Props) => {
 
           <Button className="w-full gap-1.5" onClick={p.onSend} disabled={p.bulkSending || (p.bulkUsage || 0) >= p.bulkLimit}>
             {p.bulkSending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Sending... {p.bulkProgress}%</>
+              <><KretopiaSpinner className="h-4 w-4" /> Sending... {p.bulkProgress}%</>
             ) : p.bulkScheduledFor ? (
               <><CalendarClock className="h-4 w-4" /> Schedule Campaign</>
             ) : (

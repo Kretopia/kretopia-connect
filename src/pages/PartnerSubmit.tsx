@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Upload, CheckCircle, Loader2 } from "lucide-react";
+import { Sparkles, Upload, CheckCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 
 export default function PartnerSubmit() {
@@ -345,7 +346,7 @@ export default function PartnerSubmit() {
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <KretopiaSpinner className="h-4 w-4 mr-2" />
                     Submitting...
                   </>
                 ) : (

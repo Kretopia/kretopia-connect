@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2, Mail, ShieldCheck, Loader2, CheckCircle2, Send } from "lucide-react";
+import { Building2, Mail, ShieldCheck, CheckCircle2, Send } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -117,7 +118,7 @@ export const BrandVerificationRequest = ({
             </div>
 
             <Button onClick={handleSubmit} disabled={loading} className="w-full gap-2">
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {loading ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
               Send Verification Request
             </Button>
           </div>

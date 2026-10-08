@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Loader2, X, ChevronDown, PanelRightOpen, FolderKanban } from "lucide-react";
+import { X, ChevronDown, PanelRightOpen, FolderKanban } from "lucide-react";
 import { ProjectSettingsMenu } from "@/components/project/ProjectSettingsMenu";
 import { SimpleProjectHeader } from "@/components/project/SimpleProjectHeader";
 import { WorkspaceSidebar } from "@/components/project/WorkspaceSidebar";
@@ -25,6 +25,7 @@ import { ProjectCompleteDialog } from "@/components/project/studio/ProjectComple
 import { DeskCommandPalette } from "@/components/desk/DeskCommandPalette";
 import { VoiceCommandSheet } from "@/components/desk/VoiceCommandSheet";
 import { ArrowLeft } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useProjectData } from "@/hooks/useProjectData";
 import { useProjectFlow, PROJECT_FLOW_STAGES, STUDIO_PHASES, stageToPhase, type ProjectFlowStageId } from "@/hooks/useProjectFlow";
 import { useProjectFlowExtras } from "@/hooks/useProjectFlowExtras";

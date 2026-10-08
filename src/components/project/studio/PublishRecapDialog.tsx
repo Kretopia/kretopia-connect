@@ -13,7 +13,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Copy, ExternalLink, Loader2, Share2 } from "lucide-react";
+import { Copy, ExternalLink, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Props {
   open: boolean;
@@ -94,7 +95,7 @@ export function PublishRecapDialog({ open, onOpenChange, projectId, projectTitle
 
         {loading ? (
           <div className="py-8 flex justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
         ) : (
           <div className="space-y-4">
@@ -147,7 +148,7 @@ export function PublishRecapDialog({ open, onOpenChange, projectId, projectTitle
             Cancel
           </Button>
           <Button onClick={save} disabled={saving || loading}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {saving && <KretopiaSpinner className="h-4 w-4 mr-2" />}
             Save
           </Button>
         </DialogFooter>

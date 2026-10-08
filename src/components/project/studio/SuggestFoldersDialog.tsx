@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Sparkles, Folder, Loader2, Check, X } from "lucide-react";
+import { Sparkles, Folder, Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -169,7 +170,7 @@ export const SuggestFoldersDialog = ({ userId, open, onOpenChange, onApplied }: 
 
         {loading && (
           <div className="py-10 flex flex-col items-center gap-3 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <KretopiaSpinner className="h-5 w-5" />
             <p className="text-xs">Reading your studios…</p>
           </div>
         )}
@@ -271,7 +272,7 @@ export const SuggestFoldersDialog = ({ userId, open, onOpenChange, onApplied }: 
             className="gap-1.5"
           >
             {applying ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <KretopiaSpinner className="h-3.5 w-3.5" />
             ) : (
               <Sparkles className="h-3.5 w-3.5" />
             )}

@@ -5,7 +5,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Camera, Loader2, Trash2, ImagePlus } from "lucide-react";
+import { Camera, Trash2, ImagePlus } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -133,7 +134,7 @@ export const EventPhotoWall = ({ eventId, isHost, canUpload }: EventPhotoWallPro
                 disabled={uploading}
                 className="gap-2"
               >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                {uploading ? <KretopiaSpinner className="h-4 w-4" /> : <ImagePlus className="h-4 w-4" />}
                 Add
               </Button>
             </>

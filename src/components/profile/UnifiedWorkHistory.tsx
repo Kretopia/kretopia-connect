@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrig
 import { supabase } from "@/integrations/supabase/client";
 import {
   Film, Tv, Music, Disc3, Video, ExternalLink, CheckCircle2,
-  Plus, Loader2, ShieldCheck, Trash2, Mic2, Play, Pencil,
+  Plus, ShieldCheck, Trash2, Mic2, Play, Pencil,
   Drama, PersonStanding, CalendarDays, Sparkles, Crown, Shirt,
   Megaphone, Briefcase, UserPlus, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MediaPlayerModal } from "./MediaPlayerModal";
@@ -344,7 +345,7 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-8 w-8 text-muted-foreground" />
       </div>
     );
   }
@@ -434,7 +435,7 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
               </DialogHeader>
               <CreditFormFields form={newCredit} setForm={setNewCredit} />
               <Button onClick={addManualCredit} disabled={saving} className="w-full">
-                {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Add Credit
+                {saving && <KretopiaSpinner className="h-4 w-4 mr-1.5" />} Add Credit
               </Button>
             </DialogContent>
           </Dialog>
@@ -567,7 +568,7 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
                               </Button>
                             )}
                             <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); handleDelete(credit.id); }} disabled={deletingId === credit.id} className="text-destructive hover:text-destructive hover:bg-destructive/10">
-                              {deletingId === credit.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                              {deletingId === credit.id ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Trash2 className="h-3.5 w-3.5" />}
                             </Button>
                           </>
                         )}
@@ -597,7 +598,7 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
           </DialogHeader>
           <CreditFormFields form={editForm} setForm={setEditForm} />
           <Button onClick={saveEdit} disabled={saving} className="w-full">
-            {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Save Changes
+            {saving && <KretopiaSpinner className="h-4 w-4 mr-1.5" />} Save Changes
           </Button>
         </DialogContent>
       </Dialog>

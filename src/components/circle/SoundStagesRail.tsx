@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Mic, Video, Loader2, Users } from "lucide-react";
+import { Mic, Video, Users } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -78,7 +79,7 @@ export function SoundStagesRail({ onJoin, onLoad }: Props) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking the lot…
+        <KretopiaSpinner className="h-3.5 w-3.5" /> Checking the lot…
       </div>
     );
   }

@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { UserPlus, Mail, Loader2, Users, Briefcase, Sparkles, Handshake, Link2, Copy, Check, Share2 } from "lucide-react";
+import { UserPlus, Mail, Users, Briefcase, Sparkles, Handshake, Link2, Copy, Check, Share2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -327,7 +328,7 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
                     onClick={() => handleInviteByEmail(searchInput.trim())}
                     disabled={sending}
                   >
-                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send"}
+                    {sending ? <KretopiaSpinner className="h-4 w-4" /> : "Send"}
                   </Button>
                 </div>
               </div>
@@ -354,7 +355,7 @@ export const InviteCollaboratorDialog = ({ projectId, onInvite }: InviteCollabor
                   onClick={() => handleBulkInviteByEmail(parsedEmails)}
                   disabled={sending}
                 >
-                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                  {sending ? <KretopiaSpinner className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
                   Send {parsedEmails.length} invites
                 </Button>
                 <p className="text-[10px] text-muted-foreground text-center">
@@ -449,7 +450,7 @@ const InviteRowAction = ({
   }
   return (
     <Button size="sm" onClick={onInvite} disabled={sending} variant="default">
-      {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Invite"}
+      {sending ? <KretopiaSpinner className="h-4 w-4" /> : "Invite"}
     </Button>
   );
 };
@@ -535,7 +536,7 @@ const GuestLinkPanel = ({ projectId }: { projectId: string }) => {
   };
 
   if (loading) {
-    return <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+    return <div className="py-8 flex justify-center"><KretopiaSpinner className="h-5 w-5 text-muted-foreground" /></div>;
   }
 
   return (
@@ -566,13 +567,13 @@ const GuestLinkPanel = ({ projectId }: { projectId: string }) => {
               Share link
             </Button>
             <Button size="sm" variant="ghost" className="text-xs h-8" onClick={create} disabled={creating}>
-              {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : "New link"}
+              {creating ? <KretopiaSpinner className="h-3 w-3" /> : "New link"}
             </Button>
           </div>
         </div>
       ) : (
         <Button onClick={create} disabled={creating} className="w-full gap-2">
-          {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+          {creating ? <KretopiaSpinner className="h-4 w-4" /> : <Link2 className="h-4 w-4" />}
           Create guest link
         </Button>
       )}

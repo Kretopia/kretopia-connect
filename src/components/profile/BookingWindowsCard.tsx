@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { CalendarDays, Plus, Trash2, Loader2, Copy } from "lucide-react";
+import { CalendarDays, Plus, Trash2, Copy } from "lucide-react";
+import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { APP_URL } from "@/lib/constants";
 
@@ -114,7 +115,7 @@ export const BookingWindowsCard = ({ userId, username, bookingsEnabled }: Props)
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {savingToggle && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+          {savingToggle && <KretopiaSpinner className="h-3.5 w-3.5 text-muted-foreground" />}
           <Switch checked={enabled} onCheckedChange={toggleEnabled} />
         </div>
       </div>
@@ -130,7 +131,7 @@ export const BookingWindowsCard = ({ userId, username, bookingsEnabled }: Props)
       )}
 
       {loading ? (
-        <p className="text-xs text-muted-foreground text-center py-3">Loading…</p>
+        <KretopiaLoader size="sm" label="Loading…" className="py-3" />
       ) : (
         <div className="space-y-2">
           {WEEKDAYS.map((label, weekday) => {

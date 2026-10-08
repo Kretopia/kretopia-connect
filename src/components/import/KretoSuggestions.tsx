@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { Check, Loader2, X } from "lucide-react";
+import { Check, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ export const KretoSuggestions = ({ jobId }: { jobId: string }) => {
   if (loading) {
     return (
       <div className="flex items-center gap-2 rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" /> Kreto is reading through what you brought in…
+        <KretopiaSpinner className="h-4 w-4" /> Kreto is reading through what you brought in…
       </div>
     );
   }
@@ -101,7 +102,7 @@ export const KretoSuggestions = ({ jobId }: { jobId: string }) => {
           I picked out {items.length} thing{items.length === 1 ? "" : "s"} worth keeping
         </p>
         <Button size="sm" variant="ghost" onClick={acceptAll} disabled={busy === "all"}>
-          {busy === "all" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add all"}
+          {busy === "all" ? <KretopiaSpinner className="h-3.5 w-3.5" /> : "Add all"}
         </Button>
       </div>
 
@@ -124,7 +125,7 @@ export const KretoSuggestions = ({ jobId }: { jobId: string }) => {
                   <X className="h-4 w-4" />
                 </Button>
                 <Button size="icon" className="h-8 w-8" disabled={!!busy} onClick={() => act(s.id, "approve")} aria-label="Add">
-                  {busy === s.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  {busy === s.id ? <KretopiaSpinner className="h-4 w-4" /> : <Check className="h-4 w-4" />}
                 </Button>
               </div>
             </div>

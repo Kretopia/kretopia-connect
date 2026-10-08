@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { FolderKanban, Plus, ArrowRight, Loader2 } from "lucide-react";
+import { FolderKanban, Plus, ArrowRight } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface ProjectsTabProps {
@@ -33,7 +34,7 @@ export function CircleProjectsTab({ circleId, isMember }: ProjectsTabProps) {
   if (loading) {
     return (
       <div className="px-4 py-12 flex justify-center">
-        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        <KretopiaSpinner className="h-5 w-5 text-primary" />
       </div>
     );
   }

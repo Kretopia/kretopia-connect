@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Lightbulb, Loader2 } from "lucide-react";
+import { Lightbulb } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface SuggestCategoryDialogProps {
   open: boolean;
@@ -113,7 +114,7 @@ export function SuggestCategoryDialog({ open, onOpenChange }: SuggestCategoryDia
             disabled={loading || !name.trim() || !locationType}
             className="w-full"
           >
-            {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Lightbulb className="h-4 w-4 mr-2" />}
+            {loading ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Lightbulb className="h-4 w-4 mr-2" />}
             Submit Suggestion
           </Button>
         </div>

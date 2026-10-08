@@ -6,7 +6,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Send, Loader2, MessageCircle } from "lucide-react";
+import { Send, MessageCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { validateMessage, sanitizeInput } from "@/lib/errorHandling";
 
@@ -183,7 +184,7 @@ export const MessagesDialog = ({
         <ScrollArea className="flex-1 px-6" ref={scrollRef} aria-label="Message history">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-8 gap-3" aria-busy="true">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <KretopiaSpinner className="h-6 w-6 text-primary" />
               <p className="text-sm text-muted-foreground">Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
@@ -236,7 +237,7 @@ export const MessagesDialog = ({
             />
             <Button type="submit" size="icon" disabled={isSending || !newMessage.trim()}>
               {isSending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4" />
               ) : (
                 <Send className="h-4 w-4" />
               )}

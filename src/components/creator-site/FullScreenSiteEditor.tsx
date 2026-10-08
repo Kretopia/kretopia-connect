@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, X, Save, Loader2,
+  Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, X, Save,
   Eye, EyeOff, GripVertical, ChevronDown, ChevronRight, Wand2, Layout,
   PanelLeft, CheckCircle2, ArrowLeft
 } from "lucide-react";
@@ -19,6 +19,7 @@ import { SiteSection } from "@/components/settings/CreatorSiteSectionEditor";
 import { TEMPLATES, isTemplateAccessible } from "@/components/creator-site/templateConfig";
 import { hasCreatorProAccess } from "@/lib/subscriptionConfig";
 import { Lock, Crown } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 
 const DEVICES = [
@@ -194,7 +195,7 @@ export const FullScreenSiteEditor = ({ open, onClose, siteUrl, initialData, onSa
             AI
           </Button>
           <Button size="sm" className="h-8 gap-1.5" onClick={handleSave} disabled={saving || !hasChanges}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {saving ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Save className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">Save</span>
           </Button>
         </div>
@@ -414,7 +415,7 @@ export const FullScreenSiteEditor = ({ open, onClose, siteUrl, initialData, onSa
           <Wand2 className="h-3.5 w-3.5 mr-1" /> AI
         </Button>
         <Button size="sm" className="flex-1 text-xs" onClick={handleSave} disabled={saving || !hasChanges}>
-          {saving ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1" />}
+          {saving ? <KretopiaSpinner className="h-3.5 w-3.5 mr-1" /> : <Save className="h-3.5 w-3.5 mr-1" />}
           Save
         </Button>
       </div>

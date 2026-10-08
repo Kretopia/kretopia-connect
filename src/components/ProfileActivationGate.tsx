@@ -2,7 +2,8 @@ import { useState, ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, FileText, Image as ImageIcon, Sparkles, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Camera, FileText, Image as ImageIcon, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -176,7 +177,7 @@ export const ProfileActivationGate = ({
                 disabled={importing || !importUrl.trim()}
                 size="sm"
               >
-                {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+                {importing ? <KretopiaSpinner className="h-4 w-4" /> : "Import"}
               </Button>
             </div>
           </div>

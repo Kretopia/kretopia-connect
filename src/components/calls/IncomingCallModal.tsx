@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
-import { Phone, PhoneOff, Loader2 } from "lucide-react";
+import { Phone, PhoneOff } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -176,7 +177,7 @@ export const IncomingCallModal = ({ call, onClose }: Props) => {
           >
             <span className="h-14 w-14 rounded-full bg-green-500 flex items-center justify-center shadow-lg active:scale-95 transition animate-pulse">
               {accepting ? (
-                <Loader2 className="h-6 w-6 text-white animate-spin" />
+                <KretopiaSpinner className="h-6 w-6 text-white" />
               ) : (
                 <Phone className="h-6 w-6 text-white" />
               )}

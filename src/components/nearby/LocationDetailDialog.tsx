@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Star, MapPin, DollarSign, Camera, Building2, Palette, Music, Navigation, Share2, Phone, Globe, ChevronLeft, ChevronRight, Loader2, Bookmark, BookmarkCheck, Headphones, ShoppingBag, ExternalLink, BadgeCheck, CalendarIcon, Clock } from "lucide-react";
+import { Star, MapPin, DollarSign, Camera, Building2, Palette, Music, Navigation, Share2, Phone, Globe, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Headphones, ShoppingBag, ExternalLink, BadgeCheck, CalendarIcon, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import type { CreativeLocation } from "./LocationListItem";
 import { ClaimLocationDialog } from "./ClaimLocationDialog";
 import { LocationReviewHelpful } from "./LocationReviewHelpful";
@@ -492,7 +493,7 @@ export function LocationDetailDialog({ location, open, onOpenChange, isBookmarke
                     disabled={submitting || userRating === 0}
                     className="w-full"
                   >
-                    {submitting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
+                    {submitting ? <KretopiaSpinner className="h-4 w-4 mr-1" /> : null}
                     {hasReviewed ? 'Update Review' : 'Submit Review'}
                   </Button>
                 </CardContent>
@@ -502,7 +503,7 @@ export function LocationDetailDialog({ location, open, onOpenChange, isBookmarke
             {/* Reviews list */}
             {loadingReviews ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <KretopiaSpinner className="h-5 w-5 text-primary" />
               </div>
             ) : reviews.length === 0 ? (
               <div className="text-center py-6">

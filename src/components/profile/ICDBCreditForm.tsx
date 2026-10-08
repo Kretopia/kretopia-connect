@@ -11,7 +11,8 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { notifyUser } from "@/lib/notifyUser";
-import { Plus, X, Search, Loader2, MapPin, Calendar, Link2, Users, Building2, Sparkles, ChevronRight, Wand2, ChevronDown, Mail, Database, ShieldCheck, UserPlus, Upload, Image as ImageIcon, Video, Music } from "lucide-react";
+import { Plus, X, Search, MapPin, Calendar, Link2, Users, Building2, Sparkles, ChevronRight, Wand2, ChevronDown, Mail, Database, ShieldCheck, UserPlus, Upload, Image as ImageIcon, Video, Music } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { parseMediaUrl } from "@/lib/mediaUtils";
@@ -617,7 +618,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
               >
                 {uploading ? (
                   <>
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    <KretopiaSpinner className="h-6 w-6 text-primary" />
                     <span className="text-xs font-medium">Uploading & analyzing...</span>
                   </>
                 ) : (
@@ -686,7 +687,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
                   onClick={() => handleSearch()}
                   disabled={searching || searchQuery.length < 2}
                 >
-                  {searching ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {searching ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                   Search
                 </Button>
               </div>
@@ -760,7 +761,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
               {/* Results */}
               {searching && (
                 <div className="flex items-center justify-center py-6 gap-2">
-                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <KretopiaSpinner className="h-5 w-5 text-primary" />
                   <span className="text-sm text-muted-foreground">Searching ICDB & platforms...</span>
                 </div>
               )}
@@ -1002,7 +1003,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
                     placeholder="Search platform users..."
                     className="h-9 text-sm pl-8"
                   />
-                  {searchingCollabs && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin" />}
+                  {searchingCollabs && <KretopiaSpinner className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5" />}
                 </div>
 
                 {collabResults.length > 0 && (
@@ -1069,7 +1070,7 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
 
               {/* Submit */}
               <Button onClick={handleSubmit} disabled={saving} className="w-full">
-                {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                {saving ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
                 Add Credit
               </Button>
             </div>

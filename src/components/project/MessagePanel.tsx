@@ -3,7 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Loader2, Paperclip, FileText, X } from "lucide-react";
+import { Send, Paperclip, FileText, X } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface Message {
   id: string;
@@ -124,7 +125,7 @@ export function MessagePanel({
               className="flex-1 h-9 text-sm"
             />
             <Button onClick={onSendMessage} disabled={sendingMessage} size="icon" className="h-9 w-9">
-              {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {sendingMessage ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -195,7 +196,7 @@ export function MessagePanel({
             className="flex-1 h-10 text-sm rounded-xl"
           />
           <Button onClick={onSendMessage} disabled={sendingMessage} size="icon" className="h-10 w-10 rounded-xl flex-shrink-0">
-            {sendingMessage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {sendingMessage ? <KretopiaSpinner className="h-4 w-4" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>

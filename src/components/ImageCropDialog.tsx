@@ -3,7 +3,7 @@ import Cropper from "react-easy-crop";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Loader2 } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 interface ImageCropDialogProps {
   imageUrl: string;
@@ -149,7 +149,7 @@ export const ImageCropDialog = ({
           <Button onClick={handleSave} disabled={loading || !croppedAreaPixels}>
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <KretopiaSpinner className="h-4 w-4 mr-2" />
                 Uploading...
               </>
             ) : (

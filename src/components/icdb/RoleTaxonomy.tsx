@@ -3,7 +3,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Tag, Loader2, BookOpen } from "lucide-react";
+import { Search, Tag, BookOpen } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 
 interface TaxonomyEntry {
@@ -97,7 +98,7 @@ export const RoleTaxonomy = ({ onSelect, selectedIndustry }: RoleTaxonomyProps) 
 
         {loading ? (
           <div className="flex justify-center py-6">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <KretopiaSpinner className="h-5 w-5 text-primary" />
           </div>
         ) : (
           <ScrollArea className="h-[300px]">

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Brain, Loader2, Trash2, Users, Calendar, DollarSign, MapPin, Quote } from "lucide-react";
+import { Brain, Trash2, Users, Calendar, DollarSign, MapPin, Quote } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -151,7 +152,7 @@ export function StudioBrainPanel({ projectId, isOwner }: Props) {
         </SheetHeader>
 
         {loading ? (
-          <div className="py-12 text-center"><Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" /></div>
+          <div className="py-12 text-center"><KretopiaSpinner className="h-5 w-5 mx-auto text-muted-foreground" /></div>
         ) : (
           <div className="mt-4 space-y-6">
             <section>

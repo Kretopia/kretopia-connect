@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 // Known partner codes (non-commission, org-level tracking)
 const PARTNER_CODES = ["CREATIVETT", "ARTISTREGISTRY"];
@@ -34,7 +35,7 @@ const JoinWithCode = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+      <KretopiaSpinner className="h-8 w-8" />
     </div>
   );
 };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { FileIcon, Loader2 } from "lucide-react";
+import { FileIcon } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getProjectFileSignedUrl } from "@/lib/projectFiles";
 
 interface ChatAttachmentProps {
@@ -34,7 +35,7 @@ export const ChatAttachment = ({ url, name, type }: ChatAttachmentProps) => {
   if (loading) {
     return (
       <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-border bg-muted/40 max-w-[240px]">
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        <KretopiaSpinner className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs truncate">{name}</span>
       </div>
     );

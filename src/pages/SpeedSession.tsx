@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 import {
-  Users, Mic, Video, Loader2, ArrowLeft, Radio, Check, UserPlus, Bookmark, PlayCircle, StopCircle, Share2, CalendarPlus, Sparkles, Pencil,
+  Users, Mic, Video, ArrowLeft, Radio, Check, UserPlus, Bookmark, PlayCircle, StopCircle, Share2, CalendarPlus, Sparkles, Pencil,
 } from "lucide-react";
 import { format as fmt } from "date-fns";
 import { SEO } from "@/components/SEO";
@@ -21,6 +21,7 @@ import { SpeedRoundTimer } from "@/components/circle/SpeedRoundTimer";
 import { SpeedHostCockpit } from "@/components/circle/SpeedHostCockpit";
 import { SpeedActionRail, type RailPeer } from "@/components/circle/SpeedActionRail";
 import { SkipForward } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type Session = {
   id: string; host_user_id: string; title: string; theme: string | null;
@@ -561,7 +562,7 @@ export default function SpeedSession() {
   }, [session, user, myRsvp, callRoom?.name, myName, id]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><KretopiaSpinner className="h-6 w-6" /></div>;
   }
   if (!session) {
     return (
@@ -924,7 +925,7 @@ export default function SpeedSession() {
                 size="lg"
                 className="w-full rounded-full"
               >
-                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> :
+                {busy ? <KretopiaSpinner className="h-4 w-4" /> :
                   myRsvp ? <><Check className="h-4 w-4" /> Saved — change my mind</> :
                   !user ? "Sign up & save my spot" : "Save my spot"}
               </Button>

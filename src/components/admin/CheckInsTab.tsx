@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin } from "lucide-react";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
 export function CheckInsTab() {
   const [checkIns, setCheckIns] = useState<any[]>([]);
@@ -57,7 +58,7 @@ export function CheckInsTab() {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <KretopiaLoader size="sm" label="Loading..." />;
   }
 
   return (

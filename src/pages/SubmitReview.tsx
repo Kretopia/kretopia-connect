@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Star, CheckCircle, Loader2 } from "lucide-react";
+import { Star, CheckCircle } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 // XP system removed
@@ -133,7 +134,7 @@ export default function SubmitReview() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -321,7 +322,7 @@ export default function SubmitReview() {
             >
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <KretopiaSpinner className="mr-2 h-4 w-4" />
                   Submitting...
                 </>
               ) : (

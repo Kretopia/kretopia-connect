@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowLeft, UserPlus, X, Crown, Video, Loader2, ChevronDown, Link as LinkIcon, Clock } from "lucide-react";
+import { Users, ArrowLeft, UserPlus, X, Crown, Video, ChevronDown, Link as LinkIcon, Clock } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -397,7 +398,7 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
               aria-label="Start video call"
               title="Start video call"
             >
-              {startingCall ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+              {startingCall ? <KretopiaSpinner className="h-4 w-4" /> : <Video className="h-4 w-4" />}
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -617,7 +618,7 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
           onClick={openStartSheet}
           disabled={startingCall}
         >
-          {startingCall ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+          {startingCall ? <KretopiaSpinner className="h-4 w-4" /> : <Video className="h-4 w-4" />}
           Start call
         </Button>
 

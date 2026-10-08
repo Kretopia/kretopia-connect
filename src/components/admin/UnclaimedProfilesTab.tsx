@@ -21,7 +21,6 @@ import {
   XCircle,
   ExternalLink,
   Copy,
-  Loader2,
   Users,
   FileSpreadsheet,
   Sparkles,
@@ -29,6 +28,7 @@ import {
   Globe,
   Plus
 } from 'lucide-react';
+import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 
 interface UnclaimedProfile {
   user_id: string;
@@ -501,7 +501,7 @@ export function UnclaimedProfilesTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
       </div>
     );
   }
@@ -575,7 +575,7 @@ export function UnclaimedProfilesTab() {
                   disabled={creating}
                   className="w-full"
                 >
-                  {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                  {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
                   Create Profile
                 </Button>
               </div>
@@ -611,7 +611,7 @@ export function UnclaimedProfilesTab() {
                   disabled={importingUrl}
                   className="w-full"
                 >
-                  {importingUrl ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Link className="h-4 w-4 mr-2" />}
+                  {importingUrl ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Link className="h-4 w-4 mr-2" />}
                   Import Profile
                 </Button>
               </div>
@@ -663,7 +663,7 @@ export function UnclaimedProfilesTab() {
                       disabled={creating}
                       className="w-full"
                     >
-                      {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                      {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
                       Import All ({bulkData.trim().split('\n').filter(l => l.trim()).length} profiles)
                     </Button>
                   </TabsContent>
@@ -722,7 +722,7 @@ export function UnclaimedProfilesTab() {
                           disabled={creating}
                           className="w-full"
                         >
-                          {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
+                          {creating ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
                           Import from CSV
                         </Button>
                       </div>
@@ -789,7 +789,7 @@ export function UnclaimedProfilesTab() {
                     >
                       {bulkProcessing ? (
                         <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <KretopiaSpinner className="h-4 w-4 mr-2" />
                           AI Enriching... This may take a few minutes
                         </>
                       ) : (
@@ -963,7 +963,7 @@ export function UnclaimedProfilesTab() {
                   />
                   <Button onClick={() => discoverProfiles(false)} disabled={discovering}>
                     {discovering ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <KretopiaSpinner className="h-4 w-4" />
                     ) : (
                       <Search className="h-4 w-4" />
                     )}
@@ -987,7 +987,7 @@ export function UnclaimedProfilesTab() {
                       disabled={loadingMore}
                     >
                       {loadingMore ? (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <KretopiaSpinner className="h-4 w-4 mr-2" />
                       ) : (
                         <Plus className="h-4 w-4 mr-2" />
                       )}
@@ -1058,7 +1058,7 @@ export function UnclaimedProfilesTab() {
                           disabled={importingDiscovered === profile.name}
                         >
                           {importingDiscovered === profile.name ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                            <KretopiaSpinner className="h-3 w-3 mr-1" />
                           ) : (
                             <Plus className="h-3 w-3 mr-1" />
                           )}
@@ -1082,7 +1082,7 @@ export function UnclaimedProfilesTab() {
           {discovering && (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <KretopiaSpinner className="h-12 w-12 text-primary mb-4" />
                 <h3 className="text-lg font-medium">Searching the web...</h3>
                 <p className="text-muted-foreground text-center">
                   AI is discovering creator profiles. This may take a moment.

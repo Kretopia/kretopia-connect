@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { getDiscoveryMissingFields } from '@/lib/profileCompletion';
 import { Button } from '@/components/ui/button';
 import { EyeOff, Camera, FileText, Image as ImageIcon, ArrowRight, Heart, RotateCcw } from 'lucide-react';
+import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 
 interface SwipeFeatureProps {
   onMatch?: (profile: any) => void;
@@ -205,7 +206,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+        <KretopiaSpinner className="h-8 w-8" />
       </div>
     );
   }

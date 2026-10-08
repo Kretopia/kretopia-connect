@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Receipt, Sparkles, Loader2, Camera, ScanLine } from "lucide-react";
+import { Plus, Receipt, Sparkles, Camera, ScanLine } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 import { EXPENSE_CATEGORIES } from "./ExpenseCategories";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
@@ -337,7 +338,7 @@ export function ExpenseForm({ projectId, onExpenseAdded }: ExpenseFormProps) {
             )}
             <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               {scanning ? (
-                <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                <KretopiaSpinner className="h-5 w-5 text-primary" />
               ) : (
                 <Camera className="h-5 w-5 text-primary" />
               )}
@@ -427,7 +428,7 @@ export function ExpenseForm({ projectId, onExpenseAdded }: ExpenseFormProps) {
               <Label className="text-xs">Vendor / Payee</Label>
               <Button type="button" variant="ghost" size="sm" className="h-6 text-[10px] gap-1 text-primary"
                 onClick={handleAutoCategorize} disabled={categorizing || !form.title}>
-                {categorizing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                {categorizing ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                 AI Categorize
               </Button>
             </div>

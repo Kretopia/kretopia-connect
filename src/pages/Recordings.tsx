@@ -10,6 +10,7 @@ import { WatchReplayButton } from "@/components/calls/WatchReplayButton";
 import { CallRecapSheet } from "@/components/calls/CallRecapSheet";
 import { formatDistanceToNow } from "date-fns";
 import { Video, Sparkles, Clock, ArrowLeft, FileVideo, RefreshCw } from "lucide-react";
+import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast as sonnerToast } from "sonner";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
@@ -153,7 +154,7 @@ export default function Recordings() {
           <ArrowLeft className="h-3.5 w-3.5" /> Back
         </Link>
         <Button type="button" size="sm" variant="outline" onClick={handleSync} disabled={syncing} className="gap-1.5 shrink-0">
-          <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
           {syncing ? "Syncing…" : "Sync now"}
         </Button>
       </div>
@@ -164,7 +165,7 @@ export default function Recordings() {
 
       <div className="px-4 py-4">
         {loading ? (
-          <p className="text-center text-sm text-muted-foreground py-12">Loading…</p>
+          <KretopiaLoader size="sm" label="Loading…" className="py-12" />
         ) : rows.length === 0 ? (
           <Card className="p-8 text-center rounded-2xl shadow-none border-dashed border-border/60">
             <FileVideo className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
