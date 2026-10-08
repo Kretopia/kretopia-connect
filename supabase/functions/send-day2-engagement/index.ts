@@ -2,6 +2,7 @@
 // Sends a personalized "your first days on Kretopia" email to users
 // who completed onboarding 2-3 days ago and haven't been emailed yet.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,10 @@ const corsHeaders = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Cron secret or an admin: nobody else may trigger a send to real users.
+  const guard = await requireAdminOrCron(req);
+  if (!guard.ok) return guard.response;
 
   try {
     const supabase = createClient(

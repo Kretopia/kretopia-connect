@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireAdminOrCron } from '../_shared/admin-guard.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,10 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Cron secret or an admin: nobody else may trigger a send to real users.
+  const guard = await requireAdminOrCron(req)
+  if (!guard.ok) return guard.response
+
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -20,6 +25,10 @@ Deno.serve(async (req) => {
 
     // Find users who started 24h+ ago, haven't completed, and haven't been reminded
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    // The email says "You started setting up your profile yesterday", so only remind people for whom that is
+    // still true: started between 24h and 7 days ago. Without a lower bound, the first run after a long pause
+    // reminded everyone who ever abandoned onboarding (2 of the 4 eligible today signed up over 30 days ago).
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
     const { data: incompleteProfiles, error: fetchError } = await supabaseClient
       .from('profiles')
@@ -27,6 +36,7 @@ Deno.serve(async (req) => {
       .eq('onboarding_completed', false)
       .eq('onboarding_reminder_sent', false)
       .lt('onboarding_started_at', twentyFourHoursAgo)
+      .gt('onboarding_started_at', sevenDaysAgo)
       .not('onboarding_started_at', 'is', null)
 
     if (fetchError) {
