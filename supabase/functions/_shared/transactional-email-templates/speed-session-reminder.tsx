@@ -1,11 +1,7 @@
 import * as React from 'npm:react@18.3.1'
-import {
-  Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text,
-} from 'npm:@react-email/components@0.0.22'
+import { Link } from 'npm:@react-email/components@0.0.22'
+import { KretopiaEmail, P, B, Small, Panel, Fact, Notice, Cta, K } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
-
-const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
 interface Props {
   attendeeName?: string
@@ -46,67 +42,50 @@ const SpeedReminder = ({
   rsvpCount,
   isGroupMode,
 }: Props) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>{previews[whenLabel](sessionTitle)}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
-        <Heading style={h1}>{headlines[whenLabel]}</Heading>
-        <Text style={text}>
-          {attendeeName ? `Hey ${attendeeName} — ` : ''}<strong>{sessionTitle}</strong> · {startsWhen}.
-        </Text>
-
-        {isGroupMode && (
-          <Section style={notice}>
-            <Text style={noticeTitle}>Heads up — tonight runs as an open group call</Text>
-            <Text style={noticeBody}>
-              Fewer than 5 RSVPs, so instead of rotating pairs you'll meet everyone together in one room. Same time, same link.
-            </Text>
-          </Section>
-        )}
-
-        <Section style={card}>
-          <Text style={label}>Format</Text>
-          <Text style={value}>
-            {isGroupMode
-              ? `Open group call · ${mode} · ${durationMin} min`
-              : `${slotMinutes} min per match · ${mode} · ${durationMin} min total`}
-          </Text>
-          {theme && (
-            <>
-              <Text style={label}>Vibe</Text>
-              <Text style={value}>{theme}</Text>
-            </>
-          )}
-          {typeof rsvpCount === 'number' && rsvpCount > 0 && (
-            <>
-              <Text style={label}>Who's coming</Text>
-              <Text style={value}>{rsvpCount} {rsvpCount === 1 ? 'creator' : 'creators'} so far</Text>
-            </>
-          )}
-        </Section>
-
-        <Button style={button} href={sessionUrl}>
-          {whenLabel === 'tomorrow' ? 'Open session' : "Open the room"}
-        </Button>
-
-        <Text style={tip}>
+  <KretopiaEmail
+    preview={previews[whenLabel](sessionTitle)}
+    eyebrow="Speed Session"
+    title={headlines[whenLabel]}
+    actions={
+      <>
+        <Cta href={sessionUrl}>{whenLabel === 'tomorrow' ? 'Open session' : 'Open the room'}</Cta>
+        <Small style={{ margin: '6px 0 0' }}>
           {whenLabel === 'tomorrow'
             ? 'Pro tip: a complete profile (avatar + role + bio) lifts your match quality. Takes 2 mins.'
             : whenLabel === 'in_one_hour'
             ? 'The lobby opens 15 min early — drop in, warm up, see who else is on.'
             : "When you land on the page, tap \"I'm here\" to enter the matching pool."}
-        </Text>
+        </Small>
+      </>
+    }
+    note={
+      <>
+        Can't make it? <Link href={sessionUrl} style={{ color: K.muted, textDecoration: 'underline' }}>Cancel your RSVP</Link> so we can match someone else.
+      </>
+    }
+  >
+    <P>
+      {attendeeName ? `Hey ${attendeeName} — ` : ''}<B>{sessionTitle}</B> · {startsWhen}.
+    </P>
 
-        <Hr style={hr} />
-        <Text style={footer}>
-          Can't make it? <Link href={sessionUrl} style={footerLink}>Cancel your RSVP</Link> so we can match someone else.
-        </Text>
-        <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
-      </Container>
-    </Body>
-  </Html>
+    {isGroupMode && (
+      <Notice title="Heads up — tonight runs as an open group call">
+        Fewer than 5 RSVPs, so instead of rotating pairs you'll meet everyone together in one room. Same time, same link.
+      </Notice>
+    )}
+
+    <Panel>
+      <Fact label="Format">
+        {isGroupMode
+          ? `Open group call · ${mode} · ${durationMin} min`
+          : `${slotMinutes} min per match · ${mode} · ${durationMin} min total`}
+      </Fact>
+      {theme && <Fact label="Vibe">{theme}</Fact>}
+      {typeof rsvpCount === 'number' && rsvpCount > 0 && (
+        <Fact label="Who's coming">{rsvpCount} {rsvpCount === 1 ? 'creator' : 'creators'} so far</Fact>
+      )}
+    </Panel>
+  </KretopiaEmail>
 )
 
 export const template = {
@@ -132,24 +111,3 @@ export const template = {
     isGroupMode: false,
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 12px' }
-const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px' }
-const notice = { backgroundColor: '#1F1A0E', border: '1px solid #4B3A12', borderRadius: '12px', padding: '14px 16px', margin: '0 0 16px' }
-const noticeTitle = { fontSize: '13px', fontWeight: '700' as const, color: '#F2C14E', margin: '0 0 4px' }
-const noticeBody = { fontSize: '13px', color: '#F2C14E', margin: '0', lineHeight: '1.5' }
-const card = { backgroundColor: '#11141B', borderRadius: '12px', padding: '16px 18px', margin: '0 0 20px' }
-const label = { fontSize: '11px', fontWeight: '700' as const, color: '#7C8393', margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }
-const value = { fontSize: '14px', color: '#FFFFFF', margin: '0 0 10px', fontWeight: '500' as const }
-const button = {
-  backgroundColor: '#FFFFFF', color: '#05070D', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const,
-  borderRadius: '16px', padding: '14px 32px', textDecoration: 'none',
-  display: 'block' as const, textAlign: 'center' as const, marginTop: '8px',
-}
-const tip = { fontSize: '12px', color: '#7C8393', margin: '16px 0 0', lineHeight: '1.5' }
-const hr = { borderColor: '#1A1E28', margin: '24px 0' }
-const footer = { fontSize: '12px', color: '#7C8393', margin: '0' }
-const footerLink = { color: '#FFFFFF', textDecoration: 'underline' }
-const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

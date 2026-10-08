@@ -1,11 +1,7 @@
 import * as React from 'npm:react@18.3.1'
-import {
-  Body, Button, Container, Head, Heading, Hr, Html, Img, Link, Preview, Section, Text,
-} from 'npm:@react-email/components@0.0.22'
+import { Link } from 'npm:@react-email/components@0.0.22'
+import { KretopiaEmail, P, B, Small, Panel, Fact, Cta, K } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
-
-const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
 interface Props {
   attendeeName?: string
@@ -30,62 +26,48 @@ const RsvpConfirmed = ({
   theme,
   sessionUrl = 'https://www.kretopia.com/circle/speed',
   googleCalendarUrl,
-}: Props) => (
-  <Html lang="en" dir="ltr">
-    <Head />
-    <Preview>You're in for {sessionTitle} · {startsWhen}</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
+}: Props) => {
+  const link = { color: K.white, textDecoration: 'underline' } as const
+  return (
+    <KretopiaEmail
+      preview={`You're in for ${sessionTitle} · ${startsWhen}`}
+      eyebrow="Speed Session"
+      title="You're in 🎉"
+      actions={
+        <>
+          {googleCalendarUrl && <Cta href={googleCalendarUrl}>Add to Google Calendar</Cta>}
+          <Small style={{ margin: '6px 0 0' }}>
+            We'll ping you again 24h, 1h, and 10 min before. The lobby opens 15 min early — drop in and warm up.
+          </Small>
+        </>
+      }
+      note={
+        <>
+          Can't make it? <Link href={sessionUrl} style={link}>Cancel your RSVP</Link> so we can match someone else.
+          <br />
+          Questions? <Link href="mailto:info@kretopia.com" style={link}>info@kretopia.com</Link>
+        </>
+      }
+    >
+      <P>
+        {attendeeName ? `Locked in, ${attendeeName}. ` : 'Locked in. '}
+        See you at <B>{sessionTitle}</B> · {startsWhen}.
+      </P>
 
-        <Heading style={h1}>You're in 🎉</Heading>
-        <Text style={text}>
-          {attendeeName ? `Locked in, ${attendeeName}. ` : 'Locked in. '}
-          See you at <strong>{sessionTitle}</strong> · {startsWhen}.
-        </Text>
+      <Panel>
+        <Fact label="Format">Meet a fresh creator every {slotMinutes} min · {mode} · {durationMin} min total</Fact>
+        {theme && <Fact label="Vibe">{theme}</Fact>}
+      </Panel>
 
-        <Section style={card}>
-          <Text style={label}>Format</Text>
-          <Text style={value}>
-            Meet a fresh creator every {slotMinutes} min · {mode} · {durationMin} min total
-          </Text>
-          {theme && (
-            <>
-              <Text style={label}>Vibe</Text>
-              <Text style={value}>{theme}</Text>
-            </>
-          )}
-        </Section>
-
-        {googleCalendarUrl && (
-          <Button style={button} href={googleCalendarUrl}>
-            Add to Google Calendar
-          </Button>
-        )}
-
-        <Text style={tip}>
-          We'll ping you again 24h, 1h, and 10 min before. The lobby opens 15 min early — drop in and warm up.
-        </Text>
-
-        <Hr style={hr} />
-        <Text style={subhead}>While you wait</Text>
-        <Text style={text}>
-          1. <Link href={sessionUrl} style={footerLink}>Open the session page</Link> and share it with a friend — better matches happen with 6+ in the room.
+      <Panel label="While you wait">
+        <P style={{ margin: 0, fontSize: '14px', whiteSpace: 'pre-line' }}>
+          1. <Link href={sessionUrl} style={link}>Open the session page</Link> and share it with a friend — better matches happen with 6+ in the room.
           {'\n'}2. Polish your profile (avatar + role + bio) so people remember you after the call.
-        </Text>
-
-        <Hr style={hr} />
-        <Text style={footer}>
-          Can't make it? <Link href={sessionUrl} style={footerLink}>Cancel your RSVP</Link> so we can match someone else.
-        </Text>
-        <Text style={footer}>
-          Questions? <Link href="mailto:info@kretopia.com" style={footerLink}>info@kretopia.com</Link>
-        </Text>
-        <Text style={footerBrand}>© {new Date().getFullYear()} Kretopia · kretopia.com</Text>
-      </Container>
-    </Body>
-  </Html>
-)
+        </P>
+      </Panel>
+    </KretopiaEmail>
+  )
+}
 
 export const template = {
   component: RsvpConfirmed,
@@ -103,22 +85,3 @@ export const template = {
     googleCalendarUrl: 'https://calendar.google.com/calendar/render?action=TEMPLATE&text=Speed',
   },
 } satisfies TemplateEntry
-
-const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
-const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '26px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 12px' }
-const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 20px', whiteSpace: 'pre-line' as const }
-const subhead = { fontSize: '13px', fontWeight: '700' as const, color: '#FFFFFF', margin: '0 0 8px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }
-const card = { backgroundColor: '#11141B', borderRadius: '12px', padding: '16px 18px', margin: '0 0 20px' }
-const label = { fontSize: '11px', fontWeight: '700' as const, color: '#7C8393', margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.4px' }
-const value = { fontSize: '14px', color: '#FFFFFF', margin: '0 0 10px', fontWeight: '500' as const }
-const button = {
-  backgroundColor: '#FFFFFF', color: '#05070D', fontSize: '14px', lineHeight: '20px', fontWeight: '600' as const,
-  borderRadius: '16px', padding: '14px 32px', textDecoration: 'none',
-  display: 'block' as const, textAlign: 'center' as const, marginTop: '8px',
-}
-const tip = { fontSize: '12px', color: '#7C8393', margin: '16px 0 0', lineHeight: '1.5' }
-const hr = { borderColor: '#1A1E28', margin: '24px 0' }
-const footer = { fontSize: '12px', color: '#7C8393', margin: '0' }
-const footerLink = { color: '#FFFFFF', textDecoration: 'underline' }
-const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }
