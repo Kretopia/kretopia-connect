@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -21,11 +22,21 @@ function isoWeek(d: Date): string {
 }
 
 const DAILY_CAP = 30; // protect sender reputation during ramp-up
+// One person gets this email at most once per COOLDOWN_DAYS. The old per-week idempotency key alone let the
+// daily job write to the same dormant people over and over: 1,414 sends reached just 106 people (13 each on
+// average, 34 at the worst), which is why the cron was removed on 2026-06-15.
+const COOLDOWN_DAYS = 30;
+// Candidates are read wider than the cap, because people inside the cooldown are skipped.
+const CANDIDATE_POOL = 200;
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Cron secret or an admin: nobody else may trigger a send to real users.
+  const guard = await requireAdminOrCron(req);
+  if (!guard.ok) return guard.response;
 
   try {
     console.log("[REENGAGE] Starting re-engagement job");
@@ -42,7 +53,7 @@ const handler = async (req: Request): Promise<Response> => {
       .gte("last_active_date", sixtyDaysAgo)
       .lte("last_active_date", sevenDaysAgo)
       .order("last_active_date", { ascending: false })
-      .limit(DAILY_CAP);
+      .limit(CANDIDATE_POOL);
 
     if (dormantError) throw dormantError;
 
@@ -62,15 +73,32 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("status", "active");
 
     const week = isoWeek(now);
+    const cooldownSince = new Date(now.getTime() - COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString();
     let enqueued = 0;
+    let skippedRecent = 0;
     const errors: string[] = [];
 
     for (const user of dormant) {
+      if (enqueued >= DAILY_CAP) break;
       try {
         // Resolve email via auth admin
         const { data: u, error: uErr } = await supabase.auth.admin.getUserById(user.user_id);
         if (uErr || !u?.user?.email) continue;
         const email = u.user.email;
+
+        // Already got this email within the cooldown (delivered rows only: failed/dead-lettered ones don't count)
+        const { data: recent } = await supabase
+          .from("email_send_log")
+          .select("id")
+          .eq("template_name", "re-engagement")
+          .eq("recipient_email", email)
+          .eq("status", "sent")
+          .gte("created_at", cooldownSince)
+          .limit(1);
+        if (recent && recent.length > 0) {
+          skippedRecent++;
+          continue;
+        }
 
         const daysInactive = user.last_active_date
           ? Math.floor((now.getTime() - new Date(user.last_active_date).getTime()) / 86400000)
@@ -108,10 +136,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    console.log(`[REENGAGE] Enqueued ${enqueued}, errors ${errors.length}`);
+    console.log(`[REENGAGE] Enqueued ${enqueued}, skipped (cooldown) ${skippedRecent}, errors ${errors.length}`);
 
     return new Response(
-      JSON.stringify({ success: true, enqueued, dormantCount: dormant.length, errors: errors.slice(0, 10) }),
+      JSON.stringify({ success: true, enqueued, skippedRecent, dormantCount: dormant.length, errors: errors.slice(0, 10) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: any) {
