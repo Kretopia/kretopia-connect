@@ -5,7 +5,7 @@ import {
 import type { TemplateEntry } from './registry.ts'
 
 const SITE_NAME = 'Kretopia'
-const LOGO_URL = 'https://www.kretopia.com/apple-touch-icon.png'
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 const APP_URL = 'https://www.kretopia.com'
 
 interface Props {
@@ -33,7 +33,7 @@ const UniverseScanFindingsEmail = ({
       <Preview>{`${total} new item${total === 1 ? '' : 's'} ready to review on your profile`}</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Img src={LOGO_URL} width="48" height="48" alt={SITE_NAME} style={{ marginBottom: '24px' }} />
+          <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 auto 28px' }} />
           <Heading style={h1}>
             {name ? `${name}, we found new things about you` : "We found new things about you"}
           </Heading>
@@ -42,16 +42,16 @@ const UniverseScanFindingsEmail = ({
           </Text>
           <Section style={statsBox}>
             {newCredits > 0 && (
-              <Text style={statLine}><strong style={{ color: '#7B61FF' }}>{newCredits}</strong> new credit{newCredits === 1 ? '' : 's'}</Text>
+              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newCredits}</strong> new credit{newCredits === 1 ? '' : 's'}</Text>
             )}
             {newPress > 0 && (
-              <Text style={statLine}><strong style={{ color: '#7B61FF' }}>{newPress}</strong> press mention{newPress === 1 ? '' : 's'}</Text>
+              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newPress}</strong> press mention{newPress === 1 ? '' : 's'}</Text>
             )}
             {newAwards > 0 && (
-              <Text style={statLine}><strong style={{ color: '#7B61FF' }}>{newAwards}</strong> award{newAwards === 1 ? '' : 's'}</Text>
+              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newAwards}</strong> award{newAwards === 1 ? '' : 's'}</Text>
             )}
             {newUploads > 0 && (
-              <Text style={statLine}><strong style={{ color: '#7B61FF' }}>{newUploads}</strong> new upload{newUploads === 1 ? '' : 's'}</Text>
+              <Text style={statLine}><strong style={{ color: '#FFFFFF' }}>{newUploads}</strong> new upload{newUploads === 1 ? '' : 's'}</Text>
             )}
           </Section>
           <Button style={button} href={url}>Review findings</Button>
@@ -77,29 +77,29 @@ export const template = {
   previewData: { name: 'Marlon', newCredits: 2, newPress: 1, newAwards: 0, newUploads: 3 },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
+const main = { backgroundColor: '#000000', fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif" }
 const container = { padding: '32px 28px', maxWidth: '480px', margin: '0 auto' }
-const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#0a0a0f', margin: '0 0 16px' }
-const text = { fontSize: '15px', color: '#606068', lineHeight: '1.6', margin: '0 0 24px' }
+const h1 = { fontSize: '24px', fontWeight: 'bold' as const, color: '#FFFFFF', margin: '0 0 16px' }
+const text = { fontSize: '15px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 24px' }
 const statsBox = {
-  backgroundColor: '#f5f3ff',
+  backgroundColor: '#11141B',
   borderRadius: '12px',
   padding: '20px 24px',
   margin: '0 0 24px',
-  borderLeft: '4px solid #7B61FF',
+  border: '1px solid #1A1E28',
 }
-const statLine = { fontSize: '14px', color: '#3a3a44', lineHeight: '1.6', margin: '0 0 8px' }
+const statLine = { fontSize: '14px', color: '#A8B0C0', lineHeight: '1.6', margin: '0 0 8px' }
 const button = {
-  backgroundColor: '#7B61FF',
-  color: '#ffffff',
-  fontSize: '15px',
+  backgroundColor: '#FFFFFF',
+  color: '#05070D',
+  fontSize: '14px', lineHeight: '20px',
   fontWeight: '600' as const,
-  borderRadius: '12px',
-  padding: '14px 28px',
+  borderRadius: '16px',
+  padding: '14px 32px',
   textDecoration: 'none',
   display: 'block' as const,
   textAlign: 'center' as const,
 }
-const subtext = { fontSize: '13px', color: '#999999', margin: '12px 0 32px', textAlign: 'center' as const }
-const footer = { fontSize: '12px', color: '#999999', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '12px 0 0' }
+const subtext = { fontSize: '13px', color: '#7C8393', margin: '12px 0 32px', textAlign: 'center' as const }
+const footer = { fontSize: '12px', color: '#7C8393', margin: '32px 0 0', whiteSpace: 'pre-line' as const }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }

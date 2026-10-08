@@ -4,6 +4,8 @@ import {
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 
+const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
+
 interface EventInviteProps {
   eventTitle?: string
   eventUrl?: string
@@ -29,7 +31,7 @@ const EventInviteEmail = ({
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Heading style={brand}>Kretopia</Heading>
+          <Img src={LOGO_URL} width="150" alt="Kretopia" style={{ margin: '0 0 14px' }} />
           <Text style={eyebrow}>YOU'RE INVITED</Text>
         </Section>
 
@@ -86,20 +88,19 @@ export const template = {
   },
 } satisfies TemplateEntry
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Inter, -apple-system, sans-serif' }
+const main = { backgroundColor: '#000000', fontFamily: 'Inter, -apple-system, sans-serif' }
 const container = { padding: '32px 24px', maxWidth: '560px', margin: '0 auto' }
 const header = { marginBottom: '20px' }
-const brand = { fontSize: '20px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.02em' }
-const eyebrow = { fontSize: '11px', fontWeight: 700, color: '#7B61FF', margin: 0, letterSpacing: '0.15em' }
+const eyebrow = { fontSize: '11px', fontWeight: 700, color: '#FF2DA1', margin: 0, letterSpacing: '0.15em' }
 const cover = { width: '100%', height: 'auto', borderRadius: '12px', margin: '0 0 20px', objectFit: 'cover' as const }
-const h1 = { fontSize: '26px', fontWeight: 800, color: '#0F172A', margin: '0 0 6px', lineHeight: 1.2 }
-const hostLine = { fontSize: '14px', color: '#64748B', margin: '0 0 16px' }
-const metaBox = { backgroundColor: '#F8FAFC', borderRadius: '10px', padding: '12px 16px', margin: '0 0 16px' }
-const metaLine = { fontSize: '14px', color: '#0F172A', margin: '4px 0', fontWeight: 500 }
-const noteBox = { borderLeft: '3px solid #C6FF00', padding: '4px 0 4px 14px', margin: '16px 0' }
-const noteText = { fontSize: '15px', color: '#334155', fontStyle: 'italic' as const, margin: 0, lineHeight: 1.5 }
-const button = { backgroundColor: '#C6FF00', color: '#0F172A', padding: '14px 32px', borderRadius: '10px', fontWeight: 700, fontSize: '15px', textDecoration: 'none', display: 'inline-block' }
-const hr = { borderColor: '#E2E8F0', margin: '24px 0' }
-const footer = { fontSize: '13px', color: '#64748B', margin: 0 }
-const link = { color: '#7B61FF', textDecoration: 'underline' }
-const footerBrand = { fontSize: '11px', color: '#bbbbbb', margin: '12px 0 0' }
+const h1 = { fontSize: '26px', fontWeight: 800, color: '#FFFFFF', margin: '0 0 6px', lineHeight: 1.2 }
+const hostLine = { fontSize: '14px', color: '#7C8393', margin: '0 0 16px' }
+const metaBox = { backgroundColor: '#11141B', borderRadius: '10px', padding: '12px 16px', margin: '0 0 16px' }
+const metaLine = { fontSize: '14px', color: '#FFFFFF', margin: '4px 0', fontWeight: 500 }
+const noteBox = { backgroundColor: '#11141B', border: '1px solid #1A1E28', borderRadius: '12px', padding: '12px 16px', margin: '16px 0' }
+const noteText = { fontSize: '15px', color: '#A8B0C0', fontStyle: 'italic' as const, margin: 0, lineHeight: 1.5 }
+const button = { backgroundColor: '#FFFFFF', color: '#05070D', padding: '14px 32px', borderRadius: '16px', fontWeight: '600' as const, fontSize: '14px', lineHeight: '20px', textDecoration: 'none', display: 'inline-block' }
+const hr = { borderColor: '#1A1E28', margin: '24px 0' }
+const footer = { fontSize: '13px', color: '#7C8393', margin: 0 }
+const link = { color: '#C9CEDA', textDecoration: 'underline' }
+const footerBrand = { fontSize: '11px', color: '#55545F', margin: '12px 0 0' }
