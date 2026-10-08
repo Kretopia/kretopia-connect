@@ -93,7 +93,7 @@ serve(async (req) => {
 
       const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
       if (RESEND_API_KEY) {
-        const emailFrom = Deno.env.get('RESEND_FROM_EMAIL') || 'Kretopia <info@kretopia.com>';
+        const emailFrom = Deno.env.get('RESEND_FROM_EMAIL') || 'Kretopia <noreply@kretopia.com>';
         const creatorName = profile?.full_name || 'A creator';
         const projectTitle = project?.title || 'a project';
 

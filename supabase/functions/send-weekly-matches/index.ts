@@ -27,7 +27,7 @@ import {
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const corsHeaders = adminGuardCorsHeaders;
 
-const FROM = "Kretopia <info@kretopia.com>";
+const FROM = "Kretopia <noreply@kretopia.com>";
 const TEMPLATE_NAME = "weekly-matches"; // email_send_log.template_name
 const SUBJECT = "Your weekly Kretopia matches & opportunities";
 const TIME_BUDGET_MS = 120_000;

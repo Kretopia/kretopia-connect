@@ -9,7 +9,7 @@ const corsHeaders = adminGuardCorsHeaders;
 
 
 const baseUrl = "https://www.kretopia.com";
-const FROM = "Kretopia <info@kretopia.com>";
+const FROM = "Kretopia <noreply@kretopia.com>";
 const TEMPLATE_NAME = "weekly-update"; // email_send_log.template_name for this email
 const TIME_BUDGET_MS = 120_000; // stop before the edge runtime limit; a re-run resumes
 

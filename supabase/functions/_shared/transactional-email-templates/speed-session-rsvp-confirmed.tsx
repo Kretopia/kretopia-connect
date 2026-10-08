@@ -45,7 +45,7 @@ const RsvpConfirmed = ({
         <>
           Can't make it? <Link href={sessionUrl} style={link}>Cancel your RSVP</Link> so we can match someone else.
           <br />
-          Questions? <Link href="mailto:info@kretopia.com" style={link}>info@kretopia.com</Link>
+          Questions? <Link href="mailto:noreply@kretopia.com" style={link}>noreply@kretopia.com</Link>
         </>
       }
     >

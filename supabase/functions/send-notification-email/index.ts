@@ -558,7 +558,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending ${type} email to ${to}`);
 
     const emailResponse = await resend.emails.send({
-      from: "Kretopia <info@kretopia.com>",
+      from: "Kretopia <noreply@kretopia.com>",
       to: [to],
       subject,
       html,

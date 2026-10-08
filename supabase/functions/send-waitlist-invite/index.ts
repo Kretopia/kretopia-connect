@@ -95,7 +95,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Kretopia <info@kretopia.com>',
+        from: 'Kretopia <noreply@kretopia.com>',
         to: [to],
         subject: '🎉 Welcome to Kretopia - Your Invite Code Inside',
         html,

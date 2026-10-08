@@ -38,20 +38,20 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 // SENDER_DOMAIN must match the subdomain actually verified/delegated with the
 // email provider — do not change without re-verifying DNS, or sending breaks.
 const SITE_NAME = "Kretopia"
-const SENDER_DOMAIN = "notify.thrivein.io"
+const SENDER_DOMAIN = "notify.kretopia.com"
 const ROOT_DOMAIN = "kretopia.com"
 // Must align with SENDER_DOMAIN's root: the email API rejects any other From domain
 // with 400 sender_domain_mismatch (every send failed that way from 2026-08-19 while
 // this was "kretopia.com", whose own sender setup never finished DNS verification).
 // Switch back only once Lovable Cloud > Emails shows kretopia.com as verified.
-const FROM_DOMAIN = "thrivein.io"
+const FROM_DOMAIN = "kretopia.com"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
 // The sample email uses a fixed placeholder (RFC 6761 .test TLD) so the Go backend
 // can always find-and-replace it with the actual recipient when sending test emails,
 // even if the project's domain has changed since the template was scaffolded.
-const SAMPLE_PROJECT_URL = "https://thrivein-new-beta.lovable.app"
+const SAMPLE_PROJECT_URL = "https://www.kretopia.com"
 const SAMPLE_EMAIL = "user@example.test"
 const SAMPLE_DATA: Record<string, object> = {
   signup: {
@@ -257,7 +257,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       {
         run_id,
         to: payload.data.email,
-        from: `${SITE_NAME} <info@${FROM_DOMAIN}>`,
+        from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
         sender_domain: SENDER_DOMAIN,
         subject: EMAIL_SUBJECTS[emailType] || 'Notification',
         html,
