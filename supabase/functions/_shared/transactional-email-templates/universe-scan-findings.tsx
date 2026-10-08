@@ -12,6 +12,8 @@ interface Props {
   newAwards?: number
   newUploads?: number
   reviewUrl?: string
+  /** Injected by send-transactional-email (one-click unsubscribe for this address). */
+  unsubscribeUrl?: string
 }
 
 const UniverseScanFindingsEmail = ({
@@ -21,6 +23,7 @@ const UniverseScanFindingsEmail = ({
   newAwards = 0,
   newUploads = 0,
   reviewUrl,
+  unsubscribeUrl,
 }: Props) => {
   const total = newCredits + newPress + newAwards + newUploads
   const url = reviewUrl || `${APP_URL}/?openPendingDiscoveries=1`
@@ -37,6 +40,7 @@ const UniverseScanFindingsEmail = ({
         </>
       }
       note={`The ${SITE_NAME} Team`}
+      unsubscribeUrl={unsubscribeUrl}
     >
       <P>
         Our weekly scan picked up {total} new item{total === 1 ? '' : 's'} across the web that look like they belong on your profile.

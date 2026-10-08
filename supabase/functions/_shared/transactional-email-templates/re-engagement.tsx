@@ -1,5 +1,5 @@
 import * as React from 'npm:react@18.3.1'
-import { KretopiaEmail, P, B, Panel, Cta, K } from '../email-kit.tsx'
+import { KretopiaEmail, KretoHero, P, B, Panel, Cta, K } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
 
 const APP_URL = 'https://www.kretopia.com'
@@ -8,19 +8,21 @@ interface Props {
   name?: string
   daysInactive?: number
   activeGigsCount?: number
+  /** Injected by send-transactional-email (one-click unsubscribe for this address). */
+  unsubscribeUrl?: string
 }
 
-const ReEngagementEmail = ({ name, activeGigsCount }: Props) => (
+// Sent from noreply@: this e-mail must not invite replies or give a personal contact line.
+const ReEngagementEmail = ({ name, activeGigsCount, unsubscribeUrl }: Props) => (
   <KretopiaEmail
     preview="A quick note from Ethan, founder of Kretopia"
     eyebrow="The Creative OS"
     title={name ? `${name}, here's what's new` : "Here's what's new on Kretopia"}
+    hero={<KretoHero />}
     actions={<Cta href={`${APP_URL}/opportunities`}>See live gigs →</Cta>}
+    unsubscribeUrl={unsubscribeUrl}
     note={
       <>
-        Your feedback shapes what we build next. Hit reply or message me directly:<br />
-        <B>WhatsApp:</B> +62 811 399 6510 · <B>Email:</B> thriveinapp@gmail.com
-        <br /><br />
         Thanks for being early.<br /><br />
         <span style={{ color: K.white, fontSize: '14px' }}>Ethan Auguste</span><br />
         Founder, Kretopia

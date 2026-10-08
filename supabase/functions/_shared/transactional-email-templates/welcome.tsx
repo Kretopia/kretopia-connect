@@ -40,8 +40,7 @@ const WelcomeEmail = ({ name, unsubscribeUrl }: Props) => (
     actions={<Cta href={APP_URL}>Open Today</Cta>}
     note={
       <>
-        Questions? Just reply to this email.
-        <br />— The Kretopia team
+        — The Kretopia team
         <br /><br />
         You’re receiving this because you created a Kretopia account.{' '}
         <Link href={unsubscribeUrl || SETTINGS_URL} style={{ color: K.dim, textDecoration: 'underline' }}>
