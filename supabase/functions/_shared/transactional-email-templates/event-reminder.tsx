@@ -7,6 +7,21 @@ import type { TemplateEntry } from './registry.ts'
 const SITE_NAME = 'Kretopia'
 const LOGO_URL = 'https://www.kretopia.com/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png'
 
+// The Kretopia-branded pass QR (same drawing as the in-app pass) is rendered by the event-pass-qr edge
+// function; emails can't run the app's QR library. SUPABASE_URL exists in the edge runtime; the
+// fallback is the production backend.
+const FUNCTIONS_BASE = (() => {
+  try {
+    // @ts-ignore Deno global (edge runtime only)
+    return (typeof Deno !== 'undefined' && Deno.env.get('SUPABASE_URL')) || 'https://kwmcocsitwssrtzkdojh.supabase.co'
+  } catch {
+    return 'https://kwmcocsitwssrtzkdojh.supabase.co'
+  }
+})()
+// Same rule as the function: real tokens are 32 hex characters. Anything else gets no QR rather than a broken image.
+const passQrUrl = (token: string): string | null =>
+  /^[A-Za-z0-9_-]{32,64}$/.test(token) ? `${FUNCTIONS_BASE}/functions/v1/event-pass-qr?t=${encodeURIComponent(token)}` : null
+
 interface Props {
   attendeeName?: string
   eventTitle?: string
@@ -28,9 +43,7 @@ const EventReminderEmail = ({
   checkInToken,
   isTicketed,
 }: Props) => {
-  const qrUrl = checkInToken
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(checkInToken)}`
-    : null
+  const qrUrl = checkInToken ? passQrUrl(checkInToken) : null
 
   return (
     <Html lang="en" dir="ltr">
@@ -73,7 +86,7 @@ const EventReminderEmail = ({
             <Section style={qrSection}>
               <Text style={qrLabel}>Your Check-In QR Code</Text>
               <Text style={qrHint}>Show this at the door for quick check-in</Text>
-              <Img src={qrUrl} width="200" height="200" alt="Check-in QR Code" style={qrImage} />
+              <Img src={qrUrl} width="200" height="200" alt="Your Kretopia check-in QR code" style={qrImage} />
             </Section>
           )}
 
@@ -108,7 +121,7 @@ export const template = {
     eventTime: '4:00 PM AST',
     eventVenue: 'The Creative Hub, Brooklyn',
     eventUrl: 'https://www.kretopia.com/event/123',
-    checkInToken: 'abc123preview',
+    checkInToken: '4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
     isTicketed: false,
   },
 } satisfies TemplateEntry

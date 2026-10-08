@@ -12,6 +12,21 @@ const SITE_URL = 'https://www.kretopia.com'
 const LOGO_URL = `${SITE_URL}/__l5e/assets-v1/6656504f-e518-4dcb-974e-ebe4d8a8a05e/kretopia-lockup.png`
 const KRETO_URL = `${SITE_URL}/email/kreto-wave.png`
 
+// The Kretopia-branded pass QR (same drawing as the in-app pass) is rendered by the event-pass-qr edge
+// function; emails can't run the app's QR library. SUPABASE_URL exists in the edge runtime; the
+// fallback is the production backend.
+const FUNCTIONS_BASE = (() => {
+  try {
+    // @ts-ignore Deno global (edge runtime only)
+    return (typeof Deno !== 'undefined' && Deno.env.get('SUPABASE_URL')) || 'https://kwmcocsitwssrtzkdojh.supabase.co'
+  } catch {
+    return 'https://kwmcocsitwssrtzkdojh.supabase.co'
+  }
+})()
+// Same rule as the function: real tokens are 32 hex characters. Anything else gets no QR rather than a broken image.
+const passQrUrl = (token: string): string | null =>
+  /^[A-Za-z0-9_-]{32,64}$/.test(token) ? `${FUNCTIONS_BASE}/functions/v1/event-pass-qr?t=${encodeURIComponent(token)}` : null
+
 interface Props {
   attendeeName?: string
   attendeeEmail?: string
@@ -58,12 +73,7 @@ const EventRegistrationConfirmationEmail = ({
         checkInToken ? `&token=${encodeURIComponent(checkInToken)}` : ''
       }`
 
-  const claimUrl = attendeeEmail
-    ? `${SITE_URL}/auth?mode=signup&email=${encodeURIComponent(attendeeEmail)}&intent=claim_rsvp`
-    : `${SITE_URL}/auth?mode=signup&intent=claim_rsvp`
-  const qrUrl = checkInToken
-    ? `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(checkInToken)}`
-    : null
+  const qrUrl = checkInToken ? passQrUrl(checkInToken) : null
 
   return (
     <Html lang="en" dir="ltr">
@@ -126,7 +136,7 @@ const EventRegistrationConfirmationEmail = ({
             <Section style={{ ...card, textAlign: 'center' as const }}>
               <Text style={cardEyebrow}>Your check-in pass</Text>
               <Text style={qrHint}>Show this QR code at the door for a quick check-in.</Text>
-              <Img src={qrUrl} width="190" height="190" alt="Check-in QR code" style={qrImage} />
+              <Img src={qrUrl} width="200" height="200" alt="Your Kretopia check-in QR code" style={qrImage} />
               {passUrl && (
                 <Section style={{ textAlign: 'center' as const, margin: '16px 0 0' }}>
                   <Button style={secondaryButton} href={passUrl}>
@@ -134,19 +144,6 @@ const EventRegistrationConfirmationEmail = ({
                   </Button>
                 </Section>
               )}
-            </Section>
-          )}
-
-          {isGuest && (
-            <Section style={{ ...card, textAlign: 'center' as const }}>
-              <Text style={cardEyebrow}>Unlock more on {SITE_NAME}</Text>
-              <Heading style={claimH2}>Claim your creator profile</Heading>
-              <Text style={claimText}>
-                Meet the other attendees, get reminders and showcase your work. Free, in 60 seconds.
-              </Text>
-              <Button style={primaryButton} href={claimUrl}>
-                Claim my profile →
-              </Button>
             </Section>
           )}
 
@@ -181,8 +178,8 @@ export const template = {
     eventTime: '7:00 PM EST',
     eventVenue: 'The Creative Hub, Brooklyn',
     eventUrl: 'https://www.kretopia.com/event/123',
-    passUrl: 'https://www.kretopia.com/event/123/pass?token=abc123preview',
-    checkInToken: 'abc123preview',
+    passUrl: 'https://www.kretopia.com/event/123/pass?token=4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
+    checkInToken: '4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
     isTicketed: false,
     isGuest: false,
     hasAccount: true,
@@ -240,8 +237,6 @@ const detailLabelCell = { fontSize: '11px', fontWeight: '700' as const, letterSp
 const detailValueCell = { fontSize: '14px', fontWeight: '600' as const, color: '#F2F1F7', padding: '6px 0', verticalAlign: 'top' as const }
 const qrHint = { fontSize: '13px', color: MUTED, margin: '0 0 14px' }
 const qrImage = { margin: '0 auto', borderRadius: '12px', backgroundColor: WHITE }
-const claimH2 = { fontSize: '20px', fontWeight: '700' as const, color: WHITE, margin: '0 0 8px' }
-const claimText = { fontSize: '14px', color: MUTED, lineHeight: '1.5', margin: '0 0 18px' }
 const hr = { borderColor: LINE, margin: '24px 0 16px' }
 const footer = { fontSize: '12px', lineHeight: '19px', color: '#7C8393', margin: '0 0 10px', textAlign: 'center' as const }
 const footerBrand = { fontSize: '11px', color: '#55545F', margin: '0', textAlign: 'center' as const }
