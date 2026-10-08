@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Loader2, Lock,
+  Loader2,
   Sparkles, ArrowRight, Check, Share2, Ticket, ExternalLink, Pencil, XCircle, ScanLine,
   MoreVertical, Crown, Ban, CheckCircle, Download,
   X, ChevronDown
@@ -596,35 +596,27 @@ const EventPage = () => {
             <Card className="mb-6">
               <CardContent className="p-5">
                 <h3 className="font-semibold mb-2">The vibe</h3>
-                {isAuthenticated ? (
-                  <div>
-                    <p
-                      className={`text-muted-foreground whitespace-pre-wrap ${
-                        !descExpanded && event.description.length > 320 ? "line-clamp-6" : ""
-                      }`}
+                {/* Open to everyone, signed in or not: people read what the event is, then decide to
+                    save a seat. Only the RSVP itself may ask for an account (see handleJoinOrSignup). */}
+                <div>
+                  <p
+                    className={`text-muted-foreground whitespace-pre-wrap ${
+                      !descExpanded && event.description.length > 320 ? "line-clamp-6" : ""
+                    }`}
+                  >
+                    {event.description}
+                  </p>
+                  {event.description.length > 320 && (
+                    <button
+                      type="button"
+                      onClick={() => setDescExpanded((v) => !v)}
+                      className="mt-2 flex items-center gap-1 text-sm font-medium text-primary hover:underline"
                     >
-                      {event.description}
-                    </p>
-                    {event.description.length > 320 && (
-                      <button
-                        type="button"
-                        onClick={() => setDescExpanded((v) => !v)}
-                        className="mt-2 flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                      >
-                        {descExpanded ? "Show less" : "Read more"}
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${descExpanded ? "rotate-180" : ""}`} />
-                      </button>
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <p className="text-muted-foreground line-clamp-3">{event.description}</p>
-                    <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-card to-transparent" />
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <Lock className="h-3 w-3" /> Sign up to read more
-                    </p>
-                  </div>
-                )}
+                      {descExpanded ? "Show less" : "Read more"}
+                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${descExpanded ? "rotate-180" : ""}`} />
+                    </button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
