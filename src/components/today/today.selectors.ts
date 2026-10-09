@@ -25,6 +25,7 @@ interface RawApprovalRow {
   title: string;
   body: string;
   action_intent: { href?: string } | null;
+  created_at: string | null;
 }
 interface RawCreditRow {
   verification_status: string | null;
@@ -60,6 +61,7 @@ export function useTodaySignals(
   const [approvalCount, setApprovalCount] = useState(0);
   const [deadlines, setDeadlines] = useState<TodayTask[]>([]);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [updatedAt, setUpdatedAt] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     if (!userId) return;
@@ -117,7 +119,7 @@ export function useTodaySignals(
           .then((r) => r.count ?? 0, () => 0),
         supabase
           .from("agent_proposals")
-          .select("id, title, body, action_intent")
+          .select("id, title, body, action_intent, created_at")
           .eq("owner_user_id", userId)
           .eq("status", "pending")
           .order("created_at", { ascending: false })
@@ -125,7 +127,7 @@ export function useTodaySignals(
           .then((r) => (r.data?.[0] as unknown as RawApprovalRow) ?? null, () => null),
         supabase
           .from("scouted_gigs")
-          .select("id, title, company")
+          .select("id, title, company, location, remote, fit_score, source_name, compensation, posted_at, scouted_at")
           .eq("target_user_id", userId)
           .order("fit_score", { ascending: false })
           .limit(1)
@@ -150,6 +152,7 @@ export function useTodaySignals(
       setDeadlines(allDeadlines);
       setApprovalCount(approvalsRes);
       setUnreadMessages(unreadRes);
+      setUpdatedAt(Date.now());
 
       // Priority action: first overdue/due-today task, else pending
       // proposal, else freshest gig, else none.
@@ -164,10 +167,25 @@ export function useTodaySignals(
             title: topApprovalRes.title,
             body: topApprovalRes.body,
             href: typeof topApprovalRes.action_intent?.href === "string" ? topApprovalRes.action_intent.href : null,
+            createdAt: topApprovalRes.created_at ?? null,
           },
         });
       } else if (topGigRes) {
-        setPriority({ kind: "gig", gig: { id: topGigRes.id, title: topGigRes.title, company: topGigRes.company ?? null } });
+        setPriority({
+          kind: "gig",
+          gig: {
+            id: topGigRes.id,
+            title: topGigRes.title,
+            company: topGigRes.company ?? null,
+            location: topGigRes.location ?? null,
+            remote: !!topGigRes.remote,
+            fitScore: topGigRes.fit_score ?? null,
+            sourceName: topGigRes.source_name ?? null,
+            compensation: topGigRes.compensation ?? null,
+            postedAt: topGigRes.posted_at ?? null,
+            scoutedAt: topGigRes.scouted_at ?? null,
+          },
+        });
       } else {
         setPriority({ kind: "none" });
       }
@@ -259,6 +277,7 @@ export function useTodaySignals(
     approvalCount,
     deadlines,
     unreadMessages,
+    updatedAt,
     reload: load,
   };
 }
