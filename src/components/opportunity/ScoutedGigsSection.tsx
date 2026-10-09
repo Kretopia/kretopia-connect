@@ -448,6 +448,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               src={g.image_url}
               alt={g.title}
               loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => markImageBroken(g.id)}
             />
@@ -732,6 +733,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
                   src={visibleGigs[0].image_url}
                   alt={visibleGigs[0].title}
                   loading="lazy"
+              decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={() => markImageBroken(visibleGigs[0].id)}
                 />

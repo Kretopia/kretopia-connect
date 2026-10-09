@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { GlassCta, GlassCtaButton, OutlineCta, OutlineCtaButton } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useToast } from "@/hooks/use-toast";
@@ -160,9 +161,7 @@ function PassportKretoCard({
       }
     >
       <div className="flex min-w-0 items-center gap-4">
-        <div className="h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
-          {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="flex h-full w-full items-center justify-center font-bold text-muted-foreground">{getInitials(displayName)}</span>}
-        </div>
+        <PersonAvatar src={avatarUrl} name={displayName} className="h-14 w-14 text-lg" />
         <div className="min-w-0">
           <p className="break-words text-sm text-foreground">{profession}</p>
           <p className="mt-1 text-xs text-muted-foreground">{creditCount} credit{creditCount === 1 ? "" : "s"}</p>
@@ -440,15 +439,6 @@ function PriorityLabel({ overdue }: { overdue?: boolean }) {
       {overdue ? "Overdue" : "Due today"}
     </span>
   );
-}
-
-function getInitials(value: string) {
-  return value
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
 }
 
 function priorityLine(signals: TodaySignals): string {

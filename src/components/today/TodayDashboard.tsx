@@ -5,6 +5,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { BrandLoader } from "@/components/brand/BrandDots";
 import { TodayCommandCenter } from "./TodayCommandCenter";
 import { TodayDiscoverCreatives } from "./TodayDiscoverCreatives";
+import { TodayNextEvent } from "./TodayNextEvent";
 import { useTodaySignals } from "./today.selectors";
 import type { ProfileRow } from "./today.types";
 
@@ -61,7 +62,8 @@ export function TodayDashboard({ firstName, profile, profileFull, myCredits = 0 
           transition={reducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}
         >
           <TodayCommandCenter firstName={firstName} profile={effectiveProfile} creditCount={myCredits} signals={signals} onSignalsChanged={refresh} />
-          {/* After the decision cards, never before: discovery and continuity, not an urgent task. */}
+          {/* After the decision cards, never before: continuity and discovery, not an urgent task. */}
+          <TodayNextEvent />
           <TodayDiscoverCreatives />
         </motion.div>
       )}

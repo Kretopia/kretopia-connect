@@ -112,6 +112,7 @@ export function ShortlistedGigs() {
                   alt={g.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
+              decoding="async"
                   onError={() => setFailedImages((prev) => new Set(prev).add(g.id))}
                 />
               </div>
