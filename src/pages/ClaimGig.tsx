@@ -61,17 +61,27 @@ const ClaimGig = () => {
     }
 
     setClaiming(true);
-    const { error } = await supabase
+    // `.select("id")` returns the rows the update really changed. Without it
+    // an update that matched nothing (someone else claimed it first, or RLS
+    // refused it) comes back as success and the page said "Gig claimed!".
+    const { data: changed, error } = await supabase
       .from("opportunities")
       .update({
         created_by: user.id,
         claim_status: "claimed",
       })
       .eq("claim_token", token)
-      .eq("claim_status", "unclaimed");
+      .eq("claim_status", "unclaimed")
+      .select("id");
 
     if (error) {
       toast({ title: "Claim failed", description: error.message, variant: "destructive" });
+    } else if (!changed || changed.length === 0) {
+      toast({
+        title: "Couldn't claim this gig",
+        description: "Someone else may have claimed it first, or you don't have permission to claim it.",
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Gig claimed!", description: "You now own this listing. Share it to get applications!" });
 
