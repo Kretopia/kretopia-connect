@@ -4,6 +4,12 @@ Scope: the "Kretopia_Studio_Passport_Security_UX" brief (14 Studio + 16 Passport
 code in this repo **and** the production database (`kwmcocsitwssrtzkdojh`), read-only. Nothing here was
 applied to production by the audit; every database change ships as a migration file that you apply.
 
+**Rollout status, 2026-10-09 night** (verified read-only against production with `verify-2026-10-09.sql`):
+migrations 0000, 0100, 0200 and 0300 are applied (27/27 server-only functions closed, 14 `*_impl` closed, 17 wrappers
+conform, 4/4 open policies gone, a pending invitee gains no access from the invitation); the frontend that uses the
+claim RPCs is published. Still to apply: 0400 (now safe), the cron secret headers, and the edge-function pastes
+(`edge-deploy-guide-2026-10-09.md`).
+
 Method (repeatable, see `verify-2026-10-09.sql`): `has_function_privilege('anon', …)` over every SECURITY
 DEFINER function, `pg_policies` for world-writable policies, `storage.buckets` / `storage.objects` policies,
 anon-key PostgREST probes that print only counts and column names (never values), and a static scan of the

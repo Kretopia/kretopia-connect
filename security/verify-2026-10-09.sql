@@ -54,7 +54,7 @@ WHERE (schemaname, tablename, policyname) IN (
 UNION ALL
 -- E. Studio: a pending invitation is not access (needs migration 0200).
 SELECT 'E user_has_project_access ignores pending', 'user_has_project_access',
-       pg_get_functiondef('public.user_has_project_access(uuid,uuid)'::regprocedure) !~* 'pending'
+       regexp_replace(pg_get_functiondef('public.user_has_project_access(uuid,uuid)'::regprocedure), '--[^\n]*', '', 'g') !~* 'pending'
 UNION ALL
 SELECT 'E collaborator self-update guard installed', 'trg_guard_project_collaborator_self_update',
        EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_guard_project_collaborator_self_update' AND NOT tgisinternal)
