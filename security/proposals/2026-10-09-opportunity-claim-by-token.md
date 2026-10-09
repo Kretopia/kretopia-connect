@@ -1,7 +1,17 @@
-# Proposal: claim a scouted gig by token (F28). Needs your approval, nothing here is applied
+# Claim a scouted gig by token (F28)
 
-Status: **proposal**. The SQL below is deliberately **not** in `supabase/migrations/`; it becomes a migration
-only after you approve this impact report.
+**Status: approved 2026-10-09** ("the flow must really work"; two-step migration validated). Implemented as
+`supabase/migrations/20261009100000_opportunity_claim_by_token.sql` + the frontend change in the same PR. The
+file is **not applied** until the frontend is published.
+
+**One change from the plan below, for safety:** the proposal had two steps (functions, then the grant change). Run
+that way, there is a window where claiming works while the old tokens are still public. The migration is therefore
+**one script, applied after the frontend is published**: functions, clearing the publicly readable tokens, and the
+`claim_token` grant change together. Before it is applied the frontend does not read the token at all, so it is safe
+to publish first; the claim page and the share button simply report an error until the script runs (they did not work
+before either). Scouts get a fresh, cryptographically random link from the gig page; links shared earlier never worked.
+
+(Original proposal text follows.)
 
 ## Finding (verified on production, read-only)
 

@@ -119,3 +119,14 @@ END; $$;
 GRANT EXECUTE ON FUNCTION public.create_bidirectional_connection(uuid, uuid, text) TO anon, authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.create_notification(uuid, text, text, text, text, text, text, text, text, text) TO anon, authenticated, service_role;
 NOTIFY pgrst, 'reload schema';
+
+-- ============================================================================
+-- gig claim by token (20261009100000)
+-- The cleared claim tokens were publicly readable and are not recoverable; a scout
+-- gets a fresh one from the gig page. Restores the column grant and removes the functions.
+-- ============================================================================
+GRANT SELECT (claim_token) ON public.opportunities TO anon, authenticated;
+DROP FUNCTION IF EXISTS public.get_scouted_opportunity_by_token(text);
+DROP FUNCTION IF EXISTS public.claim_scouted_opportunity(text);
+DROP FUNCTION IF EXISTS public.get_or_create_opportunity_claim_token(uuid);
+NOTIFY pgrst, 'reload schema';
