@@ -2,6 +2,7 @@ import { createDirectMatch } from "@/lib/createDirectMatch";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { connectionStateWith, type ConnectionsClient } from "@/lib/connectionOutcome";
 import { Button } from "@/components/ui/button";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoMark } from "@/components/brand/KretoMark";
@@ -701,6 +702,9 @@ export default function Onboarding() {
       ]);
       const { error: connectionError } = await supabase.rpc("create_bidirectional_connection", { user1_uuid: user.id, user2_uuid: targetUserId, connection_status: "accepted" });
       if (connectionError) throw connectionError;
+      // Without the other person's consent on record this is a request, not a connection: the member
+      // is notified by the connection-request trigger, so there is nothing more to announce here.
+      if ((await connectionStateWith(supabase as unknown as ConnectionsClient, user.id, targetUserId)) !== "accepted") return;
       // The raw matches insert here would now be rejected -- the table
       // policy only allows swipe-verified matches, see
       // 20260912120000_gate_matches_direct_insert.sql.

@@ -6,6 +6,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { connectionStateWith, type ConnectionsClient } from "@/lib/connectionOutcome";
 import { useAuth } from "@/hooks/useAuth";
 import { Lock, Sparkles, User, Briefcase, Github, Mail, ShieldCheck } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -299,6 +300,17 @@ const Auth = () => {
         user1_uuid: user.id, user2_uuid: targetUserId, connection_status: 'accepted',
       });
       if (connectionError) throw connectionError;
+
+      // The connection is only "accepted" when the other person's consent is on record; otherwise it
+      // became a request. Say which one it was.
+      if ((await connectionStateWith(supabase as unknown as ConnectionsClient, user.id, targetUserId)) !== 'accepted') {
+        toast({
+          title: "Request sent",
+          description: `${targetProfile?.full_name || 'This creator'} will see your request. You'll be connected as soon as they accept.`,
+        });
+        navigate(`/profile/${targetUserId}`);
+        return;
+      }
 
       await createDirectMatch(targetUserId);
 
