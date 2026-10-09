@@ -43,9 +43,9 @@ Severity: **C** critical (anonymous, no account) · **H** high (any signed-in us
 | F08 | C | Studio 7 | `share_link_approvals` INSERT `WITH CHECK (true)`: forge a client approval for any link/deliverable, even view-only or expired | writer is the edge function only | PR 0100 |
 | F09 | C | Studio 5 | `list_share_link_files` skipped the share-link password (anon RPC) | server-only | PR 0000 |
 | F10 | C | Studio 6 | `user_has_project_access` counted **pending** invitees: 16 people in 9 projects could read, edit and delete files of a Studio they never joined; an invitee could also write `role='owner'` while accepting | accepted-only + guards | PR 0200 |
-| F11 | H | Studio 8 | `send-transactional-email` open relay: verify_jwt passes the public anon key, any template, recipient and data | caller + template rules | Open (PR B) |
-| F12 | H | Studio 8 | Unguarded cron-driven functions callable by anyone (`process-outreach-queue`, `process-scheduled-campaigns`, `stage-reminders`, `speed-session-*`, `send-streak-warning`, …) | `requireAdminOrCron` + cron header | Open (PR B) |
-| F13 | H | Passport 3 | `universal-search`: no auth, service role, ignores `is_discoverable` and location privacy | public view + auth | Open (PR B) |
+| F11 | H | Studio 8 | `send-transactional-email` open relay: verify_jwt passes the public anon key, any template, recipient and data | caller identity + per-template proof, links pinned, send cap | PR #99 (paste) |
+| F12 | H | Studio 8 | 11 cron-driven functions callable by anyone (`process-outreach-queue`, `process-scheduled-campaigns`, `stage-reminders`, `speed-session-*`, `generate-challenges`, …) | `requireAdminOrCron` + cron header SQL | PR #99 (SQL, then paste) |
+| F13 | L | Passport 3 | `universal-search`: no auth, service role, paid web search + AI per call; reads the same profile fields the public view already exposes (corrected after reading the view: only hidden backers are excluded there); no caller in the app | signed-in only, hidden profiles excluded | PR #99 (paste) |
 | F14 | H | Passport 2 | Any signed-in user could claim any unclaimed event (policy had no token check); tokens listable by anon | RPC by token | PR 0300 + 0400 |
 | F15 | H | Passport 2 | invite codes: anyone minted codes, validated them (8-hex brute force), or set a badge on any user via `use_invite_code(…, user_id)` | self-only, new-account-only | PR 0000 |
 | F16 | H | Passport 3 | `claim_guest_rsvps(email, any user)` hijacks a guest's event passes; `find_duplicate_account_candidates` leaks phone-match; `get_network_*`/`get_profiles_by_degree`/`get_connection_path` read anyone's graph | server-only / self-only | PR 0000 |
@@ -53,13 +53,16 @@ Severity: **C** critical (anonymous, no account) · **H** high (any signed-in us
 | F18 | M | Studio 5 | `get_guest_files` returns every project file to a guest token, not only the shared item | scope the token | Open |
 | F19 | M | Passport 3, 9 | `credits` is world-readable (incl. `payment_verified`, `client_brand`, evidence links) and has no visibility flag | visibility column + view | Open (schema) |
 | F20 | M | Passport 9 | `portfolio` bucket is public: evidence uploaded there is public by URL | private bucket + signed URLs | Open |
-| F21 | M | Studio 7 | Approvals are not bound to a version; a later upload keeps the "approved" status | version in approval | Open (PR C) |
-| F22 | M | Studio 8, Passport 17 | No idempotency on approvals/invitations: double click = two rows | de-dupe in the writer | Open (PR C) |
+| F21 | M | Studio 7 | Approvals are not bound to a version; a later upload keeps the "approved" status. Known roadmap gate (flag `enableVersionedApprovals`, `approvalValidity.ts` flags stale approvals by timestamp in the UI) | exact-version approval | Open (roadmap Gate 2, schema) |
+| F22 | M | Studio 8, Passport 17 | Double click on an approval = two rows (credits are already de-duplicated by `credits_dedup_idx`: 0 duplicate groups in 430 credits) | de-dupe 10 min in the writer; form says "you already have this credit" | PR #99 / #100; invitations Not audited |
 | F23 | M | — | `partner_invite_links` world-readable (codes, contact fields), read by nothing | policy dropped | PR 0400 |
 | F24 | M | Passport 8 | "Is this you?" claims an imported profile (and its credits) from a name similarity alone | email/domain proof or claim request | Open (product) |
 | F25 | L | — | Open INSERT policies (analytics, error logs, guest RSVP, newsletter): spam surface | rate limit at the edge | Open |
-| F26 | L | Studio 5 | Share-link password has no attempt limit | limiter in the edge function | Open (PR B) |
+| F26 | L | Studio 5 | Share-link password has no attempt limit | per-instance throttle (best effort) | PR #99 (paste) |
 | F27 | L | — | Tokens from `md5(random())` (claim token fixed in 0300; invite/review defaults need `ALTER TABLE`) | crypto RNG defaults | Partly |
+| F28 | M | Studio 3 | `AuthContext` treats a plain network failure at start-up as a corrupted session: after two failures it signs the user out and runs `sessionStorage.clear()` (staged `pending_event_join`, claim tokens, partner code are lost) | do not clear on network errors | Open (auth code, your call) |
+| F29 | M | Studio 9 | `ClaimGig` shows "Gig claimed!" when RLS matched 0 rows (opportunities has no claim policy) | claim by RPC like events | Open |
+| F30 | M | Studio 1, 4, 9, 10 | Studio notes/brief editor: state-only text, last-write-wins, false success, delete without confirmation | draft recovery, compare-and-set, truthful status, undoable delete | PR #100 (publish) |
 
 ## The 30 rows of the brief
 
@@ -94,8 +97,9 @@ share token Not audited yet · **12/13/14** Not audited yet · **15 Export/delet
 
 ## Edge layer (manual paste, Verify JWT unchanged)
 
-See the follow-up PR: `send-transactional-email`, `universal-search`, `redeem-project-share`, the cron-driven
-functions and the matching `x-cron-secret` header SQL for cron jobs 13-16, 22, 28, 30, 33, 36, 41-44.
+PR #99: `send-transactional-email`, `universal-search`, `redeem-project-share`, 11 cron-driven functions, and the
+`x-cron-secret` header SQL for 15 cron jobs. Nothing deploys on merge: follow `security/edge-deploy-guide-2026-10-09.md`
+(cron header SQL first; create `_shared/emailSender.ts` in kretopia-app before pasting the email function).
 
 ## Standing recommendation
 
