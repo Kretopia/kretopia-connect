@@ -27,6 +27,7 @@ import {
   loadPublicFeeds,
   profileBlob,
   rankCandidates,
+  toTextList,
   type ScoredCandidate,
   type ScoutCandidate,
   type ScoutPrefsLite,
@@ -488,15 +489,18 @@ serve(async (req) => {
     }
 
     if (!profile) return json({ error: "Profile not found" }, 404);
+    // The skills columns are jsonb holding strings for some profiles and
+    // { skill, category, level } objects for others: normalise before use.
+    const text = (v: unknown) => (typeof v === "string" ? v : null);
     const mergedProfile: ScoutProfile = {
-      role: (profile as any).role,
-      sub_roles: (profile as any).sub_roles,
+      role: text((profile as any).role),
+      sub_roles: toTextList((profile as any).sub_roles),
       skills: [
-        ...((profile as any).professional_skills || []),
-        ...((profile as any).passion_skills || []),
+        ...toTextList((profile as any).professional_skills),
+        ...toTextList((profile as any).passion_skills),
       ],
-      location: (profile as any).location,
-      bio: (profile as any).bio,
+      location: text((profile as any).location),
+      bio: text((profile as any).bio),
     };
 
     // Auto-create prefs if missing

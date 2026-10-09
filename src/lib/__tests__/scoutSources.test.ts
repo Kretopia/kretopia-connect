@@ -11,8 +11,10 @@ import {
   parseJobicy,
   parseRemoteOk,
   parseWeWorkRemotely,
+  profileTerms,
   rankCandidates,
   scoreCandidate,
+  toTextList,
   type ScoutCandidate,
   type ScoutPrefsLite,
   type ScoutProfile,
@@ -56,6 +58,27 @@ describe("text helpers", () => {
     expect(isGenericListingUrl("https://example.com")).toBe(true);
     expect(isGenericListingUrl("https://www.linkedin.com/jobs/search?q=motion")).toBe(true);
     expect(isGenericListingUrl("https://remoteok.com/remote-jobs/motion-designer-123")).toBe(false);
+  });
+});
+
+describe("toTextList: the skills columns are not always strings", () => {
+  it("reads strings, { skill, category, level } objects and nothing else", () => {
+    expect(toTextList(["After Effects", "  Cinema 4D  ", ""])).toEqual(["After Effects", "Cinema 4D"]);
+    expect(toTextList([{ skill: "Colour grading", category: "Post", level: "expert" }, { name: "Editing" }, { level: "x" }])).toEqual(["Colour grading", "Editing"]);
+    expect(toTextList([{ skill: 42 }, null, undefined, 7, ["nested"]])).toEqual([]);
+    expect(toTextList("solo")).toEqual(["solo"]);
+    expect(toTextList(null)).toEqual([]);
+    expect(toTextList(undefined)).toEqual([]);
+    expect(toTextList({ skill: "not a list" })).toEqual([]);
+  });
+
+  it("a profile whose skills are objects scores like one whose skills are strings (it used to throw)", () => {
+    const asObjects: ScoutProfile = { ...MOTION, skills: toTextList([{ skill: "After Effects", category: "Motion", level: "expert" }]) };
+    expect(scoreCandidate(job(), asObjects, PREFS, NOW)).not.toBeNull();
+    // and even a raw, un-normalised column cannot crash the term builder any more
+    const raw = { ...MOTION, skills: [{ skill: "After Effects" }, null, 3] } as unknown as ScoutProfile;
+    expect(() => profileTerms(raw, PREFS)).not.toThrow();
+    expect(scoreCandidate(job(), raw, PREFS, NOW)).not.toBeNull();
   });
 });
 
