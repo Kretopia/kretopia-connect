@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +8,18 @@ import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
 import { Briefcase, CheckCircle2, UserPlus, ArrowRight } from "lucide-react";
 import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
+
+/** What claim_scouted_opportunity says when it did not claim, in words a person can act on. */
+const CLAIM_FAILURE: Record<string, string> = {
+  not_available: "Someone else claimed this gig first.",
+  invalid_token: "This claim link is not valid. Ask for a new one.",
+};
+
+interface ClaimResult {
+  claimed?: boolean;
+  reason?: string;
+  opportunity_id?: string;
+}
 
 const ClaimGig = () => {
   const { token } = useParams<{ token: string }>();
@@ -19,21 +30,21 @@ const ClaimGig = () => {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
-  useEffect(() => {
-    const fetchOpp = async () => {
-      if (!token) return;
-      const { data, error } = await supabase
-        .from("opportunities")
-        .select(OPPORTUNITY_PUBLIC_COLUMNS)
-        .eq("claim_token", token)
-        .maybeSingle();
-
-      if (error) console.error(error);
-      setOpportunity(data);
-      setLoading(false);
-    };
-    fetchOpp();
+  // The token is the only key: it is not readable from the table (it is the
+  // secret in the claim link), so the card is fetched by a function that takes it.
+  const loadOpportunity = useCallback(async () => {
+    if (!token) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimEvent)
+    const { data, error } = await supabase.rpc("get_scouted_opportunity_by_token" as any, { p_token: token });
+    if (error) console.error(error);
+    const row = Array.isArray(data) ? data[0] : data;
+    setOpportunity(row ?? null);
+    setLoading(false);
   }, [token]);
+
+  useEffect(() => {
+    loadOpportunity();
+  }, [loadOpportunity]);
 
   // Auto-claim after signup redirect
   useEffect(() => {
@@ -61,46 +72,38 @@ const ClaimGig = () => {
     }
 
     setClaiming(true);
-    // `.select("id")` returns the rows the update really changed. Without it
-    // an update that matched nothing (someone else claimed it first, or RLS
-    // refused it) comes back as success and the page said "Gig claimed!".
-    const { data: changed, error } = await supabase
-      .from("opportunities")
-      .update({
-        created_by: user.id,
-        claim_status: "claimed",
-      })
-      .eq("claim_token", token)
-      .eq("claim_status", "unclaimed")
-      .select("id");
+    // One atomic call: it claims for the signed-in caller or says why not. A
+    // claim that changed nothing is never reported as success.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimEvent)
+    const { data, error } = await supabase.rpc("claim_scouted_opportunity" as any, { p_token: token });
+    const result = (data ?? null) as ClaimResult | null;
 
     if (error) {
       toast({ title: "Claim failed", description: error.message, variant: "destructive" });
-    } else if (!changed || changed.length === 0) {
+    } else if (!result?.claimed || !result.opportunity_id) {
       toast({
         title: "Couldn't claim this gig",
-        description: "Someone else may have claimed it first, or you don't have permission to claim it.",
+        description: CLAIM_FAILURE[result?.reason ?? ""] ?? "It may no longer be available.",
         variant: "destructive",
       });
+      // Show the truth on the page too: it now reads "This gig has been claimed".
+      if (result?.reason === "not_available") await loadOpportunity();
     } else {
       toast({ title: "Gig claimed!", description: "You now own this listing. Share it to get applications!" });
 
-      // Notify the original scout (if any, and not the same person claiming)
-      if (opportunity?.scouted_by && opportunity.scouted_by !== user.id) {
-        const { data: claimerProfile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        const claimerName = claimerProfile?.full_name || "Someone";
-        await supabase.rpc("notify_scout_event", {
-          _opportunity_id: opportunity.id,
-          _event: "claimed",
-          _actor_name: claimerName,
-        });
-      }
+      // Tell the scout. The function itself ignores a gig with no scout, or one the claimer scouted.
+      const { data: claimerProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      await supabase.rpc("notify_scout_event", {
+        _opportunity_id: result.opportunity_id,
+        _event: "claimed",
+        _actor_name: claimerProfile?.full_name || "Someone",
+      });
 
-      navigate(`/opportunity/${opportunity.id}`);
+      navigate(`/opportunity/${result.opportunity_id}`);
     }
     setClaiming(false);
   };

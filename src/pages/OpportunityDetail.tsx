@@ -16,6 +16,7 @@ import { EditOpportunityDialog } from "@/components/EditOpportunityDialog";
 import { SocialShareButtons } from "@/components/SocialShareButtons";
 import { SEO } from "@/components/SEO";
 import { APP_URL } from "@/lib/constants";
+import { prepareClaimLink } from "@/lib/claimLink";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 
@@ -35,7 +36,6 @@ interface Opportunity {
   image_url: string;
   created_at: string;
   claim_status?: string | null;
-  claim_token?: string | null;
   source_platform?: string | null;
   original_source_text?: string | null;
   barter_offering?: string | null;
@@ -76,7 +76,6 @@ const OpportunityDetail = () => {
   const isScoutedGig = Boolean(
     opportunity && (
       opportunity.scouted_by ||
-      opportunity.claim_token ||
       opportunity.claim_status ||
       opportunity.source_platform ||
       opportunity.original_source_text
@@ -89,69 +88,41 @@ const OpportunityDetail = () => {
     (opportunity?.scouted_by === user.id || opportunity?.created_by === user.id)
   );
 
+  // The claim token is a secret: it is not readable from the table. The scout
+  // (or owner) asks the database for their own link; see lib/claimLink.
   const handleShareClaimLink = async () => {
+    if (!opportunity) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimEvent)
+    const link = await prepareClaimLink((name, args) => supabase.rpc(name as any, args as any), opportunity.id, APP_URL);
+    if (link.kind === "error") {
+      toast({ title: "Couldn't prepare claim link", description: "Please try again.", variant: "destructive" });
+      return;
+    }
+    if (link.kind === "claimed") {
+      toast({ title: "Already claimed", description: "Someone has already claimed this gig, so there is no link to share." });
+      setOpportunity({ ...opportunity, claim_status: "claimed" });
+      return;
+    }
+
     try {
-      if (!opportunity) return;
-
-      let claimToken = opportunity.claim_token;
-
-      if (!claimToken) {
-        claimToken = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
-
-        const { error } = await supabase
-          .from('opportunities')
-          .update({
-            claim_token: claimToken,
-            claim_status: opportunity.claim_status ?? 'unclaimed',
-          } as any)
-          .eq('id', opportunity.id);
-
-        if (error) throw error;
-
-        setOpportunity({
-          ...opportunity,
-          claim_token: claimToken,
-          claim_status: opportunity.claim_status ?? 'unclaimed',
-        });
-      }
-
-      const claimUrl = `${APP_URL}/claim-gig/${claimToken}`;
-      const shareText = `Hey! I listed your gig on Kretopia so creatives can find and apply directly. Claim it here to manage applicants, message talent, and fill the role faster:\n\n${claimUrl}`;
-
       if (navigator.share) {
-        await navigator.share({ title: "Claim your gig on Kretopia", text: shareText, url: claimUrl });
+        await navigator.share({ title: "Claim your gig on Kretopia", text: link.text, url: link.url });
         return;
       }
-
-      await navigator.clipboard.writeText(shareText);
-      toast({ title: "Claim link copied!", description: "Send it to the person who posted this gig" });
-    } catch {
-      try {
-        if (!opportunity?.claim_token) throw new Error('missing claim token');
-
-        const claimUrl = `${APP_URL}/claim-gig/${opportunity.claim_token}`;
-        const shareText = `Hey! I listed your gig on Kretopia so creatives can find and apply directly. Claim it here to manage applicants, message talent, and fill the role faster:\n\n${claimUrl}`;
-        await navigator.clipboard.writeText(shareText);
-        toast({ title: "Claim link copied!", description: "Send it to the person who posted this gig" });
-      } catch {
-        if (!opportunity?.claim_token) {
-          toast({ title: "Couldn't prepare claim link", description: "Please try again.", variant: "destructive" });
-          return;
-        }
-
-        const claimUrl = `${APP_URL}/claim-gig/${opportunity.claim_token}`;
-        const shareText = `Hey! I listed your gig on Kretopia so creatives can find and apply directly. Claim it here to manage applicants, message talent, and fill the role faster:\n\n${claimUrl}`;
-        const textarea = document.createElement('textarea');
-        textarea.value = shareText;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        toast({ title: "Claim link copied!", description: "Send it to the person who posted this gig" });
-      }
+      await navigator.clipboard.writeText(link.text);
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return; // the person closed the share sheet
+      // The clipboard is blocked: fall back to a hidden textarea copy.
+      const textarea = document.createElement("textarea");
+      textarea.value = link.text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
     }
+    toast({ title: "Claim link copied!", description: "Send it to the person who posted this gig" });
   };
 
   const handleStatusChange = async (newStatus: string) => {
