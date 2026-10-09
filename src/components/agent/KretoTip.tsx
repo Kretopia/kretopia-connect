@@ -113,16 +113,26 @@ const DISMISS_HOURS = 6;
  *  other group here. Studio shipped in the pilot; Scout, Passport, Events
  *  and Circle (the brief's "Stage/Circle context" -- covers both /circle
  *  and /stages) are the rollout surfaces approved so far. */
-const PRESENCE_EYEBROWS = new Set(["Studio", "Scout", "Passport", "Events", "Circle"]);
+const PRESENCE_EYEBROWS = new Set(["Studio", "Passport", "Events", "Circle"]);
+
+/** Scout wears the Kretopia K-mark itself (same mark, same size as Passport's
+ *  Kreto entry) instead of the embodied robot: the card is the entry point to
+ *  "filter the noise / just chat", and the brand mark is what ties it to the
+ *  rest of the product. Scout was an approved presence surface before this. */
+const K_MARK_EYEBROWS = new Set(["Scout"]);
 
 interface KretoTipProps {
   /** Override route detection with an explicit tip group. */
   surface?: "today" | "discover" | "desk" | "match" | "pay" | "passport";
   className?: string;
   compact?: boolean;
+  /** Read when the tip's own action is pressed; whatever it returns is appended
+   *  to the prompt, so Kreto answers about what the page is showing (e.g. the
+   *  user's scouted gigs) instead of about nothing. Return "" to add nothing. */
+  getPromptContext?: () => string | undefined;
 }
 
-export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
+export const KretoTip = ({ surface, className, compact, getPromptContext }: KretoTipProps) => {
   const location = useLocation();
   const [dismissed, setDismissed] = useState(false);
   const [idx, setIdx] = useState(0);
@@ -163,9 +173,12 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
   // renders state="idle" regardless of surface -- proposal_ready would be a
   // false claim about work Kreto hasn't actually done.
   const usesPresence = PRESENCE_EYEBROWS.has(tip.eyebrow);
+  const usesKMark = K_MARK_EYEBROWS.has(tip.eyebrow);
 
   const openKreto = (prompt?: string) => {
-    window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: prompt ? { prompt } : {} }));
+    const context = prompt ? getPromptContext?.() : undefined;
+    const full = prompt && context ? `${prompt}\n\n${context}` : prompt;
+    window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: full ? { prompt: full } : {} }));
   };
 
   const dismiss = () => {
@@ -187,7 +200,9 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
         size="icon"
         onClick={dismiss}
         aria-label="Dismiss tip"
-        className="absolute top-2.5 right-2.5 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+        // `!absolute`: .btn-glass sets `position: relative` outside the utilities layer
+        // and would otherwise win, dropping the ✕ on top of the logo at the left.
+        className="!absolute top-2.5 right-2.5 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
       >
         <X className="h-3.5 w-3.5" />
       </Button>
@@ -195,6 +210,8 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
       <div className="relative flex items-start gap-3 sm:gap-4">
         {tip.eyebrow === "Studio" ? (
           <img src={kretoProducer} alt="" aria-hidden="true" className={cn("shrink-0 object-contain drop-shadow-lg", compact ? "h-16 w-16 sm:h-20 sm:w-20" : "h-20 w-20 sm:h-24 sm:w-24")} />
+        ) : usesKMark ? (
+          <KretoMark size="md" />
         ) : usesPresence ? (
           <KretoPresence size={compact ? "compact" : "card"} state="idle" />
         ) : (
@@ -203,7 +220,7 @@ export const KretoTip = ({ surface, className, compact }: KretoTipProps) => {
 
         <div className="min-w-0 flex-1 pr-6">
           <p className="landing-eyebrow mb-1">
-            <KretoLabel context={tip.eyebrow} />
+            <KretoLabel context={tip.eyebrow} plain={usesKMark} />
           </p>
           <p className={cn("text-card-foreground/90 leading-snug", compact ? "text-sm" : "text-sm sm:text-[15px]")}>
             {tip.line}

@@ -36,14 +36,13 @@
  * Its own padding preserves the gradient's glyph edges.
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
-import { GlassCta } from "@/components/ui/glass-cta";
+import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 // Reflected artwork imported through Vite: hashed URL in production,
 // no hand-written path to maintain. Both files are well over 4 KB, so never inlined as base64.
 import kretoBodyUrl from "@/assets/brand/kreto/hero-reflection-body.webp";
@@ -60,9 +59,6 @@ const LINE_2 = ["what", "you", "do"];
 // coloured text on the landing page wears this same gradient; the hero
 // reads it from there instead of keeping its own copy, so it can't drift.
 const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
-
-const ctaFocusRing =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 const wordVariants = (reducedMotion: boolean, gradientText = false) =>
   reducedMotion
@@ -390,19 +386,19 @@ export const KretopiaHero = () => {
               Create Passport
             </GlassCta>
 
-            <Link
+            <OutlineCta
               to="/auth?next=/scout&src=hero_explore"
+              size="lg"
               onClick={() =>
                 trackLandingCta("hero_explore_opportunities", "hero", {
                   label: "Explore Opportunities",
                   variant: "signal_field",
                 })
               }
-              className={`group inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full border border-border px-7 py-3.5 text-base font-semibold text-foreground transition-colors duration-200 hover:-translate-y-0.5 hover:border-foreground/35 ${ctaFocusRing} focus-visible:ring-foreground/50`}
-              style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+              className="w-full sm:w-auto"
             >
               Explore Opportunities
-            </Link>
+            </OutlineCta>
           </div>
 
           <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
