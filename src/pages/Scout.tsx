@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { summarizeScoutedGigs, type ScoutedGigSummary } from "@/lib/scoutGigSummary";
 import { SEO } from "@/components/SEO";
 import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
@@ -34,6 +37,8 @@ const Scout = () => {
   const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "scouted";
   const contextQuery = params.get("q") || "";
   const [tab, setTab] = useState<Tab>(initial);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const switchTab = (next: Tab) => {
     setTab(next);
@@ -42,6 +47,13 @@ const Scout = () => {
     setParams(p, { replace: true });
   };
 
+  // "Shortlist for me" hands Kreto the list the user is actually looking at,
+  // so the answer is about these gigs rather than gigs in general. Read at
+  // click time from the same cache the For You tab renders from.
+  const describeScoutedGigs = () => {
+    const gigs = queryClient.getQueryData<ScoutedGigSummary[]>(["scouted-gigs", user?.id]) ?? [];
+    return summarizeScoutedGigs(gigs);
+  };
 
   return (
     <div className="accent-scout min-h-screen bg-background">
@@ -50,53 +62,53 @@ const Scout = () => {
         description="One feed for the gigs and people that fit your work — scouted from across the web and curated by Kreto."
       />
 
+      {/* Same header as Studio: eyebrow slot holds the tutorial trigger, a
+          white first line, a gradient second line, a subtitle -- and nothing
+          else. The section switcher lives in the body, below Kreto. */}
       <FeaturePageHeader
         eyebrow="Scout"
-        title="Scout."
-        accentTitle={<>Gigs &amp; talent, found for you.</>}
-        subtitle="One feed for the gigs and people that fit your work — scouted from across the web and curated by Kreto."
+        title="Find the gigs"
+        accentTitle="that fit your work."
+        subtitle="Filter the noise and shortlist real fits, or just chat with Kreto. Fresh gigs from across the web, matched to your Passport."
         tutorial={{ featureKey: "scout", label: "How Scout works", steps: SCOUT_TUTORIAL }}
-        tabs={
-          <div className="flex flex-col gap-3">
-            <div
-              role="tablist"
-              aria-label="Scout sections"
-              className="inline-flex items-center gap-1 p-1 rounded-full border border-border bg-card w-fit"
-            >
-              {TABS.map((t) => {
-                const Icon = t.icon;
-                const active = tab === t.id;
-                return (
-                  <Button
-                    key={t.id}
-                    type="button"
-                    variant="ghost"
-                    role="tab"
-                    aria-selected={active}
-                    aria-label={t.hint}
-                    onClick={() => switchTab(t.id)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
-                      active
-                        ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon className={cn("h-3.5 w-3.5", active && "text-foreground")} />
-                    {t.label}
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-        }
       />
 
-      {/* Body — the scan and its results are the reason someone opens Scout,
-          so they render first; the Kreto nudge (a generic, always-available
-          "or just chat" prompt, same as every other authed surface) drops to
-          the bottom instead of sitting above results on every visit. */}
+      {/* Body, same container and same order as Studio: Kreto first (the way
+          in: "shortlist for me" or "just chat"), then the work itself. */}
       <StudioFeatureShell>
+        <KretoTip compact getPromptContext={describeScoutedGigs} />
+
+        <div
+          role="tablist"
+          aria-label="Scout sections"
+          className="inline-flex items-center gap-1 p-1 rounded-full border border-border bg-card w-fit max-w-full overflow-x-auto"
+        >
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <Button
+                key={t.id}
+                type="button"
+                variant="ghost"
+                role="tab"
+                aria-selected={active}
+                aria-label={t.hint}
+                onClick={() => switchTab(t.id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
+                  active
+                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className={cn("h-3.5 w-3.5", active && "text-foreground")} />
+                {t.label}
+              </Button>
+            );
+          })}
+        </div>
+
         {contextQuery && (
           <div className="rounded-xl border border-border bg-card p-3 text-xs flex items-start gap-2">
             <Radar className="h-3.5 w-3.5 mt-0.5 text-foreground shrink-0" />
@@ -113,7 +125,6 @@ const Scout = () => {
             cross-tab taste of it, not a duplicate directory. */}
         <DiscoverCreativesRail />
         <SurfaceProactiveCards surface="scout" className="px-0" />
-        <KretoTip compact />
       </StudioFeatureShell>
     </div>
   );

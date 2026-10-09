@@ -1,10 +1,38 @@
-// Smart Gig Scout — finds REAL external gigs across web, gig boards, ATS,
-// LinkedIn public job pages, and Instagram casting hashtags.
-// Triggered manually from /gigs ("Scan now") or via daily cron.
+// Smart Gig Scout — finds REAL external gigs for one creator.
+//
+// Sources, cheapest first:
+//   1. Public job feeds (Remote OK, We Work Remotely, Jobicy, Arbeitnow). No key,
+//      free, fresh to the hour, scored deterministically against the profile.
+//   2. Firecrawl web search across gig boards, ATS, LinkedIn public pages and
+//      Instagram casting hashtags. Needs FIRECRAWL_API_KEY. Manual/cron runs only.
+//   3. AI extraction of those Firecrawl pages. Needs LOVABLE_API_KEY and credit;
+//      without either, the same pages go through the deterministic scorer.
+//
+// No key is required for Scout to work. It used to answer HTTP 500 "Scout not
+// configured" when FIRECRAWL_API_KEY or LOVABLE_API_KEY was missing, which also
+// made the daily cron fail for every user. Missing pieces now degrade the scan
+// (and are reported in `degraded`) instead of killing it.
+//
+// Triggers: "manual" (Scan now), "cron" (daily job), "live" (background refresh
+// while Scout is open: feeds only, throttled, spends nothing).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import {
+  dedupeKey,
+  firecrawlToCandidate,
+  isEligible,
+  isGenericListingUrl,
+  loadPublicFeeds,
+  profileBlob,
+  rankCandidates,
+  type ScoredCandidate,
+  type ScoutCandidate,
+  type ScoutPrefsLite,
+  type ScoutProfile,
+  type ScoutSource,
+} from "../_shared/scoutSources.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +44,14 @@ const FIRECRAWL = "https://api.firecrawl.dev/v2/search";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** A background "live" refresh never runs twice within this window per user. */
+const LIVE_MIN_GAP_MS = 2 * 60_000;
+/** Stop launching new Firecrawl batches after this long; the edge runtime has a wall clock. */
+const FIRECRAWL_BUDGET_MS = 55_000;
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 // True only for the daily cron job, which proves itself with the shared
 // x-cron-secret header (same secret requireAdminOrCron checks in the other
@@ -53,26 +89,8 @@ function resolveActingUser(
   return { ok: true, userId: jwtUserId };
 }
 
-interface Profile {
-  user_id: string;
-  full_name: string | null;
-  role: string | null;
-  sub_roles: string[] | null;
-  skills: string[] | null;
-  location: string | null;
-  bio: string | null;
-}
-
-interface ScoutPrefs {
+interface ScoutPrefs extends ScoutPrefsLite {
   sources: string[];
-  extra_keywords: string[] | null;
-  exclude_keywords: string[] | null;
-  remote_only: boolean;
-  min_fit_score: number;
-  job_types: string[] | null;
-  employment_types: string[] | null;
-  locations: string[] | null;
-  travel_ok: boolean;
   instructions: string | null;
 }
 
@@ -101,7 +119,7 @@ const FB_QUERIES = [
   "facebook.com/groups freelance",
 ];
 
-function buildSearchQueries(p: Profile, prefs: ScoutPrefs): { source: string; query: string }[] {
+function buildSearchQueries(p: ScoutProfile, prefs: ScoutPrefs): { source: ScoutSource; query: string }[] {
   const role = p.role || "creative";
   const subs = (p.sub_roles || []).slice(0, 2);
   const skills = (p.skills || []).slice(0, 4);
@@ -114,7 +132,7 @@ function buildSearchQueries(p: Profile, prefs: ScoutPrefs): { source: string; qu
   const empSuffix = empTypes.length ? ` ${empTypes.join(" OR ")}` : "";
 
   const baseRole = [jobTypes[0] || role, ...subs, ...skills.slice(0, 2), extra].filter(Boolean).join(" ").trim();
-  const queries: { source: string; query: string }[] = [];
+  const queries: { source: ScoutSource; query: string }[] = [];
 
   // Fan out across each preferred location (cap to 3 to keep request count sane)
   for (const loc of locList.slice(0, 3)) {
@@ -151,7 +169,9 @@ function buildSearchQueries(p: Profile, prefs: ScoutPrefs): { source: string; qu
 // for that source, not a fatal error for the run.
 const SOURCE_TIMEOUT_MS = 9000;
 
-async function firecrawlSearch(query: string, key: string) {
+type FirecrawlItem = { url: string; title?: string; markdown?: string; description?: string; image_url?: string | null };
+
+async function firecrawlSearch(query: string, key: string): Promise<FirecrawlItem[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
   let r: Response;
@@ -195,15 +215,36 @@ async function firecrawlSearch(query: string, key: string) {
       description: it.description,
       image_url: meta.ogImage || meta["og:image"] || meta.image || meta.twitterImage || (mdImg ? mdImg[1] : null),
     };
-  }) as Array<{ url: string; title?: string; markdown?: string; description?: string; image_url?: string | null }>;
+  });
 }
 
+interface AiGig {
+  title: string;
+  company?: string;
+  location?: string;
+  remote?: boolean;
+  description?: string;
+  compensation?: string;
+  contact_email?: string;
+  apply_url?: string;
+  source_url: string;
+  source: string;
+  source_name?: string;
+  skills?: string[];
+  fit_score: number;
+  fit_reason: string;
+  posted_age: string;
+}
+
+// Optional step. Returns [] on ANY failure (no key, no credit, timeout, bad
+// JSON) and the caller falls back to the deterministic scorer, so a dry AI
+// gateway never means an empty Scout.
 async function extractAndScore(
-  raw: Array<{ url: string; title?: string; markdown?: string; description?: string; source: string }>,
-  profile: Profile,
+  raw: Array<FirecrawlItem & { source: string }>,
+  profile: ScoutProfile,
   prefs: ScoutPrefs,
   lovableKey: string,
-) {
+): Promise<AiGig[]> {
   if (raw.length === 0) return [];
   const snippets = raw
     .slice(0, 30)
@@ -304,48 +345,73 @@ ${prefBlurb ? `\nUSER SCOUT PREFERENCES:\n${prefBlurb}` : ""}`;
   const j = await r.json();
   try {
     const args = JSON.parse(j.choices[0].message.tool_calls[0].function.arguments);
-    return (args.gigs || []) as any[];
+    return (args.gigs || []) as AiGig[];
   } catch (e) {
     console.error("[scout] parse fail", e);
     return [];
   }
 }
 
-function dedupeKey(g: { source_url: string; title: string }) {
-  // Strip query/hash from URL + lowercase title
-  const url = (g.source_url || "").split("?")[0].split("#")[0].toLowerCase();
-  const title = (g.title || "").toLowerCase().replace(/\s+/g, " ").trim().slice(0, 80);
-  return `${url}::${title}`;
-}
+// Reject anything the extractor dated beyond two weeks.
+const isStale = (age: string) => {
+  if (!age) return true;
+  const a = age.toLowerCase();
+  if (/year|yr|month/.test(a)) return true;
+  if (/no longer|expired|closed|filled/.test(a)) return true;
+  // weeks: only allow "1 week" or "this week"
+  const wk = a.match(/(\d+)\s*week/);
+  if (wk && parseInt(wk[1], 10) > 2) return true;
+  return false;
+};
 
-// True if URL looks like a generic listing/search/category page rather than a
-// deep-link to ONE specific gig posting.
-function isGenericListingUrl(u: string): boolean {
-  if (!u) return true;
-  try {
-    const url = new URL(u);
-    const path = url.pathname.replace(/\/+$/, "").toLowerCase();
-    if (!path) return true;
-    const segs = path.split("/").filter(Boolean);
-    const last = segs[segs.length - 1] || "";
-    const generic = new Set([
-      "jobs","job","careers","career","search","browse","explore","listings",
-      "opportunities","gigs","work","hiring","tags","tag","category","categories",
-      "feed","home","casting","castings","openings","positions","postings","apply",
-    ]);
-    if (generic.has(last)) return true;
-    // Bare category page like /jobs/design with no specific posting id/slug
-    if (segs.length < 2 && last.length < 8) return true;
-    // Search-like URLs with only a query
-    if (url.search && /[?&](q|query|keyword|search)=/.test(url.search) && segs.length <= 2) return true;
-    // LinkedIn jobs needs /view/<id> to be a specific posting
-    if (/linkedin\.com$/.test(url.hostname) || /linkedin\.com$/.test(url.hostname.replace(/^www\./, ""))) {
-      if (!/\/jobs\/view\//.test(path)) return true;
+/** AI-extracted gigs through the same gates as before, as scored candidates. */
+function acceptAiGigs(extracted: AiGig[], profile: ScoutProfile, prefs: ScoutPrefs, imgByUrl: Map<string, string>): ScoredCandidate[] {
+  const out: ScoredCandidate[] = [];
+  let linkedin = 0;
+  const profBlob = profileBlob(profile);
+  for (const g of extracted) {
+    if (!g.title || !g.source_url) continue;
+    if ((g.fit_score ?? 0) < prefs.min_fit_score) {
+      console.log("[scout] dropped low fit_score:", g.fit_score, "<", prefs.min_fit_score, "-", g.title);
+      continue;
     }
-    return false;
-  } catch {
-    return true;
+    if (isStale(g.posted_age || "")) continue;
+    // URL must be a deep-link to a specific posting (not a search/category page)
+    const apply = g.apply_url || g.source_url;
+    if (isGenericListingUrl(apply) && isGenericListingUrl(g.source_url)) continue;
+    // Require a real description so cards aren't empty shells
+    const desc = (g.description || "").trim();
+    if (desc.length < 40 && !g.compensation && !g.company) continue;
+    const blob = `${g.title} ${desc} ${g.posted_age || ""}`.toLowerCase();
+    if (/no longer accepting|expired|position closed|1 year ago|2 years ago|months ago/.test(blob)) continue;
+    if (!isEligible(blob, profBlob)) {
+      console.log("[scout] dropped restricted:", g.title);
+      continue;
+    }
+    if ((prefs.exclude_keywords || []).some((kw) => kw && blob.includes(kw.toLowerCase()))) continue;
+    if (g.source === "linkedin") {
+      if (linkedin >= 3) continue;
+      linkedin++;
+    }
+    out.push({
+      source: (["web", "linkedin", "instagram", "ats", "gigboard"].includes(g.source) ? g.source : "web") as ScoutSource,
+      source_name: g.source_name || g.source,
+      source_url: g.source_url,
+      apply_url: !isGenericListingUrl(g.apply_url || "") ? g.apply_url! : (!isGenericListingUrl(g.source_url) ? g.source_url : (g.apply_url || g.source_url)),
+      title: g.title,
+      company: g.company || null,
+      location: g.location || null,
+      remote: !!g.remote,
+      description: g.description || null,
+      compensation: g.compensation || null,
+      posted_at: null,
+      tags: g.skills || [],
+      image_url: imgByUrl.get(g.source_url) || null,
+      fit_score: Math.round(g.fit_score),
+      fit_reason: [g.fit_reason, g.posted_age ? `Posted ${g.posted_age}` : ""].filter(Boolean).join(" · "),
+    });
   }
+  return out;
 }
 
 serve(async (req) => {
@@ -356,21 +422,16 @@ serve(async (req) => {
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const fcKey = Deno.env.get("FIRECRAWL_API_KEY");
-  const aiKey = Deno.env.get("LOVABLE_API_KEY");
-
-  if (!fcKey || !aiKey) {
-    return new Response(JSON.stringify({ error: "Scout not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Both optional now. See the header comment.
+  const fcKey = Deno.env.get("FIRECRAWL_API_KEY") || null;
+  const aiKey = Deno.env.get("LOVABLE_API_KEY") || null;
 
   let userId: string | null = null;
   let trigger = "manual";
   try {
     const body = await req.json().catch(() => ({}));
-    trigger = body.trigger || "manual";
+    trigger = typeof body.trigger === "string" && body.trigger ? body.trigger.slice(0, 24) : "manual";
+    const live = trigger === "live";
 
     // Resolve the user: their own JWT (manual run), or body.user_id when the
     // call carries the cron secret (daily job) -- see resolveActingUser.
@@ -382,15 +443,23 @@ serve(async (req) => {
       jwtUserId = user?.id || null;
     }
     const acting = resolveActingUser(body.user_id, jwtUserId, isCronRequest(req));
-    if (!acting.ok) {
-      return new Response(JSON.stringify({ error: acting.error }), {
-        status: acting.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    if (!acting.ok) return json({ error: acting.error }, acting.status);
     userId = acting.userId;
 
-    const rateLimit = await checkAiFeatureRateLimit(supabase, userId, "scout-gigs");
-    if (!rateLimit.allowed) return rateLimit.response;
+    if (live) {
+      // Background refresh: never twice in a row. (It skips the AI usage gate
+      // below because it calls no AI, but it must not be a way to hammer the feeds.)
+      const since = new Date(Date.now() - LIVE_MIN_GAP_MS).toISOString();
+      const { count } = await supabase
+        .from("scout_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("started_at", since);
+      if ((count ?? 0) > 0) return json({ ok: true, skipped: "recent", found: 0, filtered: 0, inserted: 0, queries: 0 });
+    } else {
+      const rateLimit = await checkAiFeatureRateLimit(supabase, userId, "scout-gigs");
+      if (!rateLimit.allowed) return rateLimit.response;
+    }
 
     const [{ data: profile }, { data: prefsRow }] = await Promise.all([
       supabase.from("profiles")
@@ -402,8 +471,7 @@ serve(async (req) => {
     // Tier gating: free=1 preview/week, creator=daily full, creator_pro=priority+unlimited, founder=unlimited
     const tier = ((profile as any)?.subscription_tier || "free").toLowerCase();
     const isFree = tier === "free" || tier === "spark" || tier === "";
-    const isPro = tier === "creator_pro" || tier === "founder" || tier === "brand_enterprise";
-    let perRunCap = isFree ? 1 : (tier === "creator" ? 10 : 25);
+    const perRunCap = isFree ? 1 : (tier === "creator" ? 10 : 25);
     if (isFree) {
       const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();
       const { count } = await supabase
@@ -412,21 +480,15 @@ serve(async (req) => {
         .eq("target_user_id", userId)
         .gte("scouted_at", weekAgo);
       if ((count ?? 0) >= 1) {
-        return new Response(JSON.stringify({
+        return json({
           ok: true, gated: true, tier, message: "Free tier: 1 Scout preview per week. Upgrade to Creator for daily Scout + auto-drafted applications.",
           found: 0, inserted: 0,
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+        });
       }
     }
 
-    if (!profile) {
-      return new Response(JSON.stringify({ error: "Profile not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const mergedProfile: Profile = {
-      user_id: (profile as any).user_id,
-      full_name: (profile as any).full_name,
+    if (!profile) return json({ error: "Profile not found" }, 404);
+    const mergedProfile: ScoutProfile = {
       role: (profile as any).role,
       sub_roles: (profile as any).sub_roles,
       skills: [
@@ -438,169 +500,178 @@ serve(async (req) => {
     };
 
     // Auto-create prefs if missing
-    let prefs: ScoutPrefs = prefsRow ?? {
+    const prefs: ScoutPrefs = (prefsRow as ScoutPrefs | null) ?? {
       sources: ["web", "linkedin", "instagram", "ats"],
       extra_keywords: null, exclude_keywords: null, remote_only: false, min_fit_score: 60,
       job_types: null, employment_types: null, locations: null, travel_ok: false, instructions: null,
-    } as ScoutPrefs;
+    };
     if (!prefsRow) {
       await supabase.from("scout_preferences").insert({ user_id: userId });
     }
 
-    const queries = buildSearchQueries(mergedProfile, prefs);
-    console.log("[scout] queries", queries.length, "for", userId);
-
-    // Run searches concurrently in wider batches than before -- each
-    // individual call is now time-bounded (SOURCE_TIMEOUT_MS), so a dead
-    // source can no longer stall the whole scan the way an un-timed-out
-    // sequential chunk could. allSettled means one rejected promise never
-    // takes down its batch's other results.
-    const allRaw: any[] = [];
-    const CHUNK = 12;
-    for (let i = 0; i < queries.length; i += CHUNK) {
-      const batch = queries.slice(i, i + CHUNK);
-      const results = await Promise.allSettled(batch.map(async (q) => {
-        const items = await firecrawlSearch(q.query, fcKey);
-        return items.map((it) => ({ ...it, source: q.source }));
-      }));
-      for (const r of results) {
-        if (r.status === "fulfilled") allRaw.push(...r.value);
-      }
-    }
-    console.log("[scout] raw results", allRaw.length);
-
-    const extracted = await extractAndScore(allRaw, mergedProfile, prefs, aiKey);
-    // Reject anything older than 30 days based on AI-extracted posted_age
-    const isStale = (age: string) => {
-      if (!age) return true;
-      const a = age.toLowerCase();
-      if (/year|yr|month/.test(a)) return true;
-      if (/no longer|expired|closed|filled/.test(a)) return true;
-      // weeks: only allow "1 week" or "this week"
-      const wk = a.match(/(\d+)\s*week/);
-      if (wk && parseInt(wk[1], 10) > 2) return true;
-      return false;
-    };
-    // Cap LinkedIn to 3 max in the final output
-    const linkedinCap = { count: 0, max: 3 };
-    const filtered = extracted.filter((g: any) => {
-      if (!g.title || !g.source_url) return false;
-      if ((g.fit_score ?? 0) < prefs.min_fit_score) {
-        // Logged (not silent, unlike before) so a thin/empty-profile scan's
-        // actual scores are visible in function logs without guessing --
-        // same visibility the demographic/region drops below already had.
-        console.log("[scout] dropped low fit_score:", g.fit_score, "<", prefs.min_fit_score, "-", g.title);
-        return false;
-      }
-      if (isStale(g.posted_age || "")) return false;
-      // URL must be a deep-link to a specific posting (not a search/category page)
-      const apply = g.apply_url || g.source_url;
-      if (isGenericListingUrl(apply) && isGenericListingUrl(g.source_url)) return false;
-      // Require a real description so cards aren't empty shells
-      const desc = (g.description || "").trim();
-      if (desc.length < 40 && !g.compensation && !g.company) return false;
-      const blob = `${g.title} ${desc} ${g.posted_age || ""}`.toLowerCase();
-      if (/no longer accepting|expired|position closed|1 year ago|2 years ago|months ago/.test(blob)) return false;
-      // Demographic eligibility guardrail — drop restricted opps unless profile clearly matches
-      const profBlob = `${profile.bio || ""} ${(profile.sub_roles || []).join(" ")} ${profile.role || ""} ${profile.location || ""}`.toLowerCase();
-      const restrictions: Array<[RegExp, RegExp]> = [
-        [/\b(women|female)[- ]only|for women\b|young women|women entrepreneurs?|women in tech|she\/her only/i, /\b(she\/her|woman|female)\b/i],
-        [/\b(men|male)[- ]only|for men\b/i, /\b(he\/him|man|male)\b/i],
-        [/\bblack[- ](creators?|founders?|artists?|women|men)\b|black-only|for black\b/i, /\bblack\b/i],
-        [/\blatin[ax][- ]/i, /\blatin[ax]\b/i],
-        [/\bindigenous[- ]/i, /\bindigenous\b/i],
-        [/\bstudents? only|current students?\b/i, /\bstudent\b/i],
-        [/\balumni only\b/i, /\balumni\b/i],
-        [/\bunder[- ]?(18|21|25|30)\b|youth only/i, /\b(youth|under)\b/i],
-      ];
-      for (const [needle, profMatch] of restrictions) {
-        if (needle.test(blob) && !profMatch.test(profBlob)) {
-          console.log("[scout] dropped demographic-restricted:", g.title);
-          return false;
-        }
-      }
-      // Region restrictions — drop if gig restricts to a region not in user's location
-      const regionRestrict = blob.match(/\b(?:based in|residents? of|citizens? of|located in|from)\s+(africa|asia|europe|usa|united states|canada|uk|india|nigeria|kenya|south africa|brazil|mexico)\b/);
-      if (regionRestrict && !profBlob.includes(regionRestrict[1].toLowerCase())) {
-        console.log("[scout] dropped region-restricted:", g.title);
-        return false;
-      }
-      if ((prefs.exclude_keywords || []).some((kw) => kw && blob.includes(kw.toLowerCase()))) return false;
-      if (g.source === "linkedin") {
-        if (linkedinCap.count >= linkedinCap.max) return false;
-        linkedinCap.count++;
-      }
-      return true;
-    });
-    console.log("[scout] after recency+source filter", filtered.length, "of", extracted.length);
-    // Profile-richness signal alongside the score distribution -- lets a
-    // thin/empty-profile scan (new signup: default "creative" role, no
-    // skills, no bio) be correlated against its actual fit_scores in logs,
-    // to confirm or rule out a systematic low-score bias before changing
-    // any scoring/threshold behavior.
-    if (extracted.length > 0) {
-      const scores = extracted.map((g: any) => g.fit_score ?? 0);
-      const profileRichness =
-        (mergedProfile.role ? 1 : 0) +
-        (mergedProfile.sub_roles?.length ? 1 : 0) +
-        (mergedProfile.skills?.length ? 1 : 0) +
-        (mergedProfile.bio?.trim() ? 1 : 0);
-      console.log(
-        "[scout] fit_score distribution", JSON.stringify({
-          userId, profileRichness, minScore: Math.min(...scores),
-          maxScore: Math.max(...scores),
-          avgScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
-          belowThreshold: scores.filter((s) => s < prefs.min_fit_score).length,
-          total: scores.length,
-        }),
-      );
-    }
+    // What this user already has, so "inserted" means genuinely new and a
+    // dismissed gig is never brought back.
+    const { data: existingRows } = await supabase
+      .from("scouted_gigs")
+      .select("dedupe_key")
+      .eq("target_user_id", userId)
+      .order("scouted_at", { ascending: false })
+      .limit(2000);
+    const existing = new Set<string>((existingRows || []).map((r: any) => r.dedupe_key));
 
     let inserted = 0;
-    // Build url -> image map from raw search results to enrich gigs
-    const imgByUrl = new Map<string, string>();
-    for (const r of allRaw) {
-      if (r?.url && r?.image_url) imgByUrl.set(r.url, r.image_url);
-    }
-    for (const g of filtered.slice(0, perRunCap)) {
-      const key = dedupeKey(g);
-      const image_url = imgByUrl.get(g.source_url) || null;
-      const { error } = await supabase.from("scouted_gigs").upsert({
-        target_user_id: userId,
-        source: g.source,
-        source_name: g.source_name || g.source,
-        source_url: g.source_url,
-        title: g.title.slice(0, 200),
-        company: g.company || null,
-        location: g.location || null,
-        remote: !!g.remote,
-        description: g.description || null,
-        compensation: g.compensation || null,
-        contact_email: g.contact_email || null,
-        apply_url: !isGenericListingUrl(g.apply_url || "") ? g.apply_url : (!isGenericListingUrl(g.source_url) ? g.source_url : (g.apply_url || g.source_url)),
-        skills: g.skills || null,
-        fit_score: Math.round(g.fit_score),
-        fit_reason: g.fit_reason || null,
-        image_url,
-        dedupe_key: key,
-        raw: g,
-      }, { onConflict: "target_user_id,dedupe_key", ignoreDuplicates: false });
-      if (!error) inserted++;
-      else console.warn("[scout] upsert fail", error.message);
+    const toRow = (c: ScoredCandidate, via: string) => ({
+      target_user_id: userId,
+      source: c.source,
+      source_name: c.source_name,
+      source_url: c.source_url,
+      title: c.title.slice(0, 200),
+      company: c.company,
+      location: c.location,
+      remote: c.remote,
+      description: c.description,
+      compensation: c.compensation,
+      contact_email: null,
+      apply_url: c.apply_url,
+      skills: c.tags.filter((t) => t && t.length <= 30).slice(0, 6),
+      fit_score: Math.round(c.fit_score),
+      fit_reason: c.fit_reason,
+      image_url: c.image_url ?? null,
+      posted_at: c.posted_at,
+      dedupe_key: dedupeKey(c),
+      raw: { via, posted_at: c.posted_at },
+    });
+
+    // Saves up to `cap` best candidates that the user does not already have, and
+    // returns how many were new. Rows go in as soon as they are ready so the
+    // page (which polls while a scan runs) shows them without waiting for the
+    // slow sources.
+    const saveNew = async (ranked: ScoredCandidate[], cap: number, via: string): Promise<number> => {
+      if (cap <= 0) return 0;
+      const fresh: ScoredCandidate[] = [];
+      for (const c of ranked) {
+        if (existing.has(dedupeKey(c))) continue;
+        fresh.push(c);
+        if (fresh.length >= cap) break;
+      }
+      if (!fresh.length) return 0;
+      const rows = fresh.map((c) => toRow(c, via));
+      const { data, error } = await supabase
+        .from("scouted_gigs")
+        .upsert(rows, { onConflict: "target_user_id,dedupe_key", ignoreDuplicates: true })
+        .select("id");
+      if (!error) {
+        fresh.forEach((c) => existing.add(dedupeKey(c)));
+        return data?.length ?? fresh.length;
+      }
+      console.warn("[scout] batch upsert fail, retrying row by row:", error.message);
+      let n = 0;
+      for (const [i, row] of rows.entries()) {
+        const { error: rowError } = await supabase
+          .from("scouted_gigs")
+          .upsert(row, { onConflict: "target_user_id,dedupe_key", ignoreDuplicates: true });
+        if (rowError) console.warn("[scout] upsert fail", rowError.message);
+        else {
+          existing.add(dedupeKey(fresh[i]));
+          n++;
+        }
+      }
+      return n;
+    };
+
+    const degraded: string[] = [];
+    const sourcesUsed: string[] = [];
+
+    // ── 1. public feeds: fast, free, no key ───────────────────────────────
+    const feeds = await loadPublicFeeds(mergedProfile, prefs);
+    const okFeeds = feeds.report.filter((r) => r.ok);
+    sourcesUsed.push(...okFeeds.map((r) => r.name));
+    if (okFeeds.length === 0) degraded.push("feeds_unavailable");
+    else if (okFeeds.length < feeds.report.length) degraded.push("feeds_partial");
+    for (const r of feeds.report.filter((x) => !x.ok)) console.warn("[scout] feed down:", r.name, r.error);
+
+    const feedRanked = rankCandidates(feeds.candidates, mergedProfile, prefs);
+    console.log("[scout] feeds", feeds.candidates.length, "candidates,", feedRanked.length, "relevant");
+
+    // Firecrawl is the slow, paid source: manual and cron runs only, and only
+    // when configured. Leave it room in the cap so it is not crowded out.
+    const useFirecrawl = !!fcKey && !live;
+    if (!fcKey && !live) degraded.push("web_search_unavailable");
+    const feedCap = useFirecrawl ? Math.max(1, Math.ceil(perRunCap * 0.6)) : perRunCap;
+    inserted += await saveNew(feedRanked, feedCap, "feed");
+
+    // ── 2. Firecrawl web search (+ optional AI extraction) ────────────────
+    let queryCount = okFeeds.length;
+    let firecrawlFiltered = 0;
+    let firecrawlFound = 0;
+    if (useFirecrawl && inserted < perRunCap) {
+      sourcesUsed.push("firecrawl");
+      const queries = buildSearchQueries(mergedProfile, prefs);
+      queryCount += queries.length;
+      console.log("[scout] firecrawl queries", queries.length, "for", userId);
+
+      // Concurrent in batches; every call is time-bounded (SOURCE_TIMEOUT_MS),
+      // and allSettled means one rejected promise never takes down its batch.
+      const allRaw: Array<FirecrawlItem & { source: ScoutSource }> = [];
+      const CHUNK = 12;
+      for (let i = 0; i < queries.length; i += CHUNK) {
+        if (Date.now() - startedAt > FIRECRAWL_BUDGET_MS) {
+          console.warn("[scout] firecrawl budget spent, skipping remaining batches");
+          break;
+        }
+        const batch = queries.slice(i, i + CHUNK);
+        const results = await Promise.allSettled(batch.map(async (q) => {
+          const items = await firecrawlSearch(q.query, fcKey!);
+          return items.map((it) => ({ ...it, source: q.source }));
+        }));
+        for (const r of results) {
+          if (r.status === "fulfilled") allRaw.push(...r.value);
+        }
+      }
+      firecrawlFound = allRaw.length;
+      console.log("[scout] firecrawl raw results", allRaw.length);
+
+      const imgByUrl = new Map<string, string>();
+      for (const r of allRaw) if (r?.url && r?.image_url) imgByUrl.set(r.url, r.image_url);
+
+      let webRanked: ScoredCandidate[] = [];
+      if (aiKey) {
+        webRanked = acceptAiGigs(await extractAndScore(allRaw, mergedProfile, prefs, aiKey), mergedProfile, prefs, imgByUrl);
+        if (webRanked.length === 0 && allRaw.length > 0) degraded.push("ai_unavailable");
+      } else {
+        degraded.push("ai_unavailable");
+      }
+      if (webRanked.length === 0) {
+        // No AI key, no credit, or it found nothing usable: same pages, scored by rule.
+        const candidates = allRaw
+          .map((it) => firecrawlToCandidate(it, it.source))
+          .filter((c): c is ScoutCandidate => !!c);
+        webRanked = rankCandidates(candidates, mergedProfile, prefs);
+      }
+      webRanked.sort((a, b) => b.fit_score - a.fit_score);
+      firecrawlFiltered = webRanked.length;
+      inserted += await saveNew(webRanked, perRunCap - inserted, "web");
     }
 
+    // ── 3. backfill from the feeds if the web search left room ────────────
+    if (inserted < perRunCap) inserted += await saveNew(feedRanked, perRunCap - inserted, "feed");
+
+    const found = feeds.candidates.length + firecrawlFound;
+    const filtered = feedRanked.length + firecrawlFiltered;
+
     await supabase.from("scout_runs").insert({
-      user_id: userId, trigger, sources: prefs.sources,
-      found_count: extracted.length, inserted_count: inserted,
+      user_id: userId, trigger, sources: sourcesUsed,
+      found_count: found, inserted_count: inserted,
       duration_ms: Date.now() - startedAt, finished_at: new Date().toISOString(),
     });
     await supabase.from("scout_preferences")
       .update({ last_run_at: new Date().toISOString() })
       .eq("user_id", userId);
 
-    return new Response(JSON.stringify({
-      ok: true, found: extracted.length, filtered: filtered.length, inserted, queries: queries.length,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return json({
+      ok: true, found, filtered, inserted, queries: queryCount,
+      sources: sourcesUsed, degraded,
+    });
   } catch (e) {
     console.error("[scout] error", e);
     if (userId) {
@@ -609,8 +680,6 @@ serve(async (req) => {
         duration_ms: Date.now() - startedAt, finished_at: new Date().toISOString(),
       }).then(() => {}, () => {});
     }
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: e instanceof Error ? e.message : "Unknown" }, 500);
   }
 });

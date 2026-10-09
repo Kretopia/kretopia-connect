@@ -50,11 +50,14 @@ describe("KretoTip — Kreto presence rollout scope", () => {
     expect(screen.getByText(/Kreto · Studio/i)).toBeInTheDocument();
   });
 
-  it("Scout (discover) renders the embodied KretoPresence -- the first rollout surface", () => {
+  it("Scout (discover) wears the Kretopia K-mark like Passport, with no robot artwork or label robot", () => {
     const { container } = renderTip("discover");
-    expect(cardPresence(container)).toHaveLength(1);
-    expect(labelRobots(container)).toHaveLength(1);
+    expect(container.querySelector('img[src*="kretopia-k-mark"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(0);
+    expect(labelRobots(container)).toHaveLength(0);
     expect(screen.getByText(/Kreto · Scout/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Shortlist for me/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Or just chat/i })).toBeInTheDocument();
   });
 
   it("Passport renders the embodied KretoPresence -- the second rollout surface", () => {
