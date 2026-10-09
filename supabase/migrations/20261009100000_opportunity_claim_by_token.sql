@@ -31,6 +31,13 @@
 -- Cleared tokens are not recoverable by design; they were public.
 -- ============================================================================
 
+-- The draft of these functions (security/proposals/…) may already be installed
+-- with a different return shape, which CREATE OR REPLACE cannot change: drop
+-- the old shapes first. get_my_opportunity_claim_token was the draft's read-only
+-- link getter, replaced by get_or_create_opportunity_claim_token below.
+DROP FUNCTION IF EXISTS public.get_scouted_opportunity_by_token(text);
+DROP FUNCTION IF EXISTS public.get_my_opportunity_claim_token(uuid);
+
 CREATE OR REPLACE FUNCTION public.get_scouted_opportunity_by_token(p_token text)
 RETURNS TABLE(
   id uuid, title text, type text, description text, compensation text, location text,
