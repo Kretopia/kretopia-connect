@@ -30,6 +30,33 @@ async function hashIp(ip: string | null): Promise<string | null> {
     .slice(0, 32);
 }
 
+// Share-link passwords were guessable without limit. Per-instance and in memory, so best-effort (a
+// determined attacker spreading over instances is slowed, not stopped); the real defence is a long
+// random link token plus this brake on the password step.
+const PASSWORD_WINDOW_MS = 10 * 60_000;
+const PASSWORD_MAX_FAILURES = 10;
+const passwordFailures = new Map<string, { n: number; first: number }>();
+
+function passwordThrottled(key: string): boolean {
+  const e = passwordFailures.get(key);
+  if (!e) return false;
+  if (Date.now() - e.first > PASSWORD_WINDOW_MS) {
+    passwordFailures.delete(key);
+    return false;
+  }
+  return e.n >= PASSWORD_MAX_FAILURES;
+}
+
+function notePasswordFailure(key: string) {
+  const e = passwordFailures.get(key);
+  if (!e || Date.now() - e.first > PASSWORD_WINDOW_MS) passwordFailures.set(key, { n: 1, first: Date.now() });
+  else e.n += 1;
+  if (passwordFailures.size > 5000) passwordFailures.clear();
+}
+
+const clip = (v: unknown, max: number): string | null =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -41,9 +68,17 @@ Deno.serve(async (req) => {
       password?: string;
     };
 
-    if (!action || !token) return json({ error: "Missing action or token" }, 400);
+    if (!action || !token || typeof token !== "string" || token.length > 200) {
+      return json({ error: "Missing action or token" }, 400);
+    }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const throttleKey = `${clientIp}|${token.slice(0, 24)}`;
+    if (password && passwordThrottled(throttleKey)) {
+      return json({ error: "too_many_attempts" }, 429);
+    }
 
     // ---- Resolve link ----
     const { data: resolvedRows, error: resolveErr } = await supabase.rpc(
@@ -57,6 +92,7 @@ Deno.serve(async (req) => {
     if (link.revoked) return json({ error: "revoked" }, 410);
     if (link.expired) return json({ error: "expired" }, 410);
     if (link.requires_password && !link.password_ok) {
+      if (password) notePasswordFailure(throttleKey);
       return json({ requires_password: true, password_ok: false }, 401);
     }
 
@@ -113,8 +149,8 @@ Deno.serve(async (req) => {
       const ua = req.headers.get("user-agent") ?? null;
       await supabase.rpc("log_share_link_view", {
         _token: token,
-        _viewer_name: body.viewer_name ?? null,
-        _viewer_email: body.viewer_email ?? null,
+        _viewer_name: clip(body.viewer_name, 120),
+        _viewer_email: clip(body.viewer_email, 254),
         _ip_hash: ip_hash,
         _user_agent: ua,
       });
@@ -130,6 +166,13 @@ Deno.serve(async (req) => {
       }
       if (!["approved", "revision_requested"].includes(decision)) {
         return json({ error: "invalid_decision" }, 400);
+      }
+      const signerName = clip(signer_name, 120);
+      const signerEmail = clip(signer_email, 254);
+      const approvalNote = clip(note, 2000);
+      if (!signerName) return json({ error: "Missing signer_name or decision" }, 400);
+      if (signerEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(signerEmail)) {
+        return json({ error: "invalid_signer_email" }, 400);
       }
 
       // Bind the target to the link. This function writes with the service
@@ -168,16 +211,32 @@ Deno.serve(async (req) => {
         }
       }
 
+      // A slow response and a second click must not record the decision twice (and flip the
+      // status twice): an identical decision on the same target by the same signer in the last
+      // 10 minutes is the same decision.
+      let dupQ = supabase
+        .from("share_link_approvals")
+        .select("id")
+        .eq("share_link_id", link.share_link_id)
+        .eq("decision", decision)
+        .gte("created_at", new Date(Date.now() - 10 * 60_000).toISOString())
+        .limit(1);
+      dupQ = deliverable_id ? dupQ.eq("deliverable_id", deliverable_id) : dupQ.is("deliverable_id", null);
+      dupQ = file_id ? dupQ.eq("file_id", file_id) : dupQ.is("file_id", null);
+      dupQ = signerEmail ? dupQ.eq("signer_email", signerEmail) : dupQ.eq("signer_name", signerName);
+      const { data: duplicate } = await dupQ;
+      if (duplicate?.length) return json({ ok: true, duplicate: true });
+
       const { error: insErr } = await supabase
         .from("share_link_approvals")
         .insert({
           share_link_id: link.share_link_id,
           deliverable_id: deliverable_id ?? null,
           file_id: file_id ?? null,
-          signer_name,
-          signer_email: signer_email ?? null,
+          signer_name: signerName,
+          signer_email: signerEmail,
           decision,
-          note: note ?? null,
+          note: approvalNote,
         });
       if (insErr) return json({ error: insErr.message }, 500);
 

@@ -2,25 +2,15 @@ import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
+import { SENDER_DOMAIN, FROM_DOMAIN } from '../_shared/emailSender.ts'
+import { identifyCaller } from '../_shared/callerAuth.ts'
+import { authorizeTransactionalSend, type EmailPolicyDeps } from '../_shared/transactionalEmailPolicy.ts'
 
 // Configuration baked in at scaffold time — do NOT change these manually.
-// To update, re-run the email domain setup flow.
+// SENDER_DOMAIN / FROM_DOMAIN live in _shared/emailSender.ts: they must belong together
+// (the email API rejects a From domain that does not align with the sender domain) and each
+// backend keeps its own copy of that one file.
 const SITE_NAME = "Kretopia"
-// SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
-// It MUST match the subdomain delegated to Lovable's nameservers — never the root domain.
-// The email API looks up this exact domain; a mismatch causes "No email domain record found".
-//
-// Kretopia's own sender is the default. The pair can be pinned per backend with two OPTIONAL secrets, with no
-// redeploy: a backend whose notify.kretopia.com is not verified yet sets
-//   EMAIL_SENDER_DOMAIN=notify.thrivein.io   EMAIL_FROM_DOMAIN=thrivein.io
-// and deleting both secrets switches it to Kretopia's. That is also the instant rollback if a send ever fails with
-// sender_domain_mismatch / "No email domain record found" (every send failed that way from 2026-08-17 to 2026-10-07).
-const SENDER_DOMAIN = Deno.env.get('EMAIL_SENDER_DOMAIN') || "notify.kretopia.com"
-// FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
-// When display_from_root is enabled, this can be the root domain for cleaner branding,
-// even though actual sending uses the subdomain above.
-// Must align with SENDER_DOMAIN's root: the email API rejects any other From domain with 400 sender_domain_mismatch.
-const FROM_DOMAIN = Deno.env.get('EMAIL_FROM_DOMAIN') || "kretopia.com"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,9 +27,71 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth note: verify_jwt only proves the bearer is *a* valid JWT, and the public anon key is one,
+// so the gateway alone let anyone send any template to any address from our domain. The caller
+// is now identified here (service role / signed-in member / anonymous) and every non-server
+// request is authorised per template, see _shared/transactionalEmailPolicy.ts.
+
+/** Database reads behind the policy. Fail-closed: a failed lookup reads as "not proven". */
+// deno-lint-ignore no-explicit-any
+function emailPolicyDeps(db: any): EmailPolicyDeps {
+  const since = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString()
+  return {
+    async recentSendCount(recipientEmail, sinceMinutes) {
+      const { count } = await db
+        .from('email_send_log')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_email', recipientEmail)
+        .in('status', ['pending', 'sent'])
+        .gte('created_at', since(sinceMinutes))
+      return count ?? 0
+    },
+    async eventFacts(eventId) {
+      const { data } = await db
+        .from('creative_jams')
+        .select('id, title, start_time, venue_name, venue_address')
+        .eq('id', eventId)
+        .maybeSingle()
+      return data ?? null
+    },
+    async participantRegistered(eventId, userId) {
+      const { data } = await db
+        .from('jam_participants')
+        .select('id, status')
+        .eq('jam_id', eventId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      return !!data && data.status !== 'cancelled'
+    },
+    async guestRsvpRecent(eventId, email, withinMinutes) {
+      const { data } = await db
+        .from('guest_rsvps')
+        .select('id')
+        .eq('event_id', eventId)
+        .eq('guest_email', email.toLowerCase())
+        .gte('updated_at', since(withinMinutes))
+        .limit(1)
+      return !!data?.length
+    },
+    async opportunityFacts(opportunityId) {
+      const { data } = await db
+        .from('opportunities')
+        .select('created_by, title')
+        .eq('id', opportunityId)
+        .maybeSingle()
+      return data ?? null
+    },
+    async applicationExists(opportunityId, applicantId) {
+      const { data } = await db
+        .from('applications')
+        .select('id')
+        .eq('opportunity_id', opportunityId)
+        .eq('applicant_id', applicantId)
+        .limit(1)
+      return !!data?.length
+    },
+  }
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -88,15 +140,6 @@ Deno.serve(async (req) => {
     )
   }
 
-  // If recipientUserId is provided but no email, resolve email from auth.users
-  if (recipientUserId && !recipientEmail) {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-    const { data: authUser } = await supabase.auth.admin.getUserById(recipientUserId)
-    if (authUser?.user?.email) {
-      recipientEmail = authUser.user.email
-    }
-  }
-
   if (!templateName) {
     return new Response(
       JSON.stringify({ error: 'templateName is required' }),
@@ -105,6 +148,37 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     )
+  }
+
+  // Create Supabase client with service role (bypasses RLS)
+  const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+  // Who is asking, and may they send this? Other edge functions (service role) pass through
+  // unchanged; browsers are limited to the templates the app sends, each with proof.
+  const caller = await identifyCaller(req, { serviceRoleKey: supabaseServiceKey, admin: supabase })
+  const decision = await authorizeTransactionalSend(
+    caller,
+    { templateName, recipientEmail, recipientUserId, templateData },
+    emailPolicyDeps(supabase),
+  )
+  if (!decision.allow) {
+    console.warn('Transactional email refused', { templateName, caller: caller.kind, status: decision.status, reason: decision.error })
+    return new Response(
+      JSON.stringify({ error: decision.error }),
+      {
+        status: decision.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+  templateData = decision.templateData
+
+  // If recipientUserId is provided but no email, resolve email from auth.users
+  if (recipientUserId && !recipientEmail) {
+    const { data: authUser } = await supabase.auth.admin.getUserById(recipientUserId)
+    if (authUser?.user?.email) {
+      recipientEmail = authUser.user.email
+    }
   }
 
   // 1. Look up template from registry (early — needed to resolve recipient)
@@ -139,9 +213,6 @@ Deno.serve(async (req) => {
       }
     )
   }
-
-  // Create Supabase client with service role (bypasses RLS)
-  const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
   // 2. Check suppression list (fail-closed: if we can't verify, don't send)
   const { data: suppressed, error: suppressionError } = await supabase
