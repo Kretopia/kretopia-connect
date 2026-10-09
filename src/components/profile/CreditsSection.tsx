@@ -1,3 +1,4 @@
+import { explainCreditError } from "@/lib/creditErrors";
 import { useState, useEffect } from "react";
 import { extractThumbnailForStorage } from "@/lib/thumbnailExtractor";
 import { Button } from "@/components/ui/button";
@@ -130,7 +131,7 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
       onRefresh();
     } catch (error) {
       console.error("Error adding credit:", error);
-      toast.error("Failed to add credit");
+      toast.error(explainCreditError(error).message);
     }
   };
 

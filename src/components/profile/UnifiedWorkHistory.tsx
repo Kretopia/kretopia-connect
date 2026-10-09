@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { extractThumbnailForStorage } from "@/lib/thumbnailExtractor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,9 @@ import { cn } from "@/lib/utils";
 import { MediaPlayerModal } from "./MediaPlayerModal";
 import { getBestPlayableMediaUrl, getModalMediaType } from "@/lib/mediaUtils";
 import { CreditEndorsementDialog } from "./CreditEndorsementDialog";
+import { draftKey } from "@/lib/draftStorage";
+import { useDraftRecovery } from "@/hooks/useDraftRecovery";
+import { explainCreditError } from "@/lib/creditErrors";
 
 // ── Category taxonomy (mirrors ICDBCreditForm) ──────────────────────
 const CATEGORY_GROUPS = [
@@ -143,9 +146,19 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
   const [saving, setSaving] = useState(false);
   const INITIAL_PER_CAT = 4;
 
-  const [newCredit, setNewCredit] = useState({
-    project_name: "", role: "", year: new Date().getFullYear(),
-    platform: "", url: "", project_type: "",
+  const emptyCredit = useMemo(
+    () => ({ project_name: "", role: "", year: new Date().getFullYear(), platform: "", url: "", project_type: "" }),
+    [],
+  );
+  const [newCredit, setNewCredit] = useState(emptyCredit);
+
+  // An unfinished credit survives a closed dialog, a dropped connection or an expired session: it is
+  // restored (and said to be restored) the next time the dialog opens, and only deleted once saved.
+  const creditDraft = useDraftRecovery({
+    key: isOwnProfile && isAddDialogOpen ? draftKey("credit", userId, "new") : null,
+    saved: emptyCredit,
+    value: newCredit,
+    onRestore: setNewCredit,
   });
 
   const [editForm, setEditForm] = useState({
@@ -256,14 +269,16 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
       }
 
       toast.success("Credit added successfully");
-      setNewCredit({ project_name: "", role: "", year: new Date().getFullYear(), platform: "", url: "", project_type: "" });
+      creditDraft.markSaved();
+      setNewCredit(emptyCredit);
       setIsAddDialogOpen(false);
       fetchAllCredits();
       onRefresh?.();
     } catch (error: any) {
       console.error("Error adding credit:", error);
       const msg = error?.message || error?.details || error?.hint || "Unknown error";
-      toast.error(`Failed to add credit: ${msg}`);
+      // The person gets a safe, actionable message; the raw error still goes to the error log below.
+      toast.error(explainCreditError(error).message);
       try {
         const { logClientError } = await import("@/lib/errorLogger");
         await logClientError(error instanceof Error ? error : new Error(String(msg)), "UnifiedWorkHistory.addCredit", {
@@ -433,6 +448,12 @@ export function UnifiedWorkHistory({ userId, isOwnProfile, onRefresh }: UnifiedW
                 <DialogTitle>Add Credit</DialogTitle>
                 <DialogDescription>Add a new work credit to your profile.</DialogDescription>
               </DialogHeader>
+              {creditDraft.restoredAt && (
+                <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
+                  <span>Restored the credit you were filling in.</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={creditDraft.discard}>Start over</Button>
+                </div>
+              )}
               <CreditFormFields form={newCredit} setForm={setNewCredit} />
               <Button onClick={addManualCredit} disabled={saving} className="w-full">
                 {saving && <KretopiaSpinner className="h-4 w-4 mr-1.5" />} Add Credit
