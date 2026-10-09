@@ -66,6 +66,7 @@ Severity: **C** critical (anonymous, no account) · **H** high (any signed-in us
 | F25 | L | — | Open INSERT policies (analytics, error logs, guest RSVP, newsletter): spam surface | rate limit at the edge | Open |
 | F26 | L | Studio 5 | Share-link password has no attempt limit | limiter in the edge function | Open (PR B) |
 | F27 | L | — | Tokens from `md5(random())` (claim token fixed in 0300; invite/review defaults need `ALTER TABLE`) | crypto RNG defaults | Partly |
+| F28 | M | Studio 9 | `opportunities.claim_token` is in the public column list: anonymous visitors can read the token of every unclaimed gig (4 today). Harmless only because claiming can never succeed (UPDATE policy is owner-only; 0 of 22 gigs ever claimed). Making it work needs the tokens private first | claim RPCs + stop publishing the token | **Proposal**: `proposals/2026-10-09-opportunity-claim-by-token.md` (needs your approval) |
 
 ## The 30 rows of the brief
 
