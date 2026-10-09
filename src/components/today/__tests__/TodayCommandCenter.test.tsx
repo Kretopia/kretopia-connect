@@ -120,4 +120,42 @@ describe("TodayCommandCenter", () => {
     expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
     expect(screen.getByRole("link", { name: /Complete Passport/ })).toHaveAttribute("href", "/passport");
   });
+
+  it("every card has the same anatomy and ends in the Landing CTA pair", () => {
+    const priorities: TodaySignals["priority"][] = [
+      { kind: "none" },
+      { kind: "gig", gig: { id: "g1", title: "Colorist for a music video", company: "Nord Films" } },
+      { kind: "approval", approval: { id: "a1", title: "Reach out to Lena", body: "She shortlisted you.", href: null } },
+      { kind: "task", task: { id: "t1", title: "Send the deck", projectId: "p1", projectTitle: "Bali", dueDate: "2030-01-01", overdue: false } },
+    ];
+
+    for (const priority of priorities) {
+      const signals = baseSignals({ priority, passport: { percentage: 40, missingFields: ["Bio"], isComplete: false } });
+      const { unmount } = renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
+
+      const regions = [
+        screen.getByRole("region", { name: "Creative Passport and Kreto" }),
+        screen.getByRole("region", { name: "Today's next action" }),
+        screen.getByRole("region", { name: "Your activity" }),
+      ];
+
+      for (const region of regions) {
+        // One shell: same height floor, one eyebrow, one title.
+        expect(region.className).toContain("min-h-[460px]");
+        expect(region.querySelectorAll("header > p")).toHaveLength(1);
+        expect(region.querySelectorAll("header > h2")).toHaveLength(1);
+
+        // One CTA pair: the glass primary first, the outline secondary second.
+        const pair = Array.from(region.querySelectorAll<HTMLElement>(".glass-cta, a.rounded-full, button.rounded-full"));
+        expect(pair).toHaveLength(2);
+        expect(pair[0].className).toContain("glass-cta");
+        expect(pair[1].className).not.toContain("glass-cta");
+        for (const cta of pair) {
+          expect(cta.className).toContain("rounded-full");
+          expect(cta.className).toContain("w-full");
+        }
+      }
+      unmount();
+    }
+  });
 });
