@@ -76,8 +76,8 @@ Studio: **1 Drafts/autosave** Not audited yet · **2 Uploads** Found: `project-f
 other buckets either; resume/retry Not audited yet · **3 Expired sessions** Not audited yet · **4 Concurrent edits**
 Not audited yet · **5 Sharing** Fixed F08, F09; Found F17, F18 · **6 Roles/revoked access** Fixed F10; Found: RLS does not
 read `role` (except milestone money), needs a role matrix · **7 Client approvals** Fixed F08; Found F21 (no version
-binding) · **8 Retries/idempotency** Found F11, F22 · **9 Accurate action states** Found one case: the gig claim page
-reported success when RLS matched 0 rows; event claim now checks the result; rest Not audited yet · **10 Undo/restore**
+binding) · **8 Retries/idempotency** Found F11, F22 · **9 Accurate action states** Fixed: the gig claim page
+reported success when RLS matched 0 rows (now checks the rows returned, like the event claim); rest Not audited yet · **10 Undo/restore**
 Not audited yet (version tables exist) · **11 Kreto proposals** Fixed F03 (memory read); approval-gating of `desk-agent`
 was verified on 2026-10-06, not re-checked today · **12 Activity history** Not audited yet · **13 Wrap/credits/invoice**
 Not audited yet · **14 Accessible recovery** Not audited yet.
