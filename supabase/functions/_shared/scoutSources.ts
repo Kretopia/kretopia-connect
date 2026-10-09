@@ -122,10 +122,35 @@ const STOP_WORDS = new Set([
   "senior", "junior", "lead", "head", "manager", "team", "remote", "full", "time", "part", "contract",
 ]);
 
+/**
+ * A list of words from a database column that is not always a list of strings.
+ * profiles.professional_skills is jsonb: 31 profiles hold strings, 53 hold
+ * objects ({ skill, category, level }), 51 hold nothing. Strings pass through,
+ * objects give their skill/name/label/title/value, everything else is dropped.
+ * (Reading `.toLowerCase()` on an object is what made a Scout run fail with
+ * "(value ?? '').toLowerCase is not a function" for most profiles with skills.)
+ */
+const TEXT_KEYS = ["skill", "name", "label", "title", "value"];
+export function toTextList(value: unknown): string[] {
+  const items = Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+  const out: string[] = [];
+  for (const item of items) {
+    if (typeof item === "string") {
+      if (item.trim()) out.push(item.trim());
+    } else if (item && typeof item === "object") {
+      const rec = item as Record<string, unknown>;
+      const key = TEXT_KEYS.find((k) => typeof rec[k] === "string" && (rec[k] as string).trim());
+      if (key) out.push((rec[key] as string).trim());
+    }
+  }
+  return out;
+}
+
 export function profileTerms(profile: ScoutProfile, prefs: ScoutPrefsLite): { strong: string[]; weak: boolean } {
   const out = new Set<string>();
-  const add = (value: string | null | undefined) => {
-    const phrase = (value ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  const add = (value: unknown) => {
+    if (typeof value !== "string") return; // never trust a column's shape
+    const phrase = value.toLowerCase().replace(/\s+/g, " ").trim();
     if (phrase.length < 2 || phrase.length > 40) return;
     if (GENERIC_ROLES.has(phrase)) return;
     out.add(phrase);
