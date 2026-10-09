@@ -1,6 +1,7 @@
 // At T-30, if RSVPs < 5, switch session to GROUP MODE (open Zoom-style room)
 // instead of canceling. Notify all RSVPs.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +15,10 @@ const MIN_FOR_PAIRS = 5;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
+  // sends mail or changes data, so the public anon key must not be enough to trigger it.
+  const cronGuard = await requireAdminOrCron(req);
+  if (!cronGuard.ok) return cronGuard.response;
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const stats = { checked: 0, fellback: 0, notified: 0, errors: 0 };
 

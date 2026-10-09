@@ -4,6 +4,7 @@
 // who saved them, and a CTA back to the platform.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -18,6 +19,10 @@ type Peer = { user_id: string; full_name: string | null; avatar_url: string | nu
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
+  // sends mail or changes data, so the public anon key must not be enough to trigger it.
+  const cronGuard = await requireAdminOrCron(req);
+  if (!cronGuard.ok) return cronGuard.response;
   const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
   const stats = { sessions: 0, emails: 0, errors: 0 };
   const now = new Date();

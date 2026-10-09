@@ -11,6 +11,7 @@
 // Returns a Response with proper CORS + JSON when the caller is unauthorized.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { timingSafeEqualStr } from "./callerAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,7 +34,7 @@ export async function requireAdminOrCron(req: Request): Promise<AdminGuardResult
   // 1) Cron / server-to-server path
   const cronSecret = Deno.env.get("CRON_SECRET");
   const headerSecret = req.headers.get("x-cron-secret");
-  if (cronSecret && headerSecret && headerSecret === cronSecret) {
+  if (cronSecret && headerSecret && timingSafeEqualStr(headerSecret, cronSecret)) {
     return { ok: true, userId: null, viaCron: true };
   }
 

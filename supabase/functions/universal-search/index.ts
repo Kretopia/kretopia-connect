@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { requireUser } from "../_shared/require-user.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,6 +57,11 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Signed-in members only: this reads with the service role and each call runs paid web search +
+  // AI, so the public anon key must not be enough to trigger it (no caller in the app today).
+  const userGuard = await requireUser(req);
+  if (!userGuard.ok) return userGuard.response;
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -79,6 +85,7 @@ serve(async (req) => {
         .select('user_id, full_name, avatar_url, role, location, professional_skills, verification_tier, average_rating, bio')
         .or(`full_name.ilike.${q},role.ilike.${q},location.ilike.${q}`)
         .eq('onboarding_completed', true)
+        .eq('is_hidden_backer', false) // same rule as the public profile view
         .limit(15),
       supabase
         .from('credits')
