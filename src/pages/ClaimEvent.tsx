@@ -25,20 +25,13 @@ const ClaimEvent = () => {
     if (!token) return;
     let cancelled = false;
     (async () => {
-      // Use scouted_by-aware select; this works because RLS lets the scout read
-      // their own unclaimed event, and we want anyone with the token to see it
-      // even before claim — we'll use a direct query and ignore RLS denial by
-      // checking via a public RPC fallback if needed.
-      const { data } = await supabase
-        .from("creative_jams")
-        .select(
-          "id, title, description, category, venue_name, venue_address, country, start_time, end_time, cover_image_url, claim_status, scouted_by, created_by, source_platform, source_url"
-        )
-        .eq("claim_token", token)
-        .maybeSingle();
+      // The token is the only key: the card comes from get_scouted_event_by_token,
+      // so unclaimed events and their tokens are no longer listable by anyone.
+      const { data } = await supabase.rpc("get_scouted_event_by_token" as any, { p_token: token });
+      const row = Array.isArray(data) ? data[0] : data;
 
       if (!cancelled) {
-        setEvent(data);
+        setEvent(row ?? null);
         setLoading(false);
       }
     })().catch((e) => {
@@ -76,12 +69,19 @@ const ClaimEvent = () => {
 
     setClaiming(true);
     try {
-      const { error } = await supabase
-        .from("creative_jams")
-        .update({ created_by: user.id, claim_status: "claimed" })
-        .eq("claim_token", token)
-        .eq("claim_status", "unclaimed");
+      // Atomic, token-checked claim. Success is only reported when a row was
+      // really claimed (the old direct UPDATE reported success even when RLS
+      // matched zero rows).
+      const { data: claim, error } = await supabase.rpc("claim_scouted_event" as any, { p_token: token });
       if (error) throw error;
+      if (!(claim as { claimed?: boolean } | null)?.claimed) {
+        toast({
+          title: "Couldn't claim this event",
+          description: "It may already have a host, or the link is no longer valid.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Event claimed",
