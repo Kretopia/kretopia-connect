@@ -16,12 +16,22 @@ export interface TodayApproval {
   title: string;
   body: string;
   href: string | null;
+  createdAt?: string | null;
 }
 
 export interface TodayGig {
   id: string;
   title: string;
   company: string | null;
+  // What the posting itself says, for the supporting facts. All optional: a
+  // gig scouted from a page that does not say where or when stays without them.
+  location?: string | null;
+  remote?: boolean;
+  fitScore?: number | null;
+  sourceName?: string | null;
+  compensation?: string | null;
+  postedAt?: string | null;
+  scoutedAt?: string | null;
 }
 
 /** The single highest-priority thing to act on right now. Exactly one of
@@ -83,4 +93,6 @@ export interface TodaySignals {
   approvalCount: number;
   deadlines: TodayTask[];
   unreadMessages: number;
+  /** When these signals were actually loaded (ms since epoch). */
+  updatedAt?: number | null;
 }

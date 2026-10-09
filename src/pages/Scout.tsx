@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
+import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { summarizeScoutedGigs, type ScoutedGigSummary } from "@/lib/scoutGigSummary";
 import { SEO } from "@/components/SEO";
@@ -8,12 +8,11 @@ import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards"
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
-import { DiscoverCreativesRail } from "@/components/opportunity/DiscoverCreativesRail";
 import { Radar, Store, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
-import { KretoTip } from "@/components/agent/KretoTip";
+import { ScoutKretoAssist } from "@/components/scout/ScoutKretoAssist";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { Button } from "@/components/ui/button";
 
@@ -28,8 +27,7 @@ const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
 ];
 
 /**
- * Scout — gigs and talent only. Two purposes: find gigs to work on,
- * find creators to hire. People-discovery for collaboration lives in /circle.
+ * Scout — gigs. People-discovery lives on Today (Discover Creatives) and in /circle.
  */
 const Scout = () => {
   const [params, setParams] = useSearchParams();
@@ -47,13 +45,23 @@ const Scout = () => {
     setParams(p, { replace: true });
   };
 
-  // "Shortlist for me" hands Kreto the list the user is actually looking at,
-  // so the answer is about these gigs rather than gigs in general. Read at
-  // click time from the same cache the For You tab renders from.
+  // Kreto gets the list the user is actually looking at, so its answer is
+  // about these gigs rather than gigs in general. Read at click time from the
+  // same cache the For You tab renders from.
   const describeScoutedGigs = () => {
     const gigs = queryClient.getQueryData<ScoutedGigSummary[]>(["scouted-gigs", user?.id]) ?? [];
     return summarizeScoutedGigs(gigs);
   };
+
+  // Watches that same cache without fetching (skipToken): Kreto's panel is for
+  // "found one worth pursuing", so on For You it waits until there are gigs.
+  const { data: scoutedCount = 0 } = useQuery({
+    queryKey: ["scouted-gigs", user?.id],
+    queryFn: skipToken,
+    select: (gigs: unknown[]) => gigs.length,
+    enabled: !!user,
+  });
+  const showKreto = tab !== "scouted" || scoutedCount > 0;
 
   return (
     <div className="accent-scout min-h-screen bg-background">
@@ -64,7 +72,7 @@ const Scout = () => {
 
       {/* Same header as Studio: eyebrow slot holds the tutorial trigger, a
           white first line, a gradient second line, a subtitle -- and nothing
-          else. The section switcher lives in the body, below Kreto. */}
+          else. The section switcher lives in the body, right under it. */}
       <FeaturePageHeader
         eyebrow="Scout"
         title="Find the gigs"
@@ -73,11 +81,9 @@ const Scout = () => {
         tutorial={{ featureKey: "scout", label: "How Scout works", steps: SCOUT_TUTORIAL }}
       />
 
-      {/* Body, same container and same order as Studio: Kreto first (the way
-          in: "shortlist for me" or "just chat"), then the work itself. */}
+      {/* Body: the section switcher first, right under the header, then the
+          work itself, then Kreto once there is something to act on. */}
       <StudioFeatureShell>
-        <KretoTip compact getPromptContext={describeScoutedGigs} />
-
         <div
           role="tablist"
           aria-label="Scout sections"
@@ -121,9 +127,7 @@ const Scout = () => {
         {tab === "scouted" && <ScoutedGigsSection />}
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
-        {/* People-discovery lives primarily in /circle -- this is a small
-            cross-tab taste of it, not a duplicate directory. */}
-        <DiscoverCreativesRail />
+        {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
         <SurfaceProactiveCards surface="scout" className="px-0" />
       </StudioFeatureShell>
     </div>

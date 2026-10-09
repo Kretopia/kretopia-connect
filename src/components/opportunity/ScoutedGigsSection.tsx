@@ -8,11 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { FirstTimeHint } from "@/components/ui/first-time-hint";
 import {
   Globe, Linkedin, Instagram, Sparkles, MapPin, ExternalLink,
   RefreshCw, Mail, Bookmark, X, Send, ShieldCheck, Briefcase, SlidersHorizontal,
-  CheckCircle2, Trophy, Banknote, Handshake,
+  CheckCircle2, Trophy, Banknote,
 } from "lucide-react";
 import { ScoutPreferencesDialog } from "./ScoutPreferencesDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +34,6 @@ import {
   isScanStale,
   type ScanResult,
 } from "@/lib/scoutScan";
-import { RecentlyWorkedWith } from "@/components/passport/RecentlyWorkedWith";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
 import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.png";
@@ -450,6 +448,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               src={g.image_url}
               alt={g.title}
               loading="lazy"
+              decoding="async"
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => markImageBroken(g.id)}
             />
@@ -734,6 +733,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
                   src={visibleGigs[0].image_url}
                   alt={visibleGigs[0].title}
                   loading="lazy"
+              decoding="async"
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={() => markImageBroken(visibleGigs[0].id)}
                 />
@@ -806,23 +806,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           </div>
         )}
         </>
-      )}
-
-      {!limit && user && gigs.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-energy/10">
-              <Handshake className="h-4 w-4 text-energy" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-foreground">A warm intro beats a cold application</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Most creatives land work through someone they know. Message a past collaborator and ask who's hiring.
-              </p>
-              <RecentlyWorkedWith userId={user.id} compact className="mt-3" />
-            </div>
-          </div>
-        </div>
       )}
 
       {/* In-app detail modal — compact, centered, no big hero/whitespace */}
@@ -977,16 +960,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Explainer, not the headline -- scanning now happens on its own and
-          the results above are the point of the page, so "how it works"
-          drops to a footnote instead of standing between arrival and them. */}
-      <FirstTimeHint
-        storageKey="gigs.scouted-explainer"
-        title="How scouting works"
-        description="Scout checks remote job boards every few minutes while this page is open and, when switched on for your workspace, gig sites, LinkedIn, Instagram and ATS pages too. Everything is ranked by fit. Tap a card to read the full brief inside the app."
-        tone="energy"
-      />
     </div>
   );
 }

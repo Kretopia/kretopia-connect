@@ -27,6 +27,8 @@ vi.mock("../today.selectors", () => ({
   }),
 }));
 vi.mock("../TodayCommandCenter", () => ({ TodayCommandCenter: () => <div data-testid="command-center" /> }));
+vi.mock("../TodayDiscoverCreatives", () => ({ TodayDiscoverCreatives: () => <section data-testid="discover-creatives" /> }));
+vi.mock("../TodayNextEvent", () => ({ TodayNextEvent: () => <section data-testid="next-event" /> }));
 
 const profile = { user_id: "u1", full_name: "Maya" } as unknown as ProfileRow;
 
@@ -41,5 +43,19 @@ describe("TodayDashboard — focused overview", () => {
     expect(screen.queryByTestId("opportunities")).not.toBeInTheDocument();
     expect(screen.queryByText("Your Passport dashboard")).not.toBeInTheDocument();
     expect(screen.queryByTestId("metrics-dashboard")).not.toBeInTheDocument();
+  });
+
+  it("puts Discover Creatives after the decision cards, never before", () => {
+    render(
+      <MemoryRouter>
+        <TodayDashboard profileFull={profile} />
+      </MemoryRouter>,
+    );
+    const cards = screen.getByTestId("command-center");
+    const nextEvent = screen.getByTestId("next-event");
+    const discover = screen.getByTestId("discover-creatives");
+    expect(cards.compareDocumentPosition(nextEvent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(nextEvent.compareDocumentPosition(discover) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(cards.compareDocumentPosition(discover) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
