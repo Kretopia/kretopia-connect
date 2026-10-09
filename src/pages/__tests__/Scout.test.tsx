@@ -16,7 +16,6 @@ vi.mock("@/components/agent/SurfaceProactiveCards", () => ({ SurfaceProactiveCar
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div data-testid="marketplace" /> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div data-testid="scouted" /> }));
 vi.mock("@/components/opportunity/ShortlistedGigs", () => ({ ShortlistedGigs: () => <div data-testid="shortlist" /> }));
-vi.mock("@/components/opportunity/DiscoverCreativesRail", () => ({ DiscoverCreativesRail: () => null }));
 
 const headerProps: Array<Record<string, unknown>> = [];
 vi.mock("@/components/features/FeaturePageHeader", () => ({

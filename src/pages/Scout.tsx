@@ -8,7 +8,6 @@ import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards"
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
-import { DiscoverCreativesRail } from "@/components/opportunity/DiscoverCreativesRail";
 import { Radar, Store, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -28,8 +27,7 @@ const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
 ];
 
 /**
- * Scout — gigs and talent only. Two purposes: find gigs to work on,
- * find creators to hire. People-discovery for collaboration lives in /circle.
+ * Scout — gigs. People-discovery lives on Today (Discover Creatives) and in /circle.
  */
 const Scout = () => {
   const [params, setParams] = useSearchParams();
@@ -121,9 +119,6 @@ const Scout = () => {
         {tab === "scouted" && <ScoutedGigsSection />}
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
-        {/* People-discovery lives primarily in /circle -- this is a small
-            cross-tab taste of it, not a duplicate directory. */}
-        <DiscoverCreativesRail />
         <SurfaceProactiveCards surface="scout" className="px-0" />
       </StudioFeatureShell>
     </div>
