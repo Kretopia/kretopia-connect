@@ -36,11 +36,23 @@ const gigRows = [
   },
 ];
 
+// What this person did with gigs; each test sets it, and it is empty by default.
+let actionRows: { scouted_gig_id: string; action: string; outcome: string | null }[] = [];
+
 function builder(table: string) {
+  let wantsDismissed = false;
   const q: Record<string, unknown> = {};
-  for (const m of ["select", "eq", "gt", "order", "limit", "in", "maybeSingle", "update", "upsert"]) q[m] = () => q;
+  for (const m of ["select", "gt", "order", "limit", "in", "maybeSingle", "update", "upsert"]) q[m] = () => q;
+  q.eq = (col: string, val: unknown) => {
+    if (col === "action" && val === "dismissed") wantsDismissed = true;
+    return q;
+  };
   q.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
-    const data = table === "scouted_gigs" ? gigRows : table === "scout_preferences" ? { last_run_at: hoursAgo(0.05) } : [];
+    const data =
+      table === "scouted_gigs" ? gigRows
+      : table === "scout_preferences" ? { last_run_at: hoursAgo(0.05) }
+      : table === "scouted_gig_actions" ? (wantsDismissed ? actionRows.filter((a) => a.action === "dismissed") : actionRows)
+      : [];
     return Promise.resolve({ data, error: null }).then(res, rej);
   };
   return q;
@@ -54,6 +66,10 @@ vi.mock("@/integrations/supabase/client", () => ({
 }));
 
 import { ScoutedGigsSection } from "../ScoutedGigsSection";
+
+beforeEach(() => {
+  actionRows = [];
+});
 
 const renderSection = (props: { scanSurface?: "inline" | "wrapped" } = {}) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -125,6 +141,47 @@ describe("Scout results", () => {
     expect(screen.queryByRole("button", { name: "Scan now" })).not.toBeInTheDocument();
     // Tune stays with the list
     expect(screen.getByTitle("Tune scout preferences")).toBeInTheDocument();
+  });
+
+  it("says where a gig stands in the person's own words, and never claims a receipt", async () => {
+    actionRows = [
+      { scouted_gig_id: "g1", action: "apply_clicked", outcome: null },
+      { scouted_gig_id: "g2", action: "applied", outcome: "pending" },
+    ];
+    renderSection({ scanSurface: "wrapped" });
+    await screen.findAllByText("Motion Designer");
+    await waitFor(() => expect(screen.getAllByText("Handed off").length).toBeGreaterThan(0));
+    expect(screen.getAllByText("Marked applied").length).toBeGreaterThan(0);
+    expect(document.body.textContent ?? "").not.toMatch(/submitted|accepted|receipt confirmed|sent to/i);
+  });
+
+  it("each card links to its source, one tap away, with a real target size", async () => {
+    renderSection({ scanSurface: "wrapped" });
+    await screen.findAllByText("Motion Designer");
+    // the lead card (Motion Designer) and the carousel card (Video Editor) both have it
+    const lead = screen.getByRole("link", { name: "Open source for Motion Designer" });
+    expect(lead).toHaveAttribute("href", "https://remoteok.com/remote-jobs/motion-designer-nord-12345");
+    expect(lead).toHaveAttribute("target", "_blank");
+    const card = screen.getByRole("link", { name: "Open source for Video Editor" });
+    expect(card).toHaveAttribute("href", "https://studio.example/jobs/video-editor-sud-2");
+    expect(card.className).toContain("h-11");
+    for (const name of [/Save Video Editor/, /Dismiss Video Editor/]) {
+      expect(screen.getByRole("button", { name }).className).toContain("h-11");
+    }
+  });
+
+  it("says what the listing did not state, so it is checked before a pitch", async () => {
+    renderSection({ scanSurface: "wrapped" });
+    await screen.findAllByText("Motion Designer");
+    // g1 has no posting date from its board; g2 has one, a place and a company
+    const notStated = screen.getAllByText(/Not stated:/).map((el) => el.parentElement?.textContent ?? "");
+    expect(notStated.some((t) => /posting date/.test(t))).toBe(true);
+  });
+
+  it("draws no coloured halo behind the scouted cards", async () => {
+    const { container } = renderSection({ scanSurface: "wrapped" });
+    await screen.findAllByText("Motion Designer");
+    expect(container.querySelector(".ai-ambient-breathe")).toBeNull();
   });
 
   it("the brief dialog has the same evidence, the source and no percentage", async () => {

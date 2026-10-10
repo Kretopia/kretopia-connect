@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,7 @@ import { ScoutEvidence } from "./ScoutEvidence";
 import { ScoutScanProvider } from "@/components/scout/ScoutScanProvider";
 import { useOptionalScoutScan, useScoutScan } from "@/components/scout/scoutScanContext";
 import type { ScoutedGig } from "@/components/scout/scout.types";
+import { gigStatesById, type GigState } from "@/components/scout/gigState";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
@@ -76,6 +77,17 @@ function SourceLine({ gig, className }: { gig: ScoutedGig; className?: string })
         {gig.posted_at ? "posted" : "found"} {formatDistanceToNow(new Date(gig.posted_at || gig.scouted_at), { addSuffix: true }).replace("about ", "")}
       </span>
     </div>
+  );
+}
+
+// Where this gig stands for the person, from what they did with it. It speaks
+// only of their own actions: Scout has no receipt from any source.
+function StateChip({ state, className }: { state: GigState | undefined; className?: string }) {
+  if (!state) return null;
+  return (
+    <Badge variant="outline" title={state.hint} className={cn("px-2 py-0.5 text-[10px] font-semibold bg-background/90 border-border", className)}>
+      {state.label}
+    </Badge>
   );
 }
 
@@ -151,9 +163,11 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
   const markImageBroken = (id: string) =>
     setBrokenImageIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const {
-    gigs, loading, listError, queryKey, progress, lastRunAt, scanning, liveRefreshing,
+    gigs, loading, listError, queryKey, actions, progress, lastRunAt, scanning, liveRefreshing,
     scanElapsed, scanUnavailable, scanNote, scanNow,
   } = useScoutScan();
+  const gigStates = useMemo(() => gigStatesById(actions), [actions]);
+  const savedIds = useMemo(() => new Set(actions.filter((a) => a.action === "saved").map((a) => a.scouted_gig_id)), [actions]);
   const [payFilter, setPayFilter] = useState<PayFilter>("all");
   const [openGig, setOpenGig] = useState<ScoutedGig | null>(null);
   const paidCount = countPaid(gigs);
@@ -292,7 +306,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
     // content/logic unchanged -- it already had a real HD image, fit
     // score and "why this fits you" reasoning, just no HoloCard wrapper.
     return (
-      <HoloCard className="h-full">
+      <HoloCard className="h-full" glow={false}>
       <div
         onClick={() => openDetail(g)}
         role="button"
@@ -317,10 +331,11 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
           <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
-            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/80 backdrop-blur-sm border-border">
+            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/90 border-border">
               <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
               Scouted
             </Badge>
+            <StateChip state={gigStates.get(g.id)} />
           </div>
 
           <div className="absolute bottom-0 inset-x-0 p-3">
@@ -340,14 +355,19 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
 
           <ScoutEvidence gig={g} compact />
 
-          <div className="mt-auto flex items-center justify-between gap-2 pt-1">
+          <div className="mt-auto space-y-0.5 pt-1">
             <SourceLine gig={g} />
-            <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-              <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => save(g.id, e)} title="Save">
-                <Bookmark className="h-3.5 w-3.5" />
+            <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
+              <Button asChild size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground">
+                <a href={g.source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${g.title}`} title="Open source">
+                  <ExternalLink className="h-4 w-4" />
+                </a>
               </Button>
-              <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground" onClick={(e) => { e.stopPropagation(); dismiss(g.id); }} title="Dismiss">
-                <X className="h-3.5 w-3.5" />
+              <Button size="icon" variant="ghost" className="h-11 w-11" onClick={(e) => save(g.id, e)} title={savedIds.has(g.id) ? "Saved" : "Save"} aria-label={savedIds.has(g.id) ? `${g.title} is saved` : `Save ${g.title}`}>
+                <Bookmark className={cn("h-4 w-4", savedIds.has(g.id) && "fill-current text-energy")} />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={(e) => { e.stopPropagation(); dismiss(g.id); }} title="Dismiss" aria-label={`Dismiss ${g.title}`}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -395,7 +415,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
           )}
         </div>
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="ghost" onClick={() => setPrefsOpen(true)} title="Tune scout preferences">
+          <Button size="sm" variant="ghost" className="min-h-11 min-w-11" onClick={() => setPrefsOpen(true)} title="Tune scout preferences" aria-label="Tune scout preferences">
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="ml-1.5 text-xs hidden sm:inline">Tune</span>
           </Button>
@@ -442,7 +462,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
               aria-pressed={payFilter === f.id}
               onClick={() => setPayFilter(f.id)}
               className={cn(
-                "h-7 rounded-full border px-3 text-xs font-semibold",
+                "min-h-11 rounded-full border px-3.5 text-xs font-semibold",
                 payFilter === f.id
                   ? "border-energy/40 bg-energy/10 text-foreground"
                   : "border-border text-muted-foreground hover:text-foreground",
@@ -566,7 +586,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
         {/* First in the list gets the larger layout. It is simply the first the existing
             ordering returns (fit_score desc, then newest): no badge claims more than that. */}
         {visibleGigs[0] && (
-          <HoloCard>
+          <HoloCard glow={false}>
           <div
             onClick={() => openDetail(visibleGigs[0])}
             role="button"
@@ -589,14 +609,17 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                 <KretoScene scene="onboarding" className="h-full w-full" />
               )}
               <div className="absolute top-2.5 left-2.5">
-                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/80 backdrop-blur-sm border-border">
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/90 border-border">
                   <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
                   Scouted
                 </Badge>
               </div>
             </div>
             <div className="p-4 flex flex-col gap-2.5 flex-1 min-w-0">
-              <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
+                <StateChip state={gigStates.get(visibleGigs[0].id)} />
+              </div>
               <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
                 <PayChip compensation={visibleGigs[0].compensation} />
                 {visibleGigs[0].company && <span className="font-medium text-foreground/90">{visibleGigs[0].company}</span>}
@@ -605,15 +628,21 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
               </div>
               <ScoutEvidence gig={visibleGigs[0]} />
               <SourceLine gig={visibleGigs[0]} />
-              <div className="mt-auto flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
-                <Button size="sm" onClick={() => openDetail(visibleGigs[0])} className="gap-1.5">
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                <Button size="sm" onClick={() => openDetail(visibleGigs[0])} className="min-h-11 gap-1.5">
                   View full brief
                 </Button>
-                <Button size="sm" variant="outline" onClick={(e) => save(visibleGigs[0].id, e)} className="gap-1.5">
+                <Button asChild size="sm" variant="outline" className="min-h-11 gap-1.5">
+                  <a href={visibleGigs[0].source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${visibleGigs[0].title}`}>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open source
+                  </a>
+                </Button>
+                <Button size="sm" variant="outline" onClick={(e) => save(visibleGigs[0].id, e)} className="min-h-11 gap-1.5">
                   <Bookmark className="h-3.5 w-3.5" />
                   Save
                 </Button>
-                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismiss(visibleGigs[0].id); }} className="gap-1.5 text-muted-foreground">
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismiss(visibleGigs[0].id); }} className="min-h-11 gap-1.5 text-muted-foreground">
                   <X className="h-3.5 w-3.5" />
                   Dismiss
                 </Button>
@@ -675,7 +704,10 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                       )}
                       {openGig.remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
                     </div>
-                    <SourceLine gig={openGig} className="mt-1" />
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <SourceLine gig={openGig} />
+                      <StateChip state={gigStates.get(openGig.id)} />
+                    </div>
                   </div>
                 </div>
               </DialogHeader>
@@ -714,7 +746,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 text-xs px-2"
+                        className="min-h-11 text-xs px-3"
                         onClick={() => {
                           window.dispatchEvent(new CustomEvent("thrive-copilot:open", {
                             detail: {
@@ -733,7 +765,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                         Open in Kreto
                       </Button>
                       {!coverLetter && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs px-2" onClick={draftLetter} disabled={drafting}>
+                        <Button size="sm" variant="outline" className="min-h-11 text-xs px-3" onClick={draftLetter} disabled={drafting}>
                           {drafting ? <KretoMark size="xs" state="active" className="mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
                           Draft
                         </Button>
@@ -752,26 +784,26 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
               <div className="p-4 pt-0 space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   {openGig.contact_email ? (
-                    <Button asChild size="sm" variant="default" onClick={trackApplyClick}>
+                    <Button asChild size="sm" variant="default" className="min-h-11" onClick={trackApplyClick}>
                       <a href={`mailto:${openGig.contact_email}?subject=${encodeURIComponent(`RE: ${openGig.title}`)}&body=${encodeURIComponent(coverLetter)}`}>
                         <Mail className="h-3.5 w-3.5 mr-1.5" />Email apply
                       </a>
                     </Button>
                   ) : (
-                    <Button asChild size="sm" variant="default" onClick={trackApplyClick}>
+                    <Button asChild size="sm" variant="default" className="min-h-11" onClick={trackApplyClick}>
                       <a href={openGig.apply_url || openGig.source_url} target="_blank" rel="noopener noreferrer">
                         <Send className="h-3.5 w-3.5 mr-1.5" />Apply on site
                       </a>
                     </Button>
                   )}
-                  <Button size="sm" onClick={markApplied} variant="outline">
+                  <Button size="sm" onClick={markApplied} variant="outline" className="min-h-11">
                     <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />I applied
                   </Button>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
-                  <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setOutcome("won")}>🎉 Won</Button>
-                  <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setOutcome("lost")}>Lost</Button>
-                  <Button size="sm" variant="ghost" className="text-xs h-7" onClick={() => setOutcome("ghosted")}>Ghosted</Button>
+                  <Button size="sm" variant="ghost" className="min-h-11 text-xs" onClick={() => setOutcome("won")}>🎉 Won</Button>
+                  <Button size="sm" variant="ghost" className="min-h-11 text-xs" onClick={() => setOutcome("lost")}>Lost</Button>
+                  <Button size="sm" variant="ghost" className="min-h-11 text-xs" onClick={() => setOutcome("ghosted")}>Ghosted</Button>
                 </div>
                 <a
                   href={openGig.source_url}

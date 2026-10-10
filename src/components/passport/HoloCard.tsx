@@ -6,6 +6,8 @@ interface HoloCardProps {
   className?: string;
   /** Max tilt in degrees. */
   maxTilt?: number;
+  /** The blurred coloured halo behind the card. On by default; off leaves the card on the page's own background. */
+  glow?: boolean;
 }
 
 /**
@@ -14,7 +16,7 @@ interface HoloCardProps {
  * Pure CSS/transform: no dependencies, GPU-composited, disabled for touch
  * devices and for users who prefer reduced motion.
  */
-export function HoloCard({ children, className, maxTilt = 8 }: HoloCardProps) {
+export function HoloCard({ children, className, maxTilt = 8, glow = true }: HoloCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glare, setGlare] = useState({ x: 50, y: 50, on: false });
@@ -68,16 +70,18 @@ export function HoloCard({ children, className, maxTilt = 8 }: HoloCardProps) {
         }}
       >
         {/* Depth glow behind the card — slow ambient breathe reads as "AI-aware" presence */}
-        <div
-          aria-hidden
-          className="ai-ambient-breathe pointer-events-none absolute -inset-2 rounded-[26px] blur-2xl"
-          style={{
-            background:
-              "linear-gradient(135deg, hsl(var(--signal-teal)/0.35), transparent 45%, hsl(var(--signal-pink,320 100% 60%)/0.14))",
-            transform: "translateZ(-40px)",
-            animationPlayState: inView ? "running" : "paused",
-          }}
-        />
+        {glow && (
+          <div
+            aria-hidden
+            className="ai-ambient-breathe pointer-events-none absolute -inset-2 rounded-[26px] blur-2xl"
+            style={{
+              background:
+                "linear-gradient(135deg, hsl(var(--signal-teal)/0.35), transparent 45%, hsl(var(--signal-pink,320 100% 60%)/0.14))",
+              transform: "translateZ(-40px)",
+              animationPlayState: inView ? "running" : "paused",
+            }}
+          />
+        )}
 
         {/* Card body */}
         <div className="relative h-full overflow-hidden rounded-2xl shadow-[0_20px_50px_-20px_rgba(0,0,0,0.75),0_2px_0_0_rgba(255,255,255,0.06)_inset]">
