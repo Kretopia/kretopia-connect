@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bookmark, Briefcase, CalendarClock, ClipboardCheck, Clock, Hourglass, RefreshCw, type LucideIcon } from "lucide-react";
+import { Bookmark, Briefcase, CalendarCheck, CalendarClock, ClipboardCheck, Clock, Hourglass, MapPin, RefreshCw, UserSearch, type LucideIcon } from "lucide-react";
 
 import { KretoScene } from "@/components/brand/KretoScene";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -20,6 +20,9 @@ const ICON: Record<ScoutSignalId, LucideIcon> = {
   started: ClipboardCheck,
   saved: Bookmark,
   awaiting: Hourglass,
+  posted: CalendarCheck,
+  role: UserSearch,
+  place: MapPin,
   fresh: Clock,
   listed: Briefcase,
 };
@@ -51,11 +54,11 @@ interface ScoutWrappedProps {
 export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
   const scan = useScoutScan();
   const now = useNow(30_000);
-  const { gigs, actions, actionsReady, loading, listError, lastRunAt, busy, scanning, liveRefreshing, scanElapsed, scanUnavailable, scanNote, lastResult, progress } = scan;
+  const { gigs, actions, actionsReady, profile, loading, listError, lastRunAt, busy, scanning, liveRefreshing, scanElapsed, scanUnavailable, scanNote, lastResult, progress } = scan;
 
   const signals: WrappedSignal[] = useMemo(
     () =>
-      selectScoutWrappedSignals({ gigs, actions, now: new Date(now) }).map((s) => ({
+      selectScoutWrappedSignals({ gigs, actions, profile, now: new Date(now) }).map((s) => ({
         id: s.id,
         icon: ICON[s.id],
         value: s.value,
@@ -64,7 +67,7 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
         hint: s.hint,
         onSelect: () => onSelectTab(s.tab),
       })),
-    [gigs, actions, now, onSelectTab],
+    [gigs, actions, profile, now, onSelectTab],
   );
   const signalsLoading = loading || !actionsReady;
 

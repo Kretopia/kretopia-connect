@@ -98,6 +98,17 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
     won: actions.filter((a) => a.action === "applied" && a.outcome === "won").length,
   };
 
+  // Two columns of one row: what the top section compares gig titles and places with.
+  const { data: profile = null } = useQuery({
+    queryKey: ["scout-profile-facts", userId],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("role, location").eq("user_id", userId!).maybeSingle();
+      return data ? { role: (data.role as string | null) ?? null, location: (data.location as string | null) ?? null } : null;
+    },
+    enabled: !!userId,
+    staleTime: 10 * 60_000,
+  });
+
   const { data: lastRunAt = null, isFetched: lastRunKnown } = useQuery({
     queryKey: ["scout-last-run", userId],
     queryFn: async () => {
@@ -209,6 +220,7 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
     queryKey,
     actions,
     actionsReady,
+    profile,
     progress,
     lastRunAt,
     scanning,
