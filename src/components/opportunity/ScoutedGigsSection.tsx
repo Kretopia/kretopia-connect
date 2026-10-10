@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,53 +15,23 @@ import {
 } from "lucide-react";
 import { ScoutPreferencesDialog } from "./ScoutPreferencesDialog";
 import { ScoutEvidence } from "./ScoutEvidence";
+import { ScoutScanProvider } from "@/components/scout/ScoutScanProvider";
+import { useOptionalScoutScan, useScoutScan } from "@/components/scout/scoutScanContext";
+import type { ScoutedGig } from "@/components/scout/scout.types";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useNavigate } from "react-router-dom";
-import { extractInvokeError } from "@/lib/extractInvokeError";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "@/lib/scoutPay";
-import { isThinListing } from "@/lib/scoutListing";
-import {
-  LIVE_INTERVAL_MS,
-  degradedNote,
-  describeScan,
-  friendlyScanError,
-  isScanStale,
-  type ScanResult,
-} from "@/lib/scoutScan";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoScene } from "@/components/brand/KretoScene";
-
-interface ScoutedGig {
-  id: string;
-  source: string;
-  source_name: string | null;
-  source_url: string;
-  title: string;
-  company: string | null;
-  location: string | null;
-  remote: boolean;
-  description: string | null;
-  full_description: string | null;
-  image_url: string | null;
-  compensation: string | null;
-  contact_email: string | null;
-  apply_url: string | null;
-  fit_score: number;
-  fit_reason: string | null;
-  scouted_at: string;
-  /** When the board says the job went up; null for pages that don't say. */
-  posted_at?: string | null;
-  details_fetched_at: string | null;
-}
 
 const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   web: Globe, linkedin: Linkedin, instagram: Instagram, ats: Briefcase, gigboard: Briefcase,
@@ -143,9 +113,30 @@ function MiniMarkdown({ md }: { md: string }) {
 interface ScoutedGigsSectionProps {
   /** When set, only show this many gigs and append a "See all" link to /opportunities. */
   limit?: number;
+  /**
+   * Where Scan now and its progress live. "inline" (default) draws them in this
+   * section's header. "wrapped" means a Scout Wrapped surface above already
+   * does, so this section only lists gigs and keeps Tune.
+   */
+  scanSurface?: "inline" | "wrapped";
 }
 
-export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
+/**
+ * The For You list. The scan state it needs comes from a ScoutScanProvider: the
+ * Scout page puts one above both this and the Wrapped surface; anywhere else
+ * (Discover, Opportunities, Today's embed) this mounts its own.
+ */
+export function ScoutedGigsSection(props: ScoutedGigsSectionProps = {}) {
+  const inherited = useOptionalScoutScan();
+  if (inherited) return <ScoutedGigsBody {...props} />;
+  return (
+    <ScoutScanProvider embedded={!!props.limit}>
+      <ScoutedGigsBody {...props} />
+    </ScoutScanProvider>
+  );
+}
+
+function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -159,70 +150,11 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const [brokenImageIds, setBrokenImageIds] = useState<Set<string>>(new Set());
   const markImageBroken = (id: string) =>
     setBrokenImageIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
-  const queryKey = ["scouted-gigs", user?.id];
-  // Declared before the queries: while a scan runs the list is re-read every
-  // few seconds, so gigs appear as the scan saves them instead of at the end.
-  const [scanning, setScanning] = useState(false);
-  const { data: gigs = [], isLoading: loading } = useQuery({
-    queryKey,
-    refetchInterval: scanning ? 3_000 : 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("scouted_gigs")
-        .select("*")
-        .eq("target_user_id", user!.id)
-        .gt("expires_at", new Date().toISOString())
-        .order("fit_score", { ascending: false })
-        .order("scouted_at", { ascending: false })
-        .limit(40);
-
-      const { data: actions } = await supabase
-        .from("scouted_gig_actions")
-        .select("scouted_gig_id, action")
-        .eq("user_id", user!.id)
-        .eq("action", "dismissed");
-      const dismissed = new Set((actions || []).map((a) => a.scouted_gig_id));
-      return ((data || []) as ScoutedGig[]).filter((g) => !dismissed.has(g.id) && !isThinListing(g));
-    },
-    enabled: !!user,
-  });
-  const { data: progress = { saved: 0, applied: 0, won: 0 } } = useQuery({
-    queryKey: ["scout-progress", user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("scouted_gig_actions")
-        .select("action, outcome")
-        .eq("user_id", user!.id);
-      if (error) throw error;
-      return {
-        saved: data.filter((item) => item.action === "saved").length,
-        applied: data.filter((item) => item.action === "applied").length,
-        won: data.filter((item) => item.action === "applied" && item.outcome === "won").length,
-      };
-    },
-    enabled: !!user,
-  });
-  // When Scout last checked the boards (any trigger), for the "Live" line and
-  // to decide whether to refresh on arrival.
-  const { data: lastRunAt = null, isFetched: lastRunKnown } = useQuery({
-    queryKey: ["scout-last-run", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("scout_preferences")
-        .select("last_run_at")
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      return (data?.last_run_at as string | null | undefined) ?? null;
-    },
-    enabled: !!user,
-    refetchInterval: 60_000,
-  });
-  const [scanUnavailable, setScanUnavailable] = useState<string | null>(null);
-  const [liveRefreshing, setLiveRefreshing] = useState(false);
-  const [scanNote, setScanNote] = useState<string | null>(null);
+  const {
+    gigs, loading, listError, queryKey, progress, lastRunAt, scanning, liveRefreshing,
+    scanElapsed, scanUnavailable, scanNote, scanNow,
+  } = useScoutScan();
   const [payFilter, setPayFilter] = useState<PayFilter>("all");
-  const [scanElapsed, setScanElapsed] = useState(0);
-  const scanTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [openGig, setOpenGig] = useState<ScoutedGig | null>(null);
   const paidCount = countPaid(gigs);
   const visibleGigs = applyPayFilter(gigs, payFilter);
@@ -253,87 +185,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     enabled: !limit && !loading && gigs.length === 0,
     staleTime: 5 * 60_000,
   });
-
-  // `auto` = a scan we start ourselves. It must never greet someone with a red
-  // failure toast for something they didn't ask for.
-  // `mode`: "full" is Scan now / first arrival (job boards, plus web search and
-  // AI when the workspace has them); "live" is the quiet background refresh of
-  // the public job boards (free; the server throttles it).
-  const busyRef = useRef(false);
-  const scanNow = async ({ auto = false, mode = "full" }: { auto?: boolean; mode?: "full" | "live" } = {}) => {
-    if (!user) return;
-    if (auto && busyRef.current) return;
-    busyRef.current = true;
-    const live = mode === "live";
-    if (live) {
-      setLiveRefreshing(true);
-    } else {
-      setScanning(true);
-      setScanElapsed(0);
-      scanTimerRef.current = setInterval(() => setScanElapsed((s) => s + 1), 1000);
-    }
-
-    const { data, error } = await supabase.functions.invoke("scout-gigs", { body: { trigger: live ? "live" : "manual" } });
-
-    busyRef.current = false;
-    if (live) {
-      setLiveRefreshing(false);
-    } else {
-      if (scanTimerRef.current) clearInterval(scanTimerRef.current);
-      scanTimerRef.current = null;
-      setScanning(false);
-    }
-
-    if (error) {
-      // The SDK's own message is a generic "non-2xx status code" — the
-      // function's real error (config, auth, rate limit) lives in the body.
-      const detail = friendlyScanError(await extractInvokeError(error));
-      if (auto) {
-        if (!live) setScanUnavailable(detail);
-        return;
-      }
-      toast({ title: "Scout failed", description: detail, variant: "destructive" });
-      setScanUnavailable(detail);
-      return;
-    }
-
-    const result = (data ?? {}) as ScanResult;
-    setScanUnavailable(null);
-    setScanNote(degradedNote(result.degraded));
-    const message = describeScan(result, auto);
-    if (message) toast(message);
-    queryClient.invalidateQueries({ queryKey });
-    queryClient.invalidateQueries({ queryKey: ["scout-last-run", user.id] });
-  };
-
-  useEffect(() => () => { if (scanTimerRef.current) clearInterval(scanTimerRef.current); }, []);
-
-  // On arrival, once per mount: nothing scouted yet -> a full scan (waiting for
-  // a manual click was the whole complaint); otherwise, if the last check is
-  // stale -> a quiet live refresh, so the list is current the moment it is
-  // looked at. Marking the ref in both cases keeps it from looping or burning
-  // through the server-side weekly limit (e.g. after dismissing everything).
-  const hasAutoScannedRef = useRef(false);
-  useEffect(() => {
-    if (hasAutoScannedRef.current) return;
-    if (loading || scanning || !user || !lastRunKnown) return;
-    hasAutoScannedRef.current = true;
-    if (gigs.length === 0) scanNow({ auto: true });
-    else if (!limit && isScanStale(lastRunAt)) scanNow({ auto: true, mode: "live" });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, user, gigs.length, lastRunKnown, lastRunAt]);
-
-  // While Scout stays open and visible, look again every few minutes. The
-  // boards update about hourly and the server skips a refresh that comes too
-  // soon after the last one, so this costs nothing.
-  useEffect(() => {
-    if (!user || limit) return;
-    const id = setInterval(() => {
-      if (document.visibilityState === "visible") scanNow({ auto: true, mode: "live" });
-    }, LIVE_INTERVAL_MS);
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, limit]);
 
   const dismiss = async (gigId: string) => {
     if (!user) return;
@@ -401,22 +252,27 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
     setCoverLetter(data.cover_letter);
     supabase.from("scouted_gig_actions").upsert({
       user_id: user.id, scouted_gig_id: openGig.id, action: "drafted",
-    }).then(() => {}, () => {});
+    }).then(() => queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] }), () => {});
   };
 
   const trackApplyClick = () => {
     if (!user || !openGig) return;
     supabase.from("scouted_gig_actions").upsert({
       user_id: user.id, scouted_gig_id: openGig.id, action: "apply_clicked",
-    }).then(() => {}, () => {});
+    }).then(() => queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] }), () => {});
   };
 
   const markApplied = async () => {
     if (!user || !openGig) return;
-    await supabase.from("scouted_gig_actions").upsert({
+    const { error } = await supabase.from("scouted_gig_actions").upsert({
       user_id: user.id, scouted_gig_id: openGig.id, action: "applied",
       cover_letter: coverLetter, outcome: "pending",
     });
+    if (error) {
+      toast({ title: "Couldn't mark this as applied", description: "Nothing was saved. Try again.", variant: "destructive" });
+      return;
+    }
+    queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] });
     toast({ title: "Marked as applied", description: "Tap Won / Lost / Ghosted later to track outcome." });
     setOpenGig(null);
   };
@@ -521,8 +377,8 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             <Sparkles className="h-4 w-4 text-energy" />
             Scouted for you
           </h2>
-          <p className="text-[11px] text-muted-foreground mt-0.5">Real gigs from job boards across the web — matched to your profile</p>
-          {(liveRefreshing || lastRunAt) && (
+          <p className="text-[11px] text-muted-foreground mt-0.5">Gigs from job boards, matched to your Passport</p>
+          {scanSurface === "inline" && (liveRefreshing || lastRunAt) && (
             <p className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground" aria-live="polite">
               {liveRefreshing ? (
                 <>
@@ -543,10 +399,12 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             <SlidersHorizontal className="h-3.5 w-3.5" />
             <span className="ml-1.5 text-xs hidden sm:inline">Tune</span>
           </Button>
-          <Button size="sm" variant="outline" onClick={() => scanNow()} disabled={scanning}>
-            {scanning ? <KretoMark size="xs" state="active" /> : <RefreshCw className="h-3.5 w-3.5" />}
-            <span className="ml-1.5 text-xs">Scan now</span>
-          </Button>
+          {scanSurface === "inline" && (
+            <Button size="sm" variant="outline" onClick={() => void scanNow()} disabled={scanning || liveRefreshing}>
+              {scanning ? <KretoMark size="xs" state="active" /> : <RefreshCw className="h-3.5 w-3.5" />}
+              <span className="ml-1.5 text-xs">Scan now</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -597,24 +455,24 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         </div>
       )}
 
-      {scanUnavailable && !scanning && (
+      {scanSurface === "inline" && scanUnavailable && !scanning && (
         <p className="rounded-xl border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground" role="status">
           {scanUnavailable}
         </p>
       )}
 
-      {!scanUnavailable && scanNote && !scanning && (
+      {scanSurface === "inline" && !scanUnavailable && scanNote && !scanning && (
         <p className="rounded-xl border border-border bg-card px-3 py-2 text-[11px] text-muted-foreground" role="status">
           {scanNote}
         </p>
       )}
 
-      {scanning && (
+      {scanSurface === "inline" && scanning && (
         <SmartWidget interactive={false} className="p-3">
           <div className="flex items-center gap-3">
             <KretoMark size="xs" state="active" className="shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground">Searching remote job boards first, then gig sites, LinkedIn, Instagram and ATS pages…</p>
+              <p className="text-xs font-semibold text-foreground">Checking the job boards for roles that match your Passport…</p>
               <p className="text-[11px] text-muted-foreground">{scanElapsed}s elapsed — new gigs appear below as they're found</p>
             </div>
           </div>
@@ -625,7 +483,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         fallbackOpps.length > 0 ? (
           <div className="space-y-3">
             <p className="text-[11px] text-muted-foreground">
-              Your first personalized scan is warming up — meanwhile, these open gigs on Kretopia match your world:
+              Your first scan is still warming up. Meanwhile, these are the latest open gigs on Kretopia:
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {fallbackOpps.map((o) => (
@@ -660,7 +518,18 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
           </div>
         ) : (
           <Card className="p-6 text-center text-sm text-muted-foreground border-dashed">
-            No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to find real jobs across the web matched to your skills.
+            {listError ? (
+              <>
+                Couldn't load your scouted gigs.{" "}
+                <button type="button" className="font-semibold text-foreground underline underline-offset-2" onClick={() => void queryClient.invalidateQueries({ queryKey })}>
+                  Try again
+                </button>
+              </>
+            ) : (
+              <>
+                No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to check the job boards for roles that match your skills.
+              </>
+            )}
           </Card>
         )
       ) : limit ? (

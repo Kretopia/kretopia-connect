@@ -12,10 +12,13 @@ import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { ScoutKretoAssist } from "@/components/scout/ScoutKretoAssist";
+import { ScoutScanProvider } from "@/components/scout/ScoutScanProvider";
+import { ScoutWrapped } from "@/components/scout/ScoutWrapped";
+import type { ScoutTab } from "@/components/scout/scout.types";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { Button } from "@/components/ui/button";
 
-type Tab = "scouted" | "shortlist" | "marketplace";
+type Tab = ScoutTab;
 
 // Tab order: For You first (the personalized scout is the reason to open
 // this page), then the open marketplace, then saved gigs.
@@ -66,7 +69,7 @@ const Scout = () => {
     <div className="accent-scout min-h-screen bg-background">
       <SEO
         title="Scout — Find your next gig & collaborator | Kretopia"
-        description="One feed for the gigs and people that fit your work — scouted from across the web and curated by Kreto."
+        description="One feed for the gigs that fit your work — scouted from job boards and matched to your Passport."
       />
 
       {/* Same header as Studio: eyebrow slot holds the tutorial trigger, a
@@ -76,13 +79,18 @@ const Scout = () => {
         eyebrow="Scout"
         title="Find the gigs"
         accentTitle="that fit your work."
-        subtitle="Filter the noise and shortlist real fits, or just chat with Kreto. Fresh gigs from across the web, matched to your Passport."
+        subtitle="Filter the noise and shortlist real fits, or just chat with Kreto. Fresh gigs from job boards, matched to your Passport."
         tutorial={{ featureKey: "scout", label: "How Scout works", steps: SCOUT_TUTORIAL }}
       />
 
-      {/* Body: the section switcher first, right under the header, then the
-          work itself, then Kreto once there is something to act on. */}
+      {/* Body: Scout's Wrapped surface first (what is on your list, and Scan now),
+          the section switcher right under it, then the work itself, then Kreto
+          once there is something to act on. One scan state is shared by the
+          Wrapped surface and the For You list. */}
+      <ScoutScanProvider>
       <StudioFeatureShell>
+        <ScoutWrapped onSelectTab={switchTab} />
+
         <div
           role="tablist"
           aria-label="Scout sections"
@@ -123,11 +131,12 @@ const Scout = () => {
             </div>
           </div>
         )}
-        {tab === "scouted" && <ScoutedGigsSection />}
+        {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
       </StudioFeatureShell>
+      </ScoutScanProvider>
     </div>
   );
 };

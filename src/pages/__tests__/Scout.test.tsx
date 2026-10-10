@@ -23,6 +23,14 @@ vi.mock("@/components/agent/SurfaceProactiveCards", () => ({
     return <section data-testid="proactive-cards">Kreto Suggests</section>;
   },
 }));
+vi.mock("@/components/scout/ScoutScanProvider", () => ({ ScoutScanProvider: ({ children }: { children: ReactNode }) => <>{children}</> }));
+vi.mock("@/components/scout/ScoutWrapped", () => ({
+  ScoutWrapped: ({ onSelectTab }: { onSelectTab: (tab: string) => void }) => (
+    <section aria-label="Scout Wrapped" data-testid="wrapped">
+      <button type="button" onClick={() => onSelectTab("shortlist")}>Go to saved</button>
+    </section>
+  ),
+}));
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div data-testid="marketplace" /> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div data-testid="scouted" /> }));
 vi.mock("@/components/opportunity/ShortlistedGigs", () => ({ ShortlistedGigs: () => <div data-testid="shortlist" /> }));
@@ -70,12 +78,16 @@ describe("Scout page", () => {
     expect(String(props.subtitle)).toMatch(/just chat with Kreto/i);
   });
 
-  it("order: header, then the tabs, then the results, then Kreto, never Kreto above the tabs", () => {
+  it("order: header, then Scout's Wrapped surface, then the tabs right under it, then the results, then Kreto", () => {
     renderScout();
+    const wrapped = screen.getByTestId("wrapped");
     const tabs = screen.getByRole("tablist", { name: "Scout sections" });
     const results = screen.getByTestId("scouted");
     const kreto = assist()!;
-    expect(before(screen.getByTestId("header"), tabs)).toBe(true);
+    expect(before(screen.getByTestId("header"), wrapped)).toBe(true);
+    expect(before(wrapped, tabs)).toBe(true);
+    // nothing sits between the Wrapped surface and the tabs
+    expect(wrapped.nextElementSibling).toBe(tabs);
     expect(before(tabs, results)).toBe(true);
     expect(before(results, kreto)).toBe(true);
     expect(screen.getAllByRole("complementary", { name: "Kreto can help" })).toHaveLength(1);
@@ -130,6 +142,13 @@ describe("Scout page", () => {
       expect(screen.queryByText(gone)).not.toBeInTheDocument();
     }
     expect(watchSpy).not.toHaveBeenCalled();
+  });
+
+  it("the Wrapped surface can switch the page to a tab", async () => {
+    renderScout();
+    fireEvent.click(screen.getByRole("button", { name: "Go to saved" }));
+    expect(await screen.findByTestId("shortlist")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Gigs you saved for later/i })).toHaveAttribute("aria-selected", "true");
   });
 
   it("switches sections from the body", async () => {

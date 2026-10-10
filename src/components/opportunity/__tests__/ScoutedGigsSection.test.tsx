@@ -55,12 +55,12 @@ vi.mock("@/integrations/supabase/client", () => ({
 
 import { ScoutedGigsSection } from "../ScoutedGigsSection";
 
-const renderSection = () => {
+const renderSection = (props: { scanSurface?: "inline" | "wrapped" } = {}) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
-        <ScoutedGigsSection />
+        <ScoutedGigsSection {...props} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -112,6 +112,19 @@ describe("Scout results", () => {
     const group = screen.getByRole("group", { name: "Pay filter" });
     expect(within(group).getByRole("button", { name: /All 2/ })).toBeInTheDocument();
     expect(within(group).getByRole("button", { name: /Pay listed 1/ })).toBeInTheDocument();
+  });
+
+  it("draws Scan now in its own header by default, and leaves it to the Wrapped surface when told to", async () => {
+    const inline = renderSection();
+    await screen.findAllByText("Motion Designer");
+    expect(screen.getAllByRole("button", { name: "Scan now" })).toHaveLength(1);
+    inline.unmount();
+
+    renderSection({ scanSurface: "wrapped" });
+    await screen.findAllByText("Motion Designer");
+    expect(screen.queryByRole("button", { name: "Scan now" })).not.toBeInTheDocument();
+    // Tune stays with the list
+    expect(screen.getByTitle("Tune scout preferences")).toBeInTheDocument();
   });
 
   it("the brief dialog has the same evidence, the source and no percentage", async () => {
