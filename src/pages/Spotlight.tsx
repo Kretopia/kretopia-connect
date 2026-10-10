@@ -77,7 +77,7 @@ const Spotlight = () => {
           subtitle="Interviews, features and podcast episodes from across the creative universe — the people behind the work, in their own words."
         />
 
-        <StudioFeatureShell>
+        <StudioFeatureShell wrapped={{ name: "Spotlight" }}>
           <section>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">The desk</p>
             <h2 className="text-xl font-bold text-foreground mb-4">Read it, or hear it.</h2>

@@ -192,7 +192,7 @@ export default function CreditsDashboard() {
           subtitle="Your professional identity and the verified creative work behind it — in one private place."
         />
 
-        <StudioFeatureShell className="relative">
+        <StudioFeatureShell className="relative" wrapped={{ name: "Credits" }}>
           <div className="mb-5">
             <PersonalCreditsSearch
               value={rawQuery}

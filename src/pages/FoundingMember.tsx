@@ -81,7 +81,7 @@ export default function FoundingMember() {
         tutorial={{ featureKey: "founding-circle", label: "How the Founding Circle works", steps: FOUNDING_TUTORIAL }}
       />
 
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "Founding Circle" }}>
         <button
           onClick={() => navigate(-1)}
           className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[hsl(var(--energy))] transition-colors"

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { useNavigate } from "react-router-dom";
 import { useClients, type Client } from "@/hooks/useClients";
 import { AIAddClientCard } from "@/components/clients/AIAddClientCard";
@@ -42,7 +43,7 @@ const Clients = () => {
         />
       </div>
 
-      <div className="max-w-3xl mx-auto p-4">
+      <StudioFeatureShell wrapped={{ name: "Clients" }}>
         <KretoTip compact className="mb-4" />
         <AIAddClientCard
           onDraft={(d) => {
@@ -96,7 +97,7 @@ const Clients = () => {
           );})}
         </div>
       )}
-      </div>
+      </StudioFeatureShell>
 
       <ClientFormDialog key={draftKey} open={showForm} onOpenChange={setShowForm} client={draft as Client | null} />
     </div>

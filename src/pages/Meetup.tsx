@@ -273,7 +273,7 @@ const Meetup = () => {
         }
       />
 
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "Events" }}>
         {searchResults !== null ? (
           // A search takes over the whole content area regardless of which
           // tab was selected -- previously the search box lived in the

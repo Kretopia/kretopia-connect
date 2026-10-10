@@ -1,5 +1,6 @@
 import type { ElementType, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { FeatureWrapped } from "@/components/wrapped/FeatureWrapped";
 
 interface StudioFeatureShellProps {
   children: ReactNode;
@@ -7,6 +8,8 @@ interface StudioFeatureShellProps {
   /** Render as `<main>` for the page's primary landmark, or `<div>` (default) when
    * the page already has its own `<main>` elsewhere. */
   as?: ElementType;
+  /** Put the body on a Wrapped panel named for the feature (see FeatureWrapped). */
+  wrapped?: { name: string; status?: ReactNode };
 }
 
 /**
@@ -23,10 +26,16 @@ interface StudioFeatureShellProps {
  * max-w-*, double-applying horizontal padding. See
  * STUDIO_CONTAINER_ALIGNMENT_REPORT.md.
  */
-export function StudioFeatureShell({ children, className, as: Component = "div" }: StudioFeatureShellProps) {
+export function StudioFeatureShell({ children, className, as: Component = "div", wrapped }: StudioFeatureShellProps) {
   return (
     <Component className={cn("max-w-6xl mx-auto px-4 pt-4 pb-36 md:pb-12 space-y-5", className)}>
-      {children}
+      {wrapped ? (
+        <FeatureWrapped name={wrapped.name} status={wrapped.status}>
+          {children}
+        </FeatureWrapped>
+      ) : (
+        children
+      )}
     </Component>
   );
 }

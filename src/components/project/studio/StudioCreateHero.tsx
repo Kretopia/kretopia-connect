@@ -4,7 +4,6 @@ import { ArrowRight, Mic, FileText, ListChecks, Receipt } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { GlassCtaButton, OutlineCtaButton } from "@/components/ui/glass-cta";
-import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 interface StudioCreateHeroProps {
@@ -34,7 +33,7 @@ const PROMPTS = [
  * Studio home hero — the New Room is the feature, not a button. Same
  * cinematic plate as every other Kretopia surface (theme-aware base,
  * breathing aurora, quadrille grid, grain), signed with Kretopia's own
- * lockup, a large K behind it and Kreto at his Studio desk, with a
+ * lockup and Kreto at his Studio desk, with a
  * live prompt line and the Landing CTA pair (one primary, one secondary, in
  * equal tracks). Copy stays inside what is actually shipped: Kreto drafts a
  * structure, the user reviews and confirms before anything is created.
@@ -70,14 +69,6 @@ export const StudioCreateHero = ({ onCreate, onVoice, projectCount, activeCount 
             "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
         }}
       />
-      {/* Kretopia's K, large and quiet, behind everything */}
-      <img
-        src={kMarkAsset.url}
-        alt=""
-        draggable={false}
-        className="pointer-events-none absolute -bottom-16 -right-10 h-80 w-80 select-none object-contain opacity-[0.07]"
-      />
-
       <div className="relative p-6 sm:p-9">
         <div className="flex items-center justify-between gap-3">
           <BrandLogo lockup size="md" />
