@@ -1,5 +1,7 @@
 import type { ReactNode, Ref } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
+import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { cn } from "@/lib/utils";
 
 /** Thin L-shaped corner marks: the HUD feel, drawn with borders only (no filters, no images). */
@@ -30,6 +32,8 @@ export interface WrappedShellProps {
   aside?: ReactNode;
   /** Ref for the outer section (visibility checks). */
   sectionRef?: Ref<HTMLElement>;
+  /** The Kretopia lockup at the foot of the panel. On by default; a page that stacks two panels keeps it on the last one. */
+  brandFooter?: boolean;
   className?: string;
   children: ReactNode;
 }
@@ -43,7 +47,7 @@ export interface WrappedShellProps {
  * drift apart. It owns the look only: what goes inside, and where its numbers
  * come from, belongs to each surface.
  */
-export function WrappedShell({ titleId, eyebrow, title, subtitle, status, aside, sectionRef, className, children }: WrappedShellProps) {
+export function WrappedShell({ titleId, eyebrow, title, subtitle, status, aside, sectionRef, brandFooter = true, className, children }: WrappedShellProps) {
   return (
     <section
       ref={sectionRef}
@@ -61,6 +65,14 @@ export function WrappedShell({ titleId, eyebrow, title, subtitle, status, aside,
         style={{ background: "radial-gradient(60% 45% at 0% 0%, hsl(var(--energy) / 0.10), transparent 70%)" }}
       />
       <HudCorners />
+      {/* Kretopia's K, large and quiet, behind the content */}
+      <img
+        src={kMarkAsset.url}
+        alt=""
+        aria-hidden
+        draggable={false}
+        className="pointer-events-none absolute -bottom-12 -right-10 -z-10 h-64 w-64 select-none object-contain opacity-[0.05]"
+      />
 
       <div className="space-y-5 sm:space-y-6">
         <header className="flex items-start justify-between gap-3">
@@ -75,6 +87,12 @@ export function WrappedShell({ titleId, eyebrow, title, subtitle, status, aside,
           <div className="flex shrink-0 items-center gap-2">{aside}</div>
         </header>
         {children}
+        {brandFooter && (
+          <footer className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+            <BrandLogo lockup size="sm" className="opacity-90" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow.replace(/^Kretopia( ·)?\s*/i, "")}</span>
+          </footer>
+        )}
       </div>
     </section>
   );

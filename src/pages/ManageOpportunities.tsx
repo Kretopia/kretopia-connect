@@ -270,6 +270,7 @@ const ManageOpportunities = () => {
         <div className="relative">
         <PageBackButton />
         <FeaturePageHeader
+          scene="scout"
           eyebrow="Manage"
           title="Gig Manager."
           accentTitle="From post to hire."

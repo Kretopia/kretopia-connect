@@ -185,6 +185,7 @@ export default function CreditsDashboard() {
       <div className="accent-passport relative min-h-screen bg-background">
         <PageBackButton />
         <FeaturePageHeader
+          scene="workspace"
           eyebrow="Credits"
           title="Credits."
           accentTitle="Your record, verified."

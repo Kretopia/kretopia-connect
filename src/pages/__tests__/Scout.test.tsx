@@ -31,6 +31,9 @@ vi.mock("@/components/scout/ScoutWrapped", () => ({
     </section>
   ),
 }));
+vi.mock("@/components/scout/ScoutResultsWrapped", () => ({
+  ScoutResultsWrapped: ({ children }: { children: ReactNode }) => <section aria-label="Scout results" data-testid="results-wrapped">{children}</section>,
+}));
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div data-testid="marketplace" /> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div data-testid="scouted" /> }));
 vi.mock("@/components/opportunity/ShortlistedGigs", () => ({ ShortlistedGigs: () => <div data-testid="shortlist" /> }));
@@ -86,8 +89,12 @@ describe("Scout page", () => {
     const kreto = assist()!;
     expect(before(screen.getByTestId("header"), wrapped)).toBe(true);
     expect(before(wrapped, tabs)).toBe(true);
-    // nothing sits between the Wrapped surface and the tabs
-    expect(wrapped.nextElementSibling).toBe(tabs);
+    // the bottom of the page is one Wrapped panel, right after the top one, and the tabs open it
+    const bottom = screen.getByTestId("results-wrapped");
+    expect(wrapped.nextElementSibling).toBe(bottom);
+    expect(bottom.firstElementChild).toBe(tabs);
+    expect(bottom.contains(results)).toBe(true);
+    expect(bottom.contains(kreto)).toBe(true);
     expect(before(tabs, results)).toBe(true);
     expect(before(results, kreto)).toBe(true);
     expect(screen.getAllByRole("complementary", { name: "Kreto can help" })).toHaveLength(1);

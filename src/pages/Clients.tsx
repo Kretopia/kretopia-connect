@@ -33,6 +33,7 @@ const Clients = () => {
       <div className="relative">
         <PageBackButton />
         <FeaturePageHeader
+          scene="office"
           eyebrow="Client hub"
           title="Clients."
           accentTitle="Everyone you work with."

@@ -326,7 +326,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
               onError={() => markImageBroken(g.id)}
             />
           ) : (
-            <KretoScene scene="onboarding" className="h-full w-full" />
+            <KretoScene scene="scout" size="thumb" className="h-full w-full" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
@@ -606,7 +606,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                   onError={() => markImageBroken(visibleGigs[0].id)}
                 />
               ) : (
-                <KretoScene scene="onboarding" className="h-full w-full" />
+                <KretoScene scene="scout" size="thumb" className="h-full w-full" />
               )}
               <div className="absolute top-2.5 left-2.5">
                 <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/90 border-border">
@@ -688,7 +688,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
                         onError={() => markImageBroken(openGig.id)}
                       />
                     ) : (
-                      <KretoScene scene="onboarding" className="h-full w-full" />
+                      <KretoScene scene="scout" size="thumb" className="h-full w-full" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-left">

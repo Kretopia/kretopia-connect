@@ -38,9 +38,9 @@ describe("StudioCreateHero", () => {
     expect(container.querySelectorAll('img[src*="kretopia-k-mark"]').length).toBeGreaterThanOrEqual(2);
   });
 
-  it("shows a scene from the Kreto library, as decorative art", () => {
+  it("shows Kreto at his Studio desk, as decorative art", () => {
     const { container } = setup();
-    const scene = container.querySelector('img[src*="library/onboarding"]');
+    const scene = container.querySelector('img[src*="scenes/studio"]');
     expect(scene).toBeInTheDocument();
     expect(scene).toHaveAttribute("alt", "");
   });

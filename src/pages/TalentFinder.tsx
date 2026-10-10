@@ -140,6 +140,7 @@ export default function TalentFinder() {
         <div className="relative">
           <PageBackButton />
           <FeaturePageHeader
+            scene="talent-search"
             eyebrow="Hiring"
             title="Smart Talent Finder."
             accentTitle="Real matches, in real time."

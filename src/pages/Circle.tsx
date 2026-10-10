@@ -333,6 +333,7 @@ export default function Circle() {
         />
 
         <FeaturePageHeader
+          scene="coworking"
           eyebrow="Stages"
           title="Stages."
           accentTitle="Where creators meet, live."

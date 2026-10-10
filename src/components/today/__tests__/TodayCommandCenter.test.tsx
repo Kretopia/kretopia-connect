@@ -172,23 +172,29 @@ describe("TodayCommandCenter", () => {
     expect(container.querySelector("[style*='rotateX']")).toBeNull();
   });
 
-  it("every card has its own scene from the Kreto library, all different, and no cut-out robot", () => {
+  it("every card has its own Kreto scene banner, all different, signed Kretopia, and no cut-out robot", () => {
     const signals = baseSignals({ passport: { percentage: 40, missingFields: ["Bio"], isComplete: false } });
     renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
     const sceneOf = (name: string) => {
-      const img = screen.getByRole("region", { name }).querySelector("header img");
+      const region = screen.getByRole("region", { name });
+      const img = region.querySelector('img[src*="scenes/"]');
       expect(img).not.toBeNull();
-      return img as HTMLImageElement;
+      return { img: img as HTMLImageElement, region };
     };
     const scenes = [sceneOf("Creative Passport and Kreto"), sceneOf("Today's next action"), sceneOf("Your activity")];
-    const srcs = scenes.map((img) => img.getAttribute("src"));
+    const srcs = scenes.map(({ img }) => img.getAttribute("src"));
     expect(new Set(srcs).size).toBe(3);
-    for (const img of scenes) {
-      expect(img.getAttribute("src")).toMatch(/library\/[a-z-]+\.webp/);
+    expect(srcs[0]).toMatch(/scenes\/passport/);
+    expect(srcs[1]).toMatch(/scenes\/assistant/);
+    expect(srcs[2]).toMatch(/scenes\/match/);
+    for (const { img, region } of scenes) {
       // decorative art with its space reserved, so nothing jumps when it arrives
       expect(img).toHaveAttribute("alt", "");
       expect(img).toHaveAttribute("width");
       expect(img).toHaveAttribute("height");
+      // the banner is not inside the card's heading block, and says Kretopia
+      expect(region.querySelector("header img")).toBeNull();
+      expect(region.textContent).toMatch(/Kretopia · /);
     }
     for (const src of srcs) expect(src).not.toMatch(/cutout|\/small\//);
   });

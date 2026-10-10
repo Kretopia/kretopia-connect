@@ -14,6 +14,7 @@ import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureS
 import { ScoutKretoAssist } from "@/components/scout/ScoutKretoAssist";
 import { ScoutScanProvider } from "@/components/scout/ScoutScanProvider";
 import { ScoutWrapped } from "@/components/scout/ScoutWrapped";
+import { ScoutResultsWrapped } from "@/components/scout/ScoutResultsWrapped";
 import type { ScoutTab } from "@/components/scout/scout.types";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { Button } from "@/components/ui/button";
@@ -83,14 +84,15 @@ const Scout = () => {
         tutorial={{ featureKey: "scout", label: "How Scout works", steps: SCOUT_TUTORIAL }}
       />
 
-      {/* Body: Scout's Wrapped surface first (what is on your list, and Scan now),
-          the section switcher right under it, then the work itself, then Kreto
-          once there is something to act on. One scan state is shared by the
-          Wrapped surface and the For You list. */}
+      {/* Body: two Wrapped surfaces. The top one says what is on your list and
+          holds Scan now; the bottom one holds everything else (the section
+          switcher, the list, Kreto's panel once there is something to act on).
+          One scan state is shared by both. */}
       <ScoutScanProvider>
       <StudioFeatureShell>
         <ScoutWrapped onSelectTab={switchTab} />
 
+        <ScoutResultsWrapped>
         <div
           role="tablist"
           aria-label="Scout sections"
@@ -135,6 +137,7 @@ const Scout = () => {
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
+        </ScoutResultsWrapped>
       </StudioFeatureShell>
       </ScoutScanProvider>
     </div>

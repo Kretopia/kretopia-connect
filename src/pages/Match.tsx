@@ -109,6 +109,7 @@ export default function Match() {
         description="Swipe or browse creators whose work proves they can do the brief."
       />
       <FeaturePageHeader
+        scene="match"
         eyebrow="Collaborators"
         title="Match."
         accentTitle="Find your people."

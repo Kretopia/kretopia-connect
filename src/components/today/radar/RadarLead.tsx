@@ -9,11 +9,11 @@ import { startsIn } from "./radar.logic";
 /**
  * "Your next event": the one event that is coming up for this person (hosted or
  * going), with its real cover. With no cover of its own it shows the Kreto
- * library's Event scene (never a made-up picture), and with no event at all it
+ * Coworking scene (never a made-up picture), and with no event at all it
  * says so and points to where events are.
  */
 function EventArt() {
-  return <KretoScene scene="event" className="h-full w-full" />;
+  return <KretoScene scene="coworking" size="thumb" className="h-full w-full" />;
 }
 
 export function RadarLead({ event }: { event: NextEvent | null }) {

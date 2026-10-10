@@ -33,6 +33,8 @@ export interface CinematicHeaderPlateProps {
   subtitleOneLine?: boolean;
   /** Centered action replacing the small eyebrow above the heading. */
   preTitle?: ReactNode;
+  /** A picture under the subtitle (a Kreto scene banner), centred and capped in width. */
+  art?: ReactNode;
   /** Content below the subtitle (tabs, search bar, CTA row) -- renders outside the title's own fade-up so it's immediately interactive. */
   footer?: ReactNode;
   /** Tighter top padding (pt-3/sm:pt-4 instead of pt-10/sm:pt-14) for a
@@ -44,7 +46,7 @@ export interface CinematicHeaderPlateProps {
 }
 
 export function CinematicHeaderPlate({
-  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = false, subtitleOneLine = false, preTitle, footer, compact = false,
+  eyebrow, title, accentTitle, subtitle, align = "center", oneLine = false, subtitleOneLine = false, preTitle, art, footer, compact = false,
 }: CinematicHeaderPlateProps) {
   const reducedMotion = useReducedMotion();
   const centered = align === "center";
@@ -93,6 +95,7 @@ export function CinematicHeaderPlate({
             </p>
           )}
         </div>
+        {art && <div className="mt-2 w-full max-w-xl">{art}</div>}
       </motion.div>
       {footer}
     </div>

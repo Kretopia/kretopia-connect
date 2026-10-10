@@ -134,6 +134,7 @@ export default function Recordings() {
       <div className="relative">
         <PageBackButton />
         <FeaturePageHeader
+          scene="music-studio"
           eyebrow="Call recordings"
           title="Recordings."
           accentTitle="Every call, revisited."

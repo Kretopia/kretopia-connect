@@ -9,16 +9,23 @@ interface KretoSceneProps {
   className?: string;
   /** Off for the first screenful, on everywhere else. */
   lazy?: boolean;
+  /**
+   * "thumb" is the 480 px file, for a slot up to about 240 px wide; "full" is
+   * the 1280 px file, for banners and heroes. A scene with no thumb (the
+   * interim crops) always uses its one file.
+   */
+  size?: "thumb" | "full";
 }
 
-/** One of the library's scenes as decorative art: it never carries information, so it has no alt text. */
-export function KretoScene({ scene, className, lazy = true }: KretoSceneProps) {
+/** One of Kreto's scenes as decorative art: it never carries information, so it has no alt text. */
+export function KretoScene({ scene, className, lazy = true, size = "full" }: KretoSceneProps) {
   const asset = KRETO_SCENES[scene];
+  const file = size === "thumb" && asset.thumb ? asset.thumb : asset;
   return (
     <img
-      src={asset.src}
-      width={asset.width}
-      height={asset.height}
+      src={file.src}
+      width={file.width}
+      height={file.height}
       alt=""
       aria-hidden
       draggable={false}
