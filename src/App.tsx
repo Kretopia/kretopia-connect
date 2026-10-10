@@ -12,6 +12,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
+import { appChrome } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
 import QuickActionFab from "./components/QuickActionFab";
 import { BrandLoader } from "./components/brand/BrandDots";
@@ -261,22 +262,9 @@ const AppContent = () => {
   useNativeCapacitor();
   useActivityPing();
   
-  // Check if on public EPK page (hide navbar/bottomnav for standalone link-in-bio experience)
-  const isPublicEPK = /^\/epk\/[^/]+$/.test(location.pathname) || /^\/comp\/[^/]+$/.test(location.pathname);
-  const isCreatorSite = /^\/site\/[^/]+$/.test(location.pathname) || location.pathname === '/website-builder';
-  const isPublicEvent = /^\/event\/[^/]+$/.test(location.pathname);
-  const isAuthPage = location.pathname === '/auth';
-  const isOnboardingPage = location.pathname === '/onboarding' || location.pathname === '/company-onboarding';
-  const isDeckPage = location.pathname === '/deck';
-  const isLandingPage = location.pathname === '/';
-  
-  // Public browsable routes where guests see nav — expanded to show platform value
-  
-  // Show bottom nav for authenticated users OR guests on public browse routes (+ landing)
-  // Hide everything during onboarding so users focus on setup
-  const showBottomNav = !isPublicEPK && !isCreatorSite && !isAuthPage && !isOnboardingPage && !isDeckPage && !!user;
-  const showNavbar = !isPublicEPK && !isCreatorSite && !isAuthPage && !isOnboardingPage && !isDeckPage;
-  
+  // Which parts of the frame this route wears (see lib/appChrome).
+  const { showNavbar, showBottomNav } = appChrome(location.pathname, !!user);
+
   // Don't add bottom padding when on individual project pages or desk list
   const shouldAddBottomPadding = showBottomNav && !location.pathname.startsWith('/desk');
   

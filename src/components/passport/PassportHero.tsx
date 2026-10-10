@@ -1,13 +1,13 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { CtaButton } from "@/components/ui/cta-button";
 import { Badge } from "@/components/ui/badge";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
-import {
-  Camera, PencilLine, MapPin, ShieldCheck, Share2, QrCode, FileDown, Gauge, Fingerprint,
-} from "lucide-react";
+import { Camera, MapPin, ShieldCheck, Fingerprint } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { BrandLogo } from "@/components/BrandLogo";
+import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { HoloCard } from "./HoloCard";
+import { PassportSmartActions } from "./PassportSmartActions";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
 import { SocialStatsInline } from "@/components/profile/SocialStatsInline";
@@ -120,10 +120,21 @@ export function PassportHero({
             <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
               <div className="absolute -right-8 -top-20 h-56 w-56 rotate-45 border border-foreground/20 sm:h-72 sm:w-72" />
               <div className="absolute right-5 -top-24 h-56 w-56 rotate-45 border border-foreground/10 sm:h-72 sm:w-72" />
+              <img
+                src={kMarkAsset.url}
+                alt=""
+                draggable={false}
+                className="absolute right-6 top-1/2 h-24 w-24 -translate-y-1/2 select-none object-contain opacity-[0.12] sm:h-32 sm:w-32"
+              />
               <Fingerprint className="h-20 w-20 text-foreground/20 sm:h-28 sm:w-28" strokeWidth={0.8} />
             </div>
           )}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
+          {/* Kretopia's own mark and name: this is a Kretopia Passport, wherever it is shown. */}
+          <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full border border-border bg-card/90 py-1 pl-1.5 pr-3">
+            <BrandLogo iconOnly size="sm" className="[&_img]:h-5 [&_img]:w-5" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-foreground">Creative Passport</span>
+          </div>
         </div>
 
         <div className="relative px-5 pb-5 -mt-8 space-y-4">
@@ -146,7 +157,7 @@ export function PassportHero({
               <Button
                 size="icon"
                 variant="secondary"
-                className="absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full shadow-md"
+                className="!absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full shadow-md"
                 onClick={onAvatarClick}
                 disabled={isUploadingAvatar}
                 aria-label="Change avatar"
@@ -170,8 +181,8 @@ export function PassportHero({
                 </div>
               )}
             </div>
-            <div className="mt-1 flex items-center gap-1 text-[10px] font-mono text-muted-foreground/70">
-               <Fingerprint className="h-3 w-3 shrink-0 text-foreground" />
+            <div className="mt-1 flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/70">
+              <img src={kMarkAsset.url} alt="" draggable={false} className="h-3 w-3 shrink-0 select-none object-contain" />
               <span title="Your unique Passport ID">{passportId}</span>
             </div>
             <div className="mt-1 flex items-center gap-x-2 gap-y-1 text-xs text-muted-foreground flex-wrap">
@@ -262,48 +273,16 @@ export function PassportHero({
             </div>
           )}
 
-          {/* Passport Strength — the one progress meter */}
-          <div>
-            <div className="flex items-center gap-1.5 mb-1">
-              <Gauge className="h-3.5 w-3.5 text-foreground" />
-              <p className="text-xs font-medium">Passport Strength — {strength}%</p>
-            </div>
-            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full k-gradient-fill transition-all"
-                style={{ width: `${Math.min(strength, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Edit Profile is the clear primary action on this owner-only
-              view (PassportHero only renders on the protected /profile
-              route; the public /profile/:userId view uses
-              PublicPassportHero instead, so it never competes with
-              collaboration CTAs there). Share/QR/Download recede to a
-              secondary row beneath it. */}
-          <div className="grid gap-2">
-            <CtaButton onClick={onEdit} className="h-11 gap-1.5">
-              <PencilLine className="h-4 w-4" />
-              Edit Profile
-            </CtaButton>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={onShare}
-                variant="outline"
-                 className="glass-surface flex-1 h-10 gap-1.5 border-border text-foreground transition-colors hover:border-foreground/50 focus-visible:ring-ring"
-              >
-                <Share2 className="h-4 w-4" />
-                Share Passport
-              </Button>
-              <Button onClick={onShowQR} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Show QR code">
-                <QrCode className="h-4 w-4" />
-              </Button>
-              <Button onClick={onDownloadEPK} variant="outline" size="icon" className="h-10 w-10 shrink-0" aria-label="Download press kit PDF">
-                <FileDown className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          {/* Strength, Edit, Share, QR and press kit on one line. Strength is the
+              Passport's own number (same formula as before) and opens the editor,
+              Edit is the primary action, the rest are one tap each. */}
+          <PassportSmartActions
+            strength={strength}
+            onEdit={onEdit}
+            onShare={onShare}
+            onShowQR={onShowQR}
+            onDownloadEPK={onDownloadEPK}
+          />
 
            {profile.user_id && <SocialStatsInline userId={profile.user_id} />}
         </div>

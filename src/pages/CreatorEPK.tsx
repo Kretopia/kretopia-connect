@@ -10,6 +10,7 @@ import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
+import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
 import { PassportHiringGlance } from "@/components/passport/PassportHiringGlance";
 import { HireMeTrustBar } from "@/components/passport/HireMeTrustBar";
 import { classifyCreditEvidence, creditEvidenceBasis, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
@@ -498,36 +499,190 @@ const CreatorEPK = () => {
           avatar: profile.avatar_url,
           bio: profile.bio,
           skills: allSkills.slice(0, 20),
-          socialLinks: {
-            instagram: profile.instagram_url,
-            twitter: profile.twitter_url,
-            linkedin: profile.linkedin_url,
-            youtube: profile.youtube_url,
-            website: profile.website
-          }
         }}
       />
 
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 pb-16 pt-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:items-start lg:gap-8">
-        <div className="order-2 min-w-0 space-y-7 lg:order-1">
-          <div className="border-b border-border pb-5">
-            <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase text-energy"><Fingerprint className="h-4 w-4" /> Kretopia / Creator record</p>
-            <h2 className="break-words text-2xl font-bold text-foreground">{profile.full_name}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">{[profile.job_title || profile.role, profile.location].filter(Boolean).join(' · ')}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-border bg-border sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-            {[
-              { label: 'Credits', value: glance.total },
-              { label: 'Confirmed', value: glance.confirmed },
-              { label: 'Features', value: pressLinks.length },
-              { label: 'Awards', value: awards.length },
-            ].map(({ label, value }) => (
-              <div key={label} className="min-w-0 bg-card p-4">
-                <p className="text-2xl font-bold text-foreground">{value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+      <div className="mx-auto max-w-7xl px-4 pb-16 pt-6">
+        <PublicProfileWrapped
+          userId={profile.user_id}
+          fullName={profile.full_name}
+          verified={profile.verification_status === 'verified'}
+          stats={[
+            { id: 'credits', label: 'Credits', value: glance.total },
+            { id: 'confirmed', label: 'Confirmed', value: glance.confirmed },
+            { id: 'features', label: 'Features', value: pressLinks.length },
+            { id: 'awards', label: 'Awards', value: awards.length },
+          ]}
+          passport={
+          <PublicPassportHero
+            profile={profile}
+            glance={
+              <div className="space-y-3">
+                <PassportHiringGlance glance={glance} firstName={firstName} />
+                <HireMeTrustBar
+                  userId={profile.user_id}
+                  avgResponseHours={profile.avg_response_hours}
+                  hourlyRate={profile.hourly_rate}
+                  projectRate={profile.project_rate}
+                  rateCurrency={profile.rate_currency}
+                  collabIntent={profile.collab_intent}
+                />
               </div>
-            ))}
+            }
+            connectionStatus={connectionStatus}
+            isOwner={isOwner}
+            isSignedIn={Boolean(currentUserId)}
+            isConnecting={isConnecting}
+            onConnect={handleConnect}
+            onMessage={() => setMessageOpen(true)}
+            onCollaborate={() => setCollaborateOpen(true)}
+            onAddToProject={() => setInviteOpen(true)}
+            onShare={handleShare}
+            onJoin={() => navigate(`/auth?connect=${userId}`)}
+            showBio={false}
+            showActions={false}
+          >
+        {/* Collaboration uses the same existing gated actions. */}
+        {!isOwner && (
+          <div className="border-b border-border pb-5">
+            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
+              Work with {firstName}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {connectionStatus === 'connected'
+                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
+                : connectionStatus === 'pending'
+                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
+                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {connectionStatus === 'connected' ? (
+                <>
+                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    Message
+                  </Button>
+                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Start a Project
+                  </Button>
+                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
+                    <UserPlus2 className="h-4 w-4" />
+                    Invite to Project
+                  </Button>
+                </>
+              ) : (
+                <CtaButton
+                  onClick={handleConnect}
+                  disabled={isConnecting || connectionStatus === 'pending'}
+                  className="w-full gap-2"
+                >
+                  <UserPlus2 className="h-4 w-4" />
+                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
+                </CtaButton>
+              )}
+            </div>
+            {!currentUserId && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={() => navigate('/auth?type=brand')}
+                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
+              >
+                I'm a brand — find creators like {firstName}
+              </Button>
+            )}
           </div>
+        )}
+
+        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
+        {profile.headline || profile.bio ? (() => {
+          const longBio = profile.bio && profile.bio.length > 280;
+          const body = profile.headline
+            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
+          return (
+            <div className="rounded-md border border-border bg-secondary p-5">
+              <h3 className="text-sm font-semibold text-energy uppercase mb-2">
+                Why work with me
+              </h3>
+              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
+                {body}
+              </p>
+              {!profile.headline && longBio && (
+                <Button
+                  type="button"
+                  variant="link"
+                  onClick={() => setBioExpanded((v) => !v)}
+                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
+                >
+                  {bioExpanded ? "Show less" : "Read more"}
+                </Button>
+              )}
+            </div>
+          );
+        })() : <div className="rounded-md border border-border bg-secondary p-5"><h3 className="text-sm font-semibold uppercase text-energy">Why work with me</h3><p className="mt-2 text-sm text-muted-foreground">This creator has not added an introduction yet.</p></div>}
+
+        {/* Press & Awards Combined */}
+        {(pressLinks.length > 0 || awards.length > 0) && (
+          <div className="space-y-5">
+            {pressLinks.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Featured In
+                </h3>
+                <div className="space-y-2">
+                  {pressLinks.slice(0, 4).map((press) => (
+                    <a
+                      key={press.id}
+                      href={press.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    >
+                      {press.image_url ? (
+                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
+                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                        </div>
+                      ) : (
+                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
+                        <p className="text-xs text-muted-foreground">{press.publication}</p>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {awards.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Awards
+                </h3>
+                <div className="space-y-2">
+                  {awards.slice(0, 3).map((award) => (
+                    <div
+                      key={award.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
+                    >
+                      <Award className="h-4 w-4 text-energy shrink-0" />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{award.title}</p>
+                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+          </PublicPassportHero>
+          }
+        >
           {allSkills.length > 0 && (
             <section>
               <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Expertise</h3>
@@ -867,177 +1022,7 @@ const CreatorEPK = () => {
             />
           </div>
         )}
-      </div>
-
-        <div className="order-1 min-w-0 lg:order-2">
-          <PublicPassportHero
-            profile={profile}
-            glance={
-              <div className="space-y-3">
-                <PassportHiringGlance glance={glance} firstName={firstName} />
-                <HireMeTrustBar
-                  userId={profile.user_id}
-                  avgResponseHours={profile.avg_response_hours}
-                  hourlyRate={profile.hourly_rate}
-                  projectRate={profile.project_rate}
-                  rateCurrency={profile.rate_currency}
-                  collabIntent={profile.collab_intent}
-                />
-              </div>
-            }
-            connectionStatus={connectionStatus}
-            isOwner={isOwner}
-            isSignedIn={Boolean(currentUserId)}
-            isConnecting={isConnecting}
-            onConnect={handleConnect}
-            onMessage={() => setMessageOpen(true)}
-            onCollaborate={() => setCollaborateOpen(true)}
-            onAddToProject={() => setInviteOpen(true)}
-            onShare={handleShare}
-            onJoin={() => navigate(`/auth?connect=${userId}`)}
-            showBio={false}
-            showActions={false}
-          >
-        {/* Collaboration uses the same existing gated actions. */}
-        {!isOwner && (
-          <div className="border-b border-border pb-5">
-            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
-              Work with {firstName}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {connectionStatus === 'connected'
-                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
-                : connectionStatus === 'pending'
-                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
-                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Start a Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
-                    <UserPlus2 className="h-4 w-4" />
-                    Invite to Project
-                  </Button>
-                </>
-              ) : (
-                <CtaButton
-                  onClick={handleConnect}
-                  disabled={isConnecting || connectionStatus === 'pending'}
-                  className="w-full gap-2"
-                >
-                  <UserPlus2 className="h-4 w-4" />
-                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </CtaButton>
-              )}
-            </div>
-            {!currentUserId && (
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate('/auth?type=brand')}
-                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
-              >
-                I'm a brand — find creators like {firstName}
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Positioning uses a full, themed surface rather than a light side stripe. */}
-        {profile.headline || profile.bio ? (() => {
-          const longBio = profile.bio && profile.bio.length > 280;
-          const body = profile.headline
-            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
-          return (
-            <div className="rounded-md border border-border bg-secondary p-5">
-              <h3 className="text-sm font-semibold text-energy uppercase mb-2">
-                Why work with me
-              </h3>
-              <p className="break-words text-base leading-relaxed text-foreground whitespace-pre-line">
-                {body}
-              </p>
-              {!profile.headline && longBio && (
-                <Button
-                  type="button"
-                  variant="link"
-                  onClick={() => setBioExpanded((v) => !v)}
-                  className="mt-2 h-auto p-0 text-xs font-semibold text-primary"
-                >
-                  {bioExpanded ? "Show less" : "Read more"}
-                </Button>
-              )}
-            </div>
-          );
-        })() : <div className="rounded-md border border-border bg-secondary p-5"><h3 className="text-sm font-semibold uppercase text-energy">Why work with me</h3><p className="mt-2 text-sm text-muted-foreground">This creator has not added an introduction yet.</p></div>}
-
-        {/* Press & Awards Combined */}
-        {(pressLinks.length > 0 || awards.length > 0) && (
-          <div className="space-y-5">
-            {pressLinks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured In
-                </h3>
-                <div className="space-y-2">
-                  {pressLinks.slice(0, 4).map((press) => (
-                    <a
-                      key={press.id}
-                      href={press.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      {press.image_url ? (
-                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
-                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
-                        <p className="text-xs text-muted-foreground">{press.publication}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {awards.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Awards
-                </h3>
-                <div className="space-y-2">
-                  {awards.slice(0, 3).map((award) => (
-                    <div
-                      key={award.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
-                    >
-                      <Award className="h-4 w-4 text-energy shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{award.title}</p>
-                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-          </PublicPassportHero>
-        </div>
+        </PublicProfileWrapped>
       </div>
 
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
