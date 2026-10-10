@@ -97,7 +97,7 @@ export function TodayRadar({ userId, profile }: TodayRadarProps) {
           >
             {radar.isFetching ? <KretopiaSpinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" aria-hidden />}
           </button>
-          <KretoScene scene="product-launch" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />
+          <KretoScene scene="talent-search" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />
         </>
       }
     >

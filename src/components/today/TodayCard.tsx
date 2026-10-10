@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import { KretoScene, type KretoSceneId } from "@/components/brand/KretoScene";
+import { SceneBanner } from "@/components/brand/SceneBanner";
+import type { KretoSceneId } from "@/components/brand/kretoScenes";
 import { cn } from "@/lib/utils";
 
 interface TodayCardProps {
@@ -9,8 +10,10 @@ interface TodayCardProps {
   /** Small uppercase line above the title. */
   eyebrow: string;
   title: ReactNode;
-  /** Which scene of the Kreto library fills this card's corner. Every card on Today has a different one. */
+  /** Which Kreto scene runs across the top of this card. Every card on Today has a different one. */
   scene: KretoSceneId;
+  /** Words after the K in the banner's chip ("Passport" gives "Kretopia · Passport"). */
+  sceneLabel?: string;
   /** The card's content; fills the space between the header and the actions. */
   children: ReactNode;
   /** Exactly one primary (GlassCta*) and one secondary (OutlineCta*) Landing CTA, each `w-full`. */
@@ -24,7 +27,8 @@ interface TodayCardProps {
  * Passport, the next move and the activity summary share one anatomy by
  * construction:
  *
- *   eyebrow + title          (and one Kreto scene in the corner, a different one per card)
+ *   Kreto scene banner       (a different scene per card, signed Kretopia)
+ *   eyebrow + title
  *   content (fills the card)
  *   ── hairline ──
  *   primary + secondary CTA  <- always the Landing pair, stacked, full width
@@ -33,27 +37,24 @@ interface TodayCardProps {
  * pointer; the content and the actions do. Equal height comes from the grid's
  * `auto-rows-fr` (or the deck) plus the shared min height.
  */
-export function TodayCard({ label, eyebrow, title, scene, children, actions, className }: TodayCardProps) {
+export function TodayCard({ label, eyebrow, title, scene, sceneLabel, children, actions, className }: TodayCardProps) {
   return (
     <section
       aria-label={label}
       className={cn(
-        "relative flex h-full min-h-[460px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-7",
+        "relative flex h-full min-h-[460px] min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card",
         className,
       )}
     >
-      <header className="flex min-w-0 items-start justify-between gap-3">
-        <div className="min-w-0">
+      <SceneBanner scene={scene} label={sceneLabel} fade className="h-36 w-full shrink-0 sm:h-44" />
+      <div className="flex min-w-0 flex-1 flex-col p-6 pt-4 sm:p-7 sm:pt-5">
+        <header className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
           <h2 className="mt-2 break-words text-xl font-bold leading-tight text-foreground">{title}</h2>
-        </div>
-        <KretoScene
-          scene={scene}
-          className="h-[52px] w-[104px] shrink-0 rounded-xl border border-border sm:h-16 sm:w-32"
-        />
-      </header>
-      <div className="mt-5 flex min-w-0 flex-1 flex-col">{children}</div>
-      <div className="mt-6 grid gap-3 border-t border-border pt-5">{actions}</div>
+        </header>
+        <div className="mt-5 flex min-w-0 flex-1 flex-col">{children}</div>
+        <div className="mt-6 grid gap-3 border-t border-border pt-5">{actions}</div>
+      </div>
     </section>
   );
 }

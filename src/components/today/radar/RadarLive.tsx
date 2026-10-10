@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Radio } from "lucide-react";
 
+import { KretoScene } from "@/components/brand/KretoScene";
 import type { LiveStage } from "./radar.queries";
 
 /**
@@ -14,12 +15,15 @@ export function RadarLive({ stages, total }: { stages: LiveStage[]; total: numbe
       aria-label="Live now"
       className="rounded-2xl border border-[hsl(var(--energy)/0.35)] bg-[hsl(var(--energy)/0.06)] p-3 sm:p-4"
     >
-      <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-foreground">
-        <span className="relative inline-flex h-2 w-2" aria-hidden>
-          <span className="absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--energy))] opacity-60 motion-safe:animate-ping" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(var(--energy))]" />
-        </span>
-        Live now{total > stages.length ? ` · ${total} Stages` : ""}
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.16em] text-foreground">
+          <span className="relative inline-flex h-2 w-2" aria-hidden>
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[hsl(var(--energy))] opacity-60 motion-safe:animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-[hsl(var(--energy))]" />
+          </span>
+          Live now{total > stages.length ? ` · ${total} Stages` : ""}
+        </div>
+        <KretoScene scene="soundstages" size="thumb" className="hidden h-10 w-20 shrink-0 rounded-lg border border-border sm:block" />
       </div>
       <ul className="grid gap-2 sm:grid-cols-2">
         {stages.slice(0, 2).map((s) => (
