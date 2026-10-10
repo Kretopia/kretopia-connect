@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 /**
  * CANONICAL CTA — single source of truth for in-app (Studio) primary CTAs.
  *
- * Live call sites today: StudioProjectsDashboard.tsx, StudioCreateHero.tsx.
+ * Live call sites today: StudioProjectsDashboard.tsx (the Studio hero uses the Landing CTA pair now).
  * (The doc comment here used to point at
  * src/components/landing/BottomCTASection.tsx as the reference
  * implementation -- that file is dead code, never rendered by any route,
