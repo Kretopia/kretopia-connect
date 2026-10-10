@@ -86,7 +86,6 @@ export function gigFacts(gig: TodayGig, now: Date = new Date()): CardFacts {
     reason: null,
     facts: [
       place,
-      typeof gig.fitScore === "number" ? `${Math.round(gig.fitScore)}% fit with your Passport` : null,
       hasRealCompensation(gig.compensation ?? null) ? gig.compensation! : "Pay not listed",
     ].filter((f): f is string => !!f),
   };

@@ -92,7 +92,7 @@ export async function fetchGigs(userId: string): Promise<{ top: RadarGig[]; newC
   const [list, fresh, dismissed] = await Promise.all([
     supabase
       .from("scouted_gigs")
-      .select("id, title, company, location, remote, fit_score, source_name, compensation, posted_at, scouted_at, description, apply_url, source_url")
+      .select("id, title, company, location, remote, source_name, compensation, posted_at, scouted_at, description, apply_url, source_url")
       .eq("target_user_id", userId)
       .gt("expires_at", nowIso)
       .order("fit_score", { ascending: false })
@@ -115,7 +115,6 @@ export async function fetchGigs(userId: string): Promise<{ top: RadarGig[]; newC
         company: g.company,
         location: g.location,
         remote: !!g.remote,
-        fit_score: g.fit_score,
         source_name: g.source_name,
         compensation: g.compensation,
         posted_at: g.posted_at,

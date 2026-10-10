@@ -126,7 +126,7 @@ describe("ageLabel", () => {
 });
 
 describe("buildProposals", () => {
-  const gig: RadarGig = { id: "g", title: "Motion Designer / Video Editor", company: "Dataiku", location: null, remote: true, fit_score: 82.4, source_name: "Jobicy", compensation: null, posted_at: null, scouted_at: daysAgo(1) };
+  const gig: RadarGig = { id: "g", title: "Motion Designer / Video Editor", company: "Dataiku", location: null, remote: true, source_name: "Jobicy", compensation: null, posted_at: null, scouted_at: daysAgo(1) };
   const top = rankPeopleToMeet(ME, [person("a", { full_name: "Lena Hart", professional_skills: ["Cinema 4D"], location: "Paris, France" })], new Set(), NOW)[0];
 
   it("proposes a person, an event and a gig, each asking for a draft or a plan to review", () => {
@@ -137,7 +137,7 @@ describe("buildProposals", () => {
     expect(out[0].prompt).toContain("Shares your Cinema 4D skill");
     expect(out[1].prompt).toContain("Rooftop screening");
     expect(out[2].prompt).toContain("Dataiku");
-    expect(out[2].prompt).toContain("82% fit");
+    expect(out[2].prompt).not.toMatch(/\d+% fit/);
     // every prompt asks for something to review; no button claims anything is already done
     for (const p of out) expect(p.prompt).toMatch(/review/i);
     for (const p of out) expect(p.label).not.toMatch(/\b(sent|booked|applied|done|scheduled)\b/i);

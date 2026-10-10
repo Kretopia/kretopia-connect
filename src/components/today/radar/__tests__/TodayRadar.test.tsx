@@ -216,10 +216,10 @@ describe("TodayRadar", () => {
     db.dismissed = [{ scouted_gig_id: "g3" }];
     renderRadar();
     const list = await screen.findByRole("region", { name: "Gigs for you" });
-    const row = await within(list).findByRole("link", { name: /Motion Designer \/ Video Editor, 88% fit/ });
+    const row = await within(list).findByRole("link", { name: "Motion Designer / Video Editor. Open Scout." });
     expect(row).toHaveAttribute("href", "/scout");
     expect(within(list).getByText(/Dataiku/)).toBeInTheDocument();
-    expect(within(list).getByText("88%")).toBeInTheDocument();
+    expect(within(list).queryByText(/%/)).not.toBeInTheDocument();
     expect(within(list).queryByText("Empty shell")).not.toBeInTheDocument();
     expect(within(list).queryByText("Dismissed one")).not.toBeInTheDocument();
   });

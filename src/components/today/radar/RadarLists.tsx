@@ -113,15 +113,12 @@ export function RadarGigs({ gigs, state, now = new Date() }: { gigs: RadarGig[];
             const pay = hasRealCompensation(g.compensation) ? g.compensation : null;
             return (
               <li key={g.id}>
-                <Link to="/scout" className={rowClass} aria-label={`${g.title}, ${Math.round(g.fit_score)}% fit. Open Scout.`}>
+                <Link to="/scout" className={rowClass} aria-label={`${g.title}. Open Scout.`}>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-semibold text-foreground">{g.title}</span>
                     <span className="block truncate text-[11px] text-muted-foreground">
                       {[g.company, g.remote ? "Remote" : g.location, pay, when].filter(Boolean).join(" · ")}
                     </span>
-                  </span>
-                  <span className="shrink-0 rounded-full border border-[hsl(var(--energy)/0.4)] px-2 py-0.5 text-[11px] font-bold tabular-nums text-foreground">
-                    {Math.round(g.fit_score)}%
                   </span>
                 </Link>
               </li>

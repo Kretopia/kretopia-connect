@@ -160,7 +160,6 @@ export interface RadarGig {
   company: string | null;
   location: string | null;
   remote: boolean;
-  fit_score: number;
   source_name: string | null;
   compensation: string | null;
   posted_at: string | null;
@@ -220,7 +219,7 @@ export function buildProposals(input: {
       id: "gig",
       kicker: "Pitch",
       label: `Pitch “${g.title.length > 24 ? `${g.title.slice(0, 23)}…` : g.title}”`,
-      prompt: `Help me draft a pitch for "${g.title}"${g.company ? ` at ${g.company}` : ""} (found via ${g.source_name ?? "Scout"}, ${Math.round(g.fit_score)}% fit with my Passport). Use my Passport and my voice, and let me review it before I send anything.`,
+      prompt: `Help me draft a pitch for "${g.title}"${g.company ? ` at ${g.company}` : ""} (found via ${g.source_name ?? "Scout"}). Use my Passport and my voice, and let me review it before I send anything.`,
     });
   }
   if (out.length === 0) {

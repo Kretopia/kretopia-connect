@@ -60,11 +60,11 @@ describe("approvalFacts", () => {
 describe("gigFacts", () => {
   const base = { id: "g", title: "Colorist", company: "Nord" };
 
-  it("uses the posting's own date, the fit score and the pay it states", () => {
-    const info = gigFacts({ ...base, remote: true, fitScore: 87.6, sourceName: "Remote OK", compensation: "$60k / year", postedAt: new Date(NOW.getTime() - 86_400_000).toISOString() }, NOW);
+  it("uses the posting's own date and the pay it states, and shows no fit percentage", () => {
+    const info = gigFacts({ ...base, remote: true, sourceName: "Remote OK", compensation: "$60k / year", postedAt: new Date(NOW.getTime() - 86_400_000).toISOString() }, NOW);
     expect(info.status).toBe("Fresh call · Remote OK");
     expect(info.freshness).toBe("Posted 1 day ago");
-    expect(info.facts).toEqual(["Remote", "88% fit with your Passport", "$60k / year"]);
+    expect(info.facts).toEqual(["Remote", "$60k / year"]);
   });
 
   it("says 'found' when the page gave no posted date, and never invents what is missing", () => {
