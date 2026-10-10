@@ -442,7 +442,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   };
 
   const sections = (
-        <SettingsShell domains={SETTINGS_DOMAINS} active={activeDomain} onSelect={setActiveDomain}>
+        <SettingsShell domains={SETTINGS_DOMAINS} active={activeDomain} onSelect={setActiveDomain} embedded={embedded}>
           {/* Account Type Switcher */}
           {(embedded || activeDomain === "account") && (
           <Card>
