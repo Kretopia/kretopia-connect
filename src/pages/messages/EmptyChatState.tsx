@@ -30,8 +30,11 @@ export const EmptyChatState = ({ otherUser, isOnline, onViewProfile, onStartProj
         <Briefcase className="h-3 w-3" /> Start Project
       </Button>
     </div>
-    <p className="text-xs text-muted-foreground max-w-[240px]">
-      Pick a conversation starter above or type your own message to connect
+    <p className="text-sm font-semibold">
+      Send the first message to {otherUser?.name?.split(" ")[0] || "them"}
+    </p>
+    <p className="mt-1 text-xs text-muted-foreground max-w-[260px]">
+      Pick a starter above or write your own. One specific line about their work is enough.
     </p>
   </div>
 );
