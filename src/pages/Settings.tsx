@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Settings as SettingsIcon, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
+import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
 import { SettingsShell } from "@/components/settings/SettingsShell";
 import type { SettingsDomain } from "@/components/settings/SettingsNav";
 import { CreatorSiteSettings } from "@/components/settings/CreatorSiteSettings";
@@ -29,6 +29,7 @@ import { Palette } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 
 interface NotificationPreferences {
   email_matches: boolean;
@@ -1054,7 +1055,14 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
 
   return (
     <div className="min-h-screen">
-      <StudioFeatureShell>
+      <FeaturePageHeader
+        eyebrow="Account"
+        scene="workspace"
+        title="Settings"
+        subtitle="Manage your account preferences and security"
+        compact
+      />
+      <StudioFeatureShell wrapped={{ name: "Settings" }}>
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -1075,16 +1083,6 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <div className="space-y-1">
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase flex items-center gap-1.5">
-            <SettingsIcon className="h-3 w-3" />
-            Account
-          </p>
-          <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">Settings</h1>
-          <p className="text-sm text-muted-foreground">Manage your account preferences and security</p>
-        </div>
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
         {sections}
       </StudioFeatureShell>
     </div>
