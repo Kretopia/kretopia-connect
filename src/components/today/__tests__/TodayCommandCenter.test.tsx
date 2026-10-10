@@ -33,8 +33,9 @@ vi.mock("@/components/features/FeaturePageHeader", () => ({
   ),
 }));
 vi.mock("@/components/brand/KretoPresence", () => ({ KretoPresence: () => <div data-testid="kreto-presence" /> }));
+// TodayCard no longer wraps HoloCard: if it ever does again, this makes the test below fail loudly.
 vi.mock("@/components/passport/HoloCard", () => ({
-  HoloCard: ({ children, className }: { children?: ReactNode; className?: string }) => <div className={className}>{children}</div>,
+  HoloCard: () => <div data-testid="holo-effect" />,
 }));
 
 function baseSignals(overrides: Partial<TodaySignals> = {}): TodaySignals {
@@ -142,8 +143,8 @@ describe("TodayCommandCenter", () => {
       for (const region of regions) {
         // One shell: same height floor, one eyebrow, one title.
         expect(region.className).toContain("min-h-[460px]");
-        expect(region.querySelectorAll("header > p")).toHaveLength(1);
-        expect(region.querySelectorAll("header > h2")).toHaveLength(1);
+        expect(region.querySelectorAll("header p")).toHaveLength(1);
+        expect(region.querySelectorAll("header h2")).toHaveLength(1);
 
         // One CTA pair: the glass primary first, the outline secondary second.
         const pair = Array.from(region.querySelectorAll<HTMLElement>(".glass-cta, a.rounded-full, button.rounded-full"));
@@ -157,5 +158,31 @@ describe("TodayCommandCenter", () => {
       }
       unmount();
     }
+  });
+
+  it("has no Holo effect: a plain card, no tilt, no sheen, no glow", () => {
+    const signals = baseSignals({ passport: { percentage: 40, missingFields: ["Bio"], isComplete: false } });
+    const { container } = renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
+    expect(screen.queryByTestId("holo-effect")).not.toBeInTheDocument();
+    for (const name of ["Creative Passport and Kreto", "Today's next action", "Your activity"]) {
+      const card = screen.getByRole("region", { name });
+      expect(card).toHaveClass("rounded-2xl", "border", "bg-card", "min-h-[460px]");
+      expect(card.closest("[class*='perspective']")).toBeNull();
+    }
+    expect(container.querySelector("[style*='rotateX']")).toBeNull();
+  });
+
+  it("every card has its own Kreto robot, all different", () => {
+    const signals = baseSignals({ passport: { percentage: 40, missingFields: ["Bio"], isComplete: false } });
+    renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
+    const robotOf = (name: string) => {
+      const img = screen.getByRole("region", { name }).querySelector("header img");
+      expect(img).not.toBeNull();
+      return (img as HTMLImageElement).getAttribute("src");
+    };
+    const robots = [robotOf("Creative Passport and Kreto"), robotOf("Today's next action"), robotOf("Your activity")];
+    expect(new Set(robots).size).toBe(3);
+    // and they are the light copies, not the 300 KB originals
+    for (const src of robots) expect(src).toMatch(/small\/kreto-/);
   });
 });

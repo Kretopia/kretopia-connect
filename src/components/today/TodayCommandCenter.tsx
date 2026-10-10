@@ -4,7 +4,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { GlassCta, GlassCtaButton, OutlineCta, OutlineCtaButton } from "@/components/ui/glass-cta";
@@ -148,6 +147,7 @@ export function TodayCommandCenter({
                   label="Creative Passport and Kreto"
                   eyebrow="My Creative Passport"
                   title="Make your work visible."
+                  robot="main"
                   actions={
                     <>
                       <GlassCta to="/passport" className="w-full">Build my Passport</GlassCta>
@@ -195,6 +195,7 @@ function PassportKretoCard({
       label="Creative Passport and Kreto"
       eyebrow="My Creative Passport"
       title={displayName}
+      robot="main"
       actions={
         <>
           <GlassCta to="/passport" className="w-full">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}</GlassCta>
@@ -219,12 +220,9 @@ function PassportKretoCard({
       </div>
       <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{info.reason}</p>
       <FactList facts={info.facts} />
-      <div className="mt-auto flex min-w-0 items-center gap-2 pt-5">
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Kreto · Creator intelligence</p>
-          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
-        </div>
-        <div className="pointer-events-none shrink-0" aria-hidden><KretoCharacter variant="main" size={56} floatAmplitude={1} floatDuration={8} /></div>
+      <div className="mt-auto min-w-0 pt-5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Kreto · Creator intelligence</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">Your Executive Producer is here for your next move.</p>
       </div>
     </TodayCard>
   );
@@ -243,6 +241,7 @@ function TodayActivityCard({ signals }: { signals: TodaySignals }) {
       label="Your activity"
       eyebrow="Your activity"
       title="Moving forward"
+      robot="connector"
       actions={
         <>
           <GlassCta to={signals.unreadMessages > 0 ? "/messages" : "/desk"} className="w-full">{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}</GlassCta>
@@ -473,7 +472,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
   }
 
   return (
-    <TodayCard label="Today's next action" eyebrow="Today" title="Your next move" actions={actions}>
+    <TodayCard label="Today's next action" eyebrow="Today" title="Your next move" robot="producer" actions={actions}>
       <AnimatePresence mode="wait" initial={false}>
         {body}
       </AnimatePresence>
