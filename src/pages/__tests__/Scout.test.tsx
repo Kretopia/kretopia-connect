@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -12,7 +12,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" } }) }));
 vi.mock("@/components/SEO", () => ({ SEO: () => null }));
-vi.mock("@/components/agent/SurfaceProactiveCards", () => ({ SurfaceProactiveCards: () => null }));
+// If Scout ever mounts the shared proactive cards again, this marker shows up
+// (and the watcher spy below is called): the two legacy "Kreto Suggests" cards
+// (Set your day rate, N fresh gigs matched you) came from this component.
+const watchSpy = vi.fn();
+vi.mock("@/hooks/useSurfaceAgentWatch", () => ({ useSurfaceAgentWatch: (surface: string) => watchSpy(surface) }));
+vi.mock("@/components/agent/SurfaceProactiveCards", () => ({
+  SurfaceProactiveCards: () => {
+    watchSpy("scout");
+    return <section data-testid="proactive-cards">Kreto Suggests</section>;
+  },
+}));
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div data-testid="marketplace" /> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div data-testid="scouted" /> }));
 vi.mock("@/components/opportunity/ShortlistedGigs", () => ({ ShortlistedGigs: () => <div data-testid="shortlist" /> }));
@@ -46,6 +56,7 @@ const renderScout = (cached: unknown[] | null = gigs) => {
 const before = (a: Node, b: Node) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 const assist = () => screen.queryByRole("complementary", { name: "Kreto can help" });
 
+beforeEach(() => watchSpy.mockClear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("Scout page", () => {
@@ -106,6 +117,19 @@ describe("Scout page", () => {
     for (const gone of [/warm intro beats a cold application/i, /Most creatives land work/i, /How scouting works/i, /Scout checks remote job boards/i, /Discover Creatives/i]) {
       expect(screen.queryByText(gone)).not.toBeInTheDocument();
     }
+  });
+
+  it("never renders the legacy Kreto Suggests cards, on any tab, and never starts the surface watcher", () => {
+    renderScout();
+    for (const id of ["marketplace", "shortlist"] as const) {
+      const tab = id === "marketplace" ? /All open gigs on Kretopia/i : /Gigs you saved for later/i;
+      fireEvent.click(screen.getByRole("tab", { name: tab }));
+    }
+    expect(screen.queryByTestId("proactive-cards")).not.toBeInTheDocument();
+    for (const gone of [/Kreto Suggests/i, /Set your day rate/i, /Set rate/i, /fresh gigs? matched you/i, /Not now/i]) {
+      expect(screen.queryByText(gone)).not.toBeInTheDocument();
+    }
+    expect(watchSpy).not.toHaveBeenCalled();
   });
 
   it("switches sections from the body", async () => {

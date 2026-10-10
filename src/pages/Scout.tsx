@@ -4,7 +4,6 @@ import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { summarizeScoutedGigs, type ScoutedGigSummary } from "@/lib/scoutGigSummary";
 import { SEO } from "@/components/SEO";
-import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
@@ -128,7 +127,6 @@ const Scout = () => {
         {tab === "shortlist" && <ShortlistedGigs />}
         {tab === "marketplace" && <OpportunitiesFeed />}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
-        <SurfaceProactiveCards surface="scout" className="px-0" />
       </StudioFeatureShell>
     </div>
   );
