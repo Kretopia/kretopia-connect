@@ -430,6 +430,7 @@ const ProfileContent = () => {
             not every one of them wants a back control. */}
         <PageBackButton />
         <FeaturePageHeader
+          scene="passport"
           eyebrow="Passport"
           title="Passport."
           accentTitle="Your work, verified."

@@ -301,6 +301,7 @@ export default function ThrivePay() {
       <div className="relative">
       <PageBackButton />
       <FeaturePageHeader
+        scene="krepay"
         eyebrow="Your money, daily"
         title="KrePay."
         accentTitle="Without the spreadsheet."

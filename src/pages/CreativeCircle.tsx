@@ -123,6 +123,7 @@ const CreativeCircle = () => {
       <div className="relative">
         <PageBackButton />
         <FeaturePageHeader
+          scene="coworking"
           eyebrow="Creative Circle"
           title="Creative Circle."
           accentTitle="Earn as it grows."

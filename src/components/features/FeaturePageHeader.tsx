@@ -3,6 +3,8 @@ import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial
 import { FeatureAITutorial } from "./FeatureAITutorial";
 import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
 import { KGradientDefs } from "@/components/brand/KGradientDefs";
+import { SceneBanner } from "@/components/brand/SceneBanner";
+import type { KretoSceneId } from "@/components/brand/kretoScenes";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -25,6 +27,8 @@ interface FeaturePageHeaderProps {
   compact?: boolean;
   /** Allow interactive footer content such as search results to extend over the page below. */
   allowOverflow?: boolean;
+  /** A Kreto scene in the expression of this feature, shown under the title as a banner signed Kretopia. */
+  scene?: KretoSceneId;
 }
 
 /**
@@ -37,7 +41,7 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene }: FeaturePageHeaderProps) {
   return (
     <div
       className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
@@ -77,6 +81,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         align="center"
         oneLine={oneLine}
         compact={compact}
+        art={scene && <SceneBanner scene={scene} label={eyebrow} lazy={false} className="h-32 w-full rounded-3xl border border-border sm:h-40" />}
         preTitle={
           tutorial && (
             <FeatureAITutorial

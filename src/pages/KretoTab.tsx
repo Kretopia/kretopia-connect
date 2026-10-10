@@ -144,6 +144,7 @@ export default function KretoTab() {
       <div className="relative">
         <PageBackButton />
         <FeaturePageHeader
+          scene="assistant"
           eyebrow="Executive Producer"
           title={`${BRAND.agentName}.`}
           accentTitle="Your creative career, run point."

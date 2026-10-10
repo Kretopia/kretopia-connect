@@ -184,6 +184,7 @@ export default function Subscription() {
       <div className="relative">
       <PageBackButton />
       <FeaturePageHeader
+        scene="krepay"
         eyebrow="Pricing"
         title="Choose"
         // "plan." alone (~70px) was too narrow for the gradient's 4-stop

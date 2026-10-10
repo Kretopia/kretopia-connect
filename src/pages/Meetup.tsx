@@ -192,6 +192,7 @@ const Meetup = () => {
       </Helmet>
 
       <FeaturePageHeader
+        scene="office"
         eyebrow="Live events"
         title="Events."
         accentTitle="Meet in real life."

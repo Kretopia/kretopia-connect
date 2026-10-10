@@ -139,6 +139,7 @@ export const BrandWorkHome = () => {
       </Helmet>
 
       <FeaturePageHeader
+        scene="studio"
         eyebrow="Hiring HQ"
         title="Studios."
         accentTitle="Your hiring command center."
