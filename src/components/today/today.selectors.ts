@@ -127,7 +127,7 @@ export function useTodaySignals(
           .then((r) => (r.data?.[0] as unknown as RawApprovalRow) ?? null, () => null),
         supabase
           .from("scouted_gigs")
-          .select("id, title, company, location, remote, fit_score, source_name, compensation, posted_at, scouted_at")
+          .select("id, title, company, location, remote, source_name, compensation, posted_at, scouted_at")
           .eq("target_user_id", userId)
           .order("fit_score", { ascending: false })
           .limit(1)
@@ -179,7 +179,6 @@ export function useTodaySignals(
             company: topGigRes.company ?? null,
             location: topGigRes.location ?? null,
             remote: !!topGigRes.remote,
-            fitScore: topGigRes.fit_score ?? null,
             sourceName: topGigRes.source_name ?? null,
             compensation: topGigRes.compensation ?? null,
             postedAt: topGigRes.posted_at ?? null,

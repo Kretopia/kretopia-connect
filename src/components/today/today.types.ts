@@ -27,7 +27,6 @@ export interface TodayGig {
   // gig scouted from a page that does not say where or when stays without them.
   location?: string | null;
   remote?: boolean;
-  fitScore?: number | null;
   sourceName?: string | null;
   compensation?: string | null;
   postedAt?: string | null;

@@ -1,3 +1,5 @@
+import { scoutEvidence } from "@/lib/scoutEvidence";
+
 /**
  * The Scout list as plain text for Kreto.
  *
@@ -14,7 +16,6 @@ export interface ScoutedGigSummary {
   location: string | null;
   remote: boolean;
   compensation: string | null;
-  fit_score: number;
   fit_reason: string | null;
   source_name?: string | null;
   source?: string | null;
@@ -36,11 +37,10 @@ export function summarizeScoutedGigs(gigs: ScoutedGigSummary[]): string {
     const head = `${i + 1}. ${clip(g.title, 100)}${g.company ? ` at ${clip(g.company, 60)}` : ""}${where ? ` (${where})` : ""}`;
     const parts = [
       head,
-      `fit ${Math.round(g.fit_score)}%`,
       g.compensation ? `pay: ${clip(g.compensation, 60)}` : "pay not listed",
       g.source_name || g.source ? `via ${clip(g.source_name || g.source, 40)}` : "",
     ].filter(Boolean);
-    const reason = clip(g.fit_reason, 160);
+    const reason = clip(scoutEvidence({ fit_reason: g.fit_reason, compensation: g.compensation, source: g.source })?.lines.join(" · "), 160);
     return reason ? `${parts.join(" · ")} — ${reason}` : parts.join(" · ");
   });
   const more = gigs.length > MAX_GIGS ? `\n(+${gigs.length - MAX_GIGS} more not listed)` : "";

@@ -43,7 +43,6 @@ interface RecentGig {
   id: string;
   title: string;
   company: string | null;
-  fit_score: number;
 }
 
 interface RecentAction {
@@ -100,7 +99,7 @@ export default function KretoTab() {
         supabase.from("profiles").select("full_name, avatar_url, role").eq("user_id", user.id).maybeSingle(),
         supabase
           .from("scouted_gigs")
-          .select("id, title, company, fit_score")
+          .select("id, title, company")
           .eq("target_user_id", user.id)
           .gt("expires_at", new Date().toISOString())
           .order("fit_score", { ascending: false })
@@ -229,10 +228,10 @@ export default function KretoTab() {
                 onClick={() => ask(`Help me think through this opportunity: "${gig.title}"${gig.company ? ` at ${gig.company}` : ""}.`)}
                 className="btn-glass btn-glass-outline text-left rounded-xl p-4"
               >
-                <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/40 font-semibold mb-2">Top Scout match</p>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/40 font-semibold mb-2">From Scout</p>
                 <p className="text-sm font-medium truncate">{gig.title}</p>
                 <p className="text-xs text-foreground/50 truncate">
-                  {gig.company || "Opportunity"} · {gig.fit_score}% fit
+                  {gig.company || "Opportunity"}
                 </p>
               </button>
             )}

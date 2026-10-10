@@ -3,7 +3,7 @@ import { summarizeScoutedGigs, type ScoutedGigSummary } from "../scoutGigSummary
 
 const gig = (over: Partial<ScoutedGigSummary> = {}): ScoutedGigSummary => ({
   id: "g", title: "Motion Designer", company: "Nord Films", location: "Paris", remote: false, compensation: null,
-  fit_score: 87.6, fit_reason: "Matches your motion", source_name: "Remote OK", ...over,
+  fit_reason: "Matches your motion", source_name: "Remote OK", ...over,
 });
 
 describe("summarizeScoutedGigs", () => {
@@ -11,12 +11,19 @@ describe("summarizeScoutedGigs", () => {
     expect(summarizeScoutedGigs([])).toBe("");
   });
 
-  it("lists each gig with where, fit, pay and source, and says when pay is not listed", () => {
+  it("lists each gig with where, pay and source, says when pay is not listed, and gives no fit percentage", () => {
     const text = summarizeScoutedGigs([gig(), gig({ title: "Colorist", company: null, remote: true, location: null, compensation: "€450/day", fit_reason: null })]);
     expect(text).toContain("Gigs currently on my Scout list:");
-    expect(text).toContain("1. Motion Designer at Nord Films (Paris) · fit 88% · pay not listed · via Remote OK — Matches your motion");
-    expect(text).toContain("2. Colorist (remote) · fit 88% · pay: €450/day · via Remote OK");
+    expect(text).toContain("1. Motion Designer at Nord Films (Paris) · pay not listed · via Remote OK — Matches your motion");
+    expect(text).toContain("2. Colorist (remote) · pay: €450/day · via Remote OK");
     expect(text).not.toContain("null");
+    expect(text).not.toMatch(/\d+%|\bfit \d/);
+  });
+
+  it("does not pass on the date the scan froze into the reason", () => {
+    const text = summarizeScoutedGigs([gig({ fit_reason: "Matches your “motion” · posted yesterday · Posted 2 days ago", source: "gigboard" })]);
+    expect(text).toContain("Matches your “motion”");
+    expect(text).not.toMatch(/yesterday|days ago/i);
   });
 
   it("caps the list and says how many were left out", () => {
