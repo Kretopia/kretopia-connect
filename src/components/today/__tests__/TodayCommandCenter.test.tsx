@@ -172,17 +172,24 @@ describe("TodayCommandCenter", () => {
     expect(container.querySelector("[style*='rotateX']")).toBeNull();
   });
 
-  it("every card has its own Kreto robot, all different", () => {
+  it("every card has its own scene from the Kreto library, all different, and no cut-out robot", () => {
     const signals = baseSignals({ passport: { percentage: 40, missingFields: ["Bio"], isComplete: false } });
     renderCommandCenter(signals, { user_id: "u1", full_name: "Maya" } as ProfileRow);
-    const robotOf = (name: string) => {
+    const sceneOf = (name: string) => {
       const img = screen.getByRole("region", { name }).querySelector("header img");
       expect(img).not.toBeNull();
-      return (img as HTMLImageElement).getAttribute("src");
+      return img as HTMLImageElement;
     };
-    const robots = [robotOf("Creative Passport and Kreto"), robotOf("Today's next action"), robotOf("Your activity")];
-    expect(new Set(robots).size).toBe(3);
-    // and they are the light copies, not the 300 KB originals
-    for (const src of robots) expect(src).toMatch(/small\/kreto-/);
+    const scenes = [sceneOf("Creative Passport and Kreto"), sceneOf("Today's next action"), sceneOf("Your activity")];
+    const srcs = scenes.map((img) => img.getAttribute("src"));
+    expect(new Set(srcs).size).toBe(3);
+    for (const img of scenes) {
+      expect(img.getAttribute("src")).toMatch(/library\/[a-z-]+\.webp/);
+      // decorative art with its space reserved, so nothing jumps when it arrives
+      expect(img).toHaveAttribute("alt", "");
+      expect(img).toHaveAttribute("width");
+      expect(img).toHaveAttribute("height");
+    }
+    for (const src of srcs) expect(src).not.toMatch(/cutout|\/small\//);
   });
 });

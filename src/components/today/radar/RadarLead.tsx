@@ -1,23 +1,19 @@
 import { CalendarClock, MapPin, Video } from "lucide-react";
 
 import { MediaImage } from "@/components/media/MediaImage";
-import { KretoCharacter } from "@/components/brand/KretoCharacter";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { OutlineCta } from "@/components/ui/glass-cta";
 import { formatEventWhen, type NextEvent } from "@/lib/nextEvent";
 import { startsIn } from "./radar.logic";
 
 /**
  * "Your next event": the one event that is coming up for this person (hosted or
- * going), with its real cover. With no cover of its own it shows a Kreto robot
- * on the brand surface (never a made-up picture), and with no event at all it
+ * going), with its real cover. With no cover of its own it shows the Kreto
+ * library's Event scene (never a made-up picture), and with no event at all it
  * says so and points to where events are.
  */
 function EventArt() {
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[hsl(var(--energy)/0.2)] via-muted to-card">
-      <KretoCharacter variant="director" size={120} floatAmplitude={0} lazy />
-    </div>
-  );
+  return <KretoScene scene="event" className="h-full w-full" />;
 }
 
 export function RadarLead({ event }: { event: NextEvent | null }) {

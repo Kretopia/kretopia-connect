@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { KretoCharacter, type KretoCharacterVariant } from "@/components/brand/KretoCharacter";
+import { KretoScene, type KretoSceneId } from "@/components/brand/KretoScene";
 import { cn } from "@/lib/utils";
 
 interface TodayCardProps {
@@ -9,8 +9,8 @@ interface TodayCardProps {
   /** Small uppercase line above the title. */
   eyebrow: string;
   title: ReactNode;
-  /** Which of Kreto's robots stands in this card's corner. Every card on Today has a different one. */
-  robot: KretoCharacterVariant;
+  /** Which scene of the Kreto library fills this card's corner. Every card on Today has a different one. */
+  scene: KretoSceneId;
   /** The card's content; fills the space between the header and the actions. */
   children: ReactNode;
   /** Exactly one primary (GlassCta*) and one secondary (OutlineCta*) Landing CTA, each `w-full`. */
@@ -24,7 +24,7 @@ interface TodayCardProps {
  * Passport, the next move and the activity summary share one anatomy by
  * construction:
  *
- *   eyebrow + title          (and one Kreto robot in the corner, a different one per card)
+ *   eyebrow + title          (and one Kreto scene in the corner, a different one per card)
  *   content (fills the card)
  *   ── hairline ──
  *   primary + secondary CTA  <- always the Landing pair, stacked, full width
@@ -33,7 +33,7 @@ interface TodayCardProps {
  * pointer; the content and the actions do. Equal height comes from the grid's
  * `auto-rows-fr` (or the deck) plus the shared min height.
  */
-export function TodayCard({ label, eyebrow, title, robot, children, actions, className }: TodayCardProps) {
+export function TodayCard({ label, eyebrow, title, scene, children, actions, className }: TodayCardProps) {
   return (
     <section
       aria-label={label}
@@ -47,7 +47,10 @@ export function TodayCard({ label, eyebrow, title, robot, children, actions, cla
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
           <h2 className="mt-2 break-words text-xl font-bold leading-tight text-foreground">{title}</h2>
         </div>
-        <KretoCharacter variant={robot} size={64} floatAmplitude={1} floatDuration={8} className="pointer-events-none -mr-1 -mt-1 shrink-0" />
+        <KretoScene
+          scene={scene}
+          className="h-[52px] w-[104px] shrink-0 rounded-xl border border-border sm:h-16 sm:w-32"
+        />
       </header>
       <div className="mt-5 flex min-w-0 flex-1 flex-col">{children}</div>
       <div className="mt-6 grid gap-3 border-t border-border pt-5">{actions}</div>
