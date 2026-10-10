@@ -10,6 +10,7 @@ import { Bookmark, MapPin, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScoutEvidence } from "./ScoutEvidence";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { useOptionalScoutScan } from "@/components/scout/scoutScanContext";
 import { gigStatesById } from "@/components/scout/gigState";
 
@@ -117,18 +118,20 @@ export function ShortlistedGigs() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {gigs.map((g) => (
           <Card key={g.id} className="overflow-hidden flex flex-col">
-            {g.image_url && !failedImages.has(g.id) && (
-              <div className="aspect-[16/9] overflow-hidden bg-muted">
+            <div className="aspect-[16/9] overflow-hidden bg-muted">
+              {g.image_url && !failedImages.has(g.id) ? (
                 <img
                   src={g.image_url}
                   alt={g.title}
                   className="w-full h-full object-cover"
                   loading="lazy"
-              decoding="async"
+                  decoding="async"
                   onError={() => setFailedImages((prev) => new Set(prev).add(g.id))}
                 />
-              </div>
-            )}
+              ) : (
+                <KretoScene scene="scout" size="thumb" className="h-full w-full" />
+              )}
+            </div>
             <div className="p-3 flex flex-col gap-2 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-sm font-bold leading-tight line-clamp-2">{g.title}</h3>

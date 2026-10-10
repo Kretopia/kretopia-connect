@@ -1,4 +1,5 @@
 import { KretoMark } from "@/components/brand/KretoMark";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { OutlineCtaButton } from "@/components/ui/glass-cta";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function ScoutKretoAssist({ getPromptContext, className }: ScoutKretoAssi
         <p className="text-sm font-semibold text-foreground">Found one worth pursuing?</p>
         <p className="mt-0.5 text-xs text-muted-foreground">Kreto can prepare a draft pitch for your review.</p>
       </div>
+      <KretoScene scene="assistant" size="thumb" className="hidden h-14 w-28 shrink-0 rounded-xl border border-border md:block" />
       <OutlineCtaButton onClick={ask} className="min-h-11 w-full shrink-0 sm:w-auto">
         Ask Kreto
       </OutlineCtaButton>

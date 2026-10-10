@@ -117,7 +117,8 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
           label={statusLabel}
         />
       }
-      aside={<KretoScene scene="campaign" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
+      brandFooter={false}
+      aside={<KretoScene scene="scout" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
     >
       {signalsLoading ? (
         <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3" aria-busy="true">
