@@ -1843,3 +1843,55 @@ svg.k-gradient-icon {
   .k-spinner__ring { animation: none; }
   .k-spinner__mark { animation: k-spinner-fade 1.6s ease-in-out infinite; }
 }
+
+/* Scout's Scan now: radar rings behind the button, a sheen across it, and a
+   beam along its foot while a scan runs. Decoration only; it stops entirely
+   under reduced motion and the button stays a still glass pill. */
+.scout-scan-ring,
+.scout-scan-sheen,
+.scout-scan-beam {
+  pointer-events: none;
+  opacity: 0;
+}
+.scout-scan-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--energy) / 0.5);
+}
+.scout-scan-sheen {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  background: linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.22), transparent);
+}
+.scout-scan-beam {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, hsl(var(--energy)), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+}
+@keyframes scout-scan-ring {
+  0% { transform: scale(0.97, 0.88); opacity: 0.6; }
+  100% { transform: scale(1.16, 1.75); opacity: 0; }
+}
+@keyframes scout-scan-sheen {
+  0%, 55% { transform: translateX(-130%) skewX(-18deg); opacity: 0; }
+  62% { opacity: 1; }
+  100% { transform: translateX(380%) skewX(-18deg); opacity: 0; }
+}
+@keyframes scout-scan-beam {
+  0% { background-position: -60% 0; opacity: 1; }
+  100% { background-position: 160% 0; opacity: 1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .scout-scan-ring { animation: scout-scan-ring 3.4s cubic-bezier(0.2, 0.65, 0.3, 0.95) infinite; }
+  .scout-scan-ring-late { animation-delay: 1.7s; }
+  .scout-scan-sheen { animation: scout-scan-sheen 4.8s ease-in-out infinite; }
+  .scout-scan[data-busy="true"] .scout-scan-ring { animation-duration: 1.5s; }
+  .scout-scan[data-busy="true"] .scout-scan-ring-late { animation-delay: 0.75s; }
+  .scout-scan[data-busy="true"] .scout-scan-sheen { animation-duration: 1.6s; }
+  .scout-scan[data-busy="true"] .scout-scan-beam { animation: scout-scan-beam 1.1s linear infinite; }
+}

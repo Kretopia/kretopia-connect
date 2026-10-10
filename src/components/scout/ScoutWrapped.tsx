@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Bookmark, Briefcase, CalendarCheck, CalendarClock, ClipboardCheck, Clock, Hourglass, MapPin, RefreshCw, UserSearch, type LucideIcon } from "lucide-react";
+import { Bookmark, Briefcase, CalendarCheck, CalendarClock, ClipboardCheck, Clock, Hourglass, MapPin, UserSearch, type LucideIcon } from "lucide-react";
 
 import { KretoScene } from "@/components/brand/KretoScene";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { GlassCtaButton, OutlineCtaButton } from "@/components/ui/glass-cta";
 import { Skeleton } from "@/components/ui/skeleton";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
 import { WrappedSignals, type WrappedSignal } from "@/components/wrapped/WrappedSignals";
 import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
 import { useNow } from "@/hooks/useNow";
 import { LIVE_INTERVAL_MS } from "@/lib/scoutScan";
+import { ScoutScanButton } from "./ScoutScanButton";
 import { useScoutScan } from "./scoutScanContext";
 import type { ScoutTab } from "./scout.types";
 import { selectScoutWrappedSignals, type ScoutSignalId } from "./scoutWrapped.signals";
@@ -54,7 +53,7 @@ interface ScoutWrappedProps {
 export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
   const scan = useScoutScan();
   const now = useNow(30_000);
-  const { gigs, actions, actionsReady, profile, loading, listError, lastRunAt, busy, scanning, liveRefreshing, scanElapsed, scanUnavailable, scanNote, lastResult, progress } = scan;
+  const { gigs, actions, actionsReady, profile, loading, listError, lastRunAt, busy, scanning, liveRefreshing, scanElapsed, scanUnavailable, scanNote, lastResult } = scan;
 
   const signals: WrappedSignal[] = useMemo(
     () =>
@@ -145,26 +144,11 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
       )}
 
       <div className="flex flex-col items-stretch gap-3 sm:items-center">
-        <GlassCtaButton
-          size="lg"
-          onClick={() => void scan.scanNow()}
-          disabled={busy}
-          aria-busy={busy}
-          icon={busy ? <KretopiaSpinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" aria-hidden />}
-          className="min-h-12 w-full justify-center sm:w-auto sm:min-w-[18rem]"
-        >
-          {buttonLabel}
-        </GlassCtaButton>
+        <ScoutScanButton label={buttonLabel} busy={busy} onClick={() => void scan.scanNow()} />
 
         <p role="status" aria-live="polite" className="min-h-[1.25rem] text-center text-xs text-muted-foreground">
           {line}
         </p>
-
-        {progress.saved > 0 && (
-          <OutlineCtaButton size="sm" onClick={() => onSelectTab("shortlist")} className="min-h-11 w-full sm:w-auto">
-            View saved opportunities ({progress.saved})
-          </OutlineCtaButton>
-        )}
       </div>
 
       <p className="text-center text-[11px] text-muted-foreground">

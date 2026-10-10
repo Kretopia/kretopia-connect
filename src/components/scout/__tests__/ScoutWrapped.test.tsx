@@ -158,18 +158,12 @@ describe("ScoutWrapped", () => {
     expect(screen.queryByRole("list", { name: "Scout priority signals" })).not.toBeInTheDocument();
   });
 
-  it("one restrained secondary action, only when something is saved", async () => {
+  it("Scan now is the only action: no saved-opportunities button, even when something is saved", async () => {
     db.actions = [{ scouted_gig_id: "b", action: "saved", outcome: null }];
-    renderWrapped();
-    const view = await screen.findByRole("button", { name: /View saved opportunities \(1\)/ });
-    fireEvent.click(view);
-    expect(onSelectTab).toHaveBeenCalledWith("shortlist");
-  });
-
-  it("no secondary action when nothing is saved", async () => {
     renderWrapped();
     await screen.findByText(/Checked/);
     expect(screen.queryByRole("button", { name: /View saved opportunities/ })).not.toBeInTheDocument();
+    expect(scanButton()).toBeInTheDocument();
   });
 
   it("says so when the list could not be read, instead of showing an empty list as nothing found", async () => {
