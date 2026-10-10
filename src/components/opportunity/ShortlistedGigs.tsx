@@ -6,9 +6,10 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bookmark, MapPin, ExternalLink, X, Sparkles } from "lucide-react";
+import { Bookmark, MapPin, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { ScoutEvidence } from "./ScoutEvidence";
 
 interface ScoutedGig {
   id: string;
@@ -20,9 +21,12 @@ interface ScoutedGig {
   image_url: string | null;
   apply_url: string | null;
   source_url: string;
-  fit_score: number;
+  source: string;
+  compensation: string | null;
   fit_reason: string | null;
   scouted_at: string;
+  /** When this person saved it (the action's own timestamp), not when Scout found it. */
+  saved_at: string | null;
 }
 
 /**
@@ -52,12 +56,15 @@ export function ShortlistedGigs() {
 
       const { data: rows } = await supabase
         .from("scouted_gigs")
-        .select("id, title, company, location, remote, description, image_url, apply_url, source_url, fit_score, fit_reason, scouted_at")
+        .select("id, title, company, location, remote, description, image_url, apply_url, source_url, source, compensation, fit_reason, scouted_at")
         .in("id", ids);
 
-      // Preserve action ordering (most recently saved first)
+      // Preserve action ordering (most recently saved first) and keep when each was saved
       const order = new Map(ids.map((id, i) => [id, i]));
-      return ((rows || []) as ScoutedGig[]).sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+      const savedAt = new Map((actions || []).map((a) => [a.scouted_gig_id, a.created_at as string | null]));
+      return ((rows || []) as Omit<ScoutedGig, "saved_at">[])
+        .map((r) => ({ ...r, saved_at: savedAt.get(r.id) ?? null }))
+        .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)) as ScoutedGig[];
     },
     enabled: !!user,
   });
@@ -118,12 +125,7 @@ export function ShortlistedGigs() {
               </div>
             )}
             <div className="p-3 flex flex-col gap-2 flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-sm font-bold leading-tight line-clamp-2 flex-1">{g.title}</h3>
-                <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0">
-                  {g.fit_score}% fit
-                </Badge>
-              </div>
+              <h3 className="text-sm font-bold leading-tight line-clamp-2">{g.title}</h3>
               {(g.company || g.location) && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
                   {g.company && <span className="font-medium text-foreground/80">{g.company}</span>}
@@ -131,15 +133,12 @@ export function ShortlistedGigs() {
                   {g.remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
                 </p>
               )}
-              {g.fit_reason && (
-                <p className="text-[11px] leading-snug text-foreground/70 line-clamp-2 flex gap-1">
-                  <Sparkles className="h-3 w-3 text-energy shrink-0 mt-0.5" />
-                  <span>{g.fit_reason}</span>
-                </p>
-              )}
+              <ScoutEvidence gig={g} compact />
               <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                 <span className="text-[10px] text-muted-foreground">
-                  Saved {formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}
+                  {g.saved_at
+                    ? `Saved ${formatDistanceToNow(new Date(g.saved_at), { addSuffix: true })}`
+                    : `Found ${formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}`}
                 </span>
                 <div className="flex items-center gap-1">
                   <Button asChild size="sm" variant="outline" className="h-7 text-xs">

@@ -14,6 +14,7 @@ import {
   CheckCircle2, Trophy, Banknote,
 } from "lucide-react";
 import { ScoutPreferencesDialog } from "./ScoutPreferencesDialog";
+import { ScoutEvidence } from "./ScoutEvidence";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
@@ -87,6 +88,24 @@ function PayChip({ compensation, className }: { compensation: string | null; cla
     <span className={cn("inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground", className)}>
       Pay not listed
     </span>
+  );
+}
+
+// Where a gig came from and how old that fact is, computed now: the date on
+// the card is the board's own `posted_at` when it gave one, otherwise the time
+// Scout found it. (The stored fit sentence used to carry "posted yesterday",
+// which stayed "yesterday" forever.)
+function SourceLine({ gig, className }: { gig: ScoutedGig; className?: string }) {
+  const Icon = SOURCE_ICON[gig.source] || Globe;
+  return (
+    <div className={cn("flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground", className)}>
+      <Icon className="h-3 w-3 shrink-0" />
+      <span className="truncate">via {gig.source_name || gig.source}</span>
+      <span>·</span>
+      <span className="shrink-0">
+        {gig.posted_at ? "posted" : "found"} {formatDistanceToNow(new Date(gig.posted_at || gig.scouted_at), { addSuffix: true }).replace("about ", "")}
+      </span>
+    </div>
   );
 }
 
@@ -412,7 +431,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   };
 
   const renderGigCard = (g: ScoutedGig) => {
-    const Icon = SOURCE_ICON[g.source] || Globe;
     // CEO overhaul: Holo Card treatment (same 3D tilt/sheen wrapper as
     // PassportHero/Passport Directory), around this card's existing
     // content/logic unchanged -- it already had a real HD image, fit
@@ -447,9 +465,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
               Scouted
             </Badge>
-            <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0">
-              {g.fit_score}% fit
-            </Badge>
           </div>
 
           <div className="absolute bottom-0 inset-x-0 p-3">
@@ -467,25 +482,10 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             </div>
           )}
 
-          {g.fit_reason && (
-            <div className="rounded-lg bg-energy/[0.06] border border-energy/20 px-2.5 py-2">
-              <div className="text-[9px] uppercase tracking-wider font-bold text-energy mb-0.5 flex items-center gap-1">
-                <Sparkles className="h-2.5 w-2.5" />
-                Why this fits you
-              </div>
-              <p className="text-[11px] leading-snug text-foreground/80 line-clamp-3">{g.fit_reason}</p>
-            </div>
-          )}
+          <ScoutEvidence gig={g} compact />
 
           <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground min-w-0">
-              <Icon className="h-3 w-3 shrink-0" />
-              <span className="truncate">via {g.source_name || g.source}</span>
-              <span>·</span>
-              <span className="shrink-0">
-                {g.posted_at ? "posted" : "found"} {formatDistanceToNow(new Date(g.posted_at || g.scouted_at), { addSuffix: true }).replace("about ", "")}
-              </span>
-            </div>
+            <SourceLine gig={g} />
             <div className="flex items-center gap-0.5 shrink-0" onClick={(e) => e.stopPropagation()}>
               <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => save(g.id, e)} title="Save">
                 <Bookmark className="h-3.5 w-3.5" />
@@ -594,11 +594,6 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               {f.label}
             </Button>
           ))}
-          {gigs.length - paidCount > 0 && payFilter === "all" && (
-            <span className="text-[11px] text-muted-foreground">
-              {gigs.length - paidCount} don't state their pay. Check before you spend time on a pitch.
-            </span>
-          )}
         </div>
       )}
 
@@ -699,7 +694,8 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
         </Card>
       ) : (
         <>
-        {/* One strongest opportunity first — gigs are already ordered by fit_score desc. */}
+        {/* First in the list gets the larger layout. It is simply the first the existing
+            ordering returns (fit_score desc, then newest): no badge claims more than that. */}
         {visibleGigs[0] && (
           <HoloCard>
           <div
@@ -707,7 +703,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
             role="button"
             tabIndex={0}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(visibleGigs[0]); } }}
-            aria-label={`View brief for ${visibleGigs[0].title}, your strongest match`}
+            aria-label={`View brief for ${visibleGigs[0].title}`}
             className="group relative rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
           >
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-64 shrink-0 overflow-hidden">
@@ -725,32 +721,21 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               )}
               <div className="absolute top-2.5 left-2.5">
                 <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/80 backdrop-blur-sm border-border">
-                  Strongest match
+                  <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
+                  Scouted
                 </Badge>
               </div>
             </div>
             <div className="p-4 flex flex-col gap-2.5 flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
-                <Badge className="h-5 text-[10px] bg-energy/15 text-energy border-energy/30 shrink-0">
-                  {visibleGigs[0].fit_score}% fit
-                </Badge>
-              </div>
+              <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
               <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
                 <PayChip compensation={visibleGigs[0].compensation} />
                 {visibleGigs[0].company && <span className="font-medium text-foreground/90">{visibleGigs[0].company}</span>}
                 {visibleGigs[0].location && <><span>·</span><MapPin className="h-3 w-3" />{visibleGigs[0].location}</>}
                 {visibleGigs[0].remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
               </div>
-              {visibleGigs[0].fit_reason && (
-                <div className="rounded-lg bg-energy/[0.06] border border-energy/20 px-3 py-2">
-                  <div className="text-[9px] uppercase tracking-wider font-bold text-energy mb-0.5 flex items-center gap-1">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    Why this fits you
-                  </div>
-                  <p className="text-xs leading-relaxed text-foreground/80">{visibleGigs[0].fit_reason}</p>
-                </div>
-              )}
+              <ScoutEvidence gig={visibleGigs[0]} />
+              <SourceLine gig={visibleGigs[0]} />
               <div className="mt-auto flex items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
                 <Button size="sm" onClick={() => openDetail(visibleGigs[0])} className="gap-1.5">
                   View full brief
@@ -820,22 +805,14 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
                         </span>
                       )}
                       {openGig.remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
-                      <Badge className="h-4 text-[9px] bg-energy/15 text-energy border-energy/30">{openGig.fit_score}% fit</Badge>
                     </div>
+                    <SourceLine gig={openGig} className="mt-1" />
                   </div>
                 </div>
               </DialogHeader>
 
               <div className="p-4 space-y-3.5">
-                {openGig.fit_reason && (
-                  <div className="rounded-lg bg-energy/[0.06] border border-energy/20 px-3 py-2">
-                    <div className="text-[9px] uppercase tracking-wider font-bold text-energy mb-0.5 flex items-center gap-1">
-                      <Sparkles className="h-2.5 w-2.5" />
-                      Why this fits you
-                    </div>
-                    <p className="text-xs leading-relaxed text-foreground/90">{openGig.fit_reason}</p>
-                  </div>
-                )}
+                <ScoutEvidence gig={openGig} />
 
                 <div>
                   {enriching ? (
