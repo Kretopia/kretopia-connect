@@ -1,7 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { MapPin, ShieldCheck } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
 import { MediaImage } from "@/components/media/MediaImage";
 import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -9,91 +7,53 @@ import { OutlineCta } from "@/components/ui/glass-cta";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { CreditEvidenceInput } from "@/lib/creditEvidence";
-import {
-  profileHref,
-  spreadAcrossRoles,
-  standingLabel,
-  summarizeCredits,
-  type CreativeRow,
-} from "@/lib/discoverCreatives";
-
-type Creative = CreativeRow & { creditsLabel: string | null };
+import { profileHref, standingLabel, summarizeCredits } from "@/lib/discoverCreatives";
+import type { PersonToMeet } from "./radar.logic";
+import type { SignalState } from "./useRadar";
 
 /**
- * One read of the public Passports (public_profiles_safe, the same guest-safe
- * view the rest of the app uses) plus the credit rows the viewer's RLS already
- * lets them see for those people. Cached, so leaving Today and coming back
- * does not refetch it.
+ * Discover Creatives, inside the Radar: real public Passports ranked for this
+ * person, each with the one factual reason it is suggested. It scrolls by hand
+ * (touch, trackpad, arrows, keyboard), never moves on its own, and every
+ * Passport has exactly one action.
  */
-async function fetchCreatives(): Promise<Creative[]> {
-  const { data, error } = await supabase
-    .from("public_profiles_safe")
-    .select("user_id,username,full_name,role,avatar_url,cover_image_url,location,verification_tier")
-    .not("username", "is", null)
-    .not("role", "is", null)
-    .order("level", { ascending: false, nullsFirst: false })
-    .limit(60);
-  if (error) throw error;
-
-  const picked = spreadAcrossRoles((data as CreativeRow[]) ?? []);
-  const ids = picked.map((r) => r.user_id).filter((id): id is string => !!id);
-  const creditsByUser = new Map<string, CreditEvidenceInput[]>();
-  if (ids.length > 0) {
-    const { data: credits } = await supabase
-      .from("credits")
-      .select("user_id, verification_status, verification_url, endorsement_count, verified_by_name, verified_by_user_id")
-      .in("user_id", ids);
-    for (const c of (credits as Array<CreditEvidenceInput & { user_id: string }> | null) ?? []) {
-      const list = creditsByUser.get(c.user_id) ?? [];
-      list.push(c);
-      creditsByUser.set(c.user_id, list);
-    }
-  }
-  return picked.map((r) => ({ ...r, creditsLabel: summarizeCredits(creditsByUser.get(r.user_id!) ?? []) }));
-}
-
-/**
- * Discover Creatives: continuity, not an urgent task. It sits after Today's
- * primary cards, scrolls by hand (touch, trackpad, arrow buttons, keyboard)
- * and never moves on its own. Each Passport shows only what the public view
- * and credits RLS return, and has exactly one action.
- */
-export function TodayDiscoverCreatives() {
+export function RadarPeople({
+  people,
+  credits,
+  state,
+}: {
+  people: PersonToMeet[];
+  credits: Record<string, CreditEvidenceInput[]>;
+  state: SignalState;
+}) {
   const reducedMotion = useReducedMotion();
-  const { data: creatives = [], isLoading } = useQuery({
-    queryKey: ["discover-creatives"],
-    queryFn: fetchCreatives,
-    staleTime: 10 * 60_000,
-  });
-
-  if (!isLoading && creatives.length === 0) return null;
+  if (state === "ready" && people.length === 0) return null;
 
   return (
     <section aria-labelledby="discover-creatives-title" className="space-y-3">
       <div>
-        <h2 id="discover-creatives-title" className="text-base font-bold text-foreground">
+        <h3 id="discover-creatives-title" className="text-base font-bold text-foreground">
           Discover Creatives
-        </h2>
+        </h3>
         <p className="text-xs text-muted-foreground">Real Passports from the Kretopia community.</p>
       </div>
 
-      {isLoading ? (
+      {state === "loading" ? (
         <div className="flex gap-3 overflow-hidden" aria-busy="true">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-80 shrink-0 basis-[78%] rounded-2xl sm:basis-[46%] lg:basis-[29%]" />
           ))}
         </div>
+      ) : state === "error" ? (
+        <p className="rounded-xl border border-dashed border-border p-3 text-xs text-muted-foreground">Couldn't load creatives right now.</p>
       ) : (
         <div className="relative">
-          <Carousel
-            opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }}
-            className="w-full"
-            aria-label="Discover creatives"
-          >
+          <Carousel opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="Discover creatives">
             <CarouselContent className="-ml-3">
-              {creatives.map((p) => {
+              {people.map(({ person: p, reason, isNew }) => {
                 const name = p.full_name || p.username || "Creator";
                 const standing = standingLabel(p.verification_tier);
+                const creditsLabel = summarizeCredits(credits[p.user_id] ?? []);
                 return (
                   <CarouselItem key={p.user_id} className="basis-[78%] pl-3 sm:basis-[46%] lg:basis-[29%]">
                     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors focus-within:border-[hsl(var(--energy)/0.45)] hover:border-[hsl(var(--energy)/0.45)]">
@@ -104,17 +64,17 @@ export function TodayDiscoverCreatives() {
                           aspect="aspect-[16/9]"
                           fallback={<div className="h-full w-full bg-gradient-to-br from-[hsl(var(--energy)/0.16)] via-muted to-card" />}
                         />
-                        {standing && (
+                        {(standing || isNew) && (
                           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-[10px] font-bold text-foreground">
-                            <ShieldCheck className="h-3 w-3 text-[hsl(var(--energy))]" aria-hidden />
-                            {standing}
+                            {standing ? <ShieldCheck className="h-3 w-3 text-[hsl(var(--energy))]" aria-hidden /> : null}
+                            {standing ?? "New"}
                           </span>
                         )}
                       </div>
                       <div className="flex flex-1 flex-col gap-3 px-4 pb-4">
                         <PersonAvatar src={p.avatar_url} name={name} className="-mt-7 h-14 w-14 text-lg ring-2 ring-card" />
                         <div className="min-w-0 space-y-1">
-                          <h3 className="truncate font-semibold text-foreground">{name}</h3>
+                          <h4 className="truncate font-semibold text-foreground">{name}</h4>
                           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                             {p.role && <span>{p.role}</span>}
                             {p.location && (
@@ -124,8 +84,12 @@ export function TodayDiscoverCreatives() {
                               </span>
                             )}
                           </p>
-                          {p.creditsLabel && <p className="text-[11px] text-muted-foreground">{p.creditsLabel}</p>}
+                          {creditsLabel && <p className="text-[11px] text-muted-foreground">{creditsLabel}</p>}
                         </div>
+                        <p className="rounded-lg border border-[hsl(var(--energy)/0.25)] bg-[hsl(var(--energy)/0.06)] px-2.5 py-1.5 text-[11px] leading-snug text-foreground">
+                          <span className="sr-only">Why: </span>
+                          {reason}
+                        </p>
                         <OutlineCta to={profileHref(p)} className="mt-auto min-h-11 w-full" aria-label={`View ${name}'s Passport`}>
                           View Passport
                         </OutlineCta>
@@ -139,11 +103,11 @@ export function TodayDiscoverCreatives() {
             <CarouselNext variant="glass" className="hidden sm:flex -right-3" aria-label="Next creatives" />
           </Carousel>
           {/* On touch the next Passport peeks in from the right; this just makes that edge read as "more". */}
-          <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden" />
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-card to-transparent sm:hidden" />
         </div>
       )}
     </section>
   );
 }
 
-export default TodayDiscoverCreatives;
+export default RadarPeople;
