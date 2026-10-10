@@ -1,6 +1,6 @@
 import { ArrowRight, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { KretoMark } from "@/components/brand/KretoMark";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { CtaButton } from "@/components/ui/cta-button";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,14 @@ export function PassportKretoEntry({ className }: PassportKretoEntryProps) {
       />
 
       <div className="relative flex items-center gap-3 sm:gap-4">
-        <KretoMark size="md" />
+        {/* The Kreto image of the Passport scene, in the 40px circle the K-mark
+            had: same box, so the card's layout does not move. */}
+        <KretoScene
+          scene="passport"
+          size="thumb"
+          lazy={false}
+          className="h-10 w-10 shrink-0 rounded-full ring-1 ring-white/10"
+        />
 
         <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[hsl(var(--accent-passport))] mb-1">
