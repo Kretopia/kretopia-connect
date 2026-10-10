@@ -47,6 +47,15 @@ import kretoPublicist from "@/assets/brand/kreto/kreto-publicist-cutout.png";
 import kretoDirector from "@/assets/brand/kreto/kreto-director-mic.png";
 import kretoDetective from "@/assets/brand/kreto/kreto-detective-scout.png";
 import kretoHeroWave from "@/assets/brand/kreto/kreto-mascot-hero-wave.png";
+// 256px WebP copies of the same cutouts (about 5% of the PNG weight, same look): used when the
+// character is shown at 160px or less, which is every small surface. The PNGs stay for big ones.
+import smallMain from "@/assets/brand/kreto/small/kreto-main.webp";
+import smallScout from "@/assets/brand/kreto/small/kreto-scout.webp";
+import smallConnector from "@/assets/brand/kreto/small/kreto-connector.webp";
+import smallProducer from "@/assets/brand/kreto/small/kreto-producer.webp";
+import smallPublicist from "@/assets/brand/kreto/small/kreto-publicist.webp";
+import smallDirector from "@/assets/brand/kreto/small/kreto-director.webp";
+import smallDetective from "@/assets/brand/kreto/small/kreto-detective.webp";
 
 export type KretoCharacterVariant = "main" | "scout" | "connector" | "producer" | "publicist" | "director" | "detective" | "hero-wave";
 export type KretoCharacterState =
@@ -70,6 +79,30 @@ const VARIANT_SRC: Record<KretoCharacterVariant, string> = {
   detective: kretoDetective,
   "hero-wave": kretoHeroWave,
 };
+
+const VARIANT_SRC_SMALL: Partial<Record<KretoCharacterVariant, string>> = {
+  main: smallMain,
+  scout: smallScout,
+  connector: smallConnector,
+  producer: smallProducer,
+  publicist: smallPublicist,
+  director: smallDirector,
+  detective: smallDetective,
+};
+
+/** Intrinsic width x height of each source, so the image box is reserved before it loads (no layout shift). */
+const VARIANT_SIZE: Record<KretoCharacterVariant, [number, number]> = {
+  main: [480, 618],
+  scout: [480, 480],
+  connector: [480, 480],
+  producer: [480, 480],
+  publicist: [480, 480],
+  director: [600, 560],
+  detective: [515, 600],
+  "hero-wave": [1378, 1141],
+};
+
+const SMALL_MAX_SIZE = 160;
 
 const VARIANT_LABEL: Record<KretoCharacterVariant, string> = {
   main: "Kreto",
@@ -142,6 +175,8 @@ interface KretoCharacterProps {
    *  pointer events, so it can't steal clicks meant for anything else
    *  nearby. */
   hoverable?: boolean;
+  /** Below the fold: let the browser load the image when it gets near. Default: load now. */
+  lazy?: boolean;
 }
 
 export const KretoCharacter = ({
@@ -154,6 +189,7 @@ export const KretoCharacter = ({
   floatDuration = 6,
   floatDelay = 0,
   hoverable = false,
+  lazy = false,
 }: KretoCharacterProps) => {
   const reducedMotion = useReducedMotion();
   const isMain = variant === "main";
@@ -221,8 +257,12 @@ export const KretoCharacter = ({
         />
       )}
       <img
-        src={VARIANT_SRC[variant]}
+        src={(size <= SMALL_MAX_SIZE && VARIANT_SRC_SMALL[variant]) || VARIANT_SRC[variant]}
         alt=""
+        width={VARIANT_SIZE[variant][0]}
+        height={VARIANT_SIZE[variant][1]}
+        decoding="async"
+        loading={lazy ? "lazy" : undefined}
         draggable={false}
         className={cn("relative w-full h-auto select-none", isCutout ? "" : "rounded-2xl")}
         style={
