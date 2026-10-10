@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scoutEvidence } from "../scoutEvidence";
+import { scoutEvidence, scoutUnknowns } from "../scoutEvidence";
 
 describe("scoutEvidence", () => {
   it("keeps the matches and drops the relative date and the pay the card already shows", () => {
@@ -39,5 +39,26 @@ describe("scoutEvidence", () => {
   it("adds nothing of its own: no score, no superlative", () => {
     const out = scoutEvidence({ fit_reason: "Matches your “video editor”", source: "gigboard" })!;
     expect(out.lines.join(" ")).not.toMatch(/%|strongest|best|top/i);
+  });
+});
+
+describe("scoutUnknowns", () => {
+  const full = { fit_reason: null, posted_at: "2026-10-08T10:00:00Z", location: "Paris", remote: false, company: "Nord" };
+
+  it("is empty when the listing said everything it could", () => {
+    expect(scoutUnknowns(full)).toEqual([]);
+  });
+
+  it("names the fields the source left out", () => {
+    expect(scoutUnknowns({ ...full, posted_at: null })).toEqual(["posting date"]);
+    expect(scoutUnknowns({ ...full, location: "  ", company: null })).toEqual(["location", "company"]);
+  });
+
+  it("a remote gig does not need a place", () => {
+    expect(scoutUnknowns({ ...full, location: null, remote: true })).toEqual([]);
+  });
+
+  it("never lists pay: the card's pay chip already says so", () => {
+    expect(scoutUnknowns({ ...full, compensation: null, posted_at: null })).not.toContain("pay");
   });
 });

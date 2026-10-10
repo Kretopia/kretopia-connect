@@ -26,6 +26,11 @@ export interface ScoutEvidenceInput {
   fit_reason: string | null | undefined;
   compensation?: string | null;
   source?: string | null;
+  /** Only needed by `scoutUnknowns`. */
+  posted_at?: string | null;
+  location?: string | null;
+  remote?: boolean | null;
+  company?: string | null;
 }
 
 export interface ScoutEvidence {
@@ -33,6 +38,19 @@ export interface ScoutEvidence {
   lines: string[];
   /** True when the sentence was written by a model from the listing rather than matched by code. */
   summarised: boolean;
+}
+
+/**
+ * What the listing did not say, so the person knows what to check before a
+ * pitch. Pay is left out on purpose: every card already has a pay chip that
+ * says "Pay not listed". Only fields the source could have given are named.
+ */
+export function scoutUnknowns({ posted_at, location, remote, company }: ScoutEvidenceInput): string[] {
+  const out: string[] = [];
+  if (!posted_at) out.push("posting date");
+  if (!(location ?? "").trim() && !remote) out.push("location");
+  if (!(company ?? "").trim()) out.push("company");
+  return out;
 }
 
 /** The evidence lines worth showing for a gig, or null when nothing durable is left. */

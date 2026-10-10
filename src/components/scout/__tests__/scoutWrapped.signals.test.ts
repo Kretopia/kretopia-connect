@@ -6,7 +6,7 @@ const NOW = new Date("2026-10-10T12:00:00Z");
 const hoursAgo = (h: number) => new Date(NOW.getTime() - h * 3_600_000).toISOString();
 const inDays = (d: number) => new Date(NOW.getTime() + d * 86_400_000).toISOString();
 
-const gig = (id: string, over: Record<string, unknown> = {}) => ({ id, scouted_at: hoursAgo(72), deadline: null, ...over });
+const gig = (id: string, over: Record<string, unknown> = {}) => ({ id, title: "A gig", location: null, posted_at: null, scouted_at: hoursAgo(72), deadline: null, ...over });
 const act = (scouted_gig_id: string, action: string, outcome: string | null = null): ScoutActionRow => ({ scouted_gig_id, action, outcome });
 
 describe("selectScoutWrappedSignals", () => {
@@ -20,16 +20,21 @@ describe("selectScoutWrappedSignals", () => {
     expect(out.every((s) => s.value > 0)).toBe(true);
   });
 
-  it("keeps a fixed order: deadline, started, saved, awaiting, fresh, then the list", () => {
+  it("keeps a fixed order: the person's decisions first, then the board's dates, their Passport, Scout's own check, then the list", () => {
     const out = selectScoutWrappedSignals(
       {
-        gigs: [gig("a", { deadline: inDays(3) }), gig("b", { scouted_at: hoursAgo(2) }), gig("c")],
+        gigs: [
+          gig("a", { deadline: inDays(3), title: "Senior Motion Designer", location: "Paris, France", posted_at: hoursAgo(30) }),
+          gig("b", { scouted_at: hoursAgo(2) }),
+          gig("c"),
+        ],
         actions: [act("b", "apply_clicked"), act("c", "saved"), act("d", "applied", "pending")],
+        profile: { role: "Motion Designer", location: "Paris, France" },
         now: NOW,
       },
-      6,
+      9,
     );
-    expect(out.map((s) => s.id)).toEqual(["closing", "started", "saved", "awaiting", "fresh", "listed"]);
+    expect(out.map((s) => s.id)).toEqual(["closing", "started", "saved", "awaiting", "posted", "role", "place", "fresh", "listed"]);
   });
 
   it("shows at most three, the first three in that order", () => {
@@ -82,6 +87,34 @@ describe("selectScoutWrappedSignals", () => {
     const out = selectScoutWrappedSignals({ gigs: [gig("a", { scouted_at: hoursAgo(23) }), gig("b", { scouted_at: hoursAgo(25) })], actions: [], now: NOW }, 6);
     expect(out.find((s) => s.id === "fresh")).toMatchObject({ value: 1, hint: "Checked by Scout" });
     expect(JSON.stringify(out)).not.toMatch(/since you|unseen|new for you/i);
+  });
+
+  it("'posted' is the board's own date, within 7 days, and a gig with no date is not counted", () => {
+    const out = selectScoutWrappedSignals(
+      { gigs: [gig("a", { posted_at: hoursAgo(24 * 6) }), gig("b", { posted_at: hoursAgo(24 * 9) }), gig("c", { posted_at: null })], actions: [], now: NOW },
+      9,
+    );
+    expect(out.find((s) => s.id === "posted")).toMatchObject({ value: 1, hint: "Date given by the board" });
+  });
+
+  it("role and place come from the Passport's own fields, as plain text matches", () => {
+    const gigs = [
+      gig("a", { title: "Motion Designer (freelance)", location: "Paris, France" }),
+      gig("b", { title: "Video Editor", location: "Lyon" }),
+      gig("c", { title: "motion designer", location: "Remote" }),
+    ];
+    const out = selectScoutWrappedSignals({ gigs, actions: [], profile: { role: "Motion Designer", location: "Paris, France" }, now: NOW }, 9);
+    expect(out.find((s) => s.id === "role")).toMatchObject({ value: 2, hint: "“Motion Designer” on your Passport" });
+    expect(out.find((s) => s.id === "place")).toMatchObject({ value: 1, hint: "Paris on your Passport" });
+  });
+
+  it("without a role or a city on the Passport, those two facts do not exist", () => {
+    const gigs = [gig("a", { title: "Motion Designer", location: "Paris" })];
+    for (const profile of [null, undefined, {}, { role: "", location: null }, { role: "VJ", location: "NY" }]) {
+      const ids = selectScoutWrappedSignals({ gigs, actions: [], profile, now: NOW }, 9).map((s) => s.id);
+      expect(ids).not.toContain("role");
+      expect(ids).not.toContain("place");
+    }
   });
 
   it("invents no score and no superlative", () => {

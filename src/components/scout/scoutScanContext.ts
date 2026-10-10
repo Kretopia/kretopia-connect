@@ -19,6 +19,8 @@ export interface ScoutScanValue {
   actions: ScoutActionRow[];
   /** The actions have been read at least once, so counts built from them are not guesses. */
   actionsReady: boolean;
+  /** The two Passport fields Scout's top section compares gigs with. Null until read, or when absent. */
+  profile: { role: string | null; location: string | null } | null;
   progress: { saved: number; applied: number; won: number };
   /** When Scout last checked the boards, whatever started it. */
   lastRunAt: string | null;
