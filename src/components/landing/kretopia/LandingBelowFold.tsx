@@ -42,6 +42,8 @@ import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
 const studioVideo = "/videos/kretovideo1.mp4";
 const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
+// 1272x720 (16:9): shown whole in a landscape frame, never cropped to 4:5.
+const matchVideo = "/videos/kretovideomatch.mp4";
 
 export const LandingBelowFold = () => {
   return (
@@ -143,6 +145,8 @@ export const LandingBelowFold = () => {
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
         caption="Match"
         image={matchImg}
+        video={matchVideo}
+        landscape
         accent="hsl(var(--energy))"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"

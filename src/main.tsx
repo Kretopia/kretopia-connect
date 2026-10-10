@@ -7,6 +7,7 @@ import { initSWUpdateListener } from "./lib/sw-update";
 import { checkForNewVersion } from "./lib/version-check";
 import { setupGlobalErrorLogging } from "./lib/errorLogger";
 import { clearAppServiceWorkerData, ensureAppServiceWorkerRegistered, isStandalonePWA } from "./lib/serviceWorker";
+import { getStoredVibe } from "./components/VibeThemeSync";
 import "./i18n";
 import "./index.css";
 
@@ -61,9 +62,15 @@ if (!isInIframe && !isPreviewHost) {
 // Log unhandled errors to the database for monitoring
 setupGlobalErrorLogging();
 
+const initialTheme = getStoredVibe() === "daylight" ? "light" : "dark";
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    {/* One source of truth for the first render: the vibe index.html already
+        applied. A fixed "light" default made next-themes strip `.dark` at
+        mount (and its own stale `theme` key could keep doing it) before
+        VibeThemeSync put it back, so Midnight painted a Light pass first. */}
+    <ThemeProvider attribute="class" defaultTheme={initialTheme} storageKey="kretopia-theme" enableSystem={false}>
       <App />
     </ThemeProvider>
   </StrictMode>

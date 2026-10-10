@@ -23,6 +23,9 @@ export interface ChapterProps {
    *  kept as the <video>'s poster (first paint + graceful fallback) and
    *  as the alt experience with reduced motion. Autoplays muted/looped. */
   video?: string;
+  /** A 16:9 video is shown whole in a 16:9 frame instead of being cropped to
+   *  the portrait frame the other chapters use, so it stays at native HD. */
+  landscape?: boolean;
   /** Landing overhaul: gradient is intentionally selective, one title per
    *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
    *  omit (the default) to keep this title plain white like the rest. */
@@ -63,7 +66,7 @@ export interface ChapterProps {
 }
 
 export const ChapterSection = ({
-  index, kicker, title, body, caption, image, video, accent, href, reverse, id, tutorialSteps, tutorialVisual,
+  index, kicker, title, body, caption, image, video, landscape, accent, href, reverse, id, tutorialSteps, tutorialVisual,
   ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
 }: ChapterProps) => {
   const reducedMotion = useReducedMotion();
@@ -85,19 +88,50 @@ export const ChapterSection = ({
     if (!video || !el) return;
     el.setAttribute("muted", "");
     el.muted = true;
+    let inView = false;
+    const play = () => {
+      if (inView) el.play().catch(() => {});
+    };
     if (typeof IntersectionObserver === "undefined") {
-      el.play().catch(() => {});
+      inView = true;
+      el.preload = "auto";
+      play();
       return;
     }
-    const observer = new IntersectionObserver(
+    // Full-quality download starts one screen before the video is reached,
+    // so it is already sharp when it scrolls in (metadata alone left the
+    // poster up until the decoder caught up).
+    const near = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) el.play().catch(() => {});
+        if (!entry.isIntersecting) return;
+        el.preload = "auto";
+        near.disconnect();
+      },
+      { rootMargin: "100% 0px" },
+    );
+    const watch = new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        if (inView) play();
         else el.pause();
       },
       { threshold: 0.25 },
     );
-    observer.observe(el);
-    return () => observer.disconnect();
+    near.observe(el);
+    watch.observe(el);
+    // Re-assert playback when the decoder is ready, when the tab returns, and
+    // after a Daylight/Midnight switch: a video that was blocked once should
+    // not sit on its poster until the visitor happens to scroll.
+    el.addEventListener("canplay", play);
+    window.addEventListener("ui-vibe:change", play);
+    document.addEventListener("visibilitychange", play);
+    return () => {
+      near.disconnect();
+      watch.disconnect();
+      el.removeEventListener("canplay", play);
+      window.removeEventListener("ui-vibe:change", play);
+      document.removeEventListener("visibilitychange", play);
+    };
   }, [video]);
   return (
     <section
@@ -115,7 +149,11 @@ export const ChapterSection = ({
             transition={{ duration: 1.1, ease: [0.2, 0.65, 0.3, 0.95] }}
             className="lg:col-span-7 relative"
           >
-            <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
+            <div
+              className={`relative overflow-hidden ${
+                landscape ? "aspect-video" : "aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5]"
+              }`}
+            >
               {video ? (
                 <video
                   ref={videoRef}
@@ -139,15 +177,19 @@ export const ChapterSection = ({
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               )}
-              {/* grain */}
-              <div
-                aria-hidden
-                className="absolute inset-0 mix-blend-overlay opacity-[0.16] pointer-events-none"
-                style={{
-                  backgroundImage:
-                    "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
-                }}
-              />
+              {/* grain: stills only. A mix-blend layer over a <video> pulls it
+                  off the hardware overlay path, which is what made the
+                  chapter videos look soft instead of HD. */}
+              {!video && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 mix-blend-overlay opacity-[0.16] pointer-events-none"
+                  style={{
+                    backgroundImage:
+                      "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+                  }}
+                />
+              )}
               {/* corner caption */}
               <div className="absolute top-4 left-4 flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: accent }} />
