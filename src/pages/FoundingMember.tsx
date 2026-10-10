@@ -75,6 +75,7 @@ export default function FoundingMember() {
 
       <FeaturePageHeader
         eyebrow="Founding Circle"
+        scene="coworking"
         title="Founding Circle."
         accentTitle="100 spots, one badge."
         subtitle="Complete 3 milestones before the deadline and earn a permanent Founding Member badge."
