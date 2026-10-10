@@ -51,4 +51,8 @@ describe("MagazineArticleCard", () => {
     expect(screen.getByText("12")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
   });
+  it("shows the subtitle in the carousel slide format too", () => {
+    render(<MagazineArticleCard article={article} categoryLabel="Art & Culture" slide onOpen={() => {}} />);
+    expect(screen.getByText("A look at what's next")).toBeInTheDocument();
+  });
 });

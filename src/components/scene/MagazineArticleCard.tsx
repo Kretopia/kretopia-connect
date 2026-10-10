@@ -27,6 +27,8 @@ interface MagazineArticleCardProps {
   categoryLabel: string;
   /** Large hero treatment for the one lead story, vs. the compact grid tile. */
   featured?: boolean;
+  /** The tall carousel format: portrait cover, full-size type, subtitle shown. */
+  slide?: boolean;
   canEdit?: boolean;
   onOpen: () => void;
   onEdit?: (e: React.MouseEvent) => void;
@@ -45,13 +47,15 @@ export function MagazineArticleCard({
   article,
   categoryLabel,
   featured = false,
+  slide = false,
   canEdit = false,
   onOpen,
   onEdit,
   className,
 }: MagazineArticleCardProps) {
+  const big = featured || slide;
   return (
-    <HoloCard className={cn("h-full", className)} maxTilt={featured ? 6 : 4}>
+    <HoloCard className={cn("h-full", className)} maxTilt={big ? 6 : 4}>
       {/* A real <button> wrapping the whole card would nest the Edit
           button inside it (invalid HTML, and its click would still
           bubble up to open the article underneath). role="button" here
@@ -68,7 +72,7 @@ export function MagazineArticleCard({
         }}
         className="group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-card text-left"
       >
-        <div className={cn("relative overflow-hidden", featured ? "aspect-[16/9]" : "aspect-[4/3]")}>
+        <div className={cn("relative overflow-hidden", slide ? "aspect-[4/5]" : featured ? "aspect-[16/9]" : "aspect-[4/3]")}>
           <SmartCover
             src={article.cover_image_url}
             alt={article.title}
@@ -84,7 +88,7 @@ export function MagazineArticleCard({
             src={kMarkAsset.url}
             alt=""
             aria-hidden
-            className={cn("absolute opacity-70 drop-shadow", featured ? "top-3 left-3 h-6 w-6" : "top-2 left-2 h-4 w-4")}
+            className={cn("absolute opacity-70 drop-shadow", big ? "top-3 left-3 h-6 w-6" : "top-2 left-2 h-4 w-4")}
           />
 
           {featured && (
@@ -98,7 +102,7 @@ export function MagazineArticleCard({
               onClick={(e) => { e.stopPropagation(); onEdit(e); }}
               className={cn(
                 "absolute z-10 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background flex items-center justify-center transition-colors",
-                featured ? "top-3 right-3 h-8 w-8" : "top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100",
+                big ? "top-3 right-3 h-8 w-8" : "top-2 right-2 h-7 w-7 opacity-0 group-hover:opacity-100",
                 featured && "right-16",
               )}
               aria-label="Edit article"
@@ -108,20 +112,20 @@ export function MagazineArticleCard({
             </button>
           )}
 
-          <div className={cn("absolute bottom-0 left-0 right-0", featured ? "p-4" : "p-2.5")}>
-            <Badge variant="secondary" className={cn("capitalize", featured ? "mb-2 text-[10px]" : "mb-1 px-1.5 py-0 text-[9px]")}>
+          <div className={cn("absolute bottom-0 left-0 right-0", big ? "p-4" : "p-2.5")}>
+            <Badge variant="secondary" className={cn("capitalize", big ? "mb-2 text-[10px]" : "mb-1 px-1.5 py-0 text-[9px]")}>
               {categoryLabel}
             </Badge>
-            <h3 className={cn("font-bold leading-tight text-white", featured ? "text-lg mb-1" : "text-xs line-clamp-2 font-semibold")}>
+            <h3 className={cn("font-bold leading-tight text-white", big ? "text-lg mb-1" : "text-xs line-clamp-2 font-semibold")}>
               {article.title}
             </h3>
-            {featured && article.subtitle && (
+            {big && article.subtitle && (
               <p className="line-clamp-2 text-xs text-white/70">{article.subtitle}</p>
             )}
           </div>
         </div>
 
-        <div className={cn("flex items-center justify-between text-muted-foreground", featured ? "p-4 text-[11px]" : "p-2.5 text-[10px]")}>
+        <div className={cn("flex items-center justify-between text-muted-foreground", big ? "p-4 text-[11px]" : "p-2.5 text-[10px]")}>
           <span className="truncate">{article.author_name}</span>
           <div className="flex shrink-0 items-center gap-2.5">
             <span className="flex items-center gap-1">
