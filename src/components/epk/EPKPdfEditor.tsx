@@ -32,7 +32,7 @@ const DEFAULT_SECTIONS: EPKSection[] = [
   { id: "hero", label: "Cover / Hero", visible: true },
   { id: "bio", label: "Bio & About", visible: true },
   { id: "stats", label: "Quick Stats", visible: true },
-  { id: "contact", label: "Contact & Links", visible: true },
+  { id: "contact", label: "Contact", visible: true },
   { id: "skills", label: "Skills & Expertise", visible: true },
   { id: "credits", label: "Work History", visible: true },
   { id: "press", label: "Press Coverage", visible: true },
@@ -678,7 +678,7 @@ const EPKPreview = ({
           </div>
           <div>
             <PdfEyebrow label="Expertise" primary={primary} />
-            <p className="text-[11px] font-bold text-white mb-1.5">Skills &amp; Connect</p>
+            <p className="text-[11px] font-bold text-white mb-1.5">Skills</p>
             {visibleIds.has("skills") && (
               <div className="flex flex-wrap gap-1">
                 {[...(Array.isArray(profile.professional_skills) ? profile.professional_skills : []), ...(Array.isArray(profile.passion_skills) ? profile.passion_skills : [])]

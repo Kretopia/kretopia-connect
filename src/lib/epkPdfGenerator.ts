@@ -11,24 +11,17 @@
  */
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
+import { APP_URL } from "@/lib/constants";
 
 interface EPKProfileData {
   full_name: string;
+  /** The Passport's owner: the kit links to /epk/<user_id>. */
+  user_id?: string;
   role?: string;
   job_title?: string;
   bio?: string;
   location?: string;
   avatar_url?: string;
-  website?: string;
-  calendly_url?: string;
-  linkedin_url?: string;
-  instagram_url?: string;
-  twitter_url?: string;
-  youtube_url?: string;
-  spotify_url?: string;
-  behance_url?: string;
-  imdb_url?: string;
-  soundcloud_url?: string;
   average_rating?: number;
   total_reviews?: number;
   professional_skills?: any;
@@ -554,10 +547,10 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     }
   }
 
-  // Right half: Skills + Connect, both inside a bordered card
+  // Right half: Skills, inside a bordered card
   const skillsX = PAGE_W / 2 + 10;
   drawEyebrow('Expertise', skillsX, 24);
-  drawSectionHeadline('Skills & Connect', skillsX, 34);
+  drawSectionHeadline('Skills', skillsX, 34);
   let skillsY = 44;
 
   const allSkills: string[] = [
@@ -597,37 +590,9 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     skillsY = chipY + chipH + 10;
   }
 
-  const contactLinks: { label: string; url: string }[] = [];
-  if (profile.website) contactLinks.push({ label: 'Website', url: profile.website });
-  if (profile.linkedin_url) contactLinks.push({ label: 'LinkedIn', url: profile.linkedin_url });
-  if (profile.instagram_url) contactLinks.push({ label: 'Instagram', url: profile.instagram_url });
-  if (profile.youtube_url) contactLinks.push({ label: 'YouTube', url: profile.youtube_url });
-  if (profile.spotify_url) contactLinks.push({ label: 'Spotify', url: profile.spotify_url });
-  if (profile.twitter_url) contactLinks.push({ label: 'X (Twitter)', url: profile.twitter_url });
-  if (profile.behance_url) contactLinks.push({ label: 'Behance', url: profile.behance_url });
-  if (profile.imdb_url) contactLinks.push({ label: 'IMDb', url: profile.imdb_url });
-  if (profile.soundcloud_url) contactLinks.push({ label: 'SoundCloud', url: profile.soundcloud_url });
-  if (profile.calendly_url) contactLinks.push({ label: 'Book a Call', url: profile.calendly_url });
-
-  if (contactLinks.length > 0) {
-    const rows = Math.min(contactLinks.length, 8);
-    const cardH = rows * 6.4 + 8;
-    drawCard(skillsX, skillsY, CONTENT_W / 2, cardH, 4);
-    let linkY = skillsY + 8;
-    contactLinks.slice(0, 8).forEach((link) => {
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...C.primary);
-      doc.text(link.label, skillsX + 6, linkY);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...C.muted);
-      const labelW = doc.getTextWidth(link.label);
-      const urlTrunc = truncateText(doc, link.url, CONTENT_W / 2 - labelW - 24);
-      doc.text(`  ${urlTrunc}`, skillsX + 6 + labelW, linkY);
-      doc.link(skillsX + 6, linkY - 3, CONTENT_W / 2 - 12, 5, { url: link.url });
-      linkY += 6.4;
-    });
-  }
+  // No contact-links card: a Kretopia press kit points to the Passport on
+  // Kretopia and nowhere else (no Instagram, LinkedIn, X, YouTube, Spotify,
+  // personal site or booking link).
 
   // ════════════════════════════════════════════════════════════
   // SLIDE 3+: CREDITS (Visual Cards)
@@ -875,7 +840,9 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   doc.text('Reach out to collaborate on the next project.', MARGIN, closeY + 32);
 
   // EPK link as a clickable pill button
-  const epkUrl = `https://kretopia.com/epk/${encodeURIComponent(profile.full_name?.toLowerCase().replace(/\s+/g, '-') || 'creator')}`;
+  const epkUrl = profile.user_id
+    ? `${APP_URL}/epk/${encodeURIComponent(profile.user_id)}`
+    : `${APP_URL}/epk/${encodeURIComponent(profile.full_name?.toLowerCase().replace(/\s+/g, '-') || 'creator')}`;
   const btnW = 62;
   const btnH = 11;
   const btnX = MARGIN;
@@ -914,20 +881,11 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     doc.text(ctaRole, cardX + 8, cardY + 28);
   }
 
-  const ctaLinks: string[] = [];
-  if (profile.website) ctaLinks.push(profile.website);
-  if (profile.calendly_url) ctaLinks.push(profile.calendly_url);
-  if (profile.linkedin_url) ctaLinks.push(profile.linkedin_url);
-
-  let ctaLinkY = cardY + 37;
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(...C.muted);
-  ctaLinks.slice(0, 3).forEach((link) => {
-    doc.text(truncateText(doc, link, cardW - 16), cardX + 8, ctaLinkY);
-    doc.link(cardX, ctaLinkY - 3, cardW, 5, { url: link });
-    ctaLinkY += 6;
-  });
+  doc.text('Reach me on Kretopia', cardX + 8, cardY + 37);
+  doc.link(cardX, cardY + 34, cardW, 5, { url: epkUrl });
 
   // ════════════════════════════════════════════════════════════
   // FOOTERS — Apply to all pages
