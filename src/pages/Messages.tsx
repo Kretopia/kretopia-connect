@@ -22,6 +22,7 @@ import { ChatHeader } from "./messages/ChatHeader";
 import { MessageBubble } from "./messages/MessageBubble";
 import { MessageComposer } from "./messages/MessageComposer";
 import { EmptyChatState } from "./messages/EmptyChatState";
+import { SceneBanner } from "@/components/brand/SceneBanner";
 import { VibeCheckPrompt } from "@/components/calls/VibeCheckPrompt";
 import { FeatureTutorial } from "@/components/landing/kretopia/FeatureTutorial";
 import { MESSAGES_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -309,6 +310,7 @@ const Messages = () => {
         ) : (
           <div className="hidden md:flex flex-1 items-center justify-center p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8 bg-background">
             <div className="w-full max-w-md">
+              <SceneBanner scene="match" label="Messages" lazy={false} className="mb-6 h-36 rounded-2xl border border-border" />
               <div className="text-center mb-8">
                 <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase mb-2">
                   Messages
