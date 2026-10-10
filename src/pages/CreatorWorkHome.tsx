@@ -9,9 +9,9 @@ import { StudioProjectsDashboard } from "@/components/project/studio/StudioProje
 import { StudioCreateHero } from "@/components/project/studio/StudioCreateHero";
 import type { StudioFolder } from "@/components/project/studio/studioHome.types";
 import { StudioPulse } from "@/components/project/studio/StudioPulse";
+import { StudioWrapped } from "@/components/project/studio/StudioWrapped";
 import { PageTransition } from "@/components/PageTransition";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { KretoTip } from "@/components/agent/KretoTip";
 import { STUDIO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { PROJECT_COLUMNS_EXCLUDING_LOCKED_FINANCIALS } from "@/lib/projectColumns";
 import { WorkHomeSkeleton } from "@/pages/WorkHomeSkeleton";
@@ -247,8 +247,6 @@ export const CreatorWorkHome = () => {
 
       {/* Wider on desktop, capped for readability */}
       <div className="max-w-6xl mx-auto px-4 pt-4 pb-8 md:pb-10 space-y-5">
-        <KretoTip compact />
-
         {/* Creation-first hero — the promise, then one dominant CTA using
             the canonical Landing Page CTA implementation. */}
         <StudioCreateHero
@@ -258,31 +256,35 @@ export const CreatorWorkHome = () => {
           activeCount={activeProjects.length}
         />
 
-        {/* What's happening now, who's involved, what needs attention --
-            immediately below the header/create hero, above Folders and
-            Projects, per the Studio home overhaul. Replaces the previous
-            separately-stacked "Session & Activity" and "Casting &
-            Collaborators" SectionCards. */}
-        <StudioPulse
-          recentCollaborators={recentCollaborators}
-          folderCount={folders.length}
+        {/* "Right now" and "Projects" on one Wrapped surface, the same frame as
+            Today's Radar and Scout's top section, immediately below the create
+            hero. What each block shows is unchanged. */}
+        <StudioWrapped
           projectCount={projects.length}
-          folderControls={folders.length > 0 ? (
-            <Select value={folderFilter} onValueChange={setFolderFilter}>
-              <SelectTrigger aria-label="Filter projects by folder" className="h-8 w-36 shrink-0 text-xs sm:w-44"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All projects</SelectItem>
-                <SelectItem value="unfiled">Unfiled</SelectItem>
-                {folders.map((folder) => <SelectItem value={folder.id} key={folder.id}>{folder.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          ) : undefined}
-          onVoice={openVoiceCommand}
-          onCommandPalette={openPalette}
-          onWrapWeek={openWrapWeek}
-        />
-
-        <StudioProjectsDashboard
+          activeCount={activeProjects.length}
+          rightNow={
+            <StudioPulse
+              variant="wrapped"
+              recentCollaborators={recentCollaborators}
+              folderCount={folders.length}
+              projectCount={projects.length}
+              folderControls={folders.length > 0 ? (
+                <Select value={folderFilter} onValueChange={setFolderFilter}>
+                  <SelectTrigger aria-label="Filter projects by folder" className="h-8 w-36 shrink-0 text-xs sm:w-44"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All projects</SelectItem>
+                    <SelectItem value="unfiled">Unfiled</SelectItem>
+                    {folders.map((folder) => <SelectItem value={folder.id} key={folder.id}>{folder.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              ) : undefined}
+              onVoice={openVoiceCommand}
+              onCommandPalette={openPalette}
+              onWrapWeek={openWrapWeek}
+            />
+          }
+          projects={
+            <StudioProjectsDashboard
               projects={visibleProjects as any}
               invoicesByProject={invoicesByProject}
               moneyVisibleByProject={moneyVisibleByProject}
@@ -291,6 +293,8 @@ export const CreatorWorkHome = () => {
               folders={folders}
               onMoveToFolder={moveProject}
             />
+          }
+        />
       </div>
 
       {modals}

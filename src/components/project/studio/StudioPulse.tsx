@@ -4,6 +4,7 @@ import { SpeedTonightCard } from "@/components/home/SpeedTonightCard";
 import { TodayStrip } from "@/components/desk/TodayStrip";
 import { MyPendingInvitations } from "@/components/project/MyPendingInvitations";
 import { StudioActivitySummary } from "@/components/project/studio/StudioActivitySummary";
+import { cn } from "@/lib/utils";
 
 interface Collaborator {
   id: string;
@@ -20,6 +21,12 @@ interface StudioPulseProps {
   onVoice: () => void;
   onCommandPalette: () => void;
   onWrapWeek: () => void;
+  /**
+   * "card" (default) is its own bordered surface. "wrapped" is the same
+   * content as a section of a Wrapped panel (StudioWrapped), which already
+   * provides the surface: no border, no background, no padding of its own.
+   */
+  variant?: "card" | "wrapped";
 }
 
 /**
@@ -31,14 +38,33 @@ interface StudioPulseProps {
  * pending invitations and the contextual quick-actions strip are unrelated
  * to that verbosity report and are unchanged below.
  */
-export function StudioPulse({ recentCollaborators, folderCount = 0, projectCount = 0, folderControls, onVoice, onCommandPalette, onWrapWeek }: StudioPulseProps) {
+export function StudioPulse({
+  recentCollaborators,
+  folderCount = 0,
+  projectCount = 0,
+  folderControls,
+  onVoice,
+  onCommandPalette,
+  onWrapWeek,
+  variant = "card",
+}: StudioPulseProps) {
+  const wrapped = variant === "wrapped";
   return (
-    <section aria-labelledby="studio-pulse-title" className="overflow-hidden rounded-lg border border-border bg-card px-4 py-3 sm:px-5">
+    <section
+      aria-labelledby="studio-pulse-title"
+      className={cn(!wrapped && "overflow-hidden rounded-lg border border-border bg-card px-4 py-3 sm:px-5")}
+    >
       <div className="flex items-center gap-2">
         <Radio className="h-4 w-4 text-[hsl(var(--energy))]" aria-hidden />
-        <h2 id="studio-pulse-title" className="text-[13px] font-semibold tracking-wide uppercase text-muted-foreground">
-          Right now
-        </h2>
+        {wrapped ? (
+          <h3 id="studio-pulse-title" className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Right now
+          </h3>
+        ) : (
+          <h2 id="studio-pulse-title" className="text-[13px] font-semibold tracking-wide uppercase text-muted-foreground">
+            Right now
+          </h2>
+        )}
       </div>
 
       <div className="mt-2"><SpeedTonightCard compact /></div>

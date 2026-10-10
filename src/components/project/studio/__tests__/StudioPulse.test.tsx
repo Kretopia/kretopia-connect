@@ -42,6 +42,19 @@ describe("StudioPulse", () => {
     expect(screen.getByRole("heading", { name: "Right now" })).toBeInTheDocument();
   });
 
+  it("as a section of a Wrapped panel it keeps the label but draws no surface of its own", () => {
+    const { container } = render(
+      <MemoryRouter>
+        <StudioPulse recentCollaborators={[]} {...baseProps} variant="wrapped" />
+      </MemoryRouter>,
+    );
+    // a sub-heading of the panel, not a second page-level heading
+    expect(screen.getByRole("heading", { level: 3, name: "Right now" })).toBeInTheDocument();
+    const section = container.querySelector("section")!;
+    expect(section.className).not.toContain("border");
+    expect(section.className).not.toContain("bg-card");
+  });
+
   it("renders every sub-widget without reimplementing them, passing real collaborators through", () => {
     const collabs = [{ id: "c1", full_name: "Maya Chen", avatar_url: null, role: "Editor" }];
     renderPulse(collabs);
