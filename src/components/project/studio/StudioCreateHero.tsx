@@ -34,7 +34,7 @@ const PROMPTS = [
  * Studio home hero — the New Room is the feature, not a button. Same
  * cinematic plate as every other Kretopia surface (theme-aware base,
  * breathing aurora, quadrille grid, grain), signed with Kretopia's own
- * lockup, a large K behind it and a scene from the Kreto library, with a
+ * lockup, a large K behind it and Kreto at his Studio desk, with a
  * live prompt line and the Landing CTA pair (one primary, one secondary, in
  * equal tracks). Copy stays inside what is actually shipped: Kreto drafts a
  * structure, the user reviews and confirms before anything is created.
@@ -105,8 +105,10 @@ export const StudioCreateHero = ({ onCreate, onVoice, projectCount, activeCount 
             </p>
           </div>
           <KretoScene
-            scene="onboarding"
-            className="hidden h-28 w-56 shrink-0 rounded-2xl border border-border sm:block"
+            scene="studio"
+            size="thumb"
+            lazy={false}
+            className="hidden h-32 w-64 shrink-0 rounded-2xl border border-border sm:block"
           />
         </div>
 

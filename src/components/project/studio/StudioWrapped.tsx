@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import { BrandLogo } from "@/components/BrandLogo";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
 import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
@@ -41,12 +40,7 @@ export function StudioWrapped({ projectCount, activeCount, rightNow, projects }:
         </>
       }
       status={<WrappedStatus active={projectCount > 0} label={status} />}
-      aside={
-        <>
-          <KretoScene scene="announcement" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />
-          <BrandLogo iconOnly size="md" className="hidden lg:flex" />
-        </>
-      }
+      aside={<KretoScene scene="workspace" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
     >
       {rightNow}
 

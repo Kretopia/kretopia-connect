@@ -44,6 +44,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { moodAccent, monogram, STATUS_PILL, PAY_DOT, PAY_LABEL, type StudioProject } from "./studioCardHelpers";
 import { MoveToFolderSheet } from "./MoveToFolderSheet";
 import { prioritizeProjects } from "./studioHome.selectors";
@@ -914,13 +915,17 @@ export const StudioProjectsDashboard = ({
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : (
-                        <div
-                          className="flex h-full w-full items-center justify-center"
-                          style={{
-                            background: `linear-gradient(135deg, ${accent}33, transparent)`,
-                          }}
-                        >
-                          <span className="text-2xl font-black tracking-tight" style={{ color: accent }}>
+                        <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+                          <KretoScene scene="workspace" size="thumb" className="absolute inset-0 h-full w-full opacity-70" />
+                          <div
+                            aria-hidden
+                            className="absolute inset-0"
+                            style={{ background: `linear-gradient(135deg, ${accent}55, transparent 70%)` }}
+                          />
+                          <span
+                            className="relative rounded-xl bg-card/85 px-3 py-1 text-2xl font-black tracking-tight"
+                            style={{ color: accent }}
+                          >
                             {monogram(p.title)}
                           </span>
                         </div>
