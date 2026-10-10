@@ -7,7 +7,6 @@ import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicato
 import { TrustSignals } from "@/components/profile/TrustSignals";
 import { cn } from "@/lib/utils";
 import {
-  Calendar,
   CheckCircle2,
   Fingerprint,
   FolderPlus,
@@ -39,7 +38,6 @@ interface PublicPassportProfile {
   id_verified?: boolean;
   payment_verified?: boolean;
   professional_skills?: unknown;
-  calendly_url?: string | null;
 }
 
 interface PublicPassportHeroProps {
@@ -153,14 +151,9 @@ export function PublicPassportHero({
 
           {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
 
-          {/* No Instagram, LinkedIn, X, YouTube, Spotify or personal-site links here:
-              a Kretopia Passport keeps the conversation on Kretopia. The one
-              outbound action left is booking a call, which is a transaction. */}
-          {profile.calendly_url && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-              <Button asChild variant="outline" className="h-9 gap-1.5"><a href={profile.calendly_url} target="_blank" rel="noopener noreferrer"><Calendar className="h-4 w-4" />Book</a></Button>
-            </div>
-          )}
+          {/* No Instagram, LinkedIn, X, YouTube, Spotify, personal-site or booking
+              links here: a Kretopia Passport keeps the conversation on Kretopia,
+              and the way in is Connect / Message below. */}
 
            {showActions && !isOwner && (
             <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-4">

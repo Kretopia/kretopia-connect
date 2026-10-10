@@ -58,13 +58,15 @@ describe("PublicPassportHero", () => {
     expect(screen.queryByRole("link", { name: /Open (Instagram|LinkedIn|Twitter|YouTube|Spotify|Website)/ })).not.toBeInTheDocument();
   });
 
-  it("keeps the one transactional outbound action, booking a call, when there is one", () => {
-    render_({ calendly_url: "https://calendly.com/maya/intro" });
-    expect(screen.getByRole("link", { name: /Book/ })).toHaveAttribute("href", "https://calendly.com/maya/intro");
+  it("has no booking link either, even when the profile has one", () => {
+    const { container } = render_({ calendly_url: "https://calendly.com/maya/intro" } as never);
+    const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href") ?? "");
+    expect(hrefs.some((h) => h.includes("calendly"))).toBe(false);
+    expect(screen.queryByRole("link", { name: /Book/ })).not.toBeInTheDocument();
   });
 
-  it("offers no booking link when there is none", () => {
-    render_();
-    expect(screen.queryByRole("link", { name: /Book/ })).not.toBeInTheDocument();
+  it("offers no outbound link of any kind from the Passport card", () => {
+    const { container } = render_();
+    expect(container.querySelectorAll("a[target=_blank]")).toHaveLength(0);
   });
 });
