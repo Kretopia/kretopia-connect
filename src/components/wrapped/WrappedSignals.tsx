@@ -13,11 +13,11 @@ export interface WrappedSignal {
   state: WrappedSignalState;
   /** What the number counts, e.g. "Stages live now". */
   label: string;
-  /** The window or the invitation under it, e.g. "in the last 24 h". */
+  /** The window or the invitation under it, e.g. "in the last 24 h". Empty for none. */
   hint: string;
   /** Where it leads. Give this for a navigation… */
   href?: string;
-  /** …or this for a switch that stays on the page (a tab). */
+  /** …or this for a switch that stays on the page (a tab). With neither, the tile is a plain figure. */
   onSelect?: () => void;
   /** A live thing: the icon gets a pulsing mark. */
   hot?: boolean;
@@ -51,6 +51,8 @@ export function WrappedSignals({ signals, label = "Live signals", columnsClassNa
       {signals.map((s) => {
         const Icon = s.icon;
         const hot = !!s.hot;
+        const interactive = !!(s.onSelect || s.href);
+        const hintText = s.state === "error" ? "Couldn't load" : s.hint;
         const body = (
           <>
             <span className="flex items-center justify-between text-muted-foreground">
@@ -60,7 +62,9 @@ export function WrappedSignals({ signals, label = "Live signals", columnsClassNa
                   <span aria-hidden className="absolute -right-1 -top-1 h-1.5 w-1.5 rounded-full bg-[hsl(var(--energy))] motion-safe:animate-pulse" />
                 )}
               </span>
-              <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
+              {interactive && (
+                <ArrowUpRight className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
+              )}
             </span>
             <span className={compactOnMobile ? "flex min-w-0 flex-1 items-center gap-3 sm:block" : "block"}>
               {s.state === "loading" ? (
@@ -73,12 +77,12 @@ export function WrappedSignals({ signals, label = "Live signals", columnsClassNa
               {compactOnMobile ? (
                 <span className="block min-w-0 sm:mt-1.5">
                   <span className="block text-xs font-medium text-foreground">{s.label}</span>
-                  <span className="block text-[11px] text-muted-foreground">{s.state === "error" ? "Couldn't load" : s.hint}</span>
+                  {hintText && <span className="block text-[11px] text-muted-foreground">{hintText}</span>}
                 </span>
               ) : (
                 <>
                   <span className="mt-1.5 block text-xs font-medium text-foreground">{s.label}</span>
-                  <span className="block text-[11px] text-muted-foreground">{s.state === "error" ? "Couldn't load" : s.hint}</span>
+                  {hintText && <span className="block text-[11px] text-muted-foreground">{hintText}</span>}
                 </>
               )}
             </span>
@@ -90,10 +94,12 @@ export function WrappedSignals({ signals, label = "Live signals", columnsClassNa
               <button type="button" onClick={s.onSelect} className={cn(compactOnMobile ? compactTileClass : tileClass, "w-full text-left")}>
                 {body}
               </button>
-            ) : (
-              <Link to={s.href ?? "/"} className={compactOnMobile ? compactTileClass : tileClass}>
+            ) : s.href ? (
+              <Link to={s.href} className={compactOnMobile ? compactTileClass : tileClass}>
                 {body}
               </Link>
+            ) : (
+              <div className={cn(compactOnMobile ? compactTileClass : tileClass, "hover:bg-transparent")}>{body}</div>
             )}
           </li>
         );

@@ -9,20 +9,13 @@ import { cn } from "@/lib/utils";
 import {
   Calendar,
   CheckCircle2,
-  ExternalLink,
   Fingerprint,
   FolderPlus,
-  Globe,
   Handshake,
-  Instagram,
-  Linkedin,
   MapPin,
   MessageCircle,
-  Music,
   Share2,
-  Twitter,
   UserPlus,
-  Youtube,
 } from "lucide-react";
 
 interface PublicPassportProfile {
@@ -46,12 +39,6 @@ interface PublicPassportProfile {
   id_verified?: boolean;
   payment_verified?: boolean;
   professional_skills?: unknown;
-  instagram_url?: string | null;
-  linkedin_url?: string | null;
-  twitter_url?: string | null;
-  youtube_url?: string | null;
-  spotify_url?: string | null;
-  website?: string | null;
   calendly_url?: string | null;
 }
 
@@ -106,14 +93,6 @@ export function PublicPassportHero({
         return null;
       }).filter((skill): skill is string => Boolean(skill)).slice(0, 6)
     : [];
-  const socialLinks = [
-    { url: profile.instagram_url, label: "Instagram", icon: Instagram },
-    { url: profile.linkedin_url, label: "LinkedIn", icon: Linkedin },
-    { url: profile.twitter_url, label: "Twitter", icon: Twitter },
-    { url: profile.youtube_url, label: "YouTube", icon: Youtube },
-    { url: profile.spotify_url, label: "Spotify", icon: Music },
-    { url: profile.website, label: "Website", icon: Globe },
-  ].filter((link) => Boolean(link.url));
   const connected = connectionStatus === "connected";
 
   return (
@@ -125,7 +104,7 @@ export function PublicPassportHero({
           <div className="absolute left-2 top-2 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
             Creative Passport
           </div>
-          <Button onClick={onShare} size="icon" variant="secondary" className="absolute right-2 top-2 h-9 w-9 rounded-full" aria-label="Share Passport">
+          <Button onClick={onShare} size="icon" variant="secondary" className="!absolute right-2 top-2 h-9 w-9 rounded-full" aria-label="Share Passport">
             <Share2 className="h-4 w-4" />
           </Button>
         </div>
@@ -174,14 +153,12 @@ export function PublicPassportHero({
 
           {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
 
-          {socialLinks.length > 0 && (
+          {/* No Instagram, LinkedIn, X, YouTube, Spotify or personal-site links here:
+              a Kretopia Passport keeps the conversation on Kretopia. The one
+              outbound action left is booking a call, which is a transaction. */}
+          {profile.calendly_url && (
             <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-              {socialLinks.map(({ url, label, icon: Icon }) => (
-                <Button key={label} asChild variant="outline" size="icon" className="h-9 w-9 rounded-full">
-                  <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${label}`}><Icon className="h-4 w-4" /></a>
-                </Button>
-              ))}
-              {profile.calendly_url && <Button asChild variant="outline" className="h-9 gap-1.5"><a href={profile.calendly_url} target="_blank" rel="noopener noreferrer"><Calendar className="h-4 w-4" />Book</a></Button>}
+              <Button asChild variant="outline" className="h-9 gap-1.5"><a href={profile.calendly_url} target="_blank" rel="noopener noreferrer"><Calendar className="h-4 w-4" />Book</a></Button>
             </div>
           )}
 
@@ -205,7 +182,6 @@ export function PublicPassportHero({
 
            {showActions && isOwner && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
            {children && <div className="space-y-5 border-t border-border pt-5">{children}</div>}
-          {(profile.website || profile.calendly_url) && <p className="sr-only"><ExternalLink aria-hidden="true" />Public contact links</p>}
         </div>
       </article>
     </HoloCard>
