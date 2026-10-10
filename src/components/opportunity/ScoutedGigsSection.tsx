@@ -26,6 +26,7 @@ import { KretoMark } from "@/components/brand/KretoMark";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "@/lib/scoutPay";
+import { isThinListing } from "@/lib/scoutListing";
 import {
   LIVE_INTERVAL_MS,
   degradedNote,
@@ -124,22 +125,6 @@ interface ScoutedGigsSectionProps {
   /** When set, only show this many gigs and append a "See all" link to /opportunities. */
   limit?: number;
 }
-
-const isThinListing = (g: ScoutedGig) => {
-  const desc = (g.full_description || g.description || "").trim();
-  if (desc.length < 40 && !g.compensation && !g.company) return true;
-  const url = g.apply_url || g.source_url || "";
-  try {
-    const u = new URL(url);
-    const segs = u.pathname.replace(/\/+$/, "").split("/").filter(Boolean);
-    const last = (segs[segs.length - 1] || "").toLowerCase();
-    const generic = ["jobs","careers","search","browse","explore","listings","opportunities","gigs","tags","postings","apply","casting"];
-    if (generic.includes(last)) return true;
-    if (segs.length < 2 && last.length < 8) return true;
-    if (/linkedin\.com$/.test(u.hostname.replace(/^www\./, "")) && !/\/jobs\/view\//.test(u.pathname)) return true;
-  } catch { return true; }
-  return false;
-};
 
 export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
   const { user } = useAuth();
