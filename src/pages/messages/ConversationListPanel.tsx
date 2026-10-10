@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, CheckCheck, Check, MessageCircle, ArrowRight } from "lucide-react";
+import { Search, CheckCheck, Check, ArrowRight } from "lucide-react";
+import { SceneBanner } from "@/components/brand/SceneBanner";
 import { formatDistanceToNow } from "date-fns";
 import { PageTip } from "@/components/PageTip";
 import { ConversationListSkeleton } from "@/components/skeletons/MessagesSkeletons";
@@ -119,9 +120,7 @@ export const ConversationListPanel = ({
           <ConversationListSkeleton />
         ) : filteredConversations.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="mb-5 mx-auto w-20 h-20 rounded-2xl bg-energy/10 border-2 border-energy/30 flex items-center justify-center shadow-glow-lime">
-              <MessageCircle className="h-10 w-10 text-energy" />
-            </div>
+            <SceneBanner scene="match" label="Messages" className="mb-5 h-24 rounded-2xl border border-border" />
             <p className="brand-eyebrow mb-2">{searchQuery ? "No matches" : "Inbox zero"}</p>
             <p className="text-xl font-black tracking-[-0.02em] mb-2">
               {searchQuery ? "Nothing matches that" : pick(pickVoice("No messages yet", "No messages yet, start one"), "No conversations yet")}
