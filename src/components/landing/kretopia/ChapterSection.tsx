@@ -3,7 +3,8 @@
  * One image. One sentence. One accent. Restrained motion.
  */
 import { motion } from "framer-motion";
-import { useEffect, useRef, type ComponentType } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
+import { Play } from "lucide-react";
 import type { TutorialStep } from "./FeatureTutorial";
 import { FeatureTutorialPanel } from "./FeatureTutorialPanel";
 import { KretopiaFeatureTutorial } from "./KretopiaFeatureTutorial";
@@ -72,6 +73,7 @@ export const ChapterSection = ({
   const reducedMotion = useReducedMotion();
   const sectionId = (id ?? kicker.toLowerCase()) as LandingSectionId;
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [blocked, setBlocked] = useState(false);
 
   // Autoplay needs two real fixes beyond the `autoplay` attribute alone:
   // (1) React sets `muted` as a JS property, not an HTML attribute
@@ -89,9 +91,20 @@ export const ChapterSection = ({
     el.setAttribute("muted", "");
     el.muted = true;
     let inView = false;
+    // A browser can refuse autoplay (low-power mode, data saver, an
+    // autoplay policy). That used to leave the poster up with nothing to
+    // tell the visitor: now the refusal shows a Play button, and the first
+    // touch, click or key press anywhere on the page starts the video.
     const play = () => {
-      if (inView) el.play().catch(() => {});
+      if (!inView) return;
+      el.play().then(() => setBlocked(false)).catch(() => setBlocked(true));
     };
+    const unlock = () => {
+      inView = inView || el.getBoundingClientRect().top < window.innerHeight;
+      play();
+    };
+    const gestures = ["pointerdown", "keydown", "touchend"] as const;
+    gestures.forEach((g) => window.addEventListener(g, unlock, { once: true, passive: true }));
     if (typeof IntersectionObserver === "undefined") {
       inView = true;
       el.preload = "auto";
@@ -131,6 +144,7 @@ export const ChapterSection = ({
       el.removeEventListener("canplay", play);
       window.removeEventListener("ui-vibe:change", play);
       document.removeEventListener("visibilitychange", play);
+      gestures.forEach((g) => window.removeEventListener(g, unlock));
     };
   }, [video]);
   return (
@@ -176,6 +190,16 @@ export const ChapterSection = ({
                   loading="lazy"
                   className="absolute inset-0 h-full w-full object-cover"
                 />
+              )}
+              {video && blocked && (
+                <button
+                  type="button"
+                  aria-label={`Play the ${caption} video`}
+                  onClick={() => videoRef.current?.play().then(() => setBlocked(false)).catch(() => {})}
+                  className="absolute inset-0 z-10 m-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <Play className="h-6 w-6 translate-x-0.5" aria-hidden />
+                </button>
               )}
               {/* grain: stills only. A mix-blend layer over a <video> pulls it
                   off the hardware overlay path, which is what made the

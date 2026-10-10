@@ -29,7 +29,6 @@ import {
 
 import passportImg    from "@/assets/kretopia/chapter-passport.jpg";
 import scoutImg       from "@/assets/kretopia/chapter-scout.jpg";
-import matchImg       from "@/assets/kretopia/chapter-match.jpg";
 import studioImg      from "@/assets/kretopia/chapter-studio.jpg";
 import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
 
@@ -44,6 +43,8 @@ const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
 // 1272x720 (16:9): shown whole in a landscape frame, never cropped to 4:5.
 const matchVideo = "/videos/kretovideomatch.mp4";
+// Its own first frame as the poster: the still never differs from the video.
+const matchPoster = "/videos/kretovideomatch-poster.jpg";
 
 export const LandingBelowFold = () => {
   return (
@@ -144,7 +145,7 @@ export const LandingBelowFold = () => {
         }
         body="Discover creatives through what they actually do, where they are, the projects they've worked on and the people who can confirm it. Less cold searching. More creative context."
         caption="Match"
-        image={matchImg}
+        image={matchPoster}
         video={matchVideo}
         landscape
         accent="hsl(var(--energy))"
