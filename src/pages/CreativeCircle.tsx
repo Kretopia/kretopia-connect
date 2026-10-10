@@ -132,7 +132,7 @@ const CreativeCircle = () => {
         />
       </div>
 
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "Creative Circle" }}>
 
       {/* Hero — Current Tier, as a real Passport-grade identity surface
           (same HoloCard treatment as the owner Passport / Today's mini

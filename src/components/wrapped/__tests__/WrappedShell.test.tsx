@@ -25,14 +25,25 @@ describe("WrappedShell", () => {
     expect(screen.getByText("Live")).toBeInTheDocument();
   });
 
-  it("wears Kretopia: a quiet K behind the content and the lockup at the foot", () => {
+  it("wears Kretopia with the real K and wordmark at the foot, and no cropped fragment of it", () => {
     const { container } = shell();
-    expect(container.querySelectorAll('img[src*="kretopia-k-mark"]').length).toBeGreaterThanOrEqual(2);
+    // one K, the one in the lockup: no large faded K cut off by the panel's edge
+    expect(container.querySelectorAll('img[src*="kretopia-k-mark"]')).toHaveLength(1);
+    expect(container.querySelector("img.absolute")).toBeNull();
     const footer = container.querySelector("footer")!;
     expect(footer.querySelector('img[alt="kretopia"]')).toBeInTheDocument();
     // the feature is named once beside the lockup, without repeating the brand
     expect(footer).toHaveTextContent("Studio");
     expect(footer.textContent).not.toMatch(/Kretopia\s*·/);
+  });
+
+  it("has no status line when it has nothing true to say", () => {
+    render(
+      <WrappedShell titleId="t2" eyebrow="Kretopia · Perks" title="Everything in Perks">
+        <p>content</p>
+      </WrappedShell>,
+    );
+    expect(screen.getByRole("region", { name: "Everything in Perks" }).querySelector("header p + h2 + p")).toBeNull();
   });
 
   it("a page with two panels can keep the lockup for the last one", () => {

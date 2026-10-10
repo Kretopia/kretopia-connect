@@ -117,7 +117,7 @@ export default function Match() {
         tutorial={{ featureKey: "match", label: "How Match works", steps: MATCH_TUTORIAL }}
       />
 
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "Match" }}>
         <KretoTip surface="match" compact />
         <StudioSectionTabs
           tabs={matchTabs}

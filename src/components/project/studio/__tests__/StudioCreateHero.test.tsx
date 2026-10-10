@@ -30,12 +30,11 @@ describe("StudioCreateHero", () => {
     expect(title).toHaveTextContent("Kreto builds the room.");
   });
 
-  it("is signed with Kretopia's lockup and a K behind it", () => {
+  it("is signed with Kretopia's lockup (the real K and wordmark)", () => {
     const { container } = setup();
     expect(container.querySelector('img[alt="Kretopia"]')).toBeInTheDocument();
     expect(container.querySelector('img[alt="kretopia"]')).toBeInTheDocument();
-    // the large quiet K
-    expect(container.querySelectorAll('img[src*="kretopia-k-mark"]').length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelectorAll('img[src*="kretopia-k-mark"]')).toHaveLength(1);
   });
 
   it("shows Kreto at his Studio desk, as decorative art", () => {

@@ -153,7 +153,7 @@ export default function KretoTab() {
         />
       </div>
 
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "Kreto" }}>
         <div className="flex gap-4 items-start">
           {/* Desktop: fixed rail beside the chat. Mobile: a compact History
               button that opens the same list in a Sheet. */}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { FeatureWrapped } from "@/components/wrapped/FeatureWrapped";
 import { Check, Lock, Shield, Zap, Award, Star, Crown, Sparkles, TrendingUp, KeyRound } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,7 +53,7 @@ export default function PerksTab() {
 
   return (
     <div className="min-h-[calc(100vh-56px)] bg-background text-foreground">
-      <div className="mx-auto max-w-4xl px-4 py-10 space-y-8">
+      <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
         <div className="relative overflow-hidden -mx-4 px-4 pt-4 pb-2">
           <PageBackButton />
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
@@ -77,6 +78,7 @@ export default function PerksTab() {
         {/* Bottom hairline — anchors the hero, same treatment as Studio Room */}
         <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
 
+        <FeatureWrapped name="Perks">
         {loading ? (
           <div className="flex items-center gap-2 text-foreground/40 text-sm py-6">
             <KretopiaSpinner className="h-4 w-4" /> Checking your status…
@@ -130,6 +132,7 @@ export default function PerksTab() {
           Partner discounts and Founding Circle rewards land here as they go live — nothing listed
           above is a placeholder.
         </p>
+        </FeatureWrapped>
       </div>
     </div>
   );

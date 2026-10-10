@@ -387,7 +387,7 @@ export default function ThrivePay() {
       </div>
 
       <div className="accent-pay min-h-screen">
-      <StudioFeatureShell>
+      <StudioFeatureShell wrapped={{ name: "KrePay" }}>
         <KretoTip compact />
 
         {/* Get Paid dashboard — the unified summary (metrics + trend chart

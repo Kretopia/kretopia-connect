@@ -341,7 +341,7 @@ export default function Circle() {
           tutorial={{ featureKey: "stages", label: "How Stages works", steps: SOUNDSTAGES_TUTORIAL }}
         />
 
-        <StudioFeatureShell>
+        <StudioFeatureShell wrapped={{ name: "Stages" }}>
           <KretoTip compact />
 
           <StudioSectionTabs

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,11 +144,10 @@ export default function Recordings() {
         />
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 pt-4">
+      <StudioFeatureShell wrapped={{ name: "Recordings" }}>
         <KretoTip compact />
-      </div>
 
-      <div className="flex items-center justify-between px-4 pt-4">
+      <div className="flex items-center justify-between">
         <Link
           to="/messages"
           className="inline-flex items-center gap-1 h-8 px-2 -ml-2 rounded-md text-xs text-muted-foreground hover:text-[hsl(var(--energy))] transition-colors"
@@ -160,11 +160,11 @@ export default function Recordings() {
         </Button>
       </div>
 
-      <p className="text-[11px] text-muted-foreground px-4 pt-3">
+      <p className="text-[11px] text-muted-foreground">
         Recordings finalize ~1 min after a call ends. Tap Sync now to pull the latest.
       </p>
 
-      <div className="px-4 py-4">
+      <div>
         {loading ? (
           <KretopiaLoader size="sm" label="Loading…" className="py-12" />
         ) : rows.length === 0 ? (
@@ -194,6 +194,7 @@ export default function Recordings() {
           />
         )}
       </div>
+      </StudioFeatureShell>
 
       <CallRecapSheet
         open={!!recapId}

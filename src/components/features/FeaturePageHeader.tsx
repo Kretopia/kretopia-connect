@@ -81,7 +81,6 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         align="center"
         oneLine={oneLine}
         compact={compact}
-        art={scene && <SceneBanner scene={scene} label={eyebrow} lazy={false} className="h-32 w-full rounded-3xl border border-border sm:h-40" />}
         preTitle={
           tutorial && (
             <FeatureAITutorial
@@ -94,6 +93,12 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         }
         footer={tabs && <div className="mt-6">{tabs}</div>}
       />
+      {/* As wide as the page's own content (StudioFeatureShell: max-w-6xl, px-4), not as wide as the title block. */}
+      {scene && (
+        <div className="relative mx-auto -mt-2 w-full max-w-6xl px-4 pb-6">
+          <SceneBanner scene={scene} label={eyebrow} layout="split" lazy={false} className="rounded-3xl border border-border" />
+        </div>
+      )}
     </div>
   );
 }
