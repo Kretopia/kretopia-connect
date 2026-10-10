@@ -11,7 +11,10 @@ import {
 import { BookOpen, PenSquare, Search, Sparkles, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MagazineArticleModal } from "./MagazineArticleModal";
-import { MagazineArticleCard } from "./MagazineArticleCard";
+import { MagazineCarousel } from "./MagazineCarousel";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
+import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { MagazineEditor } from "./MagazineEditor";
 
 interface Article {
@@ -134,8 +137,9 @@ export const MagazineWall = () => {
     );
   }
 
+  // The lead story opens the row (it already sorts first under "latest").
   const featured = sort === "latest" ? filteredArticles.find(a => a.is_featured) : undefined;
-  const rest = featured ? filteredArticles.filter(a => a !== featured) : filteredArticles;
+  const ordered = featured ? [featured, ...filteredArticles.filter(a => a !== featured)] : filteredArticles;
 
   const openEdit = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -144,15 +148,20 @@ export const MagazineWall = () => {
   };
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div>
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-primary" />
-          Kretopia Magazine
-        </h2>
-        <p className="text-xs text-muted-foreground">Stories, insights & creative culture</p>
-      </div>
+    <>
+    <WrappedShell
+      titleId="kretopia-magazine-title"
+      eyebrow="Kretopia · Magazine"
+      title={<>Kretopia <span className="k-gradient-text">Magazine</span></>}
+      subtitle="Stories, insights & creative culture."
+      status={
+        <WrappedStatus
+          active={!loading && !fetchError && filteredArticles.length > 0}
+          label={loading ? "Loading the stories…" : `${filteredArticles.length} stor${filteredArticles.length === 1 ? "y" : "ies"} on the wall`}
+        />
+      }
+      aside={<KretoScene scene="studio" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
+    >
 
       {/* Publish CTA — open to every signed-in user, not just admin/writer:
           a non-staff submission still lands here (via the same editor) but
@@ -274,38 +283,17 @@ export const MagazineWall = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-5">
-          {/* Featured Article — the lead story, full-width Holo Card */}
-          {featured && (
-            <MagazineArticleCard
-              article={featured}
-              categoryLabel={formatCategoryLabel(featured.category)}
-              featured
-              canEdit={isEditorOrAdmin}
-              onOpen={() => setSelectedArticle(featured)}
-              onEdit={(e) => openEdit(e, featured.id)}
-            />
-          )}
-
-          {/* Topics grid — a real multi-column newspaper layout instead of
-              a single swipeable rail, so more than 2-3 stories are visible
-              at once and the page reads as a magazine front, not a feed. */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {rest.map(article => (
-              <MagazineArticleCard
-                key={article.id}
-                article={article}
-                categoryLabel={formatCategoryLabel(article.category)}
-                canEdit={isEditorOrAdmin}
-                onOpen={() => setSelectedArticle(article)}
-                onEdit={(e) => openEdit(e, article.id)}
-              />
-            ))}
-          </div>
-        </div>
+        <MagazineCarousel
+          articles={ordered}
+          categoryLabel={formatCategoryLabel}
+          canEdit={isEditorOrAdmin}
+          onOpen={(a) => setSelectedArticle(a as Article)}
+          onEdit={openEdit}
+        />
       )}
+    </WrappedShell>
 
-      <MagazineArticleModal article={selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)} />
-    </div>
+    <MagazineArticleModal article={selectedArticle} onOpenChange={(open) => !open && setSelectedArticle(null)} />
+    </>
   );
 };
