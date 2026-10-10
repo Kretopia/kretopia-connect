@@ -147,7 +147,7 @@ export function TodayCommandCenter({
                   label="Creative Passport and Kreto"
                   eyebrow="My Creative Passport"
                   title="Make your work visible."
-                  robot="main"
+                  scene="landing-hero"
                   actions={
                     <>
                       <GlassCta to="/passport" className="w-full">Build my Passport</GlassCta>
@@ -195,7 +195,7 @@ function PassportKretoCard({
       label="Creative Passport and Kreto"
       eyebrow="My Creative Passport"
       title={displayName}
-      robot="main"
+      scene="landing-hero"
       actions={
         <>
           <GlassCta to="/passport" className="w-full">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}</GlassCta>
@@ -241,7 +241,7 @@ function TodayActivityCard({ signals }: { signals: TodaySignals }) {
       label="Your activity"
       eyebrow="Your activity"
       title="Moving forward"
-      robot="connector"
+      scene="announcement"
       actions={
         <>
           <GlassCta to={signals.unreadMessages > 0 ? "/messages" : "/desk"} className="w-full">{signals.unreadMessages > 0 ? "Read messages" : "Open Studio"}</GlassCta>
@@ -472,7 +472,7 @@ function TodayPriorityCard({ signals, reducedMotion, onSignalsChanged }: TodayPr
   }
 
   return (
-    <TodayCard label="Today's next action" eyebrow="Today" title="Your next move" robot="producer" actions={actions}>
+    <TodayCard label="Today's next action" eyebrow="Today" title="Your next move" scene="campaign" actions={actions}>
       <AnimatePresence mode="wait" initial={false}>
         {body}
       </AnimatePresence>

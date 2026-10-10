@@ -1,6 +1,6 @@
 import { RefreshCw } from "lucide-react";
 
-import { KretoCharacter } from "@/components/brand/KretoCharacter";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useInView } from "@/hooks/useInView";
 import { useNow } from "@/hooks/useNow";
@@ -120,7 +120,7 @@ export function TodayRadar({ userId, profile }: TodayRadarProps) {
             >
               {radar.isFetching ? <KretopiaSpinner className="h-4 w-4" /> : <RefreshCw className="h-4 w-4" aria-hidden />}
             </button>
-            <KretoCharacter variant="detective" size={72} floatAmplitude={2} floatDuration={7} lazy className="hidden sm:inline-block" />
+            <KretoScene scene="product-launch" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />
           </div>
         </header>
 

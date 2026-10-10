@@ -37,7 +37,7 @@ import {
 } from "@/lib/scoutScan";
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
-import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.png";
+import { KretoScene } from "@/components/brand/KretoScene";
 
 interface ScoutedGig {
   id: string;
@@ -438,9 +438,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
               onError={() => markImageBroken(g.id)}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
-              <img src={kretoScout} alt="" className="h-20 w-20 object-contain opacity-90" />
-            </div>
+            <KretoScene scene="onboarding" className="h-full w-full" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
@@ -723,9 +721,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
                   onError={() => markImageBroken(visibleGigs[0].id)}
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-energy/30 via-primary/10 to-background flex items-center justify-center">
-                  <img src={kretoScout} alt="" className="h-16 w-16 object-contain opacity-90" />
-                </div>
+                <KretoScene scene="onboarding" className="h-full w-full" />
               )}
               <div className="absolute top-2.5 left-2.5">
                 <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/80 backdrop-blur-sm border-border">
@@ -809,7 +805,7 @@ export function ScoutedGigsSection({ limit }: ScoutedGigsSectionProps = {}) {
                         onError={() => markImageBroken(openGig.id)}
                       />
                     ) : (
-                      <img src={kretoScout} alt="" className="h-7 w-7 object-contain opacity-90" />
+                      <KretoScene scene="onboarding" className="h-full w-full" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1 text-left">
