@@ -23,6 +23,7 @@ import { MessageBubble } from "./messages/MessageBubble";
 import { MessageComposer } from "./messages/MessageComposer";
 import { EmptyChatState } from "./messages/EmptyChatState";
 import { SceneBanner } from "@/components/brand/SceneBanner";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
 import { VibeCheckPrompt } from "@/components/calls/VibeCheckPrompt";
 import { FeatureTutorial } from "@/components/landing/kretopia/FeatureTutorial";
 import { MESSAGES_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -308,21 +309,22 @@ const Messages = () => {
             />
           </div>
         ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-8 bg-background">
-            <div className="w-full max-w-md">
-              <SceneBanner scene="match" label="Messages" lazy={false} className="mb-6 h-36 rounded-2xl border border-border" />
-              <div className="text-center mb-8">
-                <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase mb-2">
-                  Messages
-                </p>
-                <h2 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05] mb-2">
-                  Your Conversations
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">Send messages to creators you've connected with</p>
-              </div>
-              <div className="dark-surface rounded-2xl p-1" style={{ backgroundColor: "#05070D" }}>
+          /* Scrolls instead of clipping: the row is overflow-hidden at a fixed
+             height, and a centred column taller than a laptop viewport lost
+             its top and its tutorial controls. `m-auto` centres when there is
+             room and starts at the top when there is not. */
+
+          <div className="hidden md:flex flex-1 overflow-y-auto bg-background p-6 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-6">
+            <div className="m-auto w-full max-w-lg">
+              <WrappedShell
+                titleId="messages-empty-title"
+                eyebrow="Kretopia · Messages"
+                title={<>Your <span className="k-gradient-text">Conversations</span></>}
+                subtitle="Send messages to creators you've connected with."
+              >
+                <SceneBanner scene="match" label="Messages" lazy={false} className="h-28 rounded-2xl border border-border" />
                 <FeatureTutorial steps={MESSAGES_TUTORIAL} label="Messages tutorial" />
-              </div>
+              </WrappedShell>
             </div>
           </div>
         )}

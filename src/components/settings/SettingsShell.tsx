@@ -5,6 +5,8 @@ interface SettingsShellProps {
   domains: SettingsDomain[];
   active: string;
   onSelect: (id: string) => void;
+  /** Mounted in a drawer: one column, every section, no sidebar. */
+  embedded?: boolean;
   children: ReactNode;
 }
 
@@ -15,8 +17,14 @@ interface SettingsShellProps {
  * the responsive switch, so this shell never needs its own breakpoint
  * logic). Replaces Settings.tsx's prior single scrolling column of 11
  * unrelated Cards -- each domain's panel now shows only its own 2-4 cards.
+ *
+ * Embedded (the navbar drawer, ~400px wide): the sidebar breakpoint is the
+ * viewport's, not the drawer's, so it used to cut the content in two. There
+ * every section is already shown, so the nav has nothing to select: one
+ * column, full width.
  */
-export function SettingsShell({ domains, active, onSelect, children }: SettingsShellProps) {
+export function SettingsShell({ domains, active, onSelect, embedded = false, children }: SettingsShellProps) {
+  if (embedded) return <div className="min-w-0 space-y-6">{children}</div>;
   return (
     <div className="flex flex-col gap-6 md:flex-row md:items-start">
       <SettingsNav domains={domains} active={active} onSelect={onSelect} />
