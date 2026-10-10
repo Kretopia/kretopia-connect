@@ -41,7 +41,8 @@ import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
 const studioVideo = "/videos/kretovideo1.mp4";
 const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
-// 1272x720 (16:9): shown whole in a landscape frame, never cropped to 4:5.
+// 1272x720 (16:9) in the same portrait frame as every other chapter: the
+// frame is the section's dimensions, the video is cropped to it (centred).
 const matchVideo = "/videos/kretovideomatch.mp4";
 // Its own first frame as the poster: the still never differs from the video.
 const matchPoster = "/videos/kretovideomatch-poster.jpg";
@@ -147,7 +148,6 @@ export const LandingBelowFold = () => {
         caption="Match"
         image={matchPoster}
         video={matchVideo}
-        landscape
         accent="hsl(var(--energy))"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"

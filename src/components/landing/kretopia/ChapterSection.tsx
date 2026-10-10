@@ -24,9 +24,6 @@ export interface ChapterProps {
    *  kept as the <video>'s poster (first paint + graceful fallback) and
    *  as the alt experience with reduced motion. Autoplays muted/looped. */
   video?: string;
-  /** A 16:9 video is shown whole in a 16:9 frame instead of being cropped to
-   *  the portrait frame the other chapters use, so it stays at native HD. */
-  landscape?: boolean;
   /** Landing overhaul: gradient is intentionally selective, one title per
    *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
    *  omit (the default) to keep this title plain white like the rest. */
@@ -67,7 +64,7 @@ export interface ChapterProps {
 }
 
 export const ChapterSection = ({
-  index, kicker, title, body, caption, image, video, landscape, accent, href, reverse, id, tutorialSteps, tutorialVisual,
+  index, kicker, title, body, caption, image, video, accent, href, reverse, id, tutorialSteps, tutorialVisual,
   ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
 }: ChapterProps) => {
   const reducedMotion = useReducedMotion();
@@ -163,11 +160,7 @@ export const ChapterSection = ({
             transition={{ duration: 1.1, ease: [0.2, 0.65, 0.3, 0.95] }}
             className="lg:col-span-7 relative"
           >
-            <div
-              className={`relative overflow-hidden ${
-                landscape ? "aspect-video" : "aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5]"
-              }`}
-            >
+            <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
               {video ? (
                 <video
                   ref={videoRef}
