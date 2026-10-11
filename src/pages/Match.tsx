@@ -4,7 +4,7 @@ import { SEO } from "@/components/SEO";
 import { Sparkles, LayoutGrid, Users } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SwipeFeature } from "@/components/swipe";
-import { KretoTip } from "@/components/agent/KretoTip";
+import { MatchPulse } from "@/components/swipe/MatchPulse";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -118,7 +118,7 @@ export default function Match() {
       />
 
       <StudioFeatureShell wrapped={{ name: "Match" }}>
-        <KretoTip surface="match" compact />
+        <MatchPulse />
         <StudioSectionTabs
           tabs={matchTabs}
           queryParam="tab"
