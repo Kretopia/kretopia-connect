@@ -60,6 +60,14 @@ const renderHome = () =>
 const before = (a: Node, b: Node) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
 
 describe("Studio home (creator)", () => {
+  it("preserves the same project workspace and adds real hiring actions for Company", async () => {
+    render(<MemoryRouter><CreatorWorkHome company /></MemoryRouter>);
+    const wrapped = await screen.findByRole("region", { name: /Everything in your Studio/ });
+    expect(within(wrapped).getByTestId("projects")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Post a Gig" })).toHaveAttribute("href", "/post-opportunity");
+    expect(screen.getByRole("link", { name: "Find talent" })).toHaveAttribute("href", "/talent-finder");
+    expect(screen.getByRole("link", { name: "Pay creators" })).toHaveAttribute("href", "/thrivepay");
+  });
   it("no longer shows the generic Kreto tip above the New Room", async () => {
     renderHome();
     await screen.findByTestId("new-room");

@@ -15,6 +15,11 @@ const renderHeader = (scene?: "krepay" | "match") =>
   );
 
 describe("FeaturePageHeader scene", () => {
+  it("shows Company mode above the feature heading when requested", () => {
+    render(<MemoryRouter><FeaturePageHeader company eyebrow="Gigs" title="Gigs" accentTitle="Hire your team" subtitle="Your listings." /></MemoryRouter>);
+    expect(screen.getByText("Company mode")).toBeInTheDocument();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
   it("shows Kreto in the feature's expression, signed Kretopia and named for the feature", () => {
     const { container } = renderHeader("krepay");
     expect(container.querySelector('img[src*="scenes/krepay"]')).toBeInTheDocument();
