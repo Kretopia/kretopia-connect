@@ -14,7 +14,6 @@ interface MessageAttachmentsProps {
 
 export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsProps) => {
   const [isUploading, setIsUploading] = useState(false);
-  const [open, setOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -37,7 +36,7 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
         .getPublicUrl(filePath);
 
       onAttach(publicUrl, type, file.name);
-      setOpen(false);
+
       
       toast({
         title: type === 'image' ? "Image attached" : "File attached",
@@ -57,7 +56,16 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) {
+      if (!IMAGE_TYPES.includes(file.type)) {
+        toast({
+          title: "Unsupported image",
+          description: "Please choose a JPEG, PNG, WebP or GIF image.",
+          variant: "destructive",
+        });
+        return;
+      }
       if (file.size > 10 * 1024 * 1024) {
         toast({
           title: "File too large",
@@ -72,6 +80,7 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (file) {
       if (file.size > 25 * 1024 * 1024) {
         toast({
@@ -90,7 +99,7 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
       <input
         ref={imageInputRef}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp,image/gif"
         className="hidden"
         onChange={handleImageSelect}
       />
@@ -101,46 +110,37 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
         className="hidden"
         onChange={handleFileSelect}
       />
-      
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            disabled={disabled || isUploading}
-            className="rounded-full text-muted-foreground hover:text-foreground"
-          >
-            {isUploading ? (
-              <KretopiaSpinner className="h-5 w-5" />
-            ) : (
-              <Paperclip className="h-5 w-5" />
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-2" align="start">
-          <div className="space-y-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2"
-              onClick={() => imageInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Image className="h-4 w-4 text-primary" />
-              Photo
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-2"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              <Paperclip className="h-4 w-4 text-primary" />
-              Document
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+
+      {/* Each icon opens its file picker directly: an intermediate popover
+          swallowed the click and the picker never opened. */}
+      <div className="flex items-center gap-1">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Attach a photo"
+          disabled={disabled || isUploading}
+          className="h-11 w-11 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={() => imageInputRef.current?.click()}
+        >
+          {isUploading ? (
+            <KretopiaSpinner className="h-5 w-5" />
+          ) : (
+            <Image className="h-5 w-5" />
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Attach a document"
+          disabled={disabled || isUploading}
+          className="h-11 w-11 rounded-full text-muted-foreground hover:text-foreground"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Paperclip className="h-5 w-5" />
+        </Button>
+      </div>
     </>
   );
 };
