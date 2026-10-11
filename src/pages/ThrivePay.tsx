@@ -430,10 +430,9 @@ export default function ThrivePay() {
 
           {/* 2. Activity — Invoices & Earnings + Recent Activity */}
           <TabsContent value="activity" className="mt-0 space-y-6">
-        {/* Scan-a-receipt — contextual to Activity (where expenses live)
-            instead of floating globally over every tab, per the overhaul
-            spec's "misplaced Scan button." */}
-        <SnapReceiptFAB />
+        {/* Scan-a-receipt stays in Creator mode only — Company has no
+            expense-scanning workflow. */}
+        {!isBrand && <SnapReceiptFAB />}
         <section className="space-y-3">
           <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" /> {isBrand ? "Invoices & Expenses" : "Invoices & Earnings"}
