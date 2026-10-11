@@ -634,6 +634,7 @@ const EventPage = () => {
             currentUserId={user?.id || null}
             isParticipant={!!participation}
             participantCount={participantCount}
+            attendeeListVisibility={event.attendee_list_visibility}
             guestMatchingEnabled={event.guest_matching_enabled !== false}
             isPast={isPast}
             isCompleted={isCompleted}

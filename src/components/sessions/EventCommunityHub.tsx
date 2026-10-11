@@ -16,6 +16,7 @@ interface Props {
   isAuthenticated: boolean;
   currentUserId: string | null;
   isParticipant: boolean;
+  attendeeListVisibility?: string | null;
   participantCount: number;
   guestMatchingEnabled: boolean;
   isPast: boolean;
@@ -43,7 +44,7 @@ interface Props {
  */
 export function EventCommunityHub({
   eventId, eventTitle, eventCategory, eventCoverImageUrl, hostId,
-  isCreator, isAuthenticated, currentUserId, isParticipant, participantCount,
+  isCreator, isAuthenticated, currentUserId, isParticipant, participantCount, attendeeListVisibility,
   guestMatchingEnabled, isPast, isCompleted, groupChatEnabled, groupChatRoomId, onGroupChatChange,
   circleId, onCircleLinked,
 }: Props) {
@@ -63,6 +64,7 @@ export function EventCommunityHub({
           isParticipant={isParticipant}
           isHost={isCreator}
           participantCount={participantCount}
+          attendeeListVisibility={attendeeListVisibility}
         />
       ),
     });
