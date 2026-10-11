@@ -280,6 +280,7 @@ const AppContent = () => {
       {showBottomNav && <QuickActionFab />}
       <ThriveAgentFab />
       {showBottomNav && <ThriveBar />}
+      {user && <KretoLauncher />}
       
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}
       {user && <GlobalIncomingCall />}

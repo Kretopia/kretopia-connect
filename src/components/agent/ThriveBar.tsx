@@ -64,13 +64,13 @@ export const ThriveBar = () => {
   return (
     <div
       className="fixed left-0 right-0 z-40 lg:hidden px-3"
-      style={{ bottom: "calc(env(safe-area-inset-bottom) + 4.25rem)" }}
+      style={{ bottom: "calc(env(safe-area-inset-bottom) + 5rem)" }}
       role="region"
       aria-label="Kreto composer"
     >
       <div
         className={cn(
-          "mx-auto flex items-center gap-2 h-14 px-2 rounded-2xl",
+          "mx-auto flex max-w-sm items-center gap-1.5 h-11 px-1.5 rounded-full",
           "bg-card border border-border shadow-lg",
         )}
       >
@@ -86,7 +86,7 @@ export const ThriveBar = () => {
         <button
           type="button"
           onClick={() => openChat("voice")}
-          className="h-11 w-11 shrink-0 rounded-full text-primary hover:bg-primary/10 active:scale-95 transition-all flex items-center justify-center"
+          className="h-9 w-9 shrink-0 rounded-full text-primary hover:bg-primary/10 active:scale-95 transition-all flex items-center justify-center"
           aria-label="Talk to Kreto"
           title="Tap to talk"
         >
@@ -95,7 +95,7 @@ export const ThriveBar = () => {
         <button
           type="button"
           onClick={() => openChat("chat")}
-          className="h-11 w-11 shrink-0 rounded-full bg-primary text-primary-foreground active:scale-95 transition-all flex items-center justify-center"
+          className="h-9 w-9 shrink-0 rounded-full bg-primary text-primary-foreground active:scale-95 transition-all flex items-center justify-center"
           aria-label="Open Kreto"
         >
           <ArrowUp className="h-4 w-4" />

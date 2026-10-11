@@ -133,12 +133,15 @@ export const ChapterSection = ({
     // after a Daylight/Midnight switch: a video that was blocked once should
     // not sit on its poster until the visitor happens to scroll.
     el.addEventListener("canplay", play);
+    el.addEventListener("loadeddata", play);
+    el.load();
     window.addEventListener("ui-vibe:change", play);
     document.addEventListener("visibilitychange", play);
     return () => {
       near.disconnect();
       watch.disconnect();
       el.removeEventListener("canplay", play);
+      el.removeEventListener("loadeddata", play);
       window.removeEventListener("ui-vibe:change", play);
       document.removeEventListener("visibilitychange", play);
       gestures.forEach((g) => window.removeEventListener(g, unlock));
