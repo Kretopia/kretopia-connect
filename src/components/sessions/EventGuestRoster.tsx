@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Users, MapPin, Briefcase, ExternalLink, Check, Clock, UserPlus, MessageCircle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,6 +233,14 @@ export const EventGuestRoster = ({
               </p>
             </div>
           </div>
+          {isHost && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
+              <Label htmlFor={`hide-guests-${eventId}`} className="text-xs text-muted-foreground">
+                Hide guest list until people save a seat
+              </Label>
+              <Switch id={`hide-guests-${eventId}`} checked={hiddenByHost} onCheckedChange={toggleHidden} />
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
