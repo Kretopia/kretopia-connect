@@ -110,6 +110,22 @@ export function TodayCommandCenter({
   onSignalsChanged,
 }: TodayCommandCenterProps) {
   const reducedMotion = useReducedMotion();
+  // Session-only dismissal: no database column for this prompt.
+  const [bannerPromptDismissed, setBannerPromptDismissed] = useState(() => {
+    try {
+      return sessionStorage.getItem("kretopia-banner-prompt") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const dismissBannerPrompt = () => {
+    try {
+      sessionStorage.setItem("kretopia-banner-prompt", "1");
+    } catch {
+      /* private mode: dismiss for this render only */
+    }
+    setBannerPromptDismissed(true);
+  };
 
   return (
     <div className="space-y-5">
@@ -125,6 +141,26 @@ export function TodayCommandCenter({
         }}
         compact
       />
+
+      {profile && !profile.cover_image_url && !bannerPromptDismissed && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">Make your Passport yours</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Add a banner to personalise your profile.</p>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <GlassCta to="/profile" className="h-10">Add banner</GlassCta>
+            <button
+              type="button"
+              onClick={dismissBannerPrompt}
+              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <TodayDeck
         cards={[

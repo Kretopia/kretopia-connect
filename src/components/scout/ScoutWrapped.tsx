@@ -57,7 +57,7 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
 
   const signals: WrappedSignal[] = useMemo(
     () =>
-      selectScoutWrappedSignals({ gigs, actions, profile, now: new Date(now) }).map((s) => ({
+      selectScoutWrappedSignals({ gigs, actions, profile, now: new Date(now) }, 4).map((s) => ({
         id: s.id,
         icon: ICON[s.id],
         value: s.value,
@@ -120,8 +120,8 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
       aside={<KretoScene scene="scout" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
     >
       {signalsLoading ? (
-        <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-3" aria-busy="true">
-          {[0, 1, 2].map((i) => (
+        <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
             <div key={i} className="bg-card p-4">
               <Skeleton className="h-8 w-12" />
               <Skeleton className="mt-3 h-3 w-28" />
@@ -133,7 +133,7 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
           label="Scout priority signals"
           compactOnMobile
           signals={signals}
-          columnsClassName={signals.length === 1 ? "grid-cols-1" : signals.length === 2 ? "grid-cols-1 sm:grid-cols-2" : "grid-cols-1 sm:grid-cols-3"}
+          columnsClassName={signals.length === 1 ? "grid-cols-1" : signals.length === 2 ? "grid-cols-1 sm:grid-cols-2" : signals.length === 3 ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}
         />
       ) : null}
 
