@@ -133,7 +133,7 @@ describe("ScoutWrapped", () => {
     expect(scanButton()).toBeEnabled();
   });
 
-  it("shows only counts of rows that exist, at most three, each switching to its tab", async () => {
+  it("shows only counts of rows that exist, at most four, each switching to its tab", async () => {
     db.gigs = [gigRow("a", { scouted_at: hoursAgo(2) }), gigRow("b"), gigRow("c")];
     db.actions = [
       { scouted_gig_id: "a", action: "apply_clicked", outcome: null },
@@ -143,10 +143,11 @@ describe("ScoutWrapped", () => {
     renderWrapped();
     const list = await screen.findByRole("list", { name: "Scout priority signals" });
     const tiles = within(list).getAllByRole("button");
-    expect(tiles).toHaveLength(3);
+    expect(tiles).toHaveLength(4);
     expect(tiles[0]).toHaveTextContent("1application started");
     expect(tiles[1]).toHaveTextContent("1gig saved to review");
     expect(tiles[2]).toHaveTextContent("1application awaiting an outcome");
+    expect(tiles[3]).toHaveTextContent("1gig found in the last 24 h");
     fireEvent.click(tiles[1]);
     expect(onSelectTab).toHaveBeenCalledWith("shortlist");
   });
