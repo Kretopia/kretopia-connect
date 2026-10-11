@@ -1,3 +1,5 @@
+import { useAccountTone } from "@/hooks/useAccountTone";
+import ManageOpportunities from "@/pages/ManageOpportunities";
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
@@ -10,6 +12,9 @@ type Tab = "scouted" | "marketplace";
 
 const Opportunities = () => {
   const [tab, setTab] = useState<Tab>("scouted");
+
+  const { isBusiness } = useAccountTone();
+  if (isBusiness) return <ManageOpportunities company />;
 
   return (
     <div className="min-h-screen pb-20 bg-background">

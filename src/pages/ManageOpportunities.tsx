@@ -92,7 +92,7 @@ const MANAGE_TUTORIAL: TutorialStep[] = [
   { icon: Briefcase, title: "Track your own applications", body: "Switch to My Applications to follow every gig you've applied to and where it stands." },
 ];
 
-const ManageOpportunities = () => {
+const ManageOpportunities = ({ company = false }: { company?: boolean }) => {
   const [postedGigs, setPostedGigs] = useState<PostedGig[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -167,7 +167,11 @@ const ManageOpportunities = () => {
   };
 
   const updateGigStatus = async (gigId: string, newStatus: string) => {
-    await supabase.from("opportunities").update({ status: newStatus }).eq("id", gigId);
+    const { error } = await supabase.from("opportunities").update({ status: newStatus }).eq("id", gigId);
+    if (error) {
+      toast({ title: "Could not update gig", description: error.message, variant: "destructive" });
+      return;
+    }
     setPostedGigs(prev => prev.map(g => g.id === gigId ? { ...g, status: newStatus } : g));
     toast({ title: `Gig ${statusConfig[newStatus]?.label?.toLowerCase() || "updated"}` });
   };
@@ -272,8 +276,9 @@ const ManageOpportunities = () => {
         <FeaturePageHeader
           scene="scout"
           eyebrow="Manage"
-          title="Gig Manager."
-          accentTitle="From post to hire."
+          company={company}
+          title={company ? "Gigs" : "Gig Manager."}
+          accentTitle={company ? "From brief to hire" : "From post to hire."}
           subtitle={headerSubtitle}
           tutorial={{ featureKey: "manage-opportunities", label: "How this works", steps: MANAGE_TUTORIAL }}
           tabs={
@@ -292,7 +297,7 @@ const ManageOpportunities = () => {
                   value="applications"
                   className="gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-foreground/60 data-[state=active]:bg-[hsl(var(--energy))] data-[state=active]:text-white data-[state=active]:shadow-none"
                 >
-                  <Briefcase className="h-3.5 w-3.5" /> My Applications ({applications.length})
+                  <Briefcase className="h-3.5 w-3.5" /> {company ? "Applications sent" : "My Applications"} ({applications.length})
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -300,7 +305,7 @@ const ManageOpportunities = () => {
         />
         </div>
 
-        <StudioFeatureShell>
+        <StudioFeatureShell wrapped={company ? { name: "Gigs", status: headerSubtitle } : undefined}>
           {/* ── MY LISTINGS ── */}
           <TabsContent value="listings" className="mt-0 space-y-4">
             {postedGigs.length === 0 ? (
