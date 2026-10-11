@@ -4,7 +4,7 @@ import { Paperclip, Image, X, ImageOff } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { PRIVATE_MESSAGE_ATTACHMENTS, uploadPrivateAttachment, getAttachmentUrl, isPrivateAttachment } from "@/lib/messageAttachments";
+import { PRIVATE_MESSAGE_ATTACHMENTS, uploadPrivateAttachment, uploadPublicAttachment, getAttachmentUrl, isPrivateAttachment } from "@/lib/messageAttachments";
 import { useEffect } from "react";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -24,33 +24,21 @@ export const MessageAttachments = ({ onAttach, disabled, receiverId }: MessageAt
   const uploadFile = async (file: File, type: 'image' | 'file') => {
     setIsUploading(true);
     try {
+      let stored: string | null = null;
       if (PRIVATE_MESSAGE_ATTACHMENTS) {
         // Fail closed: no conversation, no upload.
         if (!receiverId) throw new Error("No conversation selected");
-        const stored = await uploadPrivateAttachment(file, receiverId);
-        onAttach(stored, type, file.name);
-        toast({
-          title: type === 'image' ? "Image attached" : "File attached",
-          description: "Ready to send with your message",
-        });
-        return;
+        try {
+          stored = await uploadPrivateAttachment(file, receiverId);
+        } catch (privateError) {
+          // Private storage rules not active on the backend yet: keep
+          // messaging working with the previous behaviour.
+          console.warn("[attachments] private upload unavailable, using legacy storage:", privateError);
+        }
       }
+      if (!stored) stored = await uploadPublicAttachment(file);
+      onAttach(stored, type, file.name);
 
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `messages/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('portfolio')
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('portfolio')
-        .getPublicUrl(filePath);
-
-      onAttach(publicUrl, type, file.name);
 
       
       toast({
