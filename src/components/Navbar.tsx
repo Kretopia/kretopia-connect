@@ -136,7 +136,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
     Promise.resolve(
       supabase
         .from("profiles")
-        .select("account_type, is_manager_mode, avatar_url, full_name")
+        .select("is_manager_mode, avatar_url, full_name")
         .eq("user_id", user.id)
         .maybeSingle(),
     )

@@ -1,5 +1,6 @@
 import { useAccountTone } from "@/hooks/useAccountTone";
 import ManageOpportunities from "@/pages/ManageOpportunities";
+import { useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
@@ -11,10 +12,12 @@ import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 type Tab = "scouted" | "marketplace";
 
 const Opportunities = () => {
-  const [tab, setTab] = useState<Tab>("scouted");
+  const [params] = useSearchParams();
+  const marketplace = params.get("view") === "marketplace";
+  const [tab, setTab] = useState<Tab>(marketplace ? "marketplace" : "scouted");
 
   const { isBusiness } = useAccountTone();
-  if (isBusiness) return <ManageOpportunities company />;
+  if (isBusiness && !marketplace) return <ManageOpportunities company />;
 
   return (
     <div className="min-h-screen pb-20 bg-background">
