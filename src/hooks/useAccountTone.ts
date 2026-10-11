@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -59,35 +59,34 @@ function writeCached(userId: string, tone: AccountTone) {
  */
 export function useAccountTone() {
   const { user } = useAuth();
-  const [tone, setTone] = useState<AccountTone>(() => readCached(user?.id) ?? "creative");
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const queryKey = ["account-tone", user?.id];
+  const { data, isPending } = useQuery({
+    queryKey,
+    enabled: !!user,
+    initialData: readCached(user?.id) ?? undefined,
+    initialDataUpdatedAt: 0,
+    staleTime: 60_000,
+    queryFn: async ({ signal }): Promise<AccountTone> => {
+      if (!user) return "creative";
+      const { data, error } = await supabase.from("profiles")
+        .select("account_type").eq("user_id", user.id).abortSignal(signal).maybeSingle();
+      if (error) throw error;
+      const next = data?.account_type === "company" ? "business" : "creative";
+      writeCached(user.id, next);
+      return next;
+    },
+  });
+  const tone: AccountTone = user ? data ?? "creative" : "creative";
 
-  useEffect(() => {
-    if (!user) { setTone("creative"); setLoading(false); return; }
-    const cached = readCached(user.id);
-    if (cached) setTone(cached);
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const { data } = await supabase
-          .from("profiles")
-          .select("account_type")
-          .eq("user_id", user.id)
-          .maybeSingle();
-        if (cancelled) return;
-        const next: AccountTone = data?.account_type === "company" ? "business" : "creative";
-        setTone(next);
-        writeCached(user.id, next);
-      } catch (err) {
-        console.warn("[useAccountTone] failed", err);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [user?.id]);
+  // Publish only after the profile update succeeds; cancel stale reads first.
+  const updateAccountType = async (accountType: "individual" | "company") => {
+    if (!user) return;
+    await queryClient.cancelQueries({ queryKey });
+    const next: AccountTone = accountType === "company" ? "business" : "creative";
+    writeCached(user.id, next);
+    queryClient.setQueryData(queryKey, next);
+  };
 
   const copy = COPY[tone];
   return {
@@ -95,7 +94,8 @@ export function useAccountTone() {
     copy,
     isBusiness: tone === "business",
     isCreative: tone === "creative",
-    loading,
+    loading: !!user && isPending,
+    updateAccountType,
     /** Pick a value based on tone — handy inline helper. */
     pick: <T,>(creative: T, business: T): T => (tone === "business" ? business : creative),
   };
