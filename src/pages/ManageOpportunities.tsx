@@ -26,6 +26,7 @@ import { toast } from "@/hooks/use-toast";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { useAccountTone } from "@/hooks/useAccountTone";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import {
   DropdownMenu,
@@ -92,7 +93,9 @@ const MANAGE_TUTORIAL: TutorialStep[] = [
   { icon: Briefcase, title: "Track your own applications", body: "Switch to My Applications to follow every gig you've applied to and where it stands." },
 ];
 
-const ManageOpportunities = ({ company = false }: { company?: boolean }) => {
+const ManageOpportunities = ({ company: companyOverride }: { company?: boolean }) => {
+  const { isBusiness } = useAccountTone();
+  const company = companyOverride ?? isBusiness;
   const [postedGigs, setPostedGigs] = useState<PostedGig[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,13 +292,13 @@ const ManageOpportunities = ({ company = false }: { company?: boolean }) => {
               <TabsList className="h-auto gap-1 rounded-full border border-foreground/[0.08] bg-foreground/[0.05] p-1 backdrop-blur-sm">
                 <TabsTrigger
                   value="listings"
-                  className="gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-foreground/60 data-[state=active]:bg-[hsl(var(--energy))] data-[state=active]:text-white data-[state=active]:shadow-none"
+                   className="gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
                 >
                   <Send className="h-3.5 w-3.5" /> My Listings ({postedGigs.length})
                 </TabsTrigger>
                 <TabsTrigger
                   value="applications"
-                  className="gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-foreground/60 data-[state=active]:bg-[hsl(var(--energy))] data-[state=active]:text-white data-[state=active]:shadow-none"
+                   className="gap-1.5 rounded-full px-4 py-2 text-xs font-semibold text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-none"
                 >
                   <Briefcase className="h-3.5 w-3.5" /> {company ? "Applications sent" : "My Applications"} ({applications.length})
                 </TabsTrigger>
@@ -313,9 +316,9 @@ const ManageOpportunities = ({ company = false }: { company?: boolean }) => {
                 icon={Briefcase}
                 eyebrow="No listings yet"
                 title="Post your first gig"
-                description="Reach thousands of vetted creators in minutes. Paid, barter, or collab — your call."
+                description="Publish your brief and review applications from Kretopia creators."
                 action={{ label: "Post a Gig", icon: Plus, onClick: () => navigate("/post-opportunity") }}
-                secondaryAction={{ label: "Browse examples", onClick: () => navigate("/opportunities") }}
+                secondaryAction={{ label: "Browse open gigs", onClick: () => navigate("/opportunities?view=marketplace") }}
               />
             ) : (
               <>
