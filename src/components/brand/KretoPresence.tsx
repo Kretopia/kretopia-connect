@@ -29,7 +29,7 @@
  * this component's own interactive button, not a caller-supplied claim, so
  * it is tracked internally -- see the interactive branch below.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretoMark } from "@/components/brand/KretoMark";
@@ -140,6 +140,12 @@ export const KretoPresence = ({
   className,
 }: KretoPresenceProps) => {
   const reducedMotion = useReducedMotion();
+  // Gradient ids must be unique per instance: several Kreto logos on one page
+  // otherwise share `kreto-presence-plate`, and the duplicated id breaks the
+  // fill reference (the stray `fill="url(#…)"` text seen next to headers).
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const plateId = `kreto-presence-plate-${uid}`;
+  const signalId = `kreto-presence-signal-${uid}`;
   const [hovered, setHovered] = useState(false);
   const px = SIZE_PX[size];
   // "micro" (24px) is too small for any legible badge; everything else gets
@@ -201,11 +207,11 @@ export const KretoPresence = ({
     >
       <svg viewBox="0 0 100 100" width={px} height={px} aria-hidden="true" focusable="false">
         <defs>
-          <linearGradient id="kreto-presence-plate" x1="0%" y1="0%" x2="100%" y2="100%">
+          <linearGradient id={plateId} x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="hsl(var(--secondary))" />
             <stop offset="100%" stopColor="hsl(var(--k-midnight))" />
           </linearGradient>
-          <radialGradient id="kreto-presence-signal" cx="35%" cy="35%" r="70%">
+          <radialGradient id={signalId} cx="35%" cy="35%" r="70%">
             <stop offset="0%" stopColor={signalColor(effectiveState)} stopOpacity="1" />
             <stop offset="100%" stopColor={signalColor(effectiveState)} stopOpacity="0.45" />
           </radialGradient>
@@ -214,7 +220,7 @@ export const KretoPresence = ({
         {/* Graphite / near-black plate -- the body material the brief's own
             "Character rules to lock" calls for, replacing the reference's
             white shell. */}
-        <rect x="9" y="7" width="82" height="86" rx="26" fill="url(#kreto-presence-plate)" />
+        <rect x="9" y="7" width="82" height="86" rx="26" fill={`url(#${plateId})`} />
         <rect x="9" y="7" width="82" height="86" rx="26" fill="none" stroke="hsl(var(--border))" strokeWidth="1" opacity="0.4" />
 
         {/* One warm off-white panel accent -- selective, not a body wash. */}
@@ -229,7 +235,7 @@ export const KretoPresence = ({
           cx="50"
           cy="42"
           r="9"
-          fill="url(#kreto-presence-signal)"
+          fill={`url(#${signalId})`}
           animate={signalAnimate}
           transition={signalTransition}
         />
