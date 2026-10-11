@@ -24,6 +24,9 @@ import {
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
+import { useAccountTone } from "@/hooks/useAccountTone";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { extractInvokeError } from "@/lib/extractInvokeError";
 
 const ACCENT = "hsl(var(--energy))";
 
@@ -45,6 +48,7 @@ export default function TalentFinder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { isBusiness } = useAccountTone();
   const { toast } = useToast();
   const { guard: guardAiMatch } = useFeatureGate("aiApplicantRankings");
 
@@ -54,6 +58,18 @@ export default function TalentFinder() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("talent_shortlist").select("talent_user_id")
+      .eq("company_user_id", user.id).eq("status", "shortlisted")
+      .then(({ data }) => {
+        if (!cancelled) setShortlisted(Object.fromEntries((data ?? []).map(row => [row.talent_user_id, true])));
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // If we landed here from the Outcome Composer with a brief, surface it.
   useEffect(() => {
@@ -89,7 +105,7 @@ export default function TalentFinder() {
       }
     } catch (err: any) {
       console.error("Talent match error:", err);
-      toast({ title: "Matching failed", description: err.message || "Please try again.", variant: "destructive" });
+       toast({ title: "Matching failed", description: await extractInvokeError(err) || "Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -97,18 +113,22 @@ export default function TalentFinder() {
 
   const handleShortlist = async (talent: TalentMatch) => {
     if (!user) return;
+    setSavingId(talent.user_id);
     try {
-      await supabase.from("talent_shortlist").upsert({
+      const { error } = await supabase.from("talent_shortlist").upsert({
         company_user_id: user.id,
         talent_user_id: talent.user_id,
         match_score: talent.match_score,
         match_reasons: talent.match_reasons,
         status: "shortlisted",
       }, { onConflict: "company_user_id,talent_user_id,opportunity_id" });
+      if (error) throw error;
       setShortlisted(prev => ({ ...prev, [talent.user_id]: true }));
       toast({ title: `${talent.full_name} shortlisted!` });
     } catch {
       toast({ title: "Failed to shortlist", variant: "destructive" });
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -120,7 +140,7 @@ export default function TalentFinder() {
   const getScoreColor = (score: number) => {
     if (score >= 85) return "text-[hsl(var(--energy))] bg-[hsl(var(--energy)/0.1)] border-[hsl(var(--energy)/0.25)]";
     if (score >= 70) return "text-[hsl(var(--signal-teal))] bg-[hsl(var(--signal-teal))]/10 border-[hsl(var(--signal-teal))]/25";
-    return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+    return "text-muted-foreground bg-muted border-border";
   };
 
   const getScoreLabel = (score: number) => {
@@ -136,14 +156,15 @@ export default function TalentFinder() {
         <meta name="description" content="Describe your project and instantly find the best creative talent — ranked by verified work." />
       </Helmet>
 
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background">
         <div className="relative">
           <PageBackButton />
           <FeaturePageHeader
             scene="talent-search"
             eyebrow="Hiring"
-            title="Smart Talent Finder."
-            accentTitle="Real matches, in real time."
+            company={isBusiness}
+            title="Find your people"
+            accentTitle="Build your team"
             subtitle="Describe what you need — Kreto searches Kretopia's live creator network and ranks real, verified people against your brief."
             tutorial={{ featureKey: "talent-finder", label: "How Smart Talent Finder works", steps: TALENT_FINDER_TUTORIAL }}
           />
@@ -158,7 +179,15 @@ export default function TalentFinder() {
             pages got — max-w-4xl gives real breathing room to the result
             cards (name, score, match reasons, actions) without leaving
             them looking sparse in an oversized row. */}
-        <div className="max-w-4xl mx-auto px-4 pt-6 space-y-4">
+        <StudioFeatureShell wrapped={{ name: "Talent", status: hasSearched ? `${matches.length} matches · ${Object.values(shortlisted).filter(Boolean).length} shortlisted` : "Your brief · Your next team" }}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/opportunity-dashboard")}>
+              <UserPlus className="h-4 w-4" /> Review applicants
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/match")}>
+              <Eye className="h-4 w-4" /> Browse creators
+            </Button>
+          </div>
           <div className="flex justify-end">
             <Badge variant="secondary" className="gap-1 text-xs shrink-0">
               <Crown className="h-3 w-3" style={{ color: ACCENT }} /> Pro feature
@@ -173,10 +202,7 @@ export default function TalentFinder() {
           {/* Brief Input */}
           {!hasSearched || matches.length === 0 ? (
             <Card className="overflow-hidden rounded-2xl shadow-none border-border/60">
-              <div
-                className="p-5 space-y-4"
-                style={{ background: "radial-gradient(120% 100% at 0% 0%, hsl(var(--energy) / 0.08), transparent 60%)" }}
-              >
+              <div className="p-5 space-y-4 bg-card">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium flex items-center gap-1.5">
                     <Briefcase className="h-4 w-4" style={{ color: ACCENT }} />
@@ -202,8 +228,7 @@ export default function TalentFinder() {
                 <Button
                   onClick={handleFindTalent}
                   disabled={loading || brief.trim().length < 10}
-                  className="w-full gap-2 text-white hover:opacity-90"
-                  style={{ backgroundColor: ACCENT }}
+                   className="w-full gap-2"
                   size="lg"
                 >
                   {loading ? (
@@ -255,7 +280,7 @@ export default function TalentFinder() {
           {loading && (
             <div className="space-y-3 py-4">
               <div className="flex flex-col items-center gap-3 text-center">
-                <KretoMark size="md" state="active" />
+                <KretopiaSpinner className="h-8 w-8" />
                 <div>
                   <p className="font-medium text-sm">Searching Kretopia's live creator network...</p>
                   <p className="text-xs text-muted-foreground">Scoring real profiles by skills, experience & fit against your brief</p>
@@ -337,14 +362,14 @@ export default function TalentFinder() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs gap-1"
                           onClick={e => { e.stopPropagation(); navigate(`/profile/${talent.user_id}`); }}
                         >
-                          <Eye className="h-3 w-3" /> View
+                          <Eye className="h-3 w-3" /> View Passport
                         </Button>
                         {shortlisted[talent.user_id] ? (
                           <Button
@@ -360,9 +385,10 @@ export default function TalentFinder() {
                             size="sm"
                             variant="secondary"
                             className="h-7 text-xs gap-1"
+                             disabled={savingId === talent.user_id}
                             onClick={e => { e.stopPropagation(); handleShortlist(talent); }}
                           >
-                            <UserPlus className="h-3 w-3" /> Shortlist
+                            {savingId === talent.user_id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />} Shortlist
                           </Button>
                         )}
                       </div>
@@ -406,7 +432,7 @@ export default function TalentFinder() {
             </div>
           )}
         </FreeTierGate>
-        </div>
+        </StudioFeatureShell>
       </div>
     </PageTransition>
   );

@@ -67,6 +67,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { useAccountTone } from "@/hooks/useAccountTone";
 
 const KREPAY_TUTORIAL: TutorialStep[] = [
   { icon: Wallet, title: "See what's coming in", body: "Your wallet balance, available funds, and pending payouts — all in one glance." },
@@ -93,7 +94,8 @@ export default function ThrivePay() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [isBrand, setIsBrand] = useState(false);
+  const { isBusiness: isBrand } = useAccountTone();
+  const [commandTab, setCommandTab] = useState("get-paid");
   const [connectStatus, setConnectStatus] = useState<string>("not_connected");
   const [balance, setBalance] = useState({ available: 0, pending: 0, currency: "usd" });
   const [accountId, setAccountId] = useState<string | null>(null);
@@ -151,20 +153,9 @@ export default function ThrivePay() {
     }
   }, [user, searchParams]);
 
-  // Brand accounts pay creators rather than getting paid for their own
-  // creative work — the wallet/Stripe/invoicing mechanics underneath are
-  // identical either way (money in/out works the same regardless of
-  // account type), so this only swaps the header framing and tutorial,
-  // not any data-fetching or payment logic.
   useEffect(() => {
-    if (!user) return;
-    supabase
-      .from("profiles")
-      .select("account_type")
-      .eq("user_id", user.id)
-      .maybeSingle()
-      .then(({ data }) => setIsBrand(data?.account_type === "company"));
-  }, [user]);
+    setCommandTab(isBrand ? "activity" : "get-paid");
+  }, [isBrand]);
 
   // --- Payment account / Connect logic ---
   const fetchAccountStatus = async () => {
@@ -303,8 +294,9 @@ export default function ThrivePay() {
       <FeaturePageHeader
         scene="krepay"
         eyebrow="Your money, daily"
-        title="KrePay."
-        accentTitle="Without the spreadsheet."
+        company={isBrand}
+        title={isBrand ? "Pay your team" : "KrePay."}
+        accentTitle={isBrand ? "Keep work moving" : "Without the spreadsheet."}
         subtitle={
           isBrand
             ? "Everything about paying the creators you hire, in one place."
@@ -316,7 +308,8 @@ export default function ThrivePay() {
             : { featureKey: "krepay", label: "How KrePay works", steps: KREPAY_TUTORIAL }
         }
         tabs={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap justify-center items-center gap-2">
+            {isBrand && <Button onClick={() => setTransferDialogOpen(true)}><Send className="h-4 w-4" /> Pay a creator</Button>}
             {/* Send Money — icon only */}
             <Button
               size="sm"
@@ -387,7 +380,7 @@ export default function ThrivePay() {
       </div>
 
       <div className="accent-pay min-h-screen">
-      <StudioFeatureShell wrapped={{ name: "KrePay" }}>
+       <StudioFeatureShell wrapped={{ name: isBrand ? "Company Pay" : "KrePay" }}>
         <KretoTip compact />
 
         {/* Get Paid dashboard — the unified summary (metrics + trend chart
@@ -435,10 +428,10 @@ export default function ThrivePay() {
             happened), "Payouts & Fees" (how money leaves the platform to
             you). Every section's own internal logic/handlers are
             unchanged — this is a layout regrouping, not a rewrite. */}
-        <Tabs defaultValue="get-paid" className="space-y-4">
+        <Tabs value={commandTab} onValueChange={setCommandTab} className="space-y-4">
           <TabsList className="w-full grid grid-cols-3 h-auto p-1 rounded-xl bg-card/80 border border-border/60 backdrop-blur-sm">
             <TabsTrigger value="get-paid" className="gap-1.5 py-2 text-xs sm:text-sm">
-              <Send className="h-3.5 w-3.5" /> Get Paid
+              <Send className="h-3.5 w-3.5" /> {isBrand ? "Payment links" : "Get Paid"}
             </TabsTrigger>
             <TabsTrigger value="activity" className="gap-1.5 py-2 text-xs sm:text-sm">
               <FileText className="h-3.5 w-3.5" /> Activity
@@ -463,7 +456,7 @@ export default function ThrivePay() {
         <SnapReceiptFAB />
         <section className="space-y-3">
           <h2 className="text-lg sm:text-xl font-black tracking-tight flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> Invoices & Earnings
+              <FileText className="h-5 w-5 text-primary" /> {isBrand ? "Invoices & Expenses" : "Invoices & Earnings"}
           </h2>
           <FreeTierGate
             feature="expenses"
@@ -488,13 +481,13 @@ export default function ThrivePay() {
               <Card className="rounded-2xl border-border/60 shadow-none">
                 <EmptyState
                   icon={Wallet}
-                  eyebrow="Your creative finances"
-                  title="Ready to get paid"
-                  description="Send your first invoice or share a payment link — your creative finances start here."
+                   eyebrow={isBrand ? "Company payments" : "Your creative finances"}
+                   title={isBrand ? "Your next team payment" : "Ready to get paid"}
+                   description={isBrand ? "Pay a creator from your wallet and follow the transaction here." : "Send your first invoice or share a payment link — your creative finances start here."}
                   action={{
-                    label: "Create Invoice",
+                     label: isBrand ? "Pay a creator" : "Create Invoice",
                     icon: Plus,
-                    onClick: () => window.dispatchEvent(new CustomEvent("thrivepay:create-document", { detail: { type: "invoice" } })),
+                     onClick: () => isBrand ? setTransferDialogOpen(true) : window.dispatchEvent(new CustomEvent("thrivepay:create-document", { detail: { type: "invoice" } })),
                   }}
                 />
               </Card>
