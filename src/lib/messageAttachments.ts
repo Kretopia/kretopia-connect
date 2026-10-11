@@ -21,11 +21,28 @@ export const uploadPrivateAttachment = async (file: File, receiverId: string): P
   if (!receiverId || receiverId === user.id) throw new Error("Invalid conversation");
   const ext = (file.name.split(".").pop() || "bin").replace(/[^a-z0-9]/gi, "").slice(0, 8);
   const path = `${user.id}/${receiverId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await supabase.storage.from(MESSAGE_BUCKET).upload(path, file, {
+  const bucket = supabase.storage.from(MESSAGE_BUCKET);
+  const { error } = await bucket.upload(path, file, {
     contentType: file.type || "application/octet-stream",
   });
   if (error) throw error;
+  // Self-check: the file must be readable back via a signed link, otherwise
+  // the read rule is missing and nobody could open it. Clean up and fail.
+  const { data: signed, error: signError } = await bucket.createSignedUrl(path, 60);
+  if (signError || !signed?.signedUrl) {
+    await bucket.remove([path]).catch(() => undefined);
+    throw signError ?? new Error("Signed URL unavailable");
+  }
   return `${PRIVATE_PREFIX}${path}`;
+};
+
+/** Legacy public upload (pre-private behaviour). */
+export const uploadPublicAttachment = async (file: File): Promise<string> => {
+  const fileExt = file.name.split(".").pop();
+  const filePath = `messages/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const { error } = await supabase.storage.from("portfolio").upload(filePath, file);
+  if (error) throw error;
+  return supabase.storage.from("portfolio").getPublicUrl(filePath).data.publicUrl;
 };
 
 /** Short-lived signed URL; never persisted. Returns null when access is denied. */
