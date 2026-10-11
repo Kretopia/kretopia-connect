@@ -1,5 +1,10 @@
 # Roadmap
 
+## Landing Match video and scroll navigation
+- [ ] Inspect and improve Match video delivery and HD encoding without replacing its content.
+- [ ] Replace scroll dots with theme-aware vertical marks that expand for the active chapter.
+- [ ] Verify video playback and active navigation.
+
 ## Company mode overhaul
 - [x] Synchronize account switching and Company navigation across pages.
 - [x] Align Studios, Gigs, Talent and Pay with shared headers and Wrapped surfaces, preserving Creator Studio.
