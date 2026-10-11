@@ -60,7 +60,7 @@ export const degradedNote = (degraded: string[] | undefined): string | null => {
 /** What to tell the person after a scan, or null when it is not worth interrupting them. */
 export const describeScan = (data: ScanResult | null | undefined, auto: boolean): { title: string; description?: string } | null => {
   if (!data || data.skipped) return null;
-  if (data.gated) return { title: "Weekly Scout limit reached", description: data.message || "Upgrade for daily scans." };
+  if (data.gated) return data.message ? { title: data.message } : null;
   const filtered = data.filtered ?? data.found ?? 0;
   const inserted = data.inserted ?? 0;
   if (inserted > 0) {

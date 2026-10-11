@@ -2,13 +2,10 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Paperclip, Image, X, ImageOff } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 interface MessageAttachmentsProps {
   onAttach: (url: string, type: 'image' | 'file', fileName?: string) => void;
