@@ -43,7 +43,8 @@ const studioVideo = "/videos/kretovideo1.mp4";
 const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
 // Native 1440×1800 master, losslessly fast-start optimized and CDN served.
-const matchVideo = matchHdAsset.url;
+// Local Vite has no CDN proxy; use the identical native master for local preview.
+const matchVideo = import.meta.env.DEV ? "/videos/kretovideomatch.mp4" : matchHdAsset.url;
 // Its own first frame as the poster: the still never differs from the video.
 const matchPoster = "/videos/kretovideomatch-poster.jpg";
 
