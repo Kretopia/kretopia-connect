@@ -4,15 +4,18 @@ import { Paperclip, Image, X, ImageOff } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { PRIVATE_MESSAGE_ATTACHMENTS, uploadPrivateAttachment, getAttachmentUrl, isPrivateAttachment } from "@/lib/messageAttachments";
+import { useEffect } from "react";
 
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 interface MessageAttachmentsProps {
   onAttach: (url: string, type: 'image' | 'file', fileName?: string) => void;
   disabled?: boolean;
+  receiverId?: string | null;
 }
 
-export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsProps) => {
+export const MessageAttachments = ({ onAttach, disabled, receiverId }: MessageAttachmentsProps) => {
   const [isUploading, setIsUploading] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -21,6 +24,18 @@ export const MessageAttachments = ({ onAttach, disabled }: MessageAttachmentsPro
   const uploadFile = async (file: File, type: 'image' | 'file') => {
     setIsUploading(true);
     try {
+      if (PRIVATE_MESSAGE_ATTACHMENTS) {
+        // Fail closed: no conversation, no upload.
+        if (!receiverId) throw new Error("No conversation selected");
+        const stored = await uploadPrivateAttachment(file, receiverId);
+        onAttach(stored, type, file.name);
+        toast({
+          title: type === 'image' ? "Image attached" : "File attached",
+          description: "Ready to send with your message",
+        });
+        return;
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `messages/${fileName}`;
