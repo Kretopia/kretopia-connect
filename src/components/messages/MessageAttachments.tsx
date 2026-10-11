@@ -167,8 +167,30 @@ interface AttachmentPreviewProps {
   onRemove: () => void;
 }
 
-export const AttachmentPreview = ({ url, type, fileName, onRemove }: AttachmentPreviewProps) => {
-  const [imageFailed, setImageFailed] = useState(false);
+/** Resolves a stored attachment value to a displayable URL (signed for private files). */
+export const useResolvedAttachmentUrl = (stored?: string | null) => {
+  const [url, setUrl] = useState<string | null>(
+    stored && !isPrivateAttachment(stored) ? stored : null,
+  );
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    if (!stored) return;
+    if (!isPrivateAttachment(stored)) { setUrl(stored); return; }
+    getAttachmentUrl(stored).then((u) => {
+      if (cancelled) return;
+      if (u) setUrl(u); else setFailed(true);
+    });
+    return () => { cancelled = true; };
+  }, [stored]);
+  return { url, failed };
+};
+
+export const AttachmentPreview = ({ url: stored, type, fileName, onRemove }: AttachmentPreviewProps) => {
+  const { url: resolved, failed } = useResolvedAttachmentUrl(stored);
+  const url = resolved ?? "";
+  const [imageFailedRaw, setImageFailed] = useState(false);
+  const imageFailed = imageFailedRaw || failed;
   return (
     <div className="relative inline-block mb-2">
       {type === 'image' ? (

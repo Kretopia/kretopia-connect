@@ -8,6 +8,7 @@ import { MessageReactions, ReactionPicker, type ReactionRow } from "@/components
 import { VoiceNotePlayer } from "@/components/messages/VoiceNoteRecorder";
 import { SharedContentCard, type SharedContentType } from "@/components/messages/SharedContentCard";
 import type { Message, OtherUser } from "./types";
+import { useResolvedAttachmentUrl } from "@/components/messages/MessageAttachments";
 
 interface Props {
   msg: Message;
@@ -36,6 +37,9 @@ export const MessageBubble = ({ msg, isOwn, showAvatar, reactions, currentUserId
 
   const nativeImage = msg.attachment_type === 'image' && msg.attachment_url;
   const nativeFile = msg.attachment_type === 'file' && msg.attachment_url;
+  const { url: attUrl, failed: attFailed } = useResolvedAttachmentUrl(
+    msg.attachment_type === 'image' || msg.attachment_type === 'file' ? msg.attachment_url : null,
+  );
   const nativeVoice = msg.attachment_type === 'voice' && msg.attachment_url;
   const legacyImageMatch = !nativeImage && !nativeFile && msg.content.match(/\[📷 Image\]\((https?:\/\/[^\)]+)\)/);
   const legacyFileMatch = !nativeImage && !nativeFile && msg.content.match(/\[📎 ([^\]]+)\]\((https?:\/\/[^\)]+)\)/);
@@ -98,9 +102,9 @@ export const MessageBubble = ({ msg, isOwn, showAvatar, reactions, currentUserId
                 <ImageOff className="h-3.5 w-3.5 shrink-0" /> Image unavailable
               </div>
             ) : (
-              <button onClick={(e) => { e.stopPropagation(); onOpenLightbox(msg.attachment_url!); }} className="block">
+              <button onClick={(e) => { e.stopPropagation(); if (attUrl) onOpenLightbox(attUrl); }} className="block">
                 <img
-                  src={msg.attachment_url!}
+                  src={attUrl ?? undefined}
                   alt="Shared image"
                   loading="lazy"
                   onError={() => setImageFailed(true)}
@@ -112,7 +116,7 @@ export const MessageBubble = ({ msg, isOwn, showAvatar, reactions, currentUserId
 
           {nativeFile && (
             <a
-              href={msg.attachment_url!}
+              href={attUrl ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
