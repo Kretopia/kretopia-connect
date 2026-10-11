@@ -100,6 +100,16 @@ export function PassportHero({
   const hasTrust = profile.email_verified || profile.phone_verified || profile.id_verified || profile.payment_verified;
   const isVerifiedPro = standing.level >= 3;
 
+  // No banner of their own: a stable Kretopia default, picked once per person
+  // (hash of their id) so it never flickers between renders. Both assets are
+  // wide, text-free Kretopia imagery whose centre crop is safe.
+  const fallbackCover = useMemo(() => {
+    const key = String(profile?.user_id ?? profile?.id ?? "");
+    let h = 0;
+    for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+    return [kretopiaHeroFallback, heroCreatorsFallback][h % 2];
+  }, [profile?.user_id, profile?.id]);
+
   return (
     <HoloCard>
       <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-lg">
@@ -119,17 +129,19 @@ export function PassportHero({
             />
           ) : null}
           {!profile.cover_image_url && (
-            <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-              <div className="absolute -right-8 -top-20 h-56 w-56 rotate-45 border border-foreground/20 sm:h-72 sm:w-72" />
-              <div className="absolute right-5 -top-24 h-56 w-56 rotate-45 border border-foreground/10 sm:h-72 sm:w-72" />
+            <>
               <img
-                src={kMarkAsset.url}
+                src={fallbackCover}
                 alt=""
+                aria-hidden
                 draggable={false}
-                className="absolute right-6 top-1/2 h-24 w-24 -translate-y-1/2 select-none object-contain opacity-[0.12] sm:h-32 sm:w-32"
+                loading="lazy"
+                className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
               />
-              <Fingerprint className="h-20 w-20 text-foreground/20 sm:h-28 sm:w-28" strokeWidth={0.8} />
-            </div>
+              <div className="absolute bottom-2 right-3 rounded-full border border-border bg-card/90 px-2.5 py-1 text-[10px] text-muted-foreground">
+                Kretopia default — add your own banner anytime.
+              </div>
+            </>
           )}
           <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
           {/* Kretopia's own mark and name: this is a Kretopia Passport, wherever it is shown. */}
