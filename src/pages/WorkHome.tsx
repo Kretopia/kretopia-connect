@@ -1,6 +1,4 @@
-import { useState, useEffect } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { useAccountTone } from "@/hooks/useAccountTone";
 import { WorkHomeSkeleton } from "@/pages/WorkHomeSkeleton";
 import { BrandWorkHome } from "@/pages/BrandWorkHome";
 import { CreatorWorkHome } from "@/pages/CreatorWorkHome";
@@ -18,28 +16,13 @@ import { CreatorWorkHome } from "@/pages/CreatorWorkHome";
  * changing what either one renders.
  */
 const WorkHome = () => {
-  const { user } = useAuth();
-  const [accountType, setAccountType] = useState<string | null>(null);
-  const [checking, setChecking] = useState(true);
-
-  useEffect(() => {
-    if (!user) { setChecking(false); return; }
-    supabase
-      .from("profiles")
-      .select("account_type")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        setAccountType(data?.account_type || "individual");
-        setChecking(false);
-      });
-  }, [user]);
+  const { isBusiness, loading: checking } = useAccountTone();
 
   if (checking) {
     return <WorkHomeSkeleton variant="shell" />;
   }
 
-  if (accountType === "company") return <BrandWorkHome />;
+  if (isBusiness) return <BrandWorkHome />;
   return <CreatorWorkHome />;
 };
 

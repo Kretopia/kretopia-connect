@@ -5,6 +5,7 @@ import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
 import { KGradientDefs } from "@/components/brand/KGradientDefs";
 import { SceneBanner } from "@/components/brand/SceneBanner";
 import type { KretoSceneId } from "@/components/brand/kretoScenes";
+import { CompanyModeBadge } from "@/components/company/CompanyModeBadge";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -29,6 +30,7 @@ interface FeaturePageHeaderProps {
   allowOverflow?: boolean;
   /** A Kreto scene in the expression of this feature, shown under the title as a banner signed Kretopia. */
   scene?: KretoSceneId;
+  company?: boolean;
 }
 
 /**
@@ -41,7 +43,7 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene, company = false }: FeaturePageHeaderProps) {
   return (
     <div
       className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
@@ -82,13 +84,18 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         oneLine={oneLine}
         compact={compact}
         preTitle={
-          tutorial && (
+          (tutorial || company) && (
+            <div className="flex flex-col items-center gap-3">
+            {company && <CompanyModeBadge />}
+            {tutorial && (
             <FeatureAITutorial
               featureKey={tutorial.featureKey}
               label={tutorial.label}
               steps={tutorial.steps}
               className="mt-0 relative z-10"
             />
+            )}
+            </div>
           )
         }
         footer={tabs && <div className="mt-6">{tabs}</div>}

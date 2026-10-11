@@ -15,7 +15,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { PageBackButton } from "@/components/navigation/PageBackButton";
-import { KretoMark } from "@/components/brand/KretoMark";
 import { TALENT_FINDER_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import {
   Sparkles, MapPin, Star,
@@ -24,8 +23,9 @@ import {
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
-
-const ACCENT = "hsl(var(--energy))";
+import { useAccountTone } from "@/hooks/useAccountTone";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { extractInvokeError } from "@/lib/extractInvokeError";
 
 interface TalentMatch {
   user_id: string;
@@ -45,6 +45,7 @@ export default function TalentFinder() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { isBusiness } = useAccountTone();
   const { toast } = useToast();
   const { guard: guardAiMatch } = useFeatureGate("aiApplicantRankings");
 
@@ -54,6 +55,18 @@ export default function TalentFinder() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [shortlisted, setShortlisted] = useState<Record<string, boolean>>({});
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    supabase.from("talent_shortlist").select("talent_user_id")
+      .eq("company_user_id", user.id).eq("status", "shortlisted")
+      .then(({ data }) => {
+        if (!cancelled) setShortlisted(Object.fromEntries((data ?? []).map(row => [row.talent_user_id, true])));
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // If we landed here from the Outcome Composer with a brief, surface it.
   useEffect(() => {
@@ -89,7 +102,7 @@ export default function TalentFinder() {
       }
     } catch (err: any) {
       console.error("Talent match error:", err);
-      toast({ title: "Matching failed", description: err.message || "Please try again.", variant: "destructive" });
+       toast({ title: "Matching failed", description: await extractInvokeError(err) || "Please try again.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -97,18 +110,22 @@ export default function TalentFinder() {
 
   const handleShortlist = async (talent: TalentMatch) => {
     if (!user) return;
+    setSavingId(talent.user_id);
     try {
-      await supabase.from("talent_shortlist").upsert({
+      const { error } = await supabase.from("talent_shortlist").upsert({
         company_user_id: user.id,
         talent_user_id: talent.user_id,
         match_score: talent.match_score,
         match_reasons: talent.match_reasons,
         status: "shortlisted",
       }, { onConflict: "company_user_id,talent_user_id,opportunity_id" });
+      if (error) throw error;
       setShortlisted(prev => ({ ...prev, [talent.user_id]: true }));
       toast({ title: `${talent.full_name} shortlisted!` });
     } catch {
       toast({ title: "Failed to shortlist", variant: "destructive" });
+    } finally {
+      setSavingId(null);
     }
   };
 
@@ -118,9 +135,9 @@ export default function TalentFinder() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-[hsl(var(--energy))] bg-[hsl(var(--energy)/0.1)] border-[hsl(var(--energy)/0.25)]";
-    if (score >= 70) return "text-[hsl(var(--signal-teal))] bg-[hsl(var(--signal-teal))]/10 border-[hsl(var(--signal-teal))]/25";
-    return "text-amber-500 bg-amber-500/10 border-amber-500/20";
+    if (score >= 85) return "text-primary bg-primary/10 border-primary/25";
+    if (score >= 70) return "text-success bg-success/10 border-success/25";
+    return "text-muted-foreground bg-muted border-border";
   };
 
   const getScoreLabel = (score: number) => {
@@ -136,32 +153,32 @@ export default function TalentFinder() {
         <meta name="description" content="Describe your project and instantly find the best creative talent — ranked by verified work." />
       </Helmet>
 
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background">
         <div className="relative">
           <PageBackButton />
           <FeaturePageHeader
             scene="talent-search"
             eyebrow="Hiring"
-            title="Smart Talent Finder."
-            accentTitle="Real matches, in real time."
+            company={isBusiness}
+            title="Find your people"
+            accentTitle="Build your team"
             subtitle="Describe what you need — Kreto searches Kretopia's live creator network and ranks real, verified people against your brief."
             tutorial={{ featureKey: "talent-finder", label: "How Smart Talent Finder works", steps: TALENT_FINDER_TUTORIAL }}
           />
         </div>
 
-        {/* max-w-4xl, not the max-w-2xl this carried before — same class of
-            fix as BrandWorkHome/CompanyProfileView (both moved to max-w-6xl
-            earlier today): 672px read as a cramped column with ~384px of
-            dead margin on each side at a 1440px viewport. This page is a
-            single-column search/results list rather than a multi-column
-            dashboard grid, so it doesn't need the full max-w-6xl those
-            pages got — max-w-4xl gives real breathing room to the result
-            cards (name, score, match reasons, actions) without leaving
-            them looking sparse in an oversized row. */}
-        <div className="max-w-4xl mx-auto px-4 pt-6 space-y-4">
+        <StudioFeatureShell wrapped={{ name: "Talent", status: hasSearched ? `${matches.length} matches · ${Object.values(shortlisted).filter(Boolean).length} shortlisted` : "Your brief · Your next team" }}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate("/opportunity-dashboard")}>
+              <UserPlus className="h-4 w-4" /> Review applicants
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate("/match")}>
+              <Eye className="h-4 w-4" /> Browse creators
+            </Button>
+          </div>
           <div className="flex justify-end">
             <Badge variant="secondary" className="gap-1 text-xs shrink-0">
-              <Crown className="h-3 w-3" style={{ color: ACCENT }} /> Pro feature
+              <Crown className="h-3 w-3"  /> Pro feature
             </Badge>
           </div>
 
@@ -172,14 +189,11 @@ export default function TalentFinder() {
         >
           {/* Brief Input */}
           {!hasSearched || matches.length === 0 ? (
-            <Card className="overflow-hidden rounded-2xl shadow-none border-border/60">
-              <div
-                className="p-5 space-y-4"
-                style={{ background: "radial-gradient(120% 100% at 0% 0%, hsl(var(--energy) / 0.08), transparent 60%)" }}
-              >
+            <Card className="overflow-hidden rounded-lg shadow-none border-border/60">
+              <div className="p-5 space-y-4 bg-card">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium flex items-center gap-1.5">
-                    <Briefcase className="h-4 w-4" style={{ color: ACCENT }} />
+                    <Briefcase className="h-4 w-4"  />
                     What do you need?
                   </label>
                   <Textarea
@@ -195,15 +209,14 @@ export default function TalentFinder() {
                 </div>
 
                 <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                  <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0" style={{ color: ACCENT }} />
+                  <Zap className="h-3.5 w-3.5 mt-0.5 shrink-0"  />
                   <span>Include role, skills, budget, timeline, and location preferences for better matches</span>
                 </div>
 
                 <Button
                   onClick={handleFindTalent}
                   disabled={loading || brief.trim().length < 10}
-                  className="w-full gap-2 text-white hover:opacity-90"
-                  style={{ backgroundColor: ACCENT }}
+                   className="w-full gap-2"
                   size="lg"
                 >
                   {loading ? (
@@ -222,7 +235,7 @@ export default function TalentFinder() {
             </Card>
           ) : (
             /* Brief summary bar when results are showing */
-            <Card className="p-3 rounded-2xl shadow-none border-border/60">
+            <Card className="p-3 rounded-lg shadow-none border-border/60">
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted-foreground mb-0.5">Your brief:</p>
@@ -255,7 +268,7 @@ export default function TalentFinder() {
           {loading && (
             <div className="space-y-3 py-4">
               <div className="flex flex-col items-center gap-3 text-center">
-                <KretoMark size="md" state="active" />
+                <KretopiaSpinner className="h-8 w-8" />
                 <div>
                   <p className="font-medium text-sm">Searching Kretopia's live creator network...</p>
                   <p className="text-xs text-muted-foreground">Scoring real profiles by skills, experience & fit against your brief</p>
@@ -269,7 +282,7 @@ export default function TalentFinder() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: ACCENT }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary ai-ambient-breathe"  />
                   {matches.length} match{matches.length !== 1 ? "es" : ""} found · live from Kretopia's creator network
                 </p>
                 <Button
@@ -286,7 +299,7 @@ export default function TalentFinder() {
               {matches.map((talent, idx) => (
                 <Card
                   key={talent.user_id}
-                  className="p-3 rounded-2xl shadow-none border-border/60 hover:border-[hsl(var(--energy)/0.35)] transition-colors cursor-pointer"
+                  className="p-3 rounded-lg shadow-none border-border/60 hover:border-primary/35 transition-colors cursor-pointer"
                   onClick={() => navigate(`/profile/${talent.user_id}`)}
                 >
                   <div className="flex items-start gap-3">
@@ -312,18 +325,18 @@ export default function TalentFinder() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-semibold truncate">{talent.full_name}</span>
-                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0" style={{ color: ACCENT }} />
+          
                       </div>
                       {talent.role && (
                         <p className="text-xs text-muted-foreground truncate">{talent.role}</p>
                       )}
 
                       {/* AI headline */}
-                      <p className="text-xs mt-1 italic line-clamp-1" style={{ color: ACCENT, opacity: 0.85 }}>"{talent.headline}"</p>
+                      <p className="text-xs mt-1 text-muted-foreground line-clamp-2" >"{talent.headline}"</p>
 
                       {/* Match reasons */}
                       <div className="flex flex-wrap gap-1 mt-1.5">
-                        {talent.match_reasons.slice(0, 2).map((reason, i) => (
+                        {(talent.match_reasons ?? []).slice(0, 2).map((reason, i) => (
                           <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
                             {reason}
                           </Badge>
@@ -337,14 +350,14 @@ export default function TalentFinder() {
                       )}
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Button
                           size="sm"
                           variant="outline"
                           className="h-7 text-xs gap-1"
                           onClick={e => { e.stopPropagation(); navigate(`/profile/${talent.user_id}`); }}
                         >
-                          <Eye className="h-3 w-3" /> View
+                          <Eye className="h-3 w-3" /> View Passport
                         </Button>
                         {shortlisted[talent.user_id] ? (
                           <Button
@@ -360,9 +373,10 @@ export default function TalentFinder() {
                             size="sm"
                             variant="secondary"
                             className="h-7 text-xs gap-1"
+                             disabled={savingId === talent.user_id}
                             onClick={e => { e.stopPropagation(); handleShortlist(talent); }}
                           >
-                            <UserPlus className="h-3 w-3" /> Shortlist
+                            {savingId === talent.user_id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />} Shortlist
                           </Button>
                         )}
                       </div>
@@ -372,10 +386,10 @@ export default function TalentFinder() {
               ))}
 
               {/* Post as Gig CTA */}
-              <Card className="p-4 rounded-2xl shadow-none border-dashed" style={{ borderColor: "hsl(var(--energy) / 0.3)", backgroundColor: "hsl(var(--energy) / 0.05)" }}>
+              <div className="p-4 border-t border-border">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl shrink-0" style={{ backgroundColor: "hsl(var(--energy) / 0.1)" }}>
-                    <FileText className="h-5 w-5" style={{ color: ACCENT }} />
+                  <div className="p-2 rounded-lg shrink-0 bg-primary/10">
+                    <FileText className="h-5 w-5"  />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">Want more applicants?</p>
@@ -385,7 +399,7 @@ export default function TalentFinder() {
                     <Send className="h-3 w-3" /> Post
                   </Button>
                 </div>
-              </Card>
+              </div>
             </div>
           )}
 
@@ -406,7 +420,7 @@ export default function TalentFinder() {
             </div>
           )}
         </FreeTierGate>
-        </div>
+        </StudioFeatureShell>
       </div>
     </PageTransition>
   );

@@ -5,6 +5,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   LogOut,
+  Plus,
   Menu,
   Settings,
   Users,
@@ -66,6 +67,8 @@ import { StorageMeter } from "@/components/storage/StorageMeter";
 import { useCrewUnread } from "@/hooks/useCrewUnread";
 import { MessagesDrawer } from "@/components/messages/MessagesDrawer";
 import { SettingsDrawer } from "@/components/SettingsDrawer";
+import { useAccountTone } from "@/hooks/useAccountTone";
+import { CompanyModeBadge } from "@/components/company/CompanyModeBadge";
 
 // useNavMode removed — single unified nav
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -84,7 +87,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [guestMenuOpen, setGuestMenuOpen] = useState(false);
-  const [accountType, setAccountType] = useState<"individual" | "company">("individual");
+  const { isBusiness: isCompany } = useAccountTone();
+  const accountType = isCompany ? "company" : "individual";
   const [isManagerMode, setIsManagerMode] = useState(false);
   // Only for the /landing connected-avatar trigger below -- everywhere
   // else the account menu opens off a plain Menu icon, not a photo.
@@ -132,12 +136,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
     Promise.resolve(
       supabase
         .from("profiles")
-        .select("account_type, is_manager_mode, avatar_url, full_name")
+        .select("is_manager_mode, avatar_url, full_name")
         .eq("user_id", user.id)
         .maybeSingle(),
     )
       .then(({ data }) => {
-        if (data?.account_type) setAccountType(data.account_type);
+        
         if (data?.is_manager_mode) setIsManagerMode(true);
         setAvatarUrl(data?.avatar_url ?? null);
         setAvatarName(data?.full_name ?? "");
@@ -175,7 +179,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
     navigate(path);
   };
 
-  const isCompany = accountType === "company";
 
   // Kretopia 2.0 Daily Driver — desktop nav mirrors mobile bottom nav
   const desktopNavItems = isCompany
@@ -398,6 +401,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <SheetHeader className="pr-8 text-left">
                   <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
+                  {isCompany && <CompanyModeBadge className="w-fit" />}
                 </SheetHeader>
 
                 {/* [&>*]:shrink-0 is load-bearing, not decorative: every row
@@ -415,7 +419,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     rendered but invisible underneath the first. */}
                 <div className="flex flex-col gap-1 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] [&>*]:shrink-0">
                   {isCompany ? (
-                    /* ====== COMPANY MENU (unchanged) ====== */
+                    /* Company workspace and the same shared feature access as Creator. */
                     <>
                       <MenuGrid>
                         <MenuGridTile
@@ -425,9 +429,15 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           path="/inbox"
                           badge={inboxBadge}
                         />
-                        {/* "Find Talent" removed — already one tap away via bottom nav (mobile)
-                            and the top desktop nav, at every breakpoint this menu is reachable from. */}
-                        {/* Events hidden from nav — /meetup route alive, event Studios cover the workflow. */}
+                        {[
+                          { icon: LayoutGrid, label: "Studios", path: "/desk" },
+                          { icon: Briefcase, label: "Gigs", path: "/opportunities" },
+                          { icon: Search, label: "Talent", path: "/talent-finder" },
+                          { icon: Wallet, label: "Pay", path: "/thrivepay" },
+                          { icon: Users, label: "Applicants", path: "/opportunity-dashboard" },
+                          { icon: Plus, label: "Post a Gig", path: "/post-opportunity" },
+                          { icon: Building2, label: "Clients", path: "/clients" },
+                        ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
                         <MenuGridTile
                           icon={User}
                           label="Company Page"
@@ -443,6 +453,25 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           />
                         )}
                       </MenuGrid>
+                      <Separator className="my-3" />
+                       <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Explore</p>
+                       <MenuGrid>
+                         {[
+                           { icon: Sun, label: "Today", path: "/" },
+                           { icon: Compass, label: "Scout", path: "/scout" },
+                           { icon: Theater, label: "Stages", path: "/circle" },
+                           { icon: Sparkles, label: "Kreto", path: "/kreto" },
+                           { icon: Heart, label: "Match", path: "/match" },
+                           { icon: Gift, label: "Perks", path: "/perks" },
+                           { icon: CalendarDays, label: "Events", path: "/meetup" },
+                           { icon: Video, label: "Recordings", path: "/recordings" },
+                           { icon: Sparkles, label: "Spotlight", path: "/spotlight" },
+                           { icon: Database, label: "Credits", path: "/credits" },
+                           { icon: Crown, label: "Founding Circle", path: "/founding-member" },
+                           { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
+                           { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
+                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
+                       </MenuGrid>
                       <Separator className="my-3" />
                       <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Account
@@ -651,6 +680,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       {user?.id === "ef429714-ea32-4f08-a4f9-ef0226f1804b" && (
                         <>
                           <Separator className="my-3" />
+
+                       <Separator className="my-3" />
                           <MenuButton icon={Shield} label="Admin Panel" onClick={() => handleNavigation("/admin")} />
                         </>
                       )}

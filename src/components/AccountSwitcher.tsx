@@ -18,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAccountTone } from "@/hooks/useAccountTone";
 
 interface AccountSwitcherProps {
   currentAccountType: "individual" | "company";
@@ -28,6 +29,7 @@ interface AccountSwitcherProps {
 
 export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeChange, variant = "menu" }: AccountSwitcherProps) => {
   const { user } = useAuth();
+  const { updateAccountType } = useAccountTone();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [showConfirm, setShowConfirm] = useState(false);
@@ -89,15 +91,14 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
 
       if (error) throw error;
 
+      await updateAccountType(targetType);
       toast({
         title: `Switched to ${targetLabel}`,
         description: `Your profile is now displaying as a ${targetLabel.toLowerCase()} account.`,
       });
 
       onSwitch?.();
-      // Navigate to profile page after switch, then reload to refresh UI
-      navigate("/profile");
-      window.location.reload();
+      navigate("/desk");
     } catch (error: any) {
       toast({
         title: "Switch failed",

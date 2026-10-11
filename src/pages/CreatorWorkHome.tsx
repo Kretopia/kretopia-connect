@@ -16,6 +16,8 @@ import { STUDIO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { PROJECT_COLUMNS_EXCLUDING_LOCKED_FINANCIALS } from "@/lib/projectColumns";
 import { WorkHomeSkeleton } from "@/pages/WorkHomeSkeleton";
 import { TodayStrip } from "@/components/desk/TodayStrip";
+import { CompanyWorkspaceActions } from "@/components/company/CompanyWorkspaceActions";
+import { STUDIO_BRAND_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
 
 interface ProjectPersonRow {
@@ -34,7 +36,7 @@ interface ProjectPersonRow {
  * account-type variant is its own navigable, independently testable
  * file, per the Studio-home scalability pass.
  */
-export const CreatorWorkHome = () => {
+export const CreatorWorkHome = ({ company = false }: { company?: boolean }) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState<any[]>([]);
@@ -233,16 +235,19 @@ export const CreatorWorkHome = () => {
   return (
     <PageTransition>
       <Helmet>
-        <title>Studio | Kretopia</title>
+        <title>{company ? "Company Studios | Kretopia" : "Studio | Kretopia"}</title>
         <meta name="description" content="Studio — start a Project by voice or text, keep the work in one place, and wrap with credits and an invoice." />
       </Helmet>
 
       <FeaturePageHeader
-        eyebrow="Studio"
-        title="Start with what"
-        accentTitle="you're making."
+        company={company}
+        eyebrow={company ? "Studios" : "Studio"}
+        title={company ? "Your next production" : "Start with what"}
+        accentTitle={company ? "starts here" : "you're making."}
         subtitle="Kreto turns it into a working Project. The work happens in one place, and your credits and invoice are ready when it wraps."
-        tutorial={{ featureKey: "studio", label: "How Studio works", steps: STUDIO_TUTORIAL }}
+        tutorial={company
+          ? { featureKey: "studio-brand", label: "How Studio works", steps: STUDIO_BRAND_TUTORIAL }
+          : { featureKey: "studio", label: "How Studio works", steps: STUDIO_TUTORIAL }}
       />
 
       {/* Wider on desktop, capped for readability */}
@@ -263,6 +268,7 @@ export const CreatorWorkHome = () => {
           projectCount={projects.length}
           activeCount={activeProjects.length}
           rightNow={
+            <>
             <StudioPulse
               variant="wrapped"
               recentCollaborators={recentCollaborators}
@@ -282,6 +288,8 @@ export const CreatorWorkHome = () => {
               onCommandPalette={openPalette}
               onWrapWeek={openWrapWeek}
             />
+            {company && <CompanyWorkspaceActions />}
+            </>
           }
           projects={
             <StudioProjectsDashboard
