@@ -97,7 +97,7 @@ export const MessageBubble = ({ msg, isOwn, showAvatar, reactions, currentUserId
           )}
 
           {nativeImage && (
-            imageFailed ? (
+            (imageFailed || attFailed) ? (
               <div className="flex items-center gap-2 max-w-[240px] rounded-2xl border border-border bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
                 <ImageOff className="h-3.5 w-3.5 shrink-0" /> Image unavailable
               </div>
