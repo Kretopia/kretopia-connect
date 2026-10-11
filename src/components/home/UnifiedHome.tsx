@@ -491,7 +491,7 @@ export const UnifiedHome = () => {
           guests get a bare `pb-28` (112px) empty block below the real
           footer with nothing in it. */}
       {user && (
-        <div className="mx-auto px-3 sm:px-4 pb-28 max-w-7xl">
+        <div className="mx-auto px-3 sm:px-4 max-w-7xl">
           <div className="flex flex-wrap items-center justify-center gap-4 text-[10px] text-muted-foreground mt-10 pb-4">
             <Link to="/about" className="hover:text-foreground transition-colors">{t("common.about")}</Link>
             <span className="text-border">·</span>

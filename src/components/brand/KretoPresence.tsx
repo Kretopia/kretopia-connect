@@ -29,7 +29,7 @@
  * this component's own interactive button, not a caller-supplied claim, so
  * it is tracked internally -- see the interactive branch below.
  */
-import { useState } from "react";
+import { useId, useState } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretoMark } from "@/components/brand/KretoMark";
