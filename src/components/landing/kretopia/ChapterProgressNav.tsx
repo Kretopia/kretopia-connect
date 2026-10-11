@@ -103,13 +103,13 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
           const active = i === activeIndex;
           return (
             <Button
-              variant="ghost"
+              variant="link"
               key={c.id}
               type="button"
               onClick={() => jumpTo(c.id)}
               aria-current={active ? "true" : undefined}
               aria-label={`Jump to ${c.label} chapter`}
-                className="group relative h-11 w-8 shrink-0 p-0 hover:bg-transparent focus-visible:ring-primary"
+                className="group relative h-11 w-8 shrink-0 p-0 text-foreground no-underline hover:no-underline hover:bg-transparent focus-visible:ring-primary"
             >
               <span
                   className="absolute right-full mr-2 text-[10px] font-medium uppercase whitespace-nowrap text-foreground bg-background/90 px-2 py-1 opacity-0 -translate-x-1 transition-all duration-200 motion-reduce:transition-none group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0"
@@ -118,7 +118,7 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
               </span>
               <span
                   aria-hidden
-                  className={`block w-0.5 rounded-full bg-foreground transition-all duration-300 motion-reduce:transition-none ${active ? "h-8 opacity-100" : "h-2 opacity-40 group-hover:h-4 group-hover:opacity-80"}`}
+                  className={`block w-0.5 shrink-0 rounded-full bg-foreground transition-all duration-300 motion-reduce:transition-none ${active ? "h-8 opacity-100" : "h-2 opacity-40 group-hover:h-4 group-hover:opacity-80"}`}
               />
             </Button>
           );
