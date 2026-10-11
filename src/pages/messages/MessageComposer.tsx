@@ -15,10 +15,11 @@ interface Props {
   replyTo: ReplyTo | null;
   clearReply: () => void;
   onSendVoice: (url: string, duration: number) => void;
+  receiverId?: string | null;
 }
 
 export const MessageComposer = forwardRef<HTMLInputElement, Props>(
-  ({ newMessage, onChange, onSubmit, attachment, setAttachment, replyTo, clearReply, onSendVoice }, ref) => (
+  ({ newMessage, onChange, onSubmit, attachment, setAttachment, replyTo, clearReply, onSendVoice, receiverId }, ref) => (
     <div className="p-3 sm:p-4 border-t border-border bg-card/95 backdrop-blur-sm space-y-2">
       {replyTo && <MessageReplyBanner replyTo={replyTo} onCancel={clearReply} />}
       {attachment && (
@@ -36,6 +37,7 @@ export const MessageComposer = forwardRef<HTMLInputElement, Props>(
         <MessageAttachments
           onAttach={(url, type, fileName) => setAttachment({ url, type, fileName })}
           disabled={!!attachment}
+          receiverId={receiverId}
         />
         <VoiceNoteRecorder onSend={onSendVoice} disabled={!!attachment} />
         <div className="flex-1 relative">

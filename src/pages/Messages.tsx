@@ -303,6 +303,7 @@ const Messages = () => {
               replyTo={replyTo}
               clearReply={() => setReplyTo(null)}
               onSendVoice={sendVoiceNote}
+              receiverId={selectedConversation}
             />
           </div>
         ) : (
