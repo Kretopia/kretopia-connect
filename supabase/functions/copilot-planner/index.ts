@@ -4,7 +4,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotContext.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
-import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
+import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
@@ -138,7 +138,7 @@ Return ONLY this JSON shape (no prose, no fences):
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: GEMINI_3_1_PRO,
+            model: GEMINI_3_8_FLASH,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: goal },

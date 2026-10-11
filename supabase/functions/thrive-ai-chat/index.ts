@@ -6,7 +6,7 @@ import {
   getOrCreateCopilotThread,
 } from "../_shared/copilotContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
-import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
+import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total streaming
@@ -594,7 +594,7 @@ Short replies like "yes", "no", "ok", "sure", "do it", "go ahead", "nope", "let'
             // Use the pro-preview model everywhere — flash drops <action>/<plan> tags
             // under load, which surfaces as Thrive saying "I'll do X" with no card
             // appearing. Pro-preview reliably follows the tag protocol.
-            model: GEMINI_3_1_PRO,
+            model: GEMINI_3_8_FLASH,
             messages: modelMessages,
             stream: stream,
           }),
