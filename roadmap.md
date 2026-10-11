@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Landing Match video and scroll navigation
-- [ ] Inspect and improve Match video delivery and HD encoding without replacing its content.
-- [ ] Replace scroll dots with theme-aware vertical marks that expand for the active chapter.
-- [ ] Verify video playback and active navigation.
+- [x] Preserve native 1440×1800 Match master; lossless fast-start optimization and CDN delivery (HTTP 206 verified).
+- [x] Replace scroll dots with theme-aware vertical marks that expand for the active chapter.
+- [x] Verify navigation visually, active Match → Studio, targeted test and lossless video decode/hash.
+- [ ] Confirm browser playback on a real device — sandbox Chromium lacks H.264 decoding; native source and optimized copy decode successfully with FFmpeg.
 
 ## Company mode overhaul
 - [x] Synchronize account switching and Company navigation across pages.
