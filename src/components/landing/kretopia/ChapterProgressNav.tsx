@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { CHAPTER_REGISTRY as CHAPTERS } from "./chapterRegistry";
+import { Button } from "@/components/ui/button";
 
 interface ChapterProgressNavProps {
   /** Whether the below-fold chapters have mounted yet — re-scans anchors once true. */
@@ -96,28 +97,30 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
       {/* Desktop: vertical dot rail */}
       <nav
         aria-label="Landing tutorial chapters"
-        className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col items-end gap-3"
+         className="hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-40 flex-col items-end gap-1"
       >
         {CHAPTERS.map((c, i) => {
           const active = i === activeIndex;
           return (
-            <button
+            <Button
+              variant="link"
               key={c.id}
               type="button"
               onClick={() => jumpTo(c.id)}
               aria-current={active ? "true" : undefined}
               aria-label={`Jump to ${c.label} chapter`}
-               className="group flex items-center gap-2.5 focus-visible:outline-none"
+                className="group relative h-11 w-8 shrink-0 p-0 text-foreground no-underline hover:no-underline hover:bg-transparent focus-visible:ring-primary"
             >
               <span
-                 className="text-[10px] font-medium uppercase whitespace-nowrap text-foreground opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0"
+                  className="absolute right-full mr-2 text-[10px] font-medium uppercase whitespace-nowrap text-foreground bg-background/90 px-2 py-1 opacity-0 -translate-x-1 transition-all duration-200 motion-reduce:transition-none group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0"
               >
                 {c.label}
               </span>
               <span
-                 className={`block rounded-full bg-[image:var(--k-text-gradient)] transition-all duration-300 group-hover:scale-125 group-focus-visible:ring-2 group-focus-visible:ring-primary group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-background ${active ? "h-2 w-2 opacity-100 shadow-[0_0_0_4px_hsl(var(--background))]" : "h-1.5 w-1.5 opacity-65 group-hover:opacity-100"}`}
+                  aria-hidden
+                  className={`block w-0.5 shrink-0 rounded-full bg-foreground transition-all duration-300 motion-reduce:transition-none ${active ? "h-8 opacity-100" : "h-2 opacity-40 group-hover:h-4 group-hover:opacity-80"}`}
               />
-            </button>
+            </Button>
           );
         })}
       </nav>

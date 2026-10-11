@@ -31,6 +31,7 @@ import passportImg    from "@/assets/kretopia/chapter-passport.jpg";
 import scoutImg       from "@/assets/kretopia/chapter-scout.jpg";
 import studioImg      from "@/assets/kretopia/chapter-studio.jpg";
 import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
+import matchHdAsset from "@/assets/kretopia/match-hd.mp4.asset.json";
 
 // HD chapter videos — landing overhaul (24/09/2026). Served from /public
 // (not imported) since Vite would otherwise inline/hash large binaries
@@ -41,9 +42,9 @@ import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
 const studioVideo = "/videos/kretovideo1.mp4";
 const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
-// 1272x720 (16:9) in the same portrait frame as every other chapter: the
-// frame is the section's dimensions, the video is cropped to it (centred).
-const matchVideo = "/videos/kretovideomatch.mp4";
+// Native 1440×1800 master, losslessly fast-start optimized and CDN served.
+// Local Vite has no CDN proxy; use the identical native master for local preview.
+const matchVideo = import.meta.env.DEV ? "/videos/kretovideomatch.mp4" : matchHdAsset.url;
 // Its own first frame as the poster: the still never differs from the video.
 const matchPoster = "/videos/kretovideomatch-poster.jpg";
 
