@@ -11,6 +11,10 @@ import {
   stopPlayback,
 } from "@/lib/thriveVoice";
 import ReactMarkdown from "react-markdown";
+
+/** Kreto answers in Markdown; drop any stray HTML tags so none show as text. */
+const stripHtml = (t: string) =>
+  t.replace(/<br\s*\/?>/gi, "\n").replace(/<\/(p|div|li)>/gi, "\n").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ");
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -867,7 +871,7 @@ export const ThriveAgentFab = () => {
                 >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_pre]:my-1 [&_pre]:text-xs">
-                      <ReactMarkdown>{extractActions(m.content).visible || "…"}</ReactMarkdown>
+                      <ReactMarkdown>{stripHtml(extractActions(m.content).visible) || "…"}</ReactMarkdown>
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>
