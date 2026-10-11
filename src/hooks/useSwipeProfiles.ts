@@ -4,6 +4,22 @@ import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/Sw
 import { locationMatchesFilter } from '@/lib/locationGroups';
 import { buildMyMatchContext, computeMatchScore, extractSkillsArray, fetchPastCollaboratorIds, type MatchSignals } from '@/lib/matchScoring';
 
+const STOP = new Set(['and', 'the', 'for', 'with', 'from', 'that', 'this', 'your', 'you', 'are', 'des', 'les', 'une', 'pour']);
+function interestTokens(...parts: unknown[]): Set<string> {
+  const out = new Set<string>();
+  const add = (v: unknown) => {
+    if (!v) return;
+    if (Array.isArray(v)) return v.forEach(add);
+    if (typeof v === 'object') return add((v as any).skill ?? (v as any).name);
+    String(v).toLowerCase().split(/[^a-z0-9à-ÿ]+/).forEach((w) => {
+      if (w.length < 3 || STOP.has(w)) return;
+      out.add(w.length > 5 ? w.slice(0, 5) : w); // loose stem: "photographer" ~ "photography"
+    });
+  };
+  parts.forEach(add);
+  return out;
+}
+
 export interface SwipeProfile {
   id: string;
   user_id: string;
@@ -45,7 +61,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchProfiles = useCallback(async () => {
+  const fetchProfiles = useCallback(async (forceRescan = false) => {
     if (!currentUserId) {
       setLoading(false);
       return;
@@ -110,10 +126,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           latitude, longitude
         `)
         .neq('user_id', currentUserId)
-        .not('avatar_url', 'is', null)
-        .neq('avatar_url', '')
         .eq('onboarding_completed', true)
-        .limit(200);
+        .limit(1000);
 
       if (profileError) throw profileError;
 
@@ -181,11 +195,13 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // ranking. Same algorithm the grid (BrowseCreators) uses, via
       // src/lib/matchScoring.ts, so "who ranks where" agrees everywhere.
       const [{ data: meProfile }, pastCollabIds] = await Promise.all([
-        supabase.from('profiles').select('role, sub_roles, location, professional_skills, passion_skills').eq('user_id', currentUserId).maybeSingle(),
+        supabase.from('profiles').select('role, sub_roles, location, professional_skills, passion_skills, bio').eq('user_id', currentUserId).maybeSingle(),
         fetchPastCollaboratorIds(currentUserId),
       ]);
 
       const myContext = buildMyMatchContext(meProfile || {}, pastCollabIds);
+      const me = (meProfile || {}) as any;
+      const myTokens = interestTokens(me.role, me.sub_roles, me.professional_skills, me.passion_skills, me.bio);
 
       const scoreProfile = (p: typeof filtered[number]): { score: number; _matchSignals: MatchSignals } => {
         const { score, ...signals } = computeMatchScore(myContext, {
@@ -198,12 +214,20 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         // Tie-break: a touch of social proof, capped so it never outranks
         // a real sector/city/collab/skills signal on its own.
         const socialProof = Math.min(((p as any).credits_count || 0) + ((p as any).portfolio_count || 0), 10);
-        return { score: score + socialProof, _matchSignals: signals };
+        // Shared interests, near or far: any overlapping word between roles,
+        // skills, passions and bio counts, so every profile gets a chance.
+        const theirs = interestTokens(p.role, p.sub_roles, p.professional_skills, p.passion_skills, p.bio);
+        let shared = 0;
+        theirs.forEach((t) => { if (myTokens.has(t)) shared++; });
+        const interest = Math.min(shared * 4, 24);
+        const hasPhoto = p.avatar_url ? 3 : 0;
+        return { score: score + socialProof + interest + hasPhoto, _matchSignals: signals };
       };
 
       const scored = filtered.map(p => ({ ...p, ...scoreProfile(p) }));
 
       const cacheKey = `swipe_order_${currentUserId}`;
+      if (forceRescan) sessionStorage.removeItem(cacheKey);
       const cachedOrder = sessionStorage.getItem(cacheKey);
       let ordered: typeof scored;
 
@@ -347,6 +371,19 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       setLoading(false);
     }
   }, [currentUserId, hasFetched, fetchProfiles]);
+
+  // Match's Pulse "Scan now" asks every open deck to re-rank from scratch.
+  useEffect(() => {
+    const onScan = () => { void fetchProfiles(true); };
+    window.addEventListener('match:scan', onScan);
+    return () => window.removeEventListener('match:scan', onScan);
+  }, [fetchProfiles]);
+
+  useEffect(() => {
+    if (!loading && hasFetched) {
+      window.dispatchEvent(new CustomEvent('match:scanned', { detail: { count: allProfiles.length } }));
+    }
+  }, [loading, hasFetched, allProfiles.length]);
 
   const removeProfile = useCallback((userId: string) => {
     setProfiles(prev => prev.filter(p => p.user_id !== userId));
