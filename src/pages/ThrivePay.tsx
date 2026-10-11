@@ -293,7 +293,7 @@ export default function ThrivePay() {
       <PageBackButton />
       <FeaturePageHeader
         scene="krepay"
-        eyebrow="Your money, daily"
+        eyebrow={isBrand ? "KrePay" : "Your money, daily"}
         company={isBrand}
         title={isBrand ? "Pay your team" : "KrePay."}
         accentTitle={isBrand ? "Keep work moving" : "Without the spreadsheet."}
@@ -381,31 +381,23 @@ export default function ThrivePay() {
 
       <div className="accent-pay min-h-screen">
        <StudioFeatureShell wrapped={{ name: isBrand ? "Company Pay" : "KrePay" }}>
-        <KretoTip compact />
-
-        {/* Get Paid dashboard — the unified summary (metrics + trend chart
-            + weekly insights) required by the overhaul spec, replacing the
-            previous stack of separate, partly-redundant cards. */}
-        <div className="mb-4 sm:mb-6">
-          <KrePayDashboard />
-        </div>
-
-        {/* Linked bank accounts — Kretopia Wallet card owns the actionable
-            "Add your bank" / "Cash out" balance and payout methods; kept
-            distinct from the dashboard above so the balance is shown once,
-            not twice. */}
-        <div className="mb-6">
-          <ThriveWalletCard />
-        </div>
-
-        {/* Thrive proactive nudges (Pay surface) */}
-        <SurfaceProactiveCards surface="pay" className="px-0 mb-4 sm:mb-6" />
-
-        {/* AI assistance — the one genuinely LLM-backed surface on this
-            page; see KrePayAIInsights for what it does and doesn't do. */}
-        <div className="mb-4 sm:mb-6">
-          <KrePayAIInsights />
-        </div>
+        {/* Creator-only finance overview. Company opens directly on its
+            payment tools beneath the branded KrePay scene in the header. */}
+        {!isBrand && (
+          <>
+            <KretoTip compact />
+            <div className="mb-4 sm:mb-6">
+              <KrePayDashboard />
+            </div>
+            <div className="mb-6">
+              <ThriveWalletCard />
+            </div>
+            <SurfaceProactiveCards surface="pay" className="px-0 mb-4 sm:mb-6" />
+            <div className="mb-4 sm:mb-6">
+              <KrePayAIInsights />
+            </div>
+          </>
+        )}
 
         <WalletTopUpDialog open={topUpDialogOpen} onOpenChange={setTopUpDialogOpen} />
         <WalletTransferDialog
@@ -415,19 +407,7 @@ export default function ThrivePay() {
           onTransferComplete={handleTransferComplete}
         />
 
-        {/* ───── Command center: 3 tabbed panels instead of one long
-            scroll ─────
-            Everything above (identity strip, Kreto tip, wallet card,
-            proactive nudges, balance overview) is the always-visible
-            summary — the numbers a user needs at a glance stay on screen
-            regardless of which tab is open below. The 5 sections that used
-            to stack in one continuous scroll (Payment Links, Invoices &
-            Earnings, Recent Activity, Payouts, Fees) are grouped into 3
-            panels by the question they answer, switched by tab instead of
-            scrolled past: "Get Paid" (act now), "Activity" (what
-            happened), "Payouts & Fees" (how money leaves the platform to
-            you). Every section's own internal logic/handlers are
-            unchanged — this is a layout regrouping, not a rewrite. */}
+        {/* Existing payment workflows remain available in both modes. */}
         <Tabs value={commandTab} onValueChange={setCommandTab} className="space-y-4">
           <TabsList className="w-full grid grid-cols-3 h-auto p-1 rounded-xl bg-card/80 border border-border/60 backdrop-blur-sm">
             <TabsTrigger value="get-paid" className="gap-1.5 py-2 text-xs sm:text-sm">
