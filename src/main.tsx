@@ -7,6 +7,7 @@ import { initSWUpdateListener } from "./lib/sw-update";
 import { checkForNewVersion } from "./lib/version-check";
 import { setupGlobalErrorLogging } from "./lib/errorLogger";
 import { clearAppServiceWorkerData, ensureAppServiceWorkerRegistered, isStandalonePWA } from "./lib/serviceWorker";
+import { startCacheSweep } from "./lib/cacheSweep";
 import { getStoredVibe } from "./components/VibeThemeSync";
 import "./i18n";
 import "./index.css";
@@ -61,6 +62,7 @@ if (!isInIframe && !isPreviewHost) {
 
 // Log unhandled errors to the database for monitoring
 setupGlobalErrorLogging();
+startCacheSweep();
 
 const initialTheme = getStoredVibe() === "daylight" ? "light" : "dark";
 
