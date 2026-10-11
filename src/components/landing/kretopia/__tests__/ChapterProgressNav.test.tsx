@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChapterProgressNav } from "../ChapterProgressNav";
 import { CHAPTER_REGISTRY } from "../chapterRegistry";
@@ -21,7 +21,6 @@ describe("Landing chapter marks", () => {
     </>);
     const match = container.querySelector("#chapter-match");
     if (!match) throw new Error("Match chapter missing");
-    const { act } = require("@testing-library/react");
     act(() => {
       observers[0]([{ isIntersecting: false }] as IntersectionObserverEntry[], {} as IntersectionObserver);
       observers[1]([{ isIntersecting: true, target: match }] as IntersectionObserverEntry[], {} as IntersectionObserver);
