@@ -1,10 +1,11 @@
 # Roadmap
 
 ## Company mode overhaul
-- [ ] Synchronize account switching and Company navigation across pages.
-- [ ] Align Studios, Gigs, Talent and Pay with shared headers and Wrapped surfaces, preserving Creator Studio.
-- [ ] Add Company signals and complete Menu access.
-- [ ] Verify targeted tests and preview; leave production backend and domains unchanged.
+- [x] Synchronize account switching and Company navigation across pages.
+- [x] Align Studios, Gigs, Talent and Pay with shared headers and Wrapped surfaces, preserving Creator Studio.
+- [x] Add Company signals and complete Menu access.
+- [x] Verify targeted tests (23 passing) and public preview; leave production backend and domains unchanged.
+- [ ] Verify authenticated Company switching and live hiring/payment flows — blocked: no mintable preview account and legacy authentication unavailable to managed session tooling.
 
 - [x] Simplify Landing chapters and preview cards; align chapter numbering, logo-colored scroll markers, and smooth anchor scrolling
 
