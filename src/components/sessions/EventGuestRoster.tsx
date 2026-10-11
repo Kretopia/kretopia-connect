@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Users, MapPin, Briefcase, ExternalLink, Check, Clock, UserPlus, MessageCircle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,8 @@ interface Props {
   hostId: string;
   currentUserId: string | null;
   isParticipant: boolean;
+  /** Host privacy: only 'host_only' hides the list from people who haven't saved a seat. */
+  attendeeListVisibility?: string | null;
   isHost: boolean;
   participantCount: number;
 }
@@ -45,7 +49,7 @@ interface Props {
  * Tap a guest -> profile preview sheet with tagged Connect button.
  */
 export const EventGuestRoster = ({
-  eventId, eventTitle, hostId, currentUserId, isParticipant, isHost, participantCount,
+  eventId, eventTitle, hostId, currentUserId, isParticipant, isHost, participantCount, attendeeListVisibility = "public",
 }: Props) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -56,7 +60,24 @@ export const EventGuestRoster = ({
   const [mutuals, setMutuals] = useState<Record<string, MutualInfo>>({});
   const [acting, setActing] = useState(false);
 
-  const canSee = isHost || isParticipant;
+  const [visibility, setVisibility] = useState(attendeeListVisibility || "public");
+  useEffect(() => { setVisibility(attendeeListVisibility || "public"); }, [attendeeListVisibility]);
+  const hiddenByHost = visibility === "host_only";
+  // Open by default: browsers see who's going before saving a seat, unless the host hid it.
+  const canSee = isHost || isParticipant || !hiddenByHost;
+
+  const toggleHidden = async (hide: boolean) => {
+    const next = hide ? "host_only" : "public";
+    const prev = visibility;
+    setVisibility(next);
+    const { error } = await supabase.from("creative_jams").update({ attendee_list_visibility: next } as any).eq("id", eventId);
+    if (error) {
+      setVisibility(prev);
+      toast({ title: "Couldn't update privacy", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: hide ? "Guest list hidden" : "Guest list visible", description: hide ? "Only people with a seat can see who's going." : "Everyone browsing this event can see who's going." });
+    }
+  };
 
   useEffect(() => {
     if (!canSee) { setLoading(false); return; }
@@ -65,7 +86,7 @@ export const EventGuestRoster = ({
       try {
         const { data: parts } = await supabase
           .from("jam_participants")
-          .select("id, user_id, guest_name, guest_email, joined_at")
+          .select("id, user_id, guest_name, joined_at")
           .eq("jam_id", eventId)
           .in("status", ["going", "interested"]);
         const participantRows = parts || [];
@@ -188,7 +209,7 @@ export const EventGuestRoster = ({
             <div className="min-w-0">
               <h3 className="font-semibold leading-tight">Who's going</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {participantCount} {participantCount === 1 ? "person" : "people"} so far · RSVP to see the guest list and connect
+                {participantCount} {participantCount === 1 ? "person" : "people"} so far · The host keeps the guest list private until you save a seat
               </p>
             </div>
           </div>
@@ -212,6 +233,14 @@ export const EventGuestRoster = ({
               </p>
             </div>
           </div>
+          {isHost && (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-border/60 px-3 py-2">
+              <Label htmlFor={`hide-guests-${eventId}`} className="text-xs text-muted-foreground">
+                Hide guest list until people save a seat
+              </Label>
+              <Switch id={`hide-guests-${eventId}`} checked={hiddenByHost} onCheckedChange={toggleHidden} />
+            </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
