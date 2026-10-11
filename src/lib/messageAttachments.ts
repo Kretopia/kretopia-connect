@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
  * applied on the production backend. While false, uploads keep the legacy
  * public `portfolio` behaviour.
  */
-export const PRIVATE_MESSAGE_ATTACHMENTS = false;
+export const PRIVATE_MESSAGE_ATTACHMENTS = true;
 
 export const MESSAGE_BUCKET = "message-attachments";
 const PRIVATE_PREFIX = `${MESSAGE_BUCKET}:`;
