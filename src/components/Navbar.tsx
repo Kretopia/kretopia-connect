@@ -454,6 +454,25 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         )}
                       </MenuGrid>
                       <Separator className="my-3" />
+                       <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Explore</p>
+                       <MenuGrid>
+                         {[
+                           { icon: Sun, label: "Today", path: "/" },
+                           { icon: Compass, label: "Scout", path: "/scout" },
+                           { icon: Theater, label: "Stages", path: "/circle" },
+                           { icon: Sparkles, label: "Kreto", path: "/kreto" },
+                           { icon: Heart, label: "Match", path: "/match" },
+                           { icon: Gift, label: "Perks", path: "/perks" },
+                           { icon: CalendarDays, label: "Events", path: "/meetup" },
+                           { icon: Video, label: "Recordings", path: "/recordings" },
+                           { icon: Sparkles, label: "Spotlight", path: "/spotlight" },
+                           { icon: Database, label: "Credits", path: "/credits" },
+                           { icon: Crown, label: "Founding Circle", path: "/founding-member" },
+                           { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
+                           { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
+                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
+                       </MenuGrid>
+                      <Separator className="my-3" />
                       <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Account
                       </p>
@@ -661,24 +680,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       {user?.id === "ef429714-ea32-4f08-a4f9-ef0226f1804b" && (
                         <>
                           <Separator className="my-3" />
-                       <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Explore</p>
-                       <MenuGrid>
-                         {[
-                           { icon: Sun, label: "Today", path: "/" },
-                           { icon: Compass, label: "Scout", path: "/scout" },
-                           { icon: Theater, label: "Stages", path: "/circle" },
-                           { icon: Sparkles, label: "Kreto", path: "/kreto" },
-                           { icon: Heart, label: "Match", path: "/match" },
-                           { icon: Gift, label: "Perks", path: "/perks" },
-                           { icon: CalendarDays, label: "Events", path: "/meetup" },
-                           { icon: Video, label: "Recordings", path: "/recordings" },
-                           { icon: Sparkles, label: "Spotlight", path: "/spotlight" },
-                           { icon: Database, label: "Credits", path: "/credits" },
-                           { icon: Crown, label: "Founding Circle", path: "/founding-member" },
-                           { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
-                           { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
-                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
-                       </MenuGrid>
+
                        <Separator className="my-3" />
                           <MenuButton icon={Shield} label="Admin Panel" onClick={() => handleNavigation("/admin")} />
                         </>
