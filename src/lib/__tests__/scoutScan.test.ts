@@ -65,6 +65,7 @@ describe("describeScan", () => {
   });
 
   it("reports the weekly limit", () => {
-    expect(describeScan({ gated: true, message: "Free tier: 1 Scout preview per week." }, true)?.title).toBe("Weekly Scout limit reached");
+    expect(describeScan({ gated: true, message: "Free tier: 1 Scout preview per week." }, true)?.title).toBe("Free tier: 1 Scout preview per week.");
+    expect(describeScan({ gated: true }, true)).toBeNull();
   });
 });
