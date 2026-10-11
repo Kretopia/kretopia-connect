@@ -24,19 +24,15 @@ export const MessageAttachments = ({ onAttach, disabled, receiverId }: MessageAt
   const uploadFile = async (file: File, type: 'image' | 'file') => {
     setIsUploading(true);
     try {
-      let stored: string | null = null;
+      let stored: string;
       if (PRIVATE_MESSAGE_ATTACHMENTS) {
-        // Fail closed: no conversation, no upload.
+        // Fail closed: no conversation, no upload. Private storage rules are
+        // confirmed on the production backend — no public fallback.
         if (!receiverId) throw new Error("No conversation selected");
-        try {
-          stored = await uploadPrivateAttachment(file, receiverId);
-        } catch (privateError) {
-          // Private storage rules not active on the backend yet: keep
-          // messaging working with the previous behaviour.
-          console.warn("[attachments] private upload unavailable, using legacy storage:", privateError);
-        }
+        stored = await uploadPrivateAttachment(file, receiverId);
+      } else {
+        stored = await uploadPublicAttachment(file);
       }
-      if (!stored) stored = await uploadPublicAttachment(file);
       onAttach(stored, type, file.name);
 
 
