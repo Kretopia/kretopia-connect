@@ -1,5 +1,10 @@
 # Roadmap
 
+## Company header and Pay simplification
+- [x] Remove Company Mode stickers from shared feature headers, preserving navigation mode indication.
+- [x] Hide creator finance summaries and brief/chat banner in Company Pay; retain payment tools and the matching branded Kreto scene.
+- [x] Run focused presentation tests (9 passing) and verify build OK; backend and publication unchanged. Authenticated visual verification remains blocked as noted below.
+
 ## Landing Match video and scroll navigation
 - [x] Preserve native 1440×1800 Match master; lossless fast-start optimization and CDN delivery (HTTP 206 verified).
 - [x] Replace scroll dots with theme-aware vertical marks that expand for the active chapter.

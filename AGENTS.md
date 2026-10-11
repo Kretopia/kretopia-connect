@@ -24,4 +24,5 @@
 - Use KretopiaSpinner (inline) or KretopiaLoader (block) from components/brand/KretopiaLoader for every loading or waiting state, never lucide's Loader2, CSS border rings, spinning icons or bare "Loading…" text, because one K-mark loader keeps every wait on-brand (ESLint blocks the lucide loaders; Skeletons for content-shaped placeholders are fine).
 - Resolve account mode through the shared user-keyed account-tone query and publish successful switches into it, because independent profile reads leave navigation and features in conflicting modes.
 - Render Company Studio through the existing project workspace with additive hiring actions, because projects, invitations, permissions and the single-row carousel must remain identical across modes.
+- Gate Creator finance overview surfaces with the shared account mode in KrePay while reusing its payment workflows and scene header, because Company presentation must not duplicate Creator summaries or fork payment logic.
 - Preserve the native Match video resolution with lossless fast-start remuxing and a CDN asset pointer, because upscaling or recompressing cannot restore missing detail and may degrade the master.
