@@ -11,7 +11,7 @@ const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peek
 type Layer = keyof typeof layers;
 const layerKeys = Object.keys(layers) as Layer[];
 /** Where the ledge line sits inside each hiding artwork (fraction of its rendered size). */
-const LEDGE = { peekTop: 0.854, peekBottom: 0.45 };
+const LEDGE = { peekTop: 0.81, peekBottom: 0.4826 };
 /** Rendered silhouette heights (origin-top scale) used to hide a pose fully behind media. */
 const HEIGHT = { peekTop: 1.446, peekBottom: 1.287 };
 // Alpha-bounds normalization: all silhouettes match Flying's 875px height.
@@ -23,7 +23,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.3145, handsY: 0.53, minScale: 0.55 };
+const SIDE = { cut: 0.42, handsY: 0.33, minScale: 0.55 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -41,8 +41,8 @@ const TURN_MS = 520;
  * Polygons are in artwork coordinates; the notch keeps the torso and the head dome behind the media.
  */
 const GRIP_CLIP = {
-  peekTop: "polygon(25% 58.5%, 40% 58.5%, 40% 62.6%, 60% 62.6%, 60% 58.5%, 75% 58.5%, 75% 69%, 25% 69%)",
-  peekBottom: "polygon(28% 29.5%, 74% 29.5%, 74% 36%, 62% 36%, 62% 33.3%, 40% 33.3%, 40% 36%, 28% 36%)",
+  peekTop: "polygon(25% 55.5%, 40% 55.5%, 40% 62.6%, 60% 62.6%, 60% 55.5%, 75% 55.5%, 75% 69%, 25% 69%)",
+  peekBottom: "polygon(28% 29.5%, 74% 29.5%, 74% 38%, 62% 38%, 62% 33.3%, 40% 33.3%, 40% 38%, 28% 38%)",
   peekSide: "polygon(24.5% 40%, 31.45% 40%, 31.45% 66%, 24.5% 66%)",
 } as const;
 
@@ -140,7 +140,18 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       } else {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
-        targetY = zone || (corridor && Number.isFinite(corridor.maxY)) ? point.y : point.y + (visibleY - point.y) * follow;
+        if (corridor && Number.isFinite(corridor.maxY) && !zone) {
+          // Between two media he is calibrated to the screen, not to the page: a band of the viewport that
+          // drifts a little along the corridor, the same whichever way the page goes. He eases away from
+          // where he let go of the last media, and is clamped below so he never overlaps a media.
+          const u = Math.min(1, Math.max(0, (scroll - corridor.from) / Math.max(1, corridor.to - corridor.from)));
+          const onScreen = -bounds.top + window.innerHeight * (0.26 + 0.2 * u);
+          const e = Math.min(1, u * 2);
+          const w = e * e * (3 - 2 * e);
+          targetY = Number.isFinite(corridor.minY) ? corridor.minY + (onScreen - corridor.minY) * w : onScreen;
+        } else {
+          targetY = zone || (corridor && Number.isFinite(corridor.maxY)) ? point.y : point.y + (visibleY - point.y) * follow;
+        }
         if (corridor) targetY = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, targetY)) : (corridor.minY + corridor.maxY) / 2;
         targetX = point.x;
       }
@@ -218,7 +229,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
       el.style.opacity = inFlight ? "1" : "0";
       // The hands are drawn over the media for as long as he holds the edge.
-      const gripping = (activeLock?.pose === "peekSide" ? activeLock.grip === true : activeLock?.hidden !== undefined) && isPeek;
+      // No hands on the side hide: only the head comes out.
+      const gripping = activeLock?.pose !== "peekSide" && activeLock?.hidden !== undefined && isPeek;
       grip.style.opacity = inFlight && gripping ? "1" : "0";
       hero.style.opacity = inFlight ? "0" : "1";
       if (settling || turning) queue();
@@ -281,7 +293,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const previous = stops[stops.length - 1];
         const topAt = Math.max(previous.scroll + 200, top + origin - vh * 0.38);
         const bottomAt = Math.max(topAt + 520, bottom + origin - vh * 0.6);
-        const release = bottomAt + hold;
+        const release = Math.max(bottomAt + hold, bottom + origin + size * 0.5);
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
@@ -314,7 +326,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // Hidden heights: the whole silhouette sits behind the media.
         const hiddenTop = Math.max(topY, Math.min(top, bottom - size * HEIGHT.peekTop));
         const hiddenBottom = Math.min(bottomY, Math.max(top, bottom - size * HEIGHT.peekBottom));
-        const middle = (topAt + bottomAt) / 2;
+        const mid = (topAt + bottomAt) / 2;
+        const afterTop = top + origin + size * 0.15 + 90;
+        const beforeBottom = bottom + origin - vh - 90;
+        const middle = afterTop <= beforeBottom ? Math.min(Math.max(mid, afterTop), beforeBottom) : mid;
         const slide = Math.min(90, (middle - topAt) / 3);
         const arriveY = top - size * FLY_ALPHA.bottom;
         const departY = bottom - size * FLY_ALPHA.top;
