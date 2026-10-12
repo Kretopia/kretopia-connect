@@ -5,7 +5,7 @@ import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
 import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
-import { bottomBackflip, headingAt, sampleFlight, type FlightPose, type FlightStop } from "./kretoFlightPath";
+import { bottomBackflip, headingAt, ledgeLockAt, sampleFlight, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as const;
 type Layer = keyof typeof layers;
@@ -56,6 +56,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let direction: -1 | 1 = 1;
     let endScroll = 0;
     let poseScroll = -100;
+    let ledgeLocks: LedgeLock[] = [];
+    let activeLock: LedgeLock | undefined;
     let mediaZones: { from: number; to: number; left: number; right: number; top: number; bottom: number }[] = [];
 
     const paint = () => {
@@ -71,27 +73,29 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const climb = ahead ? (ahead.y - point.y - direction * 12) / 12 : 0;
       const bounds = parent.getBoundingClientRect();
       const zone = mediaZones.find(zone => scroll >= zone.from && scroll <= zone.to);
-      const requestedPose = point.pose;
-      // Spatial hysteresis prevents repeated switches around a ledge threshold.
-      if (requestedPose !== activePose && Math.abs(scroll - poseScroll) > 28) {
+      activeLock = ledgeLockAt(ledgeLocks, scroll, activeLock);
+      const requestedPose: FlightPose = activeLock?.pose ?? "fly";
+      if (requestedPose !== activePose) {
         activePose = requestedPose; poseScroll = scroll; setPose(requestedPose);
       }
       const renderPose = activePose;
       const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
       const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
-      const flightY = !zone && renderPose === "fly" ? point.y + (visibleY - point.y) * follow : point.y;
-      const flightX = zone ? Math.max(zone.left, Math.min(zone.right, point.x)) : point.x;
+      const flightY = activeLock?.y ?? (!zone && renderPose === "fly" ? point.y + (visibleY - point.y) * follow : point.y);
+      const flightX = activeLock?.x ?? (zone ? Math.max(zone.left, Math.min(zone.right, point.x)) : point.x);
       // Change heading only while fully covered, or once at the start of a
       // direct inter-media journey; never from tiny scroll-direction changes.
       const covered = zone && flightY >= zone.top && flightY + size * 1.28 <= zone.bottom;
-      if (covered || (!zone && Math.abs(scroll - poseScroll) > 100)) {
+      if (!activeLock && (covered || (!zone && Math.abs(scroll - poseScroll) > 100))) {
         const tangent = headingAt(stops, scroll, 40, 3);
         const dir = tangent * direction;
         if (dir !== 0 && dir !== heading) { heading = dir < 0 ? -1 : 1; setFacing(heading); poseScroll = scroll; }
       }
       const bank = !zone && renderPose === "fly" ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
-      const targetRotation = point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
-      if (first) { x.jump(flightX); y.jump(flightY); rotate.jump(targetRotation); first = false; }
+      const targetRotation = activeLock ? 0 : point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
+      // A dock is attached to document geometry, not an eased target. Stop
+      // every spring immediately; scrolling only moves the media and figure together.
+      if (first || activeLock) { x.jump(flightX); y.jump(flightY); rotate.jump(targetRotation); first = false; }
       else {
         x.set(flightX);
         // Fast scroll jumps must not leave the spring chasing an offscreen location.
@@ -133,6 +137,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       ];
       const spin = 0;
       mediaZones = [];
+      ledgeLocks = [];
+      activeLock = undefined;
       parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]").forEach((media, index) => {
         const rect = media.getBoundingClientRect();
         const top = docY(rect.top);
@@ -149,6 +155,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const topY = top - size * LEDGE.peekTop;
         const bottomY = bottom - size * LEDGE.peekBottom;
         const middle = (topAt + 170 + bottomAt) / 2;
+        ledgeLocks.push(
+          { from: topAt, to: topAt + 170, x: topX, y: topY, pose: "peekTop" },
+          { from: bottomAt, to: bottomAt + 180, x: bottomX, y: bottomY, pose: "peekBottom" },
+        );
         mediaZones.push({ from: topAt - 60, to: bottomAt + 220, left: mediaLeft, right: mediaRight, top, bottom });
         stops.push(
           fly(topAt - 100, topX, topY - size * 0.12, spin),
@@ -197,12 +207,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     <motion.div ref={ref} aria-hidden="true" data-kreto-flight data-pose={pose} data-facing={facing === 1 ? "right" : "left"}
       className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none lg:h-[180px] lg:w-[180px] min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
       style={{ x, y, rotate, opacity }}>
-      <motion.div className="relative h-full w-full" animate={!reduced && pose === "fly" ? { y: [0, -3, 0] } : { y: 0 }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}>
+      <div className="relative h-full w-full">
       {(Object.keys(layers) as Layer[]).map(key => (
         <img key={key} src={layers[key]} alt="" width={1024} height={1024} decoding="sync" draggable={false}
           className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]} ${key === visible ? "block" : "hidden"}`} />
       ))}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { bottomBackflip, headingAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
+import { bottomBackflip, headingAt, ledgeLockAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop, type LedgeLock } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("locks exact ledge coordinates through both scroll directions", () => {
+    for (const pose of ["peekTop", "peekBottom"] as const) {
+      const lock: LedgeLock = { from: 100, to: 280, x: 200, y: 400, pose };
+      for (const scroll of [100, 160, 250, 270, 200, 130, 100]) {
+        expect(ledgeLockAt([lock], scroll, lock)).toBe(lock);
+      }
+    }
+  });
+  it("absorbs boundary jitter but releases after a deliberate departure", () => {
+    const lock: LedgeLock = { from: 100, to: 280, x: 200, y: 400, pose: "peekTop" };
+    for (const scroll of [99, 101, 95, 105, 282, 278, 290]) expect(ledgeLockAt([lock], scroll, lock)).toBe(lock);
+    expect(ledgeLockAt([lock], 299, lock)).toBeUndefined();
+    expect(ledgeLockAt([lock], 81, lock)).toBeUndefined();
+  });
   it("keeps horizontal travel monotonic between authored page-edge turns", () => {
     const path = [first, { ...first, scroll: 100, x: 20 }, { ...first, scroll: 200, x: 300 }];
     let previous = first.x;
