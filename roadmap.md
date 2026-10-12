@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Kreto Landing flight
+- [ ] Extend ledge persistence, remove pose ghosting, reverse heading on upward scroll, accelerate flips and maintain visible hovering; verify tests and media occlusion.
 - [x] Preserve Passport takeoff, extend alternating hideaways to all five chapter media, remove edge-on flattening and make reversals scroll-linked; seven tests pass, foreground layering and top/bottom poses checked in browser, compilation OK. Artwork remains pre-rendered, not a volumetric 3D model.
 - [x] Create matching tucked-backflip and peeking poses from the approved flying mascot.
 - [x] Integrate scroll-linked waving takeoff, 180-degree turns, backflips and three media hideaways.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { headingAt, sampleFlight, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
+import { headingAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
@@ -35,6 +35,12 @@ describe("Kreto scroll flight", () => {
     const back: FlightStop = { ...last, scroll: 200, x: 0 };
     expect(headingAt([first, last, back], 40)).toBe(1);
     expect(headingAt([first, last, back], 160)).toBe(-1);
+  });
+  it("faces actual return travel instead of repeating the descent heading", () => {
+    expect(travelHeading([first, last], 50, 1)).toBe(1);
+    expect(travelHeading([first, last], 50, -1)).toBe(-1);
+    const path = withFlightTurns([first, { ...first, scroll: 300, x: 300 }, { ...first, scroll: 600 }]);
+    expect(travelHeading(path, 300, -1)).toBe(1);
   });
   it("retraces the same path when scrolling back", () => {
     const before = sampleFlight([first, last], 25);
