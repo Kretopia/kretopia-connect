@@ -10,6 +10,20 @@ export interface FlightStop {
   facing?: -1 | 1;
 }
 
+export interface LedgeLock {
+  from: number;
+  to: number;
+  x: number;
+  y: number;
+  pose: "peekTop" | "peekBottom";
+}
+
+/** Boundary-based hysteresis: tiny reversals cannot replay a dock/undock. */
+export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLock): LedgeLock | undefined {
+  if (active && scroll >= active.from - 18 && scroll <= active.to + 18) return active;
+  return locks.find(lock => scroll >= lock.from && scroll <= lock.to);
+}
+
 const same = (a?: FlightStop, b?: FlightStop) => !!a && !!b && a.x === b.x && a.y === b.y;
 
 /** Finite-difference tangent scaled to the segment; zero at holds so Kreto settles instead of overshooting. */
