@@ -11,7 +11,7 @@ const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as 
 type Layer = keyof typeof layers;
 const hideaways = ["chapter-passport", "chapter-match", "chapter-studio"];
 /** Where the ledge line sits inside each hiding artwork (fraction of its height). */
-const LEDGE = { peekTop: 0.62, peekBottom: 0.344 };
+const LEDGE = { peekTop: 0.62, peekBottom: 0.32 };
 const SPRING = { stiffness: 140, damping: 24, mass: 0.7 };
 
 const sizeFor = (w: number) => (w >= 1440 ? 240 : w >= 1024 ? 180 : 104);
@@ -26,7 +26,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
   const y = useSpring(0, SPRING);
   const rotate = useSpring(0, { stiffness: 110, damping: 20, mass: 0.8 });
   const rotateY = useMotionValue(0);
-  const opacity = useMotionValue(0);
+  const opacity = useSpring(0, { stiffness: 220, damping: 32 });
 
   useEffect(() => {
     const parent = ref.current?.parentElement;
