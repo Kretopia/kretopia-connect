@@ -1,16 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { sampleFlight, type FlightStop } from "../kretopia/kretoFlightPath";
+import { headingAt, sampleFlight, type FlightStop } from "../kretopia/kretoFlightPath";
 
-const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, turn: 0, scale: 1, opacity: 0, pose: "fly" };
-const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, turn: 180, opacity: 1, pose: "tuck" };
+const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
+const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
   it("handles unmounted chapters", () => expect(sampleFlight([], 20)).toBeUndefined());
   it("clamps before takeoff and after landing", () => {
     expect(sampleFlight([first, last], -20)).toEqual(first);
     expect(sampleFlight([first, last], 200)).toEqual(last);
   });
-  it("interpolates a full backflip and a half turn", () => {
-    expect(sampleFlight([first, last], 50)).toMatchObject({ x: 60, y: 120, rotate: -180, turn: 90, opacity: 0.5, pose: "tuck" });
+  it("interpolates the midpoint of a full loop", () => {
+    expect(sampleFlight([first, last], 50)).toMatchObject({ x: 60, y: 120, rotate: -180, opacity: 0.5 });
+  });
+  it("stays still while hiding", () => {
+    const peek: FlightStop = { ...last, pose: "peekTop" };
+    const hold = { ...peek, scroll: 300 };
+    expect(sampleFlight([first, peek, hold], 200)).toMatchObject({ x: 110, y: 220, pose: "peekTop" });
+  });
+  it("faces the direction of travel", () => {
+    const back: FlightStop = { ...last, scroll: 200, x: 0 };
+    expect(headingAt([first, last, back], 40)).toBe(1);
+    expect(headingAt([first, last, back], 160)).toBe(-1);
   });
   it("retraces the same path when scrolling back", () => {
     const before = sampleFlight([first, last], 25);

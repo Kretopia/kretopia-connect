@@ -1,16 +1,28 @@
-export type FlightPose = "fly" | "flyLeft" | "tuck" | "peek";
+export type FlightPose = "fly" | "peekTop" | "peekBottom";
 export interface FlightStop {
   scroll: number;
   x: number;
   y: number;
+  /** Absolute in-plane rotation; loops are cumulative multiples of 360. */
   rotate: number;
-  turn: number;
-  scale: number;
   opacity: number;
   pose: FlightPose;
 }
 
-/** Smoothstep interpolation is reversible: scrolling up retraces the same flight. */
+const same = (a?: FlightStop, b?: FlightStop) => !!a && !!b && a.x === b.x && a.y === b.y;
+
+/** Finite-difference tangent scaled to the segment; zero at holds so Kreto settles instead of overshooting. */
+function tangent(stops: FlightStop[], i: number, key: "x" | "y", span: number) {
+  const prev = stops[i - 1];
+  const next = stops[i + 1];
+  if (!prev || !next || same(prev, stops[i]) || same(stops[i], next)) return 0;
+  return ((next[key] - prev[key]) / Math.max(1, next.scroll - prev.scroll)) * span;
+}
+
+/**
+ * Continuous-velocity (cubic Hermite) path through every stop. Pure function of
+ * scroll, so scrolling back up retraces exactly the same flight.
+ */
 export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | undefined {
   const first = stops[0];
   if (!first) return undefined;
@@ -19,16 +31,30 @@ export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | 
     const end = stops[i];
     const start = stops[i - 1];
     if (scroll > end.scroll) continue;
-    const progress = Math.max(0, Math.min(1, (scroll - start.scroll) / Math.max(1, end.scroll - start.scroll)));
-    const eased = progress * progress * (3 - 2 * progress);
-    const mix = (a: number, b: number) => a + (b - a) * eased;
+    const span = Math.max(1, end.scroll - start.scroll);
+    const t = Math.max(0, Math.min(1, (scroll - start.scroll) / span));
+    const t2 = t * t;
+    const t3 = t2 * t;
+    const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t, h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+    const curve = (key: "x" | "y") =>
+      h00 * start[key] + h10 * tangent(stops, i - 1, key, span) + h01 * end[key] + h11 * tangent(stops, i, key, span);
+    const eased = t * t * (3 - 2 * t);
+    const switchAt = end.pose !== "fly" ? 0.8 : start.pose !== "fly" ? 0.2 : 0.5;
     return {
-      scroll, x: mix(start.x, end.x), y: mix(start.y, end.y),
-      rotate: mix(start.rotate, end.rotate), turn: mix(start.turn, end.turn),
-      scale: mix(start.scale, end.scale), opacity: mix(start.opacity, end.opacity),
-      // Face the destination early: the head/body always point where Kreto goes.
-      pose: progress < 0.25 ? start.pose : end.pose,
+      scroll, x: curve("x"), y: curve("y"),
+      rotate: start.rotate + (end.rotate - start.rotate) * eased,
+      opacity: start.opacity + (end.opacity - start.opacity) * t,
+      pose: t < switchAt ? start.pose : end.pose,
     };
   }
   return stops[stops.length - 1];
+}
+
+/** -1 flying left, 1 flying right, 0 hovering (keep the current heading). */
+export function headingAt(stops: FlightStop[], scroll: number, window = 30, threshold = 4): -1 | 0 | 1 {
+  const a = sampleFlight(stops, scroll - window);
+  const b = sampleFlight(stops, scroll + window);
+  if (!a || !b) return 0;
+  const dx = b.x - a.x;
+  return Math.abs(dx) < threshold ? 0 : dx > 0 ? 1 : -1;
 }
