@@ -18,6 +18,9 @@ const poseClasses: Record<Layer, string> = {
   right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top scale-[1.287]",
 };
 
+/** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
+const FLY_ALPHA = { top: 0.04, bottom: 0.94 };
+
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 
 /**
@@ -102,7 +105,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
         targetY = zone ? point.y : point.y + (visibleY - point.y) * follow;
-        if (corridor && corridor.maxY >= corridor.minY) targetY = Math.max(corridor.minY, Math.min(corridor.maxY, targetY));
+        if (corridor) targetY = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, targetY)) : (corridor.minY + corridor.maxY) / 2;
         targetX = zone ? Math.max(zone.left, Math.min(zone.right, point.x)) : point.x;
         // Heading changes only at the start of a free journey, never from jitter.
         if (Math.abs(scroll - poseScroll) > 60) {
@@ -125,7 +128,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         if (!settling) { cur.x = targetX; cur.y = targetY; cur.r = targetR; }
       }
       // Easing must not drag Flying into a media either.
-      if (corridor && corridor.maxY >= corridor.minY) cur.y = Math.max(corridor.minY, Math.min(corridor.maxY, cur.y));
+      if (corridor) cur.y = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, cur.y)) : (corridor.minY + corridor.maxY) / 2;
       show(pose === "peekTop" || pose === "peekBottom" ? pose : heading === 1 ? "right" : "left", pose);
       el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r}deg)`;
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
@@ -195,8 +198,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         mediaZones.push({ from: topAt - 60, to: release + 40, left: mediaLeft, right: mediaRight, top, bottom });
         // Flying is never allowed to overlap a media: it arrives fully above the
         // top edge and departs fully below the bottom edge.
-        const arriveY = top - size;
-        const departY = bottom + 2;
+        const arriveY = top - size * FLY_ALPHA.bottom;
+        const departY = bottom - size * FLY_ALPHA.top;
         corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: arriveY });
         corridorFrom = release;
         corridorMin = departY;
