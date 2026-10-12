@@ -156,8 +156,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const end = parent.scrollHeight - window.innerHeight + origin;
       endScroll = end;
       if (end > last.scroll + 240) {
-        stops.push(glide(end - 280, last.x, vh * 0.5, spin));
-        stops.push(glide(end, last.x, vh * 0.55, spin));
+        stops.push(glide(end - 280, vw - size - 24, vh * 0.5, spin));
+        stops.push(glide(end, vw - size - 24, vh * 0.55, spin));
       }
       // Keep stops strictly ordered even with short media and tall viewports.
       stops = stops.reduce<FlightStop[]>((ordered, stop) => {
