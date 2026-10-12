@@ -46,7 +46,7 @@ export const ProductLoopSection = () => {
           className="max-w-xl"
         >
           <p className="landing-eyebrow mb-4">Your Passport does more</p>
-          <h2 id="product-loop-title" className="landing-h2 landing-glow">
+          <h2 id="product-loop-title" data-kreto-backflip className="landing-h2 landing-glow">
             {/* Two-line title contract: plain line + gradient line, no
                 trailing period (landing-wide rule). */}
             Your past work should help create<br />
