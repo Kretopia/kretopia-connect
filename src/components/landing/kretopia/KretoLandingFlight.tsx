@@ -288,7 +288,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const previous = stops[stops.length - 1];
         const topAt = Math.max(previous.scroll + 200, top + origin - vh * 0.38);
         const bottomAt = Math.max(topAt + 520, bottom + origin - vh * 0.6);
-        const release = Math.max(bottomAt + hold, bottom + origin + size * 0.5);
+        // The next media's arrival is measured from this release (topAt >= previous stop + 200), so
+        // delaying it until the bottom edge leaves the viewport pushed every following arrival, and
+        // everything he does at it, above the top of the screen. It stays where it was.
+        const release = bottomAt + hold;
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
