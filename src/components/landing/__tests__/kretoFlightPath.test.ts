@@ -4,6 +4,16 @@ import { bottomBackflip, headingAt, ledgeLockAt, sampleFlight, travelHeading, wi
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("hands contiguous hidden slides over at the same position in either direction", () => {
+    const top: LedgeLock = { from: 100, to: 200, x: 200, y: 300, y2: 400, pose: "peekTop" };
+    const bottom: LedgeLock = { from: 200, to: 300, x: 200, y: 400, y2: 500, pose: "peekBottom" };
+    expect(ledgeLockAt([top, bottom], 201, top)).toBe(bottom);
+    expect(ledgeLockAt([top, bottom], 199, bottom)).toBe(top);
+    for (const scroll of [101, 150, 199, 201, 250, 299, 250, 201, 199, 150]) {
+      expect(ledgeLockAt([top, bottom], scroll, scroll < 200 ? bottom : top)?.pose)
+        .toBe(scroll < 200 ? "peekTop" : "peekBottom");
+    }
+  });
   it("locks exact ledge coordinates through both scroll directions", () => {
     for (const pose of ["peekTop", "peekBottom"] as const) {
       const lock: LedgeLock = { from: 100, to: 280, x: 200, y: 400, pose };

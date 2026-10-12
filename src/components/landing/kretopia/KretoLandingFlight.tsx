@@ -19,7 +19,7 @@ const poseClasses: Record<Layer, string> = {
 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
-const FLY_ALPHA = { top: 0.04, bottom: 0.94 };
+const FLY_ALPHA = { top: 0, bottom: 1 };
 
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 
@@ -62,6 +62,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let poseScroll = -100;
     let ledgeLocks: LedgeLock[] = [];
     let activeLock: LedgeLock | undefined;
+    let wasLocked = false;
     let mediaZones: { from: number; to: number; left: number; right: number; top: number; bottom: number }[] = [];
     /** Free-flight corridors keep Flying fully between two media, never overlapping one. */
     let corridors: { from: number; to: number; minY: number; maxY: number }[] = [];
@@ -114,14 +115,14 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         }
       }
       // Tight gaps between media leave no room for banking without overlapping one.
-      const roomy = !corridor || corridor.maxY - corridor.minY > size * 0.25;
+      const roomy = !corridor || (!Number.isFinite(corridor.maxY) && targetY > corridor.minY + size);
       const bank = !activeLock && !zone && roomy ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
-      const targetR = activeLock ? 0 : point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
+      const targetR = activeLock || !roomy ? 0 : point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
 
       // Locks are attached to document geometry: no easing at all. Free flight
       // eases toward the scroll-driven target for a smooth, constant glide.
       let settling = false;
-      if (first || activeLock || Math.abs(cur.y - targetY) > window.innerHeight) {
+      if (first || activeLock || wasLocked || Math.abs(cur.y - targetY) > window.innerHeight) {
         cur.x = targetX; cur.y = targetY; cur.r = targetR; first = false;
       } else {
         const k = 0.32;
@@ -131,6 +132,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       }
       // Easing must not drag Flying into a media either.
       if (corridor) cur.y = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, cur.y)) : (corridor.minY + corridor.maxY) / 2;
+      if (!roomy) cur.r = 0;
+      wasLocked = !!activeLock;
       show(pose === "peekTop" || pose === "peekBottom" ? pose : heading === 1 ? "right" : "left", pose);
       el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r}deg)`;
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
