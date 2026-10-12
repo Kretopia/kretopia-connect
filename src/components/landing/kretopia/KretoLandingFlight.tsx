@@ -113,7 +113,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           if (dir !== 0 && dir !== heading) { heading = dir < 0 ? -1 : 1; poseScroll = scroll; }
         }
       }
-      const bank = !activeLock && !zone ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
+      // Tight gaps between media leave no room for banking without overlapping one.
+      const roomy = !corridor || corridor.maxY - corridor.minY > size * 0.25;
+      const bank = !activeLock && !zone && roomy ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
       const targetR = activeLock ? 0 : point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
 
       // Locks are attached to document geometry: no easing at all. Free flight
