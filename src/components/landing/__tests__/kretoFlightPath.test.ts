@@ -1,9 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { bottomBackflip, headingAt, ledgeLockAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop, type LedgeLock } from "../kretopia/kretoFlightPath";
+import { bottomBackflip, headingAt, ledgeLockAt, lockY, sampleFlight, travelHeading, withFlightTurns, type FlightStop, type LedgeLock } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("reveals a peek progressively with smooth endpoints and reversible motion", () => {
+    const lock: LedgeLock = { from: 100, to: 200, x: 200, y: 400, y2: 300, pose: "peekTop" };
+    expect(lockY(lock, 100)).toBe(400);
+    expect(lockY(lock, 150)).toBe(350);
+    expect(lockY(lock, 200)).toBe(300);
+    expect(Math.abs(lockY(lock, 101) - 400)).toBeLessThan(0.1);
+    expect(Math.abs(lockY(lock, 199) - 300)).toBeLessThan(0.1);
+    expect(lockY(lock, 150)).toBe(350);
+  });
   it("hands contiguous hidden slides over at the same position in either direction", () => {
     const top: LedgeLock = { from: 100, to: 200, x: 200, y: 300, y2: 400, pose: "peekTop" };
     const bottom: LedgeLock = { from: 200, to: 300, x: 200, y: 400, y2: 500, pose: "peekBottom" };
