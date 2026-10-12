@@ -43,4 +43,9 @@ describe("mediaLedgeLocks: sticky tuck", () => {
   it("leaves the sliding transition locks without a hidden height", () => {
     expect(locks.filter((l) => l.y2 !== undefined).every((l) => l.hidden === undefined)).toBe(true);
   });
+  it("marks the approach and the release so the grip pose only shows at the far end of each", () => {
+    expect(locks[0].phase).toBe("arrive");
+    expect(locks[locks.length - 1].phase).toBe("depart");
+    expect(locks.slice(1, -1).every((l) => l.phase === undefined)).toBe(true);
+  });
 });
