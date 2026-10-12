@@ -91,6 +91,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       activeLock = ledgeLockAt(ledgeLocks, scroll, activeLock);
       const pose: FlightPose = activeLock?.pose ?? "fly";
       if (activeLock) poseScroll = scroll;
+      const corridor = activeLock ? undefined : corridors.find(c => scroll >= c.from && scroll <= c.to);
 
       let targetX: number;
       let targetY: number;
@@ -115,7 +116,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // Locks are attached to document geometry: no easing at all. Free flight
       // eases toward the scroll-driven target for a smooth, constant glide.
       let settling = false;
-      const corridor = activeLock ? undefined : corridors.find(c => scroll >= c.from && scroll <= c.to);
       if (first || activeLock || Math.abs(cur.y - targetY) > window.innerHeight) {
         cur.x = targetX; cur.y = targetY; cur.r = targetR; first = false;
       } else {
