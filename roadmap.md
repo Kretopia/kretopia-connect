@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Kreto Landing flight
+- [ ] Correct top-peek descent and bottom-peek ascent with shared Flying endpoints; remove artificial disappearance and run targeted regressions.
 - [x] Keep each free journey facing its media destination, add reversible progressive peek emergence and crisp exclusive edge handoffs; 18 tests and 506 round-trip opacity/exclusive-pose/media-clearance checks pass; compilation OK, not published.
 - [x] Correct stale internal slide handoffs and unsafe eased Flying departures; exact bidirectional peek transitions, full-box media clearance and rotation disabled near media. 17 tests and 506 bidirectional single-pose/opacity checks pass; automatic compilation OK; not published.
 - [x] Lock both ledge poses to every media edge in both scroll directions, stop spring/hover/rotation drift and remove media scale animation; 10 locks and 50 bidirectional jitter checks confirm exact contact and exclusive opacity, 16 tests pass, compilation OK; not published.

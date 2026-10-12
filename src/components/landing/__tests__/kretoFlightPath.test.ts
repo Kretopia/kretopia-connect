@@ -1,9 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { bottomBackflip, headingAt, ledgeLockAt, lockY, sampleFlight, travelHeading, withFlightTurns, type FlightStop, type LedgeLock } from "../kretopia/kretoFlightPath";
+import { bottomBackflip, headingAt, ledgeLockAt, lockY, mediaLedgeLocks, sampleFlight, travelHeading, withFlightTurns, type FlightStop, type LedgeLock } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("descends from Flying into the top peek and rises from Flying into the bottom peek without a position reset", () => {
+    const locks = mediaLedgeLocks({ topAt: 100, middle: 400, release: 800, slide: 80, x: 200,
+      arriveY: 300, topY: 330, hiddenTop: 500, hiddenBottom: 600, bottomY: 700, departY: 800 });
+    const entry = locks[0];
+    const exit = locks[5];
+    expect(lockY(entry, 100)).toBe(300);
+    expect(lockY(exit, 800)).toBe(800);
+    let previous = lockY(entry, 100);
+    for (let scroll = 101; scroll <= 180; scroll++) {
+      const y = lockY(entry, scroll);
+      expect(y).toBeGreaterThanOrEqual(previous);
+      previous = y;
+    }
+    previous = lockY(exit, 800);
+    for (let scroll = 799; scroll >= 720; scroll--) {
+      const y = lockY(exit, scroll);
+      expect(y).toBeLessThanOrEqual(previous);
+      previous = y;
+    }
+  });
   it("reveals a peek progressively with smooth endpoints and reversible motion", () => {
     const lock: LedgeLock = { from: 100, to: 200, x: 200, y: 400, y2: 300, pose: "peekTop" };
     expect(lockY(lock, 100)).toBe(400);
