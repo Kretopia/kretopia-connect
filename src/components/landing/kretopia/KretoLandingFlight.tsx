@@ -82,17 +82,17 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const headingLeft = index % 2 === 1;
         const make = (delta: number, extra: Partial<FlightStop>): FlightStop => ({
           ...base, scroll: at + delta, x: safeEdge, y: centerY, rotate: 0, turn: 0,
-          scale: 0.86, opacity: 1, pose: headingLeft ? "flyLeft" : "fly", ...extra,
+          scale: 1, opacity: 1, pose: headingLeft ? "flyLeft" : "fly", ...extra,
         });
         stops.push(
           make(-420, { y: rect.top + scrollTop() - origin - size * 1.3, rotate: -16, pose: "tuck" }),
           // Backflip: one full in-plane roll of the tucked pose, no flat sideways spin.
-          make(-220, { y: rect.top + scrollTop() - origin - size * 0.9, rotate: -360, pose: "tuck" }),
+          make(-220, { y: rect.top + scrollTop() - origin - size * 0.9, rotate: -190, pose: "tuck" }),
           make(-80, { x: left + rect.width * 0.65 - size / 2, y: rect.top + scrollTop() - origin - size * 0.6, rotate: -14, pose: "peek" }),
           make(80, { x: left + rect.width * 0.5 - size / 2, rotate: 0, pose: "peek" }),
           make(230, { x: left + rect.width * 0.35 - size / 2, y: rect.bottom + scrollTop() - origin - size * 0.3, rotate: 12, pose: "peek" }),
-          // 180° turn: swap to the opposite-facing pose with a gentle bank, never an edge-on spin.
-          make(430, { y: rect.bottom + scrollTop() - origin + 30, rotate: headingLeft ? -14 : 14, pose: headingLeft ? "fly" : "flyLeft" }),
+          // 190° pirouette: full-body spin that ends facing the new travel direction.
+          make(430, { y: rect.bottom + scrollTop() - origin + 30, rotate: headingLeft ? -190 : 190, pose: headingLeft ? "fly" : "flyLeft" }),
         );
       });
       const last = stops[stops.length - 1];
@@ -122,7 +122,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       style={{ x, y, rotate, rotateY, scale, opacity }}>
       {Object.entries(poses).map(([key, src]) => (
         <img key={key} src={src} alt="" width={1024} height={1024} decoding="async" draggable={false}
-          className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 ${key === pose ? "opacity-100" : "opacity-0"} ${key === "tuck" ? "rotate-180" : ""}`} />
+          className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-150 ${key === pose ? "opacity-100" : "opacity-0"} `} />
       ))}
     </motion.div>
   );

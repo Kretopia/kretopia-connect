@@ -26,7 +26,8 @@ export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | 
       scroll, x: mix(start.x, end.x), y: mix(start.y, end.y),
       rotate: mix(start.rotate, end.rotate), turn: mix(start.turn, end.turn),
       scale: mix(start.scale, end.scale), opacity: mix(start.opacity, end.opacity),
-      pose: progress < 0.5 ? start.pose : end.pose,
+      // Face the destination early: the head/body always point where Kreto goes.
+      pose: progress < 0.25 ? start.pose : end.pose,
     };
   }
   return stops[stops.length - 1];
