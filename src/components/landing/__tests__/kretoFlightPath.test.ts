@@ -50,6 +50,19 @@ describe("Kreto scroll flight", () => {
     const hold = { ...peek, scroll: 300 };
     expect(sampleFlight([first, peek, hold], 200)).toMatchObject({ x: 110, y: 220, pose: "peekTop" });
   });
+  it("changes into ledge artwork only after docking", () => {
+    const peek: FlightStop = { ...last, pose: "peekTop" };
+    expect(sampleFlight([first, peek], 90)?.pose).toBe("fly");
+    expect(sampleFlight([first, peek], 96)?.pose).toBe("peekTop");
+  });
+  it("retains each ledge pose until departure is concealed, in both directions", () => {
+    for (const pose of ["peekTop", "peekBottom"] as const) {
+      const peek = { ...first, pose };
+      expect(sampleFlight([peek, last], 50)?.pose).toBe(pose);
+      expect(sampleFlight([peek, last], 60)?.pose).toBe("fly");
+      expect(sampleFlight([peek, last], 50)?.pose).toBe(pose);
+    }
+  });
   it("faces the direction of travel", () => {
     const back: FlightStop = { ...last, scroll: 200, x: 0 };
     expect(headingAt([first, last, back], 40)).toBe(1);

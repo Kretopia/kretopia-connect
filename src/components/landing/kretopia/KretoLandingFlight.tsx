@@ -10,8 +10,12 @@ import { bottomBackflip, headingAt, sampleFlight, type FlightPose, type FlightSt
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as const;
 type Layer = keyof typeof layers;
 /** Where the ledge line sits inside each hiding artwork (fraction of its height). */
-const LEDGE = { peekTop: 0.59, peekBottom: 0.448 };
-const SPRING = { stiffness: 150, damping: 26, mass: 0.6 };
+const LEDGE = { peekTop: 0.854, peekBottom: 0.45 };
+const SPRING = { stiffness: 150, damping: 30, mass: 0.6 };
+// Alpha-bounds normalization: all silhouettes match Flying's 875px height.
+const poseClasses: Record<Layer, string> = {
+  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top scale-[1.287]",
+};
 
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 
@@ -41,6 +45,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const scrollTop = () => scrollRoot?.scrollTop ?? window.scrollY;
     let stops: FlightStop[] = [];
     let frame = 0;
+    let cancelled = false;
+    let artworkReady = false;
+    Promise.all([...ref.current?.querySelectorAll("img") ?? []].map(image => image.decode().catch(() => undefined)))
+      .then(() => { if (!cancelled) { artworkReady = true; queue(); } });
     let activePose: FlightPose = "fly";
     let heading: 1 | -1 = -1;
     let first = true;
@@ -56,7 +64,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       if (Math.abs(scroll - previousScroll) > 1) direction = scroll > previousScroll ? 1 : -1;
       previousScroll = scroll;
       const point = sampleFlight(stops, scroll);
-      if (!point) return;
+      if (!point || !artworkReady) return;
       const size = sizeFor(window.innerWidth);
       // Bank with the climb/dive so the nose leads, mirrored for each heading.
       const ahead = sampleFlight(stops, scroll + direction * 12);
@@ -91,11 +99,11 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         else y.set(flightY);
         rotate.set(targetRotation);
       }
-      const handoff = Math.min(1, Math.max(0, scroll / 180));
-      const blend = handoff * handoff * (3 - 2 * handoff);
-      opacity.jump(blend);
-      // Cross-fade from the original, aligned waving layers at takeoff.
-      hero.style.opacity = String(1 - blend);
+      // Exclusive ownership prevents two silhouettes during Hero takeoff.
+      // The artwork swap occurs during the small launch hop, never by fading.
+      const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
+      opacity.jump(inFlight ? 1 : 0);
+      hero.style.opacity = inFlight ? "0" : "1";
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
@@ -132,7 +140,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const left = rect.left - bounds.left;
         const previous = stops[stops.length - 1];
         const topAt = Math.max(previous.scroll + 200, top + origin - vh * 0.38);
-        const bottomAt = Math.max(topAt + 360, bottom + origin - vh * 0.6);
+        const bottomAt = Math.max(topAt + 520, bottom + origin - vh * 0.6);
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
@@ -140,17 +148,17 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const bottomX = topX;
         const topY = top - size * LEDGE.peekTop;
         const bottomY = bottom - size * LEDGE.peekBottom;
-        const middle = (topAt + bottomAt) / 2;
-        mediaZones.push({ from: topAt - 60, to: bottomAt + 120, left: mediaLeft, right: mediaRight, top, bottom });
+        const middle = (topAt + 170 + bottomAt) / 2;
+        mediaZones.push({ from: topAt - 60, to: bottomAt + 220, left: mediaLeft, right: mediaRight, top, bottom });
         stops.push(
           fly(topAt - 100, topX, topY - size * 0.12, spin),
           { ...fly(topAt, topX, topY, spin), pose: "peekTop" },
-          { ...fly(topAt + 80, topX, topY, spin), pose: "peekTop" },
-          fly(middle, topX, top + Math.max(0, (rect.height - size * 1.28) / 2), spin),
+          { ...fly(topAt + 170, topX, topY, spin), pose: "peekTop" },
+          fly(middle, topX, top + Math.max(0, (rect.height - size * 1.446) / 2), spin),
           { ...fly(bottomAt, bottomX, bottomY, spin), pose: "peekBottom" },
-          { ...fly(bottomAt + 90, bottomX, bottomY, spin), pose: "peekBottom" },
+          { ...fly(bottomAt + 180, bottomX, bottomY, spin), pose: "peekBottom" },
         );
-        stops.push(fly(bottomAt + 170, bottomX, bottomY + size * 0.12, spin));
+        stops.push(fly(bottomAt + 280, bottomX, bottomY + size * 0.12, spin));
       });
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - window.innerHeight + origin;
@@ -175,6 +183,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     window.addEventListener("resize", measure);
     measure();
     return () => {
+      cancelled = true;
       observer.disconnect(); cancelAnimationFrame(frame);
       scrollTarget.removeEventListener("scroll", queue);
       window.removeEventListener("resize", measure);
@@ -190,9 +199,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       style={{ x, y, rotate, opacity }}>
       <motion.div className="relative h-full w-full" animate={!reduced && pose === "fly" ? { y: [0, -3, 0] } : { y: 0 }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}>
       {(Object.keys(layers) as Layer[]).map(key => (
-        <motion.img key={key} src={layers[key]} alt="" width={1024} height={1024} decoding="sync" draggable={false}
-          initial={false} animate={{ opacity: key === visible ? 1 : 0, zIndex: key === visible ? 1 : 0 }} transition={{ opacity: { duration: reduced ? 0 : key === visible ? 0.16 : 0, delay: reduced || key === visible ? 0 : 0.16 }, zIndex: { duration: 0 } }}
-          className={`absolute inset-0 h-full w-full object-contain ${key === "peekBottom" ? "origin-top scale-[1.28]" : ""}`} />
+        <img key={key} src={layers[key]} alt="" width={1024} height={1024} decoding="sync" draggable={false}
+          className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]} ${key === visible ? "block" : "hidden"}`} />
       ))}
       </motion.div>
     </motion.div>

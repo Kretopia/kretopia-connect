@@ -48,7 +48,9 @@ export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | 
     const curve = (key: "x" | "y") =>
       h00 * start[key] + h10 * tangent(stops, i - 1, key, span) + h01 * end[key] + h11 * tangent(stops, i, key, span);
     const eased = t * t * (3 - 2 * t);
-    const switchAt = end.pose !== "fly" ? 0.8 : start.pose !== "fly" ? 0.2 : 0.5;
+    // Dock before changing artwork; keep the ledge pose through the first
+    // half of departure so the flying replacement happens behind the media.
+    const switchAt = end.pose !== "fly" ? 0.95 : start.pose !== "fly" ? 0.55 : 0.5;
     return {
       scroll, x: curve("x"), y: curve("y"),
       rotate: start.rotate + (end.rotate - start.rotate) * eased,
