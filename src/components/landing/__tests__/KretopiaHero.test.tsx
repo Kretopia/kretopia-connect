@@ -95,8 +95,9 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("every decorative background layer is aria-hidden -- no fake data exposed to assistive tech", () => {
     const { container } = renderHero();
     const hiddenLayers = container.querySelectorAll('[aria-hidden="true"]');
-    // vignette, signal field wrapper, KretoMark wrapper, grid, bottom dissolve
-    expect(hiddenLayers.length).toBeGreaterThanOrEqual(5);
+    // Background effects share one hidden ancestor; mascot and dissolve are hidden too.
+    expect(hiddenLayers.length).toBeGreaterThanOrEqual(3);
+    expect(container.querySelector('[data-kreto-wave]')).toHaveAttribute('aria-hidden', 'true');
   });
 
   it("does not throw and still renders the field under prefers-reduced-motion", () => {
@@ -104,7 +105,8 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
     renderHero();
     expect(screen.getByRole("link", { name: /create passport/i })).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
-    const section = document.getElementById("kretopia-hero")!;
+    const section = screen.getByRole("heading", { level: 1 }).closest("section");
+    if (!section) throw new Error("Hero section missing");
     expect(() => fireEvent.mouseMove(section, { clientX: 10, clientY: 10 })).not.toThrow();
   });
 });

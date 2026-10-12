@@ -161,9 +161,9 @@ export const ChapterSection = ({
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1.1, ease: [0.2, 0.65, 0.3, 0.95] }}
-            className="lg:col-span-7 relative"
+            className="lg:col-span-7 relative z-[3]"
           >
-            <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
+            <div data-kreto-flight-media className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
               {video ? (
                 <video
                   ref={videoRef}
@@ -242,11 +242,12 @@ export const ChapterSection = ({
 
           {/* TEXT */}
           <motion.div
+            data-kreto-flight-content
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 0.9, delay: 0.15 }}
-            className="lg:col-span-5"
+            className="relative z-[3] lg:col-span-5"
           >
             {/* Same eyebrow → h2 → body hierarchy as the hero and every
                 other landing-* section (Search, Verified Credits, Kreto) —

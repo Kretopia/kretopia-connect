@@ -26,3 +26,4 @@
 - Render Company Studio through the existing project workspace with additive hiring actions, because projects, invitations, permissions and the single-row carousel must remain identical across modes.
 - Gate Creator finance overview surfaces with the shared account mode in KrePay while reusing its payment workflows and scene header, because Company presentation must not duplicate Creator summaries or fork payment logic.
 - Preserve the native Match video resolution with lossless fast-start remuxing and a CDN asset pointer, because upscaling or recompressing cannot restore missing detail and may degrade the master.
+- Keep Landing flight on one scroll-linked decorative mascot with measured media waypoints and foreground media occlusion, because this preserves video quality, reversible movement, working controls and reduced-motion fallback without a new animation dependency.

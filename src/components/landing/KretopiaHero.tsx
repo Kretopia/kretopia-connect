@@ -142,6 +142,9 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
     };
   }, [ready, reducedMotion]);
 
+  // Greet once on arrival, then retain the existing hover/touch wave.
+  useEffect(() => { play(); }, [play]);
+
   return (
     // No opacity / transform / z-index on this wrapper on purpose: that keeps it
     // out of its own stacking context, so the hit zone below (z-[2]) can sit above
@@ -149,6 +152,7 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
     // bottom dissolve overlay exactly like the former one did.
     <div
       aria-hidden
+      data-kreto-wave
       className="pointer-events-none absolute bottom-4 right-6 hidden h-[180px] w-[180px] select-none lg:block min-[1440px]:right-16 min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
     >
       {/* The figure: still body + waving arm (opacity-95 lives here, as before). */}

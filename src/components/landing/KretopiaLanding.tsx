@@ -32,6 +32,7 @@ import { ChapterProgressNav } from "@/components/landing/kretopia/ChapterProgres
 import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
 import { LandingFunnelTracker } from "@/components/landing/LandingFunnelTracker";
 import { KGradientDefs } from "@/components/brand/KGradientDefs";
+import { KretoLandingFlight } from "@/components/landing/kretopia/KretoLandingFlight";
 
 const LandingBelowFold = lazy(
   () => import("@/components/landing/kretopia/LandingBelowFold"),
@@ -90,6 +91,7 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
       <KGradientDefs />
       {/* I. Hero — critical path */}
       <KretopiaHero />
+      <KretoLandingFlight ready={showRest} />
 
       <div ref={sentinelRef} aria-hidden className="h-px w-full" />
 
