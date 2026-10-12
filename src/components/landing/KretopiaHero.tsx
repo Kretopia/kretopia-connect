@@ -156,7 +156,7 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
       className="pointer-events-none absolute bottom-4 right-6 hidden h-[180px] w-[180px] select-none lg:block min-[1440px]:right-16 min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
     >
       {/* The figure: still body + waving arm (opacity-95 lives here, as before). */}
-      <div className={`absolute inset-0 transition-opacity duration-300 ${ready ? "opacity-95" : "opacity-0"}`}>
+      <div className={`absolute inset-0 scale-[1.07] transition-opacity duration-300 ${ready ? "opacity-95" : "opacity-0"}`}>
         <img
           ref={bodyRef}
           src={kretoBodyUrl}
