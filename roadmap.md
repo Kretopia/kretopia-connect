@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Kreto Landing flight
+- [ ] Match wave/bottom-peek apparent size, confine hideaways within media and replace edge detours with direct media-to-media flight; verify scroll and tests.
 - [x] Restrict route reversals to page edges with monotonic horizontal interpolation, tighten ledge contact and stabilize pose handoffs, add edge backflips and a reversible bottom double backflip; 12 targeted tests pass, downward/upward browser scroll has no runtime errors, automatic compilation OK; not published.
 - [x] Stabilize heading with a dead zone, blend pose changes and Hero handoff, match Hero/flight container sizes, remove standing finale and limit journey to one backflip; nine path tests pass, downward/upward playback checked without runtime errors, automatic compilation OK; not published.
 - [x] Keep full opacity beyond Hero handoff, cover all five chapter media with top/bottom and alternating side waypoints, improve viewport tracking and add upright director finale; nine tests pass, ten ledges, upward heading, full opacity and finale verified in browser; compilation OK, not published.
