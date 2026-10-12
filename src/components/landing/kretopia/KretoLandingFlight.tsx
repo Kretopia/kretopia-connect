@@ -40,7 +40,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const scrollTarget = scrollRoot ?? window;
     const scrollTop = () => scrollRoot?.scrollTop ?? window.scrollY;
     let stops: FlightStop[] = [];
-    let protectedAreas: { x: number; y: number; width: number; height: number }[] = [];
     let frame = 0;
     let activePose: FlightPose = "fly";
     let heading: 1 | -1 = -1;
@@ -59,13 +58,13 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const size = sizeFor(window.innerWidth);
       // Bank with the climb/dive so the nose leads, mirrored for each heading.
       const ahead = sampleFlight(stops, scroll + direction * 12);
-      const climb = ahead ? (ahead.y - point.y) / 12 : 0;
+      const climb = ahead ? (ahead.y - point.y - direction * 12) / 12 : 0;
       const bounds = parent.getBoundingClientRect();
       const offscreen = point.y + bounds.top < -size || point.y + bounds.top > window.innerHeight;
       const renderPose = scroll > 120 && offscreen ? "fly" : point.pose;
-      const bank = renderPose === "fly" ? heading * Math.max(-16, Math.min(16, climb * 22)) : 0;
-      const flightY = scroll > 120
-        ? Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y)) : point.y;
+      const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
+      const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
+      const flightY = renderPose === "fly" ? point.y + (visibleY - point.y) * follow : point.y;
       const flightX = point.x;
       // Follow actual rendered travel, not the next scripted stop. A dead zone
       // prevents left/right chatter while hovering or reversing a short scroll.
@@ -75,6 +74,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const dir = dx > 0 ? 1 : -1;
         if (dir !== heading) { heading = dir; setFacing(dir); lastHeadingChange = now; }
       }
+      const bank = renderPose === "fly" ? heading * Math.max(-12, Math.min(12, climb * 14)) : 0;
       const targetRotation = point.rotate + bank;
       if (first) { x.jump(flightX); y.jump(flightY); rotate.jump(targetRotation); first = false; }
       else {
@@ -100,10 +100,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const size = sizeFor(vw);
       const clampX = (v: number) => Math.max(8, Math.min(vw - size - 8, v));
       const docY = (v: number) => v + scrollTop() - origin;
-      protectedAreas = Array.from(parent.querySelectorAll<HTMLElement>("[data-kreto-flight-content]")).map(el => {
-        const rect = el.getBoundingClientRect();
-        return { x: rect.left - bounds.left, y: docY(rect.top), width: rect.width, height: rect.height };
-      });
       const start = hero.getBoundingClientRect();
       const visibleHero = start.width > 0;
       const x0 = visibleHero ? start.left - bounds.left : vw - size - 16;
@@ -160,7 +156,11 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         stops.push(glide(end, vw - size - 24, vh * 0.55, spin));
       }
       // Keep stops strictly ordered even with short media and tall viewports.
-      stops = stops.map((stop, i) => ({ ...stop, scroll: i === 0 ? stop.scroll : Math.max(stop.scroll, stops[i - 1].scroll + 1) }));
+      stops = stops.reduce<FlightStop[]>((ordered, stop) => {
+        const previous = ordered[ordered.length - 1];
+        ordered.push({ ...stop, scroll: previous ? Math.max(stop.scroll, previous.scroll + 1) : stop.scroll });
+        return ordered;
+      }, []);
       const initial = headingAt(stops, 200);
       if (first && initial !== 0) { heading = initial; setFacing(initial); }
       queue();
