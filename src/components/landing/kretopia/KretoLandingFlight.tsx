@@ -22,10 +22,10 @@ const poseClasses: Record<Layer, string> = {
 const FLY_ALPHA = { top: 0, bottom: 1 };
 
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
-/** Where along a media's width Kreto flies or attaches, cycled so no two neighbours repeat. */
-const MEDIA_X = [0.65, 0.3, 0.25, 0.75];
-/** After a scroll gesture ends, Kreto waits this long before popping out of his hiding place. */
-const SCROLL_IDLE_MS = 160;
+/** After the scroll settles, the media's real positions are checked once and the flight re-measured if they moved. */
+const REMEASURE_IDLE_MS = 180;
+/** Inside this distance of his destination he keeps the heading he has (no flapping on a vertical climb). */
+const HEADING_DEAD_ZONE = 0.3;
 /** Reversing the scroll turns him with one backflip (in the picture plane, so the volume is never flattened). */
 const TURN_MS = 520;
 /**
@@ -80,10 +80,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let endScroll = 0;
     let ledgeLocks: LedgeLock[] = [];
     let flips: Flip[] = [];
-    // Sticky attach: tucked behind the media while the page moves, out on the ledge once it stops.
-    let peek = 1;
-    let lastScrollAt = 0;
     let idleTimer = 0;
+    let lastSignature = "";
     let turnStart = -1;
     let turnFrom: 1 | -1 = heading;
     let mediaEls: HTMLElement[] = [];
@@ -127,24 +125,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       let targetX: number;
       let targetY: number;
       if (activeLock) {
+        // One geometry for the slides and the resting ledge, so they join without a jump; the
+        // geometry itself is re-measured when the media move (see the idle check below).
         targetX = activeLock.x;
-        let base = lockY(activeLock, scroll);
-        let hidden = activeLock.hidden;
-        const mediaEl = activeLock.media !== undefined ? mediaEls[activeLock.media] : undefined;
-        if (hidden !== undefined && mediaEl) {
-          // A resting lock reads the media's live edge every frame: no margin, whatever has shifted since measure().
-          const r = mediaEl.getBoundingClientRect();
-          const top = r.top - bounds.top;
-          const bottom = r.bottom - bounds.top;
-          if (activeLock.pose === "peekTop") {
-            base = top - size * LEDGE.peekTop;
-            hidden = Math.max(base, Math.min(top, bottom - size * HEIGHT.peekTop));
-          } else {
-            base = bottom - size * LEDGE.peekBottom;
-            hidden = Math.min(base, Math.max(top, bottom - size * HEIGHT.peekBottom));
-          }
-        }
-        targetY = hidden !== undefined ? base + (hidden - base) * (1 - peek) : base;
+        targetY = lockY(activeLock, scroll);
       } else {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
@@ -155,16 +139,14 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // Tight gaps between media leave no room for banking without overlapping one.
       const roomy = !corridor || (!Number.isFinite(corridor.maxY) && targetY > corridor.minY + size);
       const now = performance.now();
-      const idleNow = now - lastScrollAt >= SCROLL_IDLE_MS;
-      const peekTarget = idleNow ? 1 : 0;
-      peek += (peekTarget - peek) * 0.22;
-      const peeking = Math.abs(peekTarget - peek) >= 0.01;
-      if (!peeking) peek = peekTarget;
-      // One direction, set by the scroll alone: down faces right, up faces left. Only a reversal of the
-      // scroll turns him, and he does it with a full backflip.
-      const wantHeading: 1 | -1 = direction === 1 ? 1 : -1;
-      if (!first && wantHeading !== heading) { turnStart = now; turnFrom = heading; }
-      heading = wantHeading;
+      // He faces the media he is flying to: the next one when the page goes down, the one he is
+      // coming back to when it goes up (from the Hero onward). A change of destination side is a backflip.
+      const destX = destinationX(scroll, direction);
+      if (destX !== undefined && Math.abs(destX - point.x) > size * HEADING_DEAD_ZONE) {
+        const wantHeading: 1 | -1 = destX > point.x ? 1 : -1;
+        if (!first && wantHeading !== heading) { turnStart = now; turnFrom = heading; }
+        heading = wantHeading;
+      }
       const turnT = turnStart >= 0 ? (now - turnStart) / TURN_MS : 1;
       const turning = turnT < 1 && !activeLock;
       const bank = !activeLock && !zone && roomy ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
@@ -185,8 +167,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       if (corridor) cur.y = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, cur.y)) : (corridor.minY + corridor.maxY) / 2;
       if (!roomy) cur.r = 0;
       wasLocked = !!activeLock;
-      // First half of a turn keeps the artwork he was flying with, the second half
-      // shows the new one: the swap happens while the figure is edge-on.
+      // First half of a turn keeps the artwork he was flying with, the second half shows the new one:
+      // the swap happens at the top of the roll.
       // The grip pose waits for the last moment: Flying all the way down to the edge, the hands only at
       // the end of the approach, and Flying again as soon as he lets go.
       let art: FlightPose = pose;
@@ -213,13 +195,26 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
       el.style.opacity = inFlight ? "1" : "0";
-      // The hands are drawn over the media only while he rests on the edge, never while tucked or moving.
-      const gripping = activeLock?.hidden !== undefined && (art === "peekTop" || art === "peekBottom") && peek > 0.98;
+      // The hands are drawn over the media for as long as he holds the edge.
+      const gripping = activeLock?.hidden !== undefined && (art === "peekTop" || art === "peekBottom");
       grip.style.opacity = inFlight && gripping ? "1" : "0";
       hero.style.opacity = inFlight ? "0" : "1";
-      if (settling || peeking || turning) queue();
+      if (settling || turning) queue();
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
+
+    /** The media's x he is flying to: the next corridor's end going down, the previous corridor's start going up. */
+    const destinationX = (scroll: number, dir: 1 | -1): number | undefined => {
+      const inside = corridors.find(c => scroll >= c.from && scroll <= c.to);
+      if (inside) return dir === 1 ? inside.endX : inside.startX;
+      if (dir === 1) return corridors.find(c => c.from > scroll)?.endX;
+      return [...corridors].reverse().find(c => c.to < scroll)?.startX;
+    };
+    /** Document positions of every media: a change means the layout moved and the geometry is stale. */
+    const signature = () => {
+      const top = parent.getBoundingClientRect().top;
+      return mediaEls.map(m => { const r = m.getBoundingClientRect(); return `${Math.round(r.top - top)}:${Math.round(r.height)}:${Math.round(r.left)}`; }).join("|") + `|${parent.scrollHeight}`;
+    };
 
     const measure = () => {
       const bounds = parent.getBoundingClientRect();
@@ -237,7 +232,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         ({ scroll, x: clampX(px), y: py, rotate: 0, opacity: 1, pose: "fly", ...extra });
       const glide = (scroll: number, px: number, screenY: number) => fly(scroll, px, screenY + scroll - origin);
       // Takeoff: a small upward hop out of the wave, then a long gliding arc into the page.
-      const awayX = x0 > vw / 2 ? -1 : 1;
+      // The hop is toward the first media he is flying to, never away from it.
+      const firstRect = parent.querySelector<HTMLElement>("[data-kreto-flight-media]")?.getBoundingClientRect();
+      const firstX = firstRect ? firstRect.left - bounds.left + firstRect.width / 2 : vw / 2;
+      const awayX = firstX >= x0 ? 1 : -1;
       stops = [
         { scroll: 0, x: x0, y: y0, rotate: 0, opacity: 0, pose: "fly" },
         fly(90, x0 + awayX * size * 0.12, y0 - size * 0.22),
@@ -265,7 +263,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
-        const x = Math.max(mediaLeft, Math.min(mediaRight, left + rect.width * MEDIA_X[index % MEDIA_X.length] - size / 2));
+        // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
+        const x = Math.abs(previous.x - mediaLeft) <= Math.abs(previous.x - mediaRight) ? mediaLeft : mediaRight;
         // One media in two holds him; the others he flips past.
         const attach = index % 2 === 0;
         const topY = top - size * LEDGE.peekTop;
@@ -330,19 +329,20 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         return ordered;
       }, []);
       shown = undefined;
+      lastSignature = signature();
       queue();
     };
     const observer = new ResizeObserver(measure);
     observer.observe(parent);
     const onScroll = () => {
-      lastScrollAt = performance.now();
       window.clearTimeout(idleTimer);
-      idleTimer = window.setTimeout(queue, SCROLL_IDLE_MS + 20);
+      idleTimer = window.setTimeout(() => { if (signature() !== lastSignature) measure(); }, REMEASURE_IDLE_MS);
       queue();
     };
     scrollTarget.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measure);
     measure();
+    mediaEls.forEach(media => observer.observe(media));
     return () => {
       cancelled = true;
       observer.disconnect(); cancelAnimationFrame(frame);
