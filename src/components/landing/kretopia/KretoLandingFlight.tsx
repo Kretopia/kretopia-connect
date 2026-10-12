@@ -4,9 +4,10 @@ import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
 import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
-import { bottomBackflip, flipAt, ledgeLockAt, lockY, mediaLedgeLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
+import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
+import { bottomBackflip, flipAt, ledgeLockAt, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
 
-const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as const;
+const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peekSide } as const;
 type Layer = keyof typeof layers;
 const layerKeys = Object.keys(layers) as Layer[];
 /** Where the ledge line sits inside each hiding artwork (fraction of its rendered size). */
@@ -15,8 +16,14 @@ const LEDGE = { peekTop: 0.854, peekBottom: 0.45 };
 const HEIGHT = { peekTop: 1.446, peekBottom: 1.287 };
 // Alpha-bounds normalization: all silhouettes match Flying's 875px height.
 const poseClasses: Record<Layer, string> = {
-  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top scale-[1.287]",
+  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top scale-[1.287]", peekSide: "",
 };
+/**
+ * The side hide artwork (1024 square, body cut by a straight vertical line): the media edge crosses
+ * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
+ * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
+ */
+const SIDE = { cut: 0.3145, handsY: 0.53, minScale: 0.34 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -36,6 +43,7 @@ const TURN_MS = 520;
 const GRIP_CLIP = {
   peekTop: "polygon(25% 58.5%, 40% 58.5%, 40% 62.6%, 60% 62.6%, 60% 58.5%, 75% 58.5%, 75% 69%, 25% 69%)",
   peekBottom: "polygon(28% 29.5%, 74% 29.5%, 74% 36%, 62% 36%, 62% 33.3%, 40% 33.3%, 40% 36%, 28% 36%)",
+  peekSide: "polygon(24.5% 40%, 31.45% 40%, 31.45% 66%, 24.5% 66%)",
 } as const;
 
 /**
@@ -47,7 +55,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const imgs = useRef<Partial<Record<Layer, HTMLImageElement | null>>>({});
   const gripRef = useRef<HTMLDivElement>(null);
-  const gripImgs = useRef<Partial<Record<"peekTop" | "peekBottom", HTMLImageElement | null>>>({});
+  const gripImgs = useRef<Partial<Record<"peekTop" | "peekBottom" | "peekSide", HTMLImageElement | null>>>({});
   const reduced = useReducedMotion();
 
   useEffect(() => {
@@ -177,7 +185,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         art = activeLock.phase === "arrive" ? (t >= 0.9 ? pose : "fly") : t >= 0.1 ? "fly" : pose;
       }
       const faceNow = turning && turnT < 0.5 ? turnFrom : heading;
-      show(art === "peekTop" || art === "peekBottom" ? art : faceNow === 1 ? "right" : "left", art);
+      const layer: Layer = art === "peekTop" || art === "peekBottom" || art === "peekSide" ? art : faceNow === 1 ? "right" : "left";
+      const isPeek = layer !== "right" && layer !== "left";
+      show(layer, art);
       // Every pirouette is an in-plane roll of the 3D-rendered sprite: it keeps its volume, never goes edge-on.
       const flip = activeLock ? undefined : flipAt(flips, scroll);
       const flipRoll = flip ? (flip.kind === "backflip" ? -1 : 1) * heading * 360 * flip.t : 0;
@@ -188,15 +198,27 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r + flipRoll + turnRoll}deg)`;
       el.style.transform = transform;
       grip.style.transform = transform;
-      for (const key of ["peekTop", "peekBottom"] as const) {
+      for (const key of ["peekTop", "peekBottom", "peekSide"] as const) {
         const g = gripImgs.current[key];
         if (g) g.style.visibility = key === art ? "visible" : "hidden";
+      }
+      if (art === "peekSide" && activeLock) {
+        // The same mirror and fit on the sprite and on its hands overlay, about the point where the
+        // media edge crosses the artwork, so the hands never move relative to the edge.
+        const mirror = activeLock.side === "left" ? -1 : 1;
+        const k = activeLock.scale ?? 1;
+        const originX = (mirror === 1 ? SIDE.cut : 1 - SIDE.cut) * 100;
+        for (const image of [imgs.current.peekSide, gripImgs.current.peekSide]) {
+          if (!image) continue;
+          image.style.transformOrigin = `${originX}% ${SIDE.handsY * 100}%`;
+          image.style.transform = `scale(${mirror * k}, ${k})`;
+        }
       }
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
       el.style.opacity = inFlight ? "1" : "0";
       // The hands are drawn over the media for as long as he holds the edge.
-      const gripping = activeLock?.hidden !== undefined && (art === "peekTop" || art === "peekBottom");
+      const gripping = (activeLock?.hidden !== undefined || activeLock?.pose === "peekSide") && isPeek;
       grip.style.opacity = inFlight && gripping ? "1" : "0";
       hero.style.opacity = inFlight ? "0" : "1";
       if (settling || turning) queue();
@@ -263,10 +285,23 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
-        // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
-        const x = Math.abs(previous.x - mediaLeft) <= Math.abs(previous.x - mediaRight) ? mediaLeft : mediaRight;
         // One media in two holds him; the others he flips past.
         const attach = index % 2 === 0;
+        // The others he hides beside: on the side with the most room, as much of him as fits in the margin.
+        const rectRight = left + rect.width;
+        const room = Math.max(left, vw - rectRight);
+        const sideScale = Math.min(1, (room - 2) / ((1 - SIDE.cut) * size));
+        const sideMode = !attach && sideScale >= SIDE.minScale;
+        const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
+        const sideX = sideOf === "right" ? rectRight - SIDE.cut * size : left - (1 - SIDE.cut) * size;
+        // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
+        const x = sideMode
+          ? sideX
+          : Math.abs(previous.x - mediaLeft) <= Math.abs(previous.x - mediaRight) ? mediaLeft : mediaRight;
+        // The side hide's stops are not clamped: his box may extend past the viewport (transparent there).
+        const put = sideMode
+          ? (scroll: number, px: number, py: number): FlightStop => ({ scroll, x: px, y: py, rotate: 0, opacity: 1, pose: "fly" })
+          : fly;
         const topY = top - size * LEDGE.peekTop;
         const bottomY = bottom - size * LEDGE.peekBottom;
         // Hidden heights: the whole silhouette sits behind the media.
@@ -285,6 +320,16 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           flips.push({ from: release + 30, to: release + 220, kind: index % 4 === 0 ? "spin" : "backflip" });
         } else {
           flips.push({ from: topAt - 240, to: topAt - 50, kind: index % 4 === 1 ? "backflip" : "spin" });
+          if (sideMode) {
+            const h = bottom - top;
+            const made = mediaSideLocks({
+              topAt, release, slide: Math.min(180, (middle - topAt) * 0.6), x, arriveY,
+              sideY1: top + h * 0.28 - SIDE.handsY * size, sideY2: top + h * 0.62 - SIDE.handsY * size,
+              departY, side: sideOf, scale: sideScale,
+            });
+            made.forEach(lock => { lock.media = index; });
+            ledgeLocks.push(...made);
+          }
         }
         mediaZones.push({ from: topAt - 60, to: release + 40, left: mediaLeft, right: mediaRight, top, bottom });
         // Flying is never allowed to overlap a media: it arrives fully above the
@@ -294,8 +339,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         corridorMin = departY;
         corridorX = x;
         stops.push(
-          fly(topAt - 100, x, arriveY - size * 0.12),
-          fly(topAt - 1, x, arriveY),
+          put(topAt - 100, x, arriveY - size * 0.12),
+          put(topAt - 1, x, arriveY),
           ...(attach
             ? [
                 { ...fly(topAt, x, topY), pose: "peekTop" as const },
@@ -304,8 +349,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
                 { ...fly(release, x, bottomY), pose: "peekBottom" as const },
               ]
             : []),
-          fly(release + 1, x, departY),
-          fly(release + 100, x, departY + size * 0.12),
+          put(release + 1, x, departY),
+          put(release + 100, x, departY + size * 0.12),
         );
       });
       // The line the loop section opens with: he somersaults as he reaches it.
@@ -371,7 +416,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     {/* The hands, one level above the media (z-[3]): same box, same transform, only the glove band. */}
     <div ref={gripRef} aria-hidden="true" data-kreto-grip className={`${sizeClass} z-[4]`} style={{ opacity: 0 }}>
       <div className="relative h-full w-full">
-        {(["peekTop", "peekBottom"] as const).map(key => (
+        {(["peekTop", "peekBottom", "peekSide"] as const).map(key => (
           <img key={key} ref={node => { gripImgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}

@@ -87,7 +87,7 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
   }, [showRest]);
 
   return (
-    <div className="landing-theme k-gradient-scope relative bg-background text-foreground">
+    <div className="landing-theme k-gradient-scope relative overflow-x-clip bg-background text-foreground">
       <KGradientDefs />
       {/* I. Hero — critical path */}
       <KretopiaHero />
