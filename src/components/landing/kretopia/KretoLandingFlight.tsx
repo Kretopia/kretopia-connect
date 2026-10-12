@@ -109,7 +109,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const onTop = index % 2 === 0;
         // Time the hideaway so the ledge sits comfortably inside the viewport.
         const ledgeAt = onTop ? top + origin - vh * 0.38 : bottom + origin - vh * 0.6;
-        const at = Math.max(prev.scroll + 700, ledgeAt);
+        const at = Math.max(prev.scroll + (index === 0 ? 700 : 560), ledgeAt);
         const peekX = clampX(left + rect.width * (onTop ? 0.7 : 0.3) - size / 2);
         const fromSide: 1 | -1 = prev.x > peekX ? 1 : -1;
         const exitSide = (clampX(peekX - fromSide * size * 1.6) === peekX - fromSide * size * 1.6 ? -fromSide : fromSide) as 1 | -1;
@@ -136,7 +136,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         }
         // 360° backflip on the way out (nose up first), then keep gliding the same way.
         const last = stops[stops.length - 1];
-        stops.push(glide(at + 620, last.x + exitSide * size * 1.3, vh * 0.4, spin));
+        stops.push(glide(at + 420, last.x + exitSide * size * 1.3, vh * 0.4, spin));
       });
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - window.innerHeight + origin;
