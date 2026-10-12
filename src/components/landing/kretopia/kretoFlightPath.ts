@@ -23,9 +23,12 @@ export interface LedgeLock {
 /** Boundary-based hysteresis: tiny reversals cannot replay a dock/undock. */
 export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLock): LedgeLock | undefined {
   const exact = locks.find(lock => scroll >= lock.from && scroll <= lock.to);
+  // Internal slide/pose handoffs follow the exact scroll position in both
+  // directions. Hysteresis only belongs at the outer docking boundaries;
+  // retaining a different slide here replays it and visibly pops the artwork.
+  if (exact) return exact;
   if (active && scroll >= active.from - 18 && scroll <= active.to + 18) {
-    // Contiguous locks hand over directly so the pose never leaves its hideaway.
-    return exact && exact.pose === active.pose ? exact : active;
+    return active;
   }
   return exact;
 }
