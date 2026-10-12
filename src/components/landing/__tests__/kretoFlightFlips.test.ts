@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flipAt, mediaLedgeLocks, type Flip } from "../kretopia/kretoFlightPath";
+import { flipAt, mediaLedgeLocks, mediaSideLocks, type Flip } from "../kretopia/kretoFlightPath";
 
 const flips: Flip[] = [
   { from: 100, to: 300, kind: "backflip" },
@@ -47,5 +47,28 @@ describe("mediaLedgeLocks: sticky tuck", () => {
     expect(locks[0].phase).toBe("arrive");
     expect(locks[locks.length - 1].phase).toBe("depart");
     expect(locks.slice(1, -1).every((l) => l.phase === undefined)).toBe(true);
+  });
+});
+
+describe("mediaSideLocks", () => {
+  const locks = mediaSideLocks({
+    topAt: 1000, release: 2000, slide: 150, x: 90,
+    arriveY: 100, sideY1: 400, sideY2: 800, departY: 1200, side: "left", scale: 0.6,
+  });
+
+  it("comes down the margin, holds and drifts along the edge, then leaves, with no gap between locks", () => {
+    expect(locks).toHaveLength(3);
+    expect(locks[0].to).toBe(locks[1].from);
+    expect(locks[1].to).toBe(locks[2].from);
+    expect(locks[0].y2).toBe(locks[1].y);
+    expect(locks[1].y2).toBe(locks[2].y);
+    expect(locks[2].y2).toBe(1200);
+  });
+
+  it("carries the side, the fit and the phases the grip pose waits on", () => {
+    expect(locks.every((l) => l.pose === "peekSide" && l.side === "left" && l.scale === 0.6 && l.x === 90)).toBe(true);
+    expect(locks[0].phase).toBe("arrive");
+    expect(locks[1].phase).toBeUndefined();
+    expect(locks[2].phase).toBe("depart");
   });
 });

@@ -1,4 +1,4 @@
-export type FlightPose = "fly" | "peekTop" | "peekBottom" | "stand";
+export type FlightPose = "fly" | "peekTop" | "peekBottom" | "peekSide" | "stand";
 export interface FlightStop {
   scroll: number;
   x: number;
@@ -23,7 +23,29 @@ export interface LedgeLock {
   phase?: "arrive" | "depart";
   /** Index of the media this lock belongs to, so a resting lock can read its live edge. */
   media?: number;
-  pose: "peekTop" | "peekBottom";
+  /** Side hide only: which edge of the media he holds (the artwork is mirrored for "left"). */
+  side?: "left" | "right";
+  /** Side hide only: the uniform scale that fits his head and hands in the margin. */
+  scale?: number;
+  pose: "peekTop" | "peekBottom" | "peekSide";
+}
+
+/**
+ * The side hide: he comes down the margin, holds the media's edge while the page passes it,
+ * drifts a little along the edge, and leaves down the margin. Same phases as the top / bottom
+ * hide so the grip pose only shows at the far end of the approach and the release.
+ */
+export function mediaSideLocks({ topAt, release, slide, x, arriveY, sideY1, sideY2, departY, side, scale }: {
+  topAt: number; release: number; slide: number; x: number;
+  arriveY: number; sideY1: number; sideY2: number; departY: number;
+  side: "left" | "right"; scale: number;
+}): LedgeLock[] {
+  const common = { x, side, scale, pose: "peekSide" as const };
+  return [
+    { from: topAt, to: topAt + slide, y: arriveY, y2: sideY1, phase: "arrive", ...common },
+    { from: topAt + slide, to: release - slide, y: sideY1, y2: sideY2, ...common },
+    { from: release - slide, to: release, y: sideY2, y2: departY, phase: "depart", ...common },
+  ];
 }
 
 export type FlipKind = "backflip" | "spin";
