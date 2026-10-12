@@ -15,13 +15,26 @@ export interface LedgeLock {
   to: number;
   x: number;
   y: number;
+  /** Optional end height: the hidden pose slides linearly behind the media. */
+  y2?: number;
   pose: "peekTop" | "peekBottom";
 }
 
 /** Boundary-based hysteresis: tiny reversals cannot replay a dock/undock. */
 export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLock): LedgeLock | undefined {
-  if (active && scroll >= active.from - 18 && scroll <= active.to + 18) return active;
-  return locks.find(lock => scroll >= lock.from && scroll <= lock.to);
+  const exact = locks.find(lock => scroll >= lock.from && scroll <= lock.to);
+  if (active && scroll >= active.from - 18 && scroll <= active.to + 18) {
+    // Contiguous locks hand over directly so the pose never leaves its hideaway.
+    return exact && exact.pose === active.pose ? exact : active;
+  }
+  return exact;
+}
+
+/** Document-space height of a lock at a scroll position (clamped to its range). */
+export function lockY(lock: LedgeLock, scroll: number): number {
+  if (lock.y2 === undefined) return lock.y;
+  const t = Math.max(0, Math.min(1, (scroll - lock.from) / Math.max(1, lock.to - lock.from)));
+  return lock.y + (lock.y2 - lock.y) * t;
 }
 
 const same = (a?: FlightStop, b?: FlightStop) => !!a && !!b && a.x === b.x && a.y === b.y;
