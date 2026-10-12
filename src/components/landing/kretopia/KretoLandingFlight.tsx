@@ -32,7 +32,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const parent = ref.current?.parentElement;
     const hero = parent?.querySelector<HTMLElement>("[data-kreto-wave]");
     if (!parent || !hero || reduced) {
-      opacity.set(0);
+      opacity.jump(0);
       return;
     }
     // AppContent scrolls its own full-height shell, not the browser window.
