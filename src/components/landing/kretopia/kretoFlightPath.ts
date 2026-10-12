@@ -7,6 +7,7 @@ export interface FlightStop {
   rotate: number;
   opacity: number;
   pose: FlightPose;
+  facing?: -1 | 1;
 }
 
 const same = (a?: FlightStop, b?: FlightStop) => !!a && !!b && a.x === b.x && a.y === b.y;
@@ -45,9 +46,39 @@ export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | 
       rotate: start.rotate + (end.rotate - start.rotate) * eased,
       opacity: start.opacity + (end.opacity - start.opacity) * t,
       pose: t < switchAt ? start.pose : end.pose,
+      ...(start.facing !== undefined || end.facing !== undefined ? { facing: t < 0.5 ? start.facing ?? end.facing : end.facing ?? start.facing } : {}),
     };
   }
   return stops[stops.length - 1];
+}
+
+/** Scroll-keyed turnaround: brake at a waypoint, backflip, then depart.
+ * A constant-width image preserves the rendered volume instead of going edge-on.
+ */
+export function withFlightTurns(stops: FlightStop[]): FlightStop[] {
+  const result: FlightStop[] = [];
+  let spin = 0;
+  let facing: -1 | 1 = 1;
+  for (let i = 0; i < stops.length; i++) {
+    const stop = stops[i];
+    const prev = stops.slice(0, i).reverse().find(p => Math.abs(p.x - stop.x) > 4);
+    const next = stops.slice(i + 1).find(p => Math.abs(p.x - stop.x) > 4);
+    const incoming = prev ? Math.sign(stop.x - prev.x) : next ? Math.sign(next.x - stop.x) : facing;
+    const outgoing = next ? Math.sign(next.x - stop.x) : incoming;
+    facing = incoming < 0 ? -1 : 1;
+    const before = stops[i - 1];
+    const after = stops[i + 1];
+    if (stop.pose === "fly" && before && after && incoming !== outgoing) {
+      const span = Math.min(90, (stop.scroll - before.scroll) * 0.3, (after.scroll - stop.scroll) * 0.3);
+      result.push({ ...stop, scroll: stop.scroll - span, rotate: stop.rotate + spin, facing });
+      const nextFacing = outgoing < 0 ? -1 : 1;
+      result.push({ ...stop, rotate: stop.rotate + spin - facing * 180, facing: nextFacing });
+      spin -= facing * 360;
+      result.push({ ...stop, scroll: stop.scroll + span, rotate: stop.rotate + spin, facing: nextFacing });
+      facing = nextFacing;
+    } else result.push({ ...stop, rotate: stop.rotate + spin, facing });
+  }
+  return result;
 }
 
 /** -1 flying left, 1 flying right, 0 hovering (keep the current heading). */
