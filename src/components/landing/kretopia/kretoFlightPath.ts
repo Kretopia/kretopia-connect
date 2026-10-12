@@ -1,4 +1,4 @@
-export type FlightPose = "fly" | "peekTop" | "peekBottom";
+export type FlightPose = "fly" | "peekTop" | "peekBottom" | "stand";
 export interface FlightStop {
   scroll: number;
   x: number;

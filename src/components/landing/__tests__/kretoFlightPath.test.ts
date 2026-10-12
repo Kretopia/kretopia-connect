@@ -47,4 +47,9 @@ describe("Kreto scroll flight", () => {
     sampleFlight([first, last], 80);
     expect(sampleFlight([first, last], 25)).toEqual(before);
   });
+  it("settles upright at the end without fading and takes flight again on return", () => {
+    const landing: FlightStop = { ...last, scroll: 200, pose: "stand", opacity: 1 };
+    expect(sampleFlight([last, landing], 250)).toMatchObject({ pose: "stand", opacity: 1 });
+    expect(sampleFlight([last, landing], 110)).toMatchObject({ pose: "fly", opacity: 1 });
+  });
 });
