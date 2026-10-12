@@ -28,35 +28,41 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       opacity.set(0);
       return;
     }
+    // AppContent scrolls its own full-height shell, not the browser window.
+    let ancestor = parent.parentElement;
+    while (ancestor && !/auto|scroll/.test(getComputedStyle(ancestor).overflowY)) ancestor = ancestor.parentElement;
+    const scrollRoot = ancestor;
+    const scrollTarget = scrollRoot ?? window;
+    const scrollTop = () => scrollRoot?.scrollTop ?? window.scrollY;
     let stops: FlightStop[] = [];
     let frame = 0;
     let activePose: FlightPose = "fly";
     const paint = () => {
       frame = 0;
-      const point = sampleFlight(stops, window.scrollY);
+      const point = sampleFlight(stops, scrollTop());
       if (!point) return;
       x.set(point.x); y.set(point.y); rotate.set(point.rotate);
       rotateY.set(point.turn); scale.set(point.scale); opacity.set(point.opacity);
       // Cross-fade from the original, aligned waving layers at takeoff.
-      hero.style.opacity = String(1 - Math.min(1, window.scrollY / 160));
+      hero.style.opacity = String(1 - Math.min(1, scrollTop() / 160));
       if (point.pose !== activePose) { activePose = point.pose; setPose(point.pose); }
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
     const measure = () => {
       const bounds = parent.getBoundingClientRect();
-      const origin = bounds.top + window.scrollY;
+      const origin = bounds.top + scrollTop();
       const size = window.innerWidth >= 1440 ? 240 : window.innerWidth >= 1024 ? 180 : 104;
       const start = hero.getBoundingClientRect();
       const visibleHero = start.width > 0;
       const initialX = visibleHero ? start.left - bounds.left : window.innerWidth - size - 16;
-      const initialY = visibleHero ? start.top + window.scrollY - origin : Math.min(window.innerHeight * 0.7, 620);
+      const initialY = visibleHero ? start.top + scrollTop() - origin : Math.min(window.innerHeight * 0.7, 620);
       const base: FlightStop = { scroll: 0, x: initialX, y: initialY, rotate: 0, turn: 0, scale: 1, opacity: 0, pose: "fly" };
       stops = [base, { ...base, scroll: 160, y: initialY + 120, rotate: 18, opacity: 1 }];
       hideaways.forEach((id, index) => {
         const media = parent.querySelector<HTMLElement>(`#${id} [data-kreto-flight-media]`);
         if (!media) return;
         const rect = media.getBoundingClientRect();
-        const centerY = rect.top + window.scrollY - origin + rect.height * 0.45;
+        const centerY = rect.top + scrollTop() - origin + rect.height * 0.45;
         const at = Math.max(stops[stops.length - 1].scroll + 600, centerY + origin - window.innerHeight * 0.48);
         const left = rect.left - bounds.left;
         const side = index % 2 === 0 ? 1 : -1;
@@ -86,12 +92,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     };
     const observer = new ResizeObserver(measure);
     observer.observe(parent);
-    window.addEventListener("scroll", queue, { passive: true });
+    scrollTarget.addEventListener("scroll", queue, { passive: true });
     window.addEventListener("resize", measure);
     measure();
     return () => {
       observer.disconnect(); cancelAnimationFrame(frame);
-      window.removeEventListener("scroll", queue);
+      scrollTarget.removeEventListener("scroll", queue);
       window.removeEventListener("resize", measure);
       hero.style.removeProperty("opacity");
     };
