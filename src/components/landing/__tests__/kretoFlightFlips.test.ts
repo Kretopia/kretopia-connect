@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flipAt, mediaLedgeLocks, mediaSideLocks, type Flip } from "../kretopia/kretoFlightPath";
+import { flipAt, lockX, mediaLedgeLocks, mediaSideLocks, type Flip } from "../kretopia/kretoFlightPath";
 
 const flips: Flip[] = [
   { from: 100, to: 300, kind: "backflip" },
@@ -50,25 +50,45 @@ describe("mediaLedgeLocks: sticky tuck", () => {
   });
 });
 
-describe("mediaSideLocks", () => {
+describe("mediaSideLocks: one horizontal reveal", () => {
   const locks = mediaSideLocks({
-    topAt: 1000, release: 2000, slide: 150, x: 90,
-    arriveY: 100, sideY1: 400, sideY2: 800, departY: 1200, side: "left", scale: 0.6,
+    topAt: 1000, release: 2000, slide: 100, reveal: 200,
+    flyX: 90, hiddenX: 300, arriveY: 100, sideY1: 400, sideY2: 800, departY: 1200, side: "left", scale: 0.7,
   });
 
-  it("comes down the margin, holds and drifts along the edge, then leaves, with no gap between locks", () => {
-    expect(locks).toHaveLength(3);
-    expect(locks[0].to).toBe(locks[1].from);
-    expect(locks[1].to).toBe(locks[2].from);
-    expect(locks[0].y2).toBe(locks[1].y);
-    expect(locks[1].y2).toBe(locks[2].y);
-    expect(locks[2].y2).toBe(1200);
+  it("is five contiguous locks that join in x and in y", () => {
+    expect(locks).toHaveLength(5);
+    for (let i = 1; i < locks.length; i++) {
+      expect(locks[i].from).toBe(locks[i - 1].to);
+      expect(locks[i].x).toBe(locks[i - 1].x2 ?? locks[i - 1].x);
+      expect(locks[i].y).toBe(locks[i - 1].y2 ?? locks[i - 1].y);
+    }
+    expect(locks[4].y2).toBe(1200);
+    expect(locks[4].x2).toBe(90);
   });
 
-  it("carries the side, the fit and the phases the grip pose waits on", () => {
-    expect(locks.every((l) => l.pose === "peekSide" && l.side === "left" && l.scale === 0.6 && l.x === 90)).toBe(true);
+  it("goes behind the edge first, comes out once, and grips only at the maximum", () => {
+    expect(locks[0].x2).toBe(300);
+    expect(locks[1].x).toBe(300);
+    expect(locks[1].x2).toBe(90);
+    expect(locks.map((l) => !!l.grip)).toEqual([false, false, true, false, false]);
+    expect(locks[2].x2).toBeUndefined();
+  });
+
+  it("carries the side, the fit and the phases the pose swap waits on", () => {
+    expect(locks.every((l) => l.pose === "peekSide" && l.side === "left" && l.scale === 0.7)).toBe(true);
     expect(locks[0].phase).toBe("arrive");
-    expect(locks[1].phase).toBeUndefined();
-    expect(locks[2].phase).toBe("depart");
+    expect(locks[4].phase).toBe("depart");
+    expect(locks.slice(1, 4).every((l) => l.phase === undefined)).toBe(true);
+  });
+});
+
+describe("lockX", () => {
+  it("eases across a lock and holds its ends", () => {
+    const lock = { from: 100, to: 300, x: 10, x2: 110, y: 0, pose: "peekSide" as const };
+    expect(lockX(lock, 50)).toBe(10);
+    expect(lockX(lock, 200)).toBeCloseTo(60, 5);
+    expect(lockX(lock, 400)).toBe(110);
+    expect(lockX({ ...lock, x2: undefined }, 200)).toBe(10);
   });
 });

@@ -23,6 +23,10 @@ export interface LedgeLock {
   phase?: "arrive" | "depart";
   /** Index of the media this lock belongs to, so a resting lock can read its live edge. */
   media?: number;
+  /** Optional end x: the box slides horizontally across the lock (the side reveal). */
+  x2?: number;
+  /** Side hide only: the hands take hold during this lock, and only this one. */
+  grip?: boolean;
   /** Side hide only: which edge of the media he holds (the artwork is mirrored for "left"). */
   side?: "left" | "right";
   /** Side hide only: the uniform scale that fits his head and hands in the margin. */
@@ -31,20 +35,31 @@ export interface LedgeLock {
 }
 
 /**
- * The side hide: he comes down the margin, holds the media's edge while the page passes it,
- * drifts a little along the edge, and leaves down the margin. Same phases as the top / bottom
- * hide so the grip pose only shows at the far end of the approach and the release.
+ * The side hide, one horizontal appearance per media: he comes down the margin and slips behind the
+ * media's edge, his head then comes out from behind it a little more with the scroll until part of
+ * his body shows, and only at that maximum do his hands take hold (`grip`); then he draws back
+ * behind the edge and leaves down the margin. Every lock is a pure function of scroll, so it runs the
+ * same on the way up. The grip pose waits for the far end of the approach (`arrive`) and Flying comes
+ * back at the start of the release (`depart`), both while he is behind the media.
  */
-export function mediaSideLocks({ topAt, release, slide, x, arriveY, sideY1, sideY2, departY, side, scale }: {
-  topAt: number; release: number; slide: number; x: number;
+export function mediaSideLocks({ topAt, release, slide, reveal, flyX, hiddenX, arriveY, sideY1, sideY2, departY, side, scale }: {
+  topAt: number; release: number; slide: number; reveal: number;
+  /** Beside the edge (visible) and tucked behind it (hidden), in box-left coordinates. */
+  flyX: number; hiddenX: number;
   arriveY: number; sideY1: number; sideY2: number; departY: number;
   side: "left" | "right"; scale: number;
 }): LedgeLock[] {
-  const common = { x, side, scale, pose: "peekSide" as const };
+  const common = { side, scale, pose: "peekSide" as const };
+  const a = topAt + slide;
+  const b = a + reveal;
+  const d = release - slide;
+  const c = d - reveal;
   return [
-    { from: topAt, to: topAt + slide, y: arriveY, y2: sideY1, phase: "arrive", ...common },
-    { from: topAt + slide, to: release - slide, y: sideY1, y2: sideY2, ...common },
-    { from: release - slide, to: release, y: sideY2, y2: departY, phase: "depart", ...common },
+    { from: topAt, to: a, x: flyX, x2: hiddenX, y: arriveY, y2: sideY1, phase: "arrive", ...common },
+    { from: a, to: b, x: hiddenX, x2: flyX, y: sideY1, ...common },
+    { from: b, to: c, x: flyX, y: sideY1, y2: sideY2, grip: true, ...common },
+    { from: c, to: d, x: flyX, x2: hiddenX, y: sideY2, ...common },
+    { from: d, to: release, x: hiddenX, x2: flyX, y: sideY2, y2: departY, phase: "depart", ...common },
   ];
 }
 
@@ -89,6 +104,13 @@ export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLo
     return active;
   }
   return exact;
+}
+
+/** Horizontal position of a lock at a scroll position: eased, clamped to its range. */
+export function lockX(lock: LedgeLock, scroll: number): number {
+  if (lock.x2 === undefined) return lock.x;
+  const t = Math.max(0, Math.min(1, (scroll - lock.from) / Math.max(1, lock.to - lock.from)));
+  return lock.x + (lock.x2 - lock.x) * (t * t * (3 - 2 * t));
 }
 
 /** Document-space height of a lock at a scroll position (clamped to its range). */
