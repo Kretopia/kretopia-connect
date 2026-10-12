@@ -1,9 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { headingAt, sampleFlight, type FlightStop } from "../kretopia/kretoFlightPath";
+import { headingAt, sampleFlight, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("brakes and completes a backflip before reversing at a page edge", () => {
+    const path = withFlightTurns([
+      { ...first, opacity: 1 },
+      { ...first, scroll: 300, x: 300 },
+      { ...first, scroll: 600, x: 10 },
+    ]);
+    expect(path).toHaveLength(5);
+    expect(path[1]).toMatchObject({ x: 300, facing: 1, rotate: 0 });
+    expect(path[3]).toMatchObject({ x: 300, facing: -1, rotate: -360 });
+    expect(sampleFlight(path, 300)).toMatchObject({ x: 300, facing: -1, rotate: -180 });
+    expect(sampleFlight(path, 350)?.x).toBe(300);
+    expect(sampleFlight(path, 450)?.x).toBeLessThan(300);
+    expect(sampleFlight(path, 300)).toEqual(sampleFlight(path, 300));
+  });
   it("handles unmounted chapters", () => expect(sampleFlight([], 20)).toBeUndefined());
   it("clamps before takeoff and after landing", () => {
     expect(sampleFlight([first, last], -20)).toEqual(first);
