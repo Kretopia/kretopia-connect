@@ -69,7 +69,7 @@ export function withFlightTurns(stops: FlightStop[]): FlightStop[] {
     const before = stops[i - 1];
     const after = stops[i + 1];
     if (stop.pose === "fly" && before && after && incoming !== outgoing) {
-      const span = Math.min(90, (stop.scroll - before.scroll) * 0.3, (after.scroll - stop.scroll) * 0.3);
+      const span = Math.min(55, (stop.scroll - before.scroll) * 0.3, (after.scroll - stop.scroll) * 0.3);
       result.push({ ...stop, scroll: stop.scroll - span, rotate: stop.rotate + spin, facing });
       const nextFacing = outgoing < 0 ? -1 : 1;
       result.push({ ...stop, rotate: stop.rotate + spin - facing * 180, facing: nextFacing });
@@ -88,4 +88,10 @@ export function headingAt(stops: FlightStop[], scroll: number, window = 30, thre
   if (!a || !b) return 0;
   const dx = b.x - a.x;
   return Math.abs(dx) < threshold ? 0 : dx > 0 ? 1 : -1;
+}
+
+/** Reverse the nose on ascent, including the stationary midpoint of a turn. */
+export function travelHeading(stops: FlightStop[], scroll: number, direction: -1 | 1): -1 | 0 | 1 {
+  const heading = headingAt(stops, scroll, 12, 0.5) || sampleFlight(stops, scroll)?.facing || 0;
+  return (heading * direction) as -1 | 0 | 1;
 }
