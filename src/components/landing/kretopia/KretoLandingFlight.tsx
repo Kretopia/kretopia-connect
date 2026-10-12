@@ -59,13 +59,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let previousScroll = scrollTop();
     let direction: -1 | 1 = 1;
     let endScroll = 0;
-    let poseScroll = -100;
     let ledgeLocks: LedgeLock[] = [];
     let activeLock: LedgeLock | undefined;
     let wasLocked = false;
     let mediaZones: { from: number; to: number; left: number; right: number; top: number; bottom: number }[] = [];
     /** Free-flight corridors keep Flying fully between two media, never overlapping one. */
-    let corridors: { from: number; to: number; minY: number; maxY: number }[] = [];
+    let corridors: { from: number; to: number; minY: number; maxY: number; startX: number; endX: number }[] = [];
     const cur = { x: 0, y: 0, r: 0 };
 
     const show = (layer: Layer, pose: FlightPose) => {
@@ -83,8 +82,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const paint = () => {
       frame = 0;
       const scroll = scrollTop();
-      if (Math.abs(scroll - previousScroll) > 1) direction = scroll > previousScroll ? 1 : -1;
-      previousScroll = scroll;
+      if (Math.abs(scroll - previousScroll) > 8) {
+        direction = scroll > previousScroll ? 1 : -1;
+        previousScroll = scroll;
+      }
       const point = sampleFlight(stops, scroll);
       if (!point || !artworkReady) return;
       const size = sizeFor(window.innerWidth);
@@ -94,7 +95,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const zone = mediaZones.find(zone => scroll >= zone.from && scroll <= zone.to);
       activeLock = ledgeLockAt(ledgeLocks, scroll, activeLock);
       const pose: FlightPose = activeLock?.pose ?? "fly";
-      if (activeLock) poseScroll = scroll;
       const corridor = activeLock ? undefined : corridors.find(c => scroll >= c.from && scroll <= c.to);
 
       let targetX: number;
@@ -105,14 +105,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       } else {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
-        targetY = zone ? point.y : point.y + (visibleY - point.y) * follow;
+        targetY = zone || (corridor && Number.isFinite(corridor.maxY)) ? point.y : point.y + (visibleY - point.y) * follow;
         if (corridor) targetY = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, targetY)) : (corridor.minY + corridor.maxY) / 2;
-        targetX = zone ? Math.max(zone.left, Math.min(zone.right, point.x)) : point.x;
-        // Heading changes only at the start of a free journey, never from jitter.
-        if (Math.abs(scroll - poseScroll) > 60) {
-          const dir = headingAt(stops, scroll, 40, 3) * direction;
-          if (dir !== 0 && dir !== heading) { heading = dir < 0 ? -1 : 1; poseScroll = scroll; }
-        }
+        targetX = point.x;
+        // One destination heading for the whole journey, including departure.
+        const travelX = corridor ? corridor.endX - corridor.startX : headingAt(stops, scroll, 40, 3);
+        if (Math.abs(travelX) > 1) heading = travelX * direction < 0 ? -1 : 1;
       }
       // Tight gaps between media leave no room for banking without overlapping one.
       const roomy = !corridor || (!Number.isFinite(corridor.maxY) && targetY > corridor.minY + size);
@@ -135,6 +133,18 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       if (!roomy) cur.r = 0;
       wasLocked = !!activeLock;
       show(pose === "peekTop" || pose === "peekBottom" ? pose : heading === 1 ? "right" : "left", pose);
+      // A crisp scroll-driven edge wipe conceals the bitmap swap; never fade,
+      // blur or crossfade two figures. The peek itself emerges from the media.
+      let clip = "none";
+      if (corridor && Number.isFinite(corridor.to)) {
+        const amount = Math.max(0, Math.min(1, (corridor.to - scroll) / 80));
+        if (amount < 1) clip = `inset(${(1 - amount) * 100}% 0 0 0)`;
+      }
+      if (corridor && Number.isFinite(corridor.minY)) {
+        const amount = Math.max(0, Math.min(1, (scroll - corridor.from) / 80));
+        if (amount < 1) clip = `inset(0 0 ${(1 - amount) * 100}% 0)`;
+      }
+      el.style.clipPath = clip;
       el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r}deg)`;
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
@@ -172,6 +182,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       activeLock = undefined;
       let corridorFrom = 240;
       let corridorMin = -Infinity;
+      let corridorX = stops[stops.length - 1].x;
       const hold = Math.max(180, vh * 0.3);
       parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]").forEach((media, index) => {
         const rect = media.getBoundingClientRect();
@@ -195,19 +206,22 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const slide = Math.min(90, (middle - topAt) / 3);
         // Contiguous locks: Kreto never leaves a hideaway pose while the media is in play.
         ledgeLocks.push(
-          { from: topAt, to: middle - slide, x, y: topY, pose: "peekTop" },
+          { from: topAt, to: topAt + slide, x, y: hiddenTop, y2: topY, pose: "peekTop" },
+          { from: topAt + slide, to: middle - slide, x, y: topY, pose: "peekTop" },
           { from: middle - slide, to: middle, x, y: topY, y2: hiddenTop, pose: "peekTop" },
           { from: middle, to: middle + slide, x, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
-          { from: middle + slide, to: release, x, y: bottomY, pose: "peekBottom" },
+          { from: middle + slide, to: release - slide, x, y: bottomY, pose: "peekBottom" },
+          { from: release - slide, to: release, x, y: bottomY, y2: hiddenBottom, pose: "peekBottom" },
         );
         mediaZones.push({ from: topAt - 60, to: release + 40, left: mediaLeft, right: mediaRight, top, bottom });
         // Flying is never allowed to overlap a media: it arrives fully above the
         // top edge and departs fully below the bottom edge.
         const arriveY = top - size * FLY_ALPHA.bottom;
         const departY = bottom - size * FLY_ALPHA.top;
-        corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: arriveY });
+        corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: arriveY, startX: corridorX, endX: x });
         corridorFrom = release;
         corridorMin = departY;
+        corridorX = x;
         stops.push(
           fly(topAt - 100, x, arriveY - size * 0.12),
           fly(topAt - 1, x, arriveY),
@@ -226,7 +240,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         stops.push(glide(end - 280, vw - size - 24, vh * 0.5));
         stops.push(glide(end, vw - size - 24, vh * 0.55));
       }
-      corridors.push({ from: corridorFrom, to: Infinity, minY: corridorMin, maxY: Infinity });
+      corridors.push({ from: corridorFrom, to: Infinity, minY: corridorMin, maxY: Infinity, startX: corridorX, endX: vw - size - 24 });
       // Keep stops strictly ordered even with short media and tall viewports.
       stops = stops.reduce<FlightStop[]>((ordered, stop) => {
         const prev = ordered[ordered.length - 1];

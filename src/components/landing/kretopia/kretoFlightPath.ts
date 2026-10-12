@@ -37,7 +37,8 @@ export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLo
 export function lockY(lock: LedgeLock, scroll: number): number {
   if (lock.y2 === undefined) return lock.y;
   const t = Math.max(0, Math.min(1, (scroll - lock.from) / Math.max(1, lock.to - lock.from)));
-  return lock.y + (lock.y2 - lock.y) * t;
+  const eased = t * t * (3 - 2 * t);
+  return lock.y + (lock.y2 - lock.y) * eased;
 }
 
 const same = (a?: FlightStop, b?: FlightStop) => !!a && !!b && a.x === b.x && a.y === b.y;
