@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Kreto Landing flight
-- [ ] Lock both ledge poses to every media edge in both scroll directions, remove residual animation and verify threshold jitter without publishing.
+- [x] Lock both ledge poses to every media edge in both scroll directions, stop spring/hover/rotation drift and remove media scale animation; 10 locks and 50 bidirectional jitter checks confirm exact contact and exclusive opacity, 16 tests pass, compilation OK; not published.
 - [x] Normalize all artwork heights, remove overlapping poses and prolong ledge holds; 14 path tests pass, full round-trip scroll confirms one visible pose and no runtime errors, automatic compilation OK; not published.
 - [x] Match wave/bottom-peek visible height to Flying, confine hideaways to media footprints without viewport rescue, conceal heading changes and replace edge detours with direct media-to-media flight; 12 path tests pass, scroll playback has no runtime errors, compilation OK; not published.
 - [x] Restrict route reversals to page edges with monotonic horizontal interpolation, tighten ledge contact and stabilize pose handoffs, add edge backflips and a reversible bottom double backflip; 12 targeted tests pass, downward/upward browser scroll has no runtime errors, automatic compilation OK; not published.
