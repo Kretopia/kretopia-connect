@@ -47,16 +47,6 @@ export const ForOrganisationsSection = () => {
       className="relative pt-12 sm:pt-14 pb-16 sm:pb-20"
       aria-labelledby="for-orgs-title"
     >
-      {/* Very subtle brand silhouette — desktop only, purely decorative,
-          low opacity so it never competes with the copy or CTAs. */}
-      <KretoCharacter
-        variant="producer"
-        size={220}
-        floatAmplitude={0}
-        aria-hidden
-        className="pointer-events-none absolute -right-6 bottom-0 hidden opacity-[0.05] lg:block"
-      />
-
       <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 14 }}
@@ -67,11 +57,13 @@ export const ForOrganisationsSection = () => {
         >
           <p className="landing-eyebrow mb-4">Hiring creative talent?</p>
           <h2 id="for-orgs-title" className="landing-h2 landing-glow">
-            Find people through the work<br />
+            Find people through the work
+            <br />
             <span className="landing-accent">they've actually done</span>
           </h2>
           <p className="landing-sub mt-4 max-w-xl">
-            Kretopia helps hotels, agencies, festivals, production companies, brands and creative teams discover talent through verified creative context, not just profiles and follower counts.
+            Kretopia helps hotels, agencies, festivals, production companies, brands and creative teams discover talent
+            through verified creative context, not just profiles and follower counts.
           </p>
         </motion.div>
 
