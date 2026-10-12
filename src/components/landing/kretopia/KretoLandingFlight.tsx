@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import flying from "@/assets/brand/kreto/kreto-flying.png";
+import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.png";
 import tucked from "@/assets/brand/kreto/kreto-flight-tuck.png";
 import peeking from "@/assets/brand/kreto/kreto-flight-peek.png";
 import { sampleFlight, type FlightPose, type FlightStop } from "./kretoFlightPath";
 
-const poses = { fly: flying, tuck: tucked, peek: peeking };
+const poses = { fly: flying, flyLeft: flyingLeft, tuck: tucked, peek: peeking };
 const hideaways = ["chapter-passport", "chapter-match", "chapter-studio"];
 
 /** One decorative figure; real media are foreground occluders, never duplicated. */
