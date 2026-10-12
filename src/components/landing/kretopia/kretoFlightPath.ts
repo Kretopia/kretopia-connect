@@ -17,7 +17,24 @@ export interface LedgeLock {
   y: number;
   /** Optional end height: the hidden pose slides linearly behind the media. */
   y2?: number;
+  /** Fully tucked height for a resting lock: Kreto stays here while the page is scrolling. */
+  hidden?: number;
   pose: "peekTop" | "peekBottom";
+}
+
+export type FlipKind = "backflip" | "spin";
+export interface Flip {
+  from: number;
+  to: number;
+  kind: FlipKind;
+}
+
+/** Eased 0..1 progress of the flip active at this scroll, or undefined: a pure function of scroll, so ascent retraces it. */
+export function flipAt(flips: Flip[], scroll: number): { kind: FlipKind; t: number } | undefined {
+  const flip = flips.find(f => scroll >= f.from && scroll <= f.to);
+  if (!flip) return undefined;
+  const raw = (scroll - flip.from) / Math.max(1, flip.to - flip.from);
+  return { kind: flip.kind, t: raw * raw * (3 - 2 * raw) };
 }
 
 /** Entry and exit continue vertically in scroll direction, without a hidden reset. */
@@ -27,10 +44,10 @@ export function mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, top
 }): LedgeLock[] {
   return [
     { from: topAt, to: topAt + slide, x, y: arriveY, y2: topY, pose: "peekTop" },
-    { from: topAt + slide, to: middle - slide, x, y: topY, pose: "peekTop" },
+    { from: topAt + slide, to: middle - slide, x, y: topY, hidden: hiddenTop, pose: "peekTop" },
     { from: middle - slide, to: middle, x, y: topY, y2: hiddenTop, pose: "peekTop" },
     { from: middle, to: middle + slide, x, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
-    { from: middle + slide, to: release - slide, x, y: bottomY, pose: "peekBottom" },
+    { from: middle + slide, to: release - slide, x, y: bottomY, hidden: hiddenBottom, pose: "peekBottom" },
     { from: release - slide, to: release, x, y: bottomY, y2: departY, pose: "peekBottom" },
   ];
 }

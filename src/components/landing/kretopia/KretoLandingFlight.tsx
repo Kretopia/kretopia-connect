@@ -4,7 +4,7 @@ import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
 import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
-import { bottomBackflip, headingAt, ledgeLockAt, lockY, mediaLedgeLocks, sampleFlight, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
+import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockY, mediaLedgeLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as const;
 type Layer = keyof typeof layers;
@@ -22,6 +22,12 @@ const poseClasses: Record<Layer, string> = {
 const FLY_ALPHA = { top: 0, bottom: 1 };
 
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
+/** Where along a media's width Kreto flies or attaches, cycled so no two neighbours repeat. */
+const MEDIA_X = [0.65, 0.3, 0.25, 0.75];
+/** After a scroll gesture ends, Kreto waits this long before popping out of his hiding place. */
+const SCROLL_IDLE_MS = 160;
+/** A direction change is a quick, time-based 180° turn about the vertical axis. */
+const TURN_MS = 380;
 
 /**
  * One decorative figure; real media are foreground occluders, never duplicated.
@@ -60,6 +66,14 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let direction: -1 | 1 = 1;
     let endScroll = 0;
     let ledgeLocks: LedgeLock[] = [];
+    let flips: Flip[] = [];
+    // Sticky attach: tucked behind the media while the page moves, out on the ledge once it stops.
+    let peek = 1;
+    let lastScrollAt = 0;
+    let idleTimer = 0;
+    let lastHeading: 1 | -1 = heading;
+    let turnStart = -1;
+    let turnFrom: 1 | -1 = heading;
     let activeLock: LedgeLock | undefined;
     let wasLocked = false;
     let mediaZones: { from: number; to: number; left: number; right: number; top: number; bottom: number }[] = [];
@@ -101,7 +115,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       let targetY: number;
       if (activeLock) {
         targetX = activeLock.x;
-        targetY = lockY(activeLock, scroll);
+        const base = lockY(activeLock, scroll);
+        targetY = activeLock.hidden !== undefined ? base + (activeLock.hidden - base) * (1 - peek) : base;
       } else {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
@@ -114,6 +129,16 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       }
       // Tight gaps between media leave no room for banking without overlapping one.
       const roomy = !corridor || (!Number.isFinite(corridor.maxY) && targetY > corridor.minY + size);
+      const now = performance.now();
+      const idleNow = now - lastScrollAt >= SCROLL_IDLE_MS;
+      const peekTarget = idleNow ? 1 : 0;
+      peek += (peekTarget - peek) * 0.22;
+      const peeking = Math.abs(peekTarget - peek) >= 0.01;
+      if (!peeking) peek = peekTarget;
+      if (!first && heading !== lastHeading) { turnStart = now; turnFrom = lastHeading; }
+      lastHeading = heading;
+      const turnT = turnStart >= 0 ? (now - turnStart) / TURN_MS : 1;
+      const turning = turnT < 1 && !activeLock;
       const bank = !activeLock && !zone && roomy ? heading * Math.max(-8, Math.min(8, climb * 10)) : 0;
       const targetR = activeLock || !roomy ? 0 : point.rotate + (!zone ? bottomBackflip(scroll, endScroll) : 0) + bank;
 
@@ -132,16 +157,23 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       if (corridor) cur.y = corridor.maxY >= corridor.minY ? Math.max(corridor.minY, Math.min(corridor.maxY, cur.y)) : (corridor.minY + corridor.maxY) / 2;
       if (!roomy) cur.r = 0;
       wasLocked = !!activeLock;
-      show(pose === "peekTop" || pose === "peekBottom" ? pose : heading === 1 ? "right" : "left", pose);
+      // First half of a turn keeps the artwork he was flying with, the second half
+      // shows the new one: the swap happens while the figure is edge-on.
+      const faceNow = turning && turnT < 0.5 ? turnFrom : heading;
+      show(pose === "peekTop" || pose === "peekBottom" ? pose : faceNow === 1 ? "right" : "left", pose);
+      const flip = activeLock ? undefined : flipAt(flips, scroll);
+      const tilt = flip?.kind === "backflip" ? Math.sin(Math.PI * flip.t) * 26 : 0;
+      const roll = flip?.kind === "backflip" ? -heading * 360 * flip.t : 0;
+      const yaw = flip?.kind === "spin" ? 360 * flip.t : turning ? (turnT < 0.5 ? 180 * turnT : 180 * turnT - 180) : 0;
       // The media alone occludes Kreto: no artificial wipe to make Flying vanish.
       // Peek entry/exit shares Flying's endpoint and retraces it on ascent.
       el.style.clipPath = "none";
-      el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r}deg)`;
+      el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) perspective(900px) rotateX(${tilt}deg) rotateY(${yaw}deg) rotate(${cur.r + roll}deg)`;
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
       el.style.opacity = inFlight ? "1" : "0";
       hero.style.opacity = inFlight ? "0" : "1";
-      if (settling) queue();
+      if (settling || peeking || turning) queue();
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
@@ -169,6 +201,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       ];
       mediaZones = [];
       ledgeLocks = [];
+      flips = [];
       corridors = [];
       activeLock = undefined;
       let corridorFrom = 240;
@@ -187,7 +220,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const inset = size * 0.18;
         const mediaLeft = Math.max(8, left + inset);
         const mediaRight = Math.max(mediaLeft, Math.min(vw - size - 8, left + rect.width - size - inset));
-        const x = Math.max(mediaLeft, Math.min(mediaRight, left + rect.width * (index % 2 === 0 ? 0.65 : 0.35) - size / 2));
+        const x = Math.max(mediaLeft, Math.min(mediaRight, left + rect.width * MEDIA_X[index % MEDIA_X.length] - size / 2));
+        // One media in two holds him; the others he flips past.
+        const attach = index % 2 === 0;
         const topY = top - size * LEDGE.peekTop;
         const bottomY = bottom - size * LEDGE.peekBottom;
         // Hidden heights: the whole silhouette sits behind the media.
@@ -198,7 +233,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const arriveY = top - size * FLY_ALPHA.bottom;
         const departY = bottom - size * FLY_ALPHA.top;
         // Contiguous locks: Kreto never leaves a hideaway pose while the media is in play.
-        ledgeLocks.push(...mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY }));
+        if (attach) {
+          ledgeLocks.push(...mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY }));
+          flips.push({ from: release + 30, to: release + 220, kind: index % 4 === 0 ? "spin" : "backflip" });
+        } else {
+          flips.push({ from: topAt - 240, to: topAt - 50, kind: index % 4 === 1 ? "backflip" : "spin" });
+        }
         mediaZones.push({ from: topAt - 60, to: release + 40, left: mediaLeft, right: mediaRight, top, bottom });
         // Flying is never allowed to overlap a media: it arrives fully above the
         // top edge and departs fully below the bottom edge.
@@ -209,14 +249,24 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         stops.push(
           fly(topAt - 100, x, arriveY - size * 0.12),
           fly(topAt - 1, x, arriveY),
-          { ...fly(topAt, x, topY), pose: "peekTop" },
-          { ...fly(topAt + 1, x, topY), pose: "peekTop" },
-          { ...fly(release - 1, x, bottomY), pose: "peekBottom" },
-          { ...fly(release, x, bottomY), pose: "peekBottom" },
+          ...(attach
+            ? [
+                { ...fly(topAt, x, topY), pose: "peekTop" as const },
+                { ...fly(topAt + 1, x, topY), pose: "peekTop" as const },
+                { ...fly(release - 1, x, bottomY), pose: "peekBottom" as const },
+                { ...fly(release, x, bottomY), pose: "peekBottom" as const },
+              ]
+            : []),
           fly(release + 1, x, departY),
           fly(release + 100, x, departY + size * 0.12),
         );
       });
+      // The line the loop section opens with: he somersaults as he reaches it.
+      const pastWork = parent.querySelector<HTMLElement>("[data-kreto-backflip]");
+      if (pastWork) {
+        const at = docY(pastWork.getBoundingClientRect().top) + origin - vh * 0.5;
+        flips.push({ from: at - 130, to: at + 130, kind: "backflip" });
+      }
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - vh + origin;
       endScroll = end;
@@ -238,13 +288,20 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     };
     const observer = new ResizeObserver(measure);
     observer.observe(parent);
-    scrollTarget.addEventListener("scroll", queue, { passive: true });
+    const onScroll = () => {
+      lastScrollAt = performance.now();
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(queue, SCROLL_IDLE_MS + 20);
+      queue();
+    };
+    scrollTarget.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", measure);
     measure();
     return () => {
       cancelled = true;
       observer.disconnect(); cancelAnimationFrame(frame);
-      scrollTarget.removeEventListener("scroll", queue);
+      window.clearTimeout(idleTimer);
+      scrollTarget.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", measure);
       hero.style.removeProperty("opacity");
     };
