@@ -118,7 +118,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
 
   return (
     <motion.div ref={ref} aria-hidden="true" data-kreto-flight data-pose={pose}
-      className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none lg:h-[180px] lg:w-[180px] min-[1440px]:h-[240px] min-[1440px]:w-[240px]"
+      className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none [filter:drop-shadow(0_22px_28px_rgba(15,23,42,0.35))_drop-shadow(0_0_26px_rgba(139,92,246,0.28))] lg:h-[180px] lg:w-[180px] min-[1440px]:h-[240px] min-[1440px]:w-[240px]"
       style={{ x, y, rotate, rotateY, scale, opacity }}>
       {Object.entries(poses).map(([key, src]) => (
         <img key={key} src={src} alt="" width={1024} height={1024} decoding="async" draggable={false}
