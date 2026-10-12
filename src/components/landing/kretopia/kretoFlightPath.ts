@@ -19,6 +19,10 @@ export interface LedgeLock {
   y2?: number;
   /** Fully tucked height for a resting lock: Kreto stays here while the page is scrolling. */
   hidden?: number;
+  /** The first lock of a visit is the approach, the last is the release: the grip pose only shows at their far end. */
+  phase?: "arrive" | "depart";
+  /** Index of the media this lock belongs to, so a resting lock can read its live edge. */
+  media?: number;
   pose: "peekTop" | "peekBottom";
 }
 
@@ -43,12 +47,12 @@ export function mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, top
   arriveY: number; topY: number; hiddenTop: number; hiddenBottom: number; bottomY: number; departY: number;
 }): LedgeLock[] {
   return [
-    { from: topAt, to: topAt + slide, x, y: arriveY, y2: topY, pose: "peekTop" },
+    { from: topAt, to: topAt + slide, x, y: arriveY, y2: topY, phase: "arrive", pose: "peekTop" },
     { from: topAt + slide, to: middle - slide, x, y: topY, hidden: hiddenTop, pose: "peekTop" },
     { from: middle - slide, to: middle, x, y: topY, y2: hiddenTop, pose: "peekTop" },
     { from: middle, to: middle + slide, x, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
     { from: middle + slide, to: release - slide, x, y: bottomY, hidden: hiddenBottom, pose: "peekBottom" },
-    { from: release - slide, to: release, x, y: bottomY, y2: departY, pose: "peekBottom" },
+    { from: release - slide, to: release, x, y: bottomY, y2: departY, phase: "depart", pose: "peekBottom" },
   ];
 }
 
