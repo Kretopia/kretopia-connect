@@ -1,9 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { headingAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
+import { bottomBackflip, headingAt, sampleFlight, travelHeading, withFlightTurns, type FlightStop } from "../kretopia/kretoFlightPath";
 
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("does not insert flips at interior media waypoints", () => {
+    const path = [first, { ...first, scroll: 300, x: 150 }, { ...first, scroll: 600, x: 10 }];
+    expect(withFlightTurns(path, { left: 10, right: 300 })).toHaveLength(3);
+  });
+  it("reverses the bottom double backflip smoothly without replaying it", () => {
+    expect(bottomBackflip(500, 1000)).toBe(0);
+    expect(bottomBackflip(860, 1000)).toBe(360);
+    expect(bottomBackflip(1000, 1000)).toBe(720);
+    expect(bottomBackflip(860, 1000)).toBe(360);
+  });
   it("brakes and completes a backflip before reversing at a page edge", () => {
     const path = withFlightTurns([
       { ...first, opacity: 1 },

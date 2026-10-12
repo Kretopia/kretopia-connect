@@ -55,7 +55,7 @@ export function sampleFlight(stops: FlightStop[], scroll: number): FlightStop | 
 /** Scroll-keyed turnaround: brake at a waypoint, backflip, then depart.
  * A constant-width image preserves the rendered volume instead of going edge-on.
  */
-export function withFlightTurns(stops: FlightStop[]): FlightStop[] {
+export function withFlightTurns(stops: FlightStop[], edges?: { left: number; right: number }): FlightStop[] {
   const result: FlightStop[] = [];
   let spin = 0;
   let facing: -1 | 1 = 1;
@@ -68,7 +68,8 @@ export function withFlightTurns(stops: FlightStop[]): FlightStop[] {
     facing = incoming < 0 ? -1 : 1;
     const before = stops[i - 1];
     const after = stops[i + 1];
-    if (stop.pose === "fly" && before && after && incoming !== outgoing) {
+    const atEdge = !edges || Math.abs(stop.x - edges.left) < 2 || Math.abs(stop.x - edges.right) < 2;
+    if (atEdge && stop.pose === "fly" && before && after && incoming !== outgoing) {
       const span = Math.min(55, (stop.scroll - before.scroll) * 0.3, (after.scroll - stop.scroll) * 0.3);
       result.push({ ...stop, scroll: stop.scroll - span, rotate: stop.rotate + spin, facing });
       const nextFacing = outgoing < 0 ? -1 : 1;
@@ -79,6 +80,12 @@ export function withFlightTurns(stops: FlightStop[]): FlightStop[] {
     } else result.push({ ...stop, rotate: stop.rotate + spin, facing });
   }
   return result;
+}
+
+/** Deterministic bottom flourish: retraced in reverse on ascent, no event replays. */
+export function bottomBackflip(scroll: number, end: number): number {
+  const t = Math.max(0, Math.min(1, (scroll - (end - 280)) / 280));
+  return 720 * t * t * (3 - 2 * t);
 }
 
 /** -1 flying left, 1 flying right, 0 hovering (keep the current heading). */
