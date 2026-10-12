@@ -101,7 +101,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
         const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
         targetY = zone ? point.y : point.y + (visibleY - point.y) * follow;
-        const corridor = corridors.find(c => scroll >= c.from && scroll <= c.to);
         if (corridor && corridor.maxY >= corridor.minY) targetY = Math.max(corridor.minY, Math.min(corridor.maxY, targetY));
         targetX = zone ? Math.max(zone.left, Math.min(zone.right, point.x)) : point.x;
         // Heading changes only at the start of a free journey, never from jitter.
@@ -116,6 +115,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // Locks are attached to document geometry: no easing at all. Free flight
       // eases toward the scroll-driven target for a smooth, constant glide.
       let settling = false;
+      const corridor = activeLock ? undefined : corridors.find(c => scroll >= c.from && scroll <= c.to);
       if (first || activeLock || Math.abs(cur.y - targetY) > window.innerHeight) {
         cur.x = targetX; cur.y = targetY; cur.r = targetR; first = false;
       } else {
@@ -124,6 +124,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         settling = Math.abs(targetX - cur.x) > 0.4 || Math.abs(targetY - cur.y) > 0.4 || Math.abs(targetR - cur.r) > 0.2;
         if (!settling) { cur.x = targetX; cur.y = targetY; cur.r = targetR; }
       }
+      // Easing must not drag Flying into a media either.
+      if (corridor && corridor.maxY >= corridor.minY) cur.y = Math.max(corridor.minY, Math.min(corridor.maxY, cur.y));
       show(pose === "peekTop" || pose === "peekBottom" ? pose : heading === 1 ? "right" : "left", pose);
       el.style.transform = `translate3d(${cur.x}px, ${cur.y}px, 0) rotate(${cur.r}deg)`;
       // Exclusive ownership prevents two silhouettes during Hero takeoff.
@@ -191,16 +193,22 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           { from: middle + slide, to: release, x, y: bottomY, pose: "peekBottom" },
         );
         mediaZones.push({ from: topAt - 60, to: release + 40, left: mediaLeft, right: mediaRight, top, bottom });
-        corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: topY });
+        // Flying is never allowed to overlap a media: it arrives fully above the
+        // top edge and departs fully below the bottom edge.
+        const arriveY = top - size;
+        const departY = bottom + 2;
+        corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: arriveY });
         corridorFrom = release;
-        corridorMin = bottomY;
+        corridorMin = departY;
         stops.push(
-          fly(topAt - 100, x, topY - size * 0.12),
+          fly(topAt - 100, x, arriveY - size * 0.12),
+          fly(topAt - 1, x, arriveY),
           { ...fly(topAt, x, topY), pose: "peekTop" },
           { ...fly(topAt + 1, x, topY), pose: "peekTop" },
           { ...fly(release - 1, x, bottomY), pose: "peekBottom" },
           { ...fly(release, x, bottomY), pose: "peekBottom" },
-          fly(release + 100, x, bottomY + size * 0.12),
+          fly(release + 1, x, departY),
+          fly(release + 100, x, departY + size * 0.12),
         );
       });
       const last = stops[stops.length - 1];
