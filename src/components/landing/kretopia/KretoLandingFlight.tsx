@@ -83,12 +83,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           scale: 0.86, opacity: 1, pose: "fly", ...extra,
         });
         stops.push(
-          make(-420, { y: centerY - 260, rotate: -18, pose: "tuck" }),
-          make(-220, { y: centerY - 100, rotate: -360, pose: "tuck" }),
-          make(-80, { rotate: -360, pose: "peek" }),
+          make(-420, { y: rect.top + scrollTop() - origin - size * 1.3, rotate: -18, pose: "tuck" }),
+          make(-220, { y: rect.top + scrollTop() - origin - size * 0.9, rotate: -360, pose: "tuck" }),
+          make(-80, { x: left + rect.width * 0.65 - size / 2, y: rect.top + scrollTop() - origin - size * 0.6, rotate: -360, pose: "peek" }),
           make(80, { x: left + rect.width * 0.5 - size / 2, rotate: -360, pose: "peek" }),
-          make(230, { x: safeEdge, y: centerY + 120, rotate: -360, pose: "peek" }),
-          make(430, { y: centerY + 290, rotate: -360, turn: turn + 180 }),
+          make(230, { x: left + rect.width * 0.35 - size / 2, y: rect.bottom + scrollTop() - origin - size * 0.3, rotate: -360, pose: "peek" }),
+          make(430, { y: rect.bottom + scrollTop() - origin + 30, rotate: -360, turn: turn + 180 }),
         );
       });
       const last = stops[stops.length - 1];
