@@ -106,8 +106,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const visibleHero = start.width > 0;
       const x0 = visibleHero ? start.left - bounds.left : vw - size - 16;
       const y0 = visibleHero ? docY(start.top) : Math.min(window.innerHeight * 0.7, 620);
+      const vh = window.innerHeight;
       const fly = (scroll: number, px: number, py: number, rotate = 0, extra: Partial<FlightStop> = {}): FlightStop =>
         ({ scroll, x: clampX(px), y: py, rotate, opacity: 1, pose: "fly", ...extra });
+      // Free-flight stops are pinned to a screen height so Kreto stays in view between hideaways.
+      const glide = (scroll: number, px: number, screenY: number, rotate = 0) =>
+        fly(scroll, px, screenY + scroll - origin, rotate);
       // Takeoff: a small upward hop out of the wave, then a long gliding arc into the page.
       const awayX = x0 > vw / 2 ? -1 : 1;
       stops = [
@@ -124,35 +128,38 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const bottom = docY(rect.bottom);
         const left = rect.left - bounds.left;
         const prev = stops[stops.length - 1];
-        const at = Math.max(prev.scroll + 640, docY(rect.top + rect.height / 2) + origin - window.innerHeight * 0.5);
+        const onTop = index % 2 === 0;
+        // Time the hideaway so the ledge sits comfortably inside the viewport.
+        const ledgeAt = onTop ? top + origin - vh * 0.38 : bottom + origin - vh * 0.6;
+        const at = Math.max(prev.scroll + 700, ledgeAt);
         const peekX = clampX(left + rect.width * [0.7, 0.3, 0.62][index] - size / 2);
         const fromSide: 1 | -1 = prev.x > peekX ? 1 : -1;
         const exitSide = (clampX(peekX - fromSide * size * 1.6) === peekX - fromSide * size * 1.6 ? -fromSide : fromSide) as 1 | -1;
-        if (index % 2 === 0) {
+        if (onTop) {
           // Lands on the top edge: hands on the ledge, head above the image.
           const py = top - size * LEDGE.peekTop;
           stops.push(
-            fly(at - 520, peekX + fromSide * size * 1.5, py - size * 0.8, spin),
-            fly(at - 280, peekX + fromSide * size * 0.45, py - size * 0.45, spin),
+            glide(at - 540, peekX + fromSide * size * 1.5, vh * 0.3, spin),
+            fly(at - 270, peekX + fromSide * size * 0.4, py - size * 0.4, spin),
             { ...fly(at - 130, peekX, py, spin), pose: "peekTop" },
             { ...fly(at + 130, peekX, py, spin), pose: "peekTop" },
-            fly(at + 300, peekX + exitSide * size * 0.35, py - size * 0.7, spin),
+            glide(at + 320, peekX + exitSide * size * 0.45, vh * 0.2, spin),
           );
         } else {
           // Hangs from the bottom edge: hands under the ledge, body below the image.
           const py = bottom - size * LEDGE.peekBottom;
           stops.push(
-            fly(at - 560, peekX + fromSide * size * 1.4, docY(rect.top + rect.height * 0.55), spin),
-            fly(at - 300, peekX + fromSide * size * 0.5, py + size * 0.55, spin),
+            glide(at - 560, peekX + fromSide * size * 1.4, vh * 0.35, spin),
+            glide(at - 290, peekX + fromSide * size * 0.5, Math.min(vh - size - 16, vh * 0.68), spin),
             { ...fly(at - 130, peekX, py, spin), pose: "peekBottom" },
             { ...fly(at + 130, peekX, py, spin), pose: "peekBottom" },
-            fly(at + 300, peekX + exitSide * size * 0.4, py + size * 0.6, spin),
+            glide(at + 320, peekX + exitSide * size * 0.45, vh * 0.5, spin),
           );
         }
-        // 360° loop on the way out, rolling with the direction of travel.
+        // 360° backflip on the way out (nose up first), then keep gliding the same way.
         const last = stops[stops.length - 1];
-        spin += exitSide * 360;
-        stops.push(fly(at + 560, last.x + exitSide * size * 1.3, last.y + size * 0.15, spin));
+        spin -= exitSide * 360;
+        stops.push(glide(at + 620, last.x + exitSide * size * 1.3, vh * 0.4, spin));
       });
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - window.innerHeight + origin;
