@@ -157,13 +157,13 @@ export const ChapterSection = ({
 
           {/* IMAGE */}
           <motion.div
-            initial={reducedMotion ? false : { opacity: 0, scale: 1.03 }}
+            initial={reducedMotion ? false : { scale: 1.03 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1.1, ease: [0.2, 0.65, 0.3, 0.95] }}
             className="lg:col-span-7 relative z-[3]"
           >
-            <div data-kreto-flight-media className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden">
+            <div data-kreto-flight-media className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] overflow-hidden bg-background">
               {video ? (
                 <video
                   ref={videoRef}
