@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useMotionValue } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import flying from "@/assets/brand/kreto/kreto-flying.png";
+import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.png";
 import tucked from "@/assets/brand/kreto/kreto-flight-tuck.png";
 import peeking from "@/assets/brand/kreto/kreto-flight-peek.png";
 import { sampleFlight, type FlightPose, type FlightStop } from "./kretoFlightPath";
 
-const poses = { fly: flying, tuck: tucked, peek: peeking };
+const poses = { fly: flying, flyLeft: flyingLeft, tuck: tucked, peek: peeking };
 const hideaways = ["chapter-passport", "chapter-match", "chapter-studio"];
 
 /** One decorative figure; real media are foreground occluders, never duplicated. */
@@ -77,25 +78,28 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const side = index === 2 ? 1 : -1;
         const edge = side === 1 ? left + rect.width - size * 0.34 : left - size * 0.66;
         const safeEdge = Math.max(8, Math.min(window.innerWidth - size - 8, edge));
-        const turn = index % 2 === 0 ? 0 : 180;
+        // Alternate flight direction per hideaway: odd legs use the left-facing pose.
+        const headingLeft = index % 2 === 1;
         const make = (delta: number, extra: Partial<FlightStop>): FlightStop => ({
-          ...base, scroll: at + delta, x: safeEdge, y: centerY, rotate: 0, turn,
-          scale: 0.86, opacity: 1, pose: "fly", ...extra,
+          ...base, scroll: at + delta, x: safeEdge, y: centerY, rotate: 0, turn: 0,
+          scale: 0.86, opacity: 1, pose: headingLeft ? "flyLeft" : "fly", ...extra,
         });
         stops.push(
-          make(-420, { y: rect.top + scrollTop() - origin - size * 1.3, rotate: -18, pose: "tuck" }),
+          make(-420, { y: rect.top + scrollTop() - origin - size * 1.3, rotate: -16, pose: "tuck" }),
+          // Backflip: one full in-plane roll of the tucked pose, no flat sideways spin.
           make(-220, { y: rect.top + scrollTop() - origin - size * 0.9, rotate: -360, pose: "tuck" }),
-          make(-80, { x: left + rect.width * 0.65 - size / 2, y: rect.top + scrollTop() - origin - size * 0.6, rotate: -360, pose: "peek" }),
-          make(80, { x: left + rect.width * 0.5 - size / 2, rotate: -360, pose: "peek" }),
-          make(230, { x: left + rect.width * 0.35 - size / 2, y: rect.bottom + scrollTop() - origin - size * 0.3, rotate: -360, pose: "peek" }),
-          make(430, { y: rect.bottom + scrollTop() - origin + 30, rotate: -360, turn: turn + 180 }),
+          make(-80, { x: left + rect.width * 0.65 - size / 2, y: rect.top + scrollTop() - origin - size * 0.6, rotate: -14, pose: "peek" }),
+          make(80, { x: left + rect.width * 0.5 - size / 2, rotate: 0, pose: "peek" }),
+          make(230, { x: left + rect.width * 0.35 - size / 2, y: rect.bottom + scrollTop() - origin - size * 0.3, rotate: 12, pose: "peek" }),
+          // 180° turn: swap to the opposite-facing pose with a gentle bank, never an edge-on spin.
+          make(430, { y: rect.bottom + scrollTop() - origin + 30, rotate: headingLeft ? -14 : 14, pose: headingLeft ? "fly" : "flyLeft" }),
         );
       });
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - window.innerHeight + origin;
       if (end > last.scroll + 200) {
-        stops.push({ ...last, scroll: end - 120, x: Math.max(8, window.innerWidth - size - 24), y: parent.scrollHeight - size - 220, rotate: -720, turn: 360, pose: "tuck" });
-        stops.push({ ...last, scroll: end, x: Math.max(8, window.innerWidth - size - 24), y: parent.scrollHeight - size - 120, rotate: -720, turn: 360, pose: "peek", opacity: 0 });
+        stops.push({ ...last, scroll: end - 120, x: Math.max(8, window.innerWidth - size - 24), y: parent.scrollHeight - size - 220, rotate: -20, pose: "tuck" });
+        stops.push({ ...last, scroll: end, x: Math.max(8, window.innerWidth - size - 24), y: parent.scrollHeight - size - 120, rotate: 0, pose: "peek", opacity: 0 });
       }
       queue();
     };
@@ -114,7 +118,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
 
   return (
     <motion.div ref={ref} aria-hidden="true" data-kreto-flight data-pose={pose}
-      className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none lg:h-[180px] lg:w-[180px] min-[1440px]:h-[240px] min-[1440px]:w-[240px]"
+      className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none [filter:drop-shadow(0_22px_28px_rgba(15,23,42,0.35))_drop-shadow(0_0_26px_rgba(139,92,246,0.28))] lg:h-[180px] lg:w-[180px] min-[1440px]:h-[240px] min-[1440px]:w-[240px]"
       style={{ x, y, rotate, rotateY, scale, opacity }}>
       {Object.entries(poses).map(([key, src]) => (
         <img key={key} src={src} alt="" width={1024} height={1024} decoding="async" draggable={false}
