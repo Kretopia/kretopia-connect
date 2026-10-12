@@ -242,6 +242,7 @@ export const ChapterSection = ({
 
           {/* TEXT */}
           <motion.div
+            data-kreto-flight-content
             initial={reducedMotion ? false : { opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}

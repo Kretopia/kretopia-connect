@@ -1,9 +1,9 @@
 # Roadmap
 
 ## Kreto Landing flight
-- [ ] Create matching tucked-backflip and peeking poses from the approved flying mascot.
-- [ ] Integrate scroll-linked waving takeoff, 180-degree turns, backflips and three media hideaways.
-- [ ] Verify targeted tests and desktop/mobile/reduced-motion presentation without publishing.
+- [x] Create matching tucked-backflip and peeking poses from the approved flying mascot.
+- [x] Integrate scroll-linked waving takeoff, 180-degree turns, backflips and three media hideaways.
+- [x] Verify targeted tests (11 passing), desktop/mobile/reduced-motion presentation and automatic compilation without publishing.
 
 ## Company header and Pay simplification
 - [x] Remove Company Mode stickers from shared feature headers, preserving navigation mode indication.

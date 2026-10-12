@@ -35,6 +35,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const scrollTarget = scrollRoot ?? window;
     const scrollTop = () => scrollRoot?.scrollTop ?? window.scrollY;
     let stops: FlightStop[] = [];
+    let protectedAreas: { x: number; y: number; width: number; height: number }[] = [];
     let frame = 0;
     let activePose: FlightPose = "fly";
     const paint = () => {
@@ -42,7 +43,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const point = sampleFlight(stops, scrollTop());
       if (!point) return;
       x.set(point.x); y.set(point.y); rotate.set(point.rotate);
-      rotateY.set(point.turn); scale.set(point.scale); opacity.set(point.opacity);
+      rotateY.set(point.turn); scale.set(point.scale);
+      const size = window.innerWidth >= 1440 ? 240 : window.innerWidth >= 1024 ? 180 : 104;
+      const overlapsText = protectedAreas.some(area => point.x + size > area.x && point.x < area.x + area.width && point.y + size > area.y && point.y < area.y + area.height);
+      opacity.set(overlapsText ? 0 : point.opacity);
       // Cross-fade from the original, aligned waving layers at takeoff.
       hero.style.opacity = String(1 - Math.min(1, scrollTop() / 160));
       if (point.pose !== activePose) { activePose = point.pose; setPose(point.pose); }
@@ -51,6 +55,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     const measure = () => {
       const bounds = parent.getBoundingClientRect();
       const origin = bounds.top + scrollTop();
+      protectedAreas = Array.from(parent.querySelectorAll<HTMLElement>('[data-kreto-flight-content]')).map(el => {
+        const rect = el.getBoundingClientRect();
+        return { x: rect.left - bounds.left, y: rect.top + scrollTop() - origin, width: rect.width, height: rect.height };
+      });
       const size = window.innerWidth >= 1440 ? 240 : window.innerWidth >= 1024 ? 180 : 104;
       const start = hero.getBoundingClientRect();
       const visibleHero = start.width > 0;
@@ -65,7 +73,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const centerY = rect.top + scrollTop() - origin + rect.height * 0.45;
         const at = Math.max(stops[stops.length - 1].scroll + 600, centerY + origin - window.innerHeight * 0.48);
         const left = rect.left - bounds.left;
-        const side = index % 2 === 0 ? 1 : -1;
+        // Use the outer edge, away from the adjacent headline and controls.
+        const side = index === 2 ? 1 : -1;
         const edge = side === 1 ? left + rect.width - size * 0.34 : left - size * 0.66;
         const safeEdge = Math.max(8, Math.min(window.innerWidth - size - 8, edge));
         const turn = index % 2 === 0 ? 0 : 180;

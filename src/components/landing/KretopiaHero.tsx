@@ -142,6 +142,9 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
     };
   }, [ready, reducedMotion]);
 
+  // Greet once on arrival, then retain the existing hover/touch wave.
+  useEffect(() => { play(); }, [play]);
+
   return (
     // No opacity / transform / z-index on this wrapper on purpose: that keeps it
     // out of its own stacking context, so the hit zone below (z-[2]) can sit above
