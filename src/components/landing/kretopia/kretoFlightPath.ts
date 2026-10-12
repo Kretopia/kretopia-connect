@@ -17,6 +17,14 @@ function tangent(stops: FlightStop[], i: number, key: "x" | "y", span: number) {
   const prev = stops[i - 1];
   const next = stops[i + 1];
   if (!prev || !next || same(prev, stops[i]) || same(stops[i], next)) return 0;
+  if (key === "x") {
+    const current = stops[i];
+    const incoming = (current.x - prev.x) / Math.max(1, current.scroll - prev.scroll);
+    const outgoing = (next.x - current.x) / Math.max(1, next.scroll - current.scroll);
+    if (incoming * outgoing <= 0) return 0;
+    const slope = (incoming + outgoing) / 2;
+    return Math.sign(slope) * Math.min(Math.abs(slope), 3 * Math.min(Math.abs(incoming), Math.abs(outgoing))) * span;
+  }
   return ((next[key] - prev[key]) / Math.max(1, next.scroll - prev.scroll)) * span;
 }
 

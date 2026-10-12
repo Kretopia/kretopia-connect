@@ -117,8 +117,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         { scroll: 0, x: x0, y: y0, rotate: 0, opacity: 0, pose: "fly" },
         fly(90, x0 + awayX * size * 0.12, y0 - size * 0.22),
         fly(240, x0 + awayX * size * 0.9, y0 + size * 0.35),
+        glide(420, awayX < 0 ? 8 : vw - size - 8, vh * 0.6),
       ];
-      let spin = 0;
+      const spin = 0;
       parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]").forEach((media, index) => {
         const rect = media.getBoundingClientRect();
         const top = docY(rect.top);

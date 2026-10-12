@@ -4,6 +4,15 @@ import { bottomBackflip, headingAt, sampleFlight, travelHeading, withFlightTurns
 const first: FlightStop = { scroll: 0, x: 10, y: 20, rotate: 0, opacity: 0, pose: "fly" };
 const last: FlightStop = { ...first, scroll: 100, x: 110, y: 220, rotate: -360, opacity: 1 };
 describe("Kreto scroll flight", () => {
+  it("keeps horizontal travel monotonic between authored page-edge turns", () => {
+    const path = [first, { ...first, scroll: 100, x: 20 }, { ...first, scroll: 200, x: 300 }];
+    let previous = first.x;
+    for (let scroll = 1; scroll <= 200; scroll++) {
+      const point = sampleFlight(path, scroll);
+      expect(point?.x).toBeGreaterThanOrEqual(previous);
+      previous = point?.x ?? previous;
+    }
+  });
   it("does not insert flips at interior media waypoints", () => {
     const path = [first, { ...first, scroll: 300, x: 150 }, { ...first, scroll: 600, x: 10 }];
     expect(withFlightTurns(path, { left: 10, right: 300 })).toHaveLength(3);
