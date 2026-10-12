@@ -92,3 +92,26 @@ describe("lockX", () => {
     expect(lockX({ ...lock, x2: undefined }, 200)).toBe(10);
   });
 });
+
+describe("mediaLedgeLocks: a targeted way across", () => {
+  const locks = mediaLedgeLocks({
+    topAt: 1000, middle: 1500, release: 2000, slide: 80, x: 40, xBottom: 640,
+    arriveY: 100, topY: 160, hiddenTop: 220, hiddenBottom: 700, bottomY: 640, departY: 900,
+  });
+
+  it("moves sideways only while he sinks behind the media, and leaves from the bottom x", () => {
+    expect(locks[0].x).toBe(40);
+    expect(locks[1].x).toBe(40);
+    expect(locks[2].x).toBe(40);
+    expect(locks[2].x2).toBe(640);
+    expect(locks.slice(3).every((l) => l.x === 640 && l.x2 === undefined)).toBe(true);
+  });
+
+  it("is a straight drop when no bottom x is given", () => {
+    const plain = mediaLedgeLocks({
+      topAt: 1000, middle: 1500, release: 2000, slide: 80, x: 40,
+      arriveY: 100, topY: 160, hiddenTop: 220, hiddenBottom: 700, bottomY: 640, departY: 900,
+    });
+    expect(plain.every((l) => l.x === 40)).toBe(true);
+  });
+});
