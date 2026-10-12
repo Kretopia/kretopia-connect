@@ -5,13 +5,13 @@ import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
 import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
-import { headingAt, sampleFlight, type FlightPose, type FlightStop } from "./kretoFlightPath";
+import { bottomBackflip, headingAt, sampleFlight, travelHeading, withFlightTurns, type FlightPose, type FlightStop } from "./kretoFlightPath";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom } as const;
 type Layer = keyof typeof layers;
 /** Where the ledge line sits inside each hiding artwork (fraction of its height). */
-const LEDGE = { peekTop: 0.62, peekBottom: 0.32 };
-const SPRING = { stiffness: 180, damping: 28, mass: 0.6 };
+const LEDGE = { peekTop: 0.59, peekBottom: 0.35 };
+const SPRING = { stiffness: 150, damping: 26, mass: 0.6 };
 
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 
@@ -46,7 +46,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     let first = true;
     let previousScroll = scrollTop();
     let direction: -1 | 1 = 1;
-    let lastHeadingChange = 0;
+    let endScroll = 0;
+    let poseScroll = -100;
 
     const paint = () => {
       frame = 0;
@@ -61,21 +62,22 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const climb = ahead ? (ahead.y - point.y - direction * 12) / 12 : 0;
       const bounds = parent.getBoundingClientRect();
       const offscreen = point.y + bounds.top < -size || point.y + bounds.top > window.innerHeight;
-      const renderPose = scroll > 120 && offscreen ? "fly" : point.pose;
+      const requestedPose = scroll > 120 && offscreen ? "fly" : point.pose;
+      // Spatial hysteresis prevents repeated switches around a ledge threshold.
+      if (requestedPose !== activePose && Math.abs(scroll - poseScroll) > 28) {
+        activePose = requestedPose; poseScroll = scroll; setPose(requestedPose);
+      }
+      const renderPose = activePose;
       const follow = Math.min(1, Math.max(0, (scroll - 180) / 240));
       const visibleY = Math.max(-bounds.top + window.innerHeight * 0.2, Math.min(-bounds.top + window.innerHeight * 0.72 - size, point.y));
       const flightY = renderPose === "fly" ? point.y + (visibleY - point.y) * follow : point.y;
       const flightX = point.x;
-      // Follow actual rendered travel, not the next scripted stop. A dead zone
-      // prevents left/right chatter while hovering or reversing a short scroll.
-      const dx = flightX - x.get();
-      const now = performance.now();
-      if (renderPose === "fly" && Math.abs(dx) > 6 && now - lastHeadingChange > 180) {
-        const dir = dx > 0 ? 1 : -1;
-        if (dir !== heading) { heading = dir; setFacing(dir); lastHeadingChange = now; }
-      }
+      // The authored route reverses only at page edges. Read its tangent,
+      // never the spring's tracking error (which changes sign while settling).
+      const dir = travelHeading(stops, scroll, direction);
+      if (renderPose === "fly" && dir !== 0 && dir !== heading) { heading = dir; setFacing(dir); }
       const bank = renderPose === "fly" ? heading * Math.max(-12, Math.min(12, climb * 14)) : 0;
-      const targetRotation = point.rotate + bank;
+      const targetRotation = point.rotate + bottomBackflip(scroll, endScroll) + bank;
       if (first) { x.jump(flightX); y.jump(flightY); rotate.jump(targetRotation); first = false; }
       else {
         x.set(flightX);
@@ -89,7 +91,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       opacity.jump(blend);
       // Cross-fade from the original, aligned waving layers at takeoff.
       hero.style.opacity = String(1 - blend);
-      if (renderPose !== activePose) { activePose = renderPose; setPose(renderPose); }
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
@@ -116,8 +117,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         { scroll: 0, x: x0, y: y0, rotate: 0, opacity: 0, pose: "fly" },
         fly(90, x0 + awayX * size * 0.12, y0 - size * 0.22),
         fly(240, x0 + awayX * size * 0.9, y0 + size * 0.35),
+        glide(420, awayX < 0 ? 8 : vw - size - 8, vh * 0.6),
       ];
-      let spin = 0;
+      const spin = 0;
       parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]").forEach((media, index) => {
         const rect = media.getBoundingClientRect();
         const top = docY(rect.top);
@@ -126,34 +128,29 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const previous = stops[stops.length - 1];
         const topAt = Math.max(previous.scroll + 200, top + origin - vh * 0.38);
         const bottomAt = Math.max(topAt + 360, bottom + origin - vh * 0.6);
-        const topX = clampX(left + rect.width * (index % 2 === 0 ? 0.7 : 0.3) - size / 2);
-        const bottomX = clampX(left + rect.width * (index % 2 === 0 ? 0.3 : 0.7) - size / 2);
-        const leftSide = clampX(left - size * 0.6);
-        const rightSide = clampX(left + rect.width - size * 0.4);
-        const firstSide = index % 2 === 0 ? rightSide : leftSide;
-        const secondSide = index % 2 === 0 ? leftSide : rightSide;
+        const movingRight = index % 2 === 0;
+        const topX = clampX(left + rect.width * (movingRight ? 0.3 : 0.7) - size / 2);
+        const bottomX = clampX(left + rect.width * (movingRight ? 0.7 : 0.3) - size / 2);
+        const edge = movingRight ? vw - size - 8 : 8;
         const topY = top - size * LEDGE.peekTop;
         const bottomY = bottom - size * LEDGE.peekBottom;
         const middle = (topAt + bottomAt) / 2;
         stops.push(
-          fly(topAt - 100, topX, topY - size * 0.45, spin),
+          fly(topAt - 100, topX, topY - size * 0.12, spin),
           { ...fly(topAt, topX, topY, spin), pose: "peekTop" },
           { ...fly(topAt + 80, topX, topY, spin), pose: "peekTop" },
-          fly(middle - 40, firstSide, top + rect.height * 0.25, spin),
-          fly(middle + 40, secondSide, top + rect.height * 0.65, spin),
+          fly(middle, (topX + bottomX) / 2, top + rect.height * 0.5, spin),
           { ...fly(bottomAt, bottomX, bottomY, spin), pose: "peekBottom" },
           { ...fly(bottomAt + 90, bottomX, bottomY, spin), pose: "peekBottom" },
         );
-        // One unhurried backflip during the journey, never at every ledge.
-        if (index === 1) spin += 360;
-        stops.push(glide(bottomAt + 330, secondSide, vh * 0.45, spin));
+        stops.push(glide(bottomAt + 250, edge, vh * 0.45, spin));
       });
       const last = stops[stops.length - 1];
       const end = parent.scrollHeight - window.innerHeight + origin;
+      endScroll = end;
       if (end > last.scroll + 240) {
-        stops.push(fly(end - 140, vw - size - 24, parent.scrollHeight - size - 240, spin));
-        stops.push(glide(end - 45, vw - size - 24, vh * 0.55, spin,));
-        stops.push(glide(end, vw - size - 24, vh * 0.55, spin));
+        stops.push(glide(end - 280, 8, vh * 0.5, spin));
+        stops.push(glide(end, vw - size - 8, vh * 0.55, spin));
       }
       // Keep stops strictly ordered even with short media and tall viewports.
       stops = stops.reduce<FlightStop[]>((ordered, stop) => {
@@ -161,6 +158,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         ordered.push({ ...stop, scroll: previous ? Math.max(stop.scroll, previous.scroll + 1) : stop.scroll });
         return ordered;
       }, []);
+      stops = withFlightTurns(stops, { left: 8, right: vw - size - 8 });
       const initial = headingAt(stops, 200);
       if (first && initial !== 0) { heading = initial; setFacing(initial); }
       queue();
@@ -184,10 +182,10 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     <motion.div ref={ref} aria-hidden="true" data-kreto-flight data-pose={pose} data-facing={facing === 1 ? "right" : "left"}
       className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none lg:h-[180px] lg:w-[180px] min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
       style={{ x, y, rotate, opacity }}>
-      <motion.div className="relative h-full w-full" animate={!reduced ? { y: [0, -3, 0] } : { y: 0 }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}>
+      <motion.div className="relative h-full w-full" animate={!reduced && pose === "fly" ? { y: [0, -3, 0] } : { y: 0 }} transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}>
       {(Object.keys(layers) as Layer[]).map(key => (
         <motion.img key={key} src={layers[key]} alt="" width={1024} height={1024} decoding="sync" draggable={false}
-          initial={false} animate={{ opacity: key === visible ? 1 : 0 }} transition={{ duration: reduced ? 0 : 0.18, ease: "easeInOut" }}
+          initial={false} animate={{ opacity: key === visible ? 1 : 0, zIndex: key === visible ? 1 : 0 }} transition={{ opacity: { duration: reduced ? 0 : key === visible ? 0.16 : 0, delay: reduced || key === visible ? 0 : 0.16 }, zIndex: { duration: 0 } }}
           className="absolute inset-0 h-full w-full object-contain" />
       ))}
       </motion.div>
