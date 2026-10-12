@@ -79,17 +79,19 @@ export function flipAt(flips: Flip[], scroll: number): { kind: FlipKind; t: numb
 }
 
 /** Entry and exit continue vertically in scroll direction, without a hidden reset. */
-export function mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY }: {
+export function mediaLedgeLocks({ topAt, middle, release, slide, x, xBottom = x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY }: {
   topAt: number; middle: number; release: number; slide: number; x: number;
+  /** Where he comes out at the bottom edge: the sideways move happens while he is behind the media. */
+  xBottom?: number;
   arriveY: number; topY: number; hiddenTop: number; hiddenBottom: number; bottomY: number; departY: number;
 }): LedgeLock[] {
   return [
     { from: topAt, to: topAt + slide, x, y: arriveY, y2: topY, phase: "arrive", pose: "peekTop" },
     { from: topAt + slide, to: middle - slide, x, y: topY, hidden: hiddenTop, pose: "peekTop" },
-    { from: middle - slide, to: middle, x, y: topY, y2: hiddenTop, pose: "peekTop" },
-    { from: middle, to: middle + slide, x, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
-    { from: middle + slide, to: release - slide, x, y: bottomY, hidden: hiddenBottom, pose: "peekBottom" },
-    { from: release - slide, to: release, x, y: bottomY, y2: departY, phase: "depart", pose: "peekBottom" },
+    { from: middle - slide, to: middle, x, x2: xBottom, y: topY, y2: hiddenTop, pose: "peekTop" },
+    { from: middle, to: middle + slide, x: xBottom, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
+    { from: middle + slide, to: release - slide, x: xBottom, y: bottomY, hidden: hiddenBottom, pose: "peekBottom" },
+    { from: release - slide, to: release, x: xBottom, y: bottomY, y2: departY, phase: "depart", pose: "peekBottom" },
   ];
 }
 

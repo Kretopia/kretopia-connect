@@ -5,7 +5,7 @@ import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
-import { bottomBackflip, flipAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
+import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peekSide } as const;
 type Layer = keyof typeof layers;
@@ -23,7 +23,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.42, handsY: 0.33, minScale: 0.55 };
+const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -31,8 +31,8 @@ const FLY_ALPHA = { top: 0, bottom: 1 };
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 /** After the scroll settles, the media's real positions are checked once and the flight re-measured if they moved. */
 const REMEASURE_IDLE_MS = 180;
-/** Inside this distance of his destination he keeps the heading he has (no flapping on a vertical climb). */
-const HEADING_DEAD_ZONE = 0.3;
+/** The head clip of the side artwork (art coordinates): only the helmet and ears come out, never fingers or body. */
+const SIDE_HEAD_CLIP = "ellipse(30% 27% at 63% 33.5%)";
 /** Reversing the scroll turns him with one backflip (in the picture plane, so the volume is never flattened). */
 const TURN_MS = 520;
 /**
@@ -158,11 +158,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // Tight gaps between media leave no room for banking without overlapping one.
       const roomy = !corridor || (!Number.isFinite(corridor.maxY) && targetY > corridor.minY + size);
       const now = performance.now();
-      // He faces the media he is flying to: the next one when the page goes down, the one he is
-      // coming back to when it goes up (from the Hero onward). A change of destination side is a backflip.
-      const destX = destinationX(scroll, direction);
-      if (destX !== undefined && Math.abs(destX - point.x) > size * HEADING_DEAD_ZONE) {
-        const wantHeading: 1 | -1 = destX > point.x ? 1 : -1;
+      // His body faces the way he is actually flying: the path's x direction as the page goes down, and
+      // the reverse as it goes up (he retraces it). Where he hovers or climbs straight, he keeps his
+      // heading. A change of heading is one backflip, the artwork swapped at the top of the roll.
+      const travel = headingAt(stops, scroll, 40, 3);
+      if (travel !== 0) {
+        const wantHeading: 1 | -1 = travel * direction > 0 ? 1 : -1;
         if (!first && wantHeading !== heading) { turnStart = now; turnFrom = heading; }
         heading = wantHeading;
       }
@@ -237,13 +238,6 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
     };
     const queue = () => { if (!frame) frame = requestAnimationFrame(paint); };
 
-    /** The media's x he is flying to: the next corridor's end going down, the previous corridor's start going up. */
-    const destinationX = (scroll: number, dir: 1 | -1): number | undefined => {
-      const inside = corridors.find(c => scroll >= c.from && scroll <= c.to);
-      if (inside) return dir === 1 ? inside.endX : inside.startX;
-      if (dir === 1) return corridors.find(c => c.from > scroll)?.endX;
-      return [...corridors].reverse().find(c => c.to < scroll)?.startX;
-    };
     /** Document positions of every media: a change means the layout moved and the geometry is stale. */
     const signature = () => {
       const top = parent.getBoundingClientRect().top;
@@ -285,7 +279,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       let corridorMin = -Infinity;
       let corridorX = stops[stops.length - 1].x;
       const hold = Math.max(180, vh * 0.3);
-      parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]").forEach((media, index) => {
+      const mediaList = Array.from(parent.querySelectorAll<HTMLElement>("[data-kreto-flight-media]"));
+      mediaList.forEach((media, index) => {
         const rect = media.getBoundingClientRect();
         const top = docY(rect.top);
         const bottom = docY(rect.bottom);
@@ -304,8 +299,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const room = Math.max(left, vw - rectRight);
         // A quarter of the part that sticks out may go past the viewport edge: he keeps a believable
         // size instead of shrinking to fit a narrow margin.
-        const sideW = (1 - SIDE.cut) * size;
-        const sideScale = Math.min(1, (room - 2 + 0.25 * sideW) / sideW);
+        // Only the head comes out: its width is what has to fit, with a sliver allowed past the viewport edge.
+        const sideW = SIDE.extent * size;
+        const sideScale = Math.min(1, (room - 2 + 0.15 * sideW) / sideW);
         const sideMode = !attach && sideScale >= SIDE.minScale;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
         const sideX = sideOf === "right" ? rectRight - SIDE.cut * size : left - (1 - SIDE.cut) * size;
@@ -317,6 +313,13 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const x = sideMode
           ? sideX
           : Math.abs(previous.x - mediaLeft) <= Math.abs(previous.x - mediaRight) ? mediaLeft : mediaRight;
+        // Where he comes out at the bottom edge: the extreme nearest the next media he is flying to, so the
+        // way across (behind this one) is a targeted diagonal, not a hug of the corners.
+        const nextRect = mediaList[index + 1]?.getBoundingClientRect();
+        const nextCenter = nextRect ? nextRect.left - bounds.left + nextRect.width / 2 : vw - size / 2 - 24;
+        const xBottom = sideMode
+          ? x
+          : Math.abs(nextCenter - size / 2 - mediaLeft) <= Math.abs(nextCenter - size / 2 - mediaRight) ? mediaLeft : mediaRight;
         // The side hide's stops are not clamped: his box may extend past the viewport (transparent there).
         const put = sideMode
           ? (scroll: number, px: number, py: number): FlightStop => ({ scroll, x: px, y: py, rotate: 0, opacity: 1, pose: "fly" })
@@ -336,7 +339,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // Contiguous locks: Kreto never leaves a hideaway pose while the media is in play.
         mediaEls[index] = media;
         if (attach) {
-          const made = mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY });
+          const made = mediaLedgeLocks({ topAt, middle, release, slide, x, xBottom, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY });
           made.forEach(lock => { lock.media = index; });
           ledgeLocks.push(...made);
           flips.push({ from: release + 30, to: release + 220, kind: index % 4 === 0 ? "spin" : "backflip" });
@@ -362,7 +365,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         corridors.push({ from: corridorFrom, to: topAt, minY: corridorMin, maxY: arriveY, startX: corridorX, endX: x });
         corridorFrom = release;
         corridorMin = departY;
-        corridorX = x;
+        corridorX = xBottom;
         stops.push(
           put(topAt - 100, x, arriveY - size * 0.12),
           put(topAt - 1, x, arriveY),
@@ -370,12 +373,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
             ? [
                 { ...fly(topAt, x, topY), pose: "peekTop" as const },
                 { ...fly(topAt + 1, x, topY), pose: "peekTop" as const },
-                { ...fly(release - 1, x, bottomY), pose: "peekBottom" as const },
-                { ...fly(release, x, bottomY), pose: "peekBottom" as const },
+                { ...fly(release - 1, xBottom, bottomY), pose: "peekBottom" as const },
+                { ...fly(release, xBottom, bottomY), pose: "peekBottom" as const },
               ]
             : []),
-          put(release + 1, x, departY),
-          put(release + 100, x, departY + size * 0.12),
+          put(release + 1, xBottom, departY),
+          put(release + 100, xBottom, departY + size * 0.12),
         );
       });
       // The line the loop section opens with: he somersaults as he reaches it.
@@ -434,7 +437,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { imgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: key === "left" ? "visible" : "hidden" }} />
+            style={{ visibility: key === "left" ? "visible" : "hidden", clipPath: key === "peekSide" ? SIDE_HEAD_CLIP : undefined }} />
         ))}
       </div>
     </div>
