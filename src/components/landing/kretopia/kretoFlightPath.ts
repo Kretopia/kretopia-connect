@@ -20,6 +20,21 @@ export interface LedgeLock {
   pose: "peekTop" | "peekBottom";
 }
 
+/** Entry and exit continue vertically in scroll direction, without a hidden reset. */
+export function mediaLedgeLocks({ topAt, middle, release, slide, x, arriveY, topY, hiddenTop, hiddenBottom, bottomY, departY }: {
+  topAt: number; middle: number; release: number; slide: number; x: number;
+  arriveY: number; topY: number; hiddenTop: number; hiddenBottom: number; bottomY: number; departY: number;
+}): LedgeLock[] {
+  return [
+    { from: topAt, to: topAt + slide, x, y: arriveY, y2: topY, pose: "peekTop" },
+    { from: topAt + slide, to: middle - slide, x, y: topY, pose: "peekTop" },
+    { from: middle - slide, to: middle, x, y: topY, y2: hiddenTop, pose: "peekTop" },
+    { from: middle, to: middle + slide, x, y: hiddenBottom, y2: bottomY, pose: "peekBottom" },
+    { from: middle + slide, to: release - slide, x, y: bottomY, pose: "peekBottom" },
+    { from: release - slide, to: release, x, y: bottomY, y2: departY, pose: "peekBottom" },
+  ];
+}
+
 /** Boundary-based hysteresis: tiny reversals cannot replay a dock/undock. */
 export function ledgeLockAt(locks: LedgeLock[], scroll: number, active?: LedgeLock): LedgeLock | undefined {
   const exact = locks.find(lock => scroll >= lock.from && scroll <= lock.to);
