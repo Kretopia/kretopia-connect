@@ -10,6 +10,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { checkWebhookTimestamp } from "../_shared/webhookFreshness.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,13 +62,26 @@ serve(async (req) => {
     if (!incomingSig) {
       return new Response("missing signature", { status: 401, headers: corsHeaders });
     }
-    const candidates: string[] = [];
-    if (timestamp) candidates.push(await hmacSha256Hex(hmacSecret, `${timestamp}.${raw}`));
-    candidates.push(await hmacSha256Hex(hmacSecret, raw));
-    const ok = candidates.some((c) => timingSafeEqualHex(c, incomingSig));
-    if (!ok) {
+    const timestampedSig = timestamp ? await hmacSha256Hex(hmacSecret, `${timestamp}.${raw}`) : null;
+    const rawBodySig = await hmacSha256Hex(hmacSecret, raw);
+    const timestampedOk = timestampedSig !== null && timingSafeEqualHex(timestampedSig, incomingSig);
+    const rawBodyOk = timingSafeEqualHex(rawBodySig, incomingSig);
+    if (!timestampedOk && !rawBodyOk) {
       console.warn("[daily-recording-webhook] signature mismatch");
       return new Response("bad signature", { status: 401, headers: corsHeaders });
+    }
+
+    // Freshness (audit GA REL-04). The timestamped signature covers `${timestamp}.${body}`, so a captured
+    // request stays genuine forever unless its timestamp is bounded. Only the timestamped form can be
+    // bounded; the raw-body form carries no time and is kept for older webhook configs (logged below).
+    if (timestampedOk) {
+      const fresh = checkWebhookTimestamp(timestamp, Math.floor(Date.now() / 1000));
+      if (!fresh.ok) {
+        console.warn("[daily-recording-webhook] rejected:", fresh.reason);
+        return new Response("stale or invalid timestamp", { status: 401, headers: corsHeaders });
+      }
+    } else {
+      console.warn("[daily-recording-webhook] accepted a raw-body signature: its age cannot be bounded");
     }
 
     const payload = JSON.parse(raw);
