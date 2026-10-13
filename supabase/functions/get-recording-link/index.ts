@@ -3,6 +3,8 @@
 // Daily's access links expire in ~120s, so we always fetch fresh.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { ProjectAccessError, requireProjectAccess } from "../_shared/projectAccess.ts";
+import { decideRecordingAccess } from "../_shared/recordingAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,35 +72,63 @@ serve(async (req) => {
       });
     }
 
-    // Authorization: creator, listed participant, or (for project calls) any project member.
-    let allowed = row.created_by === userId;
-    if (!allowed && Array.isArray(row.participants)) {
-      allowed = (row.participants as any[]).some(
-        (p) => p?.user_id === userId,
-      );
-    }
-    if (!allowed && row.project_id) {
-      const { data: member } = await admin
-        .from("project_members")
-        .select("user_id")
-        .eq("project_id", row.project_id)
+    // Authorization, from canonical records only (audit GA SEC-09). Every lookup that feeds the
+    // decision fails closed: a lookup error is a denial, never a grant.
+    let lookupFailed = false;
+    const listedParticipant =
+      Array.isArray(row.participants) && (row.participants as any[]).some((p) => p?.user_id === userId);
+
+    // A person revoked from a meeting keeps no recording access through the participants list.
+    let meetingParticipantStatus: string | null | undefined;
+    if (row.call_kind === "meeting" && row.call_id) {
+      const { data: mp, error: mpErr } = await admin
+        .from("meeting_participants")
+        .select("status")
+        .eq("meeting_id", row.call_id)
         .eq("user_id", userId)
         .maybeSingle();
-      if (member) allowed = true;
+      if (mpErr) lookupFailed = true;
+      else meetingParticipantStatus = mp?.status;
     }
-    if (!allowed && row.call_kind === "direct") {
-      const { data: dc } = await admin
+
+    // Project calls: the owner or an ACCEPTED operator of the project (the canonical strict check),
+    // not an unqualified project_members row.
+    let projectAccess = false;
+    if (row.project_id) {
+      try {
+        await requireProjectAccess(admin, row.project_id, userId, {
+          allowRoles: ["owner", "collaborator", "creative"],
+        });
+        projectAccess = true;
+      } catch (e) {
+        if (e instanceof ProjectAccessError && e.status === 503) lookupFailed = true;
+      }
+    }
+
+    let directCallParty = false;
+    if (row.call_kind === "direct" && row.call_id) {
+      const { data: dc, error: dcErr } = await admin
         .from("direct_video_calls")
         .select("started_by, invited_user_id")
         .eq("id", row.call_id)
         .maybeSingle();
-      if (dc && (dc.started_by === userId || dc.invited_user_id === userId)) {
-        allowed = true;
-      }
+      if (dcErr) lookupFailed = true;
+      else directCallParty = !!dc && (dc.started_by === userId || dc.invited_user_id === userId);
     }
-    if (!allowed) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
+
+    const decision = decideRecordingAccess({
+      userId,
+      createdBy: row.created_by,
+      listedParticipant,
+      projectAccess,
+      directCallParty,
+      meetingParticipantStatus,
+      lookupFailed,
+    });
+    if (!decision.allowed) {
+      const unavailable = decision.reason === "lookup_failed";
+      return new Response(JSON.stringify({ error: unavailable ? "Could not verify access" : "Forbidden" }), {
+        status: unavailable ? 503 : 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
