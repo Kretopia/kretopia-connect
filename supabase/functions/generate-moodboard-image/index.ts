@@ -5,6 +5,7 @@
 // - Inserts a project_files row owned by the requesting user.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
+import { guardStudioOperator } from "../_shared/studioAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,25 +46,22 @@ Deno.serve(async (req) => {
     if (!rawPrompt) return json({ error: "prompt required" }, 400);
     if (rawPrompt.length > 600) return json({ error: "prompt too long" }, 400);
 
-    // Membership check — user must be owner or collaborator
+    // Access from the canonical records: the owner or an ACCEPTED operator.
+    // The previous check accepted any project_collaborators row (pending
+    // invitees and guests included) before a paid model call.
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+    const guard = await guardStudioOperator(admin, projectId, user.id, corsHeaders);
+    if (!guard.ok) return guard.response;
+
     const { data: project } = await userClient
       .from("projects")
       .select("id, title, description, mood, workspace_type, created_by")
       .eq("id", projectId)
       .maybeSingle();
     if (!project) return json({ error: "project not found" }, 404);
-
-    let allowed = project.created_by === user.id;
-    if (!allowed) {
-      const { data: collab } = await userClient
-        .from("project_collaborators")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      allowed = !!collab;
-    }
-    if (!allowed) return json({ error: "Not a project member" }, 403);
 
     // Build a richer prompt grounded in the brief & mood
     const briefSnippet = (project.description || "").slice(0, 500);
@@ -108,11 +106,8 @@ Deno.serve(async (req) => {
     const base64 = imageData.replace(/^data:image\/\w+;base64,/, "");
     const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
 
-    // Use service role for storage write so we don't fight with bucket policies
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
+    // The service-role client (declared above) writes the file so we don't
+    // fight with bucket policies.
     const fileName = `ai-moodboard-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.png`;
     const path = `${projectId}/${fileName}`;
 

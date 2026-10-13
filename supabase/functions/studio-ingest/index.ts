@@ -30,6 +30,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 import { GEMINI_FLASH, GEMINI_PRO } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { guardStudioOperator } from "../_shared/studioAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -259,21 +260,12 @@ Deno.serve(async (req) => {
       return json({ error: "text, url, image, or audio required" }, 400);
     }
 
-    // Membership check (owner or collaborator)
-    const { data: project } = await admin.from("projects").select("id, created_by").eq("id", project_id).maybeSingle();
-    if (!project) return json({ error: "project not found" }, 404);
-
-    let isMember = project.created_by === user.id;
-    if (!isMember) {
-      const { data: collab } = await admin
-        .from("project_collaborators")
-        .select("user_id")
-        .eq("project_id", project_id)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      isMember = !!collab;
-    }
-    if (!isMember) return json({ error: "Forbidden" }, 403);
+    // Access from the canonical records: the owner or an ACCEPTED operator.
+    // This function feeds the Studio Brain with the service role, so a pending
+    // invitee, a guest or a client must not be able to add facts. The previous
+    // check accepted any project_collaborators row.
+    const guard = await guardStudioOperator(admin, project_id, user.id, corsHeaders);
+    if (!guard.ok) return guard.response;
 
     // -------- Ask the model to structure the drop --------
     const visionHint = hasVision

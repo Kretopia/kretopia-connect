@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { studioOperatorAccess } from "../_shared/studioAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,13 +83,17 @@ serve(async (req) => {
         .select("id, created_by")
         .eq("event_id", event_id)
         .maybeSingle();
+      let projectLookupFailed = false;
       if (project) {
         isHost = project.created_by === user.id;
         if (!isHost) {
-          const { data: collab } = await admin
-            .from("project_collaborators")
-            .select("id").eq("project_id", project.id).eq("user_id", user.id).maybeSingle();
-          isHost = !!collab;
+          // An ACCEPTED operator of the event's project, from the canonical
+          // records. The previous check accepted any project_collaborators
+          // row (pending invitees, guests, clients), and this function reads
+          // every RSVP'd guest's profile with the service role.
+          const access = await studioOperatorAccess(admin, project.id, user.id);
+          isHost = access.ok;
+          projectLookupFailed = !access.ok && access.status === 503;
         }
       }
       // Also allow event co-hosts
@@ -97,6 +102,12 @@ serve(async (req) => {
           .from("event_cohosts")
           .select("user_id").eq("event_id", event_id).eq("user_id", user.id).maybeSingle();
         isHost = !!cohost;
+      }
+      // A failed lookup is not "no": answer 503 rather than a plain refusal.
+      if (!isHost && projectLookupFailed) {
+        return new Response(JSON.stringify({ error: "Could not verify project access" }), {
+          status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
     }
 
