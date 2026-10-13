@@ -280,7 +280,8 @@ const AppContent = () => {
       {showBottomNav && <QuickActionFab />}
       <ThriveAgentFab />
       {showBottomNav && <ThriveBar />}
-      {user && <KretoLauncher />}
+      {/* Kreto launcher everywhere except the marketing Landing page. */}
+      {user && location.pathname !== "/landing" && <KretoLauncher />}
       
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}
       {user && <GlobalIncomingCall />}
