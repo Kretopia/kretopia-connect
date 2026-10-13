@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { decideCheckoutSessionBinding } from "../_shared/purchaseEntitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +76,25 @@ serve(async (req) => {
 
     logStep("Payment verified", { paymentStatus: session.payment_status });
 
+    // A paid session is proof of payment for what that session bought, not for
+    // any product the caller names. Its metadata is written server-side by
+    // purchase-digital-product: it must be a marketplace purchase, for this
+    // product, by this user. A missing field is a refusal.
+    const binding = decideCheckoutSessionBinding({
+      sessionType: session.metadata?.type,
+      sessionProductId: session.metadata?.product_id,
+      sessionBuyerId: session.metadata?.buyer_id,
+      requestedProductId: productId,
+      userId: authenticatedUserId,
+    });
+    if (!binding.ok) {
+      logStep("Session binding refused", { sessionId, reason: binding.error });
+      return new Response(JSON.stringify({ error: binding.error }), {
+        status: binding.status,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Get product details
     const { data: product, error: productError } = await supabaseClient
       .from('digital_products')
@@ -90,15 +110,6 @@ serve(async (req) => {
     const buyerId = session.metadata?.buyer_id;
     const sellerId = session.metadata?.seller_id || product.user_id;
     const buyerEmail = session.customer_details?.email || session.customer_email;
-
-    // Verify the authenticated user owns this purchase
-    if (buyerId && buyerId !== authenticatedUserId) {
-      logStep("Ownership mismatch", { buyerId, authenticatedUserId });
-      return new Response(JSON.stringify({ error: 'Unauthorized: session does not belong to you' }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     logStep("Buyer info", { buyerId, buyerEmail, listingType });
 
