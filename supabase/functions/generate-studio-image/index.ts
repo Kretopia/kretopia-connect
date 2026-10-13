@@ -10,6 +10,12 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAndConsumeStudioAIGeneration, refundStudioAIGeneration } from "../_shared/studioAIGate.ts";
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
+import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
+
+// Generating an image spends the project owner's studio quota and writes into
+// the project's Asset Library, so it is an operator action: not for clients or
+// guests, and never for a pending invitee.
+const IMAGE_ROLES: ProjectRole[] = ["owner", "collaborator", "creative"];
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,30 +52,29 @@ Deno.serve(async (req) => {
     if (!rawPrompt) return json({ error: "prompt required" }, 400);
     if (rawPrompt.length > 600) return json({ error: "prompt too long" }, 400);
 
-    // Membership check — user must be owner or collaborator
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Access from the canonical records: the owner or an ACCEPTED operator.
+    // The previous check accepted any project_collaborators row, pending
+    // invitees and guests included. A failed lookup answers 503, not "no".
+    try {
+      await requireProjectAccess(admin, projectId, user.id, { allowRoles: IMAGE_ROLES });
+    } catch (e) {
+      if (e instanceof ProjectAccessError) {
+        return json({ error: e.status === 503 ? e.message : "Not a project member" }, e.status === 503 ? 503 : 403);
+      }
+      return json({ error: "Could not verify project access" }, 503);
+    }
+
     const { data: project } = await userClient
       .from("projects")
       .select("id, title, description, workspace_type, created_by")
       .eq("id", projectId)
       .maybeSingle();
     if (!project) return json({ error: "project not found" }, 404);
-
-    let allowed = project.created_by === user.id;
-    if (!allowed) {
-      const { data: collab } = await userClient
-        .from("project_collaborators")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      allowed = !!collab;
-    }
-    if (!allowed) return json({ error: "Not a project member" }, 403);
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
 
     const { data: profile } = await admin
       .from("profiles")

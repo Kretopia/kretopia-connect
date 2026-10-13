@@ -228,10 +228,11 @@ Deno.serve(async (req) => {
       .single();
     if (memoErr) throw memoErr;
 
-    // Signed URL valid 7 days
+    // Signed URL valid 1 hour: the only consumer opens it immediately, and a
+    // deal memo carries the terms of a private agreement.
     const { data: signed } = await admin.storage
       .from("deal-memos")
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
+      .createSignedUrl(path, 60 * 60);
 
     return new Response(
       JSON.stringify({ memo, signed_url: signed?.signedUrl }),

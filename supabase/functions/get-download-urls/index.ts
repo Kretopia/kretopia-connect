@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import Stripe from "https://esm.sh/stripe@18.5.0";
+import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import {
+  ENTITLED_ORDER_STATUSES,
+  decideLegacyPurchase,
+  orderGrantsFiles,
+} from "../_shared/purchaseEntitlement.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -75,6 +82,15 @@ serve(async (req) => {
         });
       }
 
+      // Being the buyer is not enough: a pending, refunded or disputed order
+      // does not entitle the buyer to the files.
+      if (!orderGrantsFiles(order.status)) {
+        return new Response(JSON.stringify({ error: "This order does not give access to the files" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Get file paths from product
       const { data: product } = await adminClient
         .from("digital_products")
@@ -84,31 +100,74 @@ serve(async (req) => {
 
       filePaths = product?.file_urls || [];
     } else if (productId) {
-      // Check purchase exists for this user
-      const { data: purchase } = await adminClient
-        .from("digital_product_purchases")
+      const deny = (status: number, error: string) =>
+        new Response(JSON.stringify({ error }), {
+          status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+
+      // 1. An order the system wrote (orders have no client INSERT policy)
+      //    in a state that entitles the buyer.
+      const { data: order, error: orderLookupErr } = await adminClient
+        .from("marketplace_orders")
         .select("id")
-        .eq("product_id", productId)
+        .eq("listing_id", productId)
         .eq("buyer_id", userId)
+        .in("status", [...ENTITLED_ORDER_STATUSES])
         .limit(1)
         .maybeSingle();
+      if (orderLookupErr) return deny(503, "Could not verify this purchase");
 
-      if (!purchase) {
-        // Also check marketplace_orders
-        const { data: order } = await adminClient
-          .from("marketplace_orders")
-          .select("id")
-          .eq("listing_id", productId)
+      let entitled = !!order;
+
+      // 2. A legacy purchase row. The buyer can write that table themselves
+      //    ("Users can create purchases"), so the row alone proves nothing:
+      //    the payment provider has to confirm it, for this product and buyer.
+      if (!entitled) {
+        const { data: rows, error: purchaseErr } = await adminClient
+          .from("digital_product_purchases")
+          .select("payment_status, payment_intent_id")
+          .eq("product_id", productId)
           .eq("buyer_id", userId)
-          .limit(1)
-          .maybeSingle();
+          .limit(5);
+        if (purchaseErr) return deny(503, "Could not verify this purchase");
 
-        if (!order) {
-          return new Response(JSON.stringify({ error: "No purchase found" }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+        let refusal: { status: number; error: string } = { status: 403, error: "No purchase found" };
+        for (const row of rows ?? []) {
+          let intentStatus: unknown = null;
+          let intentMetadata: Record<string, unknown> | null = null;
+          let refunded = false;
+          let lookupFailed = false;
+          if (row.payment_status === "completed" && typeof row.payment_intent_id === "string" && row.payment_intent_id) {
+            try {
+              const stripe = new Stripe(resolveStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
+              const intent = await stripe.paymentIntents.retrieve(row.payment_intent_id, { expand: ["latest_charge"] });
+              intentStatus = intent.status;
+              intentMetadata = intent.metadata as Record<string, unknown>;
+              refunded = (intent.latest_charge as Stripe.Charge | null)?.refunded === true;
+            } catch (e) {
+              // An id the provider has never seen is a refusal; anything else
+              // (network, auth, rate limit) is "could not verify".
+              if ((e as { code?: string })?.code !== "resource_missing") lookupFailed = true;
+            }
+          }
+          const decision = decideLegacyPurchase({
+            paymentStatus: row.payment_status,
+            paymentIntentId: row.payment_intent_id,
+            intentStatus,
+            intentMetadata,
+            refunded,
+            productId,
+            userId,
+            lookupFailed,
           });
+          if (decision.ok) {
+            entitled = true;
+            break;
+          }
+          if (decision.status === 503) refusal = decision;
         }
+        if (!entitled) return deny(refusal.status, refusal.error);
       }
 
       const { data: product } = await adminClient
