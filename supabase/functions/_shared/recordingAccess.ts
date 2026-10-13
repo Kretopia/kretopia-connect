@@ -20,8 +20,10 @@ export interface RecordingAccessFacts {
   listedParticipant: boolean;
   /** The transcript belongs to a project (call_transcripts.project_id is set). */
   isProjectCall?: boolean;
-  /** Owner or accepted operator of the call's project (requireProjectAccess). */
+  /** Owner or accepted operator (collaborator, creative) of the call's project (requireProjectAccess). */
   projectAccess: boolean;
+  /** Accepted client of the call's project: never enough on its own (see decideRecordingAccess). */
+  projectClient?: boolean;
   /** started_by or invited_user_id of the direct call. */
   directCallParty: boolean;
   /** meeting_participants.status for a meeting-kind call; undefined when there is no such row. */
@@ -37,6 +39,8 @@ export type RecordingAccessReason =
   | "direct_call_party"
   | "revoked_participant"
   | "project_members_only"
+  | "client_participant"
+  | "client_not_participant"
   | "lookup_failed"
   | "no_access";
 
@@ -47,13 +51,22 @@ export function decideRecordingAccess(f: RecordingAccessFacts): { allowed: boole
   if (typeof status === "string" && (REVOKED_PARTICIPANT_STATUSES as readonly string[]).includes(status)) {
     return { allowed: false, reason: "revoked_participant" };
   }
-  // A call that belongs to a project is the project team's: only the owner and accepted members
-  // (the creator, above, aside). Having been in the room, or a direct-call party, grants nothing
-  // there, so a pending invitee, a guest or someone no longer on the project gets no recording.
+  // A call that belongs to a project is the project team's. The owner and accepted operators
+  // (collaborator, creative) have it. An accepted CLIENT has it only for a call they are explicitly
+  // listed on: being a client never opens the project's internal calls. Having been in the room
+  // as anything else, or a direct-call party, grants nothing there, so a pending invitee, a guest
+  // or someone no longer on the project gets no recording.
+  //
+  // No "client-visible" field exists on any call or recording record yet, so a call cannot be shared
+  // with clients as a whole; that needs a schema proposal (see the PR that introduced this rule).
   if (f.isProjectCall) {
-    return f.projectAccess
-      ? { allowed: true, reason: "project_access" }
-      : { allowed: false, reason: "project_members_only" };
+    if (f.projectAccess) return { allowed: true, reason: "project_access" };
+    if (f.projectClient) {
+      return f.listedParticipant
+        ? { allowed: true, reason: "client_participant" }
+        : { allowed: false, reason: "client_not_participant" };
+    }
+    return { allowed: false, reason: "project_members_only" };
   }
   if (f.listedParticipant) return { allowed: true, reason: "listed_participant" };
   if (f.projectAccess) return { allowed: true, reason: "project_access" };

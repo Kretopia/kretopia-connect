@@ -91,16 +91,17 @@ serve(async (req) => {
       else meetingParticipantStatus = mp?.status;
     }
 
-    // Project calls: the owner or an ACCEPTED member of the project (the canonical strict check), not an
-    // unqualified project_members row. Owner decision: members include clients; guests are excluded
-    // (and pending invitees never pass: requireProjectAccess requires status accepted).
+    // Project calls, from the canonical strict check (requireProjectAccess: owner or an ACCEPTED
+    // collaborator; a pending invitee never passes). The role it returns decides the rest:
+    // owner, collaborator and creative are operators; a client is NOT an operator (they get a call
+    // only when explicitly listed on it, decided in decideRecordingAccess); a guest gets nothing.
     let projectAccess = false;
+    let projectClient = false;
     if (row.project_id) {
       try {
-        await requireProjectAccess(admin, row.project_id, userId, {
-          allowRoles: ["owner", "collaborator", "creative", "client"],
-        });
-        projectAccess = true;
+        const access = await requireProjectAccess(admin, row.project_id, userId);
+        if (access.role === "client") projectClient = true;
+        else if (access.role !== "guest") projectAccess = true;
       } catch (e) {
         if (e instanceof ProjectAccessError && e.status === 503) lookupFailed = true;
       }
@@ -123,6 +124,7 @@ serve(async (req) => {
       listedParticipant,
       isProjectCall: !!row.project_id,
       projectAccess,
+      projectClient,
       directCallParty,
       meetingParticipantStatus,
       lookupFailed,
