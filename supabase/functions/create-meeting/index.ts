@@ -3,6 +3,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { ROOM_SESSION_CEILING_SECONDS } from "../_shared/roomSessionLimits.ts";
+import { ProjectAccessError, isUuid, requireProjectAccess } from "../_shared/projectAccess.ts";
+import { decideCircleContext } from "../_shared/meetingContextAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,6 +60,41 @@ serve(async (req) => {
     const source: Source = body.source;
     if (!["studio", "dm", "profile", "event", "adhoc", "circle"].includes(source)) {
       return json({ error: "Invalid source" }, 400);
+    }
+
+    // The ids a meeting is attached to must be ones the caller can prove (audit GA SEC-05). They decide
+    // where a recap is distributed and who is notified, so they are checked before the Daily room exists
+    // (no orphan room on a refusal) and every lookup fails closed.
+    if (body.project_id) {
+      try {
+        await requireProjectAccess(admin, body.project_id, userId);
+      } catch (e) {
+        const status = e instanceof ProjectAccessError ? e.status : 503;
+        return json({ error: status === 503 ? "Could not verify access to that project" : "You do not have access to that project" }, status === 503 ? 503 : 403);
+      }
+    }
+    if (body.circle_id) {
+      // A malformed id is a refusal, not an outage.
+      if (!isUuid(body.circle_id)) return json({ error: "You do not have access to that Circle" }, 403);
+      const { data: room, error: roomErr } = await admin
+        .from("spark_rooms")
+        .select("id, created_by")
+        .eq("id", body.circle_id)
+        .maybeSingle();
+      const { data: member, error: memberErr } = await admin
+        .from("spark_room_members")
+        .select("id")
+        .eq("room_id", body.circle_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      const decision = decideCircleContext({
+        userId,
+        roomFound: !!room,
+        createdBy: room?.created_by ?? null,
+        isMember: !!member,
+        lookupFailed: !!(roomErr || memberErr),
+      });
+      if (!decision.ok) return json({ error: decision.error }, decision.status);
     }
 
     const max = Math.min(Math.max(body.max_participants ?? 25, 2), 500);
