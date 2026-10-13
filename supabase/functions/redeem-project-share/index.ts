@@ -2,6 +2,11 @@
 // Validates a guest review token and returns scoped data, signs file URLs,
 // logs views, and accepts approval submissions.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.55.0";
+import {
+  approvalNeedsListing,
+  decideApprovalTarget,
+  type ShareVisibleFile,
+} from "../_shared/shareLinkScope.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -210,6 +215,26 @@ Deno.serve(async (req) => {
           return json({ error: "file_not_in_scope" }, 403);
         }
       }
+
+      // Same project is not the same scope: a folder or deliverable link
+      // covers only what list_share_link_files exposes for it. That listing
+      // is the one definition of the link's scope, so the target is checked
+      // against it rather than against a second copy of the rules.
+      let visibleFiles: ShareVisibleFile[] | null = [];
+      if (approvalNeedsListing({ scope: link.scope, deliverableId: deliverable_id, fileId: file_id })) {
+        const { data: listed, error: listErr } = await supabase.rpc("list_share_link_files", { _token: token });
+        visibleFiles = listErr || !Array.isArray(listed)
+          ? null
+          : (listed as any[]).map((r) => ({ file_id: r.file_id, deliverable_id: r.deliverable_id ?? null }));
+      }
+      const inScope = decideApprovalTarget({
+        scope: link.scope,
+        scopeRefId: link.scope_ref_id,
+        deliverableId: deliverable_id ?? null,
+        fileId: file_id ?? null,
+        visibleFiles,
+      });
+      if (!inScope.ok) return json({ error: inScope.error }, inScope.status);
 
       // A slow response and a second click must not record the decision twice (and flip the
       // status twice): an identical decision on the same target by the same signer in the last
