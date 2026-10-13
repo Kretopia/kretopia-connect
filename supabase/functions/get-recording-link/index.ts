@@ -120,6 +120,7 @@ serve(async (req) => {
       userId,
       createdBy: row.created_by,
       listedParticipant,
+      isProjectCall: !!row.project_id,
       projectAccess,
       directCallParty,
       meetingParticipantStatus,
