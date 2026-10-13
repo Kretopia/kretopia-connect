@@ -22,6 +22,7 @@ Before starting, confirm PR **#149** is merged (it is not part of the checksums 
 - [ ] **1.3 Check what rides along.** The project's copy is older than `main`. Diff each repository file below against the saved copy and read the **whole** diff (not only this slice's lines). Known extras: `book-meeting` carries the 2026-10-06 in-app notification change; the other four carry `f41b3f899` (2026-09-16).
 - [ ] **1.4 Run the tests in the repository:** `npx vitest run src/lib/__tests__/meetingParticipantAccess.test.ts src/lib/__tests__/recordingAccess.test.ts src/lib/__tests__/webhookFreshness.test.ts src/lib/__tests__/recordingConsent.test.ts src/lib/__tests__/meetingContextAccess.test.ts` (expect 70 passing once the clients PR is merged).
 - [ ] **1.5 Secrets present (presence only, never read or print):** `DAILY_API_KEY`, `DAILY_WEBHOOK_HMAC_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` are set in the function environment.
+- [ ] **1.5b Shared dependencies exist.** In `kretopia-app`, confirm every `../_shared/*.ts` a pasted function imports is present. Known missing at 2026-10-13: `roomSessionLimits.ts`. Known present: `projectAccess.ts`.
 - [ ] **1.6 Name the person who watches the logs** and the time window (15 minutes after each function, then the first day).
 
 ## 2. Sequence
@@ -29,6 +30,7 @@ Before starting, confirm PR **#149** is merged (it is not part of the checksums 
 For each step: paste helper(s), paste the function, deploy **that function only**, run its tests, watch its logs for 15 minutes, tick, continue. Stop at the first failure and roll that function back (section 5).
 
 ### Step E: `mint-meeting-token`  (PR #142)
+- [ ] **Create `_shared/roomSessionLimits.ts` first** (existing file in `main`, absent from `kretopia-app`: read 2026-10-13, HTTP 404). `mint-meeting-token` and `create-meeting` import it; without it they fail to start. It only centralises the 4-hour ceiling both already use, so behaviour is unchanged. SHA-256 `f2aa42fe244c9659555bc10953a675ef7df51019a6d535816553c951a3a5961a`.
 - [ ] Create `_shared/meetingParticipantAccess.ts` (new).
 - [ ] Replace `mint-meeting-token/index.ts`.
 - [ ] Deploy `mint-meeting-token`.
