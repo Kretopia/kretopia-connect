@@ -18,6 +18,8 @@ export interface RecordingAccessFacts {
   createdBy?: string | null;
   /** The user's id appears in call_transcripts.participants. */
   listedParticipant: boolean;
+  /** The transcript belongs to a project (call_transcripts.project_id is set). */
+  isProjectCall?: boolean;
   /** Owner or accepted operator of the call's project (requireProjectAccess). */
   projectAccess: boolean;
   /** started_by or invited_user_id of the direct call. */
@@ -34,6 +36,7 @@ export type RecordingAccessReason =
   | "project_access"
   | "direct_call_party"
   | "revoked_participant"
+  | "project_members_only"
   | "lookup_failed"
   | "no_access";
 
@@ -43,6 +46,14 @@ export function decideRecordingAccess(f: RecordingAccessFacts): { allowed: boole
   const status = f.meetingParticipantStatus;
   if (typeof status === "string" && (REVOKED_PARTICIPANT_STATUSES as readonly string[]).includes(status)) {
     return { allowed: false, reason: "revoked_participant" };
+  }
+  // A call that belongs to a project is the project team's: only the owner and accepted members
+  // (the creator, above, aside). Having been in the room, or a direct-call party, grants nothing
+  // there, so a pending invitee, a guest or someone no longer on the project gets no recording.
+  if (f.isProjectCall) {
+    return f.projectAccess
+      ? { allowed: true, reason: "project_access" }
+      : { allowed: false, reason: "project_members_only" };
   }
   if (f.listedParticipant) return { allowed: true, reason: "listed_participant" };
   if (f.projectAccess) return { allowed: true, reason: "project_access" };

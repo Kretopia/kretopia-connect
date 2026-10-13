@@ -59,6 +59,38 @@ describe("decideRecordingAccess: who may fetch a recording link", () => {
   });
 });
 
+describe("decideRecordingAccess: a project call belongs to the project team (owner decision 2)", () => {
+  const projectCall = { isProjectCall: true };
+
+  it("allows the owner or an accepted operator, and the creator", () => {
+    expect(decide({ ...projectCall, projectAccess: true })).toEqual({ allowed: true, reason: "project_access" });
+    expect(decide({ ...projectCall, createdBy: U }).allowed).toBe(true);
+  });
+
+  it("does not let having been in the room grant anything: a guest, a pending invitee or a former member is listed but has no project access", () => {
+    expect(decide({ ...projectCall, listedParticipant: true })).toEqual({
+      allowed: false,
+      reason: "project_members_only",
+    });
+  });
+
+  it("does not let a direct-call party bypass it", () => {
+    expect(decide({ ...projectCall, directCallParty: true }).allowed).toBe(false);
+  });
+
+  it("still denies a revoked meeting status even for a project member", () => {
+    expect(decide({ ...projectCall, projectAccess: true, meetingParticipantStatus: "removed" })).toEqual({
+      allowed: false,
+      reason: "revoked_participant",
+    });
+  });
+
+  it("leaves non-project calls exactly as before", () => {
+    expect(decide({ listedParticipant: true }).allowed).toBe(true);
+    expect(decide({ directCallParty: true }).allowed).toBe(true);
+  });
+});
+
 describe("get-recording-link wiring", () => {
   const source = readFileSync(resolve(__dirname, "../../../supabase/functions/get-recording-link/index.ts"), "utf8");
 
@@ -73,6 +105,10 @@ describe("get-recording-link wiring", () => {
     expect(decision).toBeGreaterThan(-1);
     expect(daily).toBeGreaterThan(decision);
     expect(source).toMatch(/unavailable \? 503 : 403/);
+  });
+
+  it("tells the decision whether the call belongs to a project", () => {
+    expect(source).toContain("isProjectCall: !!row.project_id");
   });
 
   it("reads the meeting participant status for meeting calls", () => {
