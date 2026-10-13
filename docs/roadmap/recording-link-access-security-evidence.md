@@ -31,7 +31,7 @@ Unchanged on purpose: authentication, the creator path, the listed-participant p
 
 ## Remaining gaps
 
-- ~~A listed participant of a project call who has lost project access keeps the link.~~ **Closed by owner decision 2 (follow-up PR):** a call that belongs to a project (`call_transcripts.project_id` set) is available only to its creator, the project owner and accepted operators. Having been in the room, a guest role, a pending invitation or a direct-call relation grants nothing there. Clients are not added (the decision says owner and accepted members, excluding guests; clients were left out until stated otherwise).
+- ~~A listed participant of a project call who has lost project access keeps the link.~~ **Closed by owner decision 2 (follow-up PR):** a call that belongs to a project (`call_transcripts.project_id` set) is available only to its creator, the project owner and accepted operators. Having been in the room, a guest role, a pending invitation or a direct-call relation grants nothing there. Roles allowed: owner, collaborator, creative and, by a later owner decision, **client**; guest is excluded and a pending invitation never passes (`requireProjectAccess` requires `accepted`).
 - Revocation covers **meeting**-kind calls only (the only kind with participant statuses).
 - The access link already issued lives until its Daily expiry; the stored `recording_url` cache can still be read through the table's own RLS.
 - The recording and transcript audiences are still defined in two places (this function and the SQL policies on `call_transcripts` / `meeting_recordings`); aligning them is a Phase 2 proposal.

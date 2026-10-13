@@ -9,7 +9,7 @@ Order: **E, then F, then H, then I, then G.**
 | # | Decision | How it is met | Residual |
 |---|---|---|---|
 | 1 | Daily webhook replay window stays 900 s | `_shared/webhookFreshness.ts` default | none |
-| 2 | Project recording access: only the project owner and accepted project members; exclude pending, guest, denied and removed participants | `get-recording-link` with `recordingAccess.ts` from PR **#149** (a project call is available only to its creator, the owner and accepted `owner`/`collaborator`/`creative`; denied/removed meeting status denies first) | Accepted **clients** are not included; say so if they should be |
+| 2 | Project recording access: only the project owner and accepted project members; exclude pending, guest, denied and removed participants | `get-recording-link` with `recordingAccess.ts` from PR **#149** (a project call is available only to its creator, the owner and accepted `owner`/`collaborator`/`creative`; denied/removed meeting status denies first) | Resolved 2026-10-13: **accepted clients are included** (roles owner, collaborator, creative, client); guests stay excluded. Needs the follow-up PR that changes the role list |
 | 3 | Circle hosts: read-only preflight before deploying `create-meeting`; do not deploy it if legitimate hosts would get 403 | Section 3 below is a hard gate for step I | The preflight must be run by someone with production database access |
 | 4 | Recording requires `record_consent`; do not record when it is absent | `book-meeting` (PR #145): only `record_consent === true` records | `create-meeting` still treats an absent `recording_enabled` / `transcript_enabled` as ON (its two callers always send booleans). Not changed; a one-line follow-up if you want the rule product-wide |
 
@@ -20,7 +20,7 @@ Before starting, confirm PR **#149** is merged (it is not part of the checksums 
 - [ ] **1.1 Save what runs now.** For each of the five functions, copy the currently deployed source from `kretopia-app` and from the function's version history, into a folder you keep until the end of the day. This is the only real rollback artefact.
 - [ ] **1.2 Verify the shared helper that already exists.** In the project's `_shared/projectAccess.ts`, confirm it exports `requireProjectAccess`, `ProjectAccessError` and `isUuid`, and that `requireProjectAccess` filters collaborators on `status = accepted`. If not, paste the repository version.
 - [ ] **1.3 Check what rides along.** The project's copy is older than `main`. Diff each repository file below against the saved copy and read the **whole** diff (not only this slice's lines). Known extras: `book-meeting` carries the 2026-10-06 in-app notification change; the other four carry `f41b3f899` (2026-09-16).
-- [ ] **1.4 Run the tests in the repository:** `npx vitest run src/lib/__tests__/meetingParticipantAccess.test.ts src/lib/__tests__/recordingAccess.test.ts src/lib/__tests__/webhookFreshness.test.ts src/lib/__tests__/recordingConsent.test.ts src/lib/__tests__/meetingContextAccess.test.ts` (expect 69 passing after PR #149).
+- [ ] **1.4 Run the tests in the repository:** `npx vitest run src/lib/__tests__/meetingParticipantAccess.test.ts src/lib/__tests__/recordingAccess.test.ts src/lib/__tests__/webhookFreshness.test.ts src/lib/__tests__/recordingConsent.test.ts src/lib/__tests__/meetingContextAccess.test.ts` (expect 70 passing once the clients PR is merged).
 - [ ] **1.5 Secrets present (presence only, never read or print):** `DAILY_API_KEY`, `DAILY_WEBHOOK_HMAC_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY` are set in the function environment.
 - [ ] **1.6 Name the person who watches the logs** and the time window (15 minutes after each function, then the first day).
 
@@ -44,8 +44,8 @@ For each step: paste helper(s), paste the function, deploy **that function only*
 - [ ] Replace `get-recording-link/index.ts`.
 - [ ] Deploy `get-recording-link`.
 - [ ] Creator of a ready transcript: **200** with a link.
-- [ ] A **project** call: accepted collaborator (operator role): **200**.
-- [ ] A **project** call: a person who attended as a guest, a pending invitee, and someone removed from the project: each **403**.
+- [ ] A **project** call: accepted collaborator and accepted **client**: each **200**.
+- [ ] A **project** call: a person who attended as a project **guest**, a pending invitee, and someone removed from the project: each **403**.
 - [ ] A **meeting** recording: a listed participant after the host set them `removed`: **403**.
 - [ ] A non-project direct call: a party to it: **200**.
 - [ ] Logs: 403 "Forbidden" is expected for the cases above; investigate any report from a normal flow.
