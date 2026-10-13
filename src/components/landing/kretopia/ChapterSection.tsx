@@ -24,6 +24,11 @@ export interface ChapterProps {
    *  kept as the <video>'s poster (first paint + graceful fallback) and
    *  as the alt experience with reduced motion. Autoplays muted/looped. */
   video?: string;
+  /** CSS object-position of the media inside the 4:5 frame. Only needed when
+   *  the source is taller than the frame (a 9:16 master is cropped top and
+   *  bottom by object-cover) and its subject is not vertically centred. The
+   *  poster follows it, so the first paint and the video never differ. */
+  mediaPosition?: string;
   /** Landing overhaul: gradient is intentionally selective, one title per
    *  chosen chapter (Studio, Stages, Scout) rather than every chapter --
    *  omit (the default) to keep this title plain white like the rest. */
@@ -64,7 +69,7 @@ export interface ChapterProps {
 }
 
 export const ChapterSection = ({
-  index, kicker, title, body, caption, image, video, accent, href, reverse, id, tutorialSteps, tutorialVisual,
+  index, kicker, title, body, caption, image, video, mediaPosition, accent, href, reverse, id, tutorialSteps, tutorialVisual,
   ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
 }: ChapterProps) => {
   const reducedMotion = useReducedMotion();
@@ -172,6 +177,7 @@ export const ChapterSection = ({
                   playsInline
                   preload="auto"
                   aria-label={caption}
+                  style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
               ) : (
