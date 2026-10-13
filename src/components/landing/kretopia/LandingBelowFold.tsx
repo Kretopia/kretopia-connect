@@ -27,11 +27,9 @@ import {
   PassportVisual, ScoutVisual, StudioVisual,
 } from "@/components/landing/kretopia/featureVisuals";
 
-import passportImg    from "@/assets/kretopia/chapter-passport.jpg";
 import scoutImg       from "@/assets/kretopia/chapter-scout.jpg";
 import studioImg      from "@/assets/kretopia/chapter-studio.jpg";
 import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
-import matchHdAsset from "@/assets/kretopia/match-hd.mp4.asset.json";
 
 // HD chapter videos — landing overhaul (24/09/2026). Served from /public
 // (not imported) since Vite would otherwise inline/hash large binaries
@@ -42,11 +40,13 @@ import matchHdAsset from "@/assets/kretopia/match-hd.mp4.asset.json";
 const studioVideo = "/videos/kretovideo1.mp4";
 const soundstagesVideo = "/videos/kretovideo.mp4";
 const scoutVideo = "/videos/kretovideo2.mp4";
-// Native 1440×1800 master, losslessly fast-start optimized and CDN served.
-// Local Vite has no CDN proxy; use the identical native master for local preview.
-const matchVideo = import.meta.env.DEV ? "/videos/kretovideomatch.mp4" : matchHdAsset.url;
-// Its own first frame as the poster: the still never differs from the video.
-const matchPoster = "/videos/kretovideomatch-poster.jpg";
+// Passport and Match: the native 720×1280 masters, losslessly remuxed with the
+// index up front (no re-encode, no upscale), each with its own first frame as
+// the poster so the still never differs from the video.
+const passportVideo = "/videos/kreto-passport.mp4";
+const passportPoster = "/videos/kreto-passport-poster.jpg";
+const matchVideo = "/videos/kreto-vertical.mp4";
+const matchPoster = "/videos/kreto-vertical-poster.jpg";
 
 export const LandingBelowFold = () => {
   return (
@@ -79,7 +79,11 @@ export const LandingBelowFold = () => {
         }
         body="Your Creative Passport brings your projects, credits, skills, collaborators and professional history together in one living record. Not just what you say you can do — what you've actually done."
         caption="Passport"
-        image={passportImg}
+        image={passportPoster}
+        video={passportVideo}
+        // The head comes toward the camera mid-clip: keep the frame high so
+        // the helmet is never cut off by the 9:16 → 4:5 crop.
+        mediaPosition="50% 20%"
         accent="hsl(var(--energy))"
         href="/auth?next=/profile"
         ctaLabel="Build Your Passport"
