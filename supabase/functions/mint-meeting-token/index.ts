@@ -3,6 +3,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { roomSessionExpiry } from "../_shared/roomSessionLimits.ts";
+import { REVOKED_PARTICIPANT_STATUSES, participantMayMint } from "../_shared/meetingParticipantAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,13 +57,18 @@ serve(async (req) => {
     if (userId) {
       isHost = meeting.host_id === userId;
       if (!isHost) {
-        const { data: pRow } = await admin
+        const { data: pRow, error: pErr } = await admin
           .from("meeting_participants")
-          .select("role")
+          .select("role, status")
           .eq("meeting_id", meeting_id)
           .eq("user_id", userId)
           .maybeSingle();
+        // Fail closed: a failed lookup is not "no row", which would fall through to the share_token branch.
+        if (pErr) return json({ error: "Could not verify your access to this meeting" }, 503);
         if (pRow) {
+          // A denied or removed participant, or a status this code does not know, gets no token:
+          // the row is revocation evidence, not an invitation (audit GA SEC-06).
+          if (!participantMayMint(pRow)) return json({ error: "You no longer have access to this meeting" }, 403);
           participantRole = pRow.role;
         } else if (share_token && share_token === meeting.share_token) {
           // Logged-in user opening a legitimate shared link — same trust
@@ -117,7 +123,9 @@ serve(async (req) => {
         .from("meeting_participants")
         .update({ status: "joined", joined_at: new Date().toISOString() })
         .eq("meeting_id", meeting_id)
-        .eq("user_id", userId);
+        .eq("user_id", userId)
+        // Defence in depth: a host revoking between the check above and this write must not be undone.
+        .not("status", "in", `(${REVOKED_PARTICIPANT_STATUSES.join(",")})`);
     }
 
     return json({
