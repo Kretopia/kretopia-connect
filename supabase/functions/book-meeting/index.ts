@@ -3,6 +3,7 @@
 // with an existing scheduled meeting, then creates a scheduled Daily room.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { hasExplicitRecordingConsent } from "../_shared/recordingConsent.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -100,7 +101,9 @@ serve(async (req) => {
     if (!DAILY_API_KEY) throw new Error("DAILY_API_KEY not configured");
     const exp = Math.floor(end.getTime() / 1000) + 30 * 60;
     const roomName = `book-${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-    const recordConsent = body.record_consent !== false; // default ON
+    // Consent is explicit: only a boolean `true` records and transcribes (audit GA UX-04; a missing,
+    // null or mistyped field used to count as agreement).
+    const recordConsent = hasExplicitRecordingConsent(body.record_consent);
     const roomRes = await fetch(`${DAILY_API}/rooms`, {
       method: "POST",
       headers: {
@@ -176,6 +179,8 @@ serve(async (req) => {
       start_iso: start.toISOString(),
       duration_minutes: dur,
       host_name: prof?.full_name ?? null,
+      // What was actually enabled, so a client never has to assume it (additive field).
+      recording_enabled: recordConsent,
     });
   } catch (e) {
     console.error("[book-meeting]", e);
