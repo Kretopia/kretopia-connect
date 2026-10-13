@@ -15,6 +15,7 @@ const base: RecordingAccessFacts = {
   directCallParty: false,
 };
 const decide = (o: Partial<RecordingAccessFacts> = {}) => decideRecordingAccess({ ...base, ...o });
+const decideRecordingAccessFactsExample = (): RecordingAccessFacts => ({ ...base, isProjectCall: true, projectClient: true, meetingParticipantStatus: null, lookupFailed: false });
 
 describe("decideRecordingAccess: who may fetch a recording link", () => {
   it("allows the transcript's creator", () => {
@@ -91,6 +92,69 @@ describe("decideRecordingAccess: a project call belongs to the project team (own
   });
 });
 
+describe("decideRecordingAccess: clients see a project call only when they are on it (corrective rule)", () => {
+  const projectCall = { isProjectCall: true };
+  const client = { ...projectCall, projectClient: true };
+
+  it("allows an accepted client who is a listed participant of the call", () => {
+    expect(decide({ ...client, listedParticipant: true })).toEqual({ allowed: true, reason: "client_participant" });
+  });
+
+  it("denies an accepted client who is not on the call: being a client opens no internal call", () => {
+    expect(decide(client)).toEqual({ allowed: false, reason: "client_not_participant" });
+  });
+
+  it("does not let a client bypass through a direct-call relation", () => {
+    expect(decide({ ...client, directCallParty: true }).allowed).toBe(false);
+  });
+
+  it("denies a project guest, listed or not (no operator access, no client access)", () => {
+    expect(decide({ ...projectCall, listedParticipant: true })).toEqual({ allowed: false, reason: "project_members_only" });
+    expect(decide(projectCall)).toEqual({ allowed: false, reason: "project_members_only" });
+  });
+
+  it("denies a pending invitee and a former member: they have no accepted project access at all", () => {
+    expect(decide({ ...projectCall, listedParticipant: true, projectAccess: false, projectClient: false }).allowed).toBe(false);
+  });
+
+  it.each(["denied", "removed"])("denies a %s meeting status first, even for a listed client or an operator", (status) => {
+    expect(decide({ ...client, listedParticipant: true, meetingParticipantStatus: status })).toEqual({
+      allowed: false,
+      reason: "revoked_participant",
+    });
+    expect(decide({ ...projectCall, projectAccess: true, meetingParticipantStatus: status }).allowed).toBe(false);
+  });
+
+  it("leaves owner, accepted collaborator and accepted creative unchanged: allowed whether or not they are listed", () => {
+    expect(decide({ ...projectCall, projectAccess: true })).toEqual({ allowed: true, reason: "project_access" });
+    expect(decide({ ...projectCall, projectAccess: true, listedParticipant: true }).allowed).toBe(true);
+  });
+
+  it("has no client-visible input: sharing a whole call with clients needs a canonical field that does not exist yet", () => {
+    const facts = Object.keys(decideRecordingAccessFactsExample());
+    expect(facts.some((k) => /client_?visible|visibleToClient|sharedWithClient/i.test(k))).toBe(false);
+  });
+});
+
+describe("create-meeting recording default fails closed", () => {
+  const source = readFileSync(resolve(__dirname, "../../../supabase/functions/create-meeting/index.ts"), "utf8");
+
+  it("records only when recording_enabled is true AND consent is explicit", () => {
+    expect(source).toContain("hasExplicitRecordingConsent(body.record_consent)");
+    expect(source).toContain("body.recording_enabled === true && consented");
+    expect(source).toContain("body.transcript_enabled === true && consented");
+  });
+
+  it("no longer treats an absent flag as on", () => {
+    expect(source).not.toContain("body.recording_enabled !== false");
+    expect(source).not.toContain("body.transcript_enabled !== false");
+  });
+
+  it("declares record_consent on the request body", () => {
+    expect(source).toMatch(/record_consent\?: boolean/);
+  });
+});
+
 describe("get-recording-link wiring", () => {
   const source = readFileSync(resolve(__dirname, "../../../supabase/functions/get-recording-link/index.ts"), "utf8");
 
@@ -107,12 +171,11 @@ describe("get-recording-link wiring", () => {
     expect(source).toMatch(/unavailable \? 503 : 403/);
   });
 
-  it("allows owner, collaborator, creative and client roles, and never guest", () => {
-    const m = source.match(/allowRoles: \[([^\]]*)\]/);
-    expect(m).not.toBeNull();
-    const roles = m![1].split(",").map((r) => r.replace(/["'\s]/g, "")).filter(Boolean).sort();
-    expect(roles).toEqual(["client", "collaborator", "creative", "owner"]);
-    expect(roles).not.toContain("guest");
+  it("reads the role from the strict check and never passes a client or guest as an operator", () => {
+    expect(source).not.toContain("allowRoles");
+    expect(source).toContain('access.role === "client"');
+    expect(source).toContain('access.role !== "guest"');
+    expect(source).toContain("projectClient,");
   });
 
   it("tells the decision whether the call belongs to a project", () => {

@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { ROOM_SESSION_CEILING_SECONDS } from "../_shared/roomSessionLimits.ts";
 import { ProjectAccessError, isUuid, requireProjectAccess } from "../_shared/projectAccess.ts";
 import { decideCircleContext } from "../_shared/meetingContextAccess.ts";
+import { hasExplicitRecordingConsent } from "../_shared/recordingConsent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +29,8 @@ interface Body {
   max_participants?: number;
   recording_enabled?: boolean;
   transcript_enabled?: boolean;
+  /** Required, as the boolean true, for recording or transcription to be switched on. */
+  record_consent?: boolean;
   knocking_enabled?: boolean;
 }
 
@@ -98,8 +101,12 @@ serve(async (req) => {
     }
 
     const max = Math.min(Math.max(body.max_participants ?? 25, 2), 500);
-    const recording = body.recording_enabled !== false;
-    const transcription = body.transcript_enabled !== false;
+    // Fail closed (owner decision): a meeting is recorded only when the caller asks for it explicitly
+    // (recording_enabled === true) AND consent is explicit (record_consent === true). An absent flag
+    // is "no". Transcription follows the same rule: the consent covers recording and transcription.
+    const consented = hasExplicitRecordingConsent(body.record_consent);
+    const recording = body.recording_enabled === true && consented;
+    const transcription = body.transcript_enabled === true && consented;
     const knocking = body.knocking_enabled !== false;
 
     // Daily room — exp is the shared session ceiling after scheduled time
