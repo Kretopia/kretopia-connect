@@ -91,13 +91,14 @@ serve(async (req) => {
       else meetingParticipantStatus = mp?.status;
     }
 
-    // Project calls: the owner or an ACCEPTED operator of the project (the canonical strict check),
-    // not an unqualified project_members row.
+    // Project calls: the owner or an ACCEPTED member of the project (the canonical strict check), not an
+    // unqualified project_members row. Owner decision: members include clients; guests are excluded
+    // (and pending invitees never pass: requireProjectAccess requires status accepted).
     let projectAccess = false;
     if (row.project_id) {
       try {
         await requireProjectAccess(admin, row.project_id, userId, {
-          allowRoles: ["owner", "collaborator", "creative"],
+          allowRoles: ["owner", "collaborator", "creative", "client"],
         });
         projectAccess = true;
       } catch (e) {

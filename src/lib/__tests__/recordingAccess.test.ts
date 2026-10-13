@@ -107,6 +107,14 @@ describe("get-recording-link wiring", () => {
     expect(source).toMatch(/unavailable \? 503 : 403/);
   });
 
+  it("allows owner, collaborator, creative and client roles, and never guest", () => {
+    const m = source.match(/allowRoles: \[([^\]]*)\]/);
+    expect(m).not.toBeNull();
+    const roles = m![1].split(",").map((r) => r.replace(/["'\s]/g, "")).filter(Boolean).sort();
+    expect(roles).toEqual(["client", "collaborator", "creative", "owner"]);
+    expect(roles).not.toContain("guest");
+  });
+
   it("tells the decision whether the call belongs to a project", () => {
     expect(source).toContain("isProjectCall: !!row.project_id");
   });
