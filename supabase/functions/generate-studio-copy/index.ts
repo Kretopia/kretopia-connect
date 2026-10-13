@@ -9,6 +9,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAndConsumeStudioAIGeneration, refundStudioAIGeneration } from "../_shared/studioAIGate.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { guardStudioOperator } from "../_shared/studioAccess.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,29 +46,23 @@ Deno.serve(async (req) => {
     if (!rawPrompt) return json({ error: "prompt required" }, 400);
     if (rawPrompt.length > 1500) return json({ error: "prompt too long" }, 400);
 
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    // Access from the canonical records: the owner or an ACCEPTED operator,
+    // before the quota is spent. The previous check accepted any
+    // project_collaborators row (pending invitees and guests included).
+    const guard = await guardStudioOperator(admin, projectId, user.id, corsHeaders);
+    if (!guard.ok) return guard.response;
+
     const { data: project } = await userClient
       .from("projects")
       .select("id, title, description, workspace_type, created_by")
       .eq("id", projectId)
       .maybeSingle();
     if (!project) return json({ error: "project not found" }, 404);
-
-    let allowed = project.created_by === user.id;
-    if (!allowed) {
-      const { data: collab } = await userClient
-        .from("project_collaborators")
-        .select("id")
-        .eq("project_id", projectId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-      allowed = !!collab;
-    }
-    if (!allowed) return json({ error: "Not a project member" }, 403);
-
-    const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
 
     const { data: profile } = await admin
       .from("profiles")
