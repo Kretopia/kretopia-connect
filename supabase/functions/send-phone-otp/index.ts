@@ -1,4 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  OTP_TTL_MS,
+  cleanPhoneNumber,
+  decideOtpSend,
+  encodeStoredOtp,
+  generateOtp,
+  hashOtp,
+  planOtpAttempt,
+} from "../_shared/phoneOtp.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,10 +54,8 @@ Deno.serve(async (req) => {
     const TWILIO_PHONE = TWILIO_PHONE_RAW.replace(/[^\d+]/g, '');
 
     if (action === "send") {
-      // Strip all non-digit chars except leading +
-      const cleanedPhone = phone ? phone.trim().replace(/(?!^\+)\D/g, '') : '';
-      
-      if (!cleanedPhone || cleanedPhone.length < 8) {
+      const cleanedPhone = cleanPhoneNumber(phone);
+      if (!cleanedPhone) {
         return new Response(
           JSON.stringify({ error: "Invalid phone number. Use international format e.g. +1234567890" }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -57,21 +64,45 @@ Deno.serve(async (req) => {
 
       const deliveryChannel = channel === "whatsapp" ? "whatsapp" : "sms";
 
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-      // Store OTP server-side
       const adminClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
+      // Every code costs a real SMS or WhatsApp message on our Twilio account
+      // and is sent to a number the caller chose, so a new one is refused for a
+      // minute after the previous one. The send time is the stored expiry
+      // minus the code lifetime: no extra column.
+      const { data: current } = await adminClient
+        .from("profiles")
+        .select("phone_number, phone_otp_expires_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      const cooldown = decideOtpSend({ nowMs: Date.now(), expiresAtIso: current?.phone_otp_expires_at });
+      if (!cooldown.ok) {
+        return new Response(
+          JSON.stringify({ error: `Please wait ${cooldown.retryAfterSeconds} seconds before requesting another code.` }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": String(cooldown.retryAfterSeconds) },
+          }
+        );
+      }
+
+      // CSPRNG code, stored as a salted hash with an attempt counter.
+      const otp = generateOtp();
+      const storedOtp = encodeStoredOtp(await hashOtp(userId, otp), 0);
+
+      // A different number is not verified until its own code is confirmed:
+      // the badge must not move to a number nobody has proved.
+      const numberChanged = current?.phone_number !== cleanedPhone;
       await adminClient
         .from("profiles")
         .update({
-          phone_otp: otp,
-          phone_otp_expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+          phone_otp: storedOtp,
+          phone_otp_expires_at: new Date(Date.now() + OTP_TTL_MS).toISOString(),
           phone_number: cleanedPhone,
+          ...(numberChanged ? { phone_verified: false } : {}),
         })
         .eq("user_id", userId);
 
@@ -104,6 +135,12 @@ Deno.serve(async (req) => {
       if (!twilioRes.ok) {
         const errBody = await twilioRes.text();
         console.error("Twilio error:", errBody);
+        // Nothing was delivered: do not make the user wait out the cooldown
+        // (or leave a code nobody received) for a number that was rejected.
+        await adminClient
+          .from("profiles")
+          .update({ phone_otp: null, phone_otp_expires_at: null })
+          .eq("user_id", userId);
         const channelLabel = deliveryChannel === "whatsapp" ? "WhatsApp message" : "SMS";
         
         // Parse Twilio error for better user messaging
@@ -134,13 +171,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === "verify") {
-      if (!code || typeof code !== "string" || code.length !== 6) {
-        return new Response(
-          JSON.stringify({ error: "Invalid code" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
       const adminClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -159,14 +189,52 @@ Deno.serve(async (req) => {
         );
       }
 
-      if (!profile.phone_otp_expires_at || new Date(profile.phone_otp_expires_at) < new Date()) {
+      const plan = await planOtpAttempt({
+        userId,
+        code,
+        stored: profile.phone_otp,
+        expiresAtIso: profile.phone_otp_expires_at,
+        nowMs: Date.now(),
+      });
+      if (!plan.ok) {
+        if (plan.clear) {
+          await adminClient
+            .from("profiles")
+            .update({ phone_otp: null, phone_otp_expires_at: null })
+            .eq("user_id", userId);
+        }
         return new Response(
-          JSON.stringify({ error: "Code expired. Please request a new one." }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: plan.error }),
+          { status: plan.status === 410 ? 400 : plan.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
-      if (profile.phone_otp !== code.trim()) {
+      // Record the attempt before the answer is used, as a compare-and-set on
+      // the value that was read: parallel guesses cannot share one counter.
+      const { data: reserved } = await adminClient
+        .from("profiles")
+        .update({ phone_otp: plan.nextStored })
+        .eq("user_id", userId)
+        .eq("phone_otp", profile.phone_otp)
+        .select("user_id");
+      if (!reserved || reserved.length === 0) {
+        return new Response(
+          JSON.stringify({ error: "Please try again." }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!plan.matches) {
+        if (plan.burned) {
+          await adminClient
+            .from("profiles")
+            .update({ phone_otp: null, phone_otp_expires_at: null })
+            .eq("user_id", userId);
+          return new Response(
+            JSON.stringify({ error: "Too many attempts. Please request a new code." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
         return new Response(
           JSON.stringify({ error: "Invalid code. Please try again." }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
