@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 import {
   ENTITLED_ORDER_STATUSES,
   decideLegacyPurchase,
@@ -94,11 +95,13 @@ serve(async (req) => {
       // Get file paths from product
       const { data: product } = await adminClient
         .from("digital_products")
-        .select("file_urls")
+        .select("file_urls, user_id")
         .eq("id", order.listing_id)
         .single();
 
-      filePaths = product?.file_urls || [];
+      // Only paths in the seller's own folder are signed: the seller writes
+      // file_urls, and the service role can read the whole private bucket.
+      filePaths = deliverableProductFiles(product?.file_urls, product?.user_id);
     } else if (productId) {
       const deny = (status: number, error: string) =>
         new Response(JSON.stringify({ error }), {
@@ -172,11 +175,11 @@ serve(async (req) => {
 
       const { data: product } = await adminClient
         .from("digital_products")
-        .select("file_urls")
+        .select("file_urls, user_id")
         .eq("id", productId)
         .single();
 
-      filePaths = product?.file_urls || [];
+      filePaths = deliverableProductFiles(product?.file_urls, product?.user_id);
     }
 
     // Generate fresh signed URLs (1 hour expiry)

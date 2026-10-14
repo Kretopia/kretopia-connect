@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { decideCheckoutSessionBinding } from "../_shared/purchaseEntitlement.ts";
+import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -149,7 +150,9 @@ serve(async (req) => {
     const orderStatus = listingType === 'digital' ? 'completed' : 'escrow';
 
     // Store raw file paths (NOT signed URLs) — signed URLs are generated on demand
-    const filePaths: string[] = product.file_urls || [];
+    // Only paths in the seller's own folder are signed or stored: the seller
+    // writes file_urls, and the service role can read the whole private bucket.
+    const filePaths: string[] = deliverableProductFiles(product.file_urls, product.user_id);
 
     // Generate temporary signed URLs for immediate download on success page
     let downloadUrls: string[] = [];
