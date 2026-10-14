@@ -4,6 +4,27 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { cleanRecipientEmail, singleLine } from "../_shared/outboundText.ts";
+import {
+  OUTREACH_PER_ACTOR_PER_HOUR,
+  OUTREACH_PER_RECIPIENT_PER_HOUR,
+  OUTREACH_TEMPLATE,
+  countActorSends,
+  countRecipientSends,
+  decideSendBudget,
+  recordActorSend,
+} from "../_shared/outboundBudget.ts";
+
+// A refusal with its own status (400, 409, 429, 503), mapped by the final catch.
+class HttpStatusError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// A mail body is text a person wrote: bounded, so this cannot carry a payload.
+const MAX_BODY_CHARS = 20000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,7 +153,8 @@ serve(async (req) => {
       // One plain address and a single-line subject: the recipient and the
       // subject are caller text that ends up in mail headers.
       const to = cleanRecipientEmail(rawTo);
-      if (!to) return { success: false, error: "Invalid recipient address" };
+      if (!to) throw new HttpStatusError(400, "Invalid recipient address");
+      if (rawBody.length > MAX_BODY_CHARS) throw new HttpStatusError(400, "The message is too long");
       const subject = singleLine(rawSubject, 200) || "(no subject)";
 
       const htmlBody = `
@@ -149,6 +171,27 @@ serve(async (req) => {
       }
 
       if (!resendApiKey) throw new Error("No email provider configured. Please connect your Gmail in Outreach settings.");
+
+      // Mail that leaves from our domain shares our sending reputation: a budget
+      // per account and per recipient, read before anything is sent. A count
+      // that failed is not zero.
+      const [actorCount, recipientCount] = await Promise.all([
+        countActorSends(supabaseAdmin, user.id, OUTREACH_TEMPLATE),
+        countRecipientSends(supabaseAdmin, to, OUTREACH_TEMPLATE),
+      ]);
+      const budget = decideSendBudget({
+        actorCount,
+        recipientCount,
+        actorLimit: OUTREACH_PER_ACTOR_PER_HOUR,
+        recipientLimit: OUTREACH_PER_RECIPIENT_PER_HOUR,
+      });
+      if (!budget.ok) throw new HttpStatusError(budget.status, budget.error);
+      await recordActorSend(supabaseAdmin, {
+        template: OUTREACH_TEMPLATE,
+        actorId: user.id,
+        recipientEmail: to,
+        status: "sent",
+      });
 
       return sendViaResend(
         resendApiKey,
@@ -296,19 +339,45 @@ BODY: [email body with paragraphs]`,
       const { to, subject, body: emailBody, sequenceEmailId, leadId } = body;
       if (!to || !subject || !emailBody) throw new Error("Missing to, subject, or body");
 
-      const result = await sendEmail(to, subject, emailBody);
-      if (!result.success) throw new Error(result.error || "Email send failed");
-
-      console.log(`Outreach email sent to ${to} via ${useGmail ? "Gmail" : "Resend"}`);
-
-      // Update sequence_email status if linked
-      if (sequenceEmailId) {
+      // A linked sequence email is sent once: claim it (pending or failed -> sent,
+      // compare-and-set, the caller's own row) before anything leaves, so a
+      // double click or a retry cannot send it twice. The claim is released if
+      // the send fails.
+      const releaseClaim = async () => {
+        if (!sequenceEmailId) return;
         await supabaseAdmin
+          .from("sequence_emails")
+          .update({ status: "pending", sent_at: null })
+          .eq("id", sequenceEmailId)
+          .eq("user_id", user.id)
+          .eq("status", "sent");
+      };
+      if (sequenceEmailId) {
+        const { data: claimed } = await supabaseAdmin
           .from("sequence_emails")
           .update({ status: "sent", sent_at: new Date().toISOString() })
           .eq("id", sequenceEmailId)
-          .eq("user_id", user.id);
+          .eq("user_id", user.id)
+          .in("status", ["pending", "failed"])
+          .select("id");
+        if (!claimed || claimed.length === 0) {
+          throw new HttpStatusError(409, "This email was already sent or is not pending");
+        }
       }
+
+      let result: { success: boolean; emailId?: string; error?: string };
+      try {
+        result = await sendEmail(to, subject, emailBody);
+      } catch (e) {
+        await releaseClaim();
+        throw e;
+      }
+      if (!result.success) {
+        await releaseClaim();
+        throw new Error(result.error || "Email send failed");
+      }
+
+      console.log(`Outreach email sent via ${useGmail ? "Gmail" : "Resend"}`);
 
       // Update lead last_contacted_at if linked
       if (leadId) {
@@ -366,13 +435,39 @@ BODY: [email body with paragraphs]`,
       }
 
       const emailToSend = emails[0];
-      const result = await sendEmail(recipientEmail, emailToSend.subject, emailToSend.body);
-      if (!result.success) throw new Error(result.error || "Failed to send");
 
-      await supabaseAdmin
+      // Claim it (pending -> sent, compare-and-set) before it leaves: two
+      // concurrent calls for the same sequence cannot send the same step twice.
+      const { data: claimedStep } = await supabaseAdmin
         .from("sequence_emails")
         .update({ status: "sent", sent_at: new Date().toISOString() })
-        .eq("id", emailToSend.id);
+        .eq("id", emailToSend.id)
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .select("id");
+      if (!claimedStep || claimedStep.length === 0) {
+        throw new HttpStatusError(409, "This step was just sent; try again");
+      }
+      const releaseStep = async () => {
+        await supabaseAdmin
+          .from("sequence_emails")
+          .update({ status: "pending", sent_at: null })
+          .eq("id", emailToSend.id)
+          .eq("user_id", user.id)
+          .eq("status", "sent");
+      };
+
+      let result: { success: boolean; emailId?: string; error?: string };
+      try {
+        result = await sendEmail(recipientEmail, emailToSend.subject, emailToSend.body);
+      } catch (e) {
+        await releaseStep();
+        throw e;
+      }
+      if (!result.success) {
+        await releaseStep();
+        throw new Error(result.error || "Failed to send");
+      }
 
       await supabaseAdmin
         .from("outreach_sequences")
@@ -404,7 +499,7 @@ BODY: [email body with paragraphs]`,
     console.error("send-outreach-email error:", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: e instanceof HttpStatusError ? e.status : 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

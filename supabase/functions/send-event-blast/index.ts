@@ -85,16 +85,29 @@ serve(async (req) => {
     if (testOnly) {
       recipients = [{ email: user.email!, user_id: user.id, name: null }];
     } else {
+      // The event's own audience is its participant list (RSVPs and ticket
+      // holders: the ticket flows upsert jam_participants). A host may narrow a
+      // blast to some of those people, never widen it to other accounts: the
+      // explicit list used to be taken as is, so any host could mail any user id,
+      // with their own subject, HTML and link, from our domain.
+      const { data: parts, error: partsErr } = await admin
+        .from("jam_participants")
+        .select("user_id, status")
+        .eq("jam_id", eventId);
+      if (partsErr) {
+        return new Response(JSON.stringify({ error: "Could not load the event audience" }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const audience = new Set((parts ?? []).map((p: any) => p.user_id).filter(Boolean));
+
       let userIds: string[] = [];
       if (Array.isArray(explicitUserIds) && explicitUserIds.length > 0) {
-        userIds = explicitUserIds.filter((x: any) => typeof x === "string");
+        userIds = Array.from(
+          new Set(explicitUserIds.filter((x: any) => typeof x === "string" && audience.has(x))),
+        ) as string[];
       } else {
-        // Pull RSVPs from jam_participants joined with profiles
-        const { data: parts } = await admin
-          .from("jam_participants")
-          .select("user_id, status")
-          .eq("jam_id", eventId);
-
         userIds = (parts ?? [])
           .filter((p: any) => {
             if (segment === "all" || segment === "rsvp") return true;
