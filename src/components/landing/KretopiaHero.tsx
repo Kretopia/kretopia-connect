@@ -1,13 +1,19 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
- * v9: Waving wears Flying's look. The two layers were recolored in place (same
- * 768px canvas, same arm crop, same pivot, so the wave is unchanged): the neon
- * rim light and its halo are gone, the shell is Flying's white-lavender, the ear
- * lenses and joints are Flying's violet, the eyes and the K keep their gradient.
- * He is also fitted to Flying's visual size (WAVE_FIT) so the takeoff swap does
- * not jump. The CTA pair wears the opt-in `k-cta-future` finish, and the search
- * field the `k-search-hero` gradient hairline (both in index.css).
+ * v10: Waving is the official 3D render, in HD. The 768px chibi art it used before
+ * was a different character from the base Kreto (smaller head, finger gloves) and was
+ * stretched past its resolution, which showed as pixels and mismatched colours. The two
+ * layers are now cut from kreto-mascot-hero-wave.png (1378x1141, the render the base
+ * Kreto and Flying come from), recolored to Flying's measured shell (pearl white-lavender,
+ * mean RGB ~ 226,219,235), with the rim glow and halo removed, the ear lenses kept in
+ * their own gloss and the eyes and K untouched. He is fitted to Flying's helmet size
+ * (HELMET_OF_BOX) and turns toward the pointer in real perspective, his forearm sitting
+ * in front of his body, with a contact shadow under his feet. The wave itself is still
+ * a compositor transform on the arm layer, pivoting at the elbow.
+ *
+ * v9: The CTA pair wears the opt-in `k-cta-future` finish and the search field the sober
+ * `k-search-hero` hairline (both in index.css); search and CTAs share one column.
  *
  * v8: Kreto mascot = Kreto_06_Waving, body perfectly still, only the hand waves.
  *
@@ -44,17 +50,17 @@
  * Its own padding preserves the gradient's glyph edges.
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
-// Reflected artwork imported through Vite: hashed URL in production,
-// no hand-written path to maintain. Both files are well over 4 KB, so never inlined as base64.
-import kretoBodyUrl from "@/assets/brand/kreto/hero-reflection-body.webp";
-import kretoArmUrl from "@/assets/brand/kreto/hero-reflection-arm.webp";
+// HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
+// Both files are well over 4 KB, so never inlined as base64.
+import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
+import kretoArmUrl from "@/assets/brand/kreto/hero-wave-hd-arm.webp";
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
@@ -77,48 +83,59 @@ const wordVariants = (reducedMotion: boolean, gradientText = false) =>
       };
 
 /* -------------------------------------------------------------------------- */
-/*  Kreto mascot — Kreto_06_Waving (HD): still body, waving hand              */
+/*  Kreto mascot — the official 3D render, waving: still body, waving hand     */
 /* -------------------------------------------------------------------------- */
 
-/** Source art is 768×768 px. `body` = Kreto without his raised forearm + hand;
- *  `arm` = that forearm + hand only (194×174 crop of the same art, same pixels). */
-const ART = 768;
-const ARM = { x: 487, y: 318, w: 194, h: 174, pivotX: 500, pivotY: 452 } as const; // pivot = elbow
+/** The art is cut from the official render (kreto-mascot-hero-wave.png, 1378x1141: the same character
+ *  as the base Kreto and Flying), not from the 768px chibi art the hero used before, so at 300px it is
+ *  still downscaled on a 2x screen instead of stretched. `body` = Kreto without his forearm + hand,
+ *  a 908x1076 canvas; `arm` = that forearm + hand (267x316 at 641,344 of the same canvas, same pixels,
+ *  overlapping the joint by a few px so the two layers never leave a seam). */
+const ART = { w: 908, h: 1076 } as const;
+const ARM = { x: 641, y: 344, w: 267, h: 316, pivotX: 39, pivotY: 270 } as const; // pivot = elbow, in arm px
+
+/** Waving and Flying share one box (180px, 300px from 1440px). The figure is fitted so his helmet is
+ *  0.65 of the box wide (Flying's is 0.677): his silhouette is then within ~7% of Flying's height and
+ *  the takeoff swap does not jump. 754 = the helmet's width in canvas px. His raised hand reaches 5%
+ *  past the box's right edge; his feet sit on the box's bottom edge. */
+const HELMET_PX = 754;
+const HELMET_OF_BOX = 0.65;
+const FIT = HELMET_OF_BOX / HELMET_PX;
+const FIGURE_STYLE: CSSProperties = {
+  width: `${ART.w * FIT * 100}%`,
+  height: `${ART.h * FIT * 100}%`,
+  right: "-5%",
+  bottom: "-1%",
+};
 
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 
-/** Waving and Flying share one box (180px, 300px from 1440px), but the standing figure fills far less
- *  of its 768px canvas than Flying fills of its own, so at scale 1 his helmet read ~25% smaller and the
- *  takeoff swap jumped. 1.55 puts his helmet within 3% of Flying's width and his silhouette area within
- *  4% of Flying's. The figure is nudged up by 4.7% so his feet land where they always did; his raised
- *  hand still clears the box's right edge. */
-const WAVE_FIT = 1.55;
-const WAVE_FIT_STYLE: CSSProperties = { transform: `translateY(-4.7%) scale(${WAVE_FIT})` };
-
-/** The arm sits exactly over the body at rest. Everything is in % of the 768px art,
- *  so it follows the 180px / 300px box with no JS measuring. `will-change` keeps this
- *  tiny layer on the compositor, so the wave stays at full frame rate. */
+/** The arm sits exactly over the body at rest. Everything is in % of the canvas, so it follows the
+ *  180px / 300px box with no JS measuring. `will-change` keeps this layer on the compositor. */
 const ARM_STYLE: CSSProperties = {
-  left: pct(ARM.x, ART),
-  top: pct(ARM.y, ART),
-  width: pct(ARM.w, ART),
-  height: pct(ARM.h, ART),
-  transformOrigin: `${pct(ARM.pivotX - ARM.x, ARM.w)} ${pct(ARM.pivotY - ARM.y, ARM.h)}`,
+  left: pct(ARM.x, ART.w),
+  top: pct(ARM.y, ART.h),
+  width: pct(ARM.w, ART.w),
+  height: pct(ARM.h, ART.h),
+};
+const ARM_IMG_STYLE: CSSProperties = {
+  transformOrigin: `${pct(ARM.pivotX, ARM.w)} ${pct(ARM.pivotY, ARM.h)}`,
   willChange: "transform",
 };
 
 /** One fast wave (~1.1 s, ~3 swings, fading out): [time ms, degrees].
- *  Negative = toward Kreto's head, positive = outward; the pose at rest (0°) is the outer limit
- *  of the swing, so the part of the head hidden behind the thumb is never uncovered. */
+ *  Negative = toward Kreto's head, positive = outward; rest (0°) is the outer limit of the swing, so
+ *  nothing behind the hand is ever uncovered. The mitten passes in front of the helmet's rim at the
+ *  top of the swing, which is why the amplitude is smaller than the old 4-finger hand's. */
 const WAVE_STEPS: ReadonlyArray<readonly [number, number]> = [
   [0, 0],
-  [120, -13],
+  [120, -10],
   [270, 2],
-  [420, -12],
+  [420, -9],
   [570, 2],
-  [720, -10],
+  [720, -7],
   [860, 1],
-  [990, -6],
+  [990, -4],
   [1120, 0],
 ];
 const WAVE_MS = WAVE_STEPS[WAVE_STEPS.length - 1][0];
@@ -129,7 +146,34 @@ const WAVE_KEYFRAMES: Keyframe[] = WAVE_STEPS.map(([t, deg]) => ({
   easing: WAVE_EASE,
 }));
 
-const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: boolean }) {
+/** How far he turns toward the pointer (degrees) and how far his forearm sits in front of his body
+ *  (px), which is what makes the turn read as depth rather than as a flat card tilting. */
+const TILT_Y = 10;
+const TILT_X = 6;
+const ARM_DEPTH_PX = 22;
+const PERSPECTIVE_PX = 900;
+
+/** A layer moved toward the viewer by z is magnified by P / (P - z) about the perspective origin (the
+ *  figure's centre). Scaling it by the inverse about that same point, written in the arm's own box,
+ *  keeps the forearm exactly on his body at rest; only a turn reveals the offset. */
+const ARM_FRONT_STYLE: CSSProperties = {
+  transform: `translateZ(${ARM_DEPTH_PX}px) scale(${(PERSPECTIVE_PX - ARM_DEPTH_PX) / PERSPECTIVE_PX})`,
+  transformOrigin: `${pct(ART.w / 2 - ARM.x, ARM.w)} ${pct(ART.h / 2 - ARM.y, ARM.h)}`,
+};
+
+const KretoWave = memo(function KretoWave({
+  reducedMotion,
+  pointerX,
+  pointerY,
+}: {
+  reducedMotion: boolean;
+  /** The hero's smoothed pointer position, 0..1 across the section. */
+  pointerX: MotionValue<number>;
+  pointerY: MotionValue<number>;
+}) {
+  // He sits at the right of the section (~0.85 across): left of him he turns left, above him he looks up.
+  const rotateY = useTransform(pointerX, [0, 0.85, 1], [-TILT_Y, 0, TILT_Y * 0.3]);
+  const rotateX = useTransform(pointerY, [0, 0.8, 1], [TILT_X, 0, -TILT_X * 0.5]);
   const bodyRef = useRef<HTMLImageElement>(null);
   const armRef = useRef<HTMLImageElement>(null);
   const waveRef = useRef<Animation | null>(null);
@@ -183,31 +227,53 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
       data-kreto-wave
       className="pointer-events-none absolute bottom-4 right-6 hidden h-[180px] w-[180px] select-none lg:block min-[1440px]:right-16 min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
     >
-      {/* Fit the figure to Flying's visual size (see WAVE_FIT), not to the transparent source canvas. */}
-      <div className={`absolute inset-0 ${ready ? "opacity-100" : "opacity-0"}`} style={WAVE_FIT_STYLE}>
-        <img
-          ref={bodyRef}
-          src={kretoBodyUrl}
-          alt=""
-          width={ART}
-          height={ART}
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onLoad={checkReady}
-          className="absolute inset-0 h-full w-full select-none object-contain"
-        />
-        <img
-          ref={armRef}
-          src={kretoArmUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onLoad={checkReady}
-          style={ARM_STYLE}
-          className="absolute select-none"
-        />
+      {/* Soft contact shadow under his feet: grounds the figure instead of leaving it on the page. */}
+      <div
+        className={`absolute bottom-[1%] left-[26%] h-[7%] w-[46%] rounded-[50%] bg-[radial-gradient(closest-side,rgba(24,10,52,0.34),transparent)] blur-[3px] transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
+      />
+
+      {/* The figure box carries the perspective; inside it he turns toward the pointer and his forearm
+          sits in front of his body, so the turn shows depth. All of it is compositor work. */}
+      <div
+        className={`absolute transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`}
+        style={{ ...FIGURE_STYLE, perspective: PERSPECTIVE_PX }}
+      >
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            transformStyle: "preserve-3d",
+            transformOrigin: "50% 92%",
+            willChange: reducedMotion ? undefined : "transform",
+            rotateX: reducedMotion ? 0 : rotateX,
+            rotateY: reducedMotion ? 0 : rotateY,
+          }}
+        >
+          <img
+            ref={bodyRef}
+            src={kretoBodyUrl}
+            alt=""
+            width={ART.w}
+            height={ART.h}
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onLoad={checkReady}
+            className="absolute inset-0 h-full w-full select-none"
+          />
+          <div className="absolute" style={reducedMotion ? ARM_STYLE : { ...ARM_STYLE, ...ARM_FRONT_STYLE }}>
+            <img
+              ref={armRef}
+              src={kretoArmUrl}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              draggable={false}
+              onLoad={checkReady}
+              style={ARM_IMG_STYLE}
+              className="block h-full w-full select-none"
+            />
+          </div>
+        </motion.div>
       </div>
 
       {/* Invisible hit zone: the wrapper is pointer-events-none like before. */}
@@ -268,7 +334,7 @@ export const KretopiaHero = () => {
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(120% 80% at 80% 20%, rgba(120, 70, 40, 0.14), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.6), transparent 60%)",
+              "radial-gradient(120% 80% at 80% 20%, rgba(96, 52, 190, 0.14), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.6), transparent 60%)",
           }}
         />
 
@@ -308,7 +374,7 @@ export const KretopiaHero = () => {
           initial={reducedMotion ? false : { opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-6"
+          className="mb-5"
         >
           <BrandLogo size="md" showBeta />
         </motion.div>
@@ -390,9 +456,9 @@ export const KretopiaHero = () => {
           initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="relative mt-8 sm:mt-9 w-full max-w-[38rem] mx-auto"
+          className="relative mt-9 sm:mt-10 w-full max-w-[34rem] mx-auto"
         >
-          <p className="landing-eyebrow mb-4 sm:mb-5 block text-center">Find work on Kretopia</p>
+          <p className="landing-eyebrow mb-4 block text-center">Find work on Kretopia</p>
           <UnifiedSearchDropdown variant="hero" placeholder="Search by role, skill, location, type of work…" />
         </motion.div>
 
@@ -402,11 +468,11 @@ export const KretopiaHero = () => {
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.45 }}
-          className="mt-9 sm:mt-10 flex w-full flex-col items-center gap-4"
+          className="mt-6 sm:mt-7 flex w-full flex-col items-center gap-4"
         >
           {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
               so the pair stays level whatever the labels' widths. */}
-          <div className="grid w-full max-w-xs grid-cols-1 gap-3 sm:max-w-[32rem] sm:grid-cols-2">
+          <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
             <GlassCta
               to="/passport"
               size="lg"
@@ -446,7 +512,7 @@ export const KretopiaHero = () => {
 
       {/* Big main Kreto figure — Kreto_06_Waving (HD), still body + waving hand, same
           sizes and position as the former KretoCharacter: 180px (lg) → 300px (≥1440px). */}
-      <KretoWave reducedMotion={reducedMotion} />
+      <KretoWave reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} />
 
       {/* bottom dissolve to next section */}
       <div

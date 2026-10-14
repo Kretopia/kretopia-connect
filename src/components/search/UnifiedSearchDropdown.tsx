@@ -461,7 +461,7 @@ export function UnifiedSearchDropdown({
               isHero
                 // The gradient hairline and glow come from .k-search-hero (index.css), so the
                 // field's own border stays invisible and its box never changes on focus.
-                ? "h-14 sm:h-16 rounded-2xl border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
+                ? "h-14 sm:h-16 rounded-full border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
                 : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
@@ -541,7 +541,7 @@ export function UnifiedSearchDropdown({
                 className={cn(
                   "absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors",
                   isHero
-                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     : "right-1.5 h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/80"
                 )}
               >
