@@ -79,7 +79,12 @@ const wordVariants = (reducedMotion: boolean, gradientText = false) =>
     ? { hidden: {}, show: {} }
     : {
         hidden: { opacity: 0, y: 18, ...(gradientText ? {} : { filter: "blur(8px)" }) },
-        show: { opacity: 1, y: 0, ...(gradientText ? {} : { filter: "blur(0px)" }), transition: { duration: 0.6, ease: [0.2, 0.65, 0.3, 0.95] as const } },
+        show: {
+          opacity: 1,
+          y: 0,
+          ...(gradientText ? {} : { filter: "blur(0px)" }),
+          transition: { duration: 0.6, ease: [0.2, 0.65, 0.3, 0.95] as const },
+        },
       };
 
 /* -------------------------------------------------------------------------- */
@@ -186,7 +191,9 @@ const KretoWave = memo(function KretoWave({
     const body = bodyRef.current;
     const arm = armRef.current;
     if (!(body?.complete && body.naturalWidth > 0 && arm?.complete && arm.naturalWidth > 0)) return;
-    const show = () => { if (alive.current) setReady(true); };
+    const show = () => {
+      if (alive.current) setReady(true);
+    };
     if (typeof body.decode === "function" && typeof arm.decode === "function") {
       Promise.all([body.decode(), arm.decode()]).then(show, show);
     } else {
@@ -215,7 +222,9 @@ const KretoWave = memo(function KretoWave({
   }, [ready, reducedMotion]);
 
   // Greet once on arrival, then retain the existing hover/touch wave.
-  useEffect(() => { play(); }, [play]);
+  useEffect(() => {
+    play();
+  }, [play]);
 
   return (
     // No opacity / transform / z-index on this wrapper on purpose: that keeps it
@@ -342,10 +351,7 @@ export const KretopiaHero = () => {
             (see file header), heavily blurred and dimmed via opacity so
             it still reads as an ambient glow, not a literal logo replica
             plastered across the background. */}
-        <motion.div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ x: fieldX, y: fieldY }}
-        >
+        <motion.div className="absolute inset-0 flex items-center justify-center" style={{ x: fieldX, y: fieldY }}>
           <div
             className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
             style={{
@@ -503,10 +509,6 @@ export const KretopiaHero = () => {
               Explore Opportunities
             </OutlineCta>
           </div>
-
-          <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
-            Free to start. No credit card needed.
-          </p>
         </motion.div>
       </div>
 
