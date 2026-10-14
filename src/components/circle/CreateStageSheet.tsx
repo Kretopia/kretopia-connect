@@ -189,7 +189,10 @@ export function CreateStageSheet({ open, onOpenChange, onCreated }: CreateStageS
 
           <ToggleRow
             label="Record this stage"
-            hint={type === "scout" ? "Recommended — you'll get a per-artist recap after" : "Attendees get a recap link after"}
+            hint={
+              (type === "scout" ? "Recommended — you'll get a per-artist recap after. " : "Attendees get a recap link after. ") +
+              "Starts when you go live; attendees are told on the stage page before they join."
+            }
             checked={recording} onChange={setRecording}
           />
 
