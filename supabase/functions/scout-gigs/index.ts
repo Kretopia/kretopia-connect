@@ -18,6 +18,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { PREMIUM_ENFORCED } from "../_shared/premiumSwitch.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import {
   dedupeKey,
@@ -471,7 +472,8 @@ serve(async (req) => {
 
     // Tier gating: free=1 preview/week, creator=daily full, creator_pro=priority+unlimited, founder=unlimited
     const tier = ((profile as any)?.subscription_tier || "free").toLowerCase();
-    const isFree = tier === "free" || tier === "spark" || tier === "";
+    // Premium is not enforced yet: no account is held to the free-tier weekly preview.
+    const isFree = PREMIUM_ENFORCED && (tier === "free" || tier === "spark" || tier === "");
     const perRunCap = isFree ? 1 : (tier === "creator" ? 10 : 25);
     if (isFree) {
       const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString();

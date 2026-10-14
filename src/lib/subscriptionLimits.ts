@@ -7,6 +7,7 @@
  */
 
 import type { AccountType } from "./subscriptionConfig";
+import { PREMIUM_ENFORCED } from "./premiumSwitch";
 
 export type SubscriptionTier = "free" | "pro" | "creator_pro" | "founder" | "brand_pro" | "brand_enterprise";
 
@@ -104,6 +105,8 @@ export function getMonthlyCapForFeature(
   feature: FreeTierFeature,
   tier: SubscriptionTier
 ): number {
+  // Premium is not enforced yet: no monthly cap on any feature (-1 = unlimited).
+  if (!PREMIUM_ENFORCED) return -1;
   if (tier === "creator_pro" || tier === "founder" || tier === "brand_enterprise") return CREATOR_PRO_TIER_MONTHLY_CAPS[feature];
   if (tier === "pro" || tier === "brand_pro") return PRO_TIER_MONTHLY_CAPS[feature];
   return FREE_TIER_MONTHLY_CAPS[feature];
@@ -366,8 +369,10 @@ export const getTierLimits = (
   tier: SubscriptionTier,
   accountType: AccountType = "individual"
 ): TierLimits => {
-  const effectiveTier = tier === "founder" ? "creator_pro" : tier === "brand_pro" ? "pro" : tier === "brand_enterprise" ? "creator_pro" : tier;
   const limitsMap = accountType === "company" ? COMPANY_LIMITS : INDIVIDUAL_LIMITS;
+  // Premium is not enforced yet: every account gets the top tier's limits.
+  if (!PREMIUM_ENFORCED) return limitsMap.creator_pro;
+  const effectiveTier = tier === "founder" ? "creator_pro" : tier === "brand_pro" ? "pro" : tier === "brand_enterprise" ? "creator_pro" : tier;
   return limitsMap[effectiveTier];
 };
 

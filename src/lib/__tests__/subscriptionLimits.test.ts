@@ -1,4 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// These tests describe the tier rules themselves, which apply once Premium is
+// enforced. The switch is off in production until the Premium kick-off, so the
+// rules are exercised here with it on; premiumSwitch.test.ts covers it off.
+vi.mock("@/lib/premiumSwitch", () => ({ PREMIUM_ENFORCED: true }));
 import {
   TIER_LIMITS,
   canPerformAction,

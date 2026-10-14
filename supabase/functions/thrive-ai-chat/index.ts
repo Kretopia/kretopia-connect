@@ -8,6 +8,7 @@ import {
 import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total streaming
 // duration (the timer clears as soon as fetch() resolves, i.e. once headers
@@ -185,7 +186,8 @@ serve(async (req) => {
           .eq("user_id", user.id)
           .maybeSingle();
         const tier = (profile?.subscription_tier as string) || "free";
-        const dailyCap = TIER_DAILY_CAPS[tier] ?? 20;
+        // Premium is not enforced yet: a free account is held only by the safety ceiling.
+        const dailyCap = dailyCapFor(TIER_DAILY_CAPS[tier] ?? 20, ABUSE_CEILING_DAILY_MESSAGES);
 
         const { data: capCheck, error: capErr } = await admin.rpc(
           "consume_copilot_message",
@@ -198,7 +200,7 @@ serve(async (req) => {
           const cap = capCheck[0].cap;
           return new Response(
             JSON.stringify({
-              error: `Daily Copilot limit reached (${used}/${cap}). Upgrade your plan or come back tomorrow.`,
+              error: `Daily Copilot limit reached (${used}/${cap}). Come back tomorrow.`,
               code: "COPILOT_DAILY_LIMIT",
               tier,
               used,
