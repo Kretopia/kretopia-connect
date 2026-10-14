@@ -87,8 +87,11 @@ export const StartMeetingDialog = ({
     () => defaultDateTimeLocal(),
   );
   const [capacity, setCapacity] = useState<number>(50);
-  const [recording, setRecording] = useState(true);
-  const [transcript, setTranscript] = useState(true);
+  // Recording and transcription are opt-in: create-meeting only records on an explicit
+  // `record_consent: true`, so a toggle that starts ON would show "recording" while the
+  // server quietly records nothing. Turning either on is the host's explicit act.
+  const [recording, setRecording] = useState(false);
+  const [transcript, setTranscript] = useState(false);
   const [knock, setKnock] = useState(true);
   const [selected, setSelected] = useState<Set<string>>(
     new Set(people.filter((p) => p.preselected).map((p) => p.id)),
@@ -140,6 +143,9 @@ export const StartMeetingDialog = ({
           invited_user_ids: Array.from(selected),
           recording_enabled: recording,
           transcript_enabled: transcript,
+          // The consent covers recording and transcription: it is true only when the host
+          // switched one of them on, and never otherwise (see _shared/recordingConsent.ts).
+          record_consent: recording || transcript,
           knocking_enabled: knock,
           max_participants: maxParticipants,
           scheduled_for: scheduledIso,
@@ -614,7 +620,7 @@ function SettingsBlock({
       <ToggleRow
         icon={<Circle className="h-3.5 w-3.5" />}
         label="Record this call"
-        hint="Saved for the host. Everyone sees a recording badge."
+        hint="Off unless you turn it on. Saved for the host; everyone sees a recording badge."
         checked={recording}
         onChange={setRecording}
       />
@@ -636,6 +642,11 @@ function SettingsBlock({
         checked={knock}
         onChange={setKnock}
       />
+      {(recording || transcript) && (
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Everyone who joins is told this call is recorded. By turning it on, you confirm they know.
+        </p>
+      )}
     </div>
   );
 }
