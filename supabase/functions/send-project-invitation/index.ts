@@ -1,6 +1,17 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
+import { cleanRecipientEmail } from "../_shared/outboundText.ts";
+import {
+  PROJECT_INVITES_PER_ACTOR_PER_HOUR,
+  PROJECT_INVITES_PER_RECIPIENT_PER_HOUR,
+  PROJECT_INVITE_TEMPLATE,
+  countActorSends,
+  countRecipientSends,
+  decideSendBudget,
+  recordActorSend,
+} from "../_shared/outboundBudget.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -13,6 +24,11 @@ const corsHeaders = {
 };
 
 const APP_URL = "https://www.kretopia.com";
+
+// Who may invite: the owner and accepted collaborators, creatives and clients.
+// Not an accepted guest (a viewer-link visitor): a guest must not be able to
+// mint sign-in links or bring new accounts into a project.
+const INVITER_ROLES: ProjectRole[] = ["owner", "collaborator", "creative", "client"];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Escapes user-controlled text before it's interpolated into the email HTML —
@@ -59,7 +75,17 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { email, projectId, inviteeUserId }: InvitationRequest = await req.json();
+    const { email: rawEmail, projectId, inviteeUserId }: InvitationRequest = await req.json();
+
+    // One plain address: it ends up in a mail header, a sign-in link request and
+    // a stored label.
+    const email = typeof rawEmail === "string" && rawEmail.trim() ? cleanRecipientEmail(rawEmail) : null;
+    if (typeof rawEmail === "string" && rawEmail.trim() && !email) {
+      return new Response(JSON.stringify({ error: "A valid email address is required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!projectId || typeof projectId !== "string" || !UUID_RE.test(projectId)) {
       throw new Error("Missing or invalid projectId");
@@ -87,14 +113,46 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { data: hasAccess } = await admin.rpc("user_has_project_access", {
-      project_id_param: projectId,
-      user_id_param: user.id,
-    });
-    if (!hasAccess) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Access from the canonical records, accepted members only (not a pending
+    // invitee, not a guest): the SQL helper counted any accepted role.
+    try {
+      await requireProjectAccess(admin, projectId, user.id, { allowRoles: INVITER_ROLES });
+    } catch (e) {
+      const status = e instanceof ProjectAccessError ? e.status : 503;
+      return new Response(
+        JSON.stringify({ error: status === 503 ? "Could not verify project access" : "Forbidden" }),
+        {
+          status: status === 401 ? 401 : status === 503 ? 503 : 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // A budget before anything is created or sent: an invitation mints a
+    // sign-in link and, for an unknown address, creates a passwordless account.
+    // The count is read first; a count that failed is not zero.
+    if (email) {
+      const [actorCount, recipientCount] = await Promise.all([
+        countActorSends(admin, user.id, PROJECT_INVITE_TEMPLATE),
+        countRecipientSends(admin, email, PROJECT_INVITE_TEMPLATE),
+      ]);
+      const budget = decideSendBudget({
+        actorCount,
+        recipientCount,
+        actorLimit: PROJECT_INVITES_PER_ACTOR_PER_HOUR,
+        recipientLimit: PROJECT_INVITES_PER_RECIPIENT_PER_HOUR,
+      });
+      if (!budget.ok) {
+        return new Response(JSON.stringify({ error: budget.error }), {
+          status: budget.status,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await recordActorSend(admin, {
+        template: PROJECT_INVITE_TEMPLATE,
+        actorId: user.id,
+        recipientEmail: email,
+        status: "pending",
       });
     }
 
@@ -185,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
     try {
       const emailResponse = await resend.emails.send({
         from: "Kretopia <noreply@kretopia.com>",
-        to: [email],
+        to: email ? [email] : [],
         subject: `${inviterName} invited you to "${projectTitle}" on Kretopia`,
         html: `
 <!DOCTYPE html>

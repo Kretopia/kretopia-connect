@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { cleanFreeText, cleanRecipientEmail } from "../_shared/outboundText.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -77,8 +78,20 @@ serve(async (req) => {
 
     const results = [];
 
-    for (const collab of external_collaborators) {
-      const { name, email } = collab;
+    // At most 20 people per request, each one plain address; free text is
+    // clipped before it goes into the mail template.
+    const MAX_COLLABORATORS = 20;
+    const collaborators = (Array.isArray(external_collaborators) ? external_collaborators : []).slice(0, MAX_COLLABORATORS);
+    const projectNameClean = cleanFreeText(project_name, 120) ?? 'a project';
+    const roleClean = cleanFreeText(role, 60);
+
+    for (const collab of collaborators) {
+      const email = cleanRecipientEmail(collab?.email);
+      if (!email) {
+        results.push({ email: null, name: null, error: 'invalid_email' });
+        continue;
+      }
+      const name = cleanFreeText(collab?.name, 80) ?? 'there';
 
       // The invite must land on the one-tap confirmation page (/credit-verify),
       // which needs no account and is keyed by the endorsement's own token.
@@ -102,7 +115,7 @@ serve(async (req) => {
 
       const claimUrl = `${baseUrl}/credit-verify?token=${encodeURIComponent(token)}`;
       const whatsappText = encodeURIComponent(
-        `Hey ${name}! ${inviterName} credited you on "${project_name}" on Kretopia. Can you take 5 seconds to confirm you worked together? No account needed: ${claimUrl}`
+        `Hey ${name}! ${inviterName} credited you on "${projectNameClean}" on Kretopia. Can you take 5 seconds to confirm you worked together? No account needed: ${claimUrl}`
       );
       const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
 
@@ -116,8 +129,8 @@ serve(async (req) => {
             templateData: {
               recipientName: name,
               inviterName,
-              projectName: project_name,
-              role: role || 'Collaborator',
+              projectName: projectNameClean,
+              role: roleClean || 'Collaborator',
               claimUrl,
               confirmUrl: claimUrl,
               whatsappUrl,
