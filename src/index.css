@@ -1288,14 +1288,17 @@ svg.k-gradient-icon {
 }
 
 /* ── HERO SEARCH BAR ────────────────────────────────────────────────
-   The Landing search is the first thing a visitor can do, so the field
-   wears the Kretopia gradient as a hairline at rest and as a soft glow
-   while it has focus. Both are drawn OUTSIDE the field's own box (a masked
-   ring and a blurred halo), so its size never changes on focus -- the
-   layout contract the hero search tests guard. */
+   The Landing search is the first thing a visitor can do, so the field is
+   outlined and lifted, but sober: a neutral hairline at rest (the theme's
+   own foreground, so it reads in Midnight and Daylight alike), firmer on
+   hover, and a soft neutral glow while it has focus. No gradient: the
+   headline and the primary call to action carry the brand colour. The
+   hairline and glow are drawn OUTSIDE the field's own box (a masked ring
+   and a blurred halo), so its size never changes on focus -- the layout
+   contract the hero search tests guard. */
 .k-search-hero {
   isolation: isolate;
-  border-radius: 1rem;
+  border-radius: 9999px;
 }
 .k-search-hero::before,
 .k-search-hero::after {
@@ -1308,8 +1311,8 @@ svg.k-gradient-icon {
   inset: 0;
   z-index: 1;
   padding: 1.5px;
-  background-image: var(--k-text-gradient);
-  opacity: 0.55;
+  background: hsl(var(--foreground));
+  opacity: 0.2;
   transition: opacity 0.25s ease;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -1318,19 +1321,19 @@ svg.k-gradient-icon {
 .k-search-hero::after {
   inset: -2px;
   z-index: -1;
-  background-image: var(--k-text-gradient);
-  filter: blur(22px);
-  opacity: 0.16;
+  background: hsl(var(--foreground));
+  filter: blur(20px);
+  opacity: 0;
   transition: opacity 0.35s ease;
 }
 .k-search-hero:hover::before {
-  opacity: 0.8;
+  opacity: 0.34;
 }
 .k-search-hero:focus-within::before {
-  opacity: 1;
+  opacity: 0.62;
 }
 .k-search-hero:focus-within::after {
-  opacity: 0.4;
+  opacity: 0.1;
 }
 @media (prefers-reduced-motion: reduce) {
   .k-search-hero::before,
@@ -1417,7 +1420,19 @@ svg.k-gradient-icon {
 .k-cta-future[data-cta="primary"]::before {
   animation: k-cta-scan 6.5s ease-in-out 1.4s infinite;
 }
-/* Secondary: quiet at rest, the ring appears under the pointer / keyboard. */
+/* Secondary: a firm outline and a faint fill at rest, so it reads as a button next to the primary
+   without competing with it; the gradient ring appears under the pointer / keyboard. (These are
+   unlayered, so they also have to carry the hover state: they beat the Tailwind utilities.) */
+.k-cta-future[data-cta="secondary"] {
+  border-color: hsl(var(--foreground) / 0.4);
+  background-color: hsl(var(--foreground) / 0.06);
+  box-shadow: inset 0 1px 0 hsl(var(--foreground) / 0.08);
+}
+.k-cta-future[data-cta="secondary"]:hover,
+.k-cta-future[data-cta="secondary"]:focus-visible {
+  border-color: hsl(var(--foreground) / 0.62);
+  background-color: hsl(var(--foreground) / 0.1);
+}
 .k-cta-future[data-cta="secondary"]::after {
   opacity: 0;
 }
