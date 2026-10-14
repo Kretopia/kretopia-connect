@@ -81,12 +81,29 @@ export const InviteByEmailDialog = ({ open, onOpenChange, eventId, eventTitle }:
         if ((d?.failed ?? 0) > 0) {
           toast.message(`${d.failed} failed`, { description: "We'll retry automatically." });
         }
+        if ((d?.skipped ?? 0) > 0) {
+          const recent = d?.skipped_recently_contacted ?? 0;
+          toast.message(`${d.skipped} not sent`, {
+            description:
+              recent > 0
+                ? `${recent} ${recent === 1 ? "address was" : "addresses were"} contacted too recently. The rest are over today's limit.`
+                : "You've reached today's invitation limit.",
+          });
+        }
         onOpenChange(false);
         setRaw("");
         setNote("");
       }
     } catch (e: any) {
-      toast.error(e?.message || "Couldn't send invites");
+      // A refusal (limit reached, too many recent sends) carries its reason in the response body.
+      let message: string = e?.message || "Couldn't send invites";
+      try {
+        const body = await e?.context?.json?.();
+        if (typeof body?.error === "string") message = body.error;
+      } catch {
+        /* keep the generic message */
+      }
+      toast.error(message);
     } finally {
       setSending(false);
       setTesting(false);
