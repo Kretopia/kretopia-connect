@@ -29,6 +29,7 @@
 //     produces a valid, already-approved agent_action_id this helper will
 //     accept.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { bindApprovedAction, type TargetSpec } from "./agentActionBinding.ts";
 
 export type ActionSource = "agent_orchestrator" | "desk_agent" | "human_ui";
 
@@ -45,10 +46,20 @@ export interface AuthorizeParams {
    * agent-orchestrator's standard flow (agent-orchestrator passes this as
    * `_agent_action_id` when it invokes the underlying handler). */
   agentActionId?: string | null;
+  /** What this request acts on (a project id, a user id), with the keys of the
+   * approved action's arguments that hold the same thing. REQUIRED when an
+   * agentActionId is supplied: an approval covers exactly what it named. */
+  targets?: TargetSpec;
 }
 
 export type AuthorizeResult =
-  | { ok: true; source: ActionSource }
+  | {
+      ok: true;
+      source: ActionSource;
+      /** Set when an approved action was claimed: call it if the mutation did not
+       * happen, so the approval is not spent on nothing. */
+      release?: () => Promise<void>;
+    }
   | { ok: false; status: number; error: string };
 
 /**
@@ -72,25 +83,67 @@ export async function authorizeHighStakesAction(
   // the reported source -- it means a human already tapped Approve on this
   // exact action via the standard orch_actions flow.
   if (agentActionId) {
-    const { data: action, error } = await admin
+    // The approval must be for exactly what this request names: the caller's own
+    // action of this tool, still 'approved', with its approval record, unrevoked,
+    // fresh, naming this target (see _shared/agentActionBinding.ts). Before this
+    // it only had to be an approved action of the same tool, so an approval to
+    // delete one project could delete another.
+    if (!params.targets) {
+      return { ok: false, status: 403, error: "This action cannot be authorised without naming its target." };
+    }
+    const [actionRes, approvalsRes] = await Promise.all([
+      admin
+        .from("orch_actions")
+        .select("id, user_id, tool_name, status, tool_args, decided_at")
+        .eq("id", agentActionId)
+        .maybeSingle(),
+      admin
+        .from("orch_approvals")
+        .select("id, action_id, user_id, decision, edited_args, decided_at")
+        .eq("action_id", agentActionId),
+    ]);
+    // A failed lookup must not read as "not found" or "no revocation": deny.
+    if (actionRes.error || approvalsRes.error) {
+      return { ok: false, status: 503, error: "Could not verify the approval for this action." };
+    }
+    const verdict = bindApprovedAction({
+      action: actionRes.data,
+      approvals: approvalsRes.data,
+      userId,
+      actionId: agentActionId,
+      toolName,
+      targets: params.targets,
+      nowMs: Date.now(),
+    });
+    if (!verdict.allowed) {
+      return { ok: false, status: verdict.status, error: verdict.message };
+    }
+
+    // One approval, one execution: claim it (approved -> executed) by
+    // compare-and-set before the caller mutates anything.
+    const { data: claimed, error: claimErr } = await admin
       .from("orch_actions")
-      .select("id, user_id, tool_name, status")
+      .update({ status: "executed", executed_at: new Date().toISOString() })
       .eq("id", agentActionId)
-      .maybeSingle();
-    if (error || !action) {
-      return { ok: false, status: 404, error: "Referenced agent action not found." };
+      .eq("status", "approved")
+      .select("id");
+    if (claimErr) {
+      return { ok: false, status: 503, error: "Could not reserve this action for execution." };
     }
-    if (action.user_id !== userId || action.tool_name !== toolName) {
-      return { ok: false, status: 403, error: "Approved action does not match this request." };
+    if (!claimed || claimed.length === 0) {
+      return { ok: false, status: 409, error: "This action has already run; it cannot be used again." };
     }
-    if (action.status !== "approved") {
-      return {
-        ok: false,
-        status: 409,
-        error: `Action is '${action.status}', not approved -- cannot execute.`,
-      };
-    }
-    return { ok: true, source: "agent_orchestrator" };
+    return {
+      ok: true,
+      source: "agent_orchestrator",
+      release: async () => {
+        await admin
+          .from("orch_actions")
+          .update({ status: "approved", executed_at: null })
+          .eq("id", agentActionId)
+          .eq("status", "executed");
+      },
+    };
   }
 
   // No pre-approved action. A human acting directly through the app's own
