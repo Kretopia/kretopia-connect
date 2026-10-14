@@ -5,26 +5,22 @@
 //
 // No DB writes. Pure routing decision. Studio Brain is already injected by
 // the destination engine (thrive-document-engine), so we don't re-fetch it.
+//
+// Free by design: the decision is made by the rules in
+// _shared/studioOutcomeRouter.ts, with no network call. The AI gateway is only
+// asked for a request the rules cannot place, and its absence (no key, credits
+// exhausted: 402, rate limit, timeout, any error) is never an error for the
+// user: they get the rule result, which for an unplaced request is "chat". This
+// function therefore never answers 402 or 429 on behalf of the gateway.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
+import { DOC_INTENTS, routeByRules, type RoutedOutcome } from "../_shared/studioOutcomeRouter.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-const DOC_INTENTS = [
-  "sponsor_deck",
-  "pitch_deck",
-  "business_plan",
-  "client_proposal",
-  "treatment",
-  "rate_card",
-  "moodboard_deck",
-  "one_pager",
-  "letter_of_intent",
-] as const;
 
 const SYSTEM = `You are Kreto's Studio Outcome Router. The user is inside a Studio (a project workspace) and just told you what they want to make. Decide the OUTCOME to spin up and respond by calling the route_outcome tool.
 
@@ -42,25 +38,40 @@ Rules:
 - preview: ONE warm sentence (≤100 chars) confirming what you're about to do. No emojis. No quotes.
 - target_query: refined search query for find_people / find_gigs (else null).`;
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+/** The payload the client reads (the rule result without its internal flag). */
+function payloadOf(r: RoutedOutcome) {
+  const { confident: _confident, ...rest } = r;
+  return rest;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
-
     const { prompt, project_title } = await req.json();
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 2) {
-      return new Response(JSON.stringify({ error: "prompt required" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "prompt required" }, 400);
     }
 
+    // 1. The rules decide, for free, whenever they recognise the request.
+    const ruled = routeByRules(prompt, typeof project_title === "string" ? project_title : undefined);
+    if (ruled.confident) return json(payloadOf(ruled));
+
+    // 2. Unplaced: the AI may refine it, if it is available. Any failure falls
+    //    back to the rule result (chat), never to an error.
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) return json(payloadOf(ruled));
+
     const ac = new AbortController();
-    const timeoutId = setTimeout(() => ac.abort(), 12000);
-    let resp: Response;
+    const timeoutId = setTimeout(() => ac.abort(), 8000);
     try {
-      resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         signal: ac.signal,
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
@@ -68,7 +79,7 @@ serve(async (req) => {
           model: GEMINI_FLASH_LITE,
           messages: [
             { role: "system", content: SYSTEM },
-            { role: "user", content: `Studio: "${(project_title || "Untitled").slice(0, 80)}"\n\nUser said: ${prompt.trim().slice(0, 600)}` },
+            { role: "user", content: `Studio: "${String(project_title || "Untitled").slice(0, 80)}"\n\nUser said: ${prompt.trim().slice(0, 600)}` },
           ],
           tools: [{
             type: "function",
@@ -98,59 +109,24 @@ serve(async (req) => {
           tool_choice: { type: "function", function: { name: "route_outcome" } },
         }),
       });
-    } catch (fetchErr) {
+      if (!resp.ok) {
+        // 402 (credits), 429, 5xx: the user is not told, and nothing is charged to them.
+        console.warn("route-studio-outcome: gateway unavailable, using rules", resp.status);
+        return json(payloadOf(ruled));
+      }
+      const data = await resp.json();
+      const tc = data?.choices?.[0]?.message?.tool_calls?.[0];
+      if (!tc) return json(payloadOf(ruled));
+      const parsed = JSON.parse(tc.function.arguments);
+      return json({ ...parsed, routed_by: "ai" });
+    } catch (e) {
+      console.warn("route-studio-outcome: gateway call failed, using rules", e instanceof Error ? e.message : e);
+      return json(payloadOf(ruled));
+    } finally {
       clearTimeout(timeoutId);
-      console.error("route-studio-outcome gateway fetch failed", fetchErr);
-      // Graceful fallback — open chat with the prompt prefilled.
-      return new Response(
-        JSON.stringify({
-          outcome: "chat",
-          doc_intent: null,
-          refined_brief: prompt.trim(),
-          target_query: null,
-          preview: "Let's talk it through.",
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
     }
-    clearTimeout(timeoutId);
-
-    if (resp.status === 429) {
-      return new Response(JSON.stringify({ error: "Rate limit reached. Try again in a moment." }), {
-        status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (resp.status === 402) {
-      return new Response(JSON.stringify({ error: "Workspace AI credits exhausted." }), {
-        status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (!resp.ok) {
-      const t = await resp.text();
-      console.error("AI gateway error", resp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await resp.json();
-    const tc = data?.choices?.[0]?.message?.tool_calls?.[0];
-    if (!tc) {
-      return new Response(JSON.stringify({
-        outcome: "chat", doc_intent: null, refined_brief: prompt.trim(), target_query: null,
-        preview: "Let's talk it through.",
-      }), {
-        status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const parsed = JSON.parse(tc.function.arguments);
-    return new Response(JSON.stringify(parsed), {
-      status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
   } catch (e) {
     console.error("route-studio-outcome error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: e instanceof Error ? e.message : "Unknown" }, 500);
   }
 });

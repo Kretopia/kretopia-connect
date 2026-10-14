@@ -8,10 +8,20 @@ import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { dispatchDeskIntent } from "@/hooks/useDeskIntent";
+import { routeByRules } from "../../../../supabase/functions/_shared/studioOutcomeRouter";
 
 interface Props {
   projectId: string;
   projectTitle: string;
+}
+
+/** What the router returns, from the rules or from the function. */
+interface RoutedOutcomeLike {
+  outcome?: string;
+  doc_intent?: string | null;
+  refined_brief?: string;
+  target_query?: string | null;
+  preview?: string;
 }
 
 const QUICK_PROMPTS = [
@@ -47,11 +57,23 @@ export function StudioOutcomeComposer({ projectId, projectTitle }: Props) {
     setLoading(true);
     setPreview(null);
     try {
-      const { data, error } = await supabase.functions.invoke("route-studio-outcome", {
-        body: { prompt: trimmed, project_title: projectTitle },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Free by design: the rules place a recognised request on the spot, with
+      // no network call and no AI credit. Only a request they cannot place asks
+      // the router function (which may use the AI); if that is unavailable
+      // (credits, limits, network) the rule result stands. "Tell Kreto what you
+      // need" never fails on a payment or quota error.
+      const local = routeByRules(trimmed, projectTitle);
+      let data: RoutedOutcomeLike = local;
+      if (!local.confident) {
+        try {
+          const res = await supabase.functions.invoke("route-studio-outcome", {
+            body: { prompt: trimmed, project_title: projectTitle },
+          });
+          if (!res.error && res.data && !res.data.error && res.data.outcome) data = res.data;
+        } catch {
+          // keep the rule result
+        }
+      }
 
       setPreview(data?.preview || null);
       const refined = (data?.refined_brief || trimmed).slice(0, 1500);
@@ -93,10 +115,10 @@ export function StudioOutcomeComposer({ projectId, projectTitle }: Props) {
         }
       }
       setPrompt("");
-    } catch (e: any) {
+    } catch (e) {
       toast({
         title: "Kreto couldn't route that",
-        description: e?.message || "Try again in a moment.",
+        description: (e instanceof Error && e.message) || "Try again in a moment.",
         variant: "destructive",
       });
     } finally {
