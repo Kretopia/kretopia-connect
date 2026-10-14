@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { decideGuestVerificationSend } from "../_shared/guestVerification.ts";
+import { escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,6 +32,28 @@ Deno.serve(async (req) => {
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
+
+      // This endpoint is public by design, so it must not be a mail relay:
+      // one plain address, and no more than a few verification mails per
+      // address per hour, counted before anything is stored or sent. A failed
+      // count answers 503 instead of passing as zero.
+      const { count: recentCount, error: recentErr } = await adminClient
+        .from("opportunities")
+        .select("id", { count: "exact", head: true })
+        .eq("is_guest_post", true)
+        .eq("guest_email", typeof email === "string" ? email.trim().toLowerCase() : "")
+        .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+      const send = decideGuestVerificationSend({
+        email,
+        recentCount: recentErr ? null : (recentCount ?? 0),
+      });
+      if (!send.ok) {
+        return new Response(
+          JSON.stringify({ error: send.error }),
+          { status: send.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      const guestEmail = send.email;
 
       // Generate verification token
       const token = crypto.randomUUID().replace(/-/g, "");
@@ -80,7 +104,7 @@ Deno.serve(async (req) => {
           image_url: finalImageUrl,
           status: "pending_verification",
           is_guest_post: true,
-          guest_email: email,
+          guest_email: guestEmail,
           guest_company_name: company_name,
           guest_logo_url: finalLogoUrl,
           verification_token: token,
@@ -121,13 +145,13 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             from: "Kretopia <noreply@kretopia.com>",
-            to: [email],
-            subject: `Verify your opportunity: ${title}`,
+            to: [guestEmail],
+            subject: `Verify your opportunity: ${singleLine(title, 120)}`,
             html: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-                <h1 style="color: #1a1a1a; font-size: 24px;">Almost there, ${company_name}! 🎉</h1>
+                <h1 style="color: #1a1a1a; font-size: 24px;">Almost there, ${escapeHtmlText(company_name)}! 🎉</h1>
                 <p style="color: #555; font-size: 16px; line-height: 1.6;">
-                  Click below to verify your email and publish <strong>"${title}"</strong> on Kretopia's Discover page where thousands of creatives will see it.
+                  Click below to verify your email and publish <strong>"${escapeHtmlText(title)}"</strong> on Kretopia's Discover page where thousands of creatives will see it.
                 </p>
                 <a href="${verifyUrl}" style="display: inline-block; background: #7c3aed; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px; margin: 20px 0;">
                   Verify & Publish

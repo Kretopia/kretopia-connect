@@ -1,11 +1,27 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { ProjectAccessError, requireProjectAccess } from "../_shared/projectAccess.ts";
+import {
+  GET_PAID_MESSAGE_MAX,
+  GET_PAID_NAME_MAX,
+  decideGetPaidLink,
+  type GetPaidAccess,
+} from "../_shared/getPaidLink.ts";
+import { cleanFreeText, escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -30,16 +46,41 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) throw new HttpError(401, "User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated");
+    if (!user?.email) throw new HttpError(401, "User not authenticated");
 
-    const { recipientEmail, recipientName, projectId, projectTitle, message } = await req.json();
-    if (!recipientEmail) throw new Error("Missing recipientEmail");
+    const body = await req.json().catch(() => ({}));
+    const { projectId } = body as { projectId?: unknown };
 
-    logStep("Sending get-paid link", { to: recipientEmail, project: projectTitle });
+    // The caller must hold money access on the project they name, and the
+    // project title comes from the database, not from the request: this sends a
+    // payment email from our own domain, so it must not be an open relay.
+    let access: GetPaidAccess;
+    try {
+      const a = await requireProjectAccess(supabaseAdmin, projectId, user.id);
+      access = { ok: true, canSeeMoney: a.canSeeMoney };
+    } catch (e) {
+      const status = e instanceof ProjectAccessError ? e.status : 503;
+      access = { ok: false, status: status === 401 ? 401 : status === 503 ? 503 : 403 };
+    }
+    const decision = decideGetPaidLink({ projectId, recipientEmail: body?.recipientEmail, access });
+    if (!decision.ok) throw new HttpError(decision.status, decision.error);
+    const recipientEmail = decision.recipientEmail;
+    const recipientName = cleanFreeText(body?.recipientName, GET_PAID_NAME_MAX);
+    const message = cleanFreeText(body?.message, GET_PAID_MESSAGE_MAX);
+
+    const { data: projectRow } = await supabaseAdmin
+      .from('projects')
+      .select('title')
+      .eq('id', projectId as string)
+      .maybeSingle();
+    const projectTitle = cleanFreeText(projectRow?.title, 120);
+
+    logStep("Sending get-paid link", { project: projectId });
 
     // Get sender profile
     const { data: senderProfile } = await supabaseAdmin
@@ -48,7 +89,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .single();
 
-    const senderName = senderProfile?.full_name || 'A client';
+    const senderName = cleanFreeText(senderProfile?.full_name, GET_PAID_NAME_MAX) || 'A client';
     const origin = "https://www.thrivein.io";
     
     // The "Get Paid" link takes them to ThrivePay setup page
@@ -59,7 +100,7 @@ serve(async (req) => {
 
     // Check if recipient already has an account
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(u => u.email === recipientEmail);
+    const existingUser = existingUsers?.users?.find(u => u.email?.toLowerCase() === recipientEmail);
 
     let notificationSent = false;
     if (existingUser) {
@@ -96,13 +137,13 @@ serve(async (req) => {
       const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
       const personalMessage = message
-        ? `<p style="background: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; margin: 16px 0;">"${message}"</p>`
+        ? `<p style="background: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; margin: 16px 0;">"${escapeHtmlText(message)}"</p>`
         : '';
 
       await resend.emails.send({
         from: "Kretopia <noreply@kretopia.com>",
         to: [recipientEmail],
-        subject: `${senderName} wants to pay you 💰`,
+        subject: `${singleLine(senderName, GET_PAID_NAME_MAX)} wants to pay you 💰`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="text-align: center; padding: 32px 0;">
@@ -110,8 +151,8 @@ serve(async (req) => {
               <p style="color: #6b7280; margin-top: 8px;">Set up in under 2 minutes</p>
             </div>
             
-            <p>Hi${recipientName ? ` ${recipientName}` : ''}!</p>
-            <p><strong>${senderName}</strong> wants to pay you for your work${projectTitle ? ` on <strong>"${projectTitle}"</strong>` : ''}.</p>
+            <p>Hi${recipientName ? ` ${escapeHtmlText(recipientName)}` : ''}!</p>
+            <p><strong>${escapeHtmlText(senderName)}</strong> wants to pay you for your work${projectTitle ? ` on <strong>"${escapeHtmlText(projectTitle)}"</strong>` : ''}.</p>
             
             ${personalMessage}
             
@@ -141,7 +182,7 @@ serve(async (req) => {
             
             <hr style="border: none; border-top: 1px solid #eee; margin: 32px 0;" />
             <p style="color: #999; font-size: 12px;">
-              This email was sent by ${senderName} via Kretopia. If you weren't expecting this, you can safely ignore it.
+              This email was sent by ${escapeHtmlText(senderName)} via Kretopia. If you weren't expecting this, you can safely ignore it.
             </p>
           </div>
         `,
@@ -167,7 +208,7 @@ serve(async (req) => {
     logStep("ERROR", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: error instanceof HttpError ? error.status : 500,
     });
   }
 });
