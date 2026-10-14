@@ -4,6 +4,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { syncProjectStatusIfAllMilestonesPaid } from "../_shared/milestoneProjectSync.ts";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
+import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -560,8 +561,11 @@ serve(async (req) => {
 
       // Generate download URLs for digital products
       let downloadUrls: string[] = [];
-      if (listingType === 'digital' && product.file_urls?.length > 0) {
-        for (const filePath of product.file_urls) {
+      // Only paths in the seller's own folder are signed: the seller writes
+      // file_urls, and the service role can read the whole private bucket.
+      const productFiles = deliverableProductFiles(product.file_urls, product.user_id);
+      if (listingType === 'digital' && productFiles.length > 0) {
+        for (const filePath of productFiles) {
           const { data: signedData } = await supabaseAdmin
             .storage
             .from('product-files')
@@ -571,7 +575,7 @@ serve(async (req) => {
           }
         }
         if (!downloadUrls.length) {
-          downloadUrls = product.file_urls;
+          downloadUrls = productFiles;
         }
       }
 
