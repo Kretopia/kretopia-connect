@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { searchCatalog, CATALOG_KIND_LABEL, type CatalogEntry, type CatalogKind } from "@/lib/searchCatalog";
 import { supabase } from "@/integrations/supabase/client";
@@ -421,11 +421,11 @@ export function UnifiedSearchDropdown({
   return (
     <div ref={wrapperRef} className={cn("relative", className)}>
       <form onSubmit={handleSubmit}>
-        <div className="relative">
+        <div className={cn("group relative", isHero && "k-search-hero")}>
           <Search
             className={cn(
               "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
-              isHero ? "left-4 h-5 w-5" : "left-3 h-4 w-4"
+              isHero ? "left-5 h-5 w-5 transition-colors group-focus-within:text-foreground" : "left-3 h-4 w-4"
             )}
           />
           <input
@@ -450,6 +450,8 @@ export function UnifiedSearchDropdown({
             onKeyDown={handleInputKeyDown}
             placeholder={placeholder}
             autoFocus={autoFocus}
+            autoComplete="off"
+            enterKeyHint="search"
             role="combobox"
             aria-label="Search a name, project or opportunity"
             aria-expanded={open}
@@ -457,7 +459,9 @@ export function UnifiedSearchDropdown({
             className={cn(
               "w-full border text-foreground transition-all placeholder:text-muted-foreground/50 focus:outline-none",
               isHero
-                ? "h-12 sm:h-14 rounded-2xl border-border/60 bg-card/80 backdrop-blur-sm pl-12 pr-20 text-sm shadow-lg focus:border-primary focus:shadow-[var(--shadow-glow)]"
+                // The gradient hairline and glow come from .k-search-hero (index.css), so the
+                // field's own border stays invisible and its box never changes on focus.
+                ? "h-14 sm:h-16 rounded-2xl border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
                 : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
@@ -507,7 +511,7 @@ export function UnifiedSearchDropdown({
                   aria-label="Clear search"
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? "right-14" : "right-8"
+                    isHero ? "right-[3.75rem] sm:right-[4.25rem]" : "right-8"
                   )}
                 >
                   <X className="h-3.5 w-3.5" />
@@ -521,7 +525,7 @@ export function UnifiedSearchDropdown({
                   title="Search by voice"
                   className={cn(
                     "k-mic-button absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full flex items-center justify-center transition-all disabled:opacity-50 before:absolute before:-inset-1.5 before:content-['']",
-                    isHero ? "right-12" : "right-6"
+                    isHero ? "right-[3.75rem] sm:right-[4.25rem]" : "right-6"
                   )}
                 >
                   {voice.status === "requesting" ? (
@@ -537,7 +541,7 @@ export function UnifiedSearchDropdown({
                 className={cn(
                   "absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors",
                   isHero
-                    ? "right-2.5 h-9 w-9 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md"
+                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     : "right-1.5 h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/80"
                 )}
               >
@@ -632,22 +636,14 @@ export function UnifiedSearchDropdown({
                 </div>
               </div>
             )}
-            {/* Loading state */}
+            {/* Loading state: the Kretopia K-mark loader alone, never a ring plus a spinner. */}
             {loading && (
-              <div className="order-4 px-4 py-6 flex flex-col items-center gap-3">
-                <div className="relative">
-                  <div className="h-10 w-10 rounded-full border-2 border-primary/20 flex items-center justify-center">
-                    <Search className="h-4 w-4 text-primary animate-pulse" />
-                  </div>
-                  <KretopiaSpinner className="h-10 w-10 text-primary/60 absolute inset-0" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium text-foreground">Searching Kretopia</p>
-                  <p className="text-xs text-muted-foreground/60 mt-0.5">
-                    Checking creators, credits & gigs...
-                  </p>
-                </div>
-              </div>
+              <KretopiaLoader
+                size="sm"
+                label="Searching Kretopia"
+                hint="Checking creators, credits & gigs…"
+                className="order-4 px-4"
+              />
             )}
 
             {/* Highlighted creator card (from DB) */}

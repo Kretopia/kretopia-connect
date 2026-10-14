@@ -1088,7 +1088,10 @@ body:has(> [data-state="open"][role="dialog"]) .snap-receipt-fab {
 :root:not(.dark) .landing-theme :is(section, footer) :where([style*="rgba(255, 255, 255, 0.7)"], [style*="rgba(255,255,255,0.7)"], [style*="rgba(255, 255, 255, 0.5)"], [style*="rgba(255,255,255,0.5)"]) { color: hsl(var(--muted-foreground)) !important; }
 :root:not(.dark) .landing-theme .k-gradient-text,
 :root:not(.dark) .landing-theme .landing-accent { color: transparent; }
-:root:not(.dark) .landing-theme #kretopia-hero > [aria-hidden="true"] > :first-child { display: none; }
+/* Daylight drops only the hero's warm vignette. It used to be selected as "the first child of
+   any aria-hidden direct child of the hero", which also matched the mascot's own wrapper
+   and hid Kreto Waving whenever the page was in Daylight. */
+:root:not(.dark) .landing-theme #kretopia-hero [data-hero-vignette] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .landing-glow { text-shadow: none; }
 }
@@ -1282,6 +1285,173 @@ svg.k-gradient-icon {
     #FEA61A 100%
   );
   color: #ffffff;
+}
+
+/* ── HERO SEARCH BAR ────────────────────────────────────────────────
+   The Landing search is the first thing a visitor can do, so the field
+   wears the Kretopia gradient as a hairline at rest and as a soft glow
+   while it has focus. Both are drawn OUTSIDE the field's own box (a masked
+   ring and a blurred halo), so its size never changes on focus -- the
+   layout contract the hero search tests guard. */
+.k-search-hero {
+  isolation: isolate;
+  border-radius: 1rem;
+}
+.k-search-hero::before,
+.k-search-hero::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.k-search-hero::before {
+  inset: 0;
+  z-index: 1;
+  padding: 1.5px;
+  background-image: var(--k-text-gradient);
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+.k-search-hero::after {
+  inset: -2px;
+  z-index: -1;
+  background-image: var(--k-text-gradient);
+  filter: blur(22px);
+  opacity: 0.16;
+  transition: opacity 0.35s ease;
+}
+.k-search-hero:hover::before {
+  opacity: 0.8;
+}
+.k-search-hero:focus-within::before {
+  opacity: 1;
+}
+.k-search-hero:focus-within::after {
+  opacity: 0.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-search-hero::before,
+  .k-search-hero::after { transition: none; }
+}
+
+/* ── FUTURISTIC CTA ─────────────────────────────────────────────────
+   Opt-in finish for a primary / secondary call to action (class
+   "k-cta-future", plus data-cta="primary" | "secondary"). It layers three
+   things on the existing button and replaces none of it:
+     - an orbiting Kretopia-gradient ring, drawn as a masked border so it
+       never fills the button (always on for the primary; the secondary
+       keeps its hairline and reveals the ring on hover / focus);
+     - a diagonal light scan, idling every few seconds on the primary and
+       sweeping on hover;
+     - a gradient halo that lifts under the pointer.
+   All of it is decoration: the label, hit area, focus ring and colours of
+   the underlying button are untouched, and motion stops entirely under
+   prefers-reduced-motion. */
+@property --k-cta-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes k-cta-orbit {
+  to { --k-cta-angle: 360deg; }
+}
+@keyframes k-cta-scan {
+  0%, 62% { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+  68% { opacity: 1; }
+  92% { opacity: 1; }
+  100% { transform: translateX(140%) skewX(-18deg); opacity: 0; }
+}
+.k-cta-future {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.2, 0.65, 0.3, 0.95), box-shadow 0.35s ease,
+              border-color 0.25s ease, background-color 0.25s ease;
+}
+.k-cta-future::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 1.5px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--k-cta-angle), var(--k-g-1), var(--k-g-2), var(--k-g-3), var(--k-g-4), var(--k-g-1));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: k-cta-orbit 7s linear infinite;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.k-cta-future::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background: linear-gradient(100deg, transparent 36%, rgba(255, 255, 255, 0.28) 50%, transparent 64%);
+  transform: translateX(-140%) skewX(-18deg);
+  opacity: 0;
+  pointer-events: none;
+}
+.k-cta-future > * {
+  position: relative;
+  z-index: 3;
+}
+/* Primary: ring always on, scan idles. The glass button's own 1px border is
+   handed to the ring so the two never read as a double outline. */
+.k-cta-future[data-cta="primary"],
+.k-cta-future[data-cta="primary"]:hover,
+.k-cta-future[data-cta="primary"]:focus-visible {
+  border-color: transparent;
+}
+.k-cta-future[data-cta="primary"] {
+  box-shadow: 0 14px 38px -18px rgba(165, 22, 197, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+.k-cta-future[data-cta="primary"]::after {
+  opacity: 0.85;
+}
+.k-cta-future[data-cta="primary"]::before {
+  animation: k-cta-scan 6.5s ease-in-out 1.4s infinite;
+}
+/* Secondary: quiet at rest, the ring appears under the pointer / keyboard. */
+.k-cta-future[data-cta="secondary"]::after {
+  opacity: 0;
+}
+.k-cta-future:hover,
+.k-cta-future:focus-visible {
+  transform: translateY(-2px);
+}
+.k-cta-future[data-cta="primary"]:hover {
+  box-shadow: 0 0 34px -6px rgba(246, 36, 137, 0.55), 0 0 64px -14px rgba(64, 18, 248, 0.5),
+              inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.k-cta-future[data-cta="secondary"]:hover {
+  box-shadow: 0 0 26px -8px rgba(165, 22, 197, 0.5);
+}
+.k-cta-future:hover::after,
+.k-cta-future:focus-visible::after {
+  opacity: 1;
+  animation-duration: 2.4s;
+}
+.k-cta-future:hover::before {
+  animation: k-cta-scan 1.1s ease-out 1;
+}
+.k-cta-future:active {
+  transform: translateY(0) scale(0.985);
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-cta-future,
+  .k-cta-future:hover,
+  .k-cta-future:focus-visible,
+  .k-cta-future:active { transform: none; }
+  .k-cta-future::after { animation: none; }
+  .k-cta-future::before,
+  .k-cta-future[data-cta="primary"]::before,
+  .k-cta-future:hover::before { animation: none; opacity: 0; }
 }
 
 /* ============================================================

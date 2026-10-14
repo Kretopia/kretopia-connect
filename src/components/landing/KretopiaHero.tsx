@@ -1,6 +1,14 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
+ * v9: Waving wears Flying's look. The two layers were recolored in place (same
+ * 768px canvas, same arm crop, same pivot, so the wave is unchanged): the neon
+ * rim light and its halo are gone, the shell is Flying's white-lavender, the ear
+ * lenses and joints are Flying's violet, the eyes and the K keep their gradient.
+ * He is also fitted to Flying's visual size (WAVE_FIT) so the takeoff swap does
+ * not jump. The CTA pair wears the opt-in `k-cta-future` finish, and the search
+ * field the `k-search-hero` gradient hairline (both in index.css).
+ *
  * v8: Kreto mascot = Kreto_06_Waving, body perfectly still, only the hand waves.
  *
  * MASCOT — replaces the former <KretoCharacter variant="hero-wave" />, with
@@ -79,6 +87,14 @@ const ARM = { x: 487, y: 318, w: 194, h: 174, pivotX: 500, pivotY: 452 } as cons
 
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;
 
+/** Waving and Flying share one box (180px, 300px from 1440px), but the standing figure fills far less
+ *  of its 768px canvas than Flying fills of its own, so at scale 1 his helmet read ~25% smaller and the
+ *  takeoff swap jumped. 1.55 puts his helmet within 3% of Flying's width and his silhouette area within
+ *  4% of Flying's. The figure is nudged up by 4.7% so his feet land where they always did; his raised
+ *  hand still clears the box's right edge. */
+const WAVE_FIT = 1.55;
+const WAVE_FIT_STYLE: CSSProperties = { transform: `translateY(-4.7%) scale(${WAVE_FIT})` };
+
 /** The arm sits exactly over the body at rest. Everything is in % of the 768px art,
  *  so it follows the 180px / 300px box with no JS measuring. `will-change` keeps this
  *  tiny layer on the compositor, so the wave stays at full frame rate. */
@@ -118,17 +134,29 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
   const armRef = useRef<HTMLImageElement>(null);
   const waveRef = useRef<Animation | null>(null);
   const [ready, setReady] = useState(false);
+  const alive = useRef(true);
 
-  // Show Kreto only once both layers are decoded, so the hand never pops in late.
+  // Show Kreto only once both layers are downloaded AND decoded: `complete` only says the bytes
+  // arrived, and a hand painted before the body reads as a floating glove.
   const checkReady = useCallback(() => {
     const body = bodyRef.current;
     const arm = armRef.current;
-    if (body?.complete && body.naturalWidth > 0 && arm?.complete && arm.naturalWidth > 0) setReady(true);
+    if (!(body?.complete && body.naturalWidth > 0 && arm?.complete && arm.naturalWidth > 0)) return;
+    const show = () => { if (alive.current) setReady(true); };
+    if (typeof body.decode === "function" && typeof arm.decode === "function") {
+      Promise.all([body.decode(), arm.decode()]).then(show, show);
+    } else {
+      show();
+    }
   }, []);
 
   useEffect(() => {
+    alive.current = true;
     checkReady(); // covers images already in cache
-    return () => waveRef.current?.cancel();
+    return () => {
+      alive.current = false;
+      waveRef.current?.cancel();
+    };
   }, [checkReady]);
 
   /** Hover (mouse) / touch (finger, pen): one wave at a time, starts instantly. */
@@ -155,8 +183,8 @@ const KretoWave = memo(function KretoWave({ reducedMotion }: { reducedMotion: bo
       data-kreto-wave
       className="pointer-events-none absolute bottom-4 right-6 hidden h-[180px] w-[180px] select-none lg:block min-[1440px]:right-16 min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
     >
-      {/* Normalize visible silhouette height, not the transparent source canvas. */}
-      <div className={`absolute inset-0 scale-[1.43] ${ready ? "opacity-100" : "opacity-0"}`}>
+      {/* Fit the figure to Flying's visual size (see WAVE_FIT), not to the transparent source canvas. */}
+      <div className={`absolute inset-0 ${ready ? "opacity-100" : "opacity-0"}`} style={WAVE_FIT_STYLE}>
         <img
           ref={bodyRef}
           src={kretoBodyUrl}
@@ -234,8 +262,9 @@ export const KretopiaHero = () => {
           below (z-[100], already high enough — this was a clipping bug,
           not a stacking one). */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* warm vignette — barely there */}
+        {/* warm vignette — barely there (dropped in Daylight via data-hero-vignette) */}
         <div
+          data-hero-vignette
           className="absolute inset-0"
           style={{
             background:
@@ -375,17 +404,20 @@ export const KretopiaHero = () => {
           transition={{ duration: 0.6, delay: 0.45 }}
           className="mt-9 sm:mt-10 flex w-full flex-col items-center gap-4"
         >
-          <div className="flex w-full max-w-xs flex-col items-center justify-center gap-3 sm:max-w-none sm:w-auto sm:flex-row">
+          {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
+              so the pair stays level whatever the labels' widths. */}
+          <div className="grid w-full max-w-xs grid-cols-1 gap-3 sm:max-w-[32rem] sm:grid-cols-2">
             <GlassCta
               to="/passport"
               size="lg"
+              data-cta="primary"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
                   label: "Create Passport",
                   variant: "signal_field",
                 })
               }
-              className="hero-passport-cta w-full sm:w-auto"
+              className="hero-passport-cta k-cta-future w-full"
             >
               Create Passport
             </GlassCta>
@@ -393,13 +425,14 @@ export const KretopiaHero = () => {
             <OutlineCta
               to="/auth?next=/scout&src=hero_explore"
               size="lg"
+              data-cta="secondary"
               onClick={() =>
                 trackLandingCta("hero_explore_opportunities", "hero", {
                   label: "Explore Opportunities",
                   variant: "signal_field",
                 })
               }
-              className="w-full sm:w-auto"
+              className="k-cta-future w-full"
             >
               Explore Opportunities
             </OutlineCta>
