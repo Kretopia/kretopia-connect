@@ -95,7 +95,7 @@ export function bindApprovedAction(input: {
     expectedTool: toolName,
     actionId,
   });
-  if (!guard.allowed) {
+  if (guard.allowed === false) {
     const status =
       guard.reason === "action_not_found" ? 404
       : guard.reason === "wrong_owner" || guard.reason === "wrong_tool" ? 403

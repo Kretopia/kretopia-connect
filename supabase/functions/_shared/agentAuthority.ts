@@ -28,6 +28,7 @@
 //     orch_actions row + AgentApprovalCard UI that already exists), which
 //     produces a valid, already-approved agent_action_id this helper will
 //     accept.
+// @ts-ignore -- Deno URL import; resolved at runtime by the edge runtime, not by the app typecheck.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { bindApprovedAction, type TargetSpec } from "./agentActionBinding.ts";
 
@@ -115,7 +116,7 @@ export async function authorizeHighStakesAction(
       targets: params.targets,
       nowMs: Date.now(),
     });
-    if (!verdict.allowed) {
+    if (verdict.allowed === false) {
       return { ok: false, status: verdict.status, error: verdict.message };
     }
 

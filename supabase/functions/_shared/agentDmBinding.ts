@@ -86,7 +86,7 @@ export function bindApprovedDm(input: {
 
   // 1. Owner, status, approval record, revocation: the existing guard.
   const guard = evaluateExecutionGuard({ action, approvals: input.approvals, userId, actionId });
-  if (!guard.allowed) {
+  if (guard.allowed === false) {
     const status =
       guard.reason === "action_not_found" ? 404
       : guard.reason === "wrong_owner" || guard.reason === "wrong_tool" ? 403

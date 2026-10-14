@@ -52,7 +52,7 @@ export async function guardStudioOperator(
   corsHeaders: Record<string, string>,
 ): Promise<StudioOperatorGuard> {
   const result = await studioOperatorAccess(admin, projectId, userId);
-  if (result.ok) return result;
+  if (result.ok === true) return result;
   return {
     ok: false,
     response: new Response(JSON.stringify({ error: result.message }), {

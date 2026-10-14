@@ -104,7 +104,7 @@ describe("guardStudioOperator: ready-to-send denial", () => {
   it("returns the caller's CORS headers and the status on a denial", async () => {
     const guard = await guardStudioOperator(admin, P, "guest", { "Access-Control-Allow-Origin": "*" });
     expect(guard.ok).toBe(false);
-    if (!guard.ok) {
+    if (guard.ok === false) {
       expect(guard.response.status).toBe(403);
       expect(guard.response.headers.get("Access-Control-Allow-Origin")).toBe("*");
       expect(await guard.response.json()).toHaveProperty("error");

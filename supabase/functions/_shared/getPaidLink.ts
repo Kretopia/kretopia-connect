@@ -42,7 +42,7 @@ export function decideGetPaidLink(f: GetPaidFacts): GetPaidDecision {
   const recipientEmail = cleanRecipientEmail(f.recipientEmail);
   if (!recipientEmail) return { ok: false, status: 400, error: "A valid recipient email is required" };
 
-  if (!f.access.ok) {
+  if (f.access.ok === false) {
     if (f.access.status === 503) return { ok: false, status: 503, error: "Could not verify project access" };
     if (f.access.status === 401) return { ok: false, status: 401, error: "Authentication required" };
     return { ok: false, status: 403, error: "You cannot send payment links for this project" };
