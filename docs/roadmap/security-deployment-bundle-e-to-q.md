@@ -1,6 +1,6 @@
-# Security deployment bundle, steps E to Q (manual paste into `kretopia-app`)
+# Security deployment bundle, steps E to R (manual paste into `kretopia-app`)
 
-Source: `Kretopia/kretopia-connect` `main` at `5d4c6c8b0` (PRs #142 to #162 merged) plus PR #163 at `1751ce4fb` (agent-send-dm, **open**). Checksums are of the files at those commits; recompute them after #163 merges (`git show main:<path> | shasum -a 256`).
+Source: `Kretopia/kretopia-connect` `main` at `24ad42870` (PRs #142 to #165 merged). Every checksum below is of the file at that commit; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`). Supersedes the E to Q version of PR #164.
 
 **Nothing here is deployed.** Merged is not deployed: production runs the pre-slice copies. This document is the only artefact that tells you what to paste, in what order, how to check each step and how to undo it. It does not deploy anything and contains no SQL.
 
@@ -14,15 +14,19 @@ A local, untracked copy of every file, numbered in paste order, with `SHA256SUMS
 | #160 commerce schema proposal (docs) | **merged** 2026-10-14 03:09Z | done |
 | #161 outbound senders | **merged** 2026-10-14 03:32Z | done |
 | #162 outbound senders, second pass | **merged** 2026-10-14 03:56Z | done |
-| #163 agent-send-dm exact approval | open, 4 files, 26 + 19 tests, no schema | **MERGE NOW** after review: no dependency on another PR; it only takes effect once its two files are pasted |
+| #163 agent-send-dm exact approval | **merged** | done |
+| #164 deployment bundle E to Q (docs) | **merged**; this document supersedes it | done |
+| #165 outbound third pass | **merged**; accepted guests can no longer send project invitations and a host's custom segment is limited to the event's participants | done (behaviour change to be aware of) |
+| #166 four outbound proposals (docs) | open | **MERGE NOW**: documentation only |
+| #167 outreach screens no longer load the Gmail app password (frontend) | open | **MERGE NOW**; ships on the next frontend publish, not a function paste |
 
-The four PRs the request listed as open were already merged when this was checked; the pending one is #163.
+Every PR of the E to R stack is merged. Merged is not deployed: nothing below is in production until pasted.
 
 ## 2. Gates: what can be pasted when
 
 | Class | Steps | Condition |
 |---|---|---|
-| Deployable without preflight | E, F, G, J, K, L, M, P, Q | none beyond the pre-checks of section 3 |
+| Deployable without preflight | E, F, G, J, K, L, M, P, Q, R | none beyond the pre-checks of section 3 (R writes rows to `email_send_log`, which the transactional sender already uses: confirm the table exists) |
 | Deployable, with one check first | N | a scheduled job that calls `send-activity-digest`, `send-streak-warning` or `send-reengagement` must send `x-cron-secret` first, or its next run answers 401 (same header pattern as `security/cron-secret-headers-2026-10-09.sql`; `cron.job` cannot be listed from the repository) |
 | Preflight gate **satisfied**, product decision open | I | The Circle and project preflights were run on 2026-10-13: A1 0 rows, A2 `circle_meetings = 0`, `circle_hosts = 0`, `circle_meetings_90d = 0`, A3 0 rows: **GO** (the Circle gate is GO on an empty population: the first real Circle meeting is the only evidence). Open: `StartMeetingDialog` sends no `record_consent`, so meetings it creates stop being recorded and transcribed once `create-meeting` is pasted. Either accept that, or ship a consent control in the dialog first (a legal-copy decision, not code alone) |
 | Product decision | H (consent default: the booking page checkbox is pre-ticked), I (above), P `merge-accounts-init` (merging stays unavailable: no delivery template) | owner decision |
@@ -57,7 +61,7 @@ A helper is imported by functions; it is not an Edge Function and is not deploye
 |---|---|---|---|---|---|
 | 01 | `_shared/roomSessionLimits.ts` | E, I | none | `f2aa42fe244c9659555bc10953a675ef7df51019a6d535816553c951a3a5961a` | ABSENT in kretopia-app (HTTP 404 on 2026-10-13). mint-meeting-token and create-meeting fail to start without it |
 | 02 | `_shared/meetingParticipantAccess.ts` | E, F | none | `f2dc1c33ed6a0faea0a5b2d85bbb320254c9e0b65a847d0886017976da863364` | new |
-| 03 | `_shared/projectAccess.ts` | F, I, K, L, N | none | `0a0b3cb8b1dabcf1c5628f5464c9ad714f1f85e7a968f3450a3ef91867b4a092` | present and equivalent on 2026-10-13: compare the SHA-256, paste only if it differs |
+| 03 | `_shared/projectAccess.ts` | F, I, K, L, N, R | none | `0a0b3cb8b1dabcf1c5628f5464c9ad714f1f85e7a968f3450a3ef91867b4a092` | present and equivalent on 2026-10-13: compare the SHA-256, paste only if it differs |
 | 04 | `_shared/executionGuard.ts` | Q | none | `1bf3559a6e4beda1d5da597c5764b7811ad9cbb505a17cac708ff82850aa0fb3` | existing (agent authority work): compare the SHA-256, paste only if absent or different |
 | 05 | `_shared/recordingAccess.ts` | F | meetingParticipantAccess | `204705a2593ba496956dccf9d4ed4d45e215d4ad2f64934eaf1706ede8fb293b` | new; imports meetingParticipantAccess |
 | 06 | `_shared/recordingConsent.ts` | H, I | none | `eb55e18f64d64443aeacf65bb4ec00dfea6f4a2bca6a53d1d7f170721fd0a8be` | new |
@@ -67,11 +71,12 @@ A helper is imported by functions; it is not an Edge Function and is not deploye
 | 10 | `_shared/purchaseEntitlement.ts` | K | none | `daed89fdad1f3d2260394b4ba3f5a5472ed8da0294d1c4a042cc632a6a831ed7` | new |
 | 11 | `_shared/productFilePaths.ts` | K, M | none | `fd06fb87129fdd326c1d32fb296df212d28bdeb5bc0c24e2296049015bc0210b` | new; imported by get-download-urls, complete-product-purchase, stripe-marketplace-webhook |
 | 12 | `_shared/studioAccess.ts` | L | projectAccess | `78191121643dbdd587330a61677b09f26c39b29c742ddf69018b0934822e1461` | new; imports projectAccess |
-| 13 | `_shared/outboundText.ts` | N, P | none | `ae20433c5293e79164baa06ec3e154a53d4ed02fb07dd4c9ee35a56b3d628da0` | new |
+| 13 | `_shared/outboundText.ts` | N, P, R | none | `ae20433c5293e79164baa06ec3e154a53d4ed02fb07dd4c9ee35a56b3d628da0` | new |
 | 14 | `_shared/getPaidLink.ts` | N | outboundText | `c72b65a22fa994322c16a64a5a1307b736bd26358a69ea39982bd58ba9b109c3` | new; imports outboundText |
 | 15 | `_shared/guestVerification.ts` | N | outboundText | `52600f34eca8360b14f96e8f679d2124f9bcf2a02a3a4f4e6bfa873592ea08b3` | new; imports outboundText |
 | 16 | `_shared/phoneOtp.ts` | P | none | `5aca7213c73f2171f1f7ac83556960ba1df1c16872672243bd669b747907a508` | new (only Web Crypto) |
-| 17 | `_shared/agentDmBinding.ts` | Q | executionGuard | `a9c0e69b4836e9bcafc79b2f01a6972f8c23b1d3862d82fc4fb16799820cec64` | new; imports executionGuard |
+| 17 | `_shared/outboundBudget.ts` | P, R | none | `1971365fc9717274df729474a20b08a2e35fbe4bffb9cbf8205bcb840cd80715` | new (PR #165, open); uses `email_send_log` |
+| 18 | `_shared/agentDmBinding.ts` | Q | executionGuard | `a9c0e69b4836e9bcafc79b2f01a6972f8c23b1d3862d82fc4fb16799820cec64` | new; imports executionGuard |
 
 ## 5. Edge Functions (deploy one at a time, in this order)
 
@@ -79,10 +84,9 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 
 | # | Step | Function | PRs | Imports from `_shared` | SHA-256 |
 |---|---|---|---|---|---|
-| 18 | E | `mint-meeting-token` | #142 | meetingParticipantAccess, roomSessionLimits | `63bd589476d440ae084e5c72b60bbec74c78477c6f3d1121cf05acc7208f643e` |
-| 19 | F | `get-recording-link` | #143, #149, #151, #152 | projectAccess, recordingAccess | `11ca0d25592205a7a593ae17536276a47bac33fc24f34925a0c01e1978ce5b2b` |
-| 20 | H | `book-meeting` | #145, #152 | recordingConsent | `45d2b2de5865a883af9b579d415e6230e81520510579d29ca523eebc7da5ab56` |
-| 21 | I | `create-meeting` | #146, #152 | meetingContextAccess, projectAccess, recordingConsent, roomSessionLimits | `c8387501dd8f3071e8b26ee2dd232d7e35bfd7cfaa7ade55cf47e1ebd35bf12b` |
+| 19 | E | `mint-meeting-token` | #142 | meetingParticipantAccess, roomSessionLimits | `63bd589476d440ae084e5c72b60bbec74c78477c6f3d1121cf05acc7208f643e` |
+| 20 | F | `get-recording-link` | #143, #149, #151, #152 | projectAccess, recordingAccess | `11ca0d25592205a7a593ae17536276a47bac33fc24f34925a0c01e1978ce5b2b` |
+| 21 | H | `book-meeting` | #145, #152 | recordingConsent | `45d2b2de5865a883af9b579d415e6230e81520510579d29ca523eebc7da5ab56` |
 | 22 | G | `daily-recording-webhook` | #144 | webhookFreshness | `f2795873808140b6d06a1b2d778b19e2682d32f0eb44593dfb78be6f9d77ff04` |
 | 23 | J | `redeem-project-share` | #156 | shareLinkScope | `f8da3a1b8ab343849fbdb25bc53b307ac9f15d5a46556e65da84c49a8c263de8` |
 | 24 | K | `get-download-urls` | #157, #159 | productFilePaths, purchaseEntitlement, stripeEnv | `7bc97fe857ddc0bb49757edce35a1e2a7a50cb1757fd9227d5fcc1d5c8786a27` |
@@ -101,9 +105,13 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 | 37 | N | `verify-guest-opportunity` | #161 | guestVerification, outboundText | `ea2603c80e96d96769e96a69388f0fc61585a4d1fa69df40bb1eb70e03069614` |
 | 38 | P | `send-phone-otp` | #162 | phoneOtp | `3a1334b2f27e8a6b0f4017e8a81d3a9c5bb7e007e0df02945268fc8c0d812e89` |
 | 39 | P | `merge-accounts-init` | #162 | phoneOtp | `131286ca7d7b01bf87d19a496a2fa8c2100d62d26cc2eac4b8097732450df9fa` |
-| 40 | P | `send-outreach-email` | #162 | aiModels, outboundText | `02d53136518c4ca0503bcca56064bbf48fca9eab2ac52e61f15b6c9401e0cacd` |
+| 40 | P | `send-outreach-email` | #162, #165 | aiModels, outboundBudget, outboundText | `0944a58f2ddf69abd90b60bdf2014e69728afb85e701ec3594e521f9e16eb149` |
 | 41 | P | `verify-brand-credit` | #162 | outboundText | `49dbc26a1cc01cbdd5063243fe43b9cd660fc51169c4e9a3475164eb17f93130` |
-| 42 | Q | `agent-send-dm` | #163 (open) | agentDmBinding | `b207e5c82e4f03b2f9bd299a9c24abd970adfa02e366a5194fcb1bdd1d43dead` |
+| 42 | Q | `agent-send-dm` | #163 | agentDmBinding | `b207e5c82e4f03b2f9bd299a9c24abd970adfa02e366a5194fcb1bdd1d43dead` |
+| 43 | R | `send-project-invitation` | #165 | outboundBudget, outboundText, projectAccess | `8f93947be6c5b003748c85400aef65930d99890e043c29895760939145b879af` |
+| 44 | R | `send-event-blast` | #165 | none | `1c757bb0fb795536727c934099685f5ee83e74a50a7be4136d17496cbb33a386` |
+| 45 | R | `send-credit-invite` | #165 | outboundText | `2c6109d462732c2ecd1f00cfe460d92b6b3f54b169d131a69d2f8493913a8c36` |
+| 46 | I | `create-meeting` | #146, #152 | meetingContextAccess, projectAccess, recordingConsent, roomSessionLimits | `c8387501dd8f3071e8b26ee2dd232d7e35bfd7cfaa7ade55cf47e1ebd35bf12b` |
 
 `get-download-urls` and `complete-product-purchase` appear once, at step K: the file pasted there already carries the step M change (product file path ownership), so step M adds only `stripe-marketplace-webhook`.
 
@@ -122,12 +130,6 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 **H `book-meeting`**
 - Booking with `record_consent: true`: `recording_enabled: true`; `false` or omitted: `recording_enabled: false`.
 - The host notification still arrives (this version also fixes the `body` key of the notification insert).
-
-**I `create-meeting`**
-- Meeting from your own project: **200**; from a project you do not belong to: **403** and no new Daily room.
-- Meeting in your own Circle: **200**; in a Circle you did not create or join: **403**.
-- No `record_consent` in the request: `recording_enabled = false` and `transcript_enabled = false`.
-- Logs: any 403 on a normal flow means a path was missed: roll back and report.
 
 **G `daily-recording-webhook`**
 - Daily dashboard test event: **200**. A fresh recording event: **200**, a transcript row is created.
@@ -193,6 +195,7 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 
 **P `send-outreach-email`**
 - `send_sequence` for a sequence pointing at another user's lead: no recipient, no mail, no write.
+- The same `sequenceEmailId` sent twice: 200 then **409**, one mail. Over 30 platform-domain mails in an hour: **429** (Gmail sends are not counted).
 
 **P `verify-brand-credit`**
 - A brand request with an invalid address: 400. Names are escaped in the mail.
@@ -202,11 +205,26 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 - Another recipient or another text: **403**. Another user's action: **403**. 31 minutes after approval: **410**.
 - The in-app approval flow (approve, edit then approve, bundle kickoff DM) still sends.
 
+**R `send-project-invitation`**
+- Owner, 21st invitation in an hour, or a 4th to one address: **429**, no link minted, no account created. Accepted guest: **403**.
+
+**R `send-event-blast`**
+- A host's explicit `userIds` containing a user who is not on the event: that user is not mailed.
+
+**R `send-credit-invite`**
+- 25 collaborators in one request: the first 20 are processed; an invalid address is reported, not sent.
+
+**I `create-meeting`**
+- Meeting from your own project: **200**; from a project you do not belong to: **403** and no new Daily room.
+- Meeting in your own Circle: **200**; in a Circle you did not create or join: **403**.
+- No `record_consent` in the request: `recording_enabled = false` and `transcript_enabled = false`.
+- Logs: any 403 on a normal flow means a path was missed: roll back and report.
+
 ## 6. Order of work in one session
 
 1. Section 3 pre-checks.
 2. Paste every helper of section 4 (no deploy needed).
-3. Functions in this order: E, F, H, G, J, K (4 functions), L (4), M, N (after the cron check), P (4), Q. Step I last, and only when the `StartMeetingDialog` decision is made.
+3. Functions in this order: E, F, H, G, J, K (4 functions), L (4), M, N (after the cron check), P (4), Q, R (3). Step I last, and only when the `StartMeetingDialog` decision is made. Steps Q and R are on `main` like the others.
 4. After the last step, fill the deployment record of `security-slices-e-to-i-manual-deployment-checklist.md` section 6 and the table below, and keep the `__before.ts` copies for the first full day of logs.
 
 | Step | Function | Pasted by / when | Checksum matched | Verified | Logs reviewed | State |
@@ -214,7 +232,6 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 | E | `mint-meeting-token` | | | | | not deployed |
 | F | `get-recording-link` | | | | | not deployed |
 | H | `book-meeting` | | | | | not deployed |
-| I | `create-meeting` | | | | | not deployed |
 | G | `daily-recording-webhook` | | | | | not deployed |
 | J | `redeem-project-share` | | | | | not deployed |
 | K | `get-download-urls` | | | | | not deployed |
@@ -236,6 +253,10 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 | P | `send-outreach-email` | | | | | not deployed |
 | P | `verify-brand-credit` | | | | | not deployed |
 | Q | `agent-send-dm` | | | | | not deployed |
+| R | `send-project-invitation` | | | | | not deployed |
+| R | `send-event-blast` | | | | | not deployed |
+| R | `send-credit-invite` | | | | | not deployed |
+| I | `create-meeting` | | | | | not deployed |
 
 ## 7. What this bundle does not change
 
