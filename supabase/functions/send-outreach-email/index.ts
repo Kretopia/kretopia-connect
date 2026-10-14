@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { cleanRecipientEmail, singleLine } from "../_shared/outboundText.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -127,7 +128,13 @@ serve(async (req) => {
     const useGmail = emailSettings?.is_configured && emailSettings?.provider === "gmail" && emailSettings?.gmail_email && emailSettings?.gmail_app_password;
 
     // Helper to send an email using the user's preferred method
-    async function sendEmail(to: string, subject: string, rawBody: string): Promise<{ success: boolean; emailId?: string; error?: string }> {
+    async function sendEmail(rawTo: string, rawSubject: string, rawBody: string): Promise<{ success: boolean; emailId?: string; error?: string }> {
+      // One plain address and a single-line subject: the recipient and the
+      // subject are caller text that ends up in mail headers.
+      const to = cleanRecipientEmail(rawTo);
+      if (!to) return { success: false, error: "Invalid recipient address" };
+      const subject = singleLine(rawSubject, 200) || "(no subject)";
+
       const htmlBody = `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px;">
           ${wrapHtml(rawBody)}
@@ -145,7 +152,7 @@ serve(async (req) => {
 
       return sendViaResend(
         resendApiKey,
-        `${senderProfile?.full_name || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
+        `${singleLine(senderProfile?.full_name, 60).replace(/[<>"\\]/g, "") || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
         to,
         subject,
         htmlBody,
@@ -337,7 +344,8 @@ BODY: [email body with paragraphs]`,
           .from("leads")
           .select("email, name")
           .eq("id", sequence.lead_id)
-          .single();
+          .eq("user_id", user.id)
+          .maybeSingle();
         recipientEmail = lead?.email || null;
       }
 
@@ -378,7 +386,8 @@ BODY: [email body with paragraphs]`,
         await supabaseAdmin
           .from("leads")
           .update({ last_contacted_at: new Date().toISOString() })
-          .eq("id", sequence.lead_id);
+          .eq("id", sequence.lead_id)
+          .eq("user_id", user.id);
       }
 
       return new Response(JSON.stringify({

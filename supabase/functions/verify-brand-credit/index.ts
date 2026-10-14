@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { cleanFreeText, cleanRecipientEmail, escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -50,6 +51,15 @@ serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      // The brand address goes straight into a mail from our domain: it must
+      // be one plain address, and the brand name is text, not markup.
+      const cleanBrandEmail = cleanRecipientEmail(brandEmail);
+      const cleanBrandName = cleanFreeText(brandName, 120);
+      if (!cleanBrandEmail || !cleanBrandName) {
+        return new Response(JSON.stringify({ error: 'A valid brand email and name are required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       const { data: roleRow } = await supabase
         .from('icdb_project_roles')
@@ -65,8 +75,8 @@ serve(async (req) => {
       const { data, error } = await supabase.from('icdb_brand_verifications').insert({
         project_id: projectId,
         role_id: roleId,
-        brand_name: brandName,
-        brand_email: brandEmail,
+        brand_name: cleanBrandName,
+        brand_email: cleanBrandEmail,
         submitted_by: submittedBy,
       }).select('verification_token').single();
 
@@ -105,13 +115,13 @@ serve(async (req) => {
           },
           body: JSON.stringify({
             from: emailFrom,
-            to: [brandEmail],
-            subject: `${creatorName} is requesting credit verification for "${projectTitle}"`,
+            to: [cleanBrandEmail],
+            subject: `${singleLine(creatorName, 80)} is requesting credit verification for "${singleLine(projectTitle, 120)}"`,
             html: `
               <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 20px;">
                 <h2 style="margin-bottom: 8px;">Credit Verification Request</h2>
                 <p style="color: #666; margin-bottom: 24px;">
-                  <strong>${creatorName}</strong> has listed a credit on <strong>"${projectTitle}"</strong> and is requesting verification from <strong>${brandName}</strong>.
+                  <strong>${escapeHtmlText(creatorName)}</strong> has listed a credit on <strong>"${escapeHtmlText(projectTitle)}"</strong> and is requesting verification from <strong>${escapeHtmlText(cleanBrandName)}</strong>.
                 </p>
                 <p style="color: #666; margin-bottom: 24px;">
                   By clicking the button below, you confirm that this person was involved in this project.

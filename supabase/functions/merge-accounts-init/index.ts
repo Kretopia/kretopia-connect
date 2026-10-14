@@ -1,4 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { generateOtp } from "../_shared/phoneOtp.ts";
+
+// A merge request mails a code to two inboxes, one of which is not the
+// caller's: the number of requests one account can open is bounded.
+const MAX_MERGE_REQUESTS_PER_HOUR = 3;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +35,6 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const sourceUserId: string = body?.source_user_id;
-    const faceMatchScore: number | undefined = body?.face_match_score;
     if (!sourceUserId || sourceUserId === targetUserId) return json({ error: "Invalid source" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -42,8 +46,18 @@ Deno.serve(async (req) => {
     const sourceEmail = srcUserData.user.email.toLowerCase();
     if (sourceEmail === targetEmail) return json({ error: "Both accounts share an email" }, 400);
 
-    const sourceOtp = genOtp();
-    const targetOtp = genOtp();
+    const { count: recentRequests, error: recentErr } = await admin
+      .from("account_merge_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("initiator_user_id", targetUserId)
+      .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+    if (recentErr) return json({ error: "Could not start the verification, try again shortly" }, 503);
+    if ((recentRequests ?? 0) >= MAX_MERGE_REQUESTS_PER_HOUR) {
+      return json({ error: "Too many merge requests, try again later" }, 429);
+    }
+
+    const sourceOtp = generateOtp();
+    const targetOtp = generateOtp();
     const [srcHash, tgtHash] = await Promise.all([sha256(sourceOtp), sha256(targetOtp)]);
 
     // Insert via service role bypassing RLS
@@ -57,7 +71,8 @@ Deno.serve(async (req) => {
         target_email: targetEmail,
         source_otp_hash: srcHash,
         target_otp_hash: tgtHash,
-        face_match_score: faceMatchScore ?? null,
+        // Never the client's value: nothing in this function can prove a face match.
+        face_match_score: null,
       })
       .select("id, expires_at")
       .single();
@@ -65,13 +80,25 @@ Deno.serve(async (req) => {
 
     // Send the codes by email (uses default Supabase auth email infra — survives even
     // if the custom auth-email-hook is misconfigured because we use admin generateLink).
-    await sendOtpEmail(admin, sourceEmail, sourceOtp, "source");
-    await sendOtpEmail(admin, targetEmail, targetOtp, "target");
+    const [sourceSent, targetSent] = await Promise.all([
+      sendOtpEmail(sourceEmail, sourceOtp),
+      sendOtpEmail(targetEmail, targetOtp),
+    ]);
+    if (!sourceSent || !targetSent) {
+      // A request whose codes nobody received must not stay open.
+      await admin
+        .from("account_merge_requests")
+        .update({ status: "failed", error: "code_delivery_failed" })
+        .eq("id", row.id);
+      return json({ error: "We could not send the verification codes. Please try again later." }, 503);
+    }
 
     return json({
       request_id: row.id,
       expires_at: row.expires_at,
-      source_email_masked: mask(sourceEmail),
+      // The other account's address is not shown: the caller supplied only a
+      // user id, so a masked address would disclose it to someone who may not own it.
+      source_email_masked: "the other account's email address",
       target_email_masked: mask(targetEmail),
     });
   } catch (e) {
@@ -79,10 +106,6 @@ Deno.serve(async (req) => {
     return json({ error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
-
-function genOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
 
 async function sha256(s: string) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
@@ -94,14 +117,10 @@ function mask(e: string) {
   return `${l.slice(0, 2)}${"•".repeat(Math.max(1, l.length - 2))}@${d}`;
 }
 
-async function sendOtpEmail(
-  admin: ReturnType<typeof createClient>,
-  email: string,
-  otp: string,
-  _which: "source" | "target",
-) {
-  // We use the project's transactional email function if available; otherwise fall back
-  // to Supabase's built-in via a magic-link with embedded code in the metadata.
+async function sendOtpEmail(email: string, otp: string): Promise<boolean> {
+  // Delivery goes through the transactional sender with the keys it reads
+  // (templateName, recipientEmail, templateData). The code itself is never
+  // logged: a failed delivery is reported to the caller, not written to a log.
   try {
     const fnUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-transactional-email`;
     const resp = await fetch(fnUrl, {
@@ -111,16 +130,15 @@ async function sendOtpEmail(
         Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
       },
       body: JSON.stringify({
-        template: "account-merge-otp",
-        recipient_email: email,
-        data: { code: otp },
+        templateName: "account-merge-otp",
+        recipientEmail: email,
+        templateData: { code: otp },
       }),
     });
-    if (resp.ok) return;
-  } catch (_) { /* fall through */ }
-
-  // Fallback: log the OTP so the user can request resend or contact support
-  console.warn(`[merge-otp fallback] ${email} -> ${otp}`);
+    return resp.ok;
+  } catch (_) {
+    return false;
+  }
 }
 
 function json(b: unknown, s = 200) {
