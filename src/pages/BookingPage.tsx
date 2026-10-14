@@ -43,7 +43,8 @@ export default function BookingPage() {
   const [email, setEmail] = useState("");
   const [brief, setBrief] = useState("");
   const [booking, setBooking] = useState(false);
-  const [recordConsent, setRecordConsent] = useState(true);
+  // Unticked: consent is the guest's own act, never a default they have to notice and undo.
+  const [recordConsent, setRecordConsent] = useState(false);
   const [confirmed, setConfirmed] = useState<{ shareUrl: string; start: Date; durationMin: number } | null>(null);
 
   useEffect(() => {
@@ -262,7 +263,7 @@ export default function BookingPage() {
                 className="mt-0.5 h-3.5 w-3.5 accent-[hsl(var(--signal-teal))]"
               />
               <span>
-                Record this call so Kreto can transcribe it, pull action items, and suggest a Studio to keep the work moving. You can turn this off.
+                Optional: record this call so Kreto can transcribe it, pull action items, and suggest a Studio to keep the work moving.
               </span>
             </label>
             <div className="flex gap-2">
