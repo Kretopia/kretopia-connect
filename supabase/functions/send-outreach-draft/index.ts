@@ -8,6 +8,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { bindApprovedAction } from "../_shared/agentActionBinding.ts";
+import { INVOICE_CHASE_COOLDOWN_MS, cooldownCutoffIso, decideInvoiceChase } from "../_shared/notificationGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -105,6 +106,26 @@ serve(async (req) => {
 
     if (draft.status === "sent") return json({ ok: true, alreadySent: true });
 
+    // A payment reminder (a draft made by send-invoice-chase) is for an invoice that is still owed,
+    // and not twice in a day: a settled invoice or a reminder in the last 24 h is refused before
+    // anything else is read or reserved. Other drafts are unaffected.
+    const chaseInvoiceId =
+      draft.source === "chase_invoice" && typeof draft.meta?.invoice_id === "string" ? draft.meta.invoice_id : null;
+    let chaseInvoice: { id: string; reminder_sent_at: string | null } | null = null;
+    if (chaseInvoiceId) {
+      const { data: inv, error: invErr } = await admin
+        .from("invoices")
+        .select("id, status, paid_at, reminder_sent_at")
+        .eq("id", chaseInvoiceId)
+        .eq("issued_by", userId)
+        .maybeSingle();
+      if (invErr) return json({ error: "Could not check the invoice, try again shortly" }, 503);
+      if (!inv) return json({ error: "Invoice not found" }, 404);
+      const gate = decideInvoiceChase(inv, true, Date.now());
+      if (!gate.ok) return json({ error: gate.error, reason: gate.reason }, gate.status);
+      chaseInvoice = { id: inv.id, reminder_sent_at: inv.reminder_sent_at ?? null };
+    }
+
     // An approved agent send goes to the address that was previewed; only a
     // person in the app may override the recipient.
     const recipient = agentInitiated ? draft.recipient_email : (recipientOverride || draft.recipient_email);
@@ -148,6 +169,36 @@ serve(async (req) => {
       };
     }
 
+    // The reminder is claimed (compare-and-set on the invoice's reminder date) before the mail
+    // leaves, so two clicks or two tabs cannot both send; the previous date is put back if it did not go.
+    let releaseInvoiceClaim: (() => Promise<void>) | null = null;
+    if (chaseInvoice) {
+      const claimedAt = new Date().toISOString();
+      const cutoff = cooldownCutoffIso(Date.now(), INVOICE_CHASE_COOLDOWN_MS);
+      const previous = chaseInvoice.reminder_sent_at;
+      const invoiceId = chaseInvoice.id;
+      const { data: got, error: gotErr } = await admin
+        .from("invoices")
+        .update({ reminder_sent_at: claimedAt })
+        .eq("id", invoiceId)
+        .eq("issued_by", userId)
+        .or(`reminder_sent_at.is.null,reminder_sent_at.lt.${cutoff}`)
+        .select("id");
+      if (gotErr || !got || got.length === 0) {
+        await releaseClaim?.();
+        return gotErr
+          ? json({ error: "Could not reserve this reminder, try again shortly" }, 503)
+          : json({ error: "A reminder was already sent for this invoice in the last 24 hours.", reason: "reminder_recent" }, 409);
+      }
+      releaseInvoiceClaim = async () => {
+        await admin
+          .from("invoices")
+          .update({ reminder_sent_at: previous })
+          .eq("id", invoiceId)
+          .eq("reminder_sent_at", claimedAt);
+      };
+    }
+
     await admin.from("outreach_drafts").update({ status: "sending" }).eq("id", draftId);
 
     const html = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#222;font-size:14px;line-height:1.6;">${
@@ -176,6 +227,7 @@ serve(async (req) => {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("SMTP send failed", msg);
       await releaseClaim?.();
+      await releaseInvoiceClaim?.();
       await admin.from("outreach_drafts").update({ status: "failed", send_error: msg.slice(0, 500) }).eq("id", draftId);
       return json({ error: `Send failed: ${msg}` }, 500);
     }

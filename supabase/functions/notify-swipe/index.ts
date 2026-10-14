@@ -1,5 +1,13 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { countActorSends } from "../_shared/outboundBudget.ts";
+import {
+  SWIPE_NOTIFY_PER_ACTOR_PER_HOUR,
+  SWIPE_NOTIFY_TEMPLATE,
+  claimNotificationOnce,
+  releaseNotificationClaim,
+  swipeNotifyMessageId,
+} from "../_shared/notificationGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,6 +117,43 @@ serve(async (req) => {
       throw new Error('Failed to get recipient user');
     }
 
+    // One notification per real swipe, at a person's pace. The swipe proves who may notify whom, not
+    // that it happens once: before this, the same swipe could be replayed into an unbounded stream of
+    // email and push for the same person. The claim is atomic (registry unique index on message_id for
+    // 'sent' rows); counts or claims that cannot be read send nothing.
+    const swipesLastHour = await countActorSends(supabaseClient, swiperId, SWIPE_NOTIFY_TEMPLATE, 60);
+    if (swipesLastHour === null) {
+      return new Response(JSON.stringify({ error: "Could not check your notification limit, try again shortly" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (swipesLastHour >= SWIPE_NOTIFY_PER_ACTOR_PER_HOUR) {
+      return new Response(JSON.stringify({ error: "Too many notifications in the last hour, try again later" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const claimId = swipeNotifyMessageId(swiperId, recipientId);
+    const claim = await claimNotificationOnce(supabaseClient, {
+      messageId: claimId,
+      template: SWIPE_NOTIFY_TEMPLATE,
+      actorId: swiperId,
+      recipientEmail: recipientUser.email ?? recipientId,
+    });
+    if (claim === "duplicate") {
+      return new Response(
+        JSON.stringify({ success: true, duplicate: true, results: { email: false, push: false } }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    if (claim === "error") {
+      return new Response(JSON.stringify({ error: "Could not record this notification, try again shortly" }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const results = {
       email: false,
       push: false,
@@ -168,6 +213,9 @@ serve(async (req) => {
         console.error('Failed to send push notification:', pushError);
       }
     }
+
+    // A notification that reached nobody does not use up the claim.
+    if (!results.email && !results.push) await releaseNotificationClaim(supabaseClient, claimId);
 
     return new Response(
       JSON.stringify({ 

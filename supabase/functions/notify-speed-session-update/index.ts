@@ -1,6 +1,15 @@
 // Notify all RSVPs about a Speed Session change or cancellation.
 // Body: { session_id: string, kind: "updated" | "canceled", changes?: string[], reason?: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  SESSION_CANCEL_COOLDOWN_MS,
+  SESSION_UPDATE_COOLDOWN_MS,
+  cleanSessionChanges,
+  cleanSessionReason,
+  cooldownCutoffIso,
+  countRecentSessionNotifications,
+  decideCooldown,
+} from "../_shared/notificationGuards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
 
   try {
-    const { session_id, kind, changes = [], reason } = await req.json();
+    const { session_id, kind, changes: rawChanges, reason: rawReason } = await req.json();
     if (!session_id || !["updated", "canceled"].includes(kind)) {
       return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: cors });
     }
@@ -56,6 +65,28 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, notified: 0 }), { headers: cors });
     }
 
+    // The host's text is a clipped string and a short list of strings, never an object; and the
+    // same notice is not repeated: two minutes for an update, an hour for a cancellation. A count
+    // that cannot be read is not zero.
+    const reason = cleanSessionReason(rawReason);
+    const changes = cleanSessionChanges(rawChanges);
+    const type = kind === "canceled" ? "speed_session_canceled" : "speed_session_updated";
+    const recent = await countRecentSessionNotifications(supabase, {
+      type,
+      actionUrl: `/circle/speed/${session_id}`,
+      sinceIso: cooldownCutoffIso(
+        Date.now(),
+        kind === "canceled" ? SESSION_CANCEL_COOLDOWN_MS : SESSION_UPDATE_COOLDOWN_MS,
+      ),
+    });
+    const cooldown = decideCooldown(recent, "Your guests were just told, give it a moment before sending another notice");
+    if (!cooldown.ok) {
+      return new Response(JSON.stringify({ error: cooldown.error }), {
+        status: cooldown.status,
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
     const when = new Date(session.starts_at).toLocaleString(undefined, {
       weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
     });
@@ -68,7 +99,7 @@ Deno.serve(async (req) => {
 
     const rows = recipients.map((uid) => ({
       user_id: uid,
-      type: kind === "canceled" ? "speed_session_canceled" : "speed_session_updated",
+      type,
       title,
       message,
       action_url: `/circle/speed/${session_id}`,
