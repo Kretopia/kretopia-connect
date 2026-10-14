@@ -14,7 +14,7 @@ import { ApplyToStageSheet } from "@/components/circle/ApplyToStageSheet";
 import { StageHostConsole } from "@/components/circle/StageHostConsole";
 import { InviteToStageDialog } from "@/components/circle/InviteToStageDialog";
 import { StageDoorsCountdown } from "@/components/circle/StageDoorsCountdown";
-import { ArrowLeft, Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles, Circle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNowStrict, format } from "date-fns";
 
@@ -301,6 +301,17 @@ const CuratedStage = () => {
 
         {/* Doors-open countdown (RSVPs + host, pre-live only) */}
         {!isLive && !isEnded && <StageDoorsCountdown startsAt={stage.starts_at} />}
+
+        {/* Told before saving a spot or walking in, not by a toast once the room is already recording. */}
+        {stage.recording_enabled && !isEnded && (
+          <p
+            data-testid="stage-recording-notice"
+            className="flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground"
+          >
+            <Circle className="h-2.5 w-2.5 shrink-0 fill-current text-destructive" aria-hidden />
+            This stage is recorded. Everyone in the room sees a recording badge.
+          </p>
+        )}
 
         {/* Primary CTA */}
         {isHost ? (

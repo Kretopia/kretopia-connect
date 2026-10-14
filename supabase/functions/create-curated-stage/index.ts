@@ -61,7 +61,10 @@ serve(async (req) => {
         application_required: type === "scout" ? !!application_required : false,
         application_prompt: application_prompt ? String(application_prompt).slice(0, 300) : null,
         turn_seconds: Math.min(Math.max(Number(turn_seconds) || 120, 30), 600),
-        recording_enabled: type === "scout" ? true : !!recording_enabled,
+        // The host's own choice, for every stage type. Scout stages used to be forced to `true`
+        // here, so a host who switched "Record this stage" off was recorded anyway. An absent or
+        // non-boolean value is "no" (only a literal `true` records).
+        recording_enabled: recording_enabled === true,
         mode: safeMode,
         visibility: safeVisibility,
         invite_token: inviteToken,
