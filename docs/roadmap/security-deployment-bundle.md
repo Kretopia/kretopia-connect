@@ -1,6 +1,6 @@
 # Security deployment bundle, steps E to Y (manual paste into `kretopia-app`)
 
-Source: `Kretopia/kretopia-connect` `main` at `bb94f7c70` (PRs #142 to #178 merged) plus PR #179 at `804e59e63` (step Y, **open**: its files come from that branch and their checksums change if the PR does). Every checksum below is of the file at those commits; recompute after any later merge that touches these paths (`git show <ref>:<path> | shasum -a 256`).
+Source: `Kretopia/kretopia-connect` `main` at `37224ee8b` (PRs #142 to #179 merged, then the docs PRs #180 and #181). Every checksum below is of the file at that commit; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`).
 
 This is the single canonical deployment document. It supersedes `security-deployment-bundle-e-to-q.md` (PRs #164, #168, #173) and every earlier per-step list. **Nothing here is deployed.** Merged is not deployed: production runs the pre-slice copies. The document deploys nothing and contains no SQL.
 
@@ -38,9 +38,9 @@ Step letters follow the program: E to U are as in earlier documents, **V** (reco
 | #176 | W | a curated stage records only when its host chose it; notice before joining | function + frontend | merged 2026-10-14 | **no** |
 | #177 | - | Hero: Waving in HD from the official render | frontend | merged 2026-10-14 | **no** |
 | #178 | X | an event invitation list is bounded per account and per address | function + helper + frontend | merged 2026-10-14 | **no** |
-| #179 | Y | invoice reminders and swipe / session notifications happen once | functions + helper + frontend | open | **no** |
+| #179 | Y | invoice reminders and swipe / session notifications happen once | functions + helper + frontend | merged 2026-10-14 | **no** |
 
-Docs-only PRs (nothing to deploy): #141 (merged 2026-10-13), #147 (merged 2026-10-13), #148 (merged 2026-10-13), #150 (merged 2026-10-13), #153 (merged 2026-10-13), #154 (merged 2026-10-13), #160 (merged 2026-10-14), #164 (merged 2026-10-14), #166 (merged 2026-10-14), #168 (merged 2026-10-14), #173 (merged 2026-10-14), #180 (open).
+Docs-only PRs (nothing to deploy): #141 (merged 2026-10-13), #147 (merged 2026-10-13), #148 (merged 2026-10-13), #150 (merged 2026-10-13), #153 (merged 2026-10-13), #154 (merged 2026-10-13), #160 (merged 2026-10-14), #164 (merged 2026-10-14), #166 (merged 2026-10-14), #168 (merged 2026-10-14), #173 (merged 2026-10-14), #180 (merged 2026-10-14), #181 (merged 2026-10-14).
 
 Frontend-only or frontend-carrying PRs ship on **one frontend publish** (not a paste): #155, #167, #169, #170, #174, #175, #176, #177, #178, #179. Publish **before** pasting step I (step I depends on #175).
 
@@ -116,7 +116,7 @@ A helper is imported by functions; it is not an Edge Function and is not deploye
 | 21 | `supabase/functions/_shared/premiumSwitch.ts` | new | none | K, L, T | `f4e372d193fb9cd5d18cb772e5f4cfdbdc10f88a7f3c22e29e503ba5caaa1375` | `PREMIUM_ENFORCED = false`, the Premium kick-off switch |
 | 22 | `supabase/functions/_shared/studioAIGate.ts` | existing, MODIFIED: paste it; imports premiumSwitch | premiumSwitch | K, L | `9832c908fe44950ce60389ad22eca52008ae68430e8970f3c901c09984b07b65` |  |
 | 23 | `supabase/functions/_shared/studioOutcomeRouter.ts` | new | none | U | `e216b5b101422b472d5616b5a340484847c91c72ad0537cfd4d8c7baa88775e2` | the rule router of "Tell Kreto what you need" |
-| 24 | `supabase/functions/_shared/notificationGuards.ts` | new | outboundText | S, Y | `6366dc97e614f1cff886c8919a635d2492b86c3418efb4c89da14915a897b160` | step Y (PR #179, open); imports outboundText |
+| 24 | `supabase/functions/_shared/notificationGuards.ts` | new | outboundText | S, Y | `6366dc97e614f1cff886c8919a635d2492b86c3418efb4c89da14915a897b160` | step Y (PR #179); imports outboundText |
 
 ## 5. Edge Functions (deploy one at a time, in this order)
 
@@ -161,13 +161,13 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 | 59 | U | `supabase/functions/route-studio-outcome/index.ts` | #169 | aiModels, studioOutcomeRouter | `acbae65675b3c67802e47e74540d2a2133cda27a1e44def6c339baef65075e98` | `route-studio-outcome__before.ts` |
 | 60 | W | `supabase/functions/create-curated-stage/index.ts` | #176 | none | `f98219f0cee207353648820ca5e656ac4b47e8a88a51306ad5a5b7e8d9146730` | `create-curated-stage__before.ts` |
 | 61 | X | `supabase/functions/send-event-invite/index.ts` | #178 | outboundBudget, outboundText | `935595b31dcbd4371282bc19fe487009150c3bfaf0954e81594e0c536cd58a35` | `send-event-invite__before.ts` |
-| 62 | Y | `supabase/functions/send-invoice-chase/index.ts` | #179 (open) | aiModels, notificationGuards | `12868b1d1d21b87aa877fd606c489895ce3b08edef9f8c33eb2c72a4cbfc1ca9` | `send-invoice-chase__before.ts` |
-| 63 | Y | `supabase/functions/notify-swipe/index.ts` | #179 (open) | notificationGuards, outboundBudget | `16a7377e1a50676d871f598b5d6e475d3b864940e11cd2dc265469926b17c339` | `notify-swipe__before.ts` |
-| 64 | Y | `supabase/functions/notify-speed-pool-ping/index.ts` | #179 (open) | notificationGuards | `f691aa03eda7fe85e9a74ee7af61a9efa86a987817fab18cc4acc7915961f421` | `notify-speed-pool-ping__before.ts` |
-| 65 | Y | `supabase/functions/notify-speed-session-update/index.ts` | #179 (open) | notificationGuards | `ac638dea60447773c56dea3007b4de482a6ebd9fc364aa85ab2c488169f8e6a0` | `notify-speed-session-update__before.ts` |
+| 62 | Y | `supabase/functions/send-invoice-chase/index.ts` | #179 | aiModels, notificationGuards | `12868b1d1d21b87aa877fd606c489895ce3b08edef9f8c33eb2c72a4cbfc1ca9` | `send-invoice-chase__before.ts` |
+| 63 | Y | `supabase/functions/notify-swipe/index.ts` | #179 | notificationGuards, outboundBudget | `16a7377e1a50676d871f598b5d6e475d3b864940e11cd2dc265469926b17c339` | `notify-swipe__before.ts` |
+| 64 | Y | `supabase/functions/notify-speed-pool-ping/index.ts` | #179 | notificationGuards | `f691aa03eda7fe85e9a74ee7af61a9efa86a987817fab18cc4acc7915961f421` | `notify-speed-pool-ping__before.ts` |
+| 65 | Y | `supabase/functions/notify-speed-session-update/index.ts` | #179 | notificationGuards | `ac638dea60447773c56dea3007b4de482a6ebd9fc364aa85ab2c488169f8e6a0` | `notify-speed-session-update__before.ts` |
 | 66 | I | `supabase/functions/create-meeting/index.ts` | #146, #152 | meetingContextAccess, projectAccess, recordingConsent, roomSessionLimits | `c8387501dd8f3071e8b26ee2dd232d7e35bfd7cfaa7ade55cf47e1ebd35bf12b` | `create-meeting__before.ts` |
 
-Notes: `get-download-urls` and `complete-product-purchase` appear once, at step K; the file pasted there already carries the step M change. `send-outreach-draft` appears once, at step S; the file carries the step Y reminder rule (PR #179, open) and is taken from that branch. `_shared/outboundBudget.ts` is one file for steps R, X and Y.
+Notes: `get-download-urls` and `complete-product-purchase` appear once, at step K; the file pasted there already carries the step M change. `send-outreach-draft` appears once, at step S; the file carries the step Y reminder rule (PR #179). `_shared/outboundBudget.ts` is one file for steps R, X and Y.
 
 ## 6. Verification per function
 
