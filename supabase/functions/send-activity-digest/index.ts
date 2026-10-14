@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 import { Resend } from "https://esm.sh/resend@4.0.0";
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -17,7 +18,11 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // No auth check needed - this is a server-side cron function with verify_jwt=false
+  // Cron or admin only (x-cron-secret or an admin session). This runs with the
+  // service role and sends to real users, so the public anon key must not be
+  // enough to trigger it. It used to say "no auth check needed".
+  const guard = await requireAdminOrCron(req);
+  if (!guard.ok) return guard.response;
 
   try {
     console.log("Starting activity digest job");
