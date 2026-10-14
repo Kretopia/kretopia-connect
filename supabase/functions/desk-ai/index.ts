@@ -3,6 +3,7 @@ import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotCon
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
+import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
@@ -71,7 +72,8 @@ Deno.serve(async (req) => {
     const { data: profile } = await admin.from("profiles")
       .select("subscription_tier").eq("user_id", user.id).maybeSingle();
     const isPro = ((profile?.subscription_tier as string) || "free") !== "free";
-    const dailyCap = isPro ? -1 : FREE_DAILY_LIMIT;
+    // Premium is not enforced yet: a free account is held only by the safety ceiling.
+    const dailyCap = dailyCapFor(isPro ? -1 : FREE_DAILY_LIMIT, ABUSE_CEILING_DAILY_MESSAGES);
 
     const { data: capCheck, error: capErr } = await admin.rpc("consume_copilot_message", {
       _user_id: user.id, _daily_cap: dailyCap,
@@ -85,8 +87,8 @@ Deno.serve(async (req) => {
     if (!capCheck?.allowed) {
       return new Response(JSON.stringify({
         error: "daily_limit",
-        message: `You've used ${FREE_DAILY_LIMIT} DeskAI messages today. Upgrade to Pro for unlimited.`,
-        used: capCheck?.used ?? 0, limit: FREE_DAILY_LIMIT,
+        message: `You've used ${dailyCap} DeskAI messages today. Come back tomorrow.`,
+        used: capCheck?.used ?? 0, limit: dailyCap,
       }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
@@ -220,7 +222,7 @@ Today's date: ${new Date().toISOString().slice(0, 10)}. Keep replies under 250 w
     // Usage was already atomically incremented by consume_copilot_message above.
 
     return new Response(JSON.stringify({
-      reply, role, used: capCheck.used, limit: isPro ? null : FREE_DAILY_LIMIT,
+      reply, role, used: capCheck.used, limit: dailyCap === -1 ? null : dailyCap,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {

@@ -6,6 +6,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { PREMIUM_ENFORCED } from "../_shared/premiumSwitch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,7 +126,9 @@ Deno.serve(async (req) => {
       console.error("voice gate error", gateErr);
       return jsonResponse({ error: "gate_failed", detail: gateErr.message }, 500);
     }
-    if (gate && (gate as { ok?: boolean }).ok === false) {
+    // Premium is not enforced yet: the seconds are still counted (the RPC above
+    // records them), but a free account's daily cap does not refuse the turn.
+    if (PREMIUM_ENFORCED && gate && (gate as { ok?: boolean }).ok === false) {
       return jsonResponse(
         { error: "voice_daily_limit", ...(gate as Record<string, unknown>), transcript },
         429,

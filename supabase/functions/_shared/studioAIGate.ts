@@ -13,6 +13,7 @@
 //   if (somethingFailed) await refundStudioAIGeneration(admin, userId);
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { ABUSE_CEILING_DAILY_GENERATIONS, dailyCapFor } from "./premiumSwitch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,7 +39,8 @@ export async function checkAndConsumeStudioAIGeneration(
   userId: string,
   isPro: boolean,
 ): Promise<StudioAIGateResult> {
-  const dailyCap = isPro ? -1 : FREE_DAILY_CAP;
+  // Premium is not enforced yet: a free account is held only by the safety ceiling.
+  const dailyCap = dailyCapFor(isPro ? -1 : FREE_DAILY_CAP, ABUSE_CEILING_DAILY_GENERATIONS);
 
   const { data, error } = await admin.rpc("consume_studio_ai_generation", {
     _user_id: userId,
@@ -62,7 +64,7 @@ export async function checkAndConsumeStudioAIGeneration(
       allowed: false,
       response: json(
         {
-          error: `Daily AI generation limit reached (${used}/${cap}). Upgrade to Pro for unlimited, or come back tomorrow.`,
+          error: `Daily AI generation limit reached (${used}/${cap}). Come back tomorrow.`,
           code: "STUDIO_AI_DAILY_LIMIT",
           used,
           cap,

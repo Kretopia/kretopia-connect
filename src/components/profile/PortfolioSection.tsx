@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { MediaPlayerModal } from "./MediaPlayerModal";
 import { useNavigate } from "react-router-dom";
-import { TIER_LIMITS, canAddPortfolioItem, SubscriptionTier } from "@/lib/subscriptionLimits";
+import { getTierLimits, canAddPortfolioItem, SubscriptionTier } from "@/lib/subscriptionLimits";
 import { getMediaThumbnail, parseMediaUrl } from "@/lib/mediaUtils";
 import { VideoThumbnailPicker } from "./VideoThumbnailPicker";
 
@@ -90,7 +90,7 @@ export const PortfolioSection = ({ items, isOwnProfile, onRefresh, subscriptionT
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  const tierLimits = TIER_LIMITS[subscriptionTier];
+  const tierLimits = getTierLimits(subscriptionTier);
   const canAddMore = canAddPortfolioItem(subscriptionTier, items.length);
   const isAtLimit = !canAddMore && tierLimits.maxPortfolioItems !== -1;
 

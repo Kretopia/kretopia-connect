@@ -2,7 +2,7 @@ import { ProfileProvider, useProfileContext } from "@/contexts/ProfileContext";
 import { useProfileData } from "@/hooks/useProfileData";
 import { ProfileContentSections } from "@/pages/profile/ProfileContentSections";
 import { DashboardPanel, CreditsPanelSkeleton } from "./CreditsPrimitives";
-import { TIER_LIMITS, type SubscriptionTier } from "@/lib/subscriptionLimits";
+import { getTierLimits, type SubscriptionTier } from "@/lib/subscriptionLimits";
 
 /**
  * CreditsFullRecord — everything that used to live under the Passport
@@ -29,7 +29,7 @@ function FullRecordInner({ index }: { index?: number }) {
             industryStats={industryStats}
             credits={credits}
             userTier={tier}
-            hasAdvancedProfile={TIER_LIMITS[tier].hasAdvancedProfile}
+            hasAdvancedProfile={getTierLimits(tier).hasAdvancedProfile}
             onRefresh={fetchData}
           />
         </div>

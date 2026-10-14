@@ -5,6 +5,7 @@ import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotCon
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
+import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
@@ -433,7 +434,8 @@ Deno.serve(async (req) => {
     const { data: profile } = await admin.from("profiles")
       .select("subscription_tier").eq("user_id", user.id).maybeSingle();
     const is_pro = ((profile?.subscription_tier as string) || "free") !== "free";
-    const dailyCap = is_pro ? -1 : FREE_DAILY_LIMIT;
+    // Premium is not enforced yet: a free account is held only by the safety ceiling.
+    const dailyCap = dailyCapFor(is_pro ? -1 : FREE_DAILY_LIMIT, ABUSE_CEILING_DAILY_MESSAGES);
 
     const { data: capCheck, error: capErr } = await admin.rpc("consume_copilot_message", {
       _user_id: user.id, _daily_cap: dailyCap,
@@ -449,7 +451,7 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({
           error: "daily_limit",
-          message: `You've used ${FREE_DAILY_LIMIT} agent actions today. Upgrade for unlimited.`,
+          message: `You've used ${dailyCap} agent actions today. Come back tomorrow.`,
           used: capCheck?.used ?? 0,
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },

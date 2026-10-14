@@ -48,7 +48,7 @@ import { computeStanding } from "@/lib/passport/standing";
 import { useTaggedCredits } from "@/hooks/useTaggedCredits";
 
 
-import { TIER_LIMITS, SubscriptionTier } from "@/lib/subscriptionLimits";
+import { getTierLimits, SubscriptionTier } from "@/lib/subscriptionLimits";
 
 const ProfileContent = () => {
   const navigate = useNavigate();
@@ -78,7 +78,7 @@ const ProfileContent = () => {
   }, []);
 
   const userTier: SubscriptionTier = (profile?.subscription_tier as SubscriptionTier) || "free";
-  const hasAdvancedProfile = TIER_LIMITS[userTier].hasAdvancedProfile;
+  const hasAdvancedProfile = getTierLimits(userTier).hasAdvancedProfile;
 
   const { toast } = useToast();
   const { user } = useAuth();

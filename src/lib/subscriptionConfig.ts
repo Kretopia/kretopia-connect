@@ -1,6 +1,8 @@
 // Centralized subscription configuration
 // Keep this in sync with Stripe products
 
+import { PREMIUM_ENFORCED } from "./premiumSwitch";
+
 export type AccountType = 'individual' | 'company';
 export type BillingInterval = 'monthly' | 'yearly';
 
@@ -248,11 +250,15 @@ export function getTierPrice(tier: SubscriptionTier, interval: BillingInterval =
 
 /** Check if tier has Pro-level access (pro, creator_pro, founder, or brand equivalents) */
 export function hasProAccess(tier: SubscriptionTier): boolean {
+  // Premium is not enforced yet: every account has Pro-level access.
+  if (!PREMIUM_ENFORCED) return true;
   return tier === 'pro' || tier === 'creator_pro' || tier === 'founder' || tier === 'brand_pro' || tier === 'brand_enterprise';
 }
 
 /** Check if tier has Creator Pro-level access (creator_pro, founder) */
 export function hasCreatorProAccess(tier: SubscriptionTier): boolean {
+  // Premium is not enforced yet: every account has Creator Pro-level access.
+  if (!PREMIUM_ENFORCED) return true;
   return tier === 'creator_pro' || tier === 'founder';
 }
 
