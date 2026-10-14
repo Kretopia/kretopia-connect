@@ -369,6 +369,11 @@ async function removeCollaborator(userId: string, body: any) {
     toolName: "remove_collaborator",
     source: body._source,
     agentActionId: body._agent_action_id,
+    // The approval covers exactly this project and this person.
+    targets: {
+      project: { request: projectId, approvedKeys: ["project_id", "target_project_id"] },
+      collaborator: { request: removeUserId, approvedKeys: ["user_id_to_remove", "user_id"] },
+    },
   });
   if (!authz.ok) return json({ ok: false, error: authz.error }, authz.status);
 
@@ -384,6 +389,7 @@ async function removeCollaborator(userId: string, body: any) {
     .eq("project_id", projectId)
     .eq("user_id", removeUserId);
   if (error) {
+    await authz.release?.();
     await recordExecutedAction({
       admin, userId, toolName: "remove_collaborator", toolArgs: body, source: authz.source,
       ok: false, error: error.message, previewTitle: `Remove collaborator from "${project.title}"`,
@@ -458,6 +464,10 @@ async function deleteProject(userId: string, body: any) {
     toolName: "delete_project",
     source: body._source,
     agentActionId: body._agent_action_id,
+    // The approval covers exactly this project.
+    targets: {
+      project: { request: projectId, approvedKeys: ["project_id", "target_project_id"] },
+    },
   });
   if (!authz.ok) return json({ ok: false, error: authz.error }, authz.status);
 
@@ -474,6 +484,7 @@ async function deleteProject(userId: string, body: any) {
     .eq("id", projectId)
     .eq("created_by", userId);
   if (error) {
+    await authz.release?.();
     await recordExecutedAction({
       admin, userId, toolName: "delete_project", toolArgs: body, source: authz.source,
       ok: false, error: error.message, previewTitle: `Delete "${project.title}"`,

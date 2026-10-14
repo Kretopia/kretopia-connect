@@ -7,7 +7,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
+import { bindApprovedAction } from "../_shared/agentActionBinding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,7 +52,8 @@ serve(async (req) => {
 
     // Agent-initiated sends (agent-orchestrator passes _agent_action_id and
     // _source) must carry proof that a human approved this action; the rule
-    // lives in _shared/executionGuard.ts. Nothing is sent otherwise -- the
+    // lives in _shared/agentActionBinding.ts (it composes _shared/executionGuard.ts).
+    // Nothing is sent otherwise -- the
     // caller gets a "needs approval" result with the draft instead. A person
     // pressing Send in the app (no agent markers) is their own approval, as in
     // _shared/agentAuthority.ts. NOTE: the markers are caller-asserted, so this
@@ -69,31 +70,36 @@ serve(async (req) => {
         return blocked(428, "no_action", true, "This send requires an approved agent action (_agent_action_id).");
       }
       const [actionRes, approvalsRes] = await Promise.all([
-        admin.from("orch_actions").select("id, user_id, status, tool_name, tool_args").eq("id", agentActionId).maybeSingle(),
-        admin.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", agentActionId),
+        admin
+          .from("orch_actions")
+          .select("id, user_id, status, tool_name, tool_args, decided_at")
+          .eq("id", agentActionId)
+          .maybeSingle(),
+        admin
+          .from("orch_approvals")
+          .select("id, action_id, user_id, decision, edited_args, decided_at")
+          .eq("action_id", agentActionId),
       ]);
-      // A failed approvals lookup must not read as "no revocation": deny.
-      if (approvalsRes.error) {
+      // A failed lookup must not read as "not found" or "no revocation": deny.
+      if (actionRes.error || approvalsRes.error) {
         return blocked(503, "approval_lookup_failed", false, "Could not verify the approval for this action.");
       }
-      const verdict = evaluateExecutionGuard({
-        action: actionRes.error ? null : actionRes.data,
+      // The approval must be for THIS send: the caller's own approved
+      // `send_outreach_email` action (any other approved tool used to be
+      // accepted here), with its approval record, unrevoked, fresh, and naming
+      // THIS draft. An approved action that names no draft covers no draft: the
+      // draft check used to be skipped when `draft_id` was absent.
+      const verdict = bindApprovedAction({
+        action: actionRes.data,
         approvals: approvalsRes.data,
         userId,
         actionId: agentActionId,
+        toolName: "send_outreach_email",
+        targets: { draft: { request: String(draftId), approvedKeys: ["draft_id"] } },
+        nowMs: Date.now(),
       });
       if (!verdict.allowed) {
-        const status =
-          verdict.reason === "action_not_found" ? 404
-          : verdict.reason === "wrong_owner" || verdict.reason === "wrong_tool" ? 403
-          : verdict.needsApproval ? 428
-          : 409;
-        return blocked(status, verdict.reason, verdict.needsApproval, verdict.message);
-      }
-      // The approval must be for THIS draft, not another one.
-      const approvedDraftId = (actionRes.data?.tool_args as Record<string, unknown> | null)?.draft_id;
-      if (typeof approvedDraftId === "string" && approvedDraftId !== String(draftId)) {
-        return blocked(403, "wrong_draft", false, "The approved action is for a different draft.");
+        return blocked(verdict.status, verdict.reason, verdict.status === 428, verdict.message);
       }
     }
 
@@ -116,6 +122,30 @@ serve(async (req) => {
     if (!settings?.is_configured || settings.provider !== "gmail" || !settings.gmail_email || !settings.gmail_app_password) {
       await admin.from("outreach_drafts").update({ status: "failed", send_error: "Gmail not connected" }).eq("id", draftId);
       return json({ error: "Connect your Gmail in Outreach settings first." }, 400);
+    }
+
+    // An agent send is one approval, one send: claim the action (approved ->
+    // executed, compare-and-set) before anything leaves; released below if the
+    // mail did not go.
+    let releaseClaim: (() => Promise<void>) | null = null;
+    if (agentInitiated && agentActionId) {
+      const { data: claimed, error: claimErr } = await admin
+        .from("orch_actions")
+        .update({ status: "executed", executed_at: new Date().toISOString() })
+        .eq("id", agentActionId)
+        .eq("status", "approved")
+        .select("id");
+      if (claimErr) return json({ ok: false, executed: false, reason: "claim_failed", error: "Could not reserve this action for sending." }, 503);
+      if (!claimed || claimed.length === 0) {
+        return json({ ok: false, executed: false, reason: "already_executed", error: "This action has already run; it cannot be sent again." }, 409);
+      }
+      releaseClaim = async () => {
+        await admin
+          .from("orch_actions")
+          .update({ status: "approved", executed_at: null })
+          .eq("id", agentActionId)
+          .eq("status", "executed");
+      };
     }
 
     await admin.from("outreach_drafts").update({ status: "sending" }).eq("id", draftId);
@@ -145,6 +175,7 @@ serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("SMTP send failed", msg);
+      await releaseClaim?.();
       await admin.from("outreach_drafts").update({ status: "failed", send_error: msg.slice(0, 500) }).eq("id", draftId);
       return json({ error: `Send failed: ${msg}` }, 500);
     }
