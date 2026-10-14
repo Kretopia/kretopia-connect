@@ -43,7 +43,9 @@ describe("the browser never loads the stored Gmail app password", () => {
       }
     }
     expect(offenders).toEqual([]);
-  });
+    // Walks the whole source tree: it takes seconds under a parallel full run,
+    // so it carries its own timeout instead of the 5 s default.
+  }, 60_000);
 
   it("the two outreach readers use the shared column list", () => {
     const read = (p: string) => readFileSync(resolve(SRC, p), "utf8");
