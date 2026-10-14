@@ -15,7 +15,7 @@
 // pattern applied to copilot-collaborator-tools.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
+import { bindApprovedDm } from "../_shared/agentDmBinding.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -52,20 +52,18 @@ serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
 
-    // Require proof that a human approved this specific send -- see module
-    // doc above. The referenced orch_actions row just has to belong to this
-    // user and be approved (an already-executed action is rejected so it can't
-    // be replayed); we don't require its tool_name to be
-    // exactly "send_dm" because the only legitimate caller today
-    // (executeSpinUpProject) sends its kickoff DM as one step of an
-    // already-approved "spin_up_project" bundle, not a standalone action.
+    // Require proof that a human approved THIS send -- see module doc above.
     //
-    // The decision itself lives in _shared/executionGuard.ts: the action must
-    // belong to the caller, be exactly 'approved' (an already 'executed' action
-    // can no longer be replayed), and carry an orch_approvals record by the
-    // caller with no rejected/revoked/cancelled record. When that can't be
-    // proven nothing is sent: the caller gets a "needs approval" result that
-    // includes the draft, so the user can still see what would have gone out.
+    // The referenced orch_actions row must belong to the caller, be exactly
+    // 'approved' (an already 'executed' action can no longer be replayed), carry
+    // an orch_approvals record by the caller with no rejected/revoked/cancelled
+    // record, be fresh (30 minutes), and -- new -- it must name exactly this
+    // recipient and exactly this text: a standalone `send_dm` action, or the
+    // `spin_up_project` bundle whose kickoff DM this is. The decision lives in
+    // _shared/agentDmBinding.ts (it composes _shared/executionGuard.ts). When it
+    // cannot be proven nothing is sent: the caller gets a "needs approval" or a
+    // refusal that includes the draft, so the user can still see what would have
+    // gone out.
     const agentActionId = body._agent_action_id ? String(body._agent_action_id) : null;
     const draft = {
       to_user_id: String(body.to_user_id ?? "").trim(),
@@ -85,31 +83,41 @@ serve(async (req) => {
           "Route DM sends through agent-orchestrator's proposal/approval flow.",
       );
     }
+    // The approval must be for exactly this message: the caller's own action,
+    // still 'approved', unrevoked and fresh, naming THIS recipient and THIS
+    // text (the arguments the orchestrator runs: the approving record's
+    // edited_args, else the action's tool_args). A different recipient, a
+    // different text, an expired approval or an unsupported tool is a hard
+    // deny. See _shared/agentDmBinding.ts.
+    const adminDb = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     {
-      const SERVICE_KEY_CHECK = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const adminCheck = createClient(SUPABASE_URL, SERVICE_KEY_CHECK);
       const [actionRes, approvalsRes] = await Promise.all([
-        adminCheck.from("orch_actions").select("id, user_id, status, tool_name").eq("id", agentActionId).maybeSingle(),
-        adminCheck.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", agentActionId),
+        adminDb
+          .from("orch_actions")
+          .select("id, user_id, status, tool_name, tool_args, decided_at")
+          .eq("id", agentActionId)
+          .maybeSingle(),
+        adminDb
+          .from("orch_approvals")
+          .select("id, action_id, user_id, decision, edited_args, decided_at")
+          .eq("action_id", agentActionId),
       ]);
-      // A failed approvals lookup must not read as "no revocation": deny.
-      if (approvalsRes.error) {
+      // A failed lookup must not read as "not found" or "no revocation": deny.
+      if (actionRes.error || approvalsRes.error) {
         return blocked(503, "approval_lookup_failed", false, "Could not verify the approval for this action.");
       }
-      const verdict = evaluateExecutionGuard({
-        action: actionRes.error ? null : actionRes.data,
+      const verdict = bindApprovedDm({
+        action: actionRes.data,
         approvals: approvalsRes.data,
         userId: senderId,
         actionId: agentActionId,
+        request: draft,
+        nowMs: Date.now(),
       });
       if (!verdict.allowed) {
-        const status =
-          verdict.reason === "action_not_found" ? 404
-          : verdict.reason === "wrong_owner" || verdict.reason === "wrong_tool" ? 403
-          : verdict.needsApproval ? 428
-          : 409;
-        return blocked(status, verdict.reason, verdict.needsApproval, verdict.message);
+        return blocked(verdict.status, verdict.reason, verdict.status === 428, verdict.message);
       }
+      console.log("[agent-send-dm] approved send", { actionId: agentActionId, approvalId: verdict.approvalId });
     }
 
     const to_user_id = String(body.to_user_id ?? "").trim();
@@ -150,6 +158,24 @@ serve(async (req) => {
       console.warn("recipient validation failed", e);
     }
 
+    // One approved action sends at most once. Claim it (approved -> executed,
+    // compare-and-set) before anything is inserted: a second call with the same
+    // action id, a retry or a double click, finds it already claimed and sends
+    // nothing. The orchestrator's own final update to 'executed' or 'failed'
+    // still applies after this.
+    const { data: claimed, error: claimErr } = await adminDb
+      .from("orch_actions")
+      .update({ status: "executed", executed_at: new Date().toISOString() })
+      .eq("id", agentActionId)
+      .eq("status", "approved")
+      .select("id");
+    if (claimErr) {
+      return blocked(503, "claim_failed", false, "Could not reserve this action for sending.");
+    }
+    if (!claimed || claimed.length === 0) {
+      return blocked(409, "already_executed", false, "This action has already run; it cannot be sent again.");
+    }
+
     const { data: inserted, error } = await userClient
       .from("messages")
       .insert({
@@ -162,6 +188,12 @@ serve(async (req) => {
       .single();
 
     if (error) {
+      // Nothing was delivered: release the claim so the approved send can be retried.
+      await adminDb
+        .from("orch_actions")
+        .update({ status: "approved", executed_at: null })
+        .eq("id", agentActionId)
+        .eq("status", "executed");
       return new Response(
         JSON.stringify({ error: error.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
