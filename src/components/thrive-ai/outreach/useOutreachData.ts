@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { EMAIL_SETTINGS_COLUMNS } from "@/lib/outreach/emailSettingsColumns";
 import { supabase } from "@/integrations/supabase/client";
 import type { Lead, Sequence, SequenceEmail } from "./types";
 
@@ -10,7 +11,7 @@ export const useOutreachData = (userId: string | undefined) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_email_settings" as any)
-        .select("*")
+        .select(EMAIL_SETTINGS_COLUMNS)
         .eq("user_id", userId!)
         .maybeSingle();
       if (error) throw error;

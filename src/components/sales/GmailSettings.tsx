@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EMAIL_SETTINGS_COLUMNS } from "@/lib/outreach/emailSettingsColumns";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +25,7 @@ export function GmailSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("user_email_settings" as any)
-        .select("*")
+        .select(EMAIL_SETTINGS_COLUMNS)
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
