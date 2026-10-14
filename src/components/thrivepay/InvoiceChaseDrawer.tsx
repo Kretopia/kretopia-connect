@@ -23,8 +23,9 @@ type Phase = "drafting" | "review" | "sent" | "error";
 // of internal ones (AI gateway/credits state, raw DB/exception text) that
 // aren't -- only the actionable ones pass through, everything else falls
 // back to a generic message rather than a guessed rewrite of the rest.
-function draftErrorCopy(rawMessage: string | undefined): string {
+function draftErrorCopy(rawMessage: string | undefined, reason?: string): string {
   const msg = (rawMessage || "").toLowerCase();
+  if (reason === "settled") return "This invoice is already paid or cancelled, so there is nothing to chase.";
   if (msg === "invoice not found") return "Invoice not found.";
   return "Couldn't draft a reminder right now. Try again in a moment.";
 }
@@ -34,6 +35,8 @@ function draftErrorCopy(rawMessage: string | undefined): string {
 // for a human reader, generic fallback for everything else.
 function sendErrorCopy(rawMessage: string | undefined): string {
   const msg = (rawMessage || "").toLowerCase();
+  if (msg.startsWith("reminder_recent:")) return "A reminder was already sent for this invoice in the last 24 hours.";
+  if (msg.startsWith("settled:")) return "This invoice is already paid or cancelled, so there is nothing to chase.";
   if (msg === "draft not found") return "This draft no longer exists — try drafting a new one.";
   if (msg.includes("no recipient email")) return "No recipient email on this invoice — add one, then retry.";
   if (msg.includes("connect your gmail")) return "Connect your Gmail in Outreach settings first.";
@@ -80,7 +83,17 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
       setGeneratedAt(new Date());
       setPhase("review");
     } catch (e: any) {
-      setErrorMsg(draftErrorCopy(e.message));
+      // A refusal carries its reason in the response body (the invoice is settled, say).
+      let reason: string | undefined;
+      let message: string | undefined = e?.message;
+      try {
+        const failure = await e?.context?.json?.();
+        if (typeof failure?.reason === "string") reason = failure.reason;
+        if (typeof failure?.error === "string") message = failure.error;
+      } catch {
+        /* keep the generic copy */
+      }
+      setErrorMsg(draftErrorCopy(message, reason));
       setPhase("error");
     }
   };
@@ -99,7 +112,16 @@ export function InvoiceChaseDrawer({ invoiceId, invoiceLabel, onOpenChange }: Pr
       const { data, error } = await supabase.functions.invoke("send-outreach-draft", {
         body: { draft_id: draftId },
       });
-      if (error) throw error;
+      if (error) {
+        // A refusal says why (a reminder already went today, the invoice is settled).
+        let failure: { error?: string; reason?: string } | null = null;
+        try {
+          failure = await (error as { context?: { json?: () => Promise<{ error?: string; reason?: string }> } }).context?.json?.() ?? null;
+        } catch {
+          failure = null;
+        }
+        throw new Error(failure?.reason ? `${failure.reason}:${failure.error ?? ""}` : (error as Error).message);
+      }
       if (data?.error) throw new Error(data.error);
 
       setPhase("sent");

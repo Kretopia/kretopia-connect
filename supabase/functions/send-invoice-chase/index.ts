@@ -8,6 +8,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { decideInvoiceChase } from "../_shared/notificationGuards.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -51,6 +52,12 @@ serve(async (req) => {
       .eq("issued_by", userId)
       .maybeSingle();
     if (!invoice) return json({ error: "invoice not found" }, 404);
+
+    // A settled invoice is never chased, a draft is not sent as a reminder, and a reminder is not
+    // repeated within 24 hours. This is read first so a refused call costs no AI request; the claim
+    // below is what makes it atomic.
+    const gate = decideInvoiceChase(invoice, send, Date.now());
+    if (!gate.ok) return json({ error: gate.error, reason: gate.reason }, gate.status);
 
     const { data: profile } = await admin
       .from("profiles")
@@ -123,29 +130,39 @@ Draft the chase email now.`;
         brand_name: invoice.brand_name,
         subject: parsed.subject.slice(0, 200),
         body: parsed.body.slice(0, 4000),
-        status: send && recipientEmail ? "approved" : "draft",
+        status: "draft",
         meta: { invoice_id: invoiceId, tone, days_overdue: daysOverdue },
       })
       .select()
       .single();
     if (insErr) return json({ error: insErr.message }, 500);
 
+    let sent = false;
+    let sendError: string | null = null;
     if (send && recipientEmail) {
-      // Hand off to send-outreach-draft
+      // The draft becomes 'approved' only now, and the reminder itself is claimed and checked by
+      // send-outreach-draft (the one place a reminder leaves, shared with the in-app drawer): a settled
+      // invoice or a reminder in the last 24 h is refused there with a 409 whose reason is passed on.
+      await admin.from("outreach_drafts").update({ status: "approved" }).eq("id", draft.id).eq("user_id", userId);
       const sendRes = await fetch(`${SUPABASE_URL}/functions/v1/send-outreach-draft`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: auth },
         body: JSON.stringify({ draft_id: draft.id }),
       });
       if (sendRes.ok) {
-        await admin
-          .from("invoices")
-          .update({ reminder_sent_at: new Date().toISOString() })
-          .eq("id", invoiceId);
+        sent = true;
+      } else {
+        let reason = `The reminder could not be sent (${sendRes.status}); it is saved as a draft.`;
+        try {
+          const failure = await sendRes.json();
+          if (typeof failure?.error === "string") reason = failure.error;
+        } catch { /* keep the generic reason */ }
+        sendError = reason;
+        await admin.from("outreach_drafts").update({ status: "draft" }).eq("id", draft.id).eq("user_id", userId);
       }
     }
 
-    return json({ ok: true, draft });
+    return json({ ok: true, draft, sent, send_error: sendError });
   } catch (e) {
     console.error("send-invoice-chase error", e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);

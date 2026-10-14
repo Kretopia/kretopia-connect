@@ -1,6 +1,12 @@
 // Host-only: ping everyone who RSVP'd but hasn't joined the pool yet.
 // Body: { session_id: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import {
+  SESSION_PING_COOLDOWN_MS,
+  cooldownCutoffIso,
+  countRecentSessionNotifications,
+  decideCooldown,
+} from "../_shared/notificationGuards.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +59,21 @@ Deno.serve(async (req) => {
 
     if (!targets.length) {
       return new Response(JSON.stringify({ ok: true, notified: 0 }), {
+        headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
+
+    // The same host can ping again, but not in a storm: one ping per session per two minutes.
+    // A count that cannot be read is not zero.
+    const recent = await countRecentSessionNotifications(supabase, {
+      type: "speed_session_ping",
+      actionUrl: `/circle/speed/${session_id}`,
+      sinceIso: cooldownCutoffIso(Date.now(), SESSION_PING_COOLDOWN_MS),
+    });
+    const cooldown = decideCooldown(recent, "You just pinged this room, give people a moment to join");
+    if (!cooldown.ok) {
+      return new Response(JSON.stringify({ error: cooldown.error }), {
+        status: cooldown.status,
         headers: { ...cors, "Content-Type": "application/json" },
       });
     }
