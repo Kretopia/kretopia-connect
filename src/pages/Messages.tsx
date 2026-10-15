@@ -192,8 +192,8 @@ const Messages = () => {
 
   return (
     <PageTransition>
-      {/* No bottom padding on this outer row itself: KretopiaBottomNav/ThriveBar
-          are both lg:hidden (visible below 1024px, gone at lg:), so a bare
+      {/* No bottom padding on this outer row itself: KretopiaBottomNav
+          is lg:hidden (visible below 1024px, gone at lg:), so a bare
           "lg:pb-24" here was backwards -- it added clearance only at the
           width where nothing needs clearing. Each child (conversation list,
           chat panel) already reserves its own bottom space correctly for

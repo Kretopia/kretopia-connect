@@ -190,8 +190,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
       ]
     : [
         // Prioritized set — Today/Studio/Scout/Passport stay in the primary
-        // row; Stages, Kreto (the dedicated page — the floating launcher
-        // and ThriveBar already give one-tap chat access everywhere) and
+        // row; Stages, Kreto (the dedicated page — the floating Kreto
+        // mascot already gives one-tap chat access everywhere) and
         // Perks moved into the Menu's Explore section so nothing becomes
         // unreachable, just less crowded up top.
         { path: "/", icon: Sun, label: "Today" },

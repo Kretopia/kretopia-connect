@@ -1089,7 +1089,7 @@ export const ThriveAgentFab = () => {
 
   return (
     <>
-      {/* Entry points: docked ThriveBar (mobile) and KretoLauncher (desktop).
+      {/* Entry point: the KretoLauncher mascot (bottom-right on desktop, above the bottom nav on mobile).
           Desktop opens a compact panel anchored above the launcher button;
           mobile keeps the full-height bottom Sheet, which fits the platform's
           own drawer conventions. Both render the exact same chat content. */}

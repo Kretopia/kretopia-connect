@@ -12,7 +12,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
-import { appChrome } from "./lib/appChrome";
+import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
 import QuickActionFab from "./components/QuickActionFab";
 import { BrandLoader } from "./components/brand/BrandDots";
@@ -39,7 +39,6 @@ import { VideoCallProvider } from "./contexts/VideoCallContext";
 import { RoomKnockToast } from "./components/calls/RoomKnockToast";
 import { ThriveAgentFab } from "./components/desk/ThriveAgentFab";
 import { KretoLauncher } from "./components/kreto/KretoLauncher";
-import { ThriveBar } from "./components/agent/ThriveBar";
 
 // Lazy load active page components
 const Auth = lazy(() => import("./pages/Auth"));
@@ -279,9 +278,11 @@ const AppContent = () => {
       {showBottomNav && <KretopiaBottomNav />}
       {showBottomNav && <QuickActionFab />}
       <ThriveAgentFab />
-      {showBottomNav && <ThriveBar />}
-      {/* Kreto launcher everywhere except the marketing Landing page. */}
-      {user && location.pathname !== "/landing" && <KretoLauncher />}
+      {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
+          a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
+      {user && location.pathname !== "/landing" && (
+        <KretoLauncher showOnMobile={showKretoMascotOnMobile(location.pathname, !!user)} />
+      )}
       
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}
       {user && <GlobalIncomingCall />}

@@ -9,7 +9,7 @@ import { trackLandingCtaClick } from "@/lib/landingMetrics";
  * Appears after scrolling past the hero section.
  *
  * Sits at the true bottom of the viewport (not offset above a bottom nav
- * bar) -- App.tsx's KretopiaBottomNav/QuickActionFab/KretoLauncher/ThriveBar
+ * bar) -- App.tsx's KretopiaBottomNav/QuickActionFab/KretoLauncher
  * are all gated behind `!!user`, so a guest never sees any of them; this is
  * the only fixed bottom element they get.
  */
