@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
-import { EscrowAuthError } from "../_shared/escrowAuth.ts";
+import { assertCanReleaseMilestone, EscrowAuthError } from "../_shared/escrowAuth.ts";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
+import { cleanBatchRequest, partitionMilestones } from "../_shared/batchPayout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,17 +34,17 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated");
     logStep("User authenticated", { userId: user.id });
 
-    const { projectId, milestoneIds } = await req.json();
-    if (!projectId || !milestoneIds?.length) {
-      throw new Error("Missing projectId or milestoneIds");
-    }
+    const request = cleanBatchRequest(await req.json().catch(() => null));
+    if (!request.ok) throw new Error(request.error);
+    const { projectId, milestoneIds } = request;
 
     logStep("Batch payout request", { projectId, count: milestoneIds.length });
 
@@ -70,17 +71,12 @@ serve(async (req) => {
     if (fetchError) throw new Error(`Failed to fetch milestones: ${fetchError.message}`);
     if (!milestones?.length) throw new Error("No eligible milestones found");
 
-    // Filter to only completable milestones (completed status, no escrow, not yet paid)
-    const payable = milestones.filter(m => 
-      m.status === 'completed' && m.escrow_status === 'none' && !m.paid_at
-    );
+    // Escrow-authorized milestones in review can be captured. Completed, non-escrow ones used to be
+    // sent to one combined Checkout session that nothing reconciles (see _shared/batchPayout.ts):
+    // they are reported as not available and paid one at a time instead.
+    const { capturable, notAvailable } = partitionMilestones(milestones);
 
-    // Also handle escrow-authorized milestones (capture them)
-    const capturable = milestones.filter(m => 
-      m.escrow_status === 'authorized' && m.payment_intent_id && m.status === 'review'
-    );
-
-    logStep("Eligible milestones", { payable: payable.length, capturable: capturable.length });
+    logStep("Eligible milestones", { notAvailable: notAvailable.length, capturable: capturable.length });
 
     const stripe = new Stripe(resolveStripeSecretKey(), {
       apiVersion: "2025-08-27.basil",
@@ -92,6 +88,21 @@ serve(async (req) => {
     // 1) Capture escrow-authorized milestones
     for (const milestone of capturable) {
       try {
+        // Same release rule as capture-milestone-payment: when the PaymentIntent records who funded
+        // it, only that payer may release it (the project-level rule above is the fallback inside
+        // assertCanReleaseMilestone, used only when no payer is recorded). The batch door used to
+        // skip this, so a project owner who was not the payer could release the client's escrow.
+        const intent = await stripe.paymentIntents.retrieve(milestone.payment_intent_id);
+        await assertCanReleaseMilestone(
+          supabaseAdmin,
+          milestone,
+          user.id,
+          (intent.metadata || {}) as Record<string, string>,
+        );
+        if (intent.status !== 'requires_capture') {
+          throw new Error(`Payment is not awaiting capture (status: ${intent.status})`);
+        }
+
         logStep("Capturing escrow", { milestoneId: milestone.id });
         await stripe.paymentIntents.capture(milestone.payment_intent_id);
 
@@ -104,7 +115,7 @@ serve(async (req) => {
           });
         }
 
-        await supabaseAdmin
+        const { error: recordError } = await supabaseAdmin
           .from('milestones')
           .update({
             status: 'paid',
@@ -113,6 +124,19 @@ serve(async (req) => {
             paid_to: payee.payeeUserId,
           })
           .eq('id', milestone.id);
+
+        if (recordError) {
+          // The money was captured and the row could not be updated: say so instead of reporting
+          // success, so it can be repaired by hand rather than found later.
+          logStep("ERROR captured but not recorded", { milestoneId: milestone.id, message: recordError.message });
+          results.push({
+            id: milestone.id,
+            status: 'captured_not_recorded',
+            success: false,
+            error: "The payment was captured but could not be recorded; contact support with this milestone id",
+          });
+          continue;
+        }
 
         // Auto-generate invoice
         await generateInvoice(supabaseAdmin, milestone, payee.payeeUserId, user.id, now);
@@ -124,68 +148,24 @@ serve(async (req) => {
       }
     }
 
-    // 2) For completed (non-escrow) milestones, create a single combined checkout session
-    if (payable.length > 0) {
-      const totalCents = payable.reduce((sum, m) => sum + Math.round(m.amount * 100), 0);
-      
-      const lineItems = payable.map(m => ({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `Milestone: ${m.title}`,
-            description: `Batch payment for project milestone`,
-          },
-          unit_amount: Math.round(m.amount * 100),
-        },
-        quantity: 1,
-      }));
+    // 2) Completed, non-escrow milestones are no longer sent to one combined Checkout session: that
+    // session was created on the platform account with no destination and no `kind` metadata, so
+    // stripe-marketplace-webhook never reconciled it (the client was charged, nothing was marked
+    // paid, no creator was paid). They are reported as not available and paid one at a time.
+    results.push(...notAvailable.map(m => ({
+      id: m.id,
+      status: 'not_available',
+      success: false,
+      error: "Pay this milestone on its own: a combined checkout is not available",
+    })));
 
-      const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-      const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
-
-      const origin = req.headers.get("origin") || "https://www.thrivein.io";
-      const session = await stripe.checkout.sessions.create({
-        customer: customerId,
-        customer_email: customerId ? undefined : user.email,
-        line_items: lineItems,
-        mode: "payment",
-        success_url: `${origin}/desk/${projectId}?payment=success&batch=true`,
-        cancel_url: `${origin}/desk/${projectId}?payment=cancelled`,
-        metadata: {
-          batch: 'true',
-          projectId,
-          milestoneIds: payable.map(m => m.id).join(','),
-          userId: user.id,
-        },
-      });
-
-      logStep("Batch checkout session created", { sessionId: session.id, total: totalCents / 100, count: payable.length });
-
-      results.push(...payable.map(m => ({ id: m.id, status: 'checkout_pending', success: true })));
-
-      return new Response(JSON.stringify({
-        success: true,
-        url: session.url,
-        sessionId: session.id,
-        results,
-        summary: {
-          captured: capturable.length,
-          checkoutItems: payable.length,
-          totalCheckout: totalCents / 100,
-        }
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    // Only escrow captures, no checkout needed
     return new Response(JSON.stringify({
       success: true,
       results,
       summary: {
         captured: results.filter(r => r.status === 'captured').length,
-        errors: results.filter(r => r.status === 'error').length,
+        errors: results.filter(r => r.status === 'error' || r.status === 'captured_not_recorded').length,
+        notAvailable: notAvailable.length,
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
