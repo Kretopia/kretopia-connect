@@ -2,6 +2,13 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import {
+  PENDING_ORDER_HOLD_MINUTES,
+  claimPromoUse,
+  cleanQuantity,
+  promoHasRoom,
+  releasePromoUse,
+} from "../_shared/ticketCheckout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,9 +45,12 @@ serve(async (req) => {
     if (!user?.email) throw new Error("Not authenticated");
 
     const body = await req.json();
-    const { eventId, tierId, quantity = 1, promoCode } = body || {};
+    const { eventId, tierId, quantity: rawQuantity = 1, promoCode } = body || {};
     if (!eventId || !tierId) throw new Error("eventId and tierId required");
-    if (quantity < 1 || quantity > 50) throw new Error("Invalid quantity");
+    // An integer from 1 to 50: 1.5, NaN and "2" used to pass the range check and reach the price
+    // and capacity maths.
+    const quantity = cleanQuantity(rawQuantity);
+    if (quantity === null) throw new Error("Invalid quantity");
 
     const { data: event, error: evErr } = await admin
       .from("creative_jams")
@@ -91,8 +101,24 @@ serve(async (req) => {
       if (!promo) throw new Error("Invalid promo code");
       if (promo.valid_from && new Date(promo.valid_from) > now) throw new Error("Promo not yet active");
       if (promo.valid_until && new Date(promo.valid_until) < now) throw new Error("Promo expired");
-      if (promo.max_uses != null && promo.uses_count >= promo.max_uses)
-        throw new Error("Promo code fully redeemed");
+      if (promo.max_uses != null) {
+        // A paid checkout consumes a use only when it is paid, so other buyers' orders that started
+        // in the last half hour and are still pending hold the code: a code with one use left is
+        // not handed to everyone who opens checkout together. The buyer's own pending orders do
+        // not hold it against them (re-opening checkout must not lock them out). An unreadable
+        // count is no room.
+        const since = new Date(now.getTime() - PENDING_ORDER_HOLD_MINUTES * 60_000).toISOString();
+        const { count: inFlight, error: inFlightErr } = await admin
+          .from("event_orders")
+          .select("id", { count: "exact", head: true })
+          .eq("promo_code_id", promo.id)
+          .eq("status", "pending")
+          .neq("buyer_id", user.id)
+          .gte("created_at", since);
+        if (!promoHasRoom({ maxUses: promo.max_uses, usesCount: Number(promo.uses_count), inFlight: inFlightErr ? null : (inFlight ?? 0) })) {
+          throw new Error("Promo code fully redeemed");
+        }
+      }
       if (promo.applies_to_tier_ids?.length && !promo.applies_to_tier_ids.includes(tierId))
         throw new Error("Promo not valid for this tier");
 
@@ -159,6 +185,15 @@ serve(async (req) => {
 
     // Free tickets: no Stripe needed, mark paid immediately.
     if (totalCents === 0) {
+      // A free grant is instantaneous, so its promo use is taken here, atomically, BEFORE the grant:
+      // two requests for the last use cannot both pass. Given back if the grant does not happen.
+      if (promoId) {
+        const claim = await claimPromoUse(admin, promoId);
+        if (claim !== "claimed") {
+          await admin.from("event_orders").update({ status: "cancelled" }).eq("id", order.id);
+          throw new Error(claim === "exhausted" ? "Promo code fully redeemed" : "Could not apply the promo code, try again shortly");
+        }
+      }
       // Atomic check-and-increment: locks the tier row, re-checks capacity,
       // and writes quantity_sold in a single statement -- closes the TOCTOU
       // race between the plain-read capacity check above and this grant
@@ -168,16 +203,18 @@ serve(async (req) => {
       const { data: reservation, error: reserveErr } = await admin
         .rpc("reserve_event_ticket_capacity", { _tier_id: tierId, _quantity: quantity })
         .single();
-      if (reserveErr) throw new Error(reserveErr.message);
+      if (reserveErr) {
+        if (promoId) await releasePromoUse(admin, promoId);
+        throw new Error(reserveErr.message);
+      }
       if (!reservation?.allowed) {
         await admin.from("event_orders").update({ status: "cancelled" }).eq("id", order.id);
+        if (promoId) await releasePromoUse(admin, promoId);
         throw new Error("Not enough tickets remaining");
       }
 
       await admin.from("event_orders").update({ status: "paid" }).eq("id", order.id);
-      if (promoId) {
-        await admin.rpc("increment_promo_use", { _id: promoId }).catch(() => {});
-      }
+      // The promo use was claimed above; incrementing it again here would count it twice.
       // 'going' matches jam_participants_status_check and every other RSVP
       // code path (rsvp_to_event, EventPage.tsx, SessionCard.tsx, ...) --
       // this used to write 'rsvp', a value the constraint has never
