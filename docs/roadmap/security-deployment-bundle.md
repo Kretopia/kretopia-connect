@@ -1,12 +1,12 @@
-# Security deployment bundle, steps E to AB (manual paste into `kretopia-app`)
+# Security deployment bundle, steps E to AC (manual paste into `kretopia-app`)
 
-Source: `Kretopia/kretopia-connect` `main` at `016c00241` (PRs #142 to #179 merged, then docs PRs). Steps Z, AA and AB (#184, #185, #187, #190) are merged and come from `main`. Every checksum below is of the file at that ref; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`).
+Source: `Kretopia/kretopia-connect` `main` at `016c00241` (PRs #142 to #179 merged, then docs PRs). Steps Z, AA, AB and AC come from their PR branches while those PRs are open (#184, #185, #187, #190, #193): their checksums change if the PRs do. Every checksum below is of the file at that ref; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`).
 
 This is the single canonical deployment document. It supersedes `security-deployment-bundle-e-to-q.md` (PRs #164, #168, #173) and every earlier per-step list. **Nothing here is deployed.** Merged is not deployed: production runs the pre-slice copies. The document deploys nothing and contains no SQL.
 
-A local, untracked copy of every file, numbered in paste order, with `SHA256SUMS` and `INDEX.txt`, is in `deploy-bundle-e-to-ab/` in the working tree of the session that generated this document (not committed).
+A local, untracked copy of every file, numbered in paste order, with `SHA256SUMS` and `INDEX.txt`, is in `deploy-bundle-e-to-ac/` in the working tree of the session that generated this document (not committed).
 
-Step letters follow the program: E to U are as in earlier documents, **V** (recording opt-in in two clients) is frontend only and has no file to paste, **W** is stages, **X** is the invitation list, **Y** is the fifth sender pass, **Z** is ThriveFund (finalizer and pledge request, owner-approved 2026-10-15) **AA** is the invoice provider reference (a migration the owner applies, then the webhook) and **AB** is the event promo-code use limit. The order of pasting is E F H G J K L M N P Q R S T U W X Y Z AA AB and **I last**: step I is gated (section 2), so it does not sit between H and G as the step letters would suggest.
+Step letters follow the program: E to U are as in earlier documents, **V** (recording opt-in in two clients) is frontend only and has no file to paste, **W** is stages, **X** is the invitation list, **Y** is the fifth sender pass, **Z** is ThriveFund (finalizer and pledge request, owner-approved 2026-10-15) **AA** is the invoice provider reference (a migration the owner applies, then the webhook) **AB** is the event promo-code use limit and **AC** is the event ticket confirmation (a paid order is counted once). The order of pasting is E F H G J K L M N P Q R S T U W X Y Z AA AB AC and **I last**: step I is gated (section 2), so it does not sit between H and G as the step letters would suggest.
 
 ## 1. Merged is not deployed
 
@@ -43,6 +43,7 @@ Step letters follow the program: E to U are as in earlier documents, **V** (reco
 | #185 | Z | ThriveFund: a pledge request is bounded, single and checked (owner-approved option C) | function + helper | merged 2026-10-15 | **no** |
 | #187 | AA | invoices: a provider reference, an honest label, a closed INSERT path | function + frontend + migration file | merged 2026-10-15 | **no** |
 | #190 | AB | an event promo code's use limit holds under concurrent checkouts | function + helper | merged 2026-10-15 | **no** |
+| #193 | AC | a paid event ticket order is counted once at confirmation | function + helper | open | **no** |
 
 Docs-only PRs (nothing to deploy): #141 (merged 2026-10-13), #147 (merged 2026-10-13), #148 (merged 2026-10-13), #150 (merged 2026-10-13), #153 (merged 2026-10-13), #154 (merged 2026-10-13), #160 (merged 2026-10-14), #164 (merged 2026-10-14), #166 (merged 2026-10-14), #168 (merged 2026-10-14), #173 (merged 2026-10-14), #180 (merged 2026-10-14), #181 (merged 2026-10-14), #182 (merged 2026-10-15), #183 (merged 2026-10-15), #186 (merged 2026-10-15). #189 adds an inert helper (`_shared/orgAccess.ts`) that no function imports yet: nothing to deploy.
 
@@ -52,7 +53,7 @@ Frontend-only or frontend-carrying PRs ship on **one frontend publish** (not a p
 
 | Class | Steps | Condition |
 |---|---|---|
-| Deployable without preflight | E, F, G, J, K, L, P, Q, R, S, T, U, W, X, Y, Z, AB | the pre-checks of section 3 only. R, X and Y write rows to `email_send_log`, which the transactional sender already uses: confirm the table exists. T is a product decision already taken by the owner (the Premium kick-off switch) |
+| Deployable without preflight | E, F, G, J, K, L, P, Q, R, S, T, U, W, X, Y, Z, AB, AC | the pre-checks of section 3 only. R, X and Y write rows to `email_send_log`, which the transactional sender already uses: confirm the table exists. T is a product decision already taken by the owner (the Premium kick-off switch) |
 | Deployable after one check | N | any scheduled job that calls `send-activity-digest`, `send-streak-warning` or `send-reengagement` must send `x-cron-secret` first, or its next run answers 401 (`cron.job` cannot be listed from the repository) |
 | Product decision taken | H (consent default), V | #175 made recording and transcription opt-in in the dialog and unticked in the booking box. Frontend publish required |
 | **Released by the owner (2026-10-15)** | **I** | the Circle and project preflights are accepted as captured on 2026-10-13; the technical prerequisites of section 2b remain |
@@ -89,11 +90,11 @@ What does not go away, because it is a fact and not a permission:
 | `_shared/promptIsolation.ts` | `studio-ingest` |
 | `_shared/resolveMilestonePayee.ts` | `stripe-marketplace-webhook` |
 | `_shared/scoutSources.ts` | `scout-gigs` |
-| `_shared/stripeEnv.ts` | `checkout-event-tickets`, `complete-product-purchase`, `get-download-urls`, `stripe-marketplace-webhook`, `thrivefund-create-pledge`, `thrivefund-finalize-campaign` |
+| `_shared/stripeEnv.ts` | `checkout-event-tickets`, `complete-product-purchase`, `get-download-urls`, `stripe-marketplace-webhook`, `thrivefund-create-pledge`, `thrivefund-finalize-campaign`, `verify-event-ticket` |
 
 3. Confirm secrets are present (presence only): `DAILY_API_KEY`, `DAILY_WEBHOOK_HMAC_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_ANON_KEY`, `STRIPE_SECRET_KEY` (or the mode-specific keys), `RESEND_API_KEY`, `TWILIO_*` for `send-phone-otp`, `CRON_SECRET`.
 4. Name the person who watches the function logs for the first 15 minutes after each deploy.
-5. Integrity: in `deploy-bundle-e-to-ab/`, `shasum -a 256 -c SHA256SUMS` prints OK for every file.
+5. Integrity: in `deploy-bundle-e-to-ac/`, `shasum -a 256 -c SHA256SUMS` prints OK for every file.
 
 ## 4. Shared helpers (paste all of these first, importers after the files they import)
 
@@ -128,6 +129,7 @@ A helper is imported by functions; it is not an Edge Function and is not deploye
 | 25 | `supabase/functions/_shared/pledgeVerification.ts` | new | none | Z | `5a4fb1c2bf8626b7a84be4c3707dac242a997b3d5762ce4cfca02e93db88fca5` | step Z (PR #184, ThriveFund finalizer, owner-approved option B) |
 | 26 | `supabase/functions/_shared/pledgeRequest.ts` | new | none | Z | `75e4f02a04f39b897f8ceee401529b18abb9a52e8010b891a578abc3b089cba3` | step Z (PR #185, ThriveFund pledge request limits, owner-approved option C) |
 | 27 | `supabase/functions/_shared/ticketCheckout.ts` | new | none | AB | `fa6d5e65ffb3758712701d198b226b8846ef98790437db75a3e464964b8210ee` | step AB (PR #190, event promo-code use limit); no import |
+| 28 | `supabase/functions/_shared/orderConfirmation.ts` | new | none | AC | `d7a054c79ecc8b9b94e778cad3f5cf640ae5d47f037d3ca77f96c6bf2b020878` | step AC (PR #193, event ticket confirmation); no import |
 
 ## 5. Edge Functions (deploy one at a time, in this order)
 
@@ -135,51 +137,52 @@ For each: paste `supabase/functions/<function>/index.ts`, deploy that function, 
 
 | # | Step | Source repo path = destination path | PRs | Imports from `_shared` | SHA-256 | Rollback artefact to save first |
 |---|---|---|---|---|---|---|
-| 28 | E | `supabase/functions/mint-meeting-token/index.ts` | #142 | meetingParticipantAccess, roomSessionLimits | `63bd589476d440ae084e5c72b60bbec74c78477c6f3d1121cf05acc7208f643e` | `mint-meeting-token__before.ts` |
-| 29 | F | `supabase/functions/get-recording-link/index.ts` | #143, #149, #151, #152 | projectAccess, recordingAccess | `11ca0d25592205a7a593ae17536276a47bac33fc24f34925a0c01e1978ce5b2b` | `get-recording-link__before.ts` |
-| 30 | H | `supabase/functions/book-meeting/index.ts` | #145, #152 | recordingConsent | `45d2b2de5865a883af9b579d415e6230e81520510579d29ca523eebc7da5ab56` | `book-meeting__before.ts` |
-| 31 | G | `supabase/functions/daily-recording-webhook/index.ts` | #144 | webhookFreshness | `f2795873808140b6d06a1b2d778b19e2682d32f0eb44593dfb78be6f9d77ff04` | `daily-recording-webhook__before.ts` |
-| 32 | J | `supabase/functions/redeem-project-share/index.ts` | #156 | shareLinkScope | `f8da3a1b8ab343849fbdb25bc53b307ac9f15d5a46556e65da84c49a8c263de8` | `redeem-project-share__before.ts` |
-| 33 | K | `supabase/functions/get-download-urls/index.ts` | #157, #159 | productFilePaths, purchaseEntitlement, stripeEnv | `7bc97fe857ddc0bb49757edce35a1e2a7a50cb1757fd9227d5fcc1d5c8786a27` | `get-download-urls__before.ts` |
-| 34 | K | `supabase/functions/complete-product-purchase/index.ts` | #157, #159 | productFilePaths, purchaseEntitlement, stripeEnv | `62eeb74d0593dda123fe3d7ed7e1981f653275f4158fda10354d9e5b9296c08b` | `complete-product-purchase__before.ts` |
-| 35 | K | `supabase/functions/generate-studio-image/index.ts` | #157 | aiModels, projectAccess, studioAIGate | `90ae0b16673f8bfb0778ceae0e0644698fe6f23f863abe8a863e878a55211058` | `generate-studio-image__before.ts` |
-| 36 | K | `supabase/functions/generate-deal-memo/index.ts` | #157 | none | `a3a5aa714c1261ea119ec2a4a181589377935d5b4a57edf2417c58234083e58f` | `generate-deal-memo__before.ts` |
-| 37 | L | `supabase/functions/generate-moodboard-image/index.ts` | #158 | aiModels, studioAccess | `aa42f35f6842fb79f9341c70217bc224e66a8b169b1fab264cc226adb45dfbd8` | `generate-moodboard-image__before.ts` |
-| 38 | L | `supabase/functions/generate-studio-copy/index.ts` | #158 | aiModels, studioAIGate, studioAccess | `31fa73a68eca9c0855085fa9c963b16ab5cd6ec9fe845e5f173e9977e01261cc` | `generate-studio-copy__before.ts` |
-| 39 | L | `supabase/functions/studio-ingest/index.ts` | #158 | aiModels, aiRateLimit, promptIsolation, studioAccess | `45cbf09c795da0ec7ebfb430e09819d9f12fc41177deb9892db21da0ca218a4e` | `studio-ingest__before.ts` |
-| 40 | L | `supabase/functions/match-event-guests/index.ts` | #158 | aiModels, aiRateLimit, studioAccess | `edaf70396fbfdcefc297a31ea336d49b81c884a3df25e49aacc400ff6515bc9f` | `match-event-guests__before.ts` |
-| 41 | N | `supabase/functions/send-activity-digest/index.ts` | #161 | admin-guard | `9a4a549e4dbc0cea09c90ee56b34e55ccd7f9e3c29c8c5bbc1b3adb3bd139231` | `send-activity-digest__before.ts` |
-| 42 | N | `supabase/functions/send-streak-warning/index.ts` | #161 | admin-guard | `71a8d8ad64ea5355595720735bfacc86bf063b938acef92fcacc67593078f176` | `send-streak-warning__before.ts` |
-| 43 | N | `supabase/functions/send-reengagement/index.ts` | #161 | admin-guard | `1bd3ce6f4bcd3c43f4e64e41df871a547c5230dbb64e8cb1bbd2e567abb778c0` | `send-reengagement__before.ts` |
-| 44 | N | `supabase/functions/send-get-paid-link/index.ts` | #161 | getPaidLink, outboundText, projectAccess | `b3ecb55cf9d25b6a31e34023989428ac195a894c57ab476f9308fed2fdf21f77` | `send-get-paid-link__before.ts` |
-| 45 | N | `supabase/functions/verify-guest-opportunity/index.ts` | #161 | guestVerification, outboundText | `ea2603c80e96d96769e96a69388f0fc61585a4d1fa69df40bb1eb70e03069614` | `verify-guest-opportunity__before.ts` |
-| 46 | P | `supabase/functions/send-phone-otp/index.ts` | #162 | phoneOtp | `3a1334b2f27e8a6b0f4017e8a81d3a9c5bb7e007e0df02945268fc8c0d812e89` | `send-phone-otp__before.ts` |
-| 47 | P | `supabase/functions/merge-accounts-init/index.ts` | #162 | phoneOtp | `131286ca7d7b01bf87d19a496a2fa8c2100d62d26cc2eac4b8097732450df9fa` | `merge-accounts-init__before.ts` |
-| 48 | P | `supabase/functions/send-outreach-email/index.ts` | #162, #165 | aiModels, outboundBudget, outboundText | `0944a58f2ddf69abd90b60bdf2014e69728afb85e701ec3594e521f9e16eb149` | `send-outreach-email__before.ts` |
-| 49 | P | `supabase/functions/verify-brand-credit/index.ts` | #162 | outboundText | `49dbc26a1cc01cbdd5063243fe43b9cd660fc51169c4e9a3475164eb17f93130` | `verify-brand-credit__before.ts` |
-| 50 | Q | `supabase/functions/agent-send-dm/index.ts` | #163 | agentDmBinding | `b207e5c82e4f03b2f9bd299a9c24abd970adfa02e366a5194fcb1bdd1d43dead` | `agent-send-dm__before.ts` |
-| 51 | R | `supabase/functions/send-project-invitation/index.ts` | #165 | outboundBudget, outboundText, projectAccess | `8f93947be6c5b003748c85400aef65930d99890e043c29895760939145b879af` | `send-project-invitation__before.ts` |
-| 52 | R | `supabase/functions/send-event-blast/index.ts` | #165 | none | `1c757bb0fb795536727c934099685f5ee83e74a50a7be4136d17496cbb33a386` | `send-event-blast__before.ts` |
-| 53 | R | `supabase/functions/send-credit-invite/index.ts` | #165 | outboundText | `2c6109d462732c2ecd1f00cfe460d92b6b3f54b169d131a69d2f8493913a8c36` | `send-credit-invite__before.ts` |
-| 54 | S | `supabase/functions/copilot-collaborator-tools/index.ts` | #172 | agentAuthority | `74142ef4449f5714cc0e5f48f3aa2026fa961c28ecb8abd8c33101ddd988cb3e` | `copilot-collaborator-tools__before.ts` |
-| 55 | S | `supabase/functions/send-outreach-draft/index.ts` | #172, #179 | agentActionBinding, notificationGuards | `702a04d8e829b56c2fccf701a281d9d211226442b96818d359bc1b43a8f3b83e` | `send-outreach-draft__before.ts` |
-| 56 | T | `supabase/functions/desk-ai/index.ts` | #170 | aiModels, copilotContext, fetchWithTimeout, premiumSwitch, projectAccess | `8de853b2ae491f4186ee50dd559b5f747eef599228cb4a54837c79eaca1550a0` | `desk-ai__before.ts` |
-| 57 | T | `supabase/functions/desk-agent/index.ts` | #170 | aiModels, copilotContext, executionGuard, fetchWithTimeout, premiumSwitch | `8c4758594174688fb9bb6be1ac1b155a9574380f00a4ba02480a7656ef8f852f` | `desk-agent__before.ts` |
-| 58 | T | `supabase/functions/thrive-ai-chat/index.ts` | #170 | aiModels, copilotContext, embed, fetchWithTimeout, premiumSwitch | `65fa2f6ae3b10f9182bcac5aee6907b592534ff3545dc6357fb5c5804f065b4a` | `thrive-ai-chat__before.ts` |
-| 59 | T | `supabase/functions/scout-gigs/index.ts` | #170 | aiModels, aiRateLimit, premiumSwitch, scoutSources | `11f082ec689bc1f9f8bee363c090b3b8d5bdcd449c3656072f06640e2bf402c9` | `scout-gigs__before.ts` |
-| 60 | T | `supabase/functions/thrive-voice-turn/index.ts` | #170 | aiModels, premiumSwitch | `c9ca00e0c98c05ade854bb5923ea54d4f35cde6012c14529924e44cadaf6969a` | `thrive-voice-turn__before.ts` |
-| 61 | U | `supabase/functions/route-studio-outcome/index.ts` | #169 | aiModels, studioOutcomeRouter | `acbae65675b3c67802e47e74540d2a2133cda27a1e44def6c339baef65075e98` | `route-studio-outcome__before.ts` |
-| 62 | W | `supabase/functions/create-curated-stage/index.ts` | #176 | none | `f98219f0cee207353648820ca5e656ac4b47e8a88a51306ad5a5b7e8d9146730` | `create-curated-stage__before.ts` |
-| 63 | X | `supabase/functions/send-event-invite/index.ts` | #178 | outboundBudget, outboundText | `935595b31dcbd4371282bc19fe487009150c3bfaf0954e81594e0c536cd58a35` | `send-event-invite__before.ts` |
-| 64 | Y | `supabase/functions/send-invoice-chase/index.ts` | #179 | aiModels, notificationGuards | `12868b1d1d21b87aa877fd606c489895ce3b08edef9f8c33eb2c72a4cbfc1ca9` | `send-invoice-chase__before.ts` |
-| 65 | Y | `supabase/functions/notify-swipe/index.ts` | #179 | notificationGuards, outboundBudget | `16a7377e1a50676d871f598b5d6e475d3b864940e11cd2dc265469926b17c339` | `notify-swipe__before.ts` |
-| 66 | Y | `supabase/functions/notify-speed-pool-ping/index.ts` | #179 | notificationGuards | `f691aa03eda7fe85e9a74ee7af61a9efa86a987817fab18cc4acc7915961f421` | `notify-speed-pool-ping__before.ts` |
-| 67 | Y | `supabase/functions/notify-speed-session-update/index.ts` | #179 | notificationGuards | `ac638dea60447773c56dea3007b4de482a6ebd9fc364aa85ab2c488169f8e6a0` | `notify-speed-session-update__before.ts` |
-| 68 | Z | `supabase/functions/thrivefund-finalize-campaign/index.ts` | #184 | admin-guard, pledgeVerification, stripeEnv | `83a89ae47c151585879df0eb6a93150725ca54da8993fbeb709b6ea94878096e` | `thrivefund-finalize-campaign__before.ts` |
-| 69 | Z | `supabase/functions/thrivefund-create-pledge/index.ts` | #185 | pledgeRequest, stripeEnv | `f96bc3459cdd9b5d6db14b8a9194f63ff3d3ba84a4b59557692046bd5927859f` | `thrivefund-create-pledge__before.ts` |
-| 70 | AA | `supabase/functions/stripe-marketplace-webhook/index.ts` | #159, #187 | milestoneProjectSync, productFilePaths, resolveMilestonePayee, stripeEnv | `4ecc2417b1b2d0c685d21979608b02c41f380fc2bc52053407a000b3d7759148` | `stripe-marketplace-webhook__before.ts` |
-| 71 | AB | `supabase/functions/checkout-event-tickets/index.ts` | #190 | stripeEnv, ticketCheckout | `8f6c0eac572b9210115852bbeacf5fca451814163e55c921ac518134974ca0b7` | `checkout-event-tickets__before.ts` |
-| 72 | I | `supabase/functions/create-meeting/index.ts` | #146, #152 | meetingContextAccess, projectAccess, recordingConsent, roomSessionLimits | `c8387501dd8f3071e8b26ee2dd232d7e35bfd7cfaa7ade55cf47e1ebd35bf12b` | `create-meeting__before.ts` |
+| 29 | E | `supabase/functions/mint-meeting-token/index.ts` | #142 | meetingParticipantAccess, roomSessionLimits | `63bd589476d440ae084e5c72b60bbec74c78477c6f3d1121cf05acc7208f643e` | `mint-meeting-token__before.ts` |
+| 30 | F | `supabase/functions/get-recording-link/index.ts` | #143, #149, #151, #152 | projectAccess, recordingAccess | `11ca0d25592205a7a593ae17536276a47bac33fc24f34925a0c01e1978ce5b2b` | `get-recording-link__before.ts` |
+| 31 | H | `supabase/functions/book-meeting/index.ts` | #145, #152 | recordingConsent | `45d2b2de5865a883af9b579d415e6230e81520510579d29ca523eebc7da5ab56` | `book-meeting__before.ts` |
+| 32 | G | `supabase/functions/daily-recording-webhook/index.ts` | #144 | webhookFreshness | `f2795873808140b6d06a1b2d778b19e2682d32f0eb44593dfb78be6f9d77ff04` | `daily-recording-webhook__before.ts` |
+| 33 | J | `supabase/functions/redeem-project-share/index.ts` | #156 | shareLinkScope | `f8da3a1b8ab343849fbdb25bc53b307ac9f15d5a46556e65da84c49a8c263de8` | `redeem-project-share__before.ts` |
+| 34 | K | `supabase/functions/get-download-urls/index.ts` | #157, #159 | productFilePaths, purchaseEntitlement, stripeEnv | `7bc97fe857ddc0bb49757edce35a1e2a7a50cb1757fd9227d5fcc1d5c8786a27` | `get-download-urls__before.ts` |
+| 35 | K | `supabase/functions/complete-product-purchase/index.ts` | #157, #159 | productFilePaths, purchaseEntitlement, stripeEnv | `62eeb74d0593dda123fe3d7ed7e1981f653275f4158fda10354d9e5b9296c08b` | `complete-product-purchase__before.ts` |
+| 36 | K | `supabase/functions/generate-studio-image/index.ts` | #157 | aiModels, projectAccess, studioAIGate | `90ae0b16673f8bfb0778ceae0e0644698fe6f23f863abe8a863e878a55211058` | `generate-studio-image__before.ts` |
+| 37 | K | `supabase/functions/generate-deal-memo/index.ts` | #157 | none | `a3a5aa714c1261ea119ec2a4a181589377935d5b4a57edf2417c58234083e58f` | `generate-deal-memo__before.ts` |
+| 38 | L | `supabase/functions/generate-moodboard-image/index.ts` | #158 | aiModels, studioAccess | `aa42f35f6842fb79f9341c70217bc224e66a8b169b1fab264cc226adb45dfbd8` | `generate-moodboard-image__before.ts` |
+| 39 | L | `supabase/functions/generate-studio-copy/index.ts` | #158 | aiModels, studioAIGate, studioAccess | `31fa73a68eca9c0855085fa9c963b16ab5cd6ec9fe845e5f173e9977e01261cc` | `generate-studio-copy__before.ts` |
+| 40 | L | `supabase/functions/studio-ingest/index.ts` | #158 | aiModels, aiRateLimit, promptIsolation, studioAccess | `45cbf09c795da0ec7ebfb430e09819d9f12fc41177deb9892db21da0ca218a4e` | `studio-ingest__before.ts` |
+| 41 | L | `supabase/functions/match-event-guests/index.ts` | #158 | aiModels, aiRateLimit, studioAccess | `edaf70396fbfdcefc297a31ea336d49b81c884a3df25e49aacc400ff6515bc9f` | `match-event-guests__before.ts` |
+| 42 | N | `supabase/functions/send-activity-digest/index.ts` | #161 | admin-guard | `9a4a549e4dbc0cea09c90ee56b34e55ccd7f9e3c29c8c5bbc1b3adb3bd139231` | `send-activity-digest__before.ts` |
+| 43 | N | `supabase/functions/send-streak-warning/index.ts` | #161 | admin-guard | `71a8d8ad64ea5355595720735bfacc86bf063b938acef92fcacc67593078f176` | `send-streak-warning__before.ts` |
+| 44 | N | `supabase/functions/send-reengagement/index.ts` | #161 | admin-guard | `1bd3ce6f4bcd3c43f4e64e41df871a547c5230dbb64e8cb1bbd2e567abb778c0` | `send-reengagement__before.ts` |
+| 45 | N | `supabase/functions/send-get-paid-link/index.ts` | #161 | getPaidLink, outboundText, projectAccess | `b3ecb55cf9d25b6a31e34023989428ac195a894c57ab476f9308fed2fdf21f77` | `send-get-paid-link__before.ts` |
+| 46 | N | `supabase/functions/verify-guest-opportunity/index.ts` | #161 | guestVerification, outboundText | `ea2603c80e96d96769e96a69388f0fc61585a4d1fa69df40bb1eb70e03069614` | `verify-guest-opportunity__before.ts` |
+| 47 | P | `supabase/functions/send-phone-otp/index.ts` | #162 | phoneOtp | `3a1334b2f27e8a6b0f4017e8a81d3a9c5bb7e007e0df02945268fc8c0d812e89` | `send-phone-otp__before.ts` |
+| 48 | P | `supabase/functions/merge-accounts-init/index.ts` | #162 | phoneOtp | `131286ca7d7b01bf87d19a496a2fa8c2100d62d26cc2eac4b8097732450df9fa` | `merge-accounts-init__before.ts` |
+| 49 | P | `supabase/functions/send-outreach-email/index.ts` | #162, #165 | aiModels, outboundBudget, outboundText | `0944a58f2ddf69abd90b60bdf2014e69728afb85e701ec3594e521f9e16eb149` | `send-outreach-email__before.ts` |
+| 50 | P | `supabase/functions/verify-brand-credit/index.ts` | #162 | outboundText | `49dbc26a1cc01cbdd5063243fe43b9cd660fc51169c4e9a3475164eb17f93130` | `verify-brand-credit__before.ts` |
+| 51 | Q | `supabase/functions/agent-send-dm/index.ts` | #163 | agentDmBinding | `b207e5c82e4f03b2f9bd299a9c24abd970adfa02e366a5194fcb1bdd1d43dead` | `agent-send-dm__before.ts` |
+| 52 | R | `supabase/functions/send-project-invitation/index.ts` | #165 | outboundBudget, outboundText, projectAccess | `8f93947be6c5b003748c85400aef65930d99890e043c29895760939145b879af` | `send-project-invitation__before.ts` |
+| 53 | R | `supabase/functions/send-event-blast/index.ts` | #165 | none | `1c757bb0fb795536727c934099685f5ee83e74a50a7be4136d17496cbb33a386` | `send-event-blast__before.ts` |
+| 54 | R | `supabase/functions/send-credit-invite/index.ts` | #165 | outboundText | `2c6109d462732c2ecd1f00cfe460d92b6b3f54b169d131a69d2f8493913a8c36` | `send-credit-invite__before.ts` |
+| 55 | S | `supabase/functions/copilot-collaborator-tools/index.ts` | #172 | agentAuthority | `74142ef4449f5714cc0e5f48f3aa2026fa961c28ecb8abd8c33101ddd988cb3e` | `copilot-collaborator-tools__before.ts` |
+| 56 | S | `supabase/functions/send-outreach-draft/index.ts` | #172, #179 | agentActionBinding, notificationGuards | `702a04d8e829b56c2fccf701a281d9d211226442b96818d359bc1b43a8f3b83e` | `send-outreach-draft__before.ts` |
+| 57 | T | `supabase/functions/desk-ai/index.ts` | #170 | aiModels, copilotContext, fetchWithTimeout, premiumSwitch, projectAccess | `8de853b2ae491f4186ee50dd559b5f747eef599228cb4a54837c79eaca1550a0` | `desk-ai__before.ts` |
+| 58 | T | `supabase/functions/desk-agent/index.ts` | #170 | aiModels, copilotContext, executionGuard, fetchWithTimeout, premiumSwitch | `8c4758594174688fb9bb6be1ac1b155a9574380f00a4ba02480a7656ef8f852f` | `desk-agent__before.ts` |
+| 59 | T | `supabase/functions/thrive-ai-chat/index.ts` | #170 | aiModels, copilotContext, embed, fetchWithTimeout, premiumSwitch | `65fa2f6ae3b10f9182bcac5aee6907b592534ff3545dc6357fb5c5804f065b4a` | `thrive-ai-chat__before.ts` |
+| 60 | T | `supabase/functions/scout-gigs/index.ts` | #170 | aiModels, aiRateLimit, premiumSwitch, scoutSources | `11f082ec689bc1f9f8bee363c090b3b8d5bdcd449c3656072f06640e2bf402c9` | `scout-gigs__before.ts` |
+| 61 | T | `supabase/functions/thrive-voice-turn/index.ts` | #170 | aiModels, premiumSwitch | `c9ca00e0c98c05ade854bb5923ea54d4f35cde6012c14529924e44cadaf6969a` | `thrive-voice-turn__before.ts` |
+| 62 | U | `supabase/functions/route-studio-outcome/index.ts` | #169 | aiModels, studioOutcomeRouter | `acbae65675b3c67802e47e74540d2a2133cda27a1e44def6c339baef65075e98` | `route-studio-outcome__before.ts` |
+| 63 | W | `supabase/functions/create-curated-stage/index.ts` | #176 | none | `f98219f0cee207353648820ca5e656ac4b47e8a88a51306ad5a5b7e8d9146730` | `create-curated-stage__before.ts` |
+| 64 | X | `supabase/functions/send-event-invite/index.ts` | #178 | outboundBudget, outboundText | `935595b31dcbd4371282bc19fe487009150c3bfaf0954e81594e0c536cd58a35` | `send-event-invite__before.ts` |
+| 65 | Y | `supabase/functions/send-invoice-chase/index.ts` | #179 | aiModels, notificationGuards | `12868b1d1d21b87aa877fd606c489895ce3b08edef9f8c33eb2c72a4cbfc1ca9` | `send-invoice-chase__before.ts` |
+| 66 | Y | `supabase/functions/notify-swipe/index.ts` | #179 | notificationGuards, outboundBudget | `16a7377e1a50676d871f598b5d6e475d3b864940e11cd2dc265469926b17c339` | `notify-swipe__before.ts` |
+| 67 | Y | `supabase/functions/notify-speed-pool-ping/index.ts` | #179 | notificationGuards | `f691aa03eda7fe85e9a74ee7af61a9efa86a987817fab18cc4acc7915961f421` | `notify-speed-pool-ping__before.ts` |
+| 68 | Y | `supabase/functions/notify-speed-session-update/index.ts` | #179 | notificationGuards | `ac638dea60447773c56dea3007b4de482a6ebd9fc364aa85ab2c488169f8e6a0` | `notify-speed-session-update__before.ts` |
+| 69 | Z | `supabase/functions/thrivefund-finalize-campaign/index.ts` | #184 | admin-guard, pledgeVerification, stripeEnv | `83a89ae47c151585879df0eb6a93150725ca54da8993fbeb709b6ea94878096e` | `thrivefund-finalize-campaign__before.ts` |
+| 70 | Z | `supabase/functions/thrivefund-create-pledge/index.ts` | #185 | pledgeRequest, stripeEnv | `f96bc3459cdd9b5d6db14b8a9194f63ff3d3ba84a4b59557692046bd5927859f` | `thrivefund-create-pledge__before.ts` |
+| 71 | AA | `supabase/functions/stripe-marketplace-webhook/index.ts` | #159, #187 | milestoneProjectSync, productFilePaths, resolveMilestonePayee, stripeEnv | `4ecc2417b1b2d0c685d21979608b02c41f380fc2bc52053407a000b3d7759148` | `stripe-marketplace-webhook__before.ts` |
+| 72 | AB | `supabase/functions/checkout-event-tickets/index.ts` | #190 | stripeEnv, ticketCheckout | `8f6c0eac572b9210115852bbeacf5fca451814163e55c921ac518134974ca0b7` | `checkout-event-tickets__before.ts` |
+| 73 | AC | `supabase/functions/verify-event-ticket/index.ts` | #193 | orderConfirmation, stripeEnv | `24493cb519157ede57c5281a6bb9f28cbf20137828c26a022427120da13918f5` | `verify-event-ticket__before.ts` |
+| 74 | I | `supabase/functions/create-meeting/index.ts` | #146, #152 | meetingContextAccess, projectAccess, recordingConsent, roomSessionLimits | `c8387501dd8f3071e8b26ee2dd232d7e35bfd7cfaa7ade55cf47e1ebd35bf12b` | `create-meeting__before.ts` |
 
 Notes: `get-download-urls` and `complete-product-purchase` appear once, at step K; the file pasted there already carries the step M change. `send-outreach-draft` appears once, at step S; the file carries the step Y reminder rule (PR #179). `_shared/outboundBudget.ts` is one file for steps R, X and Y.
 
@@ -392,6 +395,13 @@ Notes: `get-download-urls` and `complete-product-purchase` appear once, at step 
 - A limited code whose remaining uses are held by other buyers' unpaid checkouts of the last 30 minutes: "Promo code fully redeemed"; the buyer's own pending order does not block them.
 - Rollback: re-paste `checkout-event-tickets__before.ts`, redeploy `checkout-event-tickets`.
 
+**AC `verify-event-ticket`**
+- A paid Checkout session verified by the success page and the sessions list at the same moment: the order is `paid` once, the tier's `quantity_sold` rises by the order's quantity once and the promo code's `uses_count` by one; the second call answers `paid`.
+- A session that Stripe does not report as paid: the status is returned and nothing is written.
+- A tier whose capacity is gone at confirmation: the buyer is still seated and the order carries `metadata.capacity_exceeded` (as before).
+- Logs: an "order claimed paid" line with no "verified" line after it for the same order id means the function stopped between the claim and the counters: report the order id.
+- Rollback: re-paste `verify-event-ticket__before.ts`, redeploy `verify-event-ticket`.
+
 **I `create-meeting`**
 - Meeting from your own project: **200**; from a project you do not belong to: **403** and no new Daily room.
 - Meeting in your own Circle: **200**; in a Circle you did not create or join: **403**.
@@ -403,58 +413,59 @@ Notes: `get-download-urls` and `complete-product-purchase` appear once, at step 
 
 1. Section 3 pre-checks (including the `__before` copies).
 2. Paste every helper of section 4, in table order (no deploy needed).
-3. Functions in table order: E (1), F (1), H (1), G (1), J (1), K (4), L (4), M (0, see AA), N (5, after the cron check), P (4), Q (1), R (3), S (2), T (5), U (1), W (1), X (1), Y (4), Z (2: **before any ThriveFund finalization**), AA (1: **only after the migration of section 8 is applied**), AB (1). Step M has no separate paste: its file is pasted once, at AA. One at a time; verify; watch the logs.
+3. Functions in table order: E (1), F (1), H (1), G (1), J (1), K (4), L (4), M (0, see AA), N (5, after the cron check), P (4), Q (1), R (3), S (2), T (5), U (1), W (1), X (1), Y (4), Z (2: **before any ThriveFund finalization**), AA (1: **only after the migration of section 8 is applied**), AB (1), AC (1). Step M has no separate paste: its file is pasted once, at AA. One at a time; verify; watch the logs.
 4. Publish the frontend once (all the frontend PRs of section 1).
 5. Only then, with the owner's release of section 2b and the logs watched, paste step I and verify it.
 6. Fill the deployment record below and keep the `__before.ts` copies for the first full day of logs.
 
 | # | Step | Function | Pasted by / when | Checksum matched | Verified | Logs reviewed | State |
 |---|---|---|---|---|---|---|---|
-| 28 | E | `mint-meeting-token` | | | | | not deployed |
-| 29 | F | `get-recording-link` | | | | | not deployed |
-| 30 | H | `book-meeting` | | | | | not deployed |
-| 31 | G | `daily-recording-webhook` | | | | | not deployed |
-| 32 | J | `redeem-project-share` | | | | | not deployed |
-| 33 | K | `get-download-urls` | | | | | not deployed |
-| 34 | K | `complete-product-purchase` | | | | | not deployed |
-| 35 | K | `generate-studio-image` | | | | | not deployed |
-| 36 | K | `generate-deal-memo` | | | | | not deployed |
-| 37 | L | `generate-moodboard-image` | | | | | not deployed |
-| 38 | L | `generate-studio-copy` | | | | | not deployed |
-| 39 | L | `studio-ingest` | | | | | not deployed |
-| 40 | L | `match-event-guests` | | | | | not deployed |
-| 41 | N | `send-activity-digest` | | | | | not deployed |
-| 42 | N | `send-streak-warning` | | | | | not deployed |
-| 43 | N | `send-reengagement` | | | | | not deployed |
-| 44 | N | `send-get-paid-link` | | | | | not deployed |
-| 45 | N | `verify-guest-opportunity` | | | | | not deployed |
-| 46 | P | `send-phone-otp` | | | | | not deployed |
-| 47 | P | `merge-accounts-init` | | | | | not deployed |
-| 48 | P | `send-outreach-email` | | | | | not deployed |
-| 49 | P | `verify-brand-credit` | | | | | not deployed |
-| 50 | Q | `agent-send-dm` | | | | | not deployed |
-| 51 | R | `send-project-invitation` | | | | | not deployed |
-| 52 | R | `send-event-blast` | | | | | not deployed |
-| 53 | R | `send-credit-invite` | | | | | not deployed |
-| 54 | S | `copilot-collaborator-tools` | | | | | not deployed |
-| 55 | S | `send-outreach-draft` | | | | | not deployed |
-| 56 | T | `desk-ai` | | | | | not deployed |
-| 57 | T | `desk-agent` | | | | | not deployed |
-| 58 | T | `thrive-ai-chat` | | | | | not deployed |
-| 59 | T | `scout-gigs` | | | | | not deployed |
-| 60 | T | `thrive-voice-turn` | | | | | not deployed |
-| 61 | U | `route-studio-outcome` | | | | | not deployed |
-| 62 | W | `create-curated-stage` | | | | | not deployed |
-| 63 | X | `send-event-invite` | | | | | not deployed |
-| 64 | Y | `send-invoice-chase` | | | | | not deployed |
-| 65 | Y | `notify-swipe` | | | | | not deployed |
-| 66 | Y | `notify-speed-pool-ping` | | | | | not deployed |
-| 67 | Y | `notify-speed-session-update` | | | | | not deployed |
-| 68 | Z | `thrivefund-finalize-campaign` | | | | | not deployed |
-| 69 | Z | `thrivefund-create-pledge` | | | | | not deployed |
-| 70 | AA | `stripe-marketplace-webhook` | | | | | not deployed |
-| 71 | AB | `checkout-event-tickets` | | | | | not deployed |
-| 72 | I | `create-meeting` | | | | | not deployed |
+| 29 | E | `mint-meeting-token` | | | | | not deployed |
+| 30 | F | `get-recording-link` | | | | | not deployed |
+| 31 | H | `book-meeting` | | | | | not deployed |
+| 32 | G | `daily-recording-webhook` | | | | | not deployed |
+| 33 | J | `redeem-project-share` | | | | | not deployed |
+| 34 | K | `get-download-urls` | | | | | not deployed |
+| 35 | K | `complete-product-purchase` | | | | | not deployed |
+| 36 | K | `generate-studio-image` | | | | | not deployed |
+| 37 | K | `generate-deal-memo` | | | | | not deployed |
+| 38 | L | `generate-moodboard-image` | | | | | not deployed |
+| 39 | L | `generate-studio-copy` | | | | | not deployed |
+| 40 | L | `studio-ingest` | | | | | not deployed |
+| 41 | L | `match-event-guests` | | | | | not deployed |
+| 42 | N | `send-activity-digest` | | | | | not deployed |
+| 43 | N | `send-streak-warning` | | | | | not deployed |
+| 44 | N | `send-reengagement` | | | | | not deployed |
+| 45 | N | `send-get-paid-link` | | | | | not deployed |
+| 46 | N | `verify-guest-opportunity` | | | | | not deployed |
+| 47 | P | `send-phone-otp` | | | | | not deployed |
+| 48 | P | `merge-accounts-init` | | | | | not deployed |
+| 49 | P | `send-outreach-email` | | | | | not deployed |
+| 50 | P | `verify-brand-credit` | | | | | not deployed |
+| 51 | Q | `agent-send-dm` | | | | | not deployed |
+| 52 | R | `send-project-invitation` | | | | | not deployed |
+| 53 | R | `send-event-blast` | | | | | not deployed |
+| 54 | R | `send-credit-invite` | | | | | not deployed |
+| 55 | S | `copilot-collaborator-tools` | | | | | not deployed |
+| 56 | S | `send-outreach-draft` | | | | | not deployed |
+| 57 | T | `desk-ai` | | | | | not deployed |
+| 58 | T | `desk-agent` | | | | | not deployed |
+| 59 | T | `thrive-ai-chat` | | | | | not deployed |
+| 60 | T | `scout-gigs` | | | | | not deployed |
+| 61 | T | `thrive-voice-turn` | | | | | not deployed |
+| 62 | U | `route-studio-outcome` | | | | | not deployed |
+| 63 | W | `create-curated-stage` | | | | | not deployed |
+| 64 | X | `send-event-invite` | | | | | not deployed |
+| 65 | Y | `send-invoice-chase` | | | | | not deployed |
+| 66 | Y | `notify-swipe` | | | | | not deployed |
+| 67 | Y | `notify-speed-pool-ping` | | | | | not deployed |
+| 68 | Y | `notify-speed-session-update` | | | | | not deployed |
+| 69 | Z | `thrivefund-finalize-campaign` | | | | | not deployed |
+| 70 | Z | `thrivefund-create-pledge` | | | | | not deployed |
+| 71 | AA | `stripe-marketplace-webhook` | | | | | not deployed |
+| 72 | AB | `checkout-event-tickets` | | | | | not deployed |
+| 73 | AC | `verify-event-ticket` | | | | | not deployed |
+| 74 | I | `create-meeting` | | | | | not deployed |
 
 ## 8. Gates that are not part of this bundle (SQL and payments)
 
@@ -464,7 +475,7 @@ Notes: `get-download-urls` and `complete-product-purchase` appear once, at step 
 | M-B to M-E | proposals | `schema-policy-impact-meetings.md`, each after M-A |
 | Commerce C-A to C-E | proposal (5 decisions owed) | `schema-policy-impact-commerce.md` (#160) |
 | **SQL file in this program, applied only by the owner** | **reviewed file, not applied** | `supabase/migrations/20261015100000_invoices_provider_reference.sql` (PR #187), SHA-256 `41fada0659e74fc46f8a67e75e03753ca96dbadd5bdef1fee758c64ce90b6ee7`: the nullable `invoices.stripe_payment_intent_id` column and a BEFORE INSERT trigger that refuses an API insert of an invoice that is already paid. Apply it, then paste step AA, then publish the frontend. The production check of 2026-10-15 showed the column does not exist |
-| Event ticket confirmation (`verify-event-ticket`) | **found, not changed** | no compare-and-set on the order status: two simultaneous verifications count the tier's `quantity_sold` and the code's `uses_count` twice. Proposal in `event-ticket-checkout-promo-evidence.md` (PR #190); it is payment-state logic and needs the owner's approval |
+| Event ticket confirmation (`verify-event-ticket`) | **counted once (step AC); access still open** | the paid transition is an atomic claim, so two simultaneous verifications no longer count twice (`event-ticket-confirmation-claim-evidence.md`, PR #193). The function still requires no signed-in user (it can only finalise an order Stripe says is paid): requiring the buyer or the host is an access decision for the owner |
 | ThriveFund pledge state | **B and C approved and built (step Z); A is a proposal** | `proposal-thrivefund-pledge-authorization-state.md` (#180). B (#184) and C (#185) are step Z. A (`proposal-thrivefund-pending-pledge-state.md`, #186) needs a migration, a webhook and a Stripe endpoint. Until step Z is pasted, do not let `thrivefund-finalize-campaign` run on a campaign whose `total_raised` was not compared with Stripe by hand |
 | Durable send registry, Gmail credential storage, Twilio spend controls, account-merge OTP template | proposals | `proposal-outbound-send-registry.md`, `proposal-gmail-credential-storage.md`, `proposal-twilio-spend-controls.md`, `proposal-account-merge-otp-template.md` |
 | Cron header check (step N), cron jobs, secrets | owner action | not changed by this program |
