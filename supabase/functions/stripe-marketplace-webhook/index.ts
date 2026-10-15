@@ -87,7 +87,7 @@ serve(async (req) => {
       if (kind === "invoice" && session.payment_status === "paid") {
         const invoiceId = session.metadata?.invoice_id;
         if (invoiceId) {
-          await supabaseAdmin
+          const { error: invoicePaidErr } = await supabaseAdmin
             .from("invoices")
             .update({
               status: "paid",
@@ -95,6 +95,17 @@ serve(async (req) => {
               stripe_payment_intent_id: session.payment_intent as string,
             })
             .eq("id", invoiceId);
+          // A payment Stripe confirmed that could not be recorded must not be answered 200: Stripe
+          // retries a non-2xx for days. (Until `invoices.stripe_payment_intent_id` existed in
+          // production this update failed on every call and the error was dropped, so a paid
+          // invoice stayed unpaid.)
+          if (invoicePaidErr) {
+            logStep("ERROR invoice payment not recorded", { invoiceId, message: invoicePaidErr.message });
+            return new Response(JSON.stringify({ error: "Could not record the invoice payment" }), {
+              status: 500,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
 
           const recipientUserId = session.metadata?.recipient_user_id;
           if (recipientUserId) {

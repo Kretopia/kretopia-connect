@@ -1,6 +1,6 @@
 # Security deployment bundle, steps E to AA (manual paste into `kretopia-app`)
 
-Source: `Kretopia/kretopia-connect` `main` at `37224ee8b` (PRs #142 to #179 merged, then docs PRs). Steps Z and AA come from their PR branches while those PRs are open (#184, #185, #187): their checksums change if the PRs do. Every checksum below is of the file at that ref; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`).
+Source: `Kretopia/kretopia-connect` `main` at `bc86cde3a` (PRs #142 to #179 merged, then docs PRs). Steps Z and AA (#184, #185, #187) are merged and come from `main`. Every checksum below is of the file at that ref; recompute after any later merge that touches these paths (`git show main:<path> | shasum -a 256`).
 
 This is the single canonical deployment document. It supersedes `security-deployment-bundle-e-to-q.md` (PRs #164, #168, #173) and every earlier per-step list. **Nothing here is deployed.** Merged is not deployed: production runs the pre-slice copies. The document deploys nothing and contains no SQL.
 
@@ -39,11 +39,11 @@ Step letters follow the program: E to U are as in earlier documents, **V** (reco
 | #177 | - | Hero: Waving in HD from the official render | frontend | merged 2026-10-14 | **no** |
 | #178 | X | an event invitation list is bounded per account and per address | function + helper + frontend | merged 2026-10-14 | **no** |
 | #179 | Y | invoice reminders and swipe / session notifications happen once | functions + helper + frontend | merged 2026-10-14 | **no** |
-| #184 | Z | ThriveFund: the finalizer decides the goal from verified authorisations (owner-approved option B) | function + helper | open | **no** |
-| #185 | Z | ThriveFund: a pledge request is bounded, single and checked (owner-approved option C) | function + helper | open | **no** |
-| #187 | AA | invoices: a provider reference, an honest label, a closed INSERT path | function + frontend + migration file | open | **no** |
+| #184 | Z | ThriveFund: the finalizer decides the goal from verified authorisations (owner-approved option B) | function + helper | merged 2026-10-15 | **no** |
+| #185 | Z | ThriveFund: a pledge request is bounded, single and checked (owner-approved option C) | function + helper | merged 2026-10-15 | **no** |
+| #187 | AA | invoices: a provider reference, an honest label, a closed INSERT path | function + frontend + migration file | merged 2026-10-15 | **no** |
 
-Docs-only PRs (nothing to deploy): #141 (merged 2026-10-13), #147 (merged 2026-10-13), #148 (merged 2026-10-13), #150 (merged 2026-10-13), #153 (merged 2026-10-13), #154 (merged 2026-10-13), #160 (merged 2026-10-14), #164 (merged 2026-10-14), #166 (merged 2026-10-14), #168 (merged 2026-10-14), #173 (merged 2026-10-14), #180 (merged 2026-10-14), #181 (merged 2026-10-14), #182 (open), #183 (open), #186 (open).
+Docs-only PRs (nothing to deploy): #141 (merged 2026-10-13), #147 (merged 2026-10-13), #148 (merged 2026-10-13), #150 (merged 2026-10-13), #153 (merged 2026-10-13), #154 (merged 2026-10-13), #160 (merged 2026-10-14), #164 (merged 2026-10-14), #166 (merged 2026-10-14), #168 (merged 2026-10-14), #173 (merged 2026-10-14), #180 (merged 2026-10-14), #181 (merged 2026-10-14), #182 (merged 2026-10-15), #183 (merged 2026-10-15), #186 (merged 2026-10-15).
 
 Frontend-only or frontend-carrying PRs ship on **one frontend publish** (not a paste): #155, #167, #169, #170, #174, #175, #176, #177, #178, #179, #187. Publish **before** pasting step I (step I depends on #175).
 
