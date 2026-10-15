@@ -1,12 +1,19 @@
 // ThriveFund: Finalize a campaign at its deadline
-// - If total_raised >= goal_amount: capture all authorized pledges (release first milestone tranche)
+// - If the VERIFIED raised amount >= goal_amount: capture the authorised pledges (release first
+//   milestone tranche). "Verified" means Stripe itself reports the pledge's payment intent as
+//   authorised and capturable for the pledged amount (_shared/pledgeVerification.ts). The stored
+//   `campaigns.total_raised` is NOT trusted: pledge rows are written as `authorized` when the
+//   Checkout session is created, before anyone has paid, and that total counts them.
 // - If not: cancel all authorized pledges (no money charged) and mark failed
+// - A pledge that is not verified is cancelled, never captured
+// - If Stripe cannot be read for any pledge, nothing is captured or cancelled (503): retry later
 // - Idempotent: safe to call multiple times
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
+import { summarizeFinalization, toCents, verifyPledgeAuthorization, type PledgeVerdict } from "../_shared/pledgeVerification.ts";
 
 const corsHeaders = adminGuardCorsHeaders;
 
@@ -30,7 +37,7 @@ serve(async (req) => {
 
     const { data: campaign, error: cErr } = await supabaseAdmin
       .from("campaigns")
-      .select("id, slug, title, status, goal_amount, total_raised, deadline, creator_id, milestone_split")
+      .select("id, slug, title, status, goal_amount, total_raised, deadline, creator_id, milestone_split, currency")
       .eq("id", campaignId)
       .single();
     if (cErr || !campaign) throw new Error("Campaign not found");
@@ -51,24 +58,26 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const goalMet = Number(campaign.total_raised) >= Number(campaign.goal_amount);
-    log("evaluating", { goalMet, raised: campaign.total_raised, goal: campaign.goal_amount });
-
-    // Load all authorized pledges
-    const { data: pledges } = await supabaseAdmin
+    // Pass 1, read-only at Stripe: which pledges are really authorised. Pledges already captured or
+    // released were verified when they were captured and count as settled.
+    const { data: pledgeRows, error: pledgeErr } = await supabaseAdmin
       .from("pledges")
       .select("id, stripe_payment_intent_id, stripe_checkout_session_id, capture_status, amount")
       .eq("campaign_id", campaignId)
-      .eq("capture_status", "authorized");
+      .in("capture_status", ["authorized", "captured", "released"]);
+    if (pledgeErr) throw new Error("Could not read the campaign's pledges");
 
-    let captured = 0;
-    let cancelled = 0;
-    let errors = 0;
+    const pledges = (pledgeRows ?? []).filter((p: any) => p.capture_status === "authorized");
+    let settledCents = 0;
+    for (const p of pledgeRows ?? []) {
+      if (p.capture_status !== "authorized") settledCents += toCents(p.amount) ?? 0;
+    }
 
-    for (const p of pledges ?? []) {
+    const verdicts = new Map<string, { verdict: PledgeVerdict; paymentIntentId: string | null }>();
+    let verificationFailed = 0;
+    for (const p of pledges) {
       try {
-        // Resolve PI from session if not stored
-        let paymentIntentId = p.stripe_payment_intent_id;
+        let paymentIntentId: string | null = p.stripe_payment_intent_id ?? null;
         if (!paymentIntentId && p.stripe_checkout_session_id) {
           const sess = await stripe.checkout.sessions.retrieve(p.stripe_checkout_session_id);
           paymentIntentId = (sess.payment_intent as string) ?? null;
@@ -80,7 +89,68 @@ serve(async (req) => {
           }
         }
         if (!paymentIntentId) {
-          // Backer never completed checkout — cancel
+          verdicts.set(p.id, { verdict: { verified: false, reason: "no_payment_intent" }, paymentIntentId: null });
+          continue;
+        }
+        const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        verdicts.set(p.id, {
+          verdict: verifyPledgeAuthorization(p, intent as any, {
+            campaignId,
+            campaignCurrency: (campaign as any).currency,
+          }),
+          paymentIntentId,
+        });
+      } catch (err) {
+        verificationFailed++;
+        log("pledge_verify_error", { pledgeId: p.id, err: String(err) });
+      }
+    }
+    // Fail closed: a pledge that could not be checked is neither counted nor cancelled, and the
+    // decision is not made on a partial picture. The finalizer is idempotent: run it again.
+    if (verificationFailed > 0) {
+      return new Response(
+        JSON.stringify({ error: "Could not verify every pledge with Stripe; nothing was captured or cancelled", unverified: verificationFailed }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const verifiedCents: number[] = [];
+    for (const p of pledges) {
+      const v = verdicts.get(p.id)?.verdict;
+      if (v && v.verified) verifiedCents.push(v.cents);
+    }
+    const summary = summarizeFinalization({ settledCents, verifiedCents, goalAmount: campaign.goal_amount });
+    // A campaign that was already finalised keeps its outcome (re-calls are no-ops, not a re-decision).
+    const goalMet = campaign.status === "funded" ? true : campaign.status === "failed" ? false : summary.goalMet;
+    const verifiedRaised = summary.raisedCents / 100;
+    log("evaluating", {
+      goalMet,
+      verifiedRaised,
+      storedTotalRaised: campaign.total_raised,
+      goal: campaign.goal_amount,
+      authorised: pledges.length,
+      verified: verifiedCents.length,
+    });
+
+    // Pass 2: act.
+    let captured = 0;
+    let cancelled = 0;
+    let errors = 0;
+
+    for (const p of pledges) {
+      const checked = verdicts.get(p.id)!;
+      try {
+        const paymentIntentId = checked.paymentIntentId;
+
+        if (!checked.verdict.verified) {
+          // Never authorised (or not for this pledge): it is not captured, whatever the total said.
+          if (paymentIntentId) {
+            try {
+              await stripe.paymentIntents.cancel(paymentIntentId);
+            } catch (e) {
+              log("unverified_cancel_skipped", { pledgeId: p.id, err: String(e) });
+            }
+          }
           await supabaseAdmin
             .from("pledges")
             .update({ capture_status: "cancelled" })
@@ -98,7 +168,7 @@ serve(async (req) => {
 
           // For first milestone tranche we capture only firstPct of the authorized amount.
           // Remaining is captured by thrivefund-release-milestone later.
-          await stripe.paymentIntents.capture(paymentIntentId, {
+          await stripe.paymentIntents.capture(paymentIntentId!, {
             amount_to_capture: captureCents,
           });
           await supabaseAdmin
@@ -110,7 +180,7 @@ serve(async (req) => {
             .eq("id", p.id);
           captured++;
         } else {
-          await stripe.paymentIntents.cancel(paymentIntentId);
+          await stripe.paymentIntents.cancel(paymentIntentId!);
           await supabaseAdmin
             .from("pledges")
             .update({ capture_status: "cancelled" })
@@ -141,7 +211,7 @@ serve(async (req) => {
         style: "currency",
         currency: "USD",
         maximumFractionDigits: 0,
-      }).format(Number(campaign.total_raised));
+      }).format(verifiedRaised);
 
       // Creator email (lookup via auth admin)
       const { data: creatorAuth } = await supabaseAdmin.auth.admin.getUserById(campaign.creator_id);
@@ -157,7 +227,7 @@ serve(async (req) => {
               recipientName: creatorProfile?.full_name?.split(" ")[0] || null,
               campaignTitle: (campaign as any).title,
               totalRaised,
-              backerCount: (pledges?.length ?? 0),
+              backerCount: verifiedCents.length,
               isCreator: true,
               campaignUrl,
               exploreUrl,
@@ -188,7 +258,7 @@ serve(async (req) => {
                 recipientName: bProf?.full_name?.split(" ")[0] || null,
                 campaignTitle: (campaign as any).title,
                 totalRaised,
-                backerCount: (pledges?.length ?? 0),
+                backerCount: verifiedCents.length,
                 isCreator: false,
                 campaignUrl,
                 exploreUrl,
