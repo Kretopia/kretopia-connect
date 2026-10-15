@@ -334,10 +334,11 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
     }
   };
 
-  // Batch payout handler
-  const batchPayableMilestones = milestones.filter(m => 
-    (m.status === 'completed' && m.escrow_status === 'none' && !m.paid_at) ||
-    (m.escrow_status === 'authorized' && m.payment_intent_id && m.status === 'review')
+  // Batch release handler. Only escrow already held and in review can be released together;
+  // milestones that are not in escrow are paid one at a time (the combined checkout that used to
+  // include them was never reconciled by the webhook, so it is not offered any more).
+  const batchPayableMilestones = milestones.filter(m =>
+    m.escrow_status === 'authorized' && m.payment_intent_id && m.status === 'review'
   );
 
   const handleBatchPayout = async () => {
@@ -360,6 +361,15 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
 
       if (data?.summary?.captured > 0) {
         toast({ title: `${data.summary.captured} escrow payment(s) released!` });
+        onUpdate();
+      }
+
+      if (data?.summary?.errors > 0) {
+        toast({
+          title: "Some payments were not released",
+          description: `${data.summary.errors} milestone(s) could not be released. Open each one to see why.`,
+          variant: "destructive",
+        });
         onUpdate();
       }
     } catch (error: any) {
@@ -466,7 +476,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
                 ) : (
                   <Users className="h-4 w-4" />
                 )}
-                Pay All ({batchPayableMilestones.length}) — ${batchPayableMilestones.reduce((s, m) => s + Number(m.amount || 0), 0).toFixed(2)}
+                Release all ({batchPayableMilestones.length}) — ${batchPayableMilestones.reduce((s, m) => s + Number(m.amount || 0), 0).toFixed(2)}
               </Button>
             )}
 
