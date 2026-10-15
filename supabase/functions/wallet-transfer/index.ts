@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import {
+  MAX_IDEMPOTENCY_KEY_LENGTH,
+  cleanNote,
+  cleanTransferAmount,
+  limitCurrency,
+} from "../_shared/walletTransfer.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,7 +35,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
@@ -37,10 +44,30 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const { recipientId, amount, currency = "USD", description, idempotencyKey } = await req.json();
+    const body = await req.json();
+    const { recipientId, idempotencyKey } = body;
 
-    if (!recipientId || !amount || amount <= 0) {
+    if (!recipientId || typeof recipientId !== "string") {
       throw new Error("Missing or invalid recipient/amount");
+    }
+
+    // The amount is a number with at most two decimals: a third decimal is rounded differently by
+    // wallet_debit and wallet_credit (numeric(10,2)), which creates cents. See _shared/walletTransfer.ts.
+    const checkedAmount = cleanTransferAmount(body.amount);
+    if (!checkedAmount.ok) throw new Error(checkedAmount.error);
+    const amount = checkedAmount.amount;
+
+    // The wallet has one balance, so every label other than TTD is the same USD bucket: otherwise
+    // each label starts a fresh daily/monthly total in check_transfer_limit.
+    const currency = limitCurrency(body.currency);
+    const description = cleanNote(body.description);
+
+    if (
+      idempotencyKey !== undefined &&
+      idempotencyKey !== null &&
+      (typeof idempotencyKey !== "string" || idempotencyKey.length > MAX_IDEMPOTENCY_KEY_LENGTH)
+    ) {
+      throw new Error("Invalid idempotency key");
     }
 
     if (recipientId === user.id) {
@@ -132,7 +159,11 @@ serve(async (req) => {
 
     if (creditError) {
       // Roll the debit back so funds are never lost
-      await supabaseAdmin.rpc("wallet_credit", { p_user_id: user.id, p_amount: amount });
+      const { error: rollbackError } = await supabaseAdmin.rpc("wallet_credit", { p_user_id: user.id, p_amount: amount });
+      if (rollbackError) {
+        // The sender was debited and the refund failed too: this needs a manual repair.
+        logStep("ROLLBACK FAILED - sender debited, not refunded", { senderId: user.id, amount, message: rollbackError.message });
+      }
       if (reservedTransferId) {
         await supabaseAdmin.from("wallet_transfers").update({ status: "failed" }).eq("id", reservedTransferId);
       }
