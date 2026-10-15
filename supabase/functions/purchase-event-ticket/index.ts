@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { classifyTicketSession, planFromPriorOrders } from "../_shared/ticketPurchase.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -37,7 +38,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
@@ -67,6 +69,11 @@ serve(async (req) => {
     }
 
     logStep("Event found", { eventId, title: event.title, price: event.ticket_price });
+
+    // Same rule checkout-event-tickets applies: no payment is taken for a cancelled event.
+    if (event.status === 'cancelled') {
+      throw new Error("This event has been cancelled");
+    }
 
     if (!event.is_ticketed || !event.ticket_price || event.ticket_price <= 0) {
       throw new Error("This event is not a ticketed event");
@@ -119,6 +126,60 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://www.kretopia.com";
     const currency = (event.ticket_currency || 'usd').toLowerCase();
+
+    // One live purchase per buyer and event. The "already has a ticket" check above only sees the
+    // guest list, which is written after payment, so two clicks (or two tabs) used to open two
+    // payable Checkout sessions, and event tickets have no refund flow. See _shared/ticketPurchase.ts.
+    const { data: priorOrders, error: priorErr } = await supabaseAdmin
+      .from('event_orders')
+      .select('id, status, stripe_session_id, created_at')
+      .eq('event_id', eventId)
+      .eq('buyer_id', user.id)
+      .is('tier_id', null)
+      .in('status', ['paid', 'pending'])
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (priorErr) throw new Error("Could not check your earlier purchases, please try again");
+
+    const plan = planFromPriorOrders(priorOrders ?? [], new Date());
+    if (plan.paid) throw new Error("You already have a ticket for this event");
+    if (plan.startingNow) {
+      throw new Error("A purchase for this event is already being started, please try again in a moment");
+    }
+    for (const prior of plan.sessionsToCheck) {
+      let earlier;
+      try {
+        earlier = await stripe.checkout.sessions.retrieve(prior.sessionId);
+      } catch (_e) {
+        throw new Error("Could not check your earlier checkout, please try again");
+      }
+      const action = classifyTicketSession(earlier, { amountCents: priceInCents, currency });
+      if (action === 'paid') {
+        throw new Error("Your payment for this event is already being confirmed");
+      }
+      if (action === 'unknown') {
+        throw new Error("Could not check your earlier checkout, please try again");
+      }
+      if (action === 'reuse') {
+        logStep("Reusing the open checkout session", { sessionId: earlier.id, orderId: prior.orderId });
+        return new Response(JSON.stringify({
+          url: earlier.url,
+          sessionId: earlier.id,
+          orderId: prior.orderId,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      // "recreate": an open session at another price is expired so it cannot be paid later.
+      if (earlier.status === 'open') {
+        try {
+          await stripe.checkout.sessions.expire(prior.sessionId);
+        } catch (_e) {
+          throw new Error("Could not replace your earlier checkout, please try again");
+        }
+      }
+    }
 
     // Create a pending order row *before* redirecting to Stripe. This is the
     // authoritative record that verify-event-ticket checks against after
