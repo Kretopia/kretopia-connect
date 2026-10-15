@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { getPlatformFeeRate } from "../_shared/platformFees.ts";
 import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
+import { checkMilestonePayable, checkoutTitle } from "../_shared/milestonePayable.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,16 +36,17 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated or email not available");
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { milestoneId, amount: clientAmount, title, projectId, useEscrow } = await req.json();
-    if (!milestoneId || !title) {
-      throw new Error("Missing required fields: milestoneId or title");
+    const { milestoneId, amount: clientAmount, title: clientTitle, useEscrow } = await req.json();
+    if (!milestoneId || typeof milestoneId !== "string") {
+      throw new Error("Missing required fields: milestoneId");
     }
 
     // Get the brand's subscription tier to determine service fee
@@ -63,7 +65,7 @@ serve(async (req) => {
     // pattern already used by batch-milestone-payout.
     const { data: milestone, error: milestoneError } = await supabaseAdmin
       .from('milestones')
-      .select('created_by, status, amount, project_id')
+      .select('created_by, status, amount, project_id, title, escrow_status, paid_at')
       .eq('id', milestoneId)
       .single();
 
@@ -99,16 +101,24 @@ serve(async (req) => {
 
     // Guard against duplicate payment attempts (double-click, two tabs,
     // retried request) -- this is the authoritative check; a disabled
-    // button client-side helps but isn't a security boundary.
-    if (milestone.status === 'paid') {
-      logStep("Rejected: milestone already paid", { milestoneId });
-      return new Response(JSON.stringify({ error: "This milestone has already been paid." }), {
+    // button client-side helps but isn't a security boundary. It covers a milestone that is
+    // paid, captured OR already funded in escrow (a funded one is not `paid`, and a second
+    // payment for it is recorded by nobody), and a row amount that cannot be charged.
+    const payable = checkMilestonePayable(milestone);
+    if (!payable.ok) {
+      logStep("Rejected: milestone not payable", { milestoneId, reason: payable.error });
+      return new Response(JSON.stringify({ error: payable.error }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 409,
+        status: payable.status,
       });
     }
 
-    const talentRate = milestone.amount;
+    // The project and the title come from the milestone's own row, not from the request body.
+    const projectId: string = milestone.project_id;
+    const title = checkoutTitle(milestone.title, clientTitle);
+    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+
+    const talentRate = payable.amount;
     if (clientAmount !== undefined && parseFloat(clientAmount) !== talentRate) {
       logStep("Client-submitted amount ignored — mismatch with DB milestone amount", {
         milestoneId, clientAmount, dbAmount: talentRate,
@@ -245,8 +255,8 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/desk/${projectId}?payment=success&milestone=${milestoneId}&escrow=${useEscrow ? 'true' : 'false'}`,
-      cancel_url: `${req.headers.get("origin")}/desk/${projectId}?payment=cancelled`,
+      success_url: `${origin}/desk/${projectId}?payment=success&milestone=${milestoneId}&escrow=${useEscrow ? 'true' : 'false'}`,
+      cancel_url: `${origin}/desk/${projectId}?payment=cancelled`,
       metadata: {
         kind: 'milestone',
         milestoneId,
