@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { isSelfReportedPaid } from "@/lib/invoiceProvenance";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useAuth } from "@/hooks/useAuth";
@@ -802,7 +803,7 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
     setShowPreviewDialog(true);
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, selfReported = false) => {
     const styles: Record<string, string> = {
       draft: "bg-muted text-muted-foreground",
       sent: "bg-primary text-primary dark:bg-primary dark:text-primary",
@@ -818,6 +819,11 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
       <Badge variant="outline" className={`${styles[status] || ""} text-[10px] gap-1`}>
         <Icon className="h-2.5 w-2.5" />
         {status}
+        {status === "paid" && selfReported && (
+          <span className="font-normal opacity-80" title="Marked paid by you; no payment provider confirmed it">
+            · self-reported
+          </span>
+        )}
       </Badge>
     );
   };
@@ -900,7 +906,7 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="font-mono text-xs font-medium truncate max-w-[140px]">{inv.invoice_number}</p>
-                            {getStatusBadge(inv.status)}
+                            {getStatusBadge(inv.status, isSelfReportedPaid(inv))}
                             {isQuote && (
                               <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-800">
                                 <ScrollText className="h-2.5 w-2.5 mr-0.5" /> Quote
