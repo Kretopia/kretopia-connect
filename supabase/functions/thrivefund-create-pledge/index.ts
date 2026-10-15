@@ -6,6 +6,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { checkPledgeRequest, classifyOpenPledge } from "../_shared/pledgeRequest.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,6 +17,12 @@ const corsHeaders = {
 const log = (step: string, details?: any) => {
   console.log(`[THRIVEFUND-PLEDGE] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
+
+const refuse = (status: number, error: string) =>
+  new Response(JSON.stringify({ error }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    status,
+  });
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -45,7 +52,6 @@ serve(async (req) => {
     } = await req.json();
 
     if (!campaignId) throw new Error("campaignId required");
-    if (!amount || amount <= 0) throw new Error("Valid amount required");
 
     log("request", { campaignId, tierId, amount, userId: user.id });
 
@@ -58,6 +64,11 @@ serve(async (req) => {
     if (campErr || !campaign) throw new Error("Campaign not found");
     if (campaign.status !== "active") throw new Error("Campaign is not active");
     if (new Date(campaign.deadline) < new Date()) throw new Error("Campaign deadline has passed");
+
+    // The request itself: a positive amount with a ceiling, not the campaign's own creator, a
+    // literal boolean and a clipped string message (_shared/pledgeRequest.ts).
+    const checked = checkPledgeRequest({ amount, isAnonymous, backerMessage }, campaign, user.id);
+    if (!checked.ok) return refuse(checked.status, checked.error);
 
     const { data: creator } = await supabaseAdmin
       .from("profiles")
@@ -81,7 +92,7 @@ serve(async (req) => {
       if (t.max_backers && t.claimed_count >= t.max_backers) {
         throw new Error("Tier sold out");
       }
-      if (Number(amount) < Number(t.amount)) {
+      if (checked.amount < Number(t.amount)) {
         throw new Error(`Pledge must be at least ${t.amount} for this tier`);
       }
       tier = t;
@@ -91,9 +102,43 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const amountCents = Math.round(Number(amount) * 100);
+    const amountCents = checked.amountCents;
     const platformFeeCents = Math.round(amountCents * (Number(campaign.platform_fee_pct) / 100));
     const currency = (campaign.currency || "USD").toLowerCase();
+
+    // One live pledge per account and campaign. A completed Checkout session is a pledge already
+    // made; an open one is superseded by this request (its session expired, its row cancelled so
+    // the totals stop counting it); an expired one is cancelled. An unreadable one is not "none":
+    // 503 and nothing is created.
+    const { data: earlier, error: earlierErr } = await supabaseAdmin
+      .from("pledges")
+      .select("id, stripe_checkout_session_id")
+      .eq("campaign_id", campaignId)
+      .eq("backer_id", user.id)
+      .eq("capture_status", "authorized")
+      .limit(20);
+    if (earlierErr) return refuse(503, "Could not check your existing pledges, try again shortly");
+    for (const old of earlier ?? []) {
+      if (old.stripe_checkout_session_id) {
+        let action;
+        try {
+          const prior = await stripe.checkout.sessions.retrieve(old.stripe_checkout_session_id);
+          action = classifyOpenPledge(prior);
+        } catch (_e) {
+          return refuse(503, "Could not check your existing pledges, try again shortly");
+        }
+        if (action === "already_backed") return refuse(409, "You already have a pledge on this campaign");
+        if (action === "unknown") return refuse(503, "Could not check your existing pledges, try again shortly");
+        if (action === "supersede") {
+          try {
+            await stripe.checkout.sessions.expire(old.stripe_checkout_session_id);
+          } catch (_e) {
+            return refuse(503, "Could not replace your earlier pledge, try again shortly");
+          }
+        }
+      }
+      await supabaseAdmin.from("pledges").update({ capture_status: "cancelled" }).eq("id", old.id);
+    }
 
     // Find/reuse Stripe customer
     let customerId: string | undefined;
@@ -109,11 +154,11 @@ serve(async (req) => {
         campaign_id: campaignId,
         backer_id: user.id,
         tier_id: tierId ?? null,
-        amount: Number(amount),
+        amount: checked.amount,
         currency: campaign.currency || "USD",
         capture_status: "authorized",
-        is_anonymous: isAnonymous,
-        backer_message: backerMessage ?? null,
+        is_anonymous: checked.isAnonymous,
+        backer_message: checked.backerMessage,
       })
       .select()
       .single();
@@ -183,7 +228,7 @@ serve(async (req) => {
           templateData: {
             backerName: backerProfile?.full_name?.split(" ")[0] || null,
             campaignTitle: campaign.title,
-            pledgeAmount: new Intl.NumberFormat("en-US", { style: "currency", currency: campaign.currency || "USD" }).format(Number(amount)),
+            pledgeAmount: new Intl.NumberFormat("en-US", { style: "currency", currency: campaign.currency || "USD" }).format(checked.amount),
             campaignUrl: `${origin}/fund/${campaign.slug}`,
             deadlineDate,
           },
