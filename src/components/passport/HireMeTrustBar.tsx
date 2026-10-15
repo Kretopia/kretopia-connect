@@ -87,8 +87,11 @@ export function HireMeTrustBar({
         const { count } = await (supabase as any)
           .from("invoices")
           .select("id", { count: "exact", head: true })
-          .eq("creator_id", userId)
+          // `invoices` has `issued_by`, not `creator_id`: the old filter always errored and the
+          // confidence label never showed. Provider-confirmed invoices only (see BookedThisMonthChip).
+          .eq("issued_by", userId)
           .eq("status", "paid")
+          .not("stripe_payment_intent_id", "is", null)
           .gte("paid_at", since)
           .then((r: any) => r, () => ({ count: 0 }));
 

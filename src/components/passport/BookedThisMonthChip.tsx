@@ -36,6 +36,9 @@ export function BookedThisMonthChip({
         .select("id", { count: "exact", head: true })
         .eq("issued_by", userId)
         .eq("status", "paid")
+        // Shown to other people, so only invoices a payment provider vouches for: one the issuer
+        // confirmed themselves (confirm_invoice_paid_manually) has no provider reference.
+        .not("stripe_payment_intent_id", "is", null)
         .gte("paid_at", cutoff)
         .then((r: any) => r.count || 0, () => 0);
 
