@@ -14,6 +14,19 @@ export function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  // The install banner is a desktop-width surface: on a phone ("Get Kretopia App") it only sat over
+  // the content and the bottom nav, so it is not shown below `lg`. The browser's own install
+  // prompt stays suppressed (preventDefault below) and /install and Settings still offer it.
+  const [isDesktop, setIsDesktop] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const onChange = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
 
   useEffect(() => {
     const dismissed = localStorage.getItem(STORAGE_KEY);
@@ -58,7 +71,7 @@ export function PWAInstallPrompt() {
     localStorage.setItem(STORAGE_KEY, Date.now().toString());
   };
 
-  if (!showBanner) return null;
+  if (!showBanner || !isDesktop) return null;
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-40 lg:bottom-4 lg:left-auto lg:right-4 lg:max-w-sm animate-in slide-in-from-bottom-4">

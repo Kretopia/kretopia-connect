@@ -27,3 +27,34 @@ export function appChrome(pathname: string, signedIn: boolean): AppChrome {
     showBottomNav: !standalone && !isCompCard && !isPublicPassport && signedIn,
   };
 }
+
+// Full-screen or public surfaces where the Kreto mascot must not float over the page on a phone:
+// sign-in and onboarding, calls, the messages composer, public profiles and sites.
+const KRETO_MASCOT_HIDDEN_PREFIXES = [
+  "/auth",
+  "/login",
+  "/signup",
+  "/onboarding",
+  "/claim",
+  "/accept-invite",
+  "/landing",
+  "/check-in",
+  "/call/",
+  "/guest-call",
+  "/messages",
+  "/epk/",
+  "/u/",
+  "/site/",
+  "/website-builder",
+];
+
+/**
+ * Whether the Kreto mascot floats above the bottom nav on a phone (below `lg`). It replaces the
+ * docked "Ask Kreto" composer bar, so it follows the same rule that bar followed: only where the
+ * bottom nav shows, and not on the full-screen or public surfaces above. Desktop always shows the
+ * mascot (see KretoLauncher) and does not use this.
+ */
+export function showKretoMascotOnMobile(pathname: string, signedIn: boolean): boolean {
+  if (!appChrome(pathname, signedIn).showBottomNav) return false;
+  return !KRETO_MASCOT_HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}

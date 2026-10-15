@@ -9,10 +9,11 @@ import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
  * surface already uses, so it opens the real ThriveAgentFab Sheet with no
  * new backend or event plumbing.
  *
- * Desktop-only (lg+) by design: on mobile, ThriveBar is already docked
- * above the bottom nav as the "open Kreto" entry point — a second floating
- * button there would sit on top of it, which is exactly what this
- * component's own positioning rules are meant to avoid.
+ * Always shown on desktop (lg+). On a phone the same mascot floats just
+ * above the bottom nav, but only where `showOnMobile` says so (App.tsx
+ * passes `showKretoMascotOnMobile`: where the bottom nav shows, and not on
+ * calls, messages, onboarding or public pages). It replaced the docked
+ * "Ask Kreto" composer bar, so there is still exactly one entry point.
  *
  * Kreto pilot surface #1 (KRETO_3D_REFERENCE_AND_RIGHTS_AUDIT.md): shows
  * KretoPresence at state="idle" only. This button is hidden the moment any
@@ -20,7 +21,7 @@ import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
  * "processing" -- while this launcher is visible, Kreto is, truthfully,
  * always idle. No fake processing/proposal/success state is invented here.
  */
-export function KretoLauncher() {
+export function KretoLauncher({ showOnMobile = false }: { showOnMobile?: boolean }) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   // Hide while any Sheet/Dialog (Kreto itself, menu, notifications,
@@ -53,18 +54,19 @@ export function KretoLauncher() {
       aria-label="Open Kreto"
       title="Open Kreto"
       className={cn(
-        "group hidden lg:flex fixed z-40 items-end justify-center h-24 w-24",
+        "group fixed z-40 items-end justify-center h-20 w-20 lg:h-24 lg:w-24",
+        showOnMobile ? "flex" : "hidden lg:flex",
+        // Phone: above the bottom nav (and its safe area), at the right edge.
+        // Desktop: the bottom-right corner, as before.
+        "right-3 bottom-[calc(env(safe-area-inset-bottom)_+_4.75rem)]",
+        "lg:right-[max(1.25rem,env(safe-area-inset-right))] lg:bottom-[max(1.25rem,env(safe-area-inset-bottom))]",
         "hover:scale-105 active:scale-95",
         "transition-transform duration-200 motion-reduce:transition-none motion-reduce:hover:scale-100",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       )}
-      style={{
-        right: "max(1.25rem, env(safe-area-inset-right))",
-        bottom: "max(1.25rem, env(safe-area-inset-bottom))",
-      }}
     >
       <span className="absolute inset-x-2 bottom-0 h-5 rounded-full bg-primary/20 blur-lg transition-opacity group-hover:opacity-100" aria-hidden />
-      <img src={kretoProducer} alt="" className="relative h-24 w-24 object-contain drop-shadow-2xl" />
+      <img src={kretoProducer} alt="" className="relative h-20 w-20 lg:h-24 lg:w-24 object-contain drop-shadow-2xl" />
       <span className="sr-only">Open Kreto</span>
     </button>
   );
