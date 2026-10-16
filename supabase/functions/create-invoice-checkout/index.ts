@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { checkInvoicePayable, cleanPayerEmail } from "../_shared/publicCheckoutInput.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { invoice_id, payer_email } = await req.json();
+    const body = await req.json().catch(() => null);
+    const invoice_id = typeof body?.invoice_id === "string" ? body.invoice_id : "";
     if (!invoice_id) throw new Error("invoice_id required");
+    const payer_email = cleanPayerEmail(body?.payer_email);
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -27,11 +30,11 @@ serve(async (req) => {
       .eq("id", invoice_id)
       .maybeSingle();
     if (!invoice) throw new Error("Invoice not found");
-    if (invoice.document_type === "quote") throw new Error("Quotes can't be paid");
-    if (invoice.status === "paid") throw new Error("Invoice already paid");
-
-    const cents = Math.round(Number(invoice.total_amount) * 100);
-    if (!cents || cents < 50) throw new Error("Invalid amount");
+    // Quotes, paid and CANCELLED invoices are refused (a cancelled one used to be payable by anyone
+    // holding its link), and the amount must be a charge Stripe accepts.
+    const payable = checkInvoicePayable(invoice);
+    if (!payable.ok) throw new Error(payable.error);
+    const cents = payable.cents;
 
     const { data: wallet } = await admin
       .from("creator_wallets")
