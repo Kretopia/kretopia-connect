@@ -8,7 +8,10 @@
  *   2. Same city            -- 25
  *   3. Past collaboration   -- 35
  *   4. Shared skills ratio  -- up to 20
- *   5. Random discovery     -- up to 10
+ *   5. Discovery jitter     -- up to 10, deterministic per viewer+candidate
+ *      (a stable hash, not Math.random): the same viewer sees the same order
+ *      for the same data, yet different viewers still get different
+ *      tie-breaks, so one profile is not everyone's #1 by accident.
  *
  * Deliberately additive, never a filter: a candidate who matches none of
  * these still gets a (small, random-dominated) score and still appears --
@@ -17,6 +20,7 @@
  */
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleStampCategory, type RoleStampCategory } from "@/lib/passport/roleStamp";
+import { stableUnit } from "@/lib/matchRanking";
 
 export interface MatchProfileInput {
   userId: string;
@@ -95,17 +99,21 @@ export interface MyMatchContext {
   city: string;
   skills: Set<string>;
   pastCollabIds: Set<string>;
+  /** Viewer id; seeds the deterministic jitter so it differs per viewer. */
+  seed: string;
 }
 
 export function buildMyMatchContext(
   me: { role?: string | null; sub_roles?: string[] | null; location?: string | null; professional_skills?: unknown; passion_skills?: unknown },
   pastCollabIds: Set<string>,
+  seed = "",
 ): MyMatchContext {
   return {
     sector: getRoleStampCategory({ role: me.role, sub_roles: me.sub_roles }),
     city: extractCity(me.location),
     skills: new Set([...extractSkillsArray(me.professional_skills), ...extractSkillsArray(me.passion_skills)]),
     pastCollabIds,
+    seed,
   };
 }
 
@@ -124,7 +132,7 @@ export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInp
     (sameCity ? 25 : 0) +
     (pastCollab ? 35 : 0) +
     skillOverlapRatio * 20 +
-    Math.random() * 10;
+    stableUnit(`${me.seed}:${candidate.userId}`) * 10;
 
   return { score, sameSector, sameCity, pastCollab, skillOverlapRatio };
 }

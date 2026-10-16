@@ -87,6 +87,15 @@ describe("computeMatchScore", () => {
     expect(result.pastCollab).toBe(false);
   });
 
+  it("is deterministic: the same viewer and candidate always get the same score, other viewers get a different jitter", () => {
+    const candidate = { userId: "stranger", role: "Dancer", location: "Lagos" };
+    const meA = buildMyMatchContext({ role: "Photographer" }, new Set(), "viewer-a");
+    const meB = buildMyMatchContext({ role: "Photographer" }, new Set(), "viewer-b");
+    expect(computeMatchScore(meA, candidate).score).toBe(computeMatchScore(meA, candidate).score);
+    expect(computeMatchScore(meA, candidate).score).not.toBe(computeMatchScore(meB, candidate).score);
+    expect(computeMatchScore(meA, candidate).score).toBeLessThan(10);
+  });
+
   it("weighs same sector (craft category) above a same literal role isn't required", () => {
     // Videographer is a different literal role from Photographer but the
     // same RoleStamp sector (photo_video) -- this is the point of scoring

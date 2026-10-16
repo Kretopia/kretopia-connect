@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { ProfileActivationGate } from "@/components/ProfileActivationGate";
 import { getDiscoveryMissingFields } from "@/lib/profileCompletion";
 import { buildMyMatchContext, computeMatchScore, extractCity, extractSkillsArray, fetchPastCollaboratorIds } from "@/lib/matchScoring";
+import { isPositivelyRealMember } from "@/lib/matchRanking";
 
 interface CreatorRow {
   user_id: string;
@@ -147,9 +148,41 @@ export function BrowseCreators() {
         q = q.or(`full_name.ilike.${likeQ},role.ilike.${likeQ},bio.ilike.${likeQ}`);
       }
 
-      const { data, error } = await q;
-      if (error) throw error;
-      let rows = (data || []) as (CreatorRow & { bio?: string | null; is_claimed?: boolean; badge?: string | null })[];
+      // Second tier: `profiles` is owner-only under RLS, so the query above returns little
+      // beyond the viewer's own connections. public_profiles_safe is the sanctioned
+      // cross-user view; only rows it can vouch for as real members are used (it has no
+      // `is_claimed`, and imports finish "onboarding" without any XP or ID check). A
+      // minimum-rating filter needs data the view doesn't carry, so it skips this tier.
+      const loadSafeTier = async () => {
+        if (filters.minRating > 0) return [] as Record<string, any>[];
+        let sq = supabase
+          .from("public_profiles_safe")
+          .select("user_id, full_name, avatar_url, cover_image_url, role, location, verification_tier, professional_skills, bio, badge, onboarding_completed, xp, id_verified, updated_at")
+          .eq("onboarding_completed", true)
+          .not("full_name", "is", null)
+          .not("avatar_url", "is", null)
+          .neq("avatar_url", "")
+          .limit(120);
+        if (user?.id) sq = sq.neq("user_id", user.id);
+        if (filters.role) sq = sq.ilike("role", `%${filters.role}%`);
+        if (filters.location) sq = sq.ilike("location", `%${filters.location}%`);
+        if (filters.verifiedOnly) sq = (sq as any).neq("verification_tier", "none").not("verification_tier", "is", null);
+        if (query.trim()) {
+          const likeQ = escapePostgrestValue(`%${query}%`);
+          sq = sq.or(`full_name.ilike.${likeQ},role.ilike.${likeQ},bio.ilike.${likeQ}`);
+        }
+        const { data: safeData, error: safeError } = await sq;
+        if (safeError) { console.warn("[BrowseCreators] safe-view tier unavailable:", safeError.message); return []; }
+        return ((safeData || []) as Record<string, any>[]).filter(isPositivelyRealMember);
+      };
+
+      const [{ data, error }, safeRows] = await Promise.all([q, loadSafeTier()]);
+      // One tier failing is fine; the grid only errors when there is nothing from either.
+      if (error && safeRows.length === 0) throw error;
+      const byUser = new Map<string, any>();
+      safeRows.forEach((r) => byUser.set(r.user_id, r));
+      ((data || []) as any[]).forEach((r) => byUser.set(r.user_id, r));
+      let rows = Array.from(byUser.values()) as (CreatorRow & { bio?: string | null; is_claimed?: boolean; badge?: string | null })[];
 
       // "Is there anything real to show" gate -- NOT an experience/activity
       // gate. A brand new user with zero credits must still be
@@ -184,7 +217,7 @@ export function BrowseCreators() {
           supabase.from("profiles").select("role, sub_roles, location, professional_skills, passion_skills").eq("user_id", user.id).maybeSingle(),
           fetchPastCollaboratorIds(user.id),
         ]);
-        const myContext = buildMyMatchContext(meProfile || {}, pastCollabIds);
+        const myContext = buildMyMatchContext(meProfile || {}, pastCollabIds, user.id);
 
         rows = rows.map(r => {
           const { score, ...signals } = computeMatchScore(myContext, {
