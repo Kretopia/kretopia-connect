@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { syncProjectStatusIfAllMilestonesPaid } from "../_shared/milestoneProjectSync.ts";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
+import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
 import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
 import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 
@@ -20,6 +21,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Set once this delivery owns the event in the ledger: a failure that answers non-2xx gives the row
+  // back (see _shared/webhookLedger.ts), otherwise Stripe's retry is answered "already seen" and dropped.
+  let releaseLedger: (() => Promise<boolean>) | null = null;
 
   try {
     const stripe = new Stripe(resolveStripeSecretKey(), {
@@ -66,17 +71,16 @@ serve(async (req) => {
     // guest-wallet-webhook. Without this, a redelivered checkout.session.completed
     // re-increments payment_links.use_count (KREPAY_PAYMENT_AUDIT.md finding #3),
     // prematurely disabling single_use/max_uses links after one real payment.
-    const { error: dupErr } = await supabaseAdmin.from("stripe_webhook_events").insert({
-      event_id: event.id,
-      type: event.type,
-      payload: event as unknown as Record<string, unknown>,
-    });
-    if (dupErr && (dupErr as { code?: string }).code === "23505") {
+    const ledgerClaim = await claimWebhookEvent(supabaseAdmin, event);
+    if (ledgerClaim === "duplicate") {
       logStep("Duplicate event ignored", { id: event.id });
       return new Response(JSON.stringify({ received: true, idempotent_event: true }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+    if (ledgerClaim === "claimed") {
+      releaseLedger = () => releaseWebhookEvent(supabaseAdmin, event.id);
     }
 
     if (event.type === "checkout.session.completed") {
@@ -101,6 +105,7 @@ serve(async (req) => {
           // invoice stayed unpaid.)
           if (invoicePaidErr) {
             logStep("ERROR invoice payment not recorded", { invoiceId, message: invoicePaidErr.message });
+            await releaseLedger?.(); // so that Stripe's retry is processed, not answered "already seen"
             return new Response(JSON.stringify({ error: "Could not record the invoice payment" }), {
               status: 500,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -617,6 +622,7 @@ serve(async (req) => {
 
       if (orderError) {
         logStep("Error creating order", { error: orderError });
+        await releaseLedger?.(); // nothing else was done for this event: the retry can create the order
         return new Response("Failed to create order", { status: 500 });
       }
 
@@ -808,6 +814,7 @@ serve(async (req) => {
 
   } catch (error) {
     logStep("ERROR", { message: String(error) });
+    await releaseLedger?.();
     return new Response(JSON.stringify({ error: String(error) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

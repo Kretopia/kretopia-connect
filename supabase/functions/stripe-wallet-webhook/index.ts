@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
+import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,11 +40,10 @@ serve(async (req) => {
     return new Response("bad sig", { status: 400 });
   }
 
-  // idempotency
-  const { error: dupErr } = await admin.from("stripe_webhook_events").insert({
-    event_id: event.id, type: event.type, payload: event as unknown as Record<string, unknown>,
-  });
-  if (dupErr && dupErr.code === "23505") {
+  // idempotency: this delivery owns the event until it succeeds; a failure gives the row back so
+  // Stripe's retry is processed instead of being answered "ok" as already seen.
+  const ledgerClaim = await claimWebhookEvent(admin, event);
+  if (ledgerClaim === "duplicate") {
     return new Response("ok", { status: 200 });
   }
 
@@ -51,7 +51,7 @@ serve(async (req) => {
     switch (event.type) {
       case "account.updated": {
         const acct = event.data.object as Stripe.Account;
-        await admin.from("creator_wallets").update({
+        const { error: acctErr } = await admin.from("creator_wallets").update({
           payouts_enabled: acct.payouts_enabled ?? false,
           charges_enabled: acct.charges_enabled ?? false,
           kyc_status: acct.payouts_enabled
@@ -59,6 +59,9 @@ serve(async (req) => {
             : (acct.requirements?.disabled_reason ? "restricted" : "pending"),
           requirements: acct.requirements ?? {},
         }).eq("stripe_account_id", acct.id);
+        // A status that could not be written is a failure to retry, not a success: a stale
+        // payouts_enabled lets a cash-out be attempted (or blocks one) on out-of-date information.
+        if (acctErr) throw new Error(`creator_wallets update failed: ${acctErr.message}`);
         break;
       }
       case "payout.paid":
@@ -67,11 +70,12 @@ serve(async (req) => {
       case "payout.created":
       case "payout.updated": {
         const p = event.data.object as Stripe.Payout;
-        await admin.from("creator_payouts").update({
+        const { error: payoutErr } = await admin.from("creator_payouts").update({
           status: p.status,
           arrival_date: p.arrival_date ? new Date(p.arrival_date * 1000).toISOString() : null,
           failure_reason: p.failure_message ?? null,
         }).eq("stripe_payout_id", p.id);
+        if (payoutErr) throw new Error(`creator_payouts update failed: ${payoutErr.message}`);
         break;
       }
       case "balance.available": {
@@ -81,6 +85,10 @@ serve(async (req) => {
     }
   } catch (err) {
     log("handler error", err instanceof Error ? err.message : err);
+    // Not "ok": a 2xx here made a failed update permanent. Release the ledger row and answer 500 so
+    // that Stripe retries the event.
+    if (ledgerClaim === "claimed") await releaseWebhookEvent(admin, event.id);
+    return new Response("handler error", { status: 500 });
   }
 
   return new Response("ok", { status: 200 });
