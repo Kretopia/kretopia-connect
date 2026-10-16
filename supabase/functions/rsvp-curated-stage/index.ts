@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { canEnterStage } from "../_shared/stageTicket.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,21 +41,11 @@ serve(async (req) => {
     if (!["scheduled", "live"].includes(stage.status)) throw new Error("Stage not open for RSVP");
 
     // Private-stage gate: only host, invite-token holders, or invited emails can RSVP.
-    if (stage.visibility === "private" && stage.host_user_id !== user.id) {
-      let allowed = invite_token && stage.invite_token && invite_token === stage.invite_token;
-      if (!allowed) {
-        const email = (user.email || "").toLowerCase();
-        if (email) {
-          const { data: inv } = await admin.from("curated_stage_invites")
-            .select("id").eq("stage_id", stage_id).ilike("email", email).neq("status", "revoked").maybeSingle();
-          allowed = !!inv;
-        }
-      }
-      if (!allowed) {
-        return new Response(JSON.stringify({ error: "INVITE_REQUIRED" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    // The same entry rule the paid path applies (see _shared/stageTicket.ts).
+    if (!(await canEnterStage(admin, { ...stage, id: stage_id }, user, invite_token))) {
+      return new Response(JSON.stringify({ error: "INVITE_REQUIRED" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     if (stage.is_paid) {
       // Paid flow handled separately by checkout-event-tickets equivalent.
