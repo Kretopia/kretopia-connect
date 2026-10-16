@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
+import { CATEGORY_LABELS } from "@/components/sessions/SessionCard";
 import { AIHostEventCard } from "@/components/sessions/AIHostEventCard";
 import type { ScannedEventDetails } from "@/components/sessions/ScanFlyerDialog";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -44,11 +45,15 @@ interface EventRow {
   tags: string[] | null;
 }
 
-// Kept deliberately short — these are quick filters, not a taxonomy. Any
-// event whose category falls outside this set still shows up under "all";
-// it just doesn't get its own chip.
-const CATEGORIES = ["all", "music", "workshop", "networking"] as const;
-type Cat = typeof CATEGORIES[number];
+// One chip per category an event can actually be created with (the same keys
+// SessionCard labels), plus "all". Twelve divides evenly into 3, 4 and 6
+// columns, so the grid below fills its rows at every width.
+const CATEGORIES = ["all", ...Object.keys(CATEGORY_LABELS)];
+type Cat = string;
+
+// Chips read as short labels; drop the decorative leading emoji some labels carry.
+const chipLabel = (c: string) =>
+  c === "all" ? "All" : (CATEGORY_LABELS[c] ?? c).replace(/^[^\p{L}\p{N}]+/u, "");
 
 const Meetup = () => {
   const { user } = useAuth();
@@ -253,19 +258,21 @@ const Meetup = () => {
               </div>
             </form>
 
-            <div className="flex gap-2 justify-center overflow-x-auto scrollbar-hide -mx-1 px-1">
+            <div role="group" aria-label="Filter events by category" className="grid w-full grid-cols-3 gap-2 sm:grid-cols-6">
               {CATEGORIES.map((c) => (
                 <button
                   key={c}
+                  type="button"
                   onClick={() => setCategory(c)}
+                  aria-pressed={category === c}
                   className={cn(
-                    "shrink-0 px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.18em] border transition-all",
+                    "h-9 min-w-0 truncate rounded-full border px-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all",
                     category === c
                       ? "bg-primary text-primary-foreground border-primary"
                       : "bg-card/40 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
                   )}
                 >
-                  {c}
+                  {chipLabel(c)}
                 </button>
               ))}
             </div>

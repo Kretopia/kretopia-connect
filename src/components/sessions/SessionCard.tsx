@@ -40,7 +40,7 @@ interface SessionCardProps {
   onClick?: () => void;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   music: 'Music', film: 'Film', photo: 'Photo', art: 'Art',
   podcast: '🎙Podcast', workshop: 'Workshop', networking: 'Networking',
   content: 'Content', festival: 'Festival', showcase: 'Showcase',

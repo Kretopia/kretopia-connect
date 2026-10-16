@@ -7,7 +7,8 @@ import { KretoTip } from "../KretoTip";
  * Regression coverage for Kreto's controlled rollout across KretoTip's
  * route groups (KRETO_3D_REFERENCE_AND_RIGHTS_AUDIT.md §13): Studio shipped
  * in the pilot, Scout, Passport, Events and Circle are the rollout surfaces
- * approved after pilot review so far. This guards that the embodied
+ * approved after pilot review so far. Events has since been moved to the
+ * Kretopia K-mark (like Scout) on the owner's direction. This guards that the embodied
  * presence only appears on the approved route groups and every other group
  * still renders the flat KretoMark unchanged -- a rollout to "everywhere at
  * once" would be exactly the regression this suite exists to catch.
@@ -67,18 +68,35 @@ describe("KretoTip — Kreto presence rollout scope", () => {
     expect(screen.getByText(/Kreto · Passport/i)).toBeInTheDocument();
   });
 
-  it("Events (/events route) renders the embodied KretoPresence -- the third rollout surface", () => {
+  it("Events (/events route) wears the real Kretopia K-mark: one logo, one plain label, no robot", () => {
     const { container } = renderTipAtRoute("/events");
-    expect(cardPresence(container)).toHaveLength(1);
-    expect(labelRobots(container)).toHaveLength(1);
+    expect(container.querySelector('img[src*="kretopia-k-mark"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(0);
+    expect(labelRobots(container)).toHaveLength(0);
+    // Plain label: the context appears once, not as a sr-only copy next to a visible one.
+    expect(screen.getAllByText(/Kreto · Events/i)).toHaveLength(1);
+  });
+
+  it("/meetup route also resolves to the Events group with the same K-mark card", () => {
+    const { container } = renderTipAtRoute("/meetup");
+    expect(container.querySelector('img[src*="kretopia-k-mark"]')).toBeInTheDocument();
+    expect(cardPresence(container)).toHaveLength(0);
+    expect(labelRobots(container)).toHaveLength(0);
     expect(screen.getByText(/Kreto · Events/i)).toBeInTheDocument();
   });
 
-  it("/meetup route also resolves to the Events group and renders the embodied presence", () => {
-    const { container } = renderTipAtRoute("/meetup");
-    expect(cardPresence(container)).toHaveLength(1);
-    expect(labelRobots(container)).toHaveLength(1);
-    expect(screen.getByText(/Kreto · Events/i)).toBeInTheDocument();
+  it("Events has no dismiss control, and its two actions are distinct", () => {
+    renderTipAtRoute("/events");
+    expect(screen.queryByRole("button", { name: /Dismiss tip/i })).toBeNull();
+    const buttons = screen.getAllByRole("button");
+    expect(buttons).toHaveLength(2);
+    expect(buttons[0]).toHaveTextContent(/Build my event|Write the invite/);
+    expect(buttons[1]).toHaveTextContent("Or just chat");
+  });
+
+  it("other route groups keep their dismiss control", () => {
+    renderTip("discover");
+    expect(screen.getByRole("button", { name: /Dismiss tip/i })).toBeInTheDocument();
   });
 
   it("Circle (/circle route) renders the embodied KretoPresence -- the fourth rollout surface", () => {

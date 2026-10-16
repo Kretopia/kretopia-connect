@@ -10,7 +10,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, MessageCircle, X } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretoPresence } from "@/components/brand/KretoPresence";
 import { KretoLabel } from "@/components/brand/KretoLabel";
@@ -113,13 +113,20 @@ const DISMISS_HOURS = 6;
  *  other group here. Studio shipped in the pilot; Scout, Passport, Events
  *  and Circle (the brief's "Stage/Circle context" -- covers both /circle
  *  and /stages) are the rollout surfaces approved so far. */
-const PRESENCE_EYEBROWS = new Set(["Studio", "Passport", "Events", "Circle"]);
+const PRESENCE_EYEBROWS = new Set(["Studio", "Passport", "Circle"]);
 
 /** Scout wears the Kretopia K-mark itself (same mark, same size as Passport's
  *  Kreto entry) instead of the embodied robot: the card is the entry point to
  *  "filter the noise / just chat", and the brand mark is what ties it to the
  *  rest of the product. Scout was an approved presence surface before this. */
-const K_MARK_EYEBROWS = new Set(["Scout"]);
+const K_MARK_EYEBROWS = new Set(["Scout", "Events"]);
+
+/** Events: the card was showing the embodied robot twice (card artwork plus the
+ *  mini robot in the label), and its ✕ only hid a tip that rotates anyway.
+ *  Now it wears the K-mark (above), the primary action is a real primary
+ *  button, "Or just chat" is a visibly different, quieter action with a chat
+ *  icon, and there is no dismiss control. */
+const ACTION_FIRST_EYEBROWS = new Set(["Events"]);
 
 interface KretoTipProps {
   /** Override route detection with an explicit tip group. */
@@ -174,6 +181,7 @@ export const KretoTip = ({ surface, className, compact, getPromptContext }: Kret
   // false claim about work Kreto hasn't actually done.
   const usesPresence = PRESENCE_EYEBROWS.has(tip.eyebrow);
   const usesKMark = K_MARK_EYEBROWS.has(tip.eyebrow);
+  const actionFirst = ACTION_FIRST_EYEBROWS.has(tip.eyebrow);
 
   const openKreto = (prompt?: string) => {
     const context = prompt ? getPromptContext?.() : undefined;
@@ -194,31 +202,33 @@ export const KretoTip = ({ surface, className, compact, getPromptContext }: Kret
         className,
       )}
     >
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={dismiss}
-        aria-label="Dismiss tip"
-        // `!absolute`: .btn-glass sets `position: relative` outside the utilities layer
-        // and would otherwise win, dropping the ✕ on top of the logo at the left.
-        className="!absolute top-2.5 right-2.5 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      {!actionFirst && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={dismiss}
+          aria-label="Dismiss tip"
+          // `!absolute`: .btn-glass sets `position: relative` outside the utilities layer
+          // and would otherwise win, dropping the ✕ on top of the logo at the left.
+          className="!absolute top-2.5 right-2.5 h-7 w-7 rounded-full text-muted-foreground hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      )}
 
       <div className="relative flex items-start gap-3 sm:gap-4">
         {tip.eyebrow === "Studio" ? (
           <img src={kretoProducer} alt="" aria-hidden="true" className={cn("shrink-0 object-contain drop-shadow-lg", compact ? "h-16 w-16 sm:h-20 sm:w-20" : "h-20 w-20 sm:h-24 sm:w-24")} />
         ) : usesKMark ? (
-          <KretoMark size="md" />
+          <KretoMark size={actionFirst ? "lg" : "md"} />
         ) : usesPresence ? (
           <KretoPresence size={compact ? "compact" : "card"} state="idle" />
         ) : (
           <KretoMark variant="default" size={compact ? "sm" : "md"} />
         )}
 
-        <div className="min-w-0 flex-1 pr-6">
+        <div className={cn("min-w-0 flex-1", !actionFirst && "pr-6")}>
           <p className="landing-eyebrow mb-1">
             <KretoLabel context={tip.eyebrow} plain={usesKMark} />
           </p>
@@ -226,13 +236,16 @@ export const KretoTip = ({ surface, className, compact, getPromptContext }: Kret
             {tip.line}
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
+          <div className={cn("mt-3 flex flex-wrap items-center gap-2", actionFirst && "gap-x-3")}>
             <Button
               type="button"
-              variant="outline"
+              variant={actionFirst ? "default" : "outline"}
               size="sm"
               onClick={() => openKreto(tip.prompt)}
-              className="group gap-1.5 text-xs font-bold text-foreground"
+              className={cn(
+                "group gap-1.5 text-xs font-bold",
+                actionFirst ? "h-10 w-full px-4 sm:w-auto" : "text-foreground",
+              )}
             >
               {tip.cta}
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
@@ -242,8 +255,12 @@ export const KretoTip = ({ surface, className, compact, getPromptContext }: Kret
               variant="ghost"
               size="sm"
               onClick={() => openKreto()}
-              className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+              className={cn(
+                "font-semibold text-muted-foreground hover:text-foreground",
+                actionFirst ? "h-10 w-full gap-1.5 text-xs sm:w-auto" : "text-[11px]",
+              )}
             >
+              {actionFirst && <MessageCircle className="h-3.5 w-3.5" aria-hidden />}
               Or just chat
             </Button>
           </div>
