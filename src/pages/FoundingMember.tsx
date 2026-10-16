@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CardCarousel } from "@/components/kretopia/CardCarousel";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -187,8 +186,9 @@ export default function FoundingMember() {
           </div>
         </HoloCard>
 
-        {/* Quest cards */}
-        <CardCarousel label="Milestones" itemClassName="basis-[88%] sm:basis-1/2">
+        {/* Quest cards: a static grid, not a carousel -- three fixed
+            milestones that all fit, so no side arrows, dots or swipe. */}
+        <div role="list" aria-label="Milestones" className="grid grid-cols-1 gap-3 lg:grid-cols-3">
           {FOUNDING_QUESTS.map((quest, i) => {
             const p = progress[quest.key];
             const cta = QUEST_CTA[quest.key];
@@ -196,8 +196,9 @@ export default function FoundingMember() {
             return (
               <Card
                 key={quest.key}
+                role="listitem"
                 className={cn(
-                  "p-4 transition-colors",
+                  "p-4 transition-colors h-full",
                   p.completed && "border-[hsl(var(--energy)/0.4)] bg-[hsl(var(--energy)/0.04)]",
                 )}
               >
@@ -240,7 +241,7 @@ export default function FoundingMember() {
               </Card>
             );
           })}
-        </CardCarousel>
+        </div>
 
         {loading && (
           <p className="text-xs text-muted-foreground text-center mt-4">Checking your progress…</p>
