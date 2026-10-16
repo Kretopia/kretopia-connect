@@ -32,6 +32,12 @@ export default defineConfig({
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      // Edge functions import Deno-style `npm:` specifiers, which Vite cannot
+      // resolve even when a test mocks them. Tests that run an edge handler
+      // (src/lib/__tests__/edge) point the specifier at a stub and then mock it.
+      { find: /^npm:@supabase\/supabase-js@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/supabaseJsStub.ts") },
+    ],
   },
 });

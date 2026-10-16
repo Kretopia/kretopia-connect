@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { assertCanReleaseMilestone, EscrowAuthError, loadMilestoneForIntent } from "../_shared/escrowAuth.ts";
 import { syncProjectStatusIfAllMilestonesPaid } from "../_shared/milestoneProjectSync.ts";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
-import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
+import { resolveMilestonePayee, unattributedPaymentNotice } from "../_shared/resolveMilestonePayee.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -101,13 +101,24 @@ serve(async (req) => {
       throw new Error(`Failed to fetch milestone: ${fetchError.message}`);
     }
 
-    // Who actually gets paid -- NOT necessarily milestone.created_by. See
-    // _shared/resolveMilestonePayee.ts: on the primary "Brand creates the
-    // milestone" path, created_by is the Brand's own id, not the Creator's.
-    const payee = await resolveMilestonePayee(supabaseAdmin, milestone);
-    if (payee.ambiguous) {
-      logStep("WARNING: ambiguous milestone payee -- falling back to created_by", {
-        milestoneId, candidateCount: payee.candidateCount,
+    // Who actually gets paid -- NOT milestone.created_by, which on the main
+    // "Brand creates the milestone" path is the Brand itself. The payee chosen
+    // at checkout travels in the PaymentIntent metadata; an escrow funded
+    // before that existed falls back to the rules in
+    // _shared/resolveMilestonePayee.ts, which never name the payer. The money
+    // is captured either way (refusing would let the hold lapse after 7 days),
+    // but with no identified payee nobody is credited: see below.
+    const intentMeta = (intentForAuth.metadata || {}) as Record<string, string>;
+    const payerUserId = intentMeta.userId || user.id;
+    const payee = await resolveMilestonePayee(supabaseAdmin, milestone, {
+      payerUserId,
+      chosenUserId: intentMeta.payeeUserId,
+      trustChosen: true,
+    });
+    const payeeUserId = payee.payeeUserId;
+    if (!payeeUserId && action === 'capture') {
+      logStep("CAPTURED WITHOUT A PAYEE -- needs manual assignment", {
+        milestoneId, paymentIntentId, candidateCount: payee.candidateCount,
       });
     }
 
@@ -118,7 +129,7 @@ serve(async (req) => {
         status: newStatus,
         escrow_status: newEscrowStatus,
         paid_at: action === 'capture' ? new Date().toISOString() : null,
-        paid_to: action === 'capture' ? payee.payeeUserId : null,
+        paid_to: action === 'capture' ? payeeUserId : null,
       })
       .eq('id', milestoneId)
       .eq('payment_intent_id', paymentIntentId);
@@ -146,13 +157,23 @@ serve(async (req) => {
 
         logStep("Fee breakdown from metadata", { talentRate, platformFee, managerCommission, managerTableId, managerStripeAccountId });
 
+        // A commission belongs to the payee's own manager: with no payee
+        // nothing is filed or transferred (an escrow funded before the payee
+        // was recorded may carry the wrong person's manager). Logged for
+        // manual reconciliation instead.
+        if (managerTableId && managerCommission > 0 && !payeeUserId) {
+          logStep("MANAGER COMMISSION HELD -- no payee identified, nothing recorded or transferred", {
+            milestoneId, managerTableId, managerCommission,
+          });
+        }
+
         // Record manager commission if applicable
-        if (managerTableId && managerCommission > 0) {
+        if (managerTableId && managerCommission > 0 && payeeUserId) {
           const { error: commissionError } = await supabaseAdmin
             .from('referral_commissions')
             .insert({
               manager_id: managerTableId,
-              talent_user_id: payee.payeeUserId,
+              talent_user_id: payeeUserId,
               source_type: 'milestone',
               source_id: milestoneId,
               gross_amount: talentRate,
@@ -306,90 +327,94 @@ serve(async (req) => {
           }
         }
 
-        // Get profiles for invoice
-        const { data: payerProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('full_name, avatar_url, role')
-          .eq('user_id', user.id)
-          .single();
+        // Invoice only for an identified payee: one filed to a guessed person (or
+        // from the payer to themselves) is worse than none.
+        if (payeeUserId) {
+          // Get profiles for invoice
+          const { data: payerProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name, avatar_url, role')
+            .eq('user_id', user.id)
+            .single();
 
-        const { data: creatorProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('full_name')
-          .eq('user_id', payee.payeeUserId)
-          .single();
+          const { data: creatorProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', payeeUserId)
+            .single();
 
-        const { data: creatorAuth } = await supabaseAdmin.auth.admin.getUserById(payee.payeeUserId);
+          const { data: creatorAuth } = await supabaseAdmin.auth.admin.getUserById(payeeUserId);
 
-        const now = new Date();
-        const invoiceNumber = `INV-${now.getFullYear()}-${now.getTime()}`;
+          const now = new Date();
+          const invoiceNumber = `INV-${now.getFullYear()}-${now.getTime()}`;
 
-        const lineItems = [
-          {
-            description: `Milestone: ${milestone.title}`,
-            quantity: 1,
-            rate: talentRate,
-            amount: talentRate,
+          const lineItems = [
+            {
+              description: `Milestone: ${milestone.title}`,
+              quantity: 1,
+              rate: talentRate,
+              amount: talentRate,
+            }
+          ];
+
+          if (platformFee > 0) {
+            lineItems.push({
+              description: `Kretopia Service Fee`,
+              quantity: 1,
+              rate: platformFee,
+              amount: platformFee,
+            });
           }
-        ];
 
-        if (platformFee > 0) {
-          lineItems.push({
-            description: `Kretopia Service Fee`,
-            quantity: 1,
-            rate: platformFee,
-            amount: platformFee,
-          });
-        }
+          if (managerCommission > 0) {
+            lineItems.push({
+              description: `Talent Manager Commission`,
+              quantity: 1,
+              rate: managerCommission,
+              amount: managerCommission,
+            });
+          }
 
-        if (managerCommission > 0) {
-          lineItems.push({
-            description: `Talent Manager Commission`,
-            quantity: 1,
-            rate: managerCommission,
-            amount: managerCommission,
-          });
-        }
+          const totalAmount = talentRate + platformFee + managerCommission;
 
-        const totalAmount = talentRate + platformFee + managerCommission;
+          const invoiceData = {
+            invoice_number: invoiceNumber,
+            issued_by: user.id,
+            issued_to: payeeUserId,
+            project_id: milestone.project_id,
+            milestone_id: milestoneId,
+            amount: totalAmount,
+            currency: 'USD',
+            status: 'paid',
+            paid_at: now.toISOString(),
+            brand_name: payerProfile?.full_name || 'Client',
+            recipient_name: creatorProfile?.full_name || 'Creator',
+            recipient_email: creatorAuth?.user?.email || null,
+            payment_method: 'stripe_escrow',
+            payment_details: {
+              payment_intent_id: paymentIntentId,
+              escrow: true,
+              auto_generated: true,
+              talent_rate: talentRate,
+              platform_fee: platformFee,
+              manager_commission: managerCommission,
+              manager_table_id: managerTableId,
+            },
+            line_items: lineItems,
+            notes: `Auto-generated invoice for milestone "${milestone.title}" on project "${milestone.projects?.title || 'Project'}". Talent received $${talentRate.toFixed(2)} (100% of rate). Service fee and commissions charged to brand.`,
+          };
 
-        const invoiceData = {
-          invoice_number: invoiceNumber,
-          issued_by: user.id,
-          issued_to: payee.payeeUserId,
-          project_id: milestone.project_id,
-          milestone_id: milestoneId,
-          amount: totalAmount,
-          currency: 'USD',
-          status: 'paid',
-          paid_at: now.toISOString(),
-          brand_name: payerProfile?.full_name || 'Client',
-          recipient_name: creatorProfile?.full_name || 'Creator',
-          recipient_email: creatorAuth?.user?.email || null,
-          payment_method: 'stripe_escrow',
-          payment_details: {
-            payment_intent_id: paymentIntentId,
-            escrow: true,
-            auto_generated: true,
-            talent_rate: talentRate,
-            platform_fee: platformFee,
-            manager_commission: managerCommission,
-            manager_table_id: managerTableId,
-          },
-          line_items: lineItems,
-          notes: `Auto-generated invoice for milestone "${milestone.title}" on project "${milestone.projects?.title || 'Project'}". Talent received $${talentRate.toFixed(2)} (100% of rate). Service fee and commissions charged to brand.`,
-        };
+          const { data: invoice, error: invoiceError } = await supabaseAdmin
+            .from('invoices')
+            .insert(invoiceData)
+            .select('id, invoice_number')
+            .single();
 
-        const { data: invoice, error: invoiceError } = await supabaseAdmin
-          .from('invoices')
-          .insert(invoiceData)
-          .select('id, invoice_number')
-          .single();
-
-        if (invoiceError) {
-          logStep("WARNING: Failed to create auto-invoice", { error: invoiceError.message });
-        } else {
-          logStep("Auto-invoice created", { invoiceId: invoice.id, invoiceNumber: invoice.invoice_number });
+          if (invoiceError) {
+            logStep("WARNING: Failed to create auto-invoice", { error: invoiceError.message });
+          } else {
+            logStep("Auto-invoice created", { invoiceId: invoice.id, invoiceNumber: invoice.invoice_number });
+          }
         }
       } catch (invoiceErr) {
         logStep("WARNING: Auto-invoice generation failed", { error: String(invoiceErr) });
@@ -401,10 +426,11 @@ serve(async (req) => {
       const projectTitle = milestone.projects?.title || 'Project';
       const link = `/desk/${milestone.project_id}?tab=finance`;
       if (action === 'capture') {
-        // Pay creator notif
         await supabaseAdmin.from('notifications').insert([
-          {
-            user_id: payee.payeeUserId,
+          // Told "released to you" only when we know it is them; otherwise the
+          // payer is asked to have it assigned (nobody is credited on a guess).
+          ...(payeeUserId ? [{
+            user_id: payeeUserId,
             title: 'Payment released! 💰',
             message: `$${Number(milestone.amount).toFixed(2)} for "${milestone.title}" was released to you on ${projectTitle}.`,
             type: 'payment',
@@ -413,7 +439,12 @@ serve(async (req) => {
             link,
             action_url: link,
             action_text: 'View milestone',
-          },
+          }] : [unattributedPaymentNotice({
+            payerUserId: user.id,
+            milestoneTitle: milestone.title,
+            projectId: milestone.project_id,
+            amount: Number(milestone.amount),
+          })]),
           {
             user_id: user.id,
             title: 'Escrow released ✓',
@@ -426,11 +457,11 @@ serve(async (req) => {
             action_text: 'View milestone',
           },
         ]);
-      } else {
-        // Cancel/refund notif
+      } else if (payeeUserId) {
+        // Cancel/refund notif (nothing to tell a payee we could not identify)
         await supabaseAdmin.from('notifications').insert([
           {
-            user_id: payee.payeeUserId,
+            user_id: payeeUserId,
             title: 'Escrow refunded',
             message: `The client cancelled the escrow for "${milestone.title}" — funds were refunded.`,
             type: 'payment',

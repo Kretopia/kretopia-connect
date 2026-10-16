@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, DollarSign, Calendar, CheckCircle2, Clock, AlertCircle, CreditCard, Send, Users, AlertTriangle } from "lucide-react";
@@ -58,6 +59,12 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
   const [getPaidMessage, setGetPaidMessage] = useState('');
   const [talentConnectActive, setTalentConnectActive] = useState<boolean | null>(null);
   const [payingMilestoneId, setPayingMilestoneId] = useState<string | null>(null);
+  // Set when the server asks which creative a payment is for (several could be).
+  const [payeePrompt, setPayeePrompt] = useState<{
+    milestone: Milestone;
+    useEscrow: boolean;
+    candidates: { user_id: string; full_name: string | null; avatar_url: string | null }[];
+  } | null>(null);
   const [newMilestone, setNewMilestone] = useState({
     title: '',
     description: '',
@@ -218,7 +225,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
     }
   };
 
-  const handleStripePayment = async (milestone: Milestone, useEscrow: boolean = false) => {
+  const handleStripePayment = async (milestone: Milestone, useEscrow: boolean = false, payeeUserId?: string) => {
     // Guard against double-clicks / two tabs racing to create two Stripe
     // sessions for the same milestone -- the server (create-milestone-
     // payment) is the authoritative check, this just avoids the obvious
@@ -248,6 +255,7 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
           title: milestone.title,
           projectId: projectId,
           useEscrow: useEscrow,
+          ...(payeeUserId ? { payeeUserId } : {}),
         },
       });
 
@@ -265,10 +273,18 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
       // the resolved data -- extract it so "already paid" is actually shown
       // instead of a generic "non-2xx status code" message.
       let description = error?.message || "Failed to create payment session";
+      let body: any = null;
       try {
-        const body = await error?.context?.json?.();
+        body = await error?.context?.json?.();
         if (body?.error) description = body.error;
       } catch { /* fall back to error.message above */ }
+      // The server will not charge until it knows which creative the payment is
+      // for. With several on the project it sends the list so the payer picks;
+      // nothing has been charged at this point.
+      if (body?.code === "PAYEE_UNCLEAR" && Array.isArray(body.candidates) && body.candidates.length > 0) {
+        setPayeePrompt({ milestone, useEscrow, candidates: body.candidates });
+        return;
+      }
       toast({ title: "Can't process payment", description, variant: "destructive" });
       if (description.toLowerCase().includes("already been paid")) onUpdate();
     } finally {
@@ -773,6 +789,41 @@ export function MilestoneBoard({ milestones, projectId, onUpdate, userRole, coll
           })
         )}
       </div>
+
+      <Dialog open={!!payeePrompt} onOpenChange={(open) => { if (!open) setPayeePrompt(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Who is this payment for?</DialogTitle>
+            <DialogDescription>
+              {payeePrompt
+                ? `“${payeePrompt.milestone.title}” — choose the creative who did this work. Nothing is charged until you pick.`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2" role="group" aria-label="Creatives on this project">
+            {payeePrompt?.candidates.map((c) => (
+              <Button
+                key={c.user_id}
+                type="button"
+                variant="outline"
+                className="h-auto w-full justify-start gap-3 py-2.5 text-left"
+                onClick={() => {
+                  if (!payeePrompt) return;
+                  const { milestone, useEscrow } = payeePrompt;
+                  setPayeePrompt(null);
+                  void handleStripePayment(milestone, useEscrow, c.user_id);
+                }}
+              >
+                <Avatar className="h-8 w-8">
+                  {c.avatar_url && <AvatarImage src={c.avatar_url} alt="" />}
+                  <AvatarFallback>{(c.full_name || "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <span className="truncate text-sm font-medium">{c.full_name || "Creative"}</span>
+              </Button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
