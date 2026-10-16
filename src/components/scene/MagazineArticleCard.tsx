@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { Clock, Heart, MessageCircle, Pencil, TrendingUp } from "lucide-react";
+import { ArrowRight, Clock, Heart, MessageCircle, Pencil, TrendingUp } from "lucide-react";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { SmartCover } from "@/components/ui/smart-cover";
 import { coverImageStyle } from "./CoverImageEditor";
@@ -92,7 +92,7 @@ export function MagazineArticleCard({
           />
 
           {featured && (
-            <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--energy))]/90 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-foreground px-2 py-0.5 text-[10px] font-bold text-background">
               <TrendingUp className="h-3 w-3" />
               Featured
             </span>
@@ -126,7 +126,7 @@ export function MagazineArticleCard({
         </div>
 
         <div className={cn("flex items-center justify-between text-muted-foreground", big ? "p-4 text-[11px]" : "p-2.5 text-[10px]")}>
-          <span className="truncate">{article.author_name}</span>
+          <span className="min-w-0 flex-1 truncate">{article.author_name}</span>
           <div className="flex shrink-0 items-center gap-2.5">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -142,6 +142,12 @@ export function MagazineArticleCard({
               <span className="flex items-center gap-1">
                 <MessageCircle className="h-3 w-3" />
                 {article.comment_count}
+              </span>
+            )}
+            {big && (
+              <span className="ml-1 inline-flex items-center gap-1 font-semibold text-foreground">
+                Read
+                <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </span>
             )}
           </div>

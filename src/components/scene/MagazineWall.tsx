@@ -189,15 +189,14 @@ export const MagazineWall = () => {
             )}
           </div>
           <Button
-            size="sm"
-            className="w-full shrink-0 gap-1.5 bg-[hsl(var(--energy))] text-white hover:bg-[hsl(var(--energy)/0.9)] sm:w-auto"
+            className="h-11 w-full shrink-0 gap-2 sm:w-auto"
             onClick={() => {
               if (!user) { window.location.href = "/auth?next=/spotlight"; return; }
               setEditingId(null);
               setShowEditor(true);
             }}
           >
-            <PenSquare className="h-3.5 w-3.5" />
+            <PenSquare className="h-4 w-4" aria-hidden />
             {isEditorOrAdmin ? "Write" : "Publish your story"}
           </Button>
         </div>

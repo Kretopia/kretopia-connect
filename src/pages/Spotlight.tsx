@@ -78,9 +78,7 @@ const Spotlight = () => {
         />
 
         <StudioFeatureShell wrapped={{ name: "Spotlight" }}>
-          <section>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">The desk</p>
-            <h2 className="text-xl font-bold text-foreground mb-4">Read it, or hear it.</h2>
+          <section aria-label="Spotlight stories and episodes">
             <SpotlightBoard
               value={activeTab}
               onValueChange={setActiveTab}
