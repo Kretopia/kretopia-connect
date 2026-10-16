@@ -53,7 +53,10 @@ serve(async (req) => {
         return json({ error: "Too many verification requests. Try again later." }, 429);
       }
 
-      const generated = String(Math.floor(100000 + Math.random() * 900000));
+      // A verification code from the platform's CSPRNG (a general-purpose PRNG is predictable).
+      const rand = new Uint32Array(1);
+      crypto.getRandomValues(rand);
+      const generated = String(100000 + (rand[0] % 900000));
       const { error: insertError } = await admin
         .from("guest_wallet_email_codes")
         .insert({ email, code_hash: await hashCode(email, generated) });
@@ -102,19 +105,30 @@ serve(async (req) => {
     if (new Date(record.expires_at) < new Date()) return json({ error: "Code expired" }, 401);
     if (record.attempts >= 5) return json({ error: "Too many attempts. Request a new code." }, 429);
 
+    // Take the attempt BEFORE comparing, conditional on the count that was read: parallel guesses
+    // used to all read the same count and all be compared, so the limit of five attempts did not
+    // hold. Only one request can move the count from N to N + 1; the others are refused unevaluated.
+    const { data: attempt } = await admin
+      .from("guest_wallet_email_codes")
+      .update({ attempts: record.attempts + 1 })
+      .eq("id", record.id)
+      .eq("attempts", record.attempts)
+      .select("id");
+    if (!attempt?.length) return json({ error: "Try again in a moment" }, 429);
+
     const expected = await hashCode(email, code);
     if (expected !== record.code_hash) {
-      await admin
-        .from("guest_wallet_email_codes")
-        .update({ attempts: record.attempts + 1 })
-        .eq("id", record.id);
       return json({ error: "Incorrect code" }, 401);
     }
 
-    await admin
+    // A code opens one session: consume it conditionally and read the result.
+    const { data: consumed } = await admin
       .from("guest_wallet_email_codes")
       .update({ consumed_at: new Date().toISOString() })
-      .eq("id", record.id);
+      .eq("id", record.id)
+      .is("consumed_at", null)
+      .select("id");
+    if (!consumed?.length) return json({ error: "Request a new code" }, 401);
 
     // Upsert wallet only after ownership of the email is proven
     const { data: existing } = await admin
