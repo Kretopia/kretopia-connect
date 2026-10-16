@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { topupCurrencyMatches } from "../_shared/walletTopup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
@@ -93,6 +95,12 @@ serve(async (req) => {
     if (session.amount_total !== expectedCents) {
       throw new Error("Payment amount does not match this top-up");
     }
+    // The balance is in USD: a session or a top-up row in another currency would credit the same
+    // number at face value (an exchange-rate arbitrage). Refuse and leave it for a person to settle.
+    if (!topupCurrencyMatches(topup.currency, session.currency)) {
+      logStep("REFUSED non-USD top-up", { topupId, topupCurrency: topup.currency, sessionCurrency: session.currency });
+      throw new Error("This top-up was paid in a currency the wallet does not hold; contact support with this top-up id");
+    }
 
     logStep("Payment verified", { sessionId: session.id, status: session.payment_status });
 
@@ -120,8 +128,20 @@ serve(async (req) => {
     const { data: newBalance, error: creditError } = await supabaseAdmin
       .rpc("wallet_credit", { p_user_id: user.id, p_amount: topup.amount });
 
-    if (creditError) throw creditError;
-
+    if (creditError) {
+      // The claim above made this top-up 'completed' before the credit: give it back so a retry can
+      // still credit it, instead of leaving a paid top-up that is never credited and answers
+      // "Already confirmed". If even that fails, say so in the logs.
+      const { error: revertError } = await supabaseAdmin
+        .from("wallet_topups")
+        .update({ status: topup.status, completed_at: null, gateway_payment_id: null })
+        .eq("id", topupId)
+        .eq("status", "completed");
+      if (revertError) {
+        logStep("TOP-UP CLAIMED BUT NOT CREDITED", { topupId, userId: user.id, amount: topup.amount, message: revertError.message });
+      }
+      throw creditError;
+    }
 
     // Record transaction
     await supabaseAdmin

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { cleanBankRequest } from "../_shared/bankRequest.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -93,20 +94,17 @@ serve(async (req) => {
     const user = auth?.user;
     if (!user?.email) return errorResponse("authentication_required", "Sign in to add a bank account.", 401);
 
-    const body = await req.json();
-    const {
-      country,
-      currency,
-      account_holder_name,
-      account_number,
-      routing_number, // US ABA / CA transit / etc.
-      make_default = true,
-      idempotencyKey,
-    } = body ?? {};
-
-    if (!country || !currency || !account_holder_name || !account_number) {
-      return errorResponse("invalid_bank_details", "Fill in all required fields.", 400);
-    }
+    // Every field is checked BEFORE the first Stripe call (a crafted request used to fail after a
+    // Connect account had already been created for the caller): see _shared/bankRequest.ts.
+    const checked = cleanBankRequest(await req.json().catch(() => null));
+    if (!checked.ok) return errorResponse(checked.code, checked.error, 400);
+    const country = checked.request.country;
+    const currency = checked.request.currency;
+    const account_holder_name = checked.request.accountHolderName;
+    const account_number = checked.request.accountNumber;
+    const routing_number = checked.request.routingNumber ?? undefined; // US ABA / CA transit / etc.
+    const make_default = checked.request.makeDefault;
+    const idempotencyKey = checked.request.idempotencyKey;
 
     const countryCfg = SUPPORTED_COUNTRIES[country];
     if (!countryCfg) {
@@ -134,8 +132,7 @@ serve(async (req) => {
     }
 
     const stripe = new Stripe(resolveStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
-    const baseIdempotencyKey =
-      typeof idempotencyKey === "string" && idempotencyKey ? idempotencyKey : crypto.randomUUID();
+    const baseIdempotencyKey = idempotencyKey ?? crypto.randomUUID();
 
     // Load or create wallet + Connect account
     const { data: wallet, error: walletErr } = await admin
@@ -277,6 +274,25 @@ serve(async (req) => {
     if (insErr) {
       log("payout method insert failed", insErr.message);
       return errorResponse("database_persistence_error", "Bank account was added but couldn't be saved. Contact support.", 500);
+    }
+
+    // Tell the account's owner that a payout destination was added. A payout goes to the default
+    // bank account, so adding one is the step that matters if a session was taken over; this is
+    // in-app only and never blocks the request (an email and a payout cooldown are proposals).
+    try {
+      await admin.rpc("create_notification", {
+        p_user_id: user.id,
+        p_title: "Payout bank account added",
+        p_message: `A bank account ending in ${ba.last4 ?? "????"} was added for payouts${make_default ? " and set as your default" : ""}. If this wasn't you, contact support immediately.`,
+        p_type: "payment",
+        p_link: "/thrivepay",
+        p_action_url: "/thrivepay",
+        p_action_text: "Review payout methods",
+        p_priority: "high",
+        p_category: "payment",
+      });
+    } catch (notifyErr) {
+      log("notification failed", notifyErr instanceof Error ? notifyErr.message : String(notifyErr));
     }
 
     // Refresh account status

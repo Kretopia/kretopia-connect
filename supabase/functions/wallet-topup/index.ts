@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { WALLET_CURRENCY, cleanTopupRequest } from "../_shared/walletTopup.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -31,7 +32,8 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("User not authenticated");
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
 
@@ -39,14 +41,23 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const { amount, currency = "USD", gateway = "stripe" } = await req.json();
+    // The wallet has one balance, in USD: a top-up in another currency credited the same NUMBER
+    // (10,000 of a cheap currency became 10,000 of balance). The amount is whole cents, the
+    // currency is the wallet's own. See _shared/walletTopup.ts.
+    const checked = cleanTopupRequest(await req.json().catch(() => null));
+    if (!checked.ok) throw new Error(checked.error);
+    const { amount, gateway } = checked;
+    const currency = WALLET_CURRENCY;
 
-    if (!amount || amount <= 0) {
-      throw new Error("Invalid amount");
-    }
-
-    if (amount > 10000) {
-      throw new Error("Maximum top-up amount is $10,000");
+    // WiPay is a placeholder: answer before a pending top-up row is created for it.
+    if (gateway === "wipay") {
+      return new Response(JSON.stringify({
+        error: "WiPay integration coming soon. Please use card payment for now.",
+        gateway: "wipay",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     logStep("Top-up request", { userId: user.id, amount, currency, gateway });
@@ -120,18 +131,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
-    } else if (gateway === "wipay") {
-      // WiPay integration placeholder
-      // When WiPay is configured, this will create a WiPay payment request
-      return new Response(JSON.stringify({
-        error: "WiPay integration coming soon. Please use card payment for now.",
-        gateway: "wipay",
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
     }
 
+    // Unreachable: cleanTopupRequest only lets "stripe" and "wipay" through and "wipay" returned above.
     throw new Error("Unsupported payment gateway");
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
