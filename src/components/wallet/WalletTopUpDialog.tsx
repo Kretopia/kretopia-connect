@@ -111,8 +111,9 @@ export function WalletTopUpDialog({ open, onOpenChange }: WalletTopUpDialogProps
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {/* The wallet holds one balance, in USD: a top-up in another currency used to be
+                      credited at face value (see supabase/functions/_shared/walletTopup.ts). */}
                   <SelectItem value="USD">USD</SelectItem>
-                  <SelectItem value="TTD">TTD</SelectItem>
                 </SelectContent>
               </Select>
             </div>
