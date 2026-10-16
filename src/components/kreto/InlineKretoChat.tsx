@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Square } from "lucide-react";
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUp, Square } from "lucide-react";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
@@ -25,6 +26,28 @@ function stripTagsLive(raw: string): string {
   return out;
 }
 
+/** Close enough to the bottom that the reader is "following" the stream. */
+const FOLLOW_THRESHOLD_PX = 48;
+
+// Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
+const MessageBubble = memo(function MessageBubble({ role, content }: CopilotMessage) {
+  return (
+    <div
+      className={
+        role === "user"
+          ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-[hsl(var(--energy)/0.15)] border border-[hsl(var(--energy)/0.25)] px-3.5 py-2 text-sm text-white break-words"
+          : "mr-auto max-w-[92%] rounded-2xl rounded-bl-sm bg-white/[0.05] border border-white/10 px-3.5 py-2 text-sm text-white/90 whitespace-pre-wrap break-words"
+      }
+    >
+      {content || (
+        <span className="inline-flex h-5 items-center gap-1.5 text-white/50">
+          <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
+        </span>
+      )}
+    </div>
+  );
+});
+
 interface InlineKretoChatProps {
   seedPrompt?: string | null;
   /** Bump this any time seedPrompt should (re)send — including clicking the
@@ -37,6 +60,9 @@ interface InlineKretoChatProps {
   /** Fired once a draft becomes a real conversation (first send), and again
    *  any time the caller should know the list of conversations changed. */
   onConversationCreated?: (id: string) => void;
+  /** Shown inside the thread while it has no messages, so the card keeps one fixed size
+   *  instead of growing (and pushing the page) when the first message lands. */
+  emptyState?: ReactNode;
 }
 
 /**
@@ -44,15 +70,23 @@ interface InlineKretoChatProps {
  * bubble. Streams the first token straight into the thread so replies feel
  * instant, and keeps the composer pinned under the conversation.
  */
-export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConversationCreated }: InlineKretoChatProps) {
+export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConversationCreated, emptyState }: InlineKretoChatProps) {
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const conversationIdRef = useRef<string | null>(conversationId);
-  const endRef = useRef<HTMLDivElement>(null);
+  const threadRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  // Whether the reader is at the bottom (and so wants new text kept in view). Scrolling up to
+  // read pauses it; sending a message or pressing "Latest" resumes it.
+  const followRef = useRef(true);
+  const [showLatest, setShowLatest] = useState(false);
+  // The id of a conversation this component just created itself: its live messages are already
+  // on screen, so the history effect must not wipe and reload them mid-stream.
+  const createdHereRef = useRef<string | null>(null);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -65,6 +99,12 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // silently loses the visible thread.
   useEffect(() => {
     let cancelled = false;
+    if (conversationId && conversationId === createdHereRef.current) {
+      // We created this one ourselves a moment ago; what's on screen is the truth.
+      setHistoryLoaded(true);
+      return;
+    }
+    followRef.current = true;
     setMessages([]);
     setHistoryLoaded(false);
     if (!conversationId) {
@@ -83,15 +123,35 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     return () => { cancelled = true; };
   }, [conversationId]);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
-  }, [messages, streaming]);
+  // Keep the newest text in view only while the reader is following along, and do it on the
+  // thread itself (scrollIntoView would also scroll the whole page) and without easing (a
+  // smooth scroll restarted on every token lags behind the text and reads as jitter).
+  useLayoutEffect(() => {
+    const el = threadRef.current;
+    if (el && followRef.current) el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
+  const onThreadScroll = useCallback(() => {
+    const el = threadRef.current;
+    if (!el) return;
+    const following = el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_THRESHOLD_PX;
+    followRef.current = following;
+    setShowLatest((prev) => (prev === !following ? prev : !following));
+  }, []);
+
+  const jumpToLatest = () => {
+    const el = threadRef.current;
+    if (!el) return;
+    followRef.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: reducedMotion ? "auto" : "smooth" });
+  };
 
   const send = useCallback(async (raw: string) => {
     const text = raw.trim();
     if (!text || streaming) return;
 
     setInput("");
+    followRef.current = true;
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
     setStreaming(true);
 
@@ -103,6 +163,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       activeId = await createConversation();
       if (activeId) {
         conversationIdRef.current = activeId;
+        createdHereRef.current = activeId;
         onConversationCreated?.(activeId);
       }
     }
@@ -113,15 +174,28 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     // Strip <action>/<plan> tags live so raw JSON/XML never renders in the
     // bubble, even mid-stream — matches ThriveAgentFab's stripTagsLive.
     let assistantSoFar = "";
-    const appendDelta = (delta: string) => {
-      assistantSoFar += delta;
+    // Chunks can arrive far faster than a screen can show them. Collect them and paint at most
+    // once per frame; the final flush below guarantees the full text lands even if the tab
+    // was in the background (animation frames pause there).
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
       const visible = stripTagsLive(assistantSoFar);
       setMessages((m) => {
-        const next = [...m];
-        const last = next[next.length - 1];
-        if (last?.role === "assistant") next[next.length - 1] = { ...last, content: visible };
+        const last = m[m.length - 1];
+        if (last?.role !== "assistant" || last.content === visible) return m;
+        const next = m.slice();
+        next[next.length - 1] = { ...last, content: visible };
         return next;
       });
+    };
+    const appendDelta = (delta: string) => {
+      assistantSoFar += delta;
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+    const flushNow = () => {
+      if (frame) cancelAnimationFrame(frame);
+      flush();
     };
 
     try {
@@ -132,15 +206,18 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         onConversationId: (id) => { conversationIdRef.current = id; },
         onDelta: appendDelta,
         onDone: () => {},
-        onError: (err) =>
+        onError: (err) => {
+          if (controller.signal.aborted) return; // the user pressed Stop; that is not an error
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
             if (last?.role === "assistant" && !last.content) next[next.length - 1] = { ...last, content: err };
             return next;
-          }),
+          });
+        },
         signal: controller.signal,
       });
+      flushNow();
 
       // The model proposed an action/plan (tags were stripped from the
       // visible text above). This page has no approval-card UI yet — never
@@ -157,6 +234,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         ]);
       }
     } catch (e) {
+      flushNow();
       const aborted = e instanceof DOMException && e.name === "AbortError";
       if (!aborted) {
         console.error("InlineKretoChat stream failed:", e);
@@ -170,6 +248,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         });
       }
     } finally {
+      if (frame) cancelAnimationFrame(frame);
+      // Stopped before a single token arrived: drop the empty "thinking" bubble instead of
+      // leaving it spinning forever.
+      if (controller.signal.aborted) {
+        setMessages((m) => {
+          const last = m[m.length - 1];
+          return last?.role === "assistant" && !last.content ? m.slice(0, -1) : m;
+        });
+      }
       setStreaming(false);
     }
   }, [streaming, conversationId, onConversationCreated]);
@@ -188,37 +275,46 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   };
 
   return (
-    <div className="rounded-2xl border border-[hsl(var(--energy)/0.3)] bg-white/[0.03] backdrop-blur-sm overflow-hidden">
-      {!historyLoaded && messages.length === 0 && (
-        <div className="px-4 py-4 text-xs text-white/40 flex items-center gap-1.5">
-          <KretopiaSpinner className="h-3 w-3" /> Loading your conversation…
-        </div>
-      )}
-      {messages.length > 0 && (
-        <div className="max-h-[46vh] overflow-y-auto px-4 py-4 space-y-3">
-          {messages.map((m, i) => (
-            <div
-              key={i}
-              className={
-                m.role === "user"
-                  ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-[hsl(var(--energy)/0.15)] border border-[hsl(var(--energy)/0.25)] px-3.5 py-2 text-sm text-white"
-                  : "mr-auto max-w-[92%] rounded-2xl rounded-bl-sm bg-white/[0.05] border border-white/10 px-3.5 py-2 text-sm text-white/90 whitespace-pre-wrap"
-              }
-            >
-              {m.content || (
-                <span className="inline-flex items-center gap-1.5 text-white/50">
-                  <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
-                </span>
-              )}
+    // One fixed height from the first paint to the last token: the thread scrolls inside the
+    // card, so streaming text can never push the page (or the cards below it) around. The
+    // height comes from KretoTab (--kreto-h) so the history rail can match it.
+    <div className="flex h-[var(--kreto-h,32rem)] flex-col overflow-hidden rounded-2xl border border-[hsl(var(--energy)/0.3)] bg-white/[0.03] backdrop-blur-sm">
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={threadRef}
+          onScroll={onThreadScroll}
+          role="log"
+          aria-label={`Conversation with ${BRAND.agentName}`}
+          aria-busy={streaming}
+          className="h-full space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
+        >
+          {!historyLoaded && messages.length === 0 ? (
+            <div className="flex items-center gap-1.5 text-xs text-white/40">
+              <KretopiaSpinner className="h-3 w-3" /> Loading your conversation…
             </div>
-          ))}
-          <div ref={endRef} />
+          ) : messages.length === 0 ? (
+            emptyState ?? (
+              <p className="py-6 text-center text-sm text-white/50">Ask {BRAND.agentName} anything to get started.</p>
+            )
+          ) : (
+            messages.map((m, i) => <MessageBubble key={i} role={m.role} content={m.content} />)
+          )}
         </div>
-      )}
+
+        {showLatest && messages.length > 0 && (
+          <button
+            type="button"
+            onClick={jumpToLatest}
+            className="btn-glass btn-glass-outline absolute bottom-3 left-1/2 inline-flex h-8 -translate-x-1/2 items-center gap-1.5 rounded-full px-3 text-xs font-semibold"
+          >
+            <ArrowDown className="h-3.5 w-3.5" aria-hidden /> Latest
+          </button>
+        )}
+      </div>
 
       <form
         onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
-        className="flex items-end gap-2 border-t border-white/10 bg-white/[0.02] p-3"
+        className="flex shrink-0 items-end gap-2 border-t border-white/10 bg-white/[0.02] p-3"
       >
         <textarea
           ref={inputRef}
