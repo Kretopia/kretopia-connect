@@ -71,7 +71,7 @@ export function KretoConversationHistory(props: KretoConversationHistoryProps) {
   }
 
   return (
-    <div className="w-64 shrink-0 border-r border-white/10 flex flex-col h-full">
+    <div className="w-64 shrink-0 border-r border-white/10 flex flex-col h-[var(--kreto-h,32rem)]">
       <ConversationListBody {...props} />
     </div>
   );

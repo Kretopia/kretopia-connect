@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import {
   PenLine, IdCard, Compass, Send, ArrowUpRight,
@@ -154,9 +154,10 @@ export default function KretoTab() {
       </div>
 
       <StudioFeatureShell wrapped={{ name: "Kreto" }}>
-        <div className="flex gap-4 items-start">
-          {/* Desktop: fixed rail beside the chat. Mobile: a compact History
-              button that opens the same list in a Sheet. */}
+        <div className="flex flex-col items-start gap-3 md:flex-row md:gap-4" style={{ "--kreto-h": "clamp(22rem, 58vh, 38rem)" } as CSSProperties}>
+          {/* md and up: a fixed rail beside the chat. Below that: a compact History
+              button above the chat (not beside it, which squeezed the chat to half width)
+              that opens the same list in a Sheet. */}
           <KretoConversationHistory
             activeConversationId={activeConversationId}
             onSelect={setActiveConversationId}
@@ -164,32 +165,39 @@ export default function KretoTab() {
             refreshKey={historyRefreshKey}
           />
 
-          <div className="flex-1 min-w-0 space-y-5">
-            {/* Primary surface — the live thread, answered right here on the page */}
+          <div className="w-full min-w-0 space-y-5 md:w-auto md:flex-1">
+            {/* Primary surface — the live thread, answered right here on the page. The quick
+                actions live in its empty state, so the card is one fixed size from first paint
+                to last token and nothing below it moves when the first message lands. */}
             <InlineKretoChat
               seedPrompt={seed?.text ?? null}
               seedNonce={seed?.n}
               conversationId={activeConversationId}
               onConversationCreated={handleConversationCreated}
+              emptyState={
+                <div className="flex min-h-full flex-col justify-center gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-white">What should we work on?</p>
+                    <p className="mt-0.5 text-xs text-white/50">
+                      {BRAND.agentName} drafts, searches and prepares. Anything that goes out waits for your approval.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                    {QUICK_ACTIONS.map(({ icon: Icon, label, prompt }) => (
+                      <button
+                        key={label}
+                        type="button"
+                        onClick={() => ask(prompt)}
+                        className="btn-glass btn-glass-outline flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium"
+                      >
+                        <Icon className="h-4 w-4 shrink-0 text-foreground/50" aria-hidden />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              }
             />
-
-            {/* Quick actions — secondary shortcuts, visually quieter than the primary CTA above */}
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/40 font-semibold mb-2.5">Or start with</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {QUICK_ACTIONS.map(({ icon: Icon, label, prompt }) => (
-                  <button
-                    key={label}
-                    type="button"
-                    onClick={() => ask(prompt)}
-                    className="btn-glass btn-glass-outline flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium"
-                  >
-                    <Icon className="h-4 w-4 text-foreground/50 shrink-0" aria-hidden />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
 
@@ -269,7 +277,7 @@ export default function KretoTab() {
 
         <p className="text-xs text-foreground/35 leading-relaxed">
           {BRAND.agentName} opens automatically above. Anything that could affect other people, spend
-          money, or send something on your behalf waits for your approval first — {BRAND.agentName}
+          money, or send something on your behalf waits for your approval first — {BRAND.agentName}{" "}
           only acts on its own for safe, reversible steps.
         </p>
       </StudioFeatureShell>
