@@ -3,11 +3,15 @@ import { motion } from "framer-motion";
 import type { MyCreditsOverview } from "@/hooks/useMyCredits";
 import { cn } from "@/lib/utils";
 import { AnimatedNumber } from "./AnimatedNumber";
+import { RecordRing } from "./RecordRing";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 interface Props {
   overview: MyCreditsOverview | null;
+  /** 0-100 record completeness, drawn as the branded ring. */
   completeness: number;
+  /** What the percentage is made of, so the card can say it in words. */
+  steps?: { done: number; total: number };
   nextAction: { label: string; onClick: () => void } | null;
   loading?: boolean;
 }
@@ -17,7 +21,7 @@ interface Props {
  * Counts come from `my_credits_overview` (auth.uid() scoped) — never from a
  * client-side tally over a public table.
  */
-export function CreditsOverviewCard({ overview, completeness, nextAction, loading }: Props) {
+export function CreditsOverviewCard({ overview, completeness, steps, nextAction, loading }: Props) {
   const reduced = useReducedMotion();
   const stats = [
     { icon: ShieldCheck, label: "Verified", value: overview?.verified_credits ?? 0 },
@@ -26,7 +30,8 @@ export function CreditsOverviewCard({ overview, completeness, nextAction, loadin
     { icon: Handshake, label: "Co-signs", value: overview?.endorsements_received ?? 0 },
   ];
 
-  const ring = Math.max(0, Math.min(100, completeness));
+  const totalCredits = overview?.total_credits ?? 0;
+  const verifiedCredits = overview?.verified_credits ?? 0;
 
   return (
     <motion.div
@@ -44,43 +49,48 @@ export function CreditsOverviewCard({ overview, completeness, nextAction, loadin
         }}
       />
 
-      <div className="relative flex flex-wrap items-center justify-between gap-5">
-        <div>
+      <div className="relative flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Your record</p>
           <p className="mt-1 flex items-end gap-2 text-5xl font-bold leading-none tracking-tight text-foreground">
-            {loading ? "—" : <AnimatedNumber value={overview?.total_credits ?? 0} />}
+            {loading ? "—" : <AnimatedNumber value={totalCredits} />}
             <span className="pb-1 text-sm font-medium text-muted-foreground">credits</span>
           </p>
+          <p className="mt-2 text-sm font-medium text-foreground">
+            {loading
+              ? "Checking your record…"
+              : totalCredits === 0
+                ? "Nothing on your record yet"
+                : `${verifiedCredits} of ${totalCredits} verified`}
+          </p>
+          {steps && !loading && (
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {steps.done} of {steps.total} steps to a complete record
+            </p>
+          )}
         </div>
 
-        {/* Completeness ring */}
-        <div className="relative h-[86px] w-[86px] shrink-0">
-          <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
-            <circle cx="50" cy="50" r="42" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
-            <motion.circle
-              cx="50"
-              cy="50"
-              r="42"
-              fill="none"
-              stroke="hsl(var(--accent-passport))"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 42}
-              initial={{ strokeDashoffset: 2 * Math.PI * 42 }}
-              animate={{ strokeDashoffset: 2 * Math.PI * 42 * (1 - ring / 100) }}
-              transition={{ duration: reduced ? 0 : 1.1, ease: "easeOut" }}
-            />
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-lg font-bold leading-none text-foreground">
-              <AnimatedNumber value={ring} />%
-            </span>
-            <span className="mt-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Complete
-            </span>
-          </div>
+        <div className="flex shrink-0 flex-col items-center">
+          <RecordRing percent={completeness} steps={steps} />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Record complete
+          </span>
         </div>
       </div>
+
+      {nextAction && (
+        <button
+          type="button"
+          onClick={nextAction.onClick}
+          className={cn(
+            "btn-glass btn-glass-primary group relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold",
+            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+          )}
+        >
+          <span className="relative">{nextAction.label}</span>
+          <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
+        </button>
+      )}
 
       <dl className="relative mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {stats.map((s, i) => (
@@ -102,20 +112,6 @@ export function CreditsOverviewCard({ overview, completeness, nextAction, loadin
           </motion.div>
         ))}
       </dl>
-
-      {nextAction && (
-        <button
-          type="button"
-          onClick={nextAction.onClick}
-          className={cn(
-            "btn-glass btn-glass-primary group relative mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold",
-            "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-          )}
-        >
-          <span className="relative">{nextAction.label}</span>
-          <ArrowRight className="relative h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </button>
-      )}
     </motion.div>
   );
 }

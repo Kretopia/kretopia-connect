@@ -14,7 +14,6 @@ import { CreditsAIInsights } from "@/components/credits/CreditsAIInsights";
 import { CreditsErrorState } from "@/components/credits/CreditsPrimitives";
 import { CreditsFullRecord } from "@/components/credits/CreditsFullRecord";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 import { User, Briefcase, Award, Activity, FileText, Sparkles as SparklesIcon } from "lucide-react";
@@ -92,7 +91,7 @@ export default function CreditsDashboard() {
 
   const { credits, overview, loading, searching, error, refresh } = useMyCredits(query);
 
-  const completeness = useMemo(() => {
+  const record = useMemo(() => {
     const checks = [
       Boolean(profile?.full_name),
       Boolean(profile?.role),
@@ -103,7 +102,8 @@ export default function CreditsDashboard() {
       (overview?.verified_credits ?? 0) > 0,
       (overview?.missing_evidence ?? 0) === 0,
     ];
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100);
+    const done = checks.filter(Boolean).length;
+    return { done, total: checks.length, percent: Math.round((done / checks.length) * 100) };
   }, [profile, overview]);
 
   const nextAction = useMemo(() => {
@@ -116,7 +116,7 @@ export default function CreditsDashboard() {
       };
     if (overview.pending_credits > 0)
       return {
-        label: "Ask for a co-sign on your pending work",
+        label: "Ask for a co-sign",
         onClick: () => document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" }),
       };
     if (!profile?.bio) return { label: "Write your bio", onClick: () => navigate("/profile/edit") };
@@ -183,7 +183,6 @@ export default function CreditsDashboard() {
       </Helmet>
 
       <div className="accent-passport relative min-h-screen bg-background">
-        <PageBackButton />
         <FeaturePageHeader
           scene="workspace"
           eyebrow="Credits"
@@ -193,15 +192,6 @@ export default function CreditsDashboard() {
         />
 
         <StudioFeatureShell className="relative" wrapped={{ name: "Credits" }}>
-          <div className="mb-5">
-            <PersonalCreditsSearch
-              value={rawQuery}
-              onChange={setRawQuery}
-              searching={searching}
-              resultCount={credits.length}
-            />
-          </div>
-
           {error === "auth" ? (
             <CreditsErrorState
               message="Your session expired. Sign in again to see your record."
@@ -213,9 +203,17 @@ export default function CreditsDashboard() {
             <div className="space-y-4">
               <CreditsOverviewCard
                 overview={overview}
-                completeness={completeness}
+                completeness={record.percent}
+                steps={{ done: record.done, total: record.total }}
                 nextAction={nextAction}
                 loading={loading}
+              />
+
+              <PersonalCreditsSearch
+                value={rawQuery}
+                onChange={setRawQuery}
+                searching={searching}
+                resultCount={credits.length}
               />
 
               <StudioSectionTabs queryParam="tab" defaultTabId="identity" tabs={creditsTabs} />
