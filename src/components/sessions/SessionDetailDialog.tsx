@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { eventEntry } from "@/lib/eventEntry";
 import { SessionParticipants } from "./SessionParticipants";
 import { SessionChat } from "./SessionChat";
 import { EventShareKit } from "./EventShareKit";
@@ -76,6 +78,7 @@ export const SessionDetailDialog = ({
 }: SessionDetailDialogProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [participation, setParticipation] = useState<'going' | 'interested' | 'maybe' | null>(null);
   const [activeTab, setActiveTab] = useState("details");
@@ -116,7 +119,18 @@ export const SessionDetailDialog = ({
         setParticipation(null);
         toast({ title: "Left event" });
         onRefresh?.();
-      } else if (session.is_ticketed && session.ticket_price && session.ticket_price > 0 && !session.external_ticket_url) {
+      } else if (eventEntry(session).kind === "external") {
+        // Tickets are sold elsewhere (the event page sends people there too).
+        const entry = eventEntry(session);
+        if (entry.kind === "external") window.open(entry.url, "_blank", "noopener,noreferrer");
+      } else if (eventEntry(session).kind === "ticket" && !(session.ticket_price && session.ticket_price > 0)) {
+        // A ticketed event whose price lives in ticket tiers (ticket_price is empty), so
+        // it has no single price to charge here. It used to fall through to the free
+        // join below. Tiers are chosen and paid for on the event page.
+        toast({ title: "This event needs a ticket", description: "Opening the event page to get yours." });
+        onOpenChange(false);
+        navigate(`/event/${session.id}`);
+      } else if (session.is_ticketed && session.ticket_price && session.ticket_price > 0) {
         // Ticketed event — redirect to Stripe checkout
         const { data, error } = await supabase.functions.invoke('purchase-event-ticket', {
           body: { eventId: session.id }
@@ -297,6 +311,8 @@ export const SessionDetailDialog = ({
                     <><Check className="h-4 w-4 mr-1.5" /> Going</>
                   ) : isTicketed ? (
                     <>{session.external_ticket_url ? <ExternalLink className="h-4 w-4 mr-1.5" /> : <Ticket className="h-4 w-4 mr-1.5" />} Get Ticket — {currencySymbol}{session.ticket_price}</>
+                  ) : session.is_ticketed ? (
+                    <><Ticket className="h-4 w-4 mr-1.5" /> Get Ticket</>
                   ) : isFull ? "Full" : "Join Event"}
                 </Button>
               )}
