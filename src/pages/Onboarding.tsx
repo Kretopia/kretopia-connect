@@ -25,6 +25,7 @@ import { IntentPicker } from "@/components/intent/IntentPicker";
 import { FunnelStepper, type StepKey } from "@/components/onboarding/FunnelStepper";
 import { BRAND } from "@/lib/brandLexicon";
 import { getPostSignupUrl } from "@/lib/authRedirect";
+import { canJoinDirectly } from "@/lib/eventEntry";
 
 // Wave 1 reframe: Find your work → Confirm credits → Launch profile
 // (internal phase ids unchanged for analytics continuity)
@@ -627,12 +628,18 @@ export default function Onboarding() {
       const pendingEventJoin = sessionStorage.getItem("pending_event_join");
       if (pendingEventJoin && user) {
         try {
-          const { data: inserted } = await supabase.from("jam_participants").insert({ jam_id: pendingEventJoin, user_id: user.id, status: "going" }).select("id").single();
-          if (inserted) {
-            const { data: ev } = await supabase.from("creative_jams").select("title, start_time, end_time, venue_name, venue_address").eq("id", pendingEventJoin).single();
-            if (ev) {
-              const { sendEventConfirmationEmail } = await import("@/utils/eventConfirmationEmail");
-              sendEventConfirmationEmail({ eventId: pendingEventJoin, eventTitle: ev.title, startTime: ev.start_time, endTime: ev.end_time, venueName: ev.venue_name, venueAddress: ev.venue_address, isTicketed: false, participantId: inserted.id });
+          // Only a free event is joined here. A ticketed one (or one we cannot read) is left
+          // for the redirect that follows onboarding, which lands on /event/:id where the
+          // ticket is bought; inserting the row directly would skip the payment.
+          const { data: pendingEvent } = await supabase.from("creative_jams").select("is_ticketed, external_ticket_url").eq("id", pendingEventJoin).maybeSingle();
+          if (canJoinDirectly(pendingEvent)) {
+            const { data: inserted } = await supabase.from("jam_participants").insert({ jam_id: pendingEventJoin, user_id: user.id, status: "going" }).select("id").single();
+            if (inserted) {
+              const { data: ev } = await supabase.from("creative_jams").select("title, start_time, end_time, venue_name, venue_address").eq("id", pendingEventJoin).single();
+              if (ev) {
+                const { sendEventConfirmationEmail } = await import("@/utils/eventConfirmationEmail");
+                sendEventConfirmationEmail({ eventId: pendingEventJoin, eventTitle: ev.title, startTime: ev.start_time, endTime: ev.end_time, venueName: ev.venue_name, venueAddress: ev.venue_address, isTicketed: false, participantId: inserted.id });
+              }
             }
           }
         } catch (e) { console.error("[Onboarding] Event join:", e); }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_URL } from "@/lib/constants";
+import { eventEntry } from "@/lib/eventEntry";
 
 interface Session {
   id: string;
@@ -29,6 +31,7 @@ interface Session {
   is_ticketed?: boolean;
   ticket_price?: number;
   ticket_currency?: string;
+  external_ticket_url?: string;
   event_type?: string;
   cover_image_url?: string;
 }
@@ -54,6 +57,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 export const SessionCard = ({ session, userParticipation, onJoin, onClick }: SessionCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [participation, setParticipation] = useState(userParticipation);
 
@@ -62,6 +66,20 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
     if (!user) {
       toast({ title: "Not authenticated", description: "Please log in to join events", variant: "destructive" });
       return;
+    }
+    // Leaving is always allowed. Joining is only direct for a free event: a ticketed
+    // one is bought on the event page, and tickets sold elsewhere are sent there.
+    if (!participation) {
+      const entry = eventEntry(session);
+      if (entry.kind === "external") {
+        window.open(entry.url, "_blank", "noopener,noreferrer");
+        return;
+      }
+      if (entry.kind === "ticket") {
+        toast({ title: "This event needs a ticket", description: "Opening the event page to get yours." });
+        navigate(`/event/${session.id}`);
+        return;
+      }
     }
     setLoading(true);
     try {

@@ -21,6 +21,33 @@ Deno.serve(async (req) => {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // rsvp_to_event does not look at ticketing, so without this the agent could put someone on
+    // the guest list of a paid event for free. The agent RSVPs only to events that need no
+    // ticket; a ticketed one is bought on the event page. The lookup uses the service role
+    // for two non-sensitive columns so the check does not depend on who can see the event.
+    const { data: userData } = await client.auth.getUser(auth.replace(/^Bearer\s+/i, ""));
+    if (!userData?.user) {
+      return new Response(JSON.stringify({ ok: false, error: "Not authenticated" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const { data: event } = await admin
+      .from("creative_jams")
+      .select("is_ticketed, external_ticket_url")
+      .eq("id", eventId)
+      .maybeSingle();
+    if (event && (event.is_ticketed || String(event.external_ticket_url ?? "").trim())) {
+      return new Response(JSON.stringify({
+        ok: false,
+        code: "TICKET_REQUIRED",
+        error: "This event needs a ticket. Open the event page to get one.",
+      }), {
+        status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data, error } = await client.rpc("rsvp_to_event", {
       p_event_id: eventId,
       p_referred_by: body?.referred_by ?? null,
