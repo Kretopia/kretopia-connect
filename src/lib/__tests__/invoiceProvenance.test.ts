@@ -37,14 +37,14 @@ describe("provenance of a paid invoice", () => {
 describe("the webhook records a confirmed payment or says it could not", () => {
   const source = root("supabase/functions/stripe-marketplace-webhook/index.ts");
 
-  it("checks the error of the invoice update and answers non-2xx so Stripe retries", () => {
+  it("checks the error of the invoice update and answers non-2xx so Stripe retries (after giving the ledger row back, see webhookLedger.test.ts)", () => {
     const update = source.indexOf("const { error: invoicePaidErr } = await supabaseAdmin");
     const guard = source.indexOf("if (invoicePaidErr)");
     const ok = source.indexOf('logStep("Invoice marked paid"');
     expect(update).toBeGreaterThan(-1);
     expect(guard).toBeGreaterThan(update);
     expect(ok).toBeGreaterThan(guard);
-    expect(source).toMatch(/if \(invoicePaidErr\) \{[\s\S]{0,300}status: 500/);
+    expect(source).toMatch(/if \(invoicePaidErr\) \{[\s\S]{0,500}status: 500/);
   });
 
   it("still writes the provider reference, and only on a paid session", () => {
