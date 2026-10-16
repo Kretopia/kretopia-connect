@@ -3,6 +3,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { cleanPaymentLinkRequest } from "../_shared/publicCheckoutInput.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,8 +14,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { slug, amount_cents, payer_email, payer_name, payer_note } = await req.json();
-    if (!slug) throw new Error("slug required");
+    // The caller is anonymous: the slug, the amount and the payer's details are checked, bounded and
+    // cleaned before they reach Stripe metadata, the idempotency key or our table.
+    const checked = cleanPaymentLinkRequest(await req.json().catch(() => null));
+    if (!checked.ok) throw new Error(checked.error);
+    const { slug, requestedCents, payerEmail: payer_email, payerName: payer_name, payerNote: payer_note } = checked.request;
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -33,7 +37,7 @@ serve(async (req) => {
     // Resolve amount
     let cents = link.amount_cents ?? 0;
     if (link.mode !== "fixed") {
-      const requested = Number(amount_cents);
+      const requested = requestedCents ?? 0;
       if (!requested || requested <= 0) throw new Error("Amount required");
       const min = link.min_amount_cents ?? 100;
       const max = link.max_amount_cents ?? 100_000_00;
