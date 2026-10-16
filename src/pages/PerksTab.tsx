@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { FeatureWrapped } from "@/components/wrapped/FeatureWrapped";
-import { Check, Lock, Shield, Zap, Award, Star, Crown, Sparkles, TrendingUp, KeyRound } from "lucide-react";
+import { Shield, Zap, Award, Star, Crown, Sparkles, TrendingUp, KeyRound } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { PerkTierCard, type PerkTierState } from "@/components/perks/PerkTierCard";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -27,8 +29,10 @@ const PERKS_TUTORIAL: TutorialStep[] = [
  */
 export default function PerksTab() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [currentTierIdx, setCurrentTierIdx] = useState(0);
+  const [verifiedCredits, setVerifiedCredits] = useState(0);
   const titleWrapperRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   useFitTitleOneLine(titleWrapperRef, titleRef, []);
@@ -44,6 +48,7 @@ export default function PerksTab() {
       if (cancelled) return;
       const status = calculateStatusFromCredits(data ?? []);
       setCurrentTierIdx(status.tierIndex);
+      setVerifiedCredits(status.metrics.verifiedCredits);
       setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -84,51 +89,34 @@ export default function PerksTab() {
             <KretopiaSpinner className="h-4 w-4" /> Checking your status…
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {allTiers.map((tier, idx) => {
-              const isCurrentTier = !!user && idx === currentTierIdx;
-              const isUnlocked = !!user && idx <= currentTierIdx;
-              const Icon = TIER_ICONS[idx];
+              // Signed out there is no "current": every rung reads as locked
+              // and none offers an action.
+              const state: PerkTierState = !user
+                ? "locked"
+                : idx === currentTierIdx
+                  ? "current"
+                  : idx < currentTierIdx
+                    ? "unlocked"
+                    : idx === currentTierIdx + 1
+                      ? "next"
+                      : "locked";
               return (
-                <div
+                <PerkTierCard
                   key={tier.tier}
-                  className={`flex flex-col min-h-[216px] rounded-xl border p-4 ${
-                    isCurrentTier ? "border-[hsl(var(--energy)/0.5)] bg-[hsl(var(--energy)/0.05)]" : "border-border bg-foreground/[0.03]"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 mb-1">
-                    <Icon className={`h-4 w-4 shrink-0 ${isUnlocked ? "text-[hsl(var(--energy))]" : "text-foreground/30"}`} aria-hidden />
-                    <h3 className="text-sm font-bold truncate">{tier.label}</h3>
-                    {isCurrentTier && (
-                      <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-[hsl(var(--energy))] border border-[hsl(var(--energy)/0.35)] bg-[hsl(var(--energy)/0.1)] backdrop-blur-sm px-1.5 py-0.5 rounded-full">
-                        <span className="h-1 w-1 rounded-full bg-[hsl(var(--energy))]" />
-                        Your status
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5 mt-3">
-                    {tier.perks.map((perk, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs">
-                        <Check className={`h-3 w-3 mt-0.5 shrink-0 ${isUnlocked ? "text-[hsl(var(--energy))]" : "text-foreground/25"}`} aria-hidden />
-                        <span className={`line-clamp-1 ${isUnlocked ? "text-foreground/80" : "text-foreground/35"}`}>{perk}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {!isUnlocked && (
-                    <div className="flex items-center gap-1.5 text-[11px] text-foreground/35 mt-auto pt-3 border-t border-border">
-                      <Lock className="h-3 w-3 shrink-0" aria-hidden />
-                      Build your reputation to unlock
-                    </div>
-                  )}
-                </div>
+                  tier={tier}
+                  icon={TIER_ICONS[idx]}
+                  state={state}
+                  verifiedCredits={verifiedCredits}
+                  onAction={() => navigate("/credits")}
+                />
               );
             })}
           </div>
         )}
 
-        <p className="text-xs text-foreground/35">
+        <p className="text-xs text-muted-foreground">
           Partner discounts and Founding Circle rewards land here as they go live — nothing listed
           above is a placeholder.
         </p>
