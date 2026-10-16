@@ -99,7 +99,8 @@ describe("create-milestone-payment wiring", () => {
   });
 
   it("reads the milestone's escrow state, payment date, title and project from its own row", () => {
-    expect(src).toContain("'created_by, status, amount, project_id, title, escrow_status, paid_at'");
+    // requested_by joined the list so the payee can be decided from the row (see resolveMilestonePayee).
+    expect(src).toContain("'created_by, requested_by, status, amount, project_id, title, escrow_status, paid_at'");
     expect(src).toContain("const projectId: string = milestone.project_id;");
   });
 
@@ -111,7 +112,9 @@ describe("create-milestone-payment wiring", () => {
     expect(src).toContain("const talentRate = payable.amount;");
     expect(src).toContain("capture_method: 'manual'");
     expect(src).toContain("kind: 'milestone'");
-    expect(src).toContain("`milestone-payment:${milestoneId}:${user.id}:${brandTotalCents}`");
+    // The payee is part of the key: a different payee is a different request, and Stripe rejects a
+    // reused key whose parameters differ.
+    expect(src).toContain("`milestone-payment:${milestoneId}:${user.id}:${payeeUserId}:${brandTotalCents}`");
     expect(src).toContain("unit_amount: Math.round(talentRate * 100)");
   });
 });

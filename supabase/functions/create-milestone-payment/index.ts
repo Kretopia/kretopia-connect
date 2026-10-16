@@ -44,7 +44,7 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { milestoneId, amount: clientAmount, title: clientTitle, useEscrow } = await req.json();
+    const { milestoneId, amount: clientAmount, title: clientTitle, useEscrow, payeeUserId: requestedPayeeId } = await req.json();
     if (!milestoneId || typeof milestoneId !== "string") {
       throw new Error("Missing required fields: milestoneId");
     }
@@ -65,7 +65,7 @@ serve(async (req) => {
     // pattern already used by batch-milestone-payout.
     const { data: milestone, error: milestoneError } = await supabaseAdmin
       .from('milestones')
-      .select('created_by, status, amount, project_id, title, escrow_status, paid_at')
+      .select('created_by, requested_by, status, amount, project_id, title, escrow_status, paid_at')
       .eq('id', milestoneId)
       .single();
 
@@ -130,51 +130,77 @@ serve(async (req) => {
     let managerTableId: string | null = null;
     let managerStripeAccountId: string | null = null;
 
-    // Who actually gets paid -- NOT necessarily milestone.created_by. On
-    // the primary "Brand creates the milestone" path, created_by is the
-    // Brand's own id, so looking up a manager referral by created_by would
-    // silently miss the real Creator's manager (and thus never attribute
-    // their commission). See _shared/resolveMilestonePayee.ts.
-    const payee = await resolveMilestonePayee(supabaseAdmin, milestone);
-    if (payee.ambiguous) {
-      logStep("WARNING: ambiguous milestone payee -- falling back to created_by", {
-        milestoneId, candidateCount: payee.candidateCount,
+    // Who actually gets paid -- NOT milestone.created_by, which on the main
+    // "Brand creates the milestone" path is the Brand itself. See
+    // _shared/resolveMilestonePayee.ts. The payee is decided HERE, before any
+    // money moves, and written into the Stripe metadata so the webhook and the
+    // escrow release credit the same person instead of guessing again later.
+    let payee = await resolveMilestonePayee(supabaseAdmin, milestone, { payerUserId: user.id });
+    if (payee.payeeUserId === null) {
+      // The server found no single creative. A payer who names one of the
+      // project's real candidates settles it; anything else is refused with
+      // the list to pick from, rather than charging and crediting nobody
+      // (or, as before, the payer).
+      payee = await resolveMilestonePayee(supabaseAdmin, milestone, {
+        payerUserId: user.id,
+        chosenUserId: typeof requestedPayeeId === "string" ? requestedPayeeId : null,
       });
     }
+    if (payee.payeeUserId === null) {
+      let candidates: { user_id: string; full_name: string | null; avatar_url: string | null }[] = [];
+      if (payee.candidateUserIds.length > 0) {
+        const { data: profiles } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id, full_name, avatar_url')
+          .in('user_id', payee.candidateUserIds);
+        candidates = (profiles || []) as typeof candidates;
+      }
+      const none = payee.candidateCount === 0;
+      logStep("Rejected: payee not identified", { milestoneId, candidateCount: payee.candidateCount, userChose: !!requestedPayeeId });
+      return new Response(JSON.stringify({
+        error: none
+          ? "Add the creative this milestone pays to the project (they must have accepted the invitation) before paying."
+          : "Choose which creative this payment is for.",
+        code: none ? "PAYEE_NONE" : "PAYEE_UNCLEAR",
+        candidates,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 409,
+      });
+    }
+    const payeeUserId: string = payee.payeeUserId;
 
-    if (payee.payeeUserId) {
-      const { data: referral } = await supabaseAdmin
-        .from('talent_referrals')
-        .select('manager_id, status')
-        .eq('talent_user_id', payee.payeeUserId)
-        .eq('status', 'active')
-        .limit(1)
-        .maybeSingle();
+    const { data: referral } = await supabaseAdmin
+      .from('talent_referrals')
+      .select('manager_id, status')
+      .eq('talent_user_id', payeeUserId)
+      .eq('status', 'active')
+      .limit(1)
+      .maybeSingle();
 
-      if (referral) {
-        hasManager = true;
-        managerTableId = referral.manager_id;
+    if (referral) {
+      hasManager = true;
+      managerTableId = referral.manager_id;
 
-        // Look up the manager's user ID and Stripe Connect account
-        const { data: managerRecord } = await supabaseAdmin
-          .from('talent_managers')
-          .select('manager_user_id')
-          .eq('id', referral.manager_id)
+      // Look up the manager's user ID and Stripe Connect account
+      const { data: managerRecord } = await supabaseAdmin
+        .from('talent_managers')
+        .select('manager_user_id')
+        .eq('id', referral.manager_id)
+        .single();
+
+      if (managerRecord?.manager_user_id) {
+        const { data: managerProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('stripe_account_id, stripe_account_status')
+          .eq('user_id', managerRecord.manager_user_id)
           .single();
 
-        if (managerRecord?.manager_user_id) {
-          const { data: managerProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('stripe_account_id, stripe_account_status')
-            .eq('user_id', managerRecord.manager_user_id)
-            .single();
-
-          if (managerProfile?.stripe_account_id && managerProfile?.stripe_account_status === 'active') {
-            managerStripeAccountId = managerProfile.stripe_account_id;
-            logStep("Manager has active Stripe Connect", { managerStripeAccountId });
-          } else {
-            logStep("Manager has no active Stripe Connect — commission will be recorded but not auto-transferred");
-          }
+        if (managerProfile?.stripe_account_id && managerProfile?.stripe_account_status === 'active') {
+          managerStripeAccountId = managerProfile.stripe_account_id;
+          logStep("Manager has active Stripe Connect", { managerStripeAccountId });
+        } else {
+          logStep("Manager has no active Stripe Connect — commission will be recorded but not auto-transferred");
         }
       }
     }
@@ -262,6 +288,7 @@ serve(async (req) => {
         milestoneId,
         projectId,
         userId: user.id,
+        payeeUserId,
         useEscrow: useEscrow ? 'true' : 'false',
         talentRate: String(talentRate),
         platformFee: String(platformFee),
@@ -280,6 +307,7 @@ serve(async (req) => {
           milestoneId,
           projectId,
           userId: user.id,
+          payeeUserId,
           talentRate: String(talentRate),
           platformFee: String(platformFee),
           managerCommission: String(managerCommission),
@@ -290,14 +318,16 @@ serve(async (req) => {
       logStep("Using escrow mode with manual capture");
     }
 
-    // Idempotency key from milestoneId + payer + total charged: a double-
+    // Idempotency key from milestoneId + payer + payee + total charged (a
+    // different payee is a different request, and Stripe rejects a reused key
+    // with different parameters): a double-
     // click or retried request for the exact same milestone payment
     // collapses onto the same Stripe Checkout Session instead of creating a
     // second one. The "already paid" guard above means this line can never
     // be reached again for the same milestone once it succeeds, so no
     // time-window is needed here either.
     const session = await stripe.checkout.sessions.create(sessionConfig, {
-      idempotencyKey: `milestone-payment:${milestoneId}:${user.id}:${brandTotalCents}`,
+      idempotencyKey: `milestone-payment:${milestoneId}:${user.id}:${payeeUserId}:${brandTotalCents}`,
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url, escrow: useEscrow, brandTotal });

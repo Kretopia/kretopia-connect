@@ -3,7 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { assertCanReleaseMilestone, EscrowAuthError } from "../_shared/escrowAuth.ts";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
-import { resolveMilestonePayee } from "../_shared/resolveMilestonePayee.ts";
+import { resolveMilestonePayee, unattributedPaymentNotice } from "../_shared/resolveMilestonePayee.ts";
 import { cleanBatchRequest, partitionMilestones } from "../_shared/batchPayout.ts";
 
 const corsHeaders = {
@@ -106,11 +106,20 @@ serve(async (req) => {
         logStep("Capturing escrow", { milestoneId: milestone.id });
         await stripe.paymentIntents.capture(milestone.payment_intent_id);
 
-        // Who actually gets paid -- NOT necessarily milestone.created_by.
-        // See _shared/resolveMilestonePayee.ts.
-        const payee = await resolveMilestonePayee(supabaseAdmin, milestone);
-        if (payee.ambiguous) {
-          logStep("WARNING: ambiguous milestone payee -- falling back to created_by", {
+        // Who actually gets paid -- NOT milestone.created_by, which on the main
+        // "Brand creates the milestone" path is the Brand itself. The payee chosen
+        // at checkout is in the PaymentIntent's signed metadata; see
+        // _shared/resolveMilestonePayee.ts. The money is captured regardless, but
+        // with no identified payee nobody is credited.
+        const intentMeta = (intent.metadata || {}) as Record<string, string>;
+        const payee = await resolveMilestonePayee(supabaseAdmin, milestone, {
+          payerUserId: intentMeta.userId || user.id,
+          chosenUserId: intentMeta.payeeUserId,
+          trustChosen: true,
+        });
+        const payeeUserId = payee.payeeUserId;
+        if (!payeeUserId) {
+          logStep("CAPTURED WITHOUT A PAYEE -- needs manual assignment", {
             milestoneId: milestone.id, candidateCount: payee.candidateCount,
           });
         }
@@ -121,7 +130,7 @@ serve(async (req) => {
             status: 'paid',
             escrow_status: 'captured',
             paid_at: now.toISOString(),
-            paid_to: payee.payeeUserId,
+            paid_to: payeeUserId,
           })
           .eq('id', milestone.id);
 
@@ -138,8 +147,17 @@ serve(async (req) => {
           continue;
         }
 
-        // Auto-generate invoice
-        await generateInvoice(supabaseAdmin, milestone, payee.payeeUserId, user.id, now);
+        if (payeeUserId) {
+          // Auto-generate invoice (only for an identified payee)
+          await generateInvoice(supabaseAdmin, milestone, payeeUserId, user.id, now);
+        } else {
+          await supabaseAdmin.from('notifications').insert(unattributedPaymentNotice({
+            payerUserId: user.id,
+            milestoneTitle: milestone.title,
+            projectId: milestone.project_id,
+            amount: Number(milestone.amount),
+          })).then(() => {}, (e: unknown) => logStep("WARNING: unattributed-payment notice failed", { error: String(e) }));
+        }
 
         results.push({ id: milestone.id, status: 'captured', success: true });
       } catch (err: any) {
