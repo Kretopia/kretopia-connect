@@ -14,10 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
+import { TierMedallion, TierRewardsList } from "@/components/circle/TierRewardsList";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 
 const CREATIVE_CIRCLE_TUTORIAL: TutorialStep[] = [
@@ -25,37 +25,6 @@ const CREATIVE_CIRCLE_TUTORIAL: TutorialStep[] = [
   { icon: TrendingUp, title: "Level up your tier", body: "As more people join through you — unlock free Pro, reduced fees, and status points." },
   { icon: Gift, title: "Earn passive commission", body: "From Kretopia's service fee when your referrals complete paid gigs — they keep 100% of their earnings." },
 ];
-
-/**
- * One circular medallion, reused for the current-tier hero (large) and
- * every row in the Tier Rewards list (small) -- a single visual language
- * for "this is a tier badge" instead of a plain icon-plus-label row, and
- * one place to keep it consistent rather than two hand-built treatments.
- */
-const TierMedallion = ({
-  tier,
-  size = "md",
-  active = true,
-}: {
-  tier: ReturnType<typeof getAllNetworkTiers>[number];
-  size?: "sm" | "md" | "lg";
-  active?: boolean;
-}) => {
-  const dims = size === "lg" ? "h-16 w-16" : size === "md" ? "h-11 w-11" : "h-9 w-9";
-  const iconDims = size === "lg" ? "h-7 w-7" : size === "md" ? "h-5 w-5" : "h-4 w-4";
-  return (
-    <div
-      className={cn(
-        "relative shrink-0 rounded-full flex items-center justify-center border bg-gradient-to-br",
-        dims,
-        active ? tier.gradient : "from-muted/30 to-muted/5",
-        active ? tier.ringClass.replace("ring-", "border-") : "border-border",
-      )}
-    >
-      <tier.icon className={cn(iconDims, active ? tier.color : "text-muted-foreground")} aria-hidden />
-    </div>
-  );
-};
 
 const CreativeCircle = () => {
   const { user } = useAuth();
@@ -120,17 +89,14 @@ const CreativeCircle = () => {
     <div>
       <SEO title="Creative Circle | Kretopia" description="Grow your creative network, unlock rewards, and earn passive income by inviting creatives to Kretopia." />
 
-      <div className="relative">
-        <PageBackButton />
-        <FeaturePageHeader
-          scene="coworking"
-          eyebrow="Creative Circle"
-          title="Creative Circle."
-          accentTitle="Earn as it grows."
-          subtitle="Invite creatives, climb tiers, and earn passive commission — all from one link."
-          tutorial={{ featureKey: "creative-circle", label: "How Creative Circle works", steps: CREATIVE_CIRCLE_TUTORIAL }}
-        />
-      </div>
+      <FeaturePageHeader
+        scene="coworking"
+        eyebrow="Creative Circle"
+        title="Creative Circle."
+        accentTitle="Earn as it grows."
+        subtitle="Invite creatives, climb tiers, and earn passive commission — all from one link."
+        tutorial={{ featureKey: "creative-circle", label: "How Creative Circle works", steps: CREATIVE_CIRCLE_TUTORIAL }}
+      />
 
       <StudioFeatureShell wrapped={{ name: "Creative Circle" }}>
 
@@ -304,41 +270,7 @@ const CreativeCircle = () => {
         <h2 className="font-bold text-lg tracking-tight">Tier Rewards</h2>
         <p className="text-sm text-muted-foreground">Each tier unlocks more rewards. Invite creatives to climb the ranks.</p>
 
-        {allTiers.map((tier) => {
-          const isActive = tier.tier === network.tier.tier;
-          const isUnlocked = network.referralCount >= tier.minReferrals;
-          return (
-            <Card
-              key={tier.tier}
-              className={cn(
-                "p-4 rounded-2xl shadow-none border-border/60 transition-colors",
-                isActive && "border-[hsl(var(--energy)/0.4)] bg-[hsl(var(--energy)/0.05)] ring-1 ring-[hsl(var(--energy)/0.2)]",
-                isUnlocked && !isActive && "bg-muted/10",
-                !isUnlocked && "opacity-50"
-              )}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <TierMedallion tier={tier} size="sm" active={isUnlocked} />
-                  <div>
-                    <span className={cn("font-bold", isActive ? tier.color : "text-foreground")}>{tier.label}</span>
-                    <span className="text-xs text-muted-foreground ml-2">{tier.minReferrals}+ invites</span>
-                  </div>
-                  {isActive && <Badge variant="default" className="text-[9px] px-1.5">You</Badge>}
-                </div>
-                {isUnlocked && !isActive && <Badge variant="secondary" className="text-[9px]">Unlocked</Badge>}
-              </div>
-              <p className="text-xs text-muted-foreground mb-3 italic">{tier.tagline}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {tier.perks.map((perk) => (
-                  <span key={perk} className="text-[10px] px-2.5 py-1 rounded-full bg-muted/60 text-muted-foreground font-medium">
-                    {perk}
-                  </span>
-                ))}
-              </div>
-            </Card>
-          );
-        })}
+        <TierRewardsList tiers={allTiers} activeTier={network.tier.tier} referralCount={network.referralCount} />
 
         <p className="text-[11px] text-muted-foreground text-center pt-2">
           Commission is earned from Kretopia's platform fee — your referrals keep 100% of their earnings. This isn't MLM — it's supporting each other to grow.
