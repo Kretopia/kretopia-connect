@@ -1,24 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/SwipeFilters';
 import { locationMatchesFilter } from '@/lib/locationGroups';
 import { buildMyMatchContext, computeMatchScore, extractSkillsArray, fetchPastCollaboratorIds, type MatchSignals } from '@/lib/matchScoring';
-
-const STOP = new Set(['and', 'the', 'for', 'with', 'from', 'that', 'this', 'your', 'you', 'are', 'des', 'les', 'une', 'pour']);
-function interestTokens(...parts: unknown[]): Set<string> {
-  const out = new Set<string>();
-  const add = (v: unknown) => {
-    if (!v) return;
-    if (Array.isArray(v)) return v.forEach(add);
-    if (typeof v === 'object') return add((v as any).skill ?? (v as any).name);
-    String(v).toLowerCase().split(/[^a-z0-9à-ÿ]+/).forEach((w) => {
-      if (w.length < 3 || STOP.has(w)) return;
-      out.add(w.length > 5 ? w.slice(0, 5) : w); // loose stem: "photographer" ~ "photography"
-    });
-  };
-  parts.forEach(add);
-  return out;
-}
+import { interestTokens, isPositivelyRealMember, orderCandidates } from '@/lib/matchRanking';
 
 export interface SwipeProfile {
   id: string;
@@ -49,9 +34,42 @@ export interface SwipeProfile {
   imported_from_url?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  updated_at?: string | null;
   /** Why this profile ranked where it did — same-sector/city/past-collab/
    *  skill-overlap, computed once here so cards don't need to re-derive it. */
   _matchSignals?: MatchSignals;
+}
+
+/** Columns the cross-user safe view (public_profiles_safe) can supply. */
+export const SAFE_VIEW_SELECT =
+  'user_id, full_name, role, bio, avatar_url, cover_image_url, location, level, professional_skills, badge, onboarding_completed, verification_tier, xp, id_verified, updated_at';
+
+/**
+ * A row from public_profiles_safe as a deck candidate. The view does not carry
+ * sub_roles, passions, collab intent, social counts, coordinates or claimed
+ * state, so those are left empty rather than guessed; ranking and filters
+ * treat "unknown" as "no signal", never as a mismatch.
+ */
+export function fromSafeRow(r: Record<string, any>): SwipeProfile {
+  return {
+    id: r.user_id,
+    user_id: r.user_id,
+    full_name: r.full_name ?? '',
+    role: r.role ?? '',
+    sub_roles: null,
+    bio: r.bio ?? null,
+    avatar_url: r.avatar_url ?? null,
+    cover_image_url: r.cover_image_url ?? null,
+    location: r.location ?? null,
+    level: r.level ?? 1,
+    professional_skills: r.professional_skills ?? null,
+    passion_skills: null,
+    badge: r.badge ?? null,
+    collab_intent: null,
+    verification_tier: r.verification_tier ?? null,
+    xp: r.xp ?? 0,
+    updated_at: r.updated_at ?? null,
+  };
 }
 
 export function useSwipeProfiles(currentUserId: string | undefined, filters: SwipeFiltersState = DEFAULT_SWIPE_FILTERS) {
@@ -61,13 +79,17 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchProfiles = useCallback(async (forceRescan = false) => {
+  const lastFetchedAt = useRef(0);
+
+  // `silent` tops the deck up in the background: no spinner, no blank frame, and the
+  // current order is kept (see the cached-order branch below).
+  const fetchProfiles = useCallback(async (forceRescan = false, silent = false) => {
     if (!currentUserId) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
 
     try {
@@ -114,22 +136,55 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         ...(connectionsIn?.map(c => c.user_id) || [])
       ]);
 
-      // Step 3: Fetch profiles
-      const { data: fetchedProfiles, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          id, user_id, full_name, role, sub_roles, bio, avatar_url, cover_image_url, location, level,
-          professional_skills, passion_skills, badge, collab_intent,
-          onboarding_completed, verification_tier,
-          instagram_followers, youtube_subscribers, tiktok_followers,
-          twitter_followers, spotify_listeners, xp, is_claimed, imported_from_url,
-          latitude, longitude
-        `)
-        .neq('user_id', currentUserId)
-        .eq('onboarding_completed', true)
-        .limit(1000);
+      // Step 3: Candidates, from two tiers.
+      //  1. `profiles` directly: full detail (sub-roles, passions, intent,
+      //     coordinates, claimed state), but RLS makes it owner-only apart from
+      //     the viewer's own connections, so on its own it leaves the deck
+      //     empty for almost everyone.
+      //  2. `public_profiles_safe`: the sanctioned cross-user view every
+      //     member can already read. Only rows it can vouch for as real
+      //     members are used (see isPositivelyRealMember).
+      // A member present in both keeps the richer tier-1 row. Who already
+      // swiped right on you rides along: the "Interested" tab shows the same
+      // people, so it exposes nothing new -- here it just ranks them first.
+      const [rawRes, safeRes, likedYouRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select(`
+            id, user_id, full_name, role, sub_roles, bio, avatar_url, cover_image_url, location, level,
+            professional_skills, passion_skills, badge, collab_intent,
+            onboarding_completed, verification_tier,
+            instagram_followers, youtube_subscribers, tiktok_followers,
+            twitter_followers, spotify_listeners, xp, is_claimed, imported_from_url,
+            latitude, longitude, updated_at
+          `)
+          .neq('user_id', currentUserId)
+          .eq('onboarding_completed', true)
+          .limit(1000),
+        supabase
+          .from('public_profiles_safe')
+          .select(SAFE_VIEW_SELECT)
+          .neq('user_id', currentUserId)
+          .eq('onboarding_completed', true)
+          .limit(1000),
+        supabase
+          .from('swipes')
+          .select('user_id')
+          .eq('target_id', currentUserId)
+          .eq('target_type', 'profile')
+          .eq('direction', 'right'),
+      ]);
 
-      if (profileError) throw profileError;
+      if (rawRes.error) console.warn('[useSwipeProfiles] profiles tier unavailable:', rawRes.error.message);
+      if (safeRes.error) console.warn('[useSwipeProfiles] safe-view tier unavailable:', safeRes.error.message);
+      // One tier failing is fine; only both failing is an error worth showing.
+      if (rawRes.error && safeRes.error) throw rawRes.error;
+
+      const merged = new Map<string, any>();
+      ((safeRes.data as any[]) || []).filter(isPositivelyRealMember).forEach((r) => merged.set(r.user_id, fromSafeRow(r)));
+      ((rawRes.data as any[]) || []).forEach((r) => merged.set(r.user_id, r));
+      const fetchedProfiles = Array.from(merged.values());
+      const likedYouIds = new Set<string>(((likedYouRes.data as any[]) || []).map((r) => r.user_id));
 
       // Step 4: Filter out swiped, connected, blocked. Deliberately NOT
       // filtering on bio length, portfolio/credits/awards count anymore --
@@ -199,7 +254,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         fetchPastCollaboratorIds(currentUserId),
       ]);
 
-      const myContext = buildMyMatchContext(meProfile || {}, pastCollabIds);
+      const myContext = buildMyMatchContext(meProfile || {}, pastCollabIds, currentUserId);
       const me = (meProfile || {}) as any;
       const myTokens = interestTokens(me.role, me.sub_roles, me.professional_skills, me.passion_skills, me.bio);
 
@@ -235,16 +290,22 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         try {
           const orderIds: string[] = JSON.parse(cachedOrder);
           const idSet = new Set(scored.map(p => p.user_id));
-          const orderedFromCache = orderIds
-            .filter(id => idSet.has(id))
-            .map(id => scored.find(p => p.user_id === id)!);
-          const newProfiles = scored.filter(p => !orderIds.includes(p.user_id));
-          ordered = [...orderedFromCache, ...newProfiles.sort((a, b) => b.score - a.score)];
+          const byId = new Map(scored.map(p => [p.user_id, p]));
+          const orderedFromCache = orderIds.filter(id => idSet.has(id)).map(id => byId.get(id)!);
+          const known = new Set(orderIds);
+          const newProfiles = scored.filter(p => !known.has(p.user_id));
+          // The deck keeps its order within a session, new arrivals are ranked
+          // and appended, and anyone who has since swiped right on you moves up.
+          const stable = [...orderedFromCache, ...orderCandidates(newProfiles, { likedYouIds })];
+          ordered = [
+            ...stable.filter(p => likedYouIds.has(p.user_id)),
+            ...stable.filter(p => !likedYouIds.has(p.user_id)),
+          ];
         } catch {
-          ordered = scored.sort((a, b) => b.score - a.score);
+          ordered = orderCandidates(scored, { likedYouIds });
         }
       } else {
-        ordered = scored.sort((a, b) => b.score - a.score);
+        ordered = orderCandidates(scored, { likedYouIds });
       }
 
       // Cache the order
@@ -252,11 +313,13 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
 
       setAllProfiles(ordered);
       setHasFetched(true);
+      lastFetchedAt.current = Date.now();
     } catch (err: any) {
       console.error('[useSwipeProfiles] Error:', err);
-      setError(err.message || 'Failed to load profiles');
+      // A failed background top-up must not replace a working deck with an error.
+      if (!silent) setError(err.message || 'Failed to load profiles');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [currentUserId]);
 
@@ -291,7 +354,16 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     }
 
     // Near Me — sort by distance using user's coordinates
-    if (filters.nearMe && filters.userLat != null && filters.userLon != null) {
+    // Coordinates, intent and follower counts only exist on full `profiles` rows. When the
+    // pool has none of them (safe-view tier only) these filters cannot apply, and applying
+    // them anyway would empty the deck, so they step aside instead.
+    const poolHasCoords = allProfiles.some(p => p.latitude != null && p.longitude != null);
+    const poolHasIntent = allProfiles.some(p => !!p.collab_intent);
+    const poolHasFollowers = allProfiles.some(p =>
+      p.instagram_followers != null || p.youtube_subscribers != null || p.tiktok_followers != null ||
+      p.twitter_followers != null || p.spotify_listeners != null);
+
+    if (filters.nearMe && poolHasCoords && filters.userLat != null && filters.userLon != null) {
       const userLat = filters.userLat;
       const userLon = filters.userLon;
       const toRad = (deg: number) => deg * Math.PI / 180;
@@ -308,7 +380,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     }
 
     // Collab intent
-    if (filters.collabIntent !== 'all') {
+    if (filters.collabIntent !== 'all' && poolHasIntent) {
       filtered = filtered.filter(p => p.collab_intent === filters.collabIntent);
     }
 
@@ -330,7 +402,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     }
 
     // Min followers (Pro)
-    if (filters.minFollowers !== 'all') {
+    if (filters.minFollowers !== 'all' && poolHasFollowers) {
       const minCount = parseInt(filters.minFollowers);
       filtered = filtered.filter(p => {
         const total = (p.instagram_followers || 0) + (p.youtube_subscribers || 0) +
@@ -371,6 +443,26 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       setLoading(false);
     }
   }, [currentUserId, hasFetched, fetchProfiles]);
+
+  // Near-real-time without a socket: `profiles` is owner-only under RLS, so there is nothing
+  // for Realtime to deliver. Instead the deck re-checks quietly when the tab comes back after
+  // a minute away, and tops itself up when only a couple of cards are left.
+  useEffect(() => {
+    if (!currentUserId) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && hasFetched && Date.now() - lastFetchedAt.current > 60_000) {
+        void fetchProfiles(false, true);
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [currentUserId, hasFetched, fetchProfiles]);
+
+  useEffect(() => {
+    if (hasFetched && !loading && profiles.length <= 2 && Date.now() - lastFetchedAt.current > 30_000) {
+      void fetchProfiles(false, true);
+    }
+  }, [hasFetched, loading, profiles.length, fetchProfiles]);
 
   // Match's Pulse "Scan now" asks every open deck to re-rank from scratch.
   useEffect(() => {
