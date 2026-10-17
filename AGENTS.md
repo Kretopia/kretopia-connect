@@ -28,6 +28,7 @@
 - Serve the Passport and Match chapter videos as their native 720×1280 masters, losslessly fast-start remuxed from `public/videos` with their own first frame as poster and a per-chapter `mediaPosition` for the 4:5 crop, because upscaling or recompressing cannot restore missing detail and the poster must never differ from the video.
 - Keep Landing flight on one scroll-linked decorative mascot beneath opaque media wrappers, painted imperatively with predecoded exclusive poses; use exact contiguous eased peek slides, outer-boundary-only hysteresis and full-box destination-heading corridors with no rotation near media; share Flying's entry/exit coordinates with vertical peek slides and let only media occlude the figure, because artificial wipes cause disappearance and each transition must follow scroll direction.
 
-- Render Spotlight, About and Hire Talent with FeaturePageHeader and the existing WrappedShell/StudioFeatureShell; group optional content in tabs or disclosures to keep public and member layouts consistent.
-- Omit page-level back controls and their dedicated rows; retain in-flow step navigation, reader close actions and sidebar dismissal so interaction flows remain usable.
+- Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
+- Omit page back rows; retain step navigation, reader close and sidebar dismissal.
+- Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.

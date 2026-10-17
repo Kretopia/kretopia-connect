@@ -53,7 +53,7 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
         )}
         style={{
           transform: `translateX(${dragOffset.x}px) translateY(${dragOffset.y}px) rotate(${rotation}deg) scale(${scale})`,
-          transition: isDragging ? "none" : "all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: isDragging ? "none" : "transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease-out",
           opacity: Math.max(opacity, 0.3),
           willChange: isDragging ? "transform" : "auto",
           WebkitTapHighlightColor: "transparent",
@@ -79,8 +79,8 @@ export const SwipeCard = forwardRef<HTMLDivElement, SwipeCardProps>(
               </div>
             )}
             {swipeDirection === "right" && (
-              <div className="absolute inset-0 bg-green-500/25 backdrop-blur-sm flex items-center justify-center pointer-events-none animate-fade-in">
-                <div className="bg-green-500 text-white p-5 rounded-full shadow-lg animate-scale-in">
+              <div className="absolute inset-0 bg-success/25 backdrop-blur-sm flex items-center justify-center pointer-events-none animate-fade-in">
+                <div className="bg-success text-success-foreground p-5 rounded-full shadow-lg animate-scale-in">
                   <Heart className="h-14 w-14 fill-current" strokeWidth={2} />
                 </div>
               </div>

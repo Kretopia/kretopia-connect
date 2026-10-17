@@ -4,6 +4,7 @@ import { extractSkillsArray } from '@/lib/matchScoring';
 import { badgeLabel } from '@/lib/badgeLabel';
 import { CardContent } from '@/components/ui/card';
 import { SwipeCard } from '@/components/ui/swipe-card';
+import { HoloCard } from '@/components/passport/HoloCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -62,7 +63,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
   // already uses -- a completed drag fires the parent action directly
   // (the drag motion itself is the confirmation); a button click has no
   // such motion, so it plays the equivalent slide-off animation first.
-  const { dragOffset, swipeDirection, isDragging, cardRef, handleDragStart, handleDragMove, handleDragEnd, animateSwipe } =
+  const { dragOffset, swipeDirection, isDragging, isAnimating, cardRef, handleDragStart, handleDragMove, handleDragEnd, animateSwipe } =
     useSwipeGestures({
       onSwipeLeft: () => onPass(profile),
       onSwipeRight: () => onLike(profile, { type: 'profile', label: 'their profile' }),
@@ -71,13 +72,11 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
     });
 
   const handlePassClick = useCallback(async () => {
-    await animateSwipe('left');
-    onPass(profile);
+    if (await animateSwipe('left')) onPass(profile);
   }, [animateSwipe, onPass, profile]);
 
   const handleConnectClick = useCallback(async () => {
-    await animateSwipe('right');
-    onLike(profile, { type: 'profile', label: 'their profile' });
+    if (await animateSwipe('right')) onLike(profile, { type: 'profile', label: 'their profile' });
   }, [animateSwipe, onLike, profile]);
 
   // Keyboard nav for the top card: Left = Pass, Right = Connect, Enter =
@@ -113,12 +112,13 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       onMouseDown={handleDragStart}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
       onTouchStart={handleDragStart}
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
-      className="w-full min-w-0 rounded-xl border-border bg-card lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]"
+      className="w-full min-w-0 rounded-xl border-border bg-card"
     >
+      <HoloCard glow={false} maxTilt={isDragging || isAnimating ? 0 : 3}>
+      <div className="min-w-0 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <div className="min-w-0 border-b border-border lg:border-b-0 lg:border-r">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted lg:aspect-[4/3]">
           {profile.cover_image_url || profile.avatar_url ? (
@@ -134,9 +134,6 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           {profile.cover_image_url && profile.avatar_url && (
             <img src={profile.avatar_url} alt="" draggable={false} className="absolute bottom-3 left-3 h-14 w-14 rounded-full border-2 border-background object-cover pointer-events-none" />
           )}
-          <Button variant="secondary" size="icon" onClick={() => onLike(profile, { type: 'photo', label: 'their photo' })} className="absolute bottom-3 right-3 h-11 w-11 rounded-full" title="Like their photo" aria-label="Like their photo">
-            <Heart className="h-5 w-5" />
-          </Button>
         </div>
         <div className="space-y-3 p-4 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -290,6 +287,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
             size="icon"
             className="h-11 w-11 rounded-full shrink-0 border-destructive/30 hover:bg-destructive/10 hover:border-destructive"
             onClick={handlePassClick}
+            disabled={isAnimating}
             aria-label={`Pass on ${profile.full_name}`}
           >
             <X className="h-4 w-4 text-destructive" />
@@ -307,6 +305,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
             size="lg"
             className="cta-solid h-12 min-w-0 flex-1 rounded-full gap-2"
             onClick={handleConnectClick}
+            disabled={isAnimating}
           >
             <Heart className="h-5 w-5" /> Connect
           </Button>
@@ -314,6 +313,8 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           {swipeDirection === 'right' && <p className="text-center text-xs text-muted-foreground">A match happens when you both connect.</p>}
         </div>
       </CardContent>
+      </div>
+      </HoloCard>
     </SwipeCard>
   );
 }

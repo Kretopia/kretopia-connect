@@ -257,6 +257,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
 
       {/* Hinge-style card — one at a time */}
       <HingeStyleCard
+        key={currentProfile.user_id}
         profile={currentProfile}
         onLike={handleLike}
         onPass={handlePass}
