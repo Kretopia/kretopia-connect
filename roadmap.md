@@ -1,5 +1,11 @@
 # Roadmap
 
+## Public feature alignment
+- [ ] Align Spotlight, About Us and Hire Talent with compact shared feature headers and grouped content.
+- [ ] Replace their small labels with working How this works tutorials.
+- [ ] Remove feature page back arrows and their reserved spacing.
+- [ ] Verify public page interactions and automatic compilation without publishing.
+
 ## Kreto Landing flight
 - [ ] Correct top-peek descent and bottom-peek ascent with shared Flying endpoints; remove artificial disappearance and run targeted regressions.
 - [x] Keep each free journey facing its media destination, add reversible progressive peek emergence and crisp exclusive edge handoffs; 18 tests and 506 round-trip opacity/exclusive-pose/media-clearance checks pass; compilation OK, not published.
