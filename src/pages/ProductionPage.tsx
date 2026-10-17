@@ -689,8 +689,167 @@ const ProductionPage = () => {
         />
 
         <StudioFeatureShell>
-          {/* BLOC 1: About this production + Get involved */}
-          <section className="grid gap-6 lg:grid-cols-3">
+          <WrappedShell
+            titleId="production-wrapped"
+            eyebrow="Kretopia · Production"
+            title={
+              <>
+                Everything in <span className="k-gradient-text">{production.name}</span>
+              </>
+            }
+            status={
+              <>
+                <span>{production.total_roles} roles</span>
+                <span aria-hidden>·</span>
+                <span>{totalClaimed} claimed</span>
+                <span aria-hidden>·</span>
+                <span>{platformRoles.filter((r) => r.verification_status === "verified").length} verified</span>
+              </>
+            }
+            aside={
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={handleShareProduction}>
+                <Share2 className="h-3.5 w-3.5" /> Share
+              </Button>
+            }
+          >
+            {/* Facts + Get involved, one compact row */}
+            <div className="grid gap-4 lg:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2 lg:col-span-2">
+                {[
+                  { icon: Icon, label: production.industry || "Production" },
+                  { icon: CalendarDays, label: production.year ? String(production.year) : "Year TBD" },
+                  { icon: MapPin, label: production.location || "Location TBD" },
+                  { icon: Building2, label: production.client_brand || "Independent" },
+                  { icon: Globe, label: production.platform || "Kretopia" },
+                  { icon: Users, label: `${totalClaimed}/${production.total_roles} claimed` },
+                ].map(({ icon: FactIcon, label }) => (
+                  <div key={label} className="flex items-center gap-2 rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+                    <FactIcon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                    <span className="truncate text-xs font-medium text-foreground" title={label}>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                <div className="mb-1 flex items-center gap-2">
+                  <Handshake className="h-4 w-4 text-primary" aria-hidden />
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">Join the roll call</p>
+                </div>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  {totalUnclaimed > 0
+                    ? `${totalUnclaimed} of ${production.total_roles} roles are still unclaimed. Worked on ${production.name}? Claim your credit.`
+                    : `Every listed role on ${production.name} has been claimed.`}
+                </p>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      setAddingRole(true);
+                      document.getElementById("production-add-role")?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Claim your role
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => {
+                      if (!user) {
+                        requireAuth("propose a new project");
+                        return;
+                      }
+                      toast.info("Propose a new project (demo flow).");
+                    }}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" /> Propose a new project
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Media */}
+            {(production.media_url || production.external_url) && (
+              <CompactMediaPlayer mediaUrl={production.media_url || production.external_url} />
+            )}
+
+            {/* Roll call — the single creatives grid */}
+            <div>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold text-foreground">The roll call</h3>
+                <span className="text-xs text-muted-foreground">{allCreatives.length} creative{allCreatives.length === 1 ? "" : "s"}</span>
+              </div>
+
+              {platformRoles.some((r) => user?.id === r.user_id) && (
+                <div className="mb-3 flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/10 p-3">
+                  <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground">Verify or strengthen your credit</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Ask a collaborator, client, producer, or supervisor to confirm your role. Only the credit owner sees these buttons.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {allCreatives.length === 0 ? (
+                <div className="rounded-2xl border border-border bg-card p-6 text-center">
+                  <Database className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+                  <p className="text-sm text-muted-foreground">No creatives listed yet for this production.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Be the first to claim your role below.</p>
+                </div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {allCreatives.map((r) => (
+                    <CreativeHoloCard
+                      key={r.id}
+                      role={r}
+                      projectName={projectName}
+                      onCollaborate={handleCollaborate}
+                      onClaim={handleClaim}
+                      onInvite={handleInvite}
+                      isOwner={user?.id === r.user_id}
+                      onVerify={handleVerify}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Add your role */}
+              <div id="production-add-role" className="mt-4">
+                {addingRole ? (
+                  <div className="flex gap-2">
+                    <input
+                      value={newRole}
+                      onChange={(e) => setNewRole(e.target.value)}
+                      placeholder="e.g. Assistant Editor, Stylist..."
+                      className="h-10 flex-1 rounded-xl border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none"
+                      autoFocus
+                      onKeyDown={(e) => e.key === "Enter" && handleAddRole()}
+                    />
+                    <Button onClick={handleAddRole} size="sm" className="h-10 px-4">Claim</Button>
+                    <Button
+                      onClick={() => { setAddingRole(false); setNewRole(""); }}
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 text-muted-foreground"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setAddingRole(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border py-3 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Worked on this? Add your role
+                  </button>
+                )}
+              </div>
+            </div>
+          </WrappedShell>
+        </StudioFeatureShell>
             {/* About this production — NEVER empty */}
             <div className="lg:col-span-2">
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">
