@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Match card gestures and Holo
-- [ ] Fix stuck swipes and verify consecutive gestures and button actions.
-- [ ] Reuse Passport Holo presentation without gesture interference; remove photo-like action.
+- [x] Fix stuck swipes; regression coverage for consecutive gestures, outside release and cancellation.
+- [x] Reuse Passport Holo presentation without gesture interference; remove photo-like action.
+- [ ] Verify live authenticated Match — blocked by external legacy session access; local gesture/card verification only.
 
 ## Match and Scout suggestion flow
 - [x] Remove first-page discovery starvation and refill real suggestions quietly without duplicate requests.

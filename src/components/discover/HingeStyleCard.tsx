@@ -59,10 +59,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
     return () => { active = false; };
   }, [profile.user_id]);
 
-  // Real drag-to-swipe, same hook + presentational shell ForYouFeed
-  // already uses -- a completed drag fires the parent action directly
-  // (the drag motion itself is the confirmation); a button click has no
-  // such motion, so it plays the equivalent slide-off animation first.
+  // Both gestures and controls finish their exit before advancing the deck.
   const { dragOffset, swipeDirection, isDragging, isAnimating, cardRef, handleDragStart, handleDragMove, handleDragEnd, animateSwipe } =
     useSwipeGestures({
       onSwipeLeft: () => onPass(profile),
