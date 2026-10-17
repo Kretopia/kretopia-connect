@@ -65,8 +65,8 @@ export default function Match() {
       label: "Discover",
       icon: Sparkles,
       content: (
-        <div className="flex justify-center">
-          <div className="w-full max-w-md">
+        <div className="w-full min-w-0">
+          <div className="w-full min-w-0">
             <SwipeFeature />
           </div>
         </div>
