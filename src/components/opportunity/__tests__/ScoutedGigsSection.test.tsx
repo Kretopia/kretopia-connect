@@ -42,7 +42,7 @@ let actionRows: { scouted_gig_id: string; action: string; outcome: string | null
 function builder(table: string) {
   let wantsDismissed = false;
   const q: Record<string, unknown> = {};
-  for (const m of ["select", "gt", "order", "limit", "in", "maybeSingle", "update", "upsert"]) q[m] = () => q;
+  for (const m of ["select", "gt", "order", "limit", "range", "in", "maybeSingle", "update", "upsert"]) q[m] = () => q;
   q.eq = (col: string, val: unknown) => {
     if (col === "action" && val === "dismissed") wantsDismissed = true;
     return q;
