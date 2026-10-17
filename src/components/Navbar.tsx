@@ -800,9 +800,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <Button
                   variant="default"
                   size="sm"
-                  className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2.5 sm:px-4 font-semibold"
+                  className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 text-xs sm:text-sm px-2 min-[400px]:px-2.5 sm:px-4 font-semibold"
                 >
-                  <Sparkles className="h-4 w-4" aria-hidden />
+                  {/* Below 400px the guest bar (logo + search + theme + menu + this button) is wider than
+                      the screen and pushed the button against the right edge: the decorative sparkle is
+                      the one thing that gives (the label, the link and the other controls are unchanged). */}
+                  <Sparkles className="h-4 w-4 max-[399px]:hidden" aria-hidden />
                   Create Passport
                 </Button>
               </Link>
