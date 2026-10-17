@@ -1,30 +1,12 @@
-/**
- * About — same cinematic language as the landing page: aurora, grain, scroll
- * reveals. Chapter titles use the exact same .landing-h2/.landing-glow
- * treatment as the hero's own .landing-h1 (brand Satoshi, weight 600, same
- * tracking/line-height/glow) -- chapters used to be set in a separate serif
- * face, which read as a different, older page bolted onto the hero rather
- * than one continuous surface. Kept short: what Kretopia is, the loop it
- * runs, the three people building it, and one invitation. No ThriveIN copy
- * — Kretopia only. Used to hardcode a permanent #05070D plate regardless of
- * theme (like the true guest landing page); now resolves --background like
- * every other feature surface, so it follows Dark/Light.
- */
-import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ChevronRight, Fingerprint, ShieldCheck, Compass, LayoutGrid, Sparkles, Globe } from "lucide-react";
+import { useState } from "react";
+import { Fingerprint, ShieldCheck, Compass, LayoutGrid, Sparkles, Globe, ChevronRight } from "lucide-react";
 import { SEO } from "@/components/SEO";
-import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
-import { Reveal } from "@/components/kretopia/Reveal";
-import { KretoCharacter, type KretoCharacterVariant } from "@/components/brand/KretoCharacter";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { kGlow } from "@/lib/kGradient";
-
-const ACCENT = "hsl(var(--energy))"; // neutral -- was flat pink, rolled back per the app-wide brand rollback
-
-const GRAIN =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { aboutTutorial } from "@/components/features/publicFeatureTutorials";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const PILLARS = [
   { icon: Fingerprint, title: "Creative Passport", body: "Your whole career on one link — credits, collaborators, co-signs." },
@@ -40,7 +22,7 @@ const LOOP_STEPS = ["Search", "Passport", "Trust", "Opportunity", "Studio", "Pay
 const FOUNDERS: {
   name: string;
   role: string;
-  kretoVariant: KretoCharacterVariant;
+  kretoVariant: "scout" | "connector" | "producer";
   body: string;
 }[] = [
   {
@@ -63,141 +45,36 @@ const FOUNDERS: {
   },
 ];
 
-/** Full-bleed chapter plate — same surface + reveal as the landing chapters. */
-const Chapter = ({
-  index, kicker, title, accentWord, children,
-}: {
-  index: string; kicker: string; title: string; accentWord: string; children: React.ReactNode;
-}) => {
-  const reducedMotion = useReducedMotion();
-  const titleId = `about-chapter-${index.toLowerCase()}-title`;
-  return (
-    <section className="relative overflow-hidden" style={{ backgroundColor: "hsl(var(--background))" }} aria-labelledby={titleId}>
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-[0.13]"
-        style={{ backgroundImage: GRAIN }}
-      />
-      <div className="relative mx-auto max-w-[1100px] px-5 sm:px-8 py-20 sm:py-28">
-        <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 18 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-100px" }}
-          transition={{ duration: 0.9, ease: [0.2, 0.65, 0.3, 0.95] }}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <span className="font-serif italic text-2xl pink-glow-breathe" style={{ color: ACCENT }}>{index}.</span>
-            <span className="landing-eyebrow" style={{ color: "hsl(var(--muted-foreground))" }}>{kicker}</span>
-          </div>
-          {/* Same landing-h2/landing-glow treatment as the hero's own
-              landing-h1 -- brand Satoshi, weight 600, same tracking/
-              line-height/glow, just the next size down. Used to be a
-              separate serif face here, reading as a different page. */}
-          <h2 id={titleId} className="landing-h2 landing-glow max-w-3xl" style={{ color: "hsl(var(--foreground))" }}>
-            {title}{" "}
-            <span className="landing-accent">{accentWord}</span>
-          </h2>
-        </motion.div>
-        <div className="mt-10">{children}</div>
-      </div>
-    </section>
-  );
-};
-
 const About = () => {
-  const [loopRef, loopVisible] = useScrollReveal<HTMLDivElement>();
-
+  const [tab, setTab] = useState("system");
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "hsl(var(--background))" }}>
-      <SEO
-        title="About Kretopia — The Creative Record, Built by Creatives"
-        description="Kretopia turns creative history into trusted opportunity — verified credits, a Creative Passport, and one room per project, connecting artists worldwide."
-      />
-
-      <EditorialPageHero
-        kicker="About Kretopia"
-        oneLine
-        subtitleOneLine
-        title="Built for"
-        accentTitle="creatives, everywhere."
-        subtitle="Talent is everywhere. Opportunity isn't. We close the gap."
-      />
-
-      {/* I — What Kretopia is */}
-      <Chapter index="I" kicker="The system" title="Your work, finally" accentWord="on the record.">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {PILLARS.map((p, i) => (
-            <Reveal key={p.title} delayIndex={i}>
-              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-5 transition-colors hover:border-[rgba(165,22,197,0.35)]">
-                <span
-                  className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: kGlow(10) }}
-                >
-                  <p.icon className="h-4 w-4" style={{ color: ACCENT }} />
-                </span>
-                <p className="text-foreground font-semibold text-sm mb-1.5">{p.title}</p>
-                <p className="text-sm leading-relaxed text-foreground/55">{p.body}</p>
+    <div className="min-h-screen bg-background">
+      <SEO title="About Kretopia — The Creative Record, Built by Creatives" description="Kretopia turns creative history into trusted opportunity — verified credits, a Creative Passport, and one room per project, connecting artists worldwide." />
+      <FeaturePageHeader compact eyebrow="About Kretopia" title="Built for" accentTitle="creatives, everywhere" subtitle="Talent is everywhere. Opportunity isn't. We close the gap." tutorial={{ featureKey: "about", label: "How Kretopia works", steps: aboutTutorial }} />
+      <StudioFeatureShell>
+        <WrappedShell titleId="about-overview" eyebrow="Kretopia" title={<>The creative <span className="k-gradient-text">record</span></>} aside={<KretoScene scene="studio" size="thumb" className="hidden h-16 w-32 rounded-xl border border-border sm:block" />}>
+          <Tabs value={tab} onValueChange={setTab}>
+            <TabsList className="grid h-11 w-full grid-cols-3">
+              <TabsTrigger value="system">The system</TabsTrigger>
+              <TabsTrigger value="loop">The loop</TabsTrigger>
+              <TabsTrigger value="team">The team</TabsTrigger>
+            </TabsList>
+            <TabsContent value="system" className="mt-4">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {PILLARS.map((p) => <div key={p.title} className="flex items-start gap-3 border-b border-border pb-4"><p.icon className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" /><div><h3 className="text-sm font-semibold text-foreground">{p.title}</h3><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{p.body}</p></div></div>)}
               </div>
-            </Reveal>
-          ))}
-        </div>
-      </Chapter>
-
-      {/* II — The loop */}
-      <Chapter index="II" kicker="The loop" title="One cycle that keeps" accentWord="compounding.">
-        <div ref={loopRef} className="flex flex-wrap items-center gap-x-1 gap-y-3">
-          {LOOP_STEPS.map((step, i) => (
-            <span key={step} className="flex items-center">
-              <span
-                className="whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs sm:text-sm font-medium text-foreground/85 transition-all duration-500"
-                style={{
-                  opacity: loopVisible ? 1 : 0,
-                  transform: loopVisible ? "none" : "translateY(6px)",
-                  transitionDelay: `${i * 90}ms`,
-                  borderColor: kGlow(25),
-                  backgroundColor: "hsl(var(--foreground) / 0.02)",
-                }}
-              >
-                {step}
-              </span>
-              {i < LOOP_STEPS.length - 1 && (
-                <ChevronRight className="mx-0.5 h-3.5 w-3.5" style={{ color: kGlow(50) }} aria-hidden />
-              )}
-            </span>
-          ))}
-        </div>
-        <Reveal delayIndex={2}>
-          <p className="mt-8 max-w-xl text-base leading-relaxed text-foreground/60">
-            Every finished project makes the next one easier to win. That is the whole product — proof in, opportunity out.
-          </p>
-        </Reveal>
-      </Chapter>
-
-      {/* III — The founders */}
-      <Chapter index="III" kicker="The founders" title="Three people, one" accentWord="obsession.">
-        <div className="grid gap-4 md:grid-cols-3">
-          {FOUNDERS.map((f, i) => (
-            <Reveal key={f.name} delayIndex={i}>
-              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-6 transition-colors hover:border-[rgba(165,22,197,0.35)]">
-                <KretoCharacter variant={f.kretoVariant} size={56} floatAmplitude={0} className="mb-5" />
-                <p className="text-foreground font-semibold">{f.name}</p>
-                {/* No inline color: .landing-eyebrow's own neutral default applies. */}
-                <p className="landing-eyebrow mb-3">{f.role}</p>
-                <p className="text-sm leading-relaxed text-foreground/55">{f.body}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-        <Reveal delayIndex={3}>
-          <p className="mt-10 max-w-2xl font-serif italic text-lg leading-relaxed text-foreground/80">
-            "A community person, a designer and an engineer building the same thing: a place where what a creative
-            has actually done travels with them — across cities, industries and borders."
-          </p>
-        </Reveal>
-      </Chapter>
-
+            </TabsContent>
+            <TabsContent value="loop" className="mt-4 space-y-4">
+              <ol className="flex flex-wrap items-center gap-3">{LOOP_STEPS.map((step, i) => <li key={step} className="flex items-center gap-3 text-sm font-medium text-foreground"><span>{step}</span>{i < LOOP_STEPS.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}</li>)}</ol>
+              <p className="text-sm leading-relaxed text-muted-foreground">Every finished project makes the next one easier to win. That is the whole product — proof in, opportunity out.</p>
+            </TabsContent>
+            <TabsContent value="team" className="mt-4">
+              <div className="grid gap-5 md:grid-cols-3">{FOUNDERS.map((f) => <article key={f.name} className="space-y-2"><h3 className="font-semibold text-foreground">{f.name}</h3><p className="text-xs font-semibold text-muted-foreground">{f.role}</p><p className="text-sm leading-relaxed text-muted-foreground">{f.body}</p></article>)}</div>
+            </TabsContent>
+          </Tabs>
+        </WrappedShell>
+      </StudioFeatureShell>
     </div>
   );
 };
-
 export default About;

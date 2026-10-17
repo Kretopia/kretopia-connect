@@ -19,20 +19,15 @@ import { useNavigate } from "react-router-dom";
 import { hasProAccess } from "@/lib/subscriptionConfig";
 import { CastingFieldsForm, type CastingFields } from "@/components/opportunity/CastingFieldsForm";
 import { PageTransition } from "@/components/PageTransition";
-import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
-import { EditorialChapter } from "@/components/kretopia/EditorialChapter";
-import { Reveal } from "@/components/kretopia/Reveal";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { hireTalentTutorial } from "@/components/features/publicFeatureTutorials";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { SectionHeading } from "@/components/typography/Heading";
 
 const ACCENT = "hsl(var(--energy))";
-
-const NOTES = [
-  { icon: ShieldCheck, title: "Verified credits", body: "Every creative is backed by co-signed work — you see proof, not promises." },
-  { icon: Sparkles, title: "Written for you", body: "Kreto drafts the brief from a sentence. You edit, you post." },
-  { icon: Users, title: "Matched, not shouted", body: "Your listing reaches the people whose record actually fits the job." },
-  { icon: Zap, title: "No account needed", body: "Verify your email and the listing is live in minutes." },
-];
-
 
 const STORAGE_KEY = "thrivein_draft_opportunity";
 
@@ -360,11 +355,12 @@ const PostOpportunity = () => {
         <meta name="description" content="Post a job, collaboration, or gig opportunity on Kretopia and connect with thousands of creative professionals. No account needed." />
       </Helmet>
 
-      <EditorialPageHero
-        kicker="Hire Talent"
-        oneLine
-        title="Hire talent."
-        accentTitle="Backed by proof."
+      <FeaturePageHeader
+        compact
+        eyebrow="Hire Talent"
+        tutorial={{ featureKey: "hire-talent", label: "How hiring works", steps: hireTalentTutorial }}
+        title="Hire talent"
+        accentTitle="Backed by proof"
         subtitle={
           user
             ? "Post your opportunity and reach creatives whose work is already on the record. Goes live immediately."
@@ -373,12 +369,12 @@ const PostOpportunity = () => {
       />
 
       {/* I — The brief */}
-      <EditorialChapter index="I" kicker="The brief" title="Tell us who you need." accentWord="Kreto writes the rest.">
+      <StudioFeatureShell>
+      <WrappedShell titleId="hire-brief" eyebrow="Kretopia · Hire Talent" title={<>Your next <span className="k-gradient-text">collaborator</span></>} aside={<KretoScene scene="talent-search" size="thumb" className="hidden h-16 w-32 rounded-xl border border-border sm:block" />} >
         <form onSubmit={handleSubmit} className="w-full">
-          <Reveal>
-            <div className="rounded-2xl border border-border bg-foreground/[0.02] overflow-hidden">
+          <div>
               {/* AI-powered brief writer — anchored at the top as the primary action */}
-              <div className="p-5 sm:p-8 border-b border-border bg-gradient-to-r from-[hsl(var(--energy)/0.08)] via-transparent to-transparent">
+              <div className="pb-4 border-b border-border">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--energy)/0.12)]">
                     <Sparkles className="h-4 w-4" style={{ color: ACCENT }} />
@@ -404,9 +400,9 @@ const PostOpportunity = () => {
                 />
               </div>
 
-              <div className="p-5 sm:p-8 space-y-8">
+              <div className="py-4 space-y-5">
                 {/* Section: Company */}
-                <section className="space-y-5">
+                <section className="space-y-3">
                   <SectionHeading as="h3" icon={<Building2 className="h-4 w-4" style={{ color: ACCENT }} />}>
                     Your Company
                   </SectionHeading>
@@ -487,7 +483,7 @@ const PostOpportunity = () => {
                 <div className="h-px bg-border" />
 
                 {/* Section: Opportunity */}
-                <section className="space-y-5">
+                <section className="space-y-3">
                   <SectionHeading as="h3" icon={<Briefcase className="h-4 w-4" style={{ color: ACCENT }} />}>
                     Opportunity
                   </SectionHeading>
@@ -578,6 +574,7 @@ const PostOpportunity = () => {
                     />
                   </div>
 
+                  <Accordion type="single" collapsible><AccordionItem value="requirements"><AccordionTrigger>Requirements & deliverables</AccordionTrigger><AccordionContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="requirements">Requirements</Label>
@@ -602,12 +599,13 @@ const PostOpportunity = () => {
                       />
                     </div>
                   </div>
+                  </AccordionContent></AccordionItem></Accordion>
                 </section>
 
                 <div className="h-px bg-border" />
 
                 {/* Section: Skills */}
-                <section className="space-y-5">
+                <Accordion type="single" collapsible><AccordionItem value="skills"><AccordionTrigger>Required skills</AccordionTrigger><AccordionContent className="space-y-3">
                   <SectionHeading as="h3" icon={<Zap className="h-4 w-4" style={{ color: ACCENT }} />}>
                     Required Skills
                   </SectionHeading>
@@ -635,13 +633,13 @@ const PostOpportunity = () => {
                       </div>
                     )}
                   </div>
-                </section>
+                </AccordionContent></AccordionItem></Accordion>
 
                 {/* Casting-specific fields */}
                 {formData.type === "casting" && (
                   <>
                     <div className="h-px bg-border" />
-                    <section className="space-y-5">
+                    <section className="space-y-3">
                       <SectionHeading as="h3" icon={<Users className="h-4 w-4" style={{ color: ACCENT }} />}>
                         Casting Details
                       </SectionHeading>
@@ -653,7 +651,7 @@ const PostOpportunity = () => {
                 <div className="h-px bg-border" />
 
                 {/* Section: Cover Image */}
-                <section className="space-y-5">
+                <Accordion type="single" collapsible><AccordionItem value="cover"><AccordionTrigger>Cover image (optional)</AccordionTrigger><AccordionContent className="space-y-3">
                   <SectionHeading as="h3" icon={<Upload className="h-4 w-4" style={{ color: ACCENT }} />}>
                     Cover Image (optional)
                   </SectionHeading>
@@ -731,11 +729,11 @@ const PostOpportunity = () => {
                       maxLength={500}
                     />
                   </div>
-                </section>
+                </AccordionContent></AccordionItem></Accordion>
               </div>
 
               {/* Sticky submit footer */}
-              <div className="sticky bottom-0 z-10 p-5 sm:p-8 border-t border-border bg-background/95">
+              <div className="sticky bottom-0 z-10 py-4 border-t border-border bg-card">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                   <Button type="submit" size="lg" className="flex-1 gap-2 h-12 text-base" disabled={posting}>
                     {posting ? (
@@ -752,34 +750,9 @@ const PostOpportunity = () => {
                 </div>
               </div>
             </div>
-          </Reveal>
         </form>
-      </EditorialChapter>
-
-      {/* II — Why it works */}
-      <EditorialChapter index="II" kicker="Why it works" title="Anyone can post a job." accentWord="Few can prove the work.">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {NOTES.map((n, i) => (
-            <Reveal key={n.title} delayIndex={i}>
-              <div className="h-full rounded-2xl border border-border bg-foreground/[0.02] p-5 transition-colors hover:border-[hsl(var(--energy)/0.35)]">
-                <span
-                  className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--energy)/0.1)]"
-                >
-                  <n.icon className="h-4 w-4" style={{ color: ACCENT }} />
-                </span>
-                <p className="text-foreground font-semibold text-sm mb-1.5">{n.title}</p>
-                <p className="text-sm leading-relaxed text-foreground/55">{n.body}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-        <Reveal delayIndex={2}>
-          <p className="mt-10 max-w-2xl font-serif italic text-lg leading-relaxed text-foreground/80">
-            "A CV tells you what someone claims. A credit tells you what they actually shipped — and who signed for it."
-          </p>
-        </Reveal>
-      </EditorialChapter>
-
+      </WrappedShell>
+      </StudioFeatureShell>
 
       <ImageCropDialog
         imageUrl={rawImageUrl}
