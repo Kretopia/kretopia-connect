@@ -77,7 +77,9 @@ const Spotlight = () => {
           subtitle="Interviews, features and podcast episodes from across the creative universe — the people behind the work, in their own words."
         />
 
-        <StudioFeatureShell wrapped={{ name: "Spotlight" }}>
+        {/* The hero above already says "Spotlight.", so the panel keeps its name for screen readers
+            and drops the repeated "Everything in Spotlight" line: the stories start higher. */}
+        <StudioFeatureShell wrapped={{ name: "Spotlight", hideTitle: true }}>
           <section aria-label="Spotlight stories and episodes">
             <SpotlightBoard
               value={activeTab}
