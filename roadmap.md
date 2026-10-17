@@ -1,5 +1,9 @@
 # Roadmap
 
+## Landing clean loading
+- [x] Remove chapter video posters, avoid duplicate resource loads, fast-start remux three remaining videos without re-encoding; remove floating guest signup CTA. No automatic signup dialog exists in current Landing source.
+- [x] Desktop/mobile: no posters, no signup dialog or floating signup CTA; 33 regressions and automatic compilation pass. No deployment. Actual video playback cannot be verified through sandbox media delivery (readyState 0).
+
 ## Shared loading performance
 - [x] Split Home/global mascots, preserve reusable HTTP caches, defer housekeeping and shorten shared entrances; warm Landing chapters immediately and videos near viewport. Business workflows unchanged.
 - [x] 33 cache/flight regressions pass; public Landing/About/Spotlight/Match render without runtime errors; chapters mount before scrolling, Passport text visible on entry. Automatic compilation OK.
