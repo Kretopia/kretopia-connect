@@ -9,7 +9,6 @@ import { Bell, Check, CheckCheck, Trash2, ExternalLink, MessageCircle, Sparkles,
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 const getCategoryIcon = (category: string) => {
   switch (category) {
@@ -51,7 +50,7 @@ const Notifications = () => {
             )}
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05] flex items-center gap-3 mt-1">
-            <PageBackButton variant="inline" />
+
             <Bell className="h-7 w-7 text-[hsl(var(--energy))]" />
             Inbox
           </h1>

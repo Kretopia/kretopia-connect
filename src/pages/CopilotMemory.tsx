@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Brain, Trash2, Plus, ArrowLeft } from "lucide-react";
+import { Brain, Trash2, Plus, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -120,14 +120,7 @@ export default function CopilotMemory() {
     <div className="min-h-screen bg-background pb-24">
       <SEO title="Kreto Memory · Kretopia" description="Manage what Kreto remembers about you." />
       <div className="mx-auto max-w-2xl px-4 py-6">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(-1)}
-          className="mb-4 -ml-2"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
+        
 
         <header className="flex items-start gap-3 mb-6">
           <div className="rounded-xl bg-primary/10 p-2.5">

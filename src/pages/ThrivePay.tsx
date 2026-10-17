@@ -37,7 +37,6 @@ import { TransactionDetailDrawer, type TransactionDetail } from "@/components/th
 import { TrustControlsCard } from "@/components/thrivepay/TrustControlsCard";
 import { InvoiceSepaBeneficiaryCard } from "@/components/thrivepay/InvoiceSepaBeneficiaryCard";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { KretoTip } from "@/components/agent/KretoTip";
 import { KREPAY_BRAND_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -290,7 +289,7 @@ export default function ThrivePay() {
       />
 
       <div className="relative">
-      <PageBackButton />
+
       <FeaturePageHeader
         scene="krepay"
         eyebrow={isBrand ? "KrePay" : "Your money, daily"}

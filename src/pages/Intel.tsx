@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Radar, Users, FileText, Check, X, Copy, ArrowLeft, Send, Inbox, Wand2 } from "lucide-react";
+import { Sparkles, Radar, Users, FileText, Check, X, Copy, Send, Inbox, Wand2 } from "lucide-react";
 import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { toast } from "sonner";
 
@@ -138,16 +138,8 @@ const Intel = () => {
       <SEO title="Your Intel Brief — Kretopia" description="Daily matches, sponsor radar, EPK refresh, and Kreto-drafted outreach." />
       <div className="pt-[env(safe-area-inset-top)]">
         <div className="container max-w-3xl mx-auto px-4 pt-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 -ml-2 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Button>
-          <div className="mt-1 space-y-1">
+          
+          <div className="space-y-1">
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase flex items-center gap-1.5">
               <Radar className="h-3 w-3" />
               Opportunity Intel

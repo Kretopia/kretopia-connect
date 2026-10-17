@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Navigation, Users, Plus, Sparkles, List, Map, Search, SlidersHorizontal, RefreshCw, Share2 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { InviteDialog } from "@/components/InviteDialog";
 import { UnifiedNearbyMap, type MapItemType } from "@/components/nearby/UnifiedNearbyMap";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
@@ -191,7 +190,7 @@ const NearbyCreators = () => {
           {/* Title row */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 min-w-0">
-              <PageBackButton variant="inline" />
+
               <div className="relative shrink-0">
                 <MapPin className="h-5 w-5 text-primary" />
                 <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-energy shadow-glow-lime animate-pulse" />

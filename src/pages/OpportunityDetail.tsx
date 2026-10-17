@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, ArrowLeft, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone, Sparkles } from "lucide-react";
+import { MapPin, DollarSign, Clock, Briefcase, Share2, CheckCircle2, XCircle, UserPlus, Bookmark, BookmarkCheck, Gift, ArrowRightLeft, ArrowRight, Instagram, Music, Youtube, Edit, Copy, Trash2, PauseCircle, PlayCircle, MoreVertical, Radar, Mail, Shield, Globe, Lock, Calendar, Megaphone, Sparkles } from "lucide-react";
 import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -423,16 +423,8 @@ const OpportunityDetail = () => {
       </Helmet>
       <div className="mx-auto max-w-4xl">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 -ml-2 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Button>
+        <div className="mb-4 flex items-center justify-end">
+          
           <div className="flex gap-2">
             {isOwner && (
               <DropdownMenu>

@@ -14,7 +14,6 @@ import { FreeTierGate } from "@/components/FreeTierGate";
 import { useToast } from "@/hooks/use-toast";
 import { useFeatureGate } from "@/hooks/useFeatureGate";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { TALENT_FINDER_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import {
   Sparkles, MapPin, Star,
@@ -155,7 +154,7 @@ export default function TalentFinder() {
 
       <div className="min-h-screen bg-background">
         <div className="relative">
-          <PageBackButton />
+
           <FeaturePageHeader
             scene="talent-search"
             eyebrow="Hiring"

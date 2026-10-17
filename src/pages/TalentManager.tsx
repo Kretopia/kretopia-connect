@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Copy, Users, DollarSign, Link2, TrendingUp, Briefcase, ShieldCheck, ArrowRight, Plus } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { SEO } from "@/components/SEO";
 
 interface ManagerData {
@@ -165,7 +164,7 @@ export default function TalentManager() {
 
       <div className="mb-6 space-y-3">
         <div className="flex items-center gap-2">
-          <PageBackButton variant="inline" />
+
           <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
             Referral network
           </p>

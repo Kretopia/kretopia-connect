@@ -7,7 +7,6 @@ import { PartnerCard } from "@/components/membership/PartnerCard";
 import { DigitalMembershipCard } from "@/components/membership/DigitalMembershipCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
@@ -131,15 +130,7 @@ export default function PartnerDirectory() {
       <div className="min-h-screen bg-background pb-24">
         <main className="container mx-auto px-4 pt-6">
           <div className="max-w-6xl mx-auto space-y-8">
-            {/* Back Button */}
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/membership")}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
+            
             {/* Membership Card */}
             {profile && profile.membership_number && (
               <DigitalMembershipCard

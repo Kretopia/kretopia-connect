@@ -14,7 +14,6 @@ import { getCreatorPlans, getBrandPlans, type PlanCard } from "@/lib/subscriptio
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
@@ -182,7 +181,7 @@ export default function Subscription() {
   return (
     <div className="min-h-screen">
       <div className="relative">
-      <PageBackButton />
+
       <FeaturePageHeader
         scene="krepay"
         eyebrow="Pricing"

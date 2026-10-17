@@ -14,7 +14,7 @@ import { ApplyToStageSheet } from "@/components/circle/ApplyToStageSheet";
 import { StageHostConsole } from "@/components/circle/StageHostConsole";
 import { InviteToStageDialog } from "@/components/circle/InviteToStageDialog";
 import { StageDoorsCountdown } from "@/components/circle/StageDoorsCountdown";
-import { ArrowLeft, Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles, Circle } from "lucide-react";
+import { Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles, Circle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNowStrict, format } from "date-fns";
 
@@ -239,9 +239,7 @@ const CuratedStage = () => {
 
       <header className="border-b border-border/60 sticky top-0 bg-background z-20 pt-[env(safe-area-inset-top)]">
         <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/circle?tab=live" className="p-2 -ml-2 rounded-full hover:bg-muted">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Sound Stages</p>
         </div>
       </header>

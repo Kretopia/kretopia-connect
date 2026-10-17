@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Monitor, Smartphone, Tablet, RefreshCw, ExternalLink, Save,
   Eye, EyeOff, GripVertical, ChevronDown, ChevronRight, Wand2, Layout,
-  PanelLeft, CheckCircle2, ArrowLeft, Copy, Globe, Crown, Lock, BarChart3,
+  PanelLeft, CheckCircle2, Copy, Globe, Crown, Lock, BarChart3,
   Settings2
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -232,10 +232,7 @@ const WebsiteBuilder = () => {
             <Wand2 className="h-5 w-5 mr-2" />
             Create My Website
           </Button>
-          <Button variant="outline" size="lg" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
+          
         </div>
         <SiteSetupWizard
           open={showWizard}
@@ -258,11 +255,8 @@ const WebsiteBuilder = () => {
       {/* Top bar */}
       <div className="h-12 border-b border-border flex items-center justify-between px-3 bg-background shrink-0">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" className="h-8 gap-1.5" onClick={() => navigate('/settings')}>
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline text-sm">Back</span>
-          </Button>
-          <div className="h-5 w-px bg-border hidden sm:block" />
+          
+          
           <span className="text-sm font-semibold hidden md:inline">Website Builder</span>
           {hasChanges && (
             <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/30">

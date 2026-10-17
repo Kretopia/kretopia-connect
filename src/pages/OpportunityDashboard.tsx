@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Briefcase, MapPin, DollarSign, User, Users, Star, Sparkles, Mail, Eye, Edit, Crown, Trophy, TrendingUp, Filter, LayoutGrid, List, BarChart3, ChevronDown, ChevronUp, ExternalLink, Clock, Share2, ArrowLeft, Video } from "lucide-react";
+import { Briefcase, MapPin, DollarSign, User, Users, Star, Sparkles, Mail, Eye, Edit, Crown, Trophy, TrendingUp, Filter, LayoutGrid, List, BarChart3, ChevronDown, ChevronUp, ExternalLink, Clock, Share2, Video } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ShareProfileDialog } from "@/components/profile/ShareProfileDialog";
 import { useStartDirectCall } from "@/hooks/useStartDirectCall";
@@ -509,15 +509,7 @@ Return ONLY valid JSON array:
 
   return (
     <div className="container mx-auto p-4 md:p-6 max-w-5xl">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 -ml-2 mb-3 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-        onClick={() => navigate('/manage-opportunities')}
-      >
-        <ArrowLeft className="h-3.5 w-3.5" />
-        Gig Manager
-      </Button>
+      
 
       <div className="mb-4 space-y-1">
         <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">

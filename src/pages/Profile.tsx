@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from "react";
 import { PageTip } from "@/components/PageTip";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -422,13 +421,7 @@ const ProfileContent = () => {
       />
 
       <div className="relative">
-        {/* Quiet back control -- now the shared canonical PageBackButton
-            (CDO audit's BackAction), extracted here first since several
-            other feature pages need the identical control. Own
-            absolutely-positioned element rather than a FeaturePageHeader
-            prop, since that template is shared by ~17 feature pages and
-            not every one of them wants a back control. */}
-        <PageBackButton />
+
         <FeaturePageHeader
           eyebrow="Passport"
           title="Passport."

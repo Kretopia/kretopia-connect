@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useClient, useClientProjects, useClientContacts } from "@/hooks/useClients";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Pencil, Plus, Mail, Phone, Globe, FolderKanban, Users, FileText, Send } from "lucide-react";
+import { Pencil, Plus, Mail, Phone, Globe, FolderKanban, Users, FileText, Send } from "lucide-react";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { StudioCardsGrid } from "@/components/project/studio/StudioCardsGrid";
 import { GuestStudioShareDialog } from "@/components/project/GuestStudioShareDialog";
@@ -73,14 +73,7 @@ const ClientDetail = () => {
     <div className="max-w-6xl mx-auto p-4 lg:p-6 pb-32">
       <SEO title={`${client.company_name || client.name} · Client`} description="Client hub" />
 
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => navigate("/clients")}
-        className="h-8 px-2 -ml-2 text-xs gap-1 text-muted-foreground hover:text-[hsl(var(--energy))] mb-3"
-      >
-        <ArrowLeft className="h-3.5 w-3.5" /> All clients
-      </Button>
+      
 
       <div className="space-y-3">
         <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">

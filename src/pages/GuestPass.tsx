@@ -3,7 +3,6 @@ import { useParams, useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CreativeLoader } from "@/components/ui/creative-loader";
-import { ArrowLeft } from "lucide-react";
 import { SEO } from "@/components/SEO";
 import { EventPassCard } from "@/components/sessions/EventPassCard";
 
@@ -91,9 +90,7 @@ const GuestPass = () => {
       <SEO title={`Your pass · ${event.title}`} description="Show this at the door" />
 
       <div className="max-w-md mx-auto px-4 py-6 sm:py-10">
-        <Link to={`/event/${eventId}/confirmed`} className="inline-flex items-center gap-1 text-sm text-muted-foreground mb-4 hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Link>
+        
 
         <EventPassCard
           eventTitle={event.title}

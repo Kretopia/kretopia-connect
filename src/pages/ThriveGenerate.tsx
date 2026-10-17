@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Sparkles, Download, Share2, RefreshCw, ArrowLeft, Wand2 } from "lucide-react";
+import { Sparkles, Download, Share2, RefreshCw, Wand2 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { DeckRenderer, type DeckContent } from "@/components/thrive/DeckRenderer";
 import { DECK_THEMES, defaultThemeFor, type DeckTheme } from "@/lib/deckThemes";
@@ -126,9 +126,7 @@ export default function ThriveGenerate() {
 
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(projectId ? `/desk/${projectId}` : "/desk")}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          
           <div className="flex-1 min-w-0">
             <div className="text-xs text-muted-foreground uppercase tracking-wider">Executive Producer</div>
             <h1 className="text-sm font-semibold truncate">
