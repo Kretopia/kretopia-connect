@@ -28,8 +28,11 @@ export function sweepClientCaches() {
 
 export function startCacheSweep() {
   // Storage parsing is housekeeping, never work for the first paint.
-  if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(sweepClientCaches, { timeout: 5000 });
+  const idle = (window as Window & {
+    requestIdleCallback?: (callback: () => void, options: { timeout: number }) => number;
+  }).requestIdleCallback;
+  if (typeof idle === "function") {
+    idle(sweepClientCaches, { timeout: 5000 });
   } else {
     window.setTimeout(sweepClientCaches, 1500);
   }
