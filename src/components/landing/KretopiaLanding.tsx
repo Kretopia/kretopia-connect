@@ -19,14 +19,14 @@
  * reads from.
  *
  * Performance: only the hero (headline + search) is on the critical path.
- * Everything below is a lazy chunk mounted when the visitor scrolls near it
- * or when the browser goes idle — whichever comes first — so the search bar
- * is interactive as early as possible. The placeholder reserves height so
- * deferring costs no layout shift.
+ * Chapters remain a separate lazy chunk, requested just after Hero renders.
+ * This avoids waiting for scroll or an idle timeout before media can warm.
+ * The placeholder reserves height during the download.
  *
  * All routes, auth and search wiring untouched.
  */
-import { Suspense, lazy, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { KretopiaHero } from "@/components/landing/KretopiaHero";
 import { ChapterProgressNav } from "@/components/landing/kretopia/ChapterProgressNav";
 import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
@@ -43,48 +43,13 @@ interface KretopiaLandingProps {
 }
 
 export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
   const [showRest, setShowRest] = useState(false);
 
   useEffect(() => {
-    if (showRest) return;
-    let idle: number | undefined;
-    let io: IntersectionObserver | undefined;
-
-    const reveal = () => setShowRest(true);
-
-    const el = sentinelRef.current;
-    if (el && typeof IntersectionObserver !== "undefined") {
-      io = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) reveal();
-        },
-        // start fetching a full viewport before it's needed
-        { rootMargin: "100% 0px" },
-      );
-      io.observe(el);
-    } else {
-      reveal();
-    }
-
-    // Belt and braces: if the visitor never scrolls, load once idle so the
-    // page is complete for crawlers and for anyone who jumps to the footer.
-    const w = window as Window & {
-      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
-      cancelIdleCallback?: (h: number) => void;
-    };
-    const ric = w.requestIdleCallback;
-    if (ric) idle = ric(reveal, { timeout: 2500 });
-    else idle = window.setTimeout(reveal, 1200);
-
-    return () => {
-      io?.disconnect();
-      if (idle !== undefined) {
-        if (ric && w.cancelIdleCallback) w.cancelIdleCallback(idle);
-        else clearTimeout(idle);
-      }
-    };
-  }, [showRest]);
+    // Start the separate chapter download immediately after Hero's first
+    // render, rather than waiting for scroll or a busy browser's idle slot.
+    setShowRest(true);
+  }, []);
 
   return (
     <div className="landing-theme k-gradient-scope relative overflow-x-clip bg-background text-foreground">
@@ -92,8 +57,6 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
       {/* I. Hero — critical path */}
       <KretopiaHero />
       <KretoLandingFlight ready={showRest} />
-
-      <div ref={sentinelRef} aria-hidden className="h-px w-full" />
 
       {showRest ? (
         <Suspense fallback={<div aria-hidden className="min-h-[60vh]" />}>

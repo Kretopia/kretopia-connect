@@ -18,7 +18,7 @@
 - Search people through the public-safe profile view for guests and rank accepted viewer connections before other name matches for signed-in users, because discovery must work without login while relationship priority stays private.
 - Keep Landing's editorial shell on the shared theme tokens and preserve photographic overlays separately, because the navbar Daylight/Midnight control must affect the whole page without reducing image-caption contrast.
 - Put feature tutorial triggers in the shared header's centered pre-title slot, replacing the eyebrow only when a tour exists, because each feature needs one consistent action above its heading.
-- Keep Hero mascot art in aligned body/arm layers cut from the official 3D render (`kreto-mascot-hero-wave.png`), wearing Flying's measured palette (pearl white-lavender shell, no rim glow or halo, ear lenses and eyes untouched) and fitted to Flying's helmet size by `HELMET_OF_BOX`, because the layers must stay HD on 2x screens, the waving animation must keep pivoting at the elbow, the takeoff swap must not jump, and other mascot surfaces stay unchanged.
+- Keep Hero's official body/arm layers aligned, Flying palette and lenses intact, sized by `HELMET_OF_BOX`; preserve elbow pivot and HD assets, because the takeoff must not jump or affect other mascot surfaces.
 - Reuse FeatureTutorialDialogContent for feature and Landing tutorial modals, because a shared surface prevents theme and interaction drift; keep Landing CTA pairs in equal grid tracks.
 - Gradient title text (`.k-gradient-text`) must keep `box-decoration-break: clone` with its padding, because without it a wrapped gradient phrase loses its clip slack at the line break and the browser cuts italic overhangs and descenders mid-title.
 - Use KretopiaSpinner (inline) or KretopiaLoader (block) for waits; never Loader2, border rings, spinning icons or bare "Loading…". Content-shaped Skeletons are allowed; shared K-mark loaders keep waits on-brand.
@@ -26,9 +26,12 @@
 - Render Company Studio through the existing project workspace with additive hiring actions, because projects, invitations, permissions and the single-row carousel must remain identical across modes.
 - Gate Creator finance overview surfaces with the shared account mode in KrePay while reusing its payment workflows and scene header, because Company presentation must not duplicate Creator summaries or fork payment logic.
 - Serve the Passport and Match chapter videos as their native 720×1280 masters, losslessly fast-start remuxed from `public/videos` with their own first frame as poster and a per-chapter `mediaPosition` for the 4:5 crop, because upscaling or recompressing cannot restore missing detail and the poster must never differ from the video.
-- Keep Landing flight on one scroll-linked decorative mascot beneath opaque media wrappers, painted imperatively with predecoded exclusive poses; use exact contiguous eased peek slides, outer-boundary-only hysteresis and full-box destination-heading corridors with no rotation near media; share Flying's entry/exit coordinates with vertical peek slides and let only media occlude the figure, because artificial wipes cause disappearance and each transition must follow scroll direction.
+- Keep Landing flight imperative with one predecoded exclusive pose beneath opaque media; contiguous eased peek slides share Flying endpoints, outer-only hysteresis and full-box heading corridors without near-media rotation, because only media may hide Kreto and transitions must follow scroll direction.
 
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit page back rows; retain step navigation, reader close and sidebar dismissal.
 - Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
+- Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
+- Split Home and optional global mascot UI with separate Suspense boundaries, because unused code must not block pages.
+- Mount Landing chapters after Hero's first render, warm videos near the viewport and reveal text before entry, because late downloads and invisible entrances compound waiting.

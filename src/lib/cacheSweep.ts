@@ -21,13 +21,20 @@ export function sweepClientCaches() {
   } catch {
     /* storage unavailable */
   }
-  // Old HTTP caches from previous builds (keeps only the newest one).
-  if ("caches" in window) {
-    caches.keys().then((keys) => keys.slice(0, -1).forEach((k) => caches.delete(k))).catch(() => {});
-  }
+  // HTTP caches have different roles, not chronological versions. Workbox
+  // owns their expiration and build cleanup; deleting all but one here forced
+  // images, fonts and installed-app chunks to download again on every visit.
 }
 
 export function startCacheSweep() {
-  sweepClientCaches();
+  // Storage parsing is housekeeping, never work for the first paint.
+  const idle = (window as Window & {
+    requestIdleCallback?: (callback: () => void, options: { timeout: number }) => number;
+  }).requestIdleCallback;
+  if (typeof idle === "function") {
+    idle(sweepClientCaches, { timeout: 5000 });
+  } else {
+    window.setTimeout(sweepClientCaches, 1500);
+  }
   window.setInterval(sweepClientCaches, 30 * 60 * 1000);
 }

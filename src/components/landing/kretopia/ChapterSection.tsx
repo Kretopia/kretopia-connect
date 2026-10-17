@@ -102,7 +102,8 @@ export const ChapterSection = ({
       el.play().then(() => setBlocked(false)).catch(() => setBlocked(true));
     };
     const unlock = () => {
-      inView = inView || el.getBoundingClientRect().top < window.innerHeight;
+      const rect = el.getBoundingClientRect();
+      inView = rect.top < window.innerHeight && rect.bottom > 0;
       play();
     };
     const gestures = ["pointerdown", "keydown", "touchend"] as const;
@@ -175,7 +176,7 @@ export const ChapterSection = ({
                   muted
                   loop
                   playsInline
-                  preload="auto"
+                  preload="metadata"
                   aria-label={caption}
                   style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"
@@ -246,10 +247,10 @@ export const ChapterSection = ({
           {/* TEXT */}
           <motion.div
             data-kreto-flight-content
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            transition={{ duration: 0.9, delay: 0.15 }}
+            viewport={{ once: true, margin: "160px" }}
+            transition={{ duration: 0.2 }}
             className="relative z-[3] lg:col-span-5"
           >
             {/* Same eyebrow → h2 → body hierarchy as the hero and every

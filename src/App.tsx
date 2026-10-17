@@ -32,13 +32,13 @@ import { AuthGate } from "./components/AuthGate";
 // OnboardingTour removed — real /onboarding page is the single source of truth.
 import { NewsletterPopup } from "./components/NewsletterPopup";
 import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
-import UnifiedHome from "./components/home/UnifiedHome";
+const UnifiedHome = lazy(() => import("./components/home/UnifiedHome"));
 import { GlobalIncomingCall } from "./components/calls/GlobalIncomingCall";
 import { GlobalVideoCallHost } from "./components/calls/GlobalVideoCallHost";
 import { VideoCallProvider } from "./contexts/VideoCallContext";
 import { RoomKnockToast } from "./components/calls/RoomKnockToast";
-import { ThriveAgentFab } from "./components/desk/ThriveAgentFab";
-import { KretoLauncher } from "./components/kreto/KretoLauncher";
+const ThriveAgentFab = lazy(() => import("./components/desk/ThriveAgentFab").then(m => ({ default: m.ThriveAgentFab })));
+const KretoLauncher = lazy(() => import("./components/kreto/KretoLauncher").then(m => ({ default: m.KretoLauncher })));
 
 // Lazy load active page components
 const Auth = lazy(() => import("./pages/Auth"));
@@ -277,11 +277,13 @@ const AppContent = () => {
       {showNavbar && <Navbar user={user} />}
       {showBottomNav && <KretopiaBottomNav />}
       {showBottomNav && <QuickActionFab />}
-      <ThriveAgentFab />
+      {user && <Suspense fallback={null}><ThriveAgentFab /></Suspense>}
       {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
           a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
       {user && location.pathname !== "/landing" && (
-        <KretoLauncher showOnMobile={showKretoMascotOnMobile(location.pathname, !!user)} />
+        <Suspense fallback={null}>
+          <KretoLauncher showOnMobile={showKretoMascotOnMobile(location.pathname, !!user)} />
+        </Suspense>
       )}
       
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}

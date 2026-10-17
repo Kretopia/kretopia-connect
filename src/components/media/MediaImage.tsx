@@ -64,7 +64,7 @@ export function MediaImage({
           onLoad={() => setStatus("loaded")}
           onError={() => setStatus("failed")}
           className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-300 motion-reduce:transition-none",
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-100 motion-reduce:transition-none",
             status === "loaded" ? "opacity-100" : "opacity-0",
             imgClassName,
           )}
