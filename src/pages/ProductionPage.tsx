@@ -29,7 +29,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -38,16 +37,13 @@ import {
   MapPin,
   CalendarDays,
   Building2,
-  ExternalLink,
   Users,
   UserPlus,
   Globe,
   Music,
   Film,
   CheckCircle2,
-  Sparkles,
   Database,
-  Link2,
   Plus,
   Camera,
   Palette,
@@ -60,7 +56,6 @@ import {
   X,
   Maximize2,
   Share2,
-  Zap,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
