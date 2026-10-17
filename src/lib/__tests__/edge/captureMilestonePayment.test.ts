@@ -9,6 +9,7 @@ const world = vi.hoisted(() => ({
   intentMetadata: {} as Record<string, string>,
   capture: null as null | ((...a: any[]) => any),
   cancel: null as null | ((...a: any[]) => any),
+  user: null as null | { id: string; email: string },
 }));
 
 vi.mock("https://deno.land/std@0.190.0/http/server.ts", () => ({ serve: (h: any) => { world.handler = h; } }));
@@ -16,7 +17,7 @@ vi.mock("https://esm.sh/@supabase/supabase-js@2.57.2", () => ({
   createClient: () => {
     const client: any = (globalThis as any).__makeFake(world.resolver, world.writes);
     client.auth = {
-      getUser: async () => ({ data: { user: { id: "brand", email: "brand@example.com" } } }),
+      getUser: async () => ({ data: { user: world.user } }),
       admin: { getUserById: async () => ({ data: { user: { email: "creative@example.com" } } }) },
     };
     return client;
@@ -36,8 +37,9 @@ vi.mock("https://esm.sh/stripe@18.5.0", () => ({
 const BRAND = "brand";
 const baseMilestone = { id: "m1", title: "Logo", project_id: "p1", created_by: BRAND, requested_by: null, status: "review", escrow_status: "authorized", payment_intent_id: "pi_1", amount: 100, projects: { id: "p1", title: "Brand film", created_by: BRAND, client_user_id: null } };
 
-async function run(opts: { action?: "capture" | "cancel"; metadata?: Record<string, string>; collaborators?: { user_id: string; role: string }[] }) {
+async function run(opts: { action?: "capture" | "cancel"; metadata?: Record<string, string>; collaborators?: { user_id: string; role: string }[]; auth?: "none" | "invalid" }) {
   world.writes = [];
+  world.user = opts.auth === "invalid" ? null : { id: BRAND, email: "brand@example.com" };
   world.intentMetadata = { userId: BRAND, talentRate: "100", platformFee: "5", managerCommission: "0", ...(opts.metadata || {}) };
   world.capture = vi.fn(async () => ({ status: "succeeded" }));
   world.cancel = vi.fn(async () => ({ status: "canceled" }));
@@ -51,7 +53,7 @@ async function run(opts: { action?: "capture" | "cancel"; metadata?: Record<stri
   const res = await world.handler!(
     new Request("https://fn.example/capture", {
       method: "POST",
-      headers: { Authorization: "Bearer t" },
+      headers: opts.auth === "none" ? {} : { Authorization: "Bearer t" },
       body: JSON.stringify({ milestoneId: "m1", paymentIntentId: "pi_1", action: opts.action || "capture" }),
     }),
   );
@@ -118,6 +120,25 @@ describe("capture-milestone-payment: releasing a held escrow", () => {
 
     const unknown = await run({ action: "cancel", collaborators: [] });
     expect(writesTo(unknown.writes, "notifications")).toHaveLength(0);
+  });
+
+  it("answers 401, not 500, when the request has no connection", async () => {
+    const { res, writes, capture, cancel } = await run({ auth: "none" });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "User not authenticated" });
+    expect(capture).not.toHaveBeenCalled();
+    expect(cancel).not.toHaveBeenCalled();
+    expect(writes).toHaveLength(0);
+  });
+
+  it("answers 401, not 500, when the connection does not resolve to a user", async () => {
+    for (const action of ["capture", "cancel"] as const) {
+      const { res, writes, capture, cancel } = await run({ auth: "invalid", action });
+      expect(res.status).toBe(401);
+      expect(capture).not.toHaveBeenCalled();
+      expect(cancel).not.toHaveBeenCalled();
+      expect(writes).toHaveLength(0);
+    }
   });
 
   it("still refuses anyone who is not the recorded payer, before touching Stripe", async () => {
