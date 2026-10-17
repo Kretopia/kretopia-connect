@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Landing clean loading
-- [ ] Remove chapter video poster flashes and automatic guest signup popup on Landing; preserve explicit signup and feature access rules.
-- [ ] Verify Landing on desktop/mobile without deployment.
+- [x] Remove chapter video posters, avoid duplicate resource loads, fast-start remux three remaining videos without re-encoding; remove floating guest signup CTA. No automatic signup dialog exists in current Landing source.
+- [ ] Verify Landing on desktop/mobile without deployment; actual sandbox video delivery remains unverified.
 
 ## Shared loading performance
 - [x] Split Home/global mascots, preserve reusable HTTP caches, defer housekeeping and shorten shared entrances; warm Landing chapters immediately and videos near viewport. Business workflows unchanged.

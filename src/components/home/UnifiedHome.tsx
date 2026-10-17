@@ -36,7 +36,6 @@ import { BottomCTASection } from "@/components/landing/BottomCTASection";
 const KretopiaLanding = lazy(
   () => import("@/components/landing/KretopiaLanding").then((m) => ({ default: m.KretopiaLanding })),
 );
-import { StickyMobileCTA } from "@/components/landing/StickyMobileCTA";
 import { InviteCircleCard } from "@/components/InviteCircleCard";
 // import { StartCircleNudgeCard } from "@/components/home/StartCircleNudgeCard"; // Hidden in Pass A
 // Prune: NewMemberStarterCard, FoundingMemberCard, MagicHomeHero, OpportunityIntelCard,
@@ -506,7 +505,6 @@ export const UnifiedHome = () => {
         </div>
       )}
       {user && <FirstWinSheet open={showFirstWin} onOpenChange={setShowFirstWin} />}
-      {!user && <StickyMobileCTA />}
     </div>
   );
 };
