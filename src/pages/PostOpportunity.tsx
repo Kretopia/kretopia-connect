@@ -385,6 +385,7 @@ const PostOpportunity = () => {
                   </div>
                 </div>
                 <AIJobDescriptionGenerator
+                  framed={false}
                   isPro={isPro}
                   onGenerated={(data) => {
                     setFormData((prev) => ({

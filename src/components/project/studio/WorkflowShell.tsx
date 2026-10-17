@@ -1,6 +1,5 @@
 import { ReactNode } from "react";
-import { ArrowLeft, LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WorkflowShellProps {
@@ -27,7 +26,6 @@ export function WorkflowShell({
   title,
   subtitle,
   icon: Icon,
-  onBack,
   accentClassName,
   actions,
   children,
@@ -44,17 +42,6 @@ export function WorkflowShell({
           )}
         />
         <div className="relative px-4 py-5 md:px-6 md:py-6 flex items-start gap-3">
-          {onBack && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 -ml-2 shrink-0"
-              onClick={onBack}
-              aria-label="Back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-          )}
           <div
             className={cn(
               "shrink-0 flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-[hsl(var(--energy)/0.4)] bg-[hsl(var(--energy)/0.12)]",

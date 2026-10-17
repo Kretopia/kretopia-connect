@@ -71,7 +71,7 @@ const Spotlight = () => {
           subtitle="Interviews, features and podcast episodes from across the creative universe — the people behind the work, in their own words."
         />
 
-        <StudioFeatureShell wrapped={{ name: "Spotlight" }}>
+        <StudioFeatureShell>
           <section aria-label="Spotlight stories and episodes">
             <SpotlightBoard
               value={activeTab}

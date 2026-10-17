@@ -110,7 +110,6 @@ export default function SpeedRecap() {
       <SEO title={`Recap · ${title}`} description="Follow up with everyone you met." />
       <div className="sticky top-0 z-10 bg-background border-b">
         <div className="container mx-auto px-3 py-3 flex items-center gap-2 max-w-xl">
-          <Link to={`/circle/speed/${id}`}><Button variant="ghost" size="icon" className="h-9 w-9"><ArrowLeft className="h-4 w-4" /></Button></Link>
           <h1 className="text-base font-bold truncate flex-1">Recap · {title}</h1>
         </div>
       </div>

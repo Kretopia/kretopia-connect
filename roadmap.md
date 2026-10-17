@@ -1,10 +1,10 @@
 # Roadmap
 
 ## Public feature alignment
-- [ ] Align Spotlight, About Us and Hire Talent with compact shared feature headers and grouped content.
-- [ ] Replace their small labels with working How this works tutorials.
-- [ ] Remove feature page back arrows and their reserved spacing.
-- [ ] Verify public page interactions and automatic compilation without publishing.
+- [x] Align Spotlight, About Us and Hire Talent with compact shared feature headers and grouped content.
+- [x] Replace their small labels with working How this works tutorials.
+- [x] Remove feature page back arrows and their reserved spacing; preserve wizard steps and mobile conversation/sidebar dismissal.
+- [x] Verify public tutorials, About tabs, Spotlight tabs and Hire Talent disclosures at desktop/375px; 11 shared-surface tests pass, no runtime errors. No publication. Live content fetching and existing logo delivery remain unverified in the sandbox.
 
 ## Kreto Landing flight
 - [ ] Correct top-peek descent and bottom-peek ascent with shared Flying endpoints; remove artificial disappearance and run targeted regressions.
