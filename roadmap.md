@@ -1,5 +1,10 @@
 # Roadmap
 
+## Match and Scout suggestion flow
+- [ ] Remove first-page discovery starvation and refill real suggestions quietly without duplicate requests.
+- [ ] Improve skill relevance while preserving visibility, blocks, swipes and explicit filters.
+- [ ] Run focused regressions and check preview; no backend deployment or publication.
+
 ## Public feature alignment
 - [x] Align Spotlight, About Us and Hire Talent with compact shared feature headers and grouped content.
 - [x] Replace their small labels with working How this works tutorials.
