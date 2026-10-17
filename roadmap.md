@@ -1,5 +1,9 @@
 # Roadmap
 
+## Shared loading performance
+- [ ] Optimize shared page loading, media readiness and entrance animations without changing business workflows.
+- [ ] Run targeted regressions and public-page browser checks; report authenticated/production measurement limitations.
+
 ## Match card gestures and Holo
 - [x] Fix stuck swipes; regression coverage for consecutive gestures, outside release and cancellation.
 - [x] Reuse Passport Holo presentation without gesture interference; remove photo-like action.
