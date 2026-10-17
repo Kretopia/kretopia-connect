@@ -19,10 +19,9 @@
  * reads from.
  *
  * Performance: only the hero (headline + search) is on the critical path.
- * Everything below is a lazy chunk mounted when the visitor scrolls near it
- * or when the browser goes idle — whichever comes first — so the search bar
- * is interactive as early as possible. The placeholder reserves height so
- * deferring costs no layout shift.
+ * Chapters remain a separate lazy chunk, requested just after Hero renders.
+ * This avoids waiting for scroll or an idle timeout before media can warm.
+ * The placeholder reserves height during the download.
  *
  * All routes, auth and search wiring untouched.
  */

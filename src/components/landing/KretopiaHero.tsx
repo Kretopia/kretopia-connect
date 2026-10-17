@@ -74,16 +74,15 @@ const LINE_2 = ["what", "you", "do"];
 // reads it from there instead of keeping its own copy, so it can't drift.
 const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
 
-const wordVariants = (reducedMotion: boolean, gradientText = false) =>
+const wordVariants = (reducedMotion: boolean, _gradientText = false) =>
   reducedMotion
     ? { hidden: {}, show: {} }
     : {
-        hidden: { opacity: 0, y: 18, ...(gradientText ? {} : { filter: "blur(8px)" }) },
+        hidden: { opacity: 1, y: 4 },
         show: {
           opacity: 1,
           y: 0,
-          ...(gradientText ? {} : { filter: "blur(0px)" }),
-          transition: { duration: 0.6, ease: [0.2, 0.65, 0.3, 0.95] as const },
+          transition: { duration: 0.18, ease: [0.2, 0.65, 0.3, 0.95] as const },
         },
       };
 
@@ -404,7 +403,7 @@ export const KretopiaHero = () => {
             className="block"
             initial="hidden"
             animate="show"
-            variants={{ show: { transition: { staggerChildren: reducedMotion ? 0 : 0.05 } } }}
+            variants={{ show: { transition: { staggerChildren: 0 } } }}
           >
             <span className="block">
               {LINE_1.map((word, wi) => (
