@@ -118,7 +118,7 @@ export const ChapterProgressNav = ({ ready }: ChapterProgressNavProps) => {
               </span>
               <span
                   aria-hidden
-                  className={`block w-0.5 shrink-0 rounded-full bg-foreground transition-all duration-300 motion-reduce:transition-none ${active ? "h-8 opacity-100" : "h-2 opacity-40 group-hover:h-4 group-hover:opacity-80"}`}
+                  className={`block w-1.5 shrink-0 rounded-full transition-[height,background-color] duration-300 motion-reduce:transition-none ${active ? "h-6 bg-foreground" : "h-1.5 bg-muted-foreground/50 group-hover:bg-muted-foreground"}`}
               />
             </Button>
           );
