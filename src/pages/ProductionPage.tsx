@@ -70,6 +70,7 @@ import { CreditEndorsementDialog } from "@/components/profile/CreditEndorsementD
 import { PageTransition } from "@/components/PageTransition";
 import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
 
 interface PlatformRole {
   id: string;
