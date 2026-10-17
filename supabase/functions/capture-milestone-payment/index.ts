@@ -35,11 +35,15 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
-    const authHeader = req.headers.get("Authorization")!;
+    // No connection, or one that does not resolve to a user, is a 401 and stops here: it used to
+    // surface as a 500 (a null header read, then a generic Error), which reads as a server fault.
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new EscrowAuthError("User not authenticated", 401);
     const token = authHeader.replace("Bearer ", "");
     const { data } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user) throw new EscrowAuthError("User not authenticated", 401);
+    if (!user.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const { paymentIntentId, action, milestoneId } = await req.json();
