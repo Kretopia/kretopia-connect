@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Match and Scout suggestion flow
-- [ ] Remove first-page discovery starvation and refill real suggestions quietly without duplicate requests.
-- [ ] Improve skill relevance while preserving visibility, blocks, swipes and explicit filters.
-- [ ] Run focused regressions and check preview; no backend deployment or publication.
+- [x] Remove first-page discovery starvation and refill real suggestions quietly without duplicate requests.
+- [x] Improve skill relevance while preserving visibility, blocks, swipes and explicit filters.
+- [x] Focused regressions: 71 tests pass; automatic preview compilation OK; no backend deployment or publication.
+- [ ] Verify live authenticated Match/Scout renewal — blocked: production uses external legacy authentication, unavailable to managed preview sessions.
 
 ## Public feature alignment
 - [x] Align Spotlight, About Us and Hire Talent with compact shared feature headers and grouped content.

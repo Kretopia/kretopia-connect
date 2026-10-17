@@ -232,10 +232,6 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           supabase.from('awards').select('user_id').in('user_id', userIds)
         ]);
 
-        const portfolioCounts = new Map<string, number>();
-        creditsResult.data?.forEach(item => {
-          portfolioCounts.set(item.user_id, (portfolioCounts.get(item.user_id) || 0) + 1);
-        });
         const creditsCounts = new Map<string, number>();
         creditsResult.data?.forEach(item => {
           creditsCounts.set(item.user_id, (creditsCounts.get(item.user_id) || 0) + 1);
@@ -247,7 +243,6 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
 
         filtered = filtered.map(p => ({
           ...p,
-          portfolio_count: portfolioCounts.get(p.user_id) || 0,
           credits_count: creditsCounts.get(p.user_id) || 0,
           awards_count: awardsCounts.get(p.user_id) || 0
         }));
@@ -276,7 +271,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         });
         // Tie-break: a touch of social proof, capped so it never outranks
         // a real sector/city/collab/skills signal on its own.
-        const socialProof = Math.min(((p as any).credits_count || 0) + ((p as any).portfolio_count || 0), 10);
+        const socialProof = Math.min((p.credits_count || 0), 10);
         // Shared interests, near or far: any overlapping word between roles,
         // skills, passions and bio counts, so every profile gets a chance.
         const theirs = interestTokens(p.role, p.sub_roles, p.professional_skills, p.passion_skills, p.bio);
