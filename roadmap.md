@@ -1,5 +1,9 @@
 # Roadmap
 
+## Landing clean loading
+- [ ] Remove chapter video poster flashes and automatic guest signup popup on Landing; preserve explicit signup and feature access rules.
+- [ ] Verify Landing on desktop/mobile without deployment.
+
 ## Shared loading performance
 - [x] Split Home/global mascots, preserve reusable HTTP caches, defer housekeeping and shorten shared entrances; warm Landing chapters immediately and videos near viewport. Business workflows unchanged.
 - [x] 33 cache/flight regressions pass; public Landing/About/Spotlight/Match render without runtime errors; chapters mount before scrolling, Passport text visible on entry. Automatic compilation OK.

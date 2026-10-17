@@ -20,9 +20,7 @@ export interface ChapterProps {
   body: string;
   caption: string;
   image: string;
-  /** Optional HD video, same frame/aspect as the image -- the image is
-   *  kept as the <video>'s poster (first paint + graceful fallback) and
-   *  as the alt experience with reduced motion. Autoplays muted/looped. */
+  /** Optional HD video; no still-image poster before playback. */
   video?: string;
   /** CSS object-position of the media inside the 4:5 frame. Only needed when
    *  the source is taller than the frame (a 9:16 master is cropped top and
@@ -92,7 +90,8 @@ export const ChapterSection = ({
     if (!video || !el) return;
     el.setAttribute("muted", "");
     el.muted = true;
-    let inView = false;
+    const rect = el.getBoundingClientRect();
+    let inView = rect.top < window.innerHeight && rect.bottom > 0;
     // A browser can refuse autoplay (low-power mode, data saver, an
     // autoplay policy). That used to leave the poster up with nothing to
     // tell the visitor: now the refusal shows a Play button, and the first
@@ -140,7 +139,9 @@ export const ChapterSection = ({
     // not sit on its poster until the visitor happens to scroll.
     el.addEventListener("canplay", play);
     el.addEventListener("loadeddata", play);
-    el.load();
+    // The src already starts resource selection. Calling load() again
+    // aborts that download and can delay the first decoded frame.
+    play();
     window.addEventListener("ui-vibe:change", play);
     document.addEventListener("visibilitychange", play);
     return () => {
@@ -171,12 +172,11 @@ export const ChapterSection = ({
                 <video
                   ref={videoRef}
                   src={video}
-                  poster={image}
                   autoPlay
                   muted
                   loop
                   playsInline
-                  preload="metadata"
+                  preload={index === "II" ? "auto" : "metadata"}
                   aria-label={caption}
                   style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"
