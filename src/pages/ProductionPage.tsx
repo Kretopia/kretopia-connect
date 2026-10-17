@@ -846,7 +846,6 @@ const ProductionPage = () => {
             </div>
           </WrappedShell>
         </StudioFeatureShell>
-        </StudioFeatureShell>
       </div>
 
       <AuthPrompt
