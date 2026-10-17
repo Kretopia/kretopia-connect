@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Heart, X, MapPin, Briefcase, Sparkles, Star,
-  ChevronDown, Eye, Handshake,
+  ChevronDown, Eye, Handshake, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -109,6 +109,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       dragOffset={dragOffset}
       isDragging={isDragging}
       swipeDirection={swipeDirection}
+      showOverlay={false}
       onMouseDown={handleDragStart}
       onMouseMove={handleDragMove}
       onMouseUp={handleDragEnd}
@@ -274,7 +275,16 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         )}
 
         {/* Action Buttons — encourage connection */}
-        <div className="mt-auto flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <div className="mt-auto space-y-3 border-t border-border pt-4">
+          <div className="flex min-h-6 items-center justify-between gap-2 text-xs" aria-live="polite" aria-atomic="true">
+            <span className={cn("inline-flex items-center gap-1.5 transition-colors", swipeDirection === 'left' ? 'font-semibold text-destructive' : 'text-muted-foreground')}>
+              <ArrowLeft className="h-3.5 w-3.5" /> {swipeDirection === 'left' ? 'Release to pass' : 'Swipe left · Pass'}
+            </span>
+            <span className={cn("inline-flex items-center gap-1.5 transition-colors", swipeDirection === 'right' ? 'font-semibold text-success' : 'text-muted-foreground')}>
+              {swipeDirection === 'right' ? 'Release to connect' : 'Swipe right · Connect'} <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
@@ -295,11 +305,13 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           </Button>
           <Button
             size="lg"
-            className="h-12 flex-1 rounded-full !bg-primary !bg-none hover:!bg-primary/90 !text-primary-foreground gap-2"
+            className="cta-solid h-12 min-w-0 flex-1 rounded-full gap-2"
             onClick={handleConnectClick}
           >
             <Heart className="h-5 w-5" /> Connect
           </Button>
+          </div>
+          {swipeDirection === 'right' && <p className="text-center text-xs text-muted-foreground">A match happens when you both connect.</p>}
         </div>
       </CardContent>
     </SwipeCard>
