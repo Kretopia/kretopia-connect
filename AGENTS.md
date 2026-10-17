@@ -30,3 +30,4 @@
 
 - Render Spotlight, About and Hire Talent with FeaturePageHeader and the existing WrappedShell/StudioFeatureShell; group optional content in tabs or disclosures to keep public and member layouts consistent.
 - Omit page-level back controls and their dedicated rows; retain in-flow step navigation, reader close actions and sidebar dismissal so interaction flows remain usable.
+- Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.

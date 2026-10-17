@@ -4,6 +4,7 @@ import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/Sw
 import { locationMatchesFilter } from '@/lib/locationGroups';
 import { buildMyMatchContext, computeMatchScore, extractSkillsArray, fetchPastCollaboratorIds, type MatchSignals } from '@/lib/matchScoring';
 import { interestTokens, isPositivelyRealMember, orderCandidates } from '@/lib/matchRanking';
+import { readDiscoveryPages } from '@/lib/discoveryPages';
 
 export interface SwipeProfile {
   id: string;
@@ -80,6 +81,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   const [hasFetched, setHasFetched] = useState(false);
 
   const lastFetchedAt = useRef(0);
+  const inFlight = useRef(false);
+  const removedIds = useRef(new Set<string>());
 
   // `silent` tops the deck up in the background: no spinner, no blank frame, and the
   // current order is kept (see the cached-order branch below).
@@ -88,6 +91,9 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       setLoading(false);
       return;
     }
+    if (inFlight.current) return;
+    inFlight.current = true;
+    lastFetchedAt.current = Date.now();
 
     if (!silent) setLoading(true);
     setError(null);
@@ -148,7 +154,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // swiped right on you rides along: the "Interested" tab shows the same
       // people, so it exposes nothing new -- here it just ranks them first.
       const [rawRes, safeRes, likedYouRes] = await Promise.all([
-        supabase
+        readDiscoveryPages((from, to) => supabase
           .from('profiles')
           .select(`
             id, user_id, full_name, role, sub_roles, bio, avatar_url, cover_image_url, location, level,
@@ -160,13 +166,15 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           `)
           .neq('user_id', currentUserId)
           .eq('onboarding_completed', true)
-          .limit(1000),
-        supabase
+          .order('user_id', { ascending: true })
+          .range(from, to)),
+        readDiscoveryPages((from, to) => supabase
           .from('public_profiles_safe')
           .select(SAFE_VIEW_SELECT)
           .neq('user_id', currentUserId)
           .eq('onboarding_completed', true)
-          .limit(1000),
+          .order('user_id', { ascending: true })
+          .range(from, to)),
         supabase
           .from('swipes')
           .select('user_id')
@@ -175,8 +183,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           .eq('direction', 'right'),
       ]);
 
-      if (rawRes.error) console.warn('[useSwipeProfiles] profiles tier unavailable:', rawRes.error.message);
-      if (safeRes.error) console.warn('[useSwipeProfiles] safe-view tier unavailable:', safeRes.error.message);
+      if (rawRes.error) console.warn('[useSwipeProfiles] profiles tier unavailable');
+      if (safeRes.error) console.warn('[useSwipeProfiles] safe-view tier unavailable');
       // One tier failing is fine; only both failing is an error worth showing.
       if (rawRes.error && safeRes.error) throw rawRes.error;
 
@@ -194,6 +202,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // eligibility. What's left here is "is there anything real to show",
       // not "have they done enough to deserve visibility".
       let filtered = (fetchedProfiles || []).filter(p => {
+        if (p.user_id === currentUserId || removedIds.current.has(p.user_id)) return false;
         if (swipedIds.has(p.user_id)) return false;
         if (connectedIds.has(p.user_id)) return false;
         if (blockedIds.has(p.user_id)) return false;
@@ -218,16 +227,11 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // tie-break signal only (see scoreProfile below), not a filter.
       if (filtered.length > 0) {
         const userIds = filtered.map(p => p.user_id);
-        const [portfolioResult, creditsResult, awardsResult] = await Promise.all([
-          supabase.from('credits').select('user_id').in('user_id', userIds),
+        const [creditsResult, awardsResult] = await Promise.all([
           supabase.from('credits').select('user_id').in('user_id', userIds),
           supabase.from('awards').select('user_id').in('user_id', userIds)
         ]);
 
-        const portfolioCounts = new Map<string, number>();
-        portfolioResult.data?.forEach(item => {
-          portfolioCounts.set(item.user_id, (portfolioCounts.get(item.user_id) || 0) + 1);
-        });
         const creditsCounts = new Map<string, number>();
         creditsResult.data?.forEach(item => {
           creditsCounts.set(item.user_id, (creditsCounts.get(item.user_id) || 0) + 1);
@@ -239,7 +243,6 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
 
         filtered = filtered.map(p => ({
           ...p,
-          portfolio_count: portfolioCounts.get(p.user_id) || 0,
           credits_count: creditsCounts.get(p.user_id) || 0,
           awards_count: awardsCounts.get(p.user_id) || 0
         }));
@@ -264,11 +267,11 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           role: p.role,
           subRoles: p.sub_roles,
           location: p.location,
-          skills: extractSkillsArray(p.professional_skills),
+          skills: [...extractSkillsArray(p.professional_skills), ...extractSkillsArray(p.passion_skills)],
         });
         // Tie-break: a touch of social proof, capped so it never outranks
         // a real sector/city/collab/skills signal on its own.
-        const socialProof = Math.min(((p as any).credits_count || 0) + ((p as any).portfolio_count || 0), 10);
+        const socialProof = Math.min((p.credits_count || 0), 10);
         // Shared interests, near or far: any overlapping word between roles,
         // skills, passions and bio counts, so every profile gets a chance.
         const theirs = interestTokens(p.role, p.sub_roles, p.professional_skills, p.passion_skills, p.bio);
@@ -291,7 +294,10 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           const orderIds: string[] = JSON.parse(cachedOrder);
           const idSet = new Set(scored.map(p => p.user_id));
           const byId = new Map(scored.map(p => [p.user_id, p]));
-          const orderedFromCache = orderIds.filter(id => idSet.has(id)).map(id => byId.get(id)!);
+          const orderedFromCache = orderIds.filter(id => idSet.has(id)).flatMap(id => {
+            const profile = byId.get(id);
+            return profile ? [profile] : [];
+          });
           const known = new Set(orderIds);
           const newProfiles = scored.filter(p => !known.has(p.user_id));
           // The deck keeps its order within a session, new arrivals are ranked
@@ -319,6 +325,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // A failed background top-up must not replace a working deck with an error.
       if (!silent) setError(err.message || 'Failed to load profiles');
     } finally {
+      inFlight.current = false;
       if (!silent) setLoading(false);
     }
   }, [currentUserId]);
@@ -375,7 +382,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       };
       filtered = filtered
         .filter(p => p.latitude != null && p.longitude != null)
-        .map(p => ({ ...p, _distance: haversine(userLat, userLon, p.latitude!, p.longitude!) }))
+        .flatMap(p => p.latitude != null && p.longitude != null
+          ? [{ ...p, _distance: haversine(userLat, userLon, p.latitude, p.longitude) }] : [])
         .sort((a, b) => (a as any)._distance - (b as any)._distance);
     }
 
@@ -464,6 +472,18 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     }
   }, [hasFetched, loading, profiles.length, fetchProfiles]);
 
+  // The low-deck effect alone never fires when an empty deck stays unchanged.
+  // Keep a visible deck fresh even after its last card has been consumed.
+  useEffect(() => {
+    if (!currentUserId) return;
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible' && Date.now() - lastFetchedAt.current >= 60_000) {
+        void fetchProfiles(false, true);
+      }
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, [currentUserId, fetchProfiles]);
+
   // Match's Pulse "Scan now" asks every open deck to re-rank from scratch.
   useEffect(() => {
     const onScan = () => { void fetchProfiles(true); };
@@ -478,6 +498,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   }, [loading, hasFetched, allProfiles.length]);
 
   const removeProfile = useCallback((userId: string) => {
+    removedIds.current.add(userId);
     setProfiles(prev => prev.filter(p => p.user_id !== userId));
     setAllProfiles(prev => {
       const updated = prev.filter(p => p.user_id !== userId);

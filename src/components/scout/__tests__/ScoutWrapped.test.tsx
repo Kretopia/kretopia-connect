@@ -26,7 +26,7 @@ const invoke = vi.fn();
 function builder(table: string) {
   let wantsDismissed = false;
   const q: Record<string, unknown> = {};
-  for (const m of ["select", "gt", "order", "limit", "maybeSingle"]) q[m] = () => q;
+  for (const m of ["select", "gt", "order", "limit", "range", "maybeSingle"]) q[m] = () => q;
   q.eq = (col: string, val: unknown) => {
     if (col === "action" && val === "dismissed") wantsDismissed = true;
     return q;

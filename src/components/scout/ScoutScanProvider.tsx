@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { extractInvokeError } from "@/lib/extractInvokeError";
 import { isThinListing } from "@/lib/scoutListing";
+import { readDiscoveryPages } from "@/lib/discoveryPages";
 import {
   LIVE_INTERVAL_MS,
   degradedNote,
@@ -56,24 +57,27 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
     queryKey,
     refetchInterval: scanning ? 3_000 : 60_000,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("scouted_gigs")
-        .select("*")
-        .eq("target_user_id", userId!)
-        .gt("expires_at", new Date().toISOString())
-        .order("fit_score", { ascending: false })
-        .order("scouted_at", { ascending: false })
-        .limit(40);
-      if (error) throw error;
-
+      if (!userId) return [];
       const { data: dismissedRows, error: dismissedError } = await supabase
         .from("scouted_gig_actions")
         .select("scouted_gig_id, action")
-        .eq("user_id", userId!)
+        .eq("user_id", userId)
         .eq("action", "dismissed");
       if (dismissedError) throw dismissedError;
       const dismissed = new Set((dismissedRows || []).map((a) => a.scouted_gig_id));
-      return ((data || []) as ScoutedGig[]).filter((g) => !dismissed.has(g.id) && !isThinListing(g));
+      const usable = (g: ScoutedGig) => !dismissed.has(g.id) && !isThinListing(g);
+      const now = new Date().toISOString();
+      const { data, error } = await readDiscoveryPages<ScoutedGig>((from, to) => supabase
+        .from("scouted_gigs")
+        .select("*")
+        .eq("target_user_id", userId)
+        .gt("expires_at", now)
+        .order("fit_score", { ascending: false })
+        .order("scouted_at", { ascending: false })
+        .order("id", { ascending: true })
+        .range(from, to), { pageSize: 100, enough: rows => rows.filter(usable).length >= 60 });
+      if (error) throw error;
+      return data.filter(usable);
     },
     enabled: !!userId,
   });
@@ -82,10 +86,11 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
   const { data: actions = [], isFetched: actionsReady } = useQuery({
     queryKey: ["scout-progress", userId],
     queryFn: async () => {
+      if (!userId) return [];
       const { data, error } = await supabase
         .from("scouted_gig_actions")
         .select("scouted_gig_id, action, outcome")
-        .eq("user_id", userId!)
+        .eq("user_id", userId)
         .limit(2000);
       if (error) throw error;
       return (data || []) as ScoutActionRow[];
@@ -102,7 +107,8 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
   const { data: profile = null } = useQuery({
     queryKey: ["scout-profile-facts", userId],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("role, location").eq("user_id", userId!).maybeSingle();
+      if (!userId) return null;
+      const { data } = await supabase.from("profiles").select("role, location").eq("user_id", userId).maybeSingle();
       return data ? { role: (data.role as string | null) ?? null, location: (data.location as string | null) ?? null } : null;
     },
     enabled: !!userId,
@@ -112,7 +118,8 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
   const { data: lastRunAt = null, isFetched: lastRunKnown } = useQuery({
     queryKey: ["scout-last-run", userId],
     queryFn: async () => {
-      const { data } = await supabase.from("scout_preferences").select("last_run_at").eq("user_id", userId!).maybeSingle();
+      if (!userId) return null;
+      const { data } = await supabase.from("scout_preferences").select("last_run_at").eq("user_id", userId).maybeSingle();
       return (data?.last_run_at as string | null | undefined) ?? null;
     },
     enabled: !!userId,
@@ -193,12 +200,12 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
   const hasAutoScannedRef = useRef(false);
   useEffect(() => {
     if (hasAutoScannedRef.current) return;
-    if (loading || scanning || !userId || !lastRunKnown || listError) return;
+    if (embedded || loading || scanning || !userId || !lastRunKnown || listError) return;
     hasAutoScannedRef.current = true;
     if (gigs.length === 0) void scanNow({ auto: true });
     else if (!embedded && isScanStale(lastRunAt)) void scanNow({ auto: true, mode: "live" });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, userId, gigs.length, lastRunKnown, lastRunAt, listError]);
+  }, [embedded, loading, userId, gigs.length, lastRunKnown, lastRunAt, listError]);
 
   // While Scout stays open and visible, look again every few minutes. The
   // boards update about hourly and the server skips a refresh that comes too
@@ -206,11 +213,11 @@ export function ScoutScanProvider({ embedded = false, children }: ScoutScanProvi
   useEffect(() => {
     if (!userId || embedded) return;
     const id = setInterval(() => {
-      if (document.visibilityState === "visible") void scanNow({ auto: true, mode: "live" });
+      if (document.visibilityState === "visible" && isScanStale(lastRunAt)) void scanNow({ auto: true, mode: "live" });
     }, LIVE_INTERVAL_MS);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId, embedded]);
+  }, [userId, embedded, lastRunAt]);
 
   const value: ScoutScanValue = {
     userId,
