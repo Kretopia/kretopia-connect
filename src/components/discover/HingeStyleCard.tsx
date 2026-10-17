@@ -128,7 +128,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
               draggable={false}
             />
           ) : (
-            <div className="flex h-full items-center justify-center"><BrandLogo size="lg" /></div>
+            <div className="flex h-full items-center justify-center text-5xl font-bold text-muted-foreground">{profile.full_name.split(" ").map(part => part[0]).slice(0, 2).join("")}</div>
           )}
           {profile.cover_image_url && profile.avatar_url && (
             <img src={profile.avatar_url} alt="" draggable={false} className="absolute bottom-3 left-3 h-14 w-14 rounded-full border-2 border-background object-cover pointer-events-none" />
@@ -295,7 +295,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           </Button>
           <Button
             size="lg"
-            className="h-12 flex-1 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            className="h-12 flex-1 rounded-full !bg-primary !bg-none hover:!bg-primary/90 !text-primary-foreground gap-2"
             onClick={handleConnectClick}
           >
             <Heart className="h-5 w-5" /> Connect
