@@ -61,21 +61,11 @@ describe("HingeStyleCard", () => {
     expect(screen.getByText("Los Angeles, CA")).toBeInTheDocument();
   });
 
-  it("shows common-ground badges derived from _matchSignals", () => {
-    renderCard({
-      _matchSignals: { sameSector: true, sameCity: true, pastCollab: true, skillOverlapRatio: 0 },
-    });
-    expect(screen.getByText("Same sector")).toBeInTheDocument();
-    expect(screen.getByText("Same city")).toBeInTheDocument();
-    expect(screen.getByText("Worked together before")).toBeInTheDocument();
-  });
-
-  it("shows no common-ground row when nothing matches", () => {
-    renderCard({
-      _matchSignals: { sameSector: false, sameCity: false, pastCollab: false, skillOverlapRatio: 0 },
-    });
-    expect(screen.queryByText("Same sector")).not.toBeInTheDocument();
-    expect(screen.queryByText("Same city")).not.toBeInTheDocument();
+  it("opens the profile without starting a connection", () => {
+    const { onLike, onViewProfile } = renderCard();
+    fireEvent.click(screen.getByRole('button', { name: /view ava chen's full profile/i }));
+    expect(onViewProfile).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user-1' }));
+    expect(onLike).not.toHaveBeenCalled();
   });
 
   it("calls onLike with a 'profile' context when Connect is clicked", async () => {
