@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 type Row = Record<string, unknown>;
@@ -13,10 +13,12 @@ const db = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => {
   const chain = (table: string) => {
     const eqs: Record<string, unknown> = {};
+    let range: [number, number] | undefined;
+    const page = (rows: Row[]) => range ? rows.slice(range[0], range[1] + 1) : rows;
     const resolve = () => {
       if (table === "swipes") return { data: "target_id" in eqs ? db.likedMe : db.mySwipes, error: null };
-      if (table === "profiles") return { data: db.rawProfiles, error: null };
-      if (table === "public_profiles_safe") return { data: db.safeProfiles, error: null };
+      if (table === "profiles") return { data: page(db.rawProfiles), error: null };
+      if (table === "public_profiles_safe") return { data: page(db.safeProfiles), error: null };
       return { data: [], error: null };
     };
     const api: any = new Proxy(
@@ -27,6 +29,7 @@ vi.mock("@/integrations/supabase/client", () => {
           if (prop === "maybeSingle") return () => Promise.resolve({ data: table === "profiles" ? db.me : null, error: null });
           return (...args: unknown[]) => {
             if (prop === "eq") eqs[String(args[0])] = args[1];
+            if (prop === "range") range = [Number(args[0]), Number(args[1])];
             return api;
           };
         },
@@ -119,6 +122,24 @@ describe("useSwipeProfiles", () => {
     const { result } = renderHook(() => useSwipeProfiles("me"));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.profiles.map((p) => p.user_id)).toEqual(["odos"]);
+  });
+  it("finds an unseen member after 1000 already-swiped candidates", async () => {
+    db.safeProfiles = Array.from({ length: 1001 }, (_, i) => member(`p${i}`));
+    db.mySwipes = db.safeProfiles.slice(0, 1000).map(p => ({ target_id: p.user_id }));
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["p1000"]);
+  });
+
+  it("quietly adds new members without resurrecting a locally consumed card", async () => {
+    db.safeProfiles = [member("a")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.removeProfile("a"));
+    db.safeProfiles.push(member("b"));
+    await act(async () => { await result.current.fetchProfiles(false, true); });
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["b"]);
+    expect(result.current.loading).toBe(false);
   });
 });
 

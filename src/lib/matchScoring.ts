@@ -122,8 +122,8 @@ export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInp
   const sameCity = !!me.city && extractCity(candidate.location) === me.city;
   const pastCollab = me.pastCollabIds.has(candidate.userId);
 
-  const theirSkills = candidate.skills || [];
-  const overlap = theirSkills.filter((s) => me.skills.has(s.toLowerCase())).length;
+  const theirSkills = [...new Set((candidate.skills || []).map(s => s.toLowerCase().trim()).filter(Boolean))];
+  const overlap = theirSkills.filter((s) => me.skills.has(s)).length;
   const denominator = Math.max(me.skills.size, theirSkills.length, 1);
   const skillOverlapRatio = overlap / denominator;
 

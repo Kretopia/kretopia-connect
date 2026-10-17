@@ -46,6 +46,14 @@ import {
   fetchPastCollaboratorIds,
 } from "../matchScoring";
 
+it("does not inflate relevance when professional and passion skills repeat", () => {
+  const context = buildMyMatchContext({ role: "Photographer", professional_skills: ["lighting"] }, new Set(), "me");
+  const single = computeMatchScore(context, { userId: "a", skills: ["lighting"] });
+  const repeated = computeMatchScore(context, { userId: "a", skills: ["lighting", "Lighting", "lighting"] });
+  expect(repeated.skillOverlapRatio).toBe(1);
+  expect(repeated.score).toBe(single.score);
+});
+
 describe("extractCity", () => {
   it("takes the first comma segment, lowercased and trimmed", () => {
     expect(extractCity("Los Angeles, CA")).toBe("los angeles");
