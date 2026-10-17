@@ -7,7 +7,7 @@ interface PageTransitionProps {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 12 },
+  initial: { opacity: 1, y: 4 },
   animate: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: -8 },
 };
@@ -15,7 +15,7 @@ const pageVariants = {
 const pageTransition = {
   type: "tween",
   ease: "easeOut",
-  duration: 0.25,
+  duration: 0.16,
 };
 
 export const PageTransition = ({ children, className }: PageTransitionProps) => (

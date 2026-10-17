@@ -263,7 +263,8 @@ const KretoWave = memo(function KretoWave({
             alt=""
             width={ART.w}
             height={ART.h}
-            loading="lazy"
+            loading="eager"
+            fetchPriority="high"
             decoding="async"
             draggable={false}
             onLoad={checkReady}
@@ -274,7 +275,7 @@ const KretoWave = memo(function KretoWave({
               ref={armRef}
               src={kretoArmUrl}
               alt=""
-              loading="lazy"
+              loading="eager"
               decoding="async"
               draggable={false}
               onLoad={checkReady}
@@ -461,7 +462,7 @@ export const KretopiaHero = () => {
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.2 }}
           className="relative mt-9 sm:mt-10 w-full max-w-[34rem] mx-auto"
         >
           <p className="landing-eyebrow mb-4 block text-center">Find work on Kretopia</p>
@@ -473,7 +474,7 @@ export const KretopiaHero = () => {
         <motion.div
           initial={reducedMotion ? false : { opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.45 }}
+          transition={{ duration: 0.2 }}
           className="mt-6 sm:mt-7 flex w-full flex-col items-center gap-4"
         >
           {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,

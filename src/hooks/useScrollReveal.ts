@@ -20,7 +20,7 @@ interface UseScrollRevealOptions {
 export function useScrollReveal<T extends HTMLElement = HTMLDivElement>(
   options: UseScrollRevealOptions = {},
 ): [RefObject<T>, boolean] {
-  const { rootMargin = "-10% 0px -10% 0px", once = true } = options;
+  const { rootMargin = "160px 0px", once = true } = options;
   const reducedMotion = useReducedMotion();
   const ref = useRef<T>(null);
   const [visible, setVisible] = useState(false);

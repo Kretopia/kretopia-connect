@@ -18,10 +18,10 @@ export function Reveal({ children, delayIndex = 0, className }: RevealProps) {
   return (
     <motion.div
       className={className}
-      initial={reducedMotion ? false : { opacity: 0, y: 22 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 8 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-10% 0px" }}
-      transition={{ duration: 0.7, delay: delayIndex * 0.07, ease: [0.2, 0.65, 0.3, 0.95] }}
+      viewport={{ once: true, margin: "160px 0px" }}
+      transition={{ duration: 0.2, delay: Math.min(delayIndex, 3) * 0.025, ease: [0.2, 0.65, 0.3, 0.95] }}
     >
       {children}
     </motion.div>
