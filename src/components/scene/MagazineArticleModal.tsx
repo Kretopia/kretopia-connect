@@ -36,7 +36,7 @@ interface MagazineArticleModalProps {
 export function MagazineArticleModal({ article, onOpenChange }: MagazineArticleModalProps) {
   return (
     <Dialog open={!!article} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl w-[calc(100%-1.5rem)] h-[88vh] p-0 gap-0 overflow-hidden rounded-2xl border-[hsl(var(--energy)/0.25)] [&>button]:z-20 [&>button]:bg-background/80 [&>button]:backdrop-blur-sm [&>button]:rounded-full">
+      <DialogContent className="max-w-3xl w-[calc(100%-1.5rem)] h-[88vh] p-0 gap-0 overflow-hidden rounded-2xl border-[hsl(var(--energy)/0.25)] [&>button]:z-20 [&>button]:bg-background/80 [&>button]:backdrop-blur-sm [&>button]:rounded-full [&>button]:right-3 [&>button]:top-3 [&>button]:flex [&>button]:h-11 [&>button]:w-11 [&>button]:items-center [&>button]:justify-center [&>button]:opacity-100 [&>button>svg]:h-5 [&>button>svg]:w-5">
         <DialogTitle className="sr-only">{article?.title || "Article"}</DialogTitle>
         {/* Ambient plate — the same signal that this is a Kretopia surface
             (aurora glow) as every other big editorial moment in the app. */}
@@ -47,7 +47,7 @@ export function MagazineArticleModal({ article, onOpenChange }: MagazineArticleM
         />
         <div className="relative h-full overflow-y-auto">
           {article && (
-            <MagazineArticleViewer article={article} onBack={() => onOpenChange(false)} />
+            <MagazineArticleViewer article={article} onBack={() => onOpenChange(false)} inDialog />
           )}
         </div>
       </DialogContent>

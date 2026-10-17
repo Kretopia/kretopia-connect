@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Button } from "@/components/ui/button";
+import { CtaButton } from "@/components/ui/cta-button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -188,8 +188,11 @@ export const MagazineWall = () => {
               <p className="mt-0.5 text-xs text-muted-foreground">Submissions are reviewed before they go live.</p>
             )}
           </div>
-          <Button
-            className="h-11 w-full shrink-0 gap-2 sm:w-auto"
+          {/* The canonical solid CTA (flat primary fill, dark label): the default Button is a
+              translucent glass pill, which read as a ghost next to the white active tab. */}
+          <CtaButton
+            size="default"
+            className="h-11 shrink-0 gap-2 px-5"
             onClick={() => {
               if (!user) { window.location.href = "/auth?next=/spotlight"; return; }
               setEditingId(null);
@@ -198,7 +201,7 @@ export const MagazineWall = () => {
           >
             <PenSquare className="h-4 w-4" aria-hidden />
             {isEditorOrAdmin ? "Write" : "Publish your story"}
-          </Button>
+          </CtaButton>
         </div>
       </div>
 

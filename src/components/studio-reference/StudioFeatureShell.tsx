@@ -9,7 +9,7 @@ interface StudioFeatureShellProps {
    * the page already has its own `<main>` elsewhere. */
   as?: ElementType;
   /** Put the body on a Wrapped panel named for the feature (see FeatureWrapped). */
-  wrapped?: { name: string; status?: ReactNode };
+  wrapped?: { name: string; status?: ReactNode; hideTitle?: boolean };
 }
 
 /**
@@ -30,7 +30,7 @@ export function StudioFeatureShell({ children, className, as: Component = "div",
   return (
     <Component className={cn("max-w-6xl mx-auto px-4 pt-4 pb-36 md:pb-12 space-y-5", className)}>
       {wrapped ? (
-        <FeatureWrapped name={wrapped.name} status={wrapped.status}>
+        <FeatureWrapped name={wrapped.name} status={wrapped.status} hideTitle={wrapped.hideTitle}>
           {children}
         </FeatureWrapped>
       ) : (
