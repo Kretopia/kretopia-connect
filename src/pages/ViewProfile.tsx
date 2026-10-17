@@ -13,7 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { 
   MapPin, 
-  ArrowLeft, 
   MessageCircle, 
   Briefcase,
   Sparkles,
@@ -421,22 +420,7 @@ const ViewProfile = () => {
       
       <div className="min-h-screen bg-background pb-24 lg:pb-6">
         <div className="container max-w-4xl mx-auto px-4 py-6">
-          {/* Back Button */}
-          <Button 
-            variant="ghost" 
-            onClick={() => {
-              // If we have history, go back; otherwise go to Circle
-              if (window.history.length > 2) {
-                navigate(-1);
-              } else {
-                navigate('/circle');
-              }
-            }}
-            className="mb-4 gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
+          
 
           {/* Match Celebration Banner */}
           {(isMatched || isFromMatch) && (

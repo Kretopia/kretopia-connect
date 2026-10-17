@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Send, ArrowLeft } from "lucide-react";
+import { Calendar, Send, } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 // Returns the date (YYYY-MM-DD) of the upcoming Monday in UTC.
@@ -142,9 +142,7 @@ export default function AdminWeeklyNote() {
   return (
     <div className="min-h-screen bg-background py-8 px-4">
       <div className="max-w-3xl mx-auto">
-        <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Admin
-        </Button>
+        
 
         <Card>
           <CardHeader>

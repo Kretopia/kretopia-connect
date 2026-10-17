@@ -610,9 +610,7 @@ const CircleDetail = () => {
           <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden shrink-0" onClick={() => setShowSidebar(true)}>
             <Menu className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          
           {activeChannel && (
             <div className="flex items-center gap-2 min-w-0">
               {(() => { const Icon = CHANNEL_ICONS[activeChannel.channel_type] || Hash; return <Icon className="h-4 w-4 text-primary shrink-0" />; })()}

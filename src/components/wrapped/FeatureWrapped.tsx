@@ -7,8 +7,6 @@ interface FeatureWrappedProps {
   name: string;
   /** One true line under the title, when there is one. */
   status?: ReactNode;
-  /** The page's own heading already names the feature: keep the title for screen readers, do not draw it. */
-  hideTitle?: boolean;
   children: ReactNode;
 }
 
@@ -18,7 +16,7 @@ interface FeatureWrappedProps {
  * page's own components inside, the Kretopia lockup at the foot. It adds no
  * data and no claims of its own.
  */
-export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWrappedProps) {
+export function FeatureWrapped({ name, status, children }: FeatureWrappedProps) {
   const id = useId();
   return (
     <WrappedShell
@@ -29,7 +27,6 @@ export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWra
           Everything in <span className="k-gradient-text">{name}</span>
         </>
       }
-      hideTitle={hideTitle}
       status={status}
     >
       {children}

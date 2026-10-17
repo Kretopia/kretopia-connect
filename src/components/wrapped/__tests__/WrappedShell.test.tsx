@@ -46,22 +46,6 @@ describe("WrappedShell", () => {
     expect(screen.getByRole("region", { name: "Everything in Perks" }).querySelector("header p + h2 + p")).toBeNull();
   });
 
-  it("hideTitle keeps the heading as the panel's name for screen readers but does not draw it", () => {
-    render(
-      <WrappedShell titleId="t3" eyebrow="Kretopia · Spotlight" title="Everything in Spotlight" hideTitle>
-        <p>content</p>
-      </WrappedShell>,
-    );
-    const region = screen.getByRole("region", { name: "Everything in Spotlight" });
-    expect(region.querySelector("h2")).toHaveClass("sr-only");
-    expect(screen.getByText("Kretopia · Spotlight")).toBeInTheDocument();
-  });
-
-  it("draws the heading by default", () => {
-    shell();
-    expect(screen.getByRole("heading", { level: 2 })).not.toHaveClass("sr-only");
-  });
-
   it("a page with two panels can keep the lockup for the last one", () => {
     const { container } = shell({ brandFooter: false });
     expect(container.querySelector("footer")).toBeNull();

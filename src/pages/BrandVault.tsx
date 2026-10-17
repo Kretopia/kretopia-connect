@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, FolderLock } from "lucide-react";
+import { Sparkles, FolderLock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -51,9 +51,7 @@ export default function BrandVault() {
 
       <header className="sticky top-0 z-30 bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          
           <div className="flex-1 min-w-0">
             <div className="text-[10px] uppercase tracking-[0.18em] text-primary font-semibold flex items-center gap-1">
               <Sparkles className="h-3 w-3" /> Brand Vault

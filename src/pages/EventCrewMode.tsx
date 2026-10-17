@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, CheckCircle2, AlertTriangle, Clock, Radio, Maximize2, Minimize2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, Radio, Maximize2, Minimize2 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
@@ -131,9 +131,7 @@ const EventCrewMode = () => {
 
       <header className="sticky top-0 z-40 bg-background border-b border-border/60">
         <div className="px-4 py-3 flex items-center gap-3">
-          <Link to={projectId ? `/desk/${projectId}` : "/"} className="text-muted-foreground">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+          
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(var(--energy))] flex items-center gap-1">
               <Radio className="h-3 w-3 animate-pulse" /> Crew mode · live

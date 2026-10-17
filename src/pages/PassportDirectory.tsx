@@ -13,7 +13,6 @@ import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
 import { PassportDirectoryCard, type DirectoryPassport } from "@/components/passport/PassportDirectoryCard";
@@ -125,7 +124,7 @@ const PassportDirectory = () => {
       />
 
       <div className="relative">
-        <PageBackButton />
+
         <FeaturePageHeader
           scene="passport"
           eyebrow="Passport Directory"

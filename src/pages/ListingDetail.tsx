@@ -7,7 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import {
-  ArrowLeft, Download, Package, Wrench, MapPin, Clock, MessageCircle,
+  Download, Package, Wrench, MapPin, Clock, MessageCircle,
   ShieldAlert, Share2, Flag, Heart, ChevronLeft, ChevronRight, ShoppingCart, Lock
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -138,10 +138,7 @@ const ListingDetail = () => {
       <SEO title={listing.title} description={listing.description || "View listing on Kretopia Market"} />
 
       <div className="container mx-auto max-w-5xl px-4 py-6 space-y-6">
-        {/* Back Button */}
-        <Button variant="ghost" size="sm" onClick={() => navigate("/market")} className="gap-2">
-          <ArrowLeft className="h-4 w-4" /> Back to Market
-        </Button>
+        
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
           {/* Left: Images */}

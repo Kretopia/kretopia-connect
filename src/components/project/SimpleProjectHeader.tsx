@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, ArrowLeft, UserPlus, X, Crown, Video, ChevronDown, Link as LinkIcon, Clock } from "lucide-react";
+import { Users, UserPlus, X, Crown, Video, ChevronDown, Link as LinkIcon, Clock } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { formatDistanceToNow } from "date-fns";
@@ -510,14 +510,6 @@ export const SimpleProjectHeader = ({ project, collaborators, onCollaboratorsCha
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate(-1)}
-          className="shrink-0"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl md:text-3xl font-bold truncate">{project.title}</h1>
           {project.description && (

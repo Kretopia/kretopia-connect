@@ -22,9 +22,10 @@ interface GeneratedJobDescription {
 interface AIJobDescriptionGeneratorProps {
   onGenerated: (data: GeneratedJobDescription) => void;
   isPro: boolean;
+  framed?: boolean;
 }
 
-export function AIJobDescriptionGenerator({ onGenerated, isPro }: AIJobDescriptionGeneratorProps) {
+export function AIJobDescriptionGenerator({ onGenerated, isPro, framed = true }: AIJobDescriptionGeneratorProps) {
   const [brief, setBrief] = useState("");
   const [generating, setGenerating] = useState(false);
   const { toast } = useToast();
@@ -101,8 +102,8 @@ Make it professional but approachable. Use language that appeals to creative pro
   };
 
   const generatorContent = (
-    <div className="space-y-3 p-4 rounded-lg border border-primary/20 bg-primary/5">
-      <div className="flex items-center gap-2 text-sm font-semibold text-primary">
+    <div className={framed ? "space-y-3 p-4 rounded-lg border border-border bg-card" : "space-y-3"}>
+      <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Wand2 className="h-4 w-4" />
         Smart Brief Writer
       </div>

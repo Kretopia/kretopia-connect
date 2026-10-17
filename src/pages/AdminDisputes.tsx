@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, ExternalLink, ArrowRightLeft, X, Clock } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -166,7 +165,7 @@ export default function AdminDisputes() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <PageBackButton variant="inline" fallbackTo="/admin" />
+
             <Shield className="h-6 w-6 text-primary" /> Dispute Arbitration
           </h1>
           <p className="text-sm text-muted-foreground">Review credit ownership disputes.</p>

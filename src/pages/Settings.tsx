@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Smartphone, ExternalLink, Info, ArrowLeft, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
+import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Smartphone, ExternalLink, Info, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
 import { SettingsShell } from "@/components/settings/SettingsShell";
 import type { SettingsDomain } from "@/components/settings/SettingsNav";
 import { CreatorSiteSettings } from "@/components/settings/CreatorSiteSettings";
@@ -1063,16 +1063,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
         compact
       />
       <StudioFeatureShell wrapped={{ name: "Settings" }}>
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 -ml-2 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back
-          </Button>
+        <div className="flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"

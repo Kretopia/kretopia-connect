@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { z } from "zod";
-import { ShieldAlert, ArrowLeft, ExternalLink, CheckCircle2, XCircle, FileText, Download } from "lucide-react";
+import { ShieldAlert, ExternalLink, CheckCircle2, XCircle, FileText, Download } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -189,9 +189,7 @@ const DisputeManage = () => {
     return (
       <div className="container max-w-md py-16 text-center">
         <h1 className="text-xl font-bold mb-2">Dispute not found</h1>
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Back
-        </Button>
+        
       </div>
     );
   }
@@ -218,9 +216,7 @@ const DisputeManage = () => {
       </Helmet>
 
       <div className="container max-w-2xl py-6 px-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back
-        </Button>
+        
 
         <div className="flex items-center gap-2 mb-1">
           <ShieldAlert className="h-5 w-5 text-primary" />

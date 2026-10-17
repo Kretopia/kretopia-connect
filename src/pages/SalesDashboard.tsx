@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { Search, Send, Target, Users, TrendingUp, Mail, Crown, Lock, Kanban, BarChart3 } from "lucide-react";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import LeadsTab from "@/components/thrive-ai/LeadsTab";
 import OutreachTab from "@/components/thrive-ai/OutreachTab";
 
@@ -119,7 +118,7 @@ const SalesDashboard = () => {
       <div className="mb-5 space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <PageBackButton variant="inline" />
+
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
               Sales
             </p>

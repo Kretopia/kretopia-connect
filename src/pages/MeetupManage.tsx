@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Calendar, Users, Mail, MessageSquare, Ticket, Megaphone,
-  Settings as SettingsIcon, BarChart3, Plus, ArrowLeft, ExternalLink,
+  Settings as SettingsIcon, BarChart3, Plus, ExternalLink,
   QrCode, Share2, Pencil, UserPlus, ChevronDown,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -122,12 +122,7 @@ const MeetupManage = () => {
       <div className="relative border-b border-border/50 bg-cinematic bg-grid-quadrille overflow-hidden pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-energy/40 to-transparent" />
         <div className="relative container mx-auto max-w-6xl px-4 pt-4 pb-5 sm:pt-7 sm:pb-8">
-          <button
-            onClick={() => navigate("/meetup")}
-            className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-[hsl(var(--energy))] transition mb-3 uppercase tracking-wider font-bold"
-          >
-            <ArrowLeft className="h-3 w-3" /> Back to Events
-          </button>
+          
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.25em] text-energy mb-2 px-2.5 py-1 rounded-full border border-energy/30 bg-energy/[0.04]">

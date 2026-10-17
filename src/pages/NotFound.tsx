@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Home, ArrowLeft } from "lucide-react";
+import { Home, } from "lucide-react";
 
 const NotFound = () => {
   const navigate = useNavigate();
@@ -30,9 +30,7 @@ const NotFound = () => {
           This page doesn't exist or has moved. Redirecting you in {countdown}s…
         </p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
-            <ArrowLeft className="h-4 w-4" /> Go Back
-          </Button>
+          
           <Button onClick={() => navigate("/circle", { replace: true })} className="gap-2">
             <Home className="h-4 w-4" /> Go Home
           </Button>

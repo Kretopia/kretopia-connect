@@ -10,11 +10,10 @@ import { Button } from "@/components/ui/button";
 import { WatchReplayButton } from "@/components/calls/WatchReplayButton";
 import { CallRecapSheet } from "@/components/calls/CallRecapSheet";
 import { formatDistanceToNow } from "date-fns";
-import { Video, Sparkles, Clock, ArrowLeft, FileVideo, RefreshCw } from "lucide-react";
+import { Video, Sparkles, Clock, FileVideo, RefreshCw } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast as sonnerToast } from "sonner";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { KretoTip } from "@/components/agent/KretoTip";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
@@ -133,7 +132,7 @@ export default function Recordings() {
       </Helmet>
 
       <div className="relative">
-        <PageBackButton />
+
         <FeaturePageHeader
           scene="music-studio"
           eyebrow="Call recordings"
@@ -147,13 +146,8 @@ export default function Recordings() {
       <StudioFeatureShell wrapped={{ name: "Recordings" }}>
         <KretoTip compact />
 
-      <div className="flex items-center justify-between">
-        <Link
-          to="/messages"
-          className="inline-flex items-center gap-1 h-8 px-2 -ml-2 rounded-md text-xs text-muted-foreground hover:text-[hsl(var(--energy))] transition-colors"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
-        </Link>
+      <div className="flex items-center justify-end">
+        
         <Button type="button" size="sm" variant="outline" onClick={handleSync} disabled={syncing} className="gap-1.5 shrink-0">
           {syncing ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <RefreshCw className="h-3.5 w-3.5" />}
           {syncing ? "Syncing…" : "Sync now"}

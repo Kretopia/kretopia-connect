@@ -5,7 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Plus, Rocket, ExternalLink } from "lucide-react";
 import { useMyCampaigns } from "@/hooks/useThriveFund";
 import { cn } from "@/lib/utils";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 const FundManage = () => {
   const navigate = useNavigate();
@@ -19,7 +18,7 @@ const FundManage = () => {
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
-            <PageBackButton variant="inline" />
+
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
               ThriveFund
             </p>

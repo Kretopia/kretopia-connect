@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { SEO } from "@/components/SEO";
 import Confetti from "react-dom-confetti";
-import { Star, CheckCircle2, ArrowLeft, Trophy, Calendar, ListChecks, Sparkles } from "lucide-react";
+import { Star, CheckCircle2, Trophy, Calendar, ListChecks, Sparkles } from "lucide-react";
 import { useFoundingMemberProgress } from "@/hooks/useFoundingMemberProgress";
 import { FOUNDING_QUESTS, FOUNDING_MEMBER_CAP, foundingDeadlineLabel, foundingDaysLeft } from "@/lib/foundingMember";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,13 +82,7 @@ export default function FoundingMember() {
       />
 
       <StudioFeatureShell wrapped={{ name: "Founding Circle" }}>
-        <button
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[hsl(var(--energy))] transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+        
 
         {/* Hero — the badge itself, as a real Passport-grade medallion
             (same HoloCard treatment as the owner Passport / New Room's

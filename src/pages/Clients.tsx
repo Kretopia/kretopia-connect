@@ -9,7 +9,6 @@ import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { ClientFormDialog } from "@/components/clients/ClientFormDialog";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { KretoTip } from "@/components/agent/KretoTip";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { formatDistanceToNow } from "date-fns";
@@ -32,7 +31,7 @@ const Clients = () => {
       <SEO title="Clients · Kretopia" description="All your clients in one hub" />
 
       <div className="relative">
-        <PageBackButton />
+
         <FeaturePageHeader
           scene="office"
           eyebrow="Client hub"

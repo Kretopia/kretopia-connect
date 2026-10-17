@@ -150,41 +150,6 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     toast.success('Undo successful!');
   }, [swipeHistory, user?.id, fetchProfiles]);
 
-  // Who is looking is not known yet: wait, instead of flashing the empty "All Caught Up" state at
-  // a member whose session is still loading.
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <KretopiaSpinner className="h-8 w-8" />
-      </div>
-    );
-  }
-
-  // A visitor with no account has no deck: it is built around the signed-in member (their swipes,
-  // blocks, connections and interests). "You've seen everyone" would be untrue for someone who has
-  // seen no one, so say what is needed and point at the grid, which works without an account.
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-        <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
-          <Heart className="k-gradient-icon h-10 w-10" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Sign in to get your deck</h3>
-        <p className="text-muted-foreground mb-4 max-w-sm">
-          Your deck is ranked around your Passport. You can browse every creator in the grid without an account.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button onClick={() => navigate('/auth?next=/match')} className="gap-2">
-            Sign in
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/match?tab=browse')} className="gap-2">
-            <ArrowRight className="h-4 w-4" /> Browse the grid
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="text-center py-12">

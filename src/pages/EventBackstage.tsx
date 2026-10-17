@@ -17,7 +17,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  ArrowLeft,
   Plus,
   Calendar,
   Users,
@@ -743,15 +742,7 @@ const EventBackstage = () => {
         <div className="sticky top-0 z-30 bg-background/95 border-b">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                onClick={() => navigate(-1)}
-                aria-label="Back"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
+              
               <div className="min-w-0">
                 <h1 className="text-base sm:text-lg font-bold leading-tight truncate">
                   Backstage

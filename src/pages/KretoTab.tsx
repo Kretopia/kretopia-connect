@@ -9,7 +9,6 @@ import { BRAND } from "@/lib/brandLexicon";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { KRETO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { InlineKretoChat } from "@/components/kreto/InlineKretoChat";
@@ -142,7 +141,7 @@ export default function KretoTab() {
   return (
     <div className="min-h-[calc(100vh-56px)] bg-background text-foreground">
       <div className="relative">
-        <PageBackButton />
+
         <FeaturePageHeader
           scene="assistant"
           eyebrow="Executive Producer"

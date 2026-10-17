@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CompCardPreview } from "@/components/passport/model/CompCardPreview";
 import { SocialFeedIngest } from "@/components/passport/model/SocialFeedIngest";
 import { BrandLoader } from "@/components/brand/BrandDots";
-import { ArrowLeft, Upload, Download, Share2, Save, Link2, Trash2 } from "lucide-react";
+import { Upload, Download, Share2, Save, Link2, Trash2 } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 
 const SLOT_LABELS = ["Headshot", "Profile", "Full Body", "Editorial", "Swim / Fit"];
@@ -130,7 +130,7 @@ export default function CompCardBuilder() {
       <Helmet><title>Comp Card Builder — Kretopia</title></Helmet>
 
       <header className="sticky top-0 z-10 bg-background border-b border-border px-3 py-3 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-4 w-4" /></Button>
+        
         <div className="flex-1">
           <h1 className="font-serif text-lg leading-tight">Comp Card</h1>
           <p className="text-xs text-muted-foreground">Industry-standard 5.5 × 8.5</p>

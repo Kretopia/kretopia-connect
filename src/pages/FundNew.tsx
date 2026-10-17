@@ -11,7 +11,6 @@ import {
   Plus, Trash2, Rocket, Lock, Sparkles, Wand2, ImagePlus, ChevronLeft, ChevronRight, Upload, Check,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 import { useCreateCampaign, useMyCampaigns } from "@/hooks/useThriveFund";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasProAccess, hasCreatorProAccess, type SubscriptionTier } from "@/lib/subscriptionConfig";
@@ -285,7 +284,7 @@ const FundNew = () => {
         {/* Header */}
         <div className="mb-5 space-y-3">
           <div className="flex items-center gap-2">
-            <PageBackButton variant="inline" />
+
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
               ThriveFund · New Campaign
             </p>

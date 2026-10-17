@@ -23,8 +23,6 @@ export interface WrappedShellProps {
   eyebrow: string;
   /** The h2: plain text with one `k-gradient-text` span for the accent. */
   title: ReactNode;
-  /** Keep the h2 as the panel's accessible name but do not draw it, when the page above already says it. */
-  hideTitle?: boolean;
   /** One honest sentence under the title; leave out when the status line says enough. */
   subtitle?: ReactNode;
   /** The line of status under the title (a WrappedStatus); omit when there is nothing true to say. */
@@ -48,7 +46,7 @@ export interface WrappedShellProps {
  * drift apart. It owns the look only: what goes inside, and where its numbers
  * come from, belongs to each surface.
  */
-export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subtitle, status, aside, sectionRef, brandFooter = true, className, children }: WrappedShellProps) {
+export function WrappedShell({ titleId, eyebrow, title, subtitle, status, aside, sectionRef, brandFooter = true, className, children }: WrappedShellProps) {
   return (
     <section
       ref={sectionRef}
@@ -71,7 +69,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
-            <h2 id={titleId} className={cn("mt-1.5 text-xl font-bold leading-tight text-foreground sm:text-2xl", hideTitle && "sr-only")}>
+            <h2 id={titleId} className="mt-1.5 text-xl font-bold leading-tight text-foreground sm:text-2xl">
               {title}
             </h2>
             {subtitle}

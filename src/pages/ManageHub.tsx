@@ -2,7 +2,6 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Building2, Briefcase, CalendarDays, Rocket, ArrowRight } from "lucide-react";
-import { PageBackButton } from "@/components/navigation/PageBackButton";
 
 const items = [
   {
@@ -44,7 +43,7 @@ const ManageHub = () => {
       <div className="max-w-3xl mx-auto px-4 pt-8">
         <header className="mb-6 space-y-3">
           <div className="flex items-center gap-2">
-            <PageBackButton variant="inline" />
+
             <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
               Command center
             </p>

@@ -11,22 +11,15 @@
  */
 import { useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link, useLocation } from "react-router-dom";
-import { Mic, BookOpen, Quote, Radio } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { PageTransition } from "@/components/PageTransition";
 import { MagazineWall } from "@/components/scene/MagazineWall";
 import { PodcastPlayer } from "@/components/scene/PodcastPlayer";
 import { APP_URL } from "@/lib/constants";
-import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { spotlightTutorial } from "@/components/features/publicFeatureTutorials";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { SpotlightBoard, type SpotlightTab } from "@/components/kretopia/SpotlightBoard";
-
-const NOTES = [
-  { icon: BookOpen, title: "The Magazine", body: "Long-form features and interviews with the people behind the work." },
-  { icon: Mic, title: "The Podcast", body: "Conversations in their own words — process, setbacks, the real numbers." },
-  { icon: Quote, title: "Straight from the source", body: "No press releases. Creatives telling their own story, unfiltered." },
-  { icon: Radio, title: "Always on", body: "New stories and episodes drop as the community makes them." },
-];
 
 const Spotlight = () => {
   const location = useLocation();
@@ -69,17 +62,16 @@ const Spotlight = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
-        <EditorialPageHero
-          kicker="The Spotlight"
-          oneLine
-          title="Spotlight."
-          accentTitle="Stories worth playing."
+        <FeaturePageHeader
+          compact
+          eyebrow="Spotlight"
+          tutorial={{ featureKey: "spotlight", label: "How Spotlight works", steps: spotlightTutorial }}
+          title="Spotlight"
+          accentTitle="Stories worth playing"
           subtitle="Interviews, features and podcast episodes from across the creative universe — the people behind the work, in their own words."
         />
 
-        {/* The hero above already says "Spotlight.", so the panel keeps its name for screen readers
-            and drops the repeated "Everything in Spotlight" line: the stories start higher. */}
-        <StudioFeatureShell wrapped={{ name: "Spotlight", hideTitle: true }}>
+        <StudioFeatureShell>
           <section aria-label="Spotlight stories and episodes">
             <SpotlightBoard
               value={activeTab}
@@ -89,24 +81,6 @@ const Spotlight = () => {
             />
           </section>
 
-          <section>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-1.5">Why it matters</p>
-            <h2 className="text-xl font-bold text-foreground mb-4">Proof is the record. Story is the reason.</h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {NOTES.map((n) => (
-                <div key={n.title} className="h-full rounded-2xl border border-border bg-card p-5 transition-colors hover:border-[hsl(var(--energy)/0.35)]">
-                  <span className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--energy)/0.1)]">
-                    <n.icon className="h-4 w-4 text-[hsl(var(--energy))]" />
-                  </span>
-                  <p className="text-foreground font-semibold text-sm mb-1.5">{n.title}</p>
-                  <p className="text-sm leading-relaxed text-muted-foreground">{n.body}</p>
-                </div>
-              ))}
-            </div>
-            <p className="mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground">
-              "Credits show what you did. Spotlight shows how you did it — and why the next person should call you."
-            </p>
-          </section>
         </StudioFeatureShell>
       </div>
     </PageTransition>
