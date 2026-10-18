@@ -1,0 +1,3898 @@
+.
+├── .claude
+│   └── launch.json
+├── .lovable
+│   ├── mcp
+│   │   └── manifest.json
+│   ├── memories
+│   │   └── features
+│   │       └── projects
+│   │           └── ep-design-engine-phase-1.md
+│   ├── memory
+│   │   ├── features
+│   │   │   ├── passport
+│   │   │   │   └── profession-and-standing-v2.md
+│   │   │   ├── projects
+│   │   │   │   └── public-studio-recap.md
+│   │   │   └── scheduling
+│   │   │       └── personal-room-and-booking.md
+│   │   ├── strategy
+│   │   │   ├── applications
+│   │   │   │   ├── bridge-for-billions.md
+│   │   │   │   ├── founder-institute.md
+│   │   │   │   └── future-caribbean.md
+│   │   │   ├── founder-bio.md
+│   │   │   └── passport-positioning-v1.md
+│   │   └── style
+│   │       └── branding
+│   │           ├── agent-name-izzy.md
+│   │           ├── hardcoded-color-drift-audit.md
+│   │           └── kretopia-rebrand-v1.md
+│   ├── plan
+│   │   ├── conversion-diagnosis-last-7-days-2026-08-31.md
+│   │   ├── correctif-du-404-des-suggestions-d-onboarding-2026-09-19.md
+│   │   ├── harmoniser-how-this-works-avec-le-mode-clair-2026-09-18.md
+│   │   ├── kretopia-connect-batch-1-p0-plan-2026-09-18.md
+│   │   ├── kretopia-feature-bible-team-reference-document-2026-08-24.md
+│   │   ├── nettoyage-des-en-têtes-de-features-actions-ai-powered-2026-08-15.md
+│   │   ├── public-epk-overhaul-2026-09-18.md
+│   │   └── today-overhaul-plan-2026-09-18.md
+│   └── project.json
+├── docs
+│   ├── roadmap
+│   │   ├── 2026-10-03-gate1-2-3-session-summary.md
+│   │   ├── agent-handlers-approval-binding-security-evidence.md
+│   │   ├── agent-send-dm-exact-approval-security-evidence.md
+│   │   ├── authenticated-feature-visual-smoke-test.md
+│   │   ├── batch-milestone-payout-evidence.md
+│   │   ├── booking-recording-consent-security-evidence.md
+│   │   ├── canonical-product-and-permission-map.md
+│   │   ├── canonical-product-map.md
+│   │   ├── company-experience-gate-status.md
+│   │   ├── daily-webhook-freshness-security-evidence.md
+│   │   ├── event-invite-send-budget-security-evidence.md
+│   │   ├── event-ticket-checkout-promo-evidence.md
+│   │   ├── event-ticket-confirmation-claim-evidence.md
+│   │   ├── exact-version-approval-mvp.md
+│   │   ├── gate-audit-company-experience-execution-matrix.md
+│   │   ├── gate3-next-slices.md
+│   │   ├── gmail-credential-not-in-browser-security-evidence.md
+│   │   ├── guest-wallet-evidence.md
+│   │   ├── invoice-provider-reference-evidence.md
+│   │   ├── kreto-execution-mvp.md
+│   │   ├── leads-duplicates-merge-preview.sql
+│   │   ├── leads-duplicates-merge-proposal.md
+│   │   ├── leads-duplicates-merge.PROPOSED.sql
+│   │   ├── leads-duplicates-report.md
+│   │   ├── leads-duplicates-report.sql
+│   │   ├── legacy-event-ticket-purchase-evidence.md
+│   │   ├── m-a-preflight-is-meeting-member.md
+│   │   ├── meeting-client-consent-evidence.md
+│   │   ├── meeting-context-access-security-evidence.md
+│   │   ├── meeting-token-status-security-evidence.md
+│   │   ├── milestone-payment-session-evidence.md
+│   │   ├── outbound-senders-fifth-pass-security-evidence.md
+│   │   ├── outbound-senders-review-security-evidence.md
+│   │   ├── outbound-senders-security-evidence.md
+│   │   ├── outbound-senders-third-pass-security-evidence.md
+│   │   ├── paid-state-writers-map.md
+│   │   ├── payout-and-escrow-release-evidence.md
+│   │   ├── premium-switch-evidence.md
+│   │   ├── product-file-path-ownership-security-evidence.md
+│   │   ├── proposal-account-merge-otp-template.md
+│   │   ├── proposal-gmail-credential-storage.md
+│   │   ├── proposal-outbound-send-registry.md
+│   │   ├── proposal-thrivefund-pending-pledge-state.md
+│   │   ├── proposal-thrivefund-pledge-authorization-state.md
+│   │   ├── proposal-twilio-spend-controls.md
+│   │   ├── public-checkout-input-evidence.md
+│   │   ├── recording-link-access-security-evidence.md
+│   │   ├── schema-impact-report.md
+│   │   ├── schema-policy-impact-commerce.md
+│   │   ├── schema-policy-impact-meetings.md
+│   │   ├── security-deployment-bundle-e-to-q.md
+│   │   ├── security-deployment-bundle.md
+│   │   ├── security-slices-e-to-i-deployment-runbook.md
+│   │   ├── security-slices-e-to-i-manual-deployment-checklist.md
+│   │   ├── security-slices-e-to-i-release-security-evidence.md
+│   │   ├── share-link-approval-scope-security-evidence.md
+│   │   ├── signed-url-issuers-security-evidence.md
+│   │   ├── stage-recording-consent-evidence.md
+│   │   ├── stage-ticket-evidence.md
+│   │   ├── studio-generators-access-security-evidence.md
+│   │   ├── studio-tell-kreto-free-routing-evidence.md
+│   │   ├── thrivefund-finalizer-verification-evidence.md
+│   │   ├── thrivefund-pledge-request-limits-evidence.md
+│   │   ├── wallet-inflow-evidence.md
+│   │   ├── wallet-transfer-input-evidence.md
+│   │   └── webhook-event-ledger-evidence.md
+│   └── README.md
+├── plugins
+│   ├── campaign-share-pages.ts
+│   ├── event-share-pages.ts
+│   ├── gig-share-pages.ts
+│   ├── magazine-share-pages.ts
+│   ├── profile-share-pages.ts
+│   ├── seo-pages.ts
+│   ├── sitemap-plugin.ts
+│   └── version-plugin.ts
+├── public
+│   ├── email
+│   │   └── kreto-wave.png
+│   ├── videos
+│   │   ├── kreto-passport-poster.jpg
+│   │   ├── kreto-passport.mp4
+│   │   ├── kreto-vertical-poster.jpg
+│   │   ├── kreto-vertical.mp4
+│   │   ├── kretovideo.mp4
+│   │   ├── kretovideo1.mp4
+│   │   ├── kretovideo2.mp4
+│   │   ├── kretovideomatch-poster.jpg
+│   │   └── kretovideomatch.mp4
+│   ├── apple-touch-icon.png
+│   ├── avatar-silhouette.svg
+│   ├── favicon.ico
+│   ├── favicon.png
+│   ├── llms.txt
+│   ├── og-image.png
+│   ├── placeholder.svg
+│   ├── pwa-192x192.png
+│   ├── pwa-512x512.png
+│   ├── robots.txt
+│   ├── sitemap.xml
+│   ├── sw.js
+│   ├── user-outreach-list.csv
+│   └── version.json
+├── remotion
+│   ├── public
+│   │   └── audio
+│   │       └── vo.mp3
+│   ├── scripts
+│   │   ├── render-chunks.mjs
+│   │   └── render-remotion.mjs
+│   ├── src
+│   │   ├── components
+│   │   │   └── UI.tsx
+│   │   ├── scenes
+│   │   │   ├── SceneClaim.tsx
+│   │   │   ├── SceneClose.tsx
+│   │   │   ├── SceneCopilot.tsx
+│   │   │   ├── SceneEPK.tsx
+│   │   │   ├── SceneFund.tsx
+│   │   │   ├── SceneGigs.tsx
+│   │   │   ├── SceneHook.tsx
+│   │   │   ├── SceneInvoice.tsx
+│   │   │   ├── SceneMatch.tsx
+│   │   │   ├── ScenePay.tsx
+│   │   │   ├── SceneProfile.tsx
+│   │   │   ├── SceneRollCall.tsx
+│   │   │   ├── SceneSearch.tsx
+│   │   │   ├── SceneVideoCall.tsx
+│   │   │   ├── SceneVoice.tsx
+│   │   │   └── SceneVouch.tsx
+│   │   ├── MainVideo.tsx
+│   │   ├── Root.tsx
+│   │   ├── index.ts
+│   │   └── theme.ts
+│   ├── .gitignore
+│   ├── CLAUDE.md
+│   ├── README.md
+│   ├── bun.lock
+│   ├── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── scripts
+│   ├── build-hero-kreto-wave.py
+│   └── sanitized-export.sh
+├── security
+│   ├── proposals
+│   │   └── 2026-10-09-opportunity-claim-by-token.md
+│   ├── 2026-10-09-studio-passport-security-audit.md
+│   ├── cron-secret-headers-2026-10-09.sql
+│   ├── edge-deploy-guide-2026-10-09.md
+│   ├── message-attachments-2026-10-11.sql
+│   ├── message-attachments-repair-2026-10-11.sql
+│   ├── rollback-2026-10-09.sql
+│   └── verify-2026-10-09.sql
+├── src
+│   ├── assets
+│   │   ├── brand
+│   │   │   ├── kreto
+│   │   │   │   ├── library
+│   │   │   │   │   ├── announcement.webp
+│   │   │   │   │   ├── campaign.webp
+│   │   │   │   │   ├── celebration.webp
+│   │   │   │   │   ├── event.webp
+│   │   │   │   │   ├── investor-deck.webp
+│   │   │   │   │   ├── landing-hero.webp
+│   │   │   │   │   ├── onboarding.webp
+│   │   │   │   │   ├── product-launch.webp
+│   │   │   │   │   └── social.webp
+│   │   │   │   ├── scenes
+│   │   │   │   │   ├── assistant-thumb.webp
+│   │   │   │   │   ├── assistant.webp
+│   │   │   │   │   ├── bg-dark-thumb.webp
+│   │   │   │   │   ├── bg-dark.webp
+│   │   │   │   │   ├── bg-gradient-thumb.webp
+│   │   │   │   │   ├── bg-gradient.webp
+│   │   │   │   │   ├── bg-light-thumb.webp
+│   │   │   │   │   ├── bg-light.webp
+│   │   │   │   │   ├── coworking-thumb.webp
+│   │   │   │   │   ├── coworking.webp
+│   │   │   │   │   ├── krepay-thumb.webp
+│   │   │   │   │   ├── krepay.webp
+│   │   │   │   │   ├── match-thumb.webp
+│   │   │   │   │   ├── match.webp
+│   │   │   │   │   ├── music-studio-thumb.webp
+│   │   │   │   │   ├── music-studio.webp
+│   │   │   │   │   ├── office-thumb.webp
+│   │   │   │   │   ├── office.webp
+│   │   │   │   │   ├── passport-thumb.webp
+│   │   │   │   │   ├── passport.webp
+│   │   │   │   │   ├── scout-thumb.webp
+│   │   │   │   │   ├── scout.webp
+│   │   │   │   │   ├── soundstages-thumb.webp
+│   │   │   │   │   ├── soundstages.webp
+│   │   │   │   │   ├── studio-thumb.webp
+│   │   │   │   │   ├── studio.webp
+│   │   │   │   │   ├── talent-search-thumb.webp
+│   │   │   │   │   ├── talent-search.webp
+│   │   │   │   │   ├── workspace-thumb.webp
+│   │   │   │   │   └── workspace.webp
+│   │   │   │   ├── small
+│   │   │   │   │   ├── kreto-connector.webp
+│   │   │   │   │   ├── kreto-detective.webp
+│   │   │   │   │   ├── kreto-director.webp
+│   │   │   │   │   ├── kreto-main.webp
+│   │   │   │   │   ├── kreto-producer.webp
+│   │   │   │   │   ├── kreto-publicist.webp
+│   │   │   │   │   └── kreto-scout.webp
+│   │   │   │   ├── hero-wave-hd-arm.webp
+│   │   │   │   ├── hero-wave-hd-body.webp
+│   │   │   │   ├── kreto-connector-cutout.png
+│   │   │   │   ├── kreto-detective-scout.png
+│   │   │   │   ├── kreto-director-mic.png
+│   │   │   │   ├── kreto-flying-left.webp
+│   │   │   │   ├── kreto-flying.webp
+│   │   │   │   ├── kreto-main-cutout.png
+│   │   │   │   ├── kreto-mascot-hero-wave.png
+│   │   │   │   ├── kreto-peek-bottom.webp
+│   │   │   │   ├── kreto-peek-side.webp
+│   │   │   │   ├── kreto-peek-top.webp
+│   │   │   │   ├── kreto-producer-cutout.png
+│   │   │   │   ├── kreto-producer-hd.png
+│   │   │   │   ├── kreto-publicist-cutout.png
+│   │   │   │   └── kreto-scout-cutout.png
+│   │   │   ├── kretopia-k-mark.png.asset.json
+│   │   │   ├── kretopia-lockup.png.asset.json
+│   │   │   └── kretopia-wordmark.png.asset.json
+│   │   ├── kretopia
+│   │   │   ├── chapter-match.jpg
+│   │   │   ├── chapter-passport.jpg
+│   │   │   ├── chapter-scout.jpg
+│   │   │   ├── chapter-soundstages.jpg
+│   │   │   ├── chapter-studio.jpg
+│   │   │   └── match-hd.mp4.asset.json
+│   │   ├── avatar-silhouette.svg
+│   │   ├── hero-creators.jpg
+│   │   ├── kreto-action.jpeg.asset.json
+│   │   ├── kreto-avatar.png
+│   │   ├── kreto-executive-producer.png.asset.json
+│   │   ├── kretopia-hero-portrait.jpg
+│   │   ├── kretopia-hero.jpg
+│   │   ├── logo-black.png
+│   │   ├── logo-white.png
+│   │   ├── meet-kreto.jpeg.asset.json
+│   │   ├── mockup-circle-swipe.png
+│   │   ├── mockup-messages.png
+│   │   ├── mockup-opportunities.png
+│   │   ├── mockup-profile.png
+│   │   ├── mockup-projects.png
+│   │   ├── mockup-wallet.png
+│   │   └── qr-focus-group.png
+│   ├── components
+│   │   ├── __tests__
+│   │   │   └── PWAInstallPrompt.test.tsx
+│   │   ├── account
+│   │   │   ├── DuplicateAccountBanner.tsx
+│   │   │   ├── ManualMergeAccountPanel.tsx
+│   │   │   └── MergeAccountsDialog.tsx
+│   │   ├── admin
+│   │   │   ├── AmbassadorsTab.tsx
+│   │   │   ├── BankTransfersTab.tsx
+│   │   │   ├── BounceRateTab.tsx
+│   │   │   ├── CheckInsTab.tsx
+│   │   │   ├── CreativeActionFunnels.tsx
+│   │   │   ├── DripAnalyticsPanel.tsx
+│   │   │   ├── DripCampaignTab.tsx
+│   │   │   ├── FeedbackTab.tsx
+│   │   │   ├── FounderGrantTab.tsx
+│   │   │   ├── LandingFunnelPanel.tsx
+│   │   │   ├── LocationDialog.tsx
+│   │   │   ├── LocationsTab.tsx
+│   │   │   ├── OutreachTab.tsx
+│   │   │   ├── PartnerSubmissionsTab.tsx
+│   │   │   ├── ProductDashboardTab.tsx
+│   │   │   ├── QRCodeDisplay.tsx
+│   │   │   ├── ScoutFunnelTab.tsx
+│   │   │   ├── UnclaimedProfilesTab.tsx
+│   │   │   ├── UsersTab.tsx
+│   │   │   └── VerificationTab.tsx
+│   │   ├── agent
+│   │   │   ├── __tests__
+│   │   │   │   └── KretoTip.test.tsx
+│   │   │   ├── AgentApprovalCard.tsx
+│   │   │   ├── AgentApprovalsTray.tsx
+│   │   │   ├── AgentModeToggle.tsx
+│   │   │   ├── AgentResultCard.tsx
+│   │   │   ├── ApprovalsHub.tsx
+│   │   │   ├── CopilotCapabilities.tsx
+│   │   │   ├── CopilotPlanCard.tsx
+│   │   │   ├── KretoTip.tsx
+│   │   │   ├── SurfaceProactiveCards.tsx
+│   │   │   ├── ThriveMark.tsx
+│   │   │   └── ThriveSurfaceHeader.tsx
+│   │   ├── ambassador
+│   │   │   └── AmbassadorAttributionVerifier.tsx
+│   │   ├── auth
+│   │   │   ├── AuthBrandingPanel.tsx
+│   │   │   ├── AuthCreatorTeaser.tsx
+│   │   │   ├── ForgotPasswordDialog.tsx
+│   │   │   ├── PasswordResetForm.tsx
+│   │   │   ├── PasswordVisibilityButton.tsx
+│   │   │   ├── SignInForm.tsx
+│   │   │   ├── SignUpWizard.tsx
+│   │   │   └── SocialLoginButtons.tsx
+│   │   ├── brand
+│   │   │   ├── __tests__
+│   │   │   │   ├── KretoCharacter.test.tsx
+│   │   │   │   ├── KretoLabel.test.tsx
+│   │   │   │   ├── KretoPresence.test.tsx
+│   │   │   │   ├── KretoScene.test.tsx
+│   │   │   │   ├── KretoTyping.test.tsx
+│   │   │   │   └── SceneBanner.test.tsx
+│   │   │   ├── BrandDots.tsx
+│   │   │   ├── KGradientDefs.tsx
+│   │   │   ├── KretoAvatar.tsx
+│   │   │   ├── KretoCharacter.tsx
+│   │   │   ├── KretoLabel.tsx
+│   │   │   ├── KretoMark.tsx
+│   │   │   ├── KretoPresence.tsx
+│   │   │   ├── KretoScene.tsx
+│   │   │   ├── KretoTyping.tsx
+│   │   │   ├── KretopiaLoader.tsx
+│   │   │   ├── KretopiaQRCode.tsx
+│   │   │   ├── SceneBanner.tsx
+│   │   │   └── kretoScenes.ts
+│   │   ├── brand-vault
+│   │   │   ├── BrandVaultChip.tsx
+│   │   │   └── BrandVaultEditor.tsx
+│   │   ├── calls
+│   │   │   ├── AdmitQueue.tsx
+│   │   │   ├── CallHistoryPanel.tsx
+│   │   │   ├── CallPreflightGate.tsx
+│   │   │   ├── CallRecapSheet.tsx
+│   │   │   ├── CallStartChooser.tsx
+│   │   │   ├── GlobalIncomingCall.tsx
+│   │   │   ├── GlobalVideoCallHost.tsx
+│   │   │   ├── Greenroom.tsx
+│   │   │   ├── IncomingCallModal.tsx
+│   │   │   ├── MeetingReadySheet.tsx
+│   │   │   ├── QuickCallButton.tsx
+│   │   │   ├── RecentRecordingsRail.tsx
+│   │   │   ├── RecordingReplayDialog.tsx
+│   │   │   ├── RoomKnockToast.tsx
+│   │   │   ├── StartMeetingDialog.tsx
+│   │   │   ├── VibeCheckPrompt.tsx
+│   │   │   └── WatchReplayButton.tsx
+│   │   ├── circle
+│   │   │   ├── __tests__
+│   │   │   │   └── TierRewardsList.test.tsx
+│   │   │   ├── hub
+│   │   │   │   ├── CircleAboutTab.tsx
+│   │   │   │   ├── CircleEventsTab.tsx
+│   │   │   │   ├── CircleFeedTab.tsx
+│   │   │   │   ├── CircleHubHeader.tsx
+│   │   │   │   ├── CircleLibraryTab.tsx
+│   │   │   │   ├── CircleMediaTab.tsx
+│   │   │   │   ├── CircleOverviewTab.tsx
+│   │   │   │   ├── CircleProjectsTab.tsx
+│   │   │   │   ├── CircleStagesTab.tsx
+│   │   │   │   ├── CircleStudiosTab.tsx
+│   │   │   │   └── CircleWelcomeModal.tsx
+│   │   │   ├── AIStageBriefGenerator.tsx
+│   │   │   ├── ApplyToStageSheet.tsx
+│   │   │   ├── CallSheetUpcoming.tsx
+│   │   │   ├── CircleActivityDigest.tsx
+│   │   │   ├── CircleAdminPanel.tsx
+│   │   │   ├── CircleCard.tsx
+│   │   │   ├── CircleInviteTools.tsx
+│   │   │   ├── CircleMemberDirectory.tsx
+│   │   │   ├── CircleMessageBubble.tsx
+│   │   │   ├── CirclePollCreator.tsx
+│   │   │   ├── ConnectionInsightCard.tsx
+│   │   │   ├── ConnectionList.tsx
+│   │   │   ├── CreateStageSheet.tsx
+│   │   │   ├── CuratedStagesRail.tsx
+│   │   │   ├── DegreeBadge.tsx
+│   │   │   ├── DegreeExplorerDrawer.tsx
+│   │   │   ├── EmptyMatchState.tsx
+│   │   │   ├── GoLiveSheet.tsx
+│   │   │   ├── IndustryMap.tsx
+│   │   │   ├── InviteToStageDialog.tsx
+│   │   │   ├── LiveCallsPanel.tsx
+│   │   │   ├── MatchFeed.tsx
+│   │   │   ├── NetworkHealthScore.tsx
+│   │   │   ├── NetworkReachStats.tsx
+│   │   │   ├── NetworkVisualization.tsx
+│   │   │   ├── OpportunitiesFeed.tsx
+│   │   │   ├── PathFinder.tsx
+│   │   │   ├── ProfilePreviewDialog.tsx
+│   │   │   ├── SoundStageRoom.tsx
+│   │   │   ├── SoundStagesRail.tsx
+│   │   │   ├── SpeedActionRail.tsx
+│   │   │   ├── SpeedHostCockpit.tsx
+│   │   │   ├── SpeedLobby.tsx
+│   │   │   ├── SpeedRoundTimer.tsx
+│   │   │   ├── SpeedSessionCreateDialog.tsx
+│   │   │   ├── StageCard.tsx
+│   │   │   ├── StageDoorsCountdown.tsx
+│   │   │   ├── StageGrid.tsx
+│   │   │   ├── StageHostConsole.tsx
+│   │   │   ├── StagePrimaryCard.tsx
+│   │   │   ├── SwipeFilters.tsx
+│   │   │   └── TierRewardsList.tsx
+│   │   ├── clients
+│   │   │   ├── AIAddClientCard.tsx
+│   │   │   ├── ClientFormDialog.tsx
+│   │   │   └── ProjectClientChip.tsx
+│   │   ├── company
+│   │   │   ├── __tests__
+│   │   │   │   └── CompanyWorkspaceActions.test.tsx
+│   │   │   ├── CompanyModeBadge.tsx
+│   │   │   └── CompanyWorkspaceActions.tsx
+│   │   ├── connections
+│   │   │   └── ConnectionRequestActions.tsx
+│   │   ├── creator-site
+│   │   │   ├── blocks
+│   │   │   │   ├── BlockEditor.tsx
+│   │   │   │   ├── BlockRenderer.tsx
+│   │   │   │   └── BlockTypes.ts
+│   │   │   ├── AIWebsiteGenerator.tsx
+│   │   │   ├── AgencyTemplate.tsx
+│   │   │   ├── ArtistShowcaseTemplate.tsx
+│   │   │   ├── BoldElectricTemplate.tsx
+│   │   │   ├── CreativeDirectorTemplate.tsx
+│   │   │   ├── FullScreenSiteEditor.tsx
+│   │   │   ├── MinimalCleanTemplate.tsx
+│   │   │   ├── MinimalEditorialTemplate.tsx
+│   │   │   ├── PhotographerTemplate.tsx
+│   │   │   ├── PortfolioMosaicTemplate.tsx
+│   │   │   ├── ProducerTemplate.tsx
+│   │   │   ├── SiteAnalyticsDashboard.tsx
+│   │   │   ├── SitePreviewPanel.tsx
+│   │   │   ├── SiteSetupWizard.tsx
+│   │   │   └── templateConfig.ts
+│   │   ├── credits
+│   │   │   ├── __tests__
+│   │   │   │   ├── CreditsOverviewCard.test.tsx
+│   │   │   │   └── CreditsStampsPanel.test.tsx
+│   │   │   ├── AnimatedNumber.tsx
+│   │   │   ├── CreditsAIInsights.tsx
+│   │   │   ├── CreditsActivityTimeline.tsx
+│   │   │   ├── CreditsHireMePanel.tsx
+│   │   │   ├── CreditsIdentityPanel.tsx
+│   │   │   ├── CreditsOverviewCard.tsx
+│   │   │   ├── CreditsPermissionState.tsx
+│   │   │   ├── CreditsPrimitives.tsx
+│   │   │   ├── CreditsSectionNav.tsx
+│   │   │   ├── CreditsStampsPanel.tsx
+│   │   │   ├── EvidenceStateBadge.tsx
+│   │   │   ├── PersonalCreditsSearch.tsx
+│   │   │   └── RecordRing.tsx
+│   │   ├── dashboard
+│   │   │   ├── AITalentSuggestions.tsx
+│   │   │   ├── CompanyHiringDashboard.tsx
+│   │   │   ├── DailyGoals.tsx
+│   │   │   ├── EngagementNudge.tsx
+│   │   │   ├── InviteCard.tsx
+│   │   │   ├── LeaderboardWidget.tsx
+│   │   │   ├── LevelBadge.tsx
+│   │   │   ├── LevelUpCelebration.tsx
+│   │   │   ├── SmartSuggestions.tsx
+│   │   │   ├── StreakCalendar.tsx
+│   │   │   ├── StreakCard.tsx
+│   │   │   └── SuccessMetrics.tsx
+│   │   ├── desk
+│   │   │   ├── DeskCommandPalette.tsx
+│   │   │   ├── DesktopCopilotRail.tsx
+│   │   │   ├── ThriveAgentFab.tsx
+│   │   │   ├── TodayStrip.tsx
+│   │   │   ├── VoiceCommandSheet.tsx
+│   │   │   └── WrapMyWeekSheet.tsx
+│   │   ├── discover
+│   │   │   ├── __tests__
+│   │   │   │   ├── BrowseCreatorsReasons.test.tsx
+│   │   │   │   ├── HingeStyleCard.test.tsx
+│   │   │   │   └── MatchExplanationDialog.test.tsx
+│   │   │   ├── AIMatchBadge.tsx
+│   │   │   ├── AIOpportunityInsights.tsx
+│   │   │   ├── BrowseCreators.tsx
+│   │   │   ├── HingeStyleCard.tsx
+│   │   │   ├── MatchCelebrationDialog.tsx
+│   │   │   ├── MatchExplanationDialog.tsx
+│   │   │   ├── NearbyInline.tsx
+│   │   │   └── TrendingLane.tsx
+│   │   ├── earnings
+│   │   │   ├── EarningsBreakdownChart.tsx
+│   │   │   └── IncomeGoalTracker.tsx
+│   │   ├── epk
+│   │   │   ├── EPKPdfEditor.tsx
+│   │   │   ├── EPKReviews.tsx
+│   │   │   └── EPKShareToolbar.tsx
+│   │   ├── features
+│   │   │   ├── __tests__
+│   │   │   │   ├── CinematicHeaderPlate.test.tsx
+│   │   │   │   └── FeaturePageHeader.scene.test.tsx
+│   │   │   ├── CinematicHeaderPlate.tsx
+│   │   │   ├── FeatureAITutorial.tsx
+│   │   │   ├── FeaturePageHeader.tsx
+│   │   │   ├── FeatureTutorialDialogContent.tsx
+│   │   │   └── publicFeatureTutorials.ts
+│   │   ├── feed
+│   │   │   ├── AwardActivityCard.tsx
+│   │   │   ├── CreatePostDialog.tsx
+│   │   │   ├── CreditActivityCard.tsx
+│   │   │   ├── FeedPost.tsx
+│   │   │   ├── PortfolioItemCard.tsx
+│   │   │   └── PressActivityCard.tsx
+│   │   ├── founding
+│   │   │   └── FoundingMemberCard.tsx
+│   │   ├── home
+│   │   │   ├── DailyBriefingCard.tsx
+│   │   │   ├── EventsNearYouSection.tsx
+│   │   │   ├── MorningPulse.tsx
+│   │   │   ├── NewMemberStarterCard.tsx
+│   │   │   ├── OpportunityIntelCard.tsx
+│   │   │   ├── PersonaCardsRow.tsx
+│   │   │   ├── ProfileHubCard.tsx
+│   │   │   ├── RecentIntentsDrawer.tsx
+│   │   │   ├── SpeedTonightCard.tsx
+│   │   │   ├── SpotlightFeedRow.tsx
+│   │   │   ├── StartCircleNudgeCard.tsx
+│   │   │   ├── StreakChipsRow.tsx
+│   │   │   ├── ThriveFundFeedRow.tsx
+│   │   │   ├── ThrivePromptHero.tsx
+│   │   │   ├── TodaySectionShell.tsx
+│   │   │   ├── UnifiedHome.tsx
+│   │   │   ├── UpcomingSessionsCard.tsx
+│   │   │   └── WeeklyIntentCard.tsx
+│   │   ├── icdb
+│   │   │   ├── BrandVerificationRequest.tsx
+│   │   │   ├── BulkProjectSubmission.tsx
+│   │   │   ├── CreatorIDCard.tsx
+│   │   │   ├── CreditGraph.tsx
+│   │   │   ├── CrossPlatformImport.tsx
+│   │   │   └── RoleTaxonomy.tsx
+│   │   ├── import
+│   │   │   ├── ConnectStep.tsx
+│   │   │   ├── KretoSuggestions.tsx
+│   │   │   ├── MappingStep.tsx
+│   │   │   ├── ProgressStep.tsx
+│   │   │   ├── ProviderPicker.tsx
+│   │   │   └── ScopeStep.tsx
+│   │   ├── inbox
+│   │   │   └── HotLeadsStrip.tsx
+│   │   ├── intent
+│   │   │   ├── IntentBadge.tsx
+│   │   │   └── IntentPicker.tsx
+│   │   ├── kreto
+│   │   │   ├── __tests__
+│   │   │   │   ├── InlineKretoChat.test.tsx
+│   │   │   │   └── KretoLauncher.test.tsx
+│   │   │   ├── InlineKretoChat.tsx
+│   │   │   ├── KretoConversationHistory.tsx
+│   │   │   ├── KretoFab.tsx
+│   │   │   ├── KretoLauncher.tsx
+│   │   │   ├── Kreto_06_Waving.webp
+│   │   │   ├── Kreto_06_Waving_arm.webp
+│   │   │   ├── Kreto_06_Waving_body.webp
+│   │   │   └── Kreto_06_Waving_poster.webp
+│   │   ├── kretopia
+│   │   │   ├── __tests__
+│   │   │   │   └── SpotlightBoard.test.tsx
+│   │   │   ├── CardCarousel.tsx
+│   │   │   ├── CreditsBoard.tsx
+│   │   │   ├── EditorialChapter.tsx
+│   │   │   ├── EditorialPageHero.tsx
+│   │   │   ├── EditorialTutorialSection.tsx
+│   │   │   ├── Reveal.tsx
+│   │   │   ├── SpotlightBoard.tsx
+│   │   │   └── pageVisuals.tsx
+│   │   ├── landing
+│   │   │   ├── __tests__
+│   │   │   │   ├── KretopiaHero.test.tsx
+│   │   │   │   ├── kretoFlightFlips.test.ts
+│   │   │   │   └── kretoFlightPath.test.ts
+│   │   │   ├── kretopia
+│   │   │   │   ├── __tests__
+│   │   │   │   │   └── ChapterProgressNav.test.tsx
+│   │   │   │   ├── ChapterProgressNav.tsx
+│   │   │   │   ├── ChapterSection.tsx
+│   │   │   │   ├── EditorialFooter.tsx
+│   │   │   │   ├── FeatureTutorial.tsx
+│   │   │   │   ├── FeatureTutorialPanel.tsx
+│   │   │   │   ├── FixedProgressiveCard.tsx
+│   │   │   │   ├── ForOrganisationsSection.tsx
+│   │   │   │   ├── InlineSignupBar.tsx
+│   │   │   │   ├── KretoLandingFlight.tsx
+│   │   │   │   ├── KretopiaFeatureTutorial.tsx
+│   │   │   │   ├── LandingBelowFold.tsx
+│   │   │   │   ├── MeetKretoSection.tsx
+│   │   │   │   ├── ProductLoopSection.tsx
+│   │   │   │   ├── ScrollToTopButton.tsx
+│   │   │   │   ├── TutorialStepper.tsx
+│   │   │   │   ├── VerifiedCreditsChapterSection.tsx
+│   │   │   │   ├── chapterRegistry.ts
+│   │   │   │   ├── featureVisuals.tsx
+│   │   │   │   ├── kretoFlightPath.ts
+│   │   │   │   ├── tutorialContent.ts
+│   │   │   │   └── visualShell.tsx
+│   │   │   ├── AIMatchingShowcase.tsx
+│   │   │   ├── AccountingSuiteSection.tsx
+│   │   │   ├── BeforeAfterSection.tsx
+│   │   │   ├── BottomCTASection.tsx
+│   │   │   ├── ClaimYourCreditsSection.tsx
+│   │   │   ├── ComparisonTableSection.tsx
+│   │   │   ├── CoreValueBlocks.tsx
+│   │   │   ├── CreatorDashboardSection.tsx
+│   │   │   ├── DiscoverCreativesRow.tsx
+│   │   │   ├── EarnCard.tsx
+│   │   │   ├── FAQSection.tsx
+│   │   │   ├── FeatureCard.tsx
+│   │   │   ├── HeroPhoneCarousel.tsx
+│   │   │   ├── HowItWorksSection.tsx
+│   │   │   ├── ICDBSection.tsx
+│   │   │   ├── KretopiaHero.tsx
+│   │   │   ├── KretopiaLanding.tsx
+│   │   │   ├── LandingFunnelTracker.tsx
+│   │   │   ├── LiveCreatorPreview.tsx
+│   │   │   ├── LiveGigsStrip.tsx
+│   │   │   ├── OAuthQuickButtons.tsx
+│   │   │   ├── PartnerBenefitsSection.tsx
+│   │   │   ├── PortfolioShowcase.tsx
+│   │   │   ├── PostOpportunitySection.tsx
+│   │   │   ├── PricingCard.tsx
+│   │   │   ├── PricingPreviewSection.tsx
+│   │   │   ├── ProductReelSection.tsx
+│   │   │   ├── ProductSectionDesk.tsx
+│   │   │   ├── ProductSectionMatch.tsx
+│   │   │   ├── ProductSectionPay.tsx
+│   │   │   ├── ProductSectionThrive.tsx
+│   │   │   ├── ProfessionalProfileShowcase.tsx
+│   │   │   ├── SocialProofSection.tsx
+│   │   │   ├── StickyMobileCTA.tsx
+│   │   │   ├── ThriveDeskShowcase.tsx
+│   │   │   ├── ThriveFundShowcase.tsx
+│   │   │   ├── ThriveFundTeaserCard.tsx
+│   │   │   ├── VisualProofCard.tsx
+│   │   │   ├── WaitlistForm.tsx
+│   │   │   └── WhyCreatorsChooseSection.tsx
+│   │   ├── legal
+│   │   │   └── ContractDisclaimer.tsx
+│   │   ├── marketplace
+│   │   │   ├── CreateListingDialog.tsx
+│   │   │   ├── ListingImageUpload.tsx
+│   │   │   └── ProductFileUpload.tsx
+│   │   ├── match
+│   │   │   ├── MatchActionSheet.tsx
+│   │   │   ├── TalentCopilot.tsx
+│   │   │   └── index.ts
+│   │   ├── media
+│   │   │   ├── MediaImage.tsx
+│   │   │   └── PersonAvatar.tsx
+│   │   ├── meetup
+│   │   │   ├── BlastComposerDialog.tsx
+│   │   │   └── TicketPurchaseDialog.tsx
+│   │   ├── membership
+│   │   │   ├── CheckInMethodDialog.tsx
+│   │   │   ├── DigitalMembershipCard.tsx
+│   │   │   ├── LocationCard.tsx
+│   │   │   ├── MembershipMap.tsx
+│   │   │   ├── NFCScanner.tsx
+│   │   │   ├── PartnerCard.tsx
+│   │   │   ├── QRScanner.tsx
+│   │   │   ├── SubscriptionComparison.tsx
+│   │   │   ├── TierBenefitsComparison.tsx
+│   │   │   ├── TierComparison.tsx
+│   │   │   └── TierProgressCard.tsx
+│   │   ├── messages
+│   │   │   ├── CreateGroupDialog.tsx
+│   │   │   ├── GroupChatPanel.tsx
+│   │   │   ├── GroupsList.tsx
+│   │   │   ├── IceBreakers.tsx
+│   │   │   ├── ImageLightbox.tsx
+│   │   │   ├── MessageAttachments.tsx
+│   │   │   ├── MessageReactions.tsx
+│   │   │   ├── MessageReply.tsx
+│   │   │   ├── MessageRequests.tsx
+│   │   │   ├── MessagesDrawer.tsx
+│   │   │   ├── OnlinePresence.tsx
+│   │   │   ├── ShareToMessageDialog.tsx
+│   │   │   ├── SharedContentCard.tsx
+│   │   │   ├── TypingIndicator.tsx
+│   │   │   └── VoiceNoteRecorder.tsx
+│   │   ├── nav
+│   │   │   └── KretopiaBottomNav.tsx
+│   │   ├── navigation
+│   │   │   └── PageBackButton.tsx
+│   │   ├── nearby
+│   │   │   ├── AddCreativeLocationDialog.tsx
+│   │   │   ├── AtlasFilterTabs.tsx
+│   │   │   ├── AtlasSearchBar.tsx
+│   │   │   ├── ClaimLocationDialog.tsx
+│   │   │   ├── LocationBookingDialog.tsx
+│   │   │   ├── LocationDetailDialog.tsx
+│   │   │   ├── LocationListItem.tsx
+│   │   │   ├── LocationPrivacySelect.tsx
+│   │   │   ├── LocationReviewHelpful.tsx
+│   │   │   ├── NearbyControls.tsx
+│   │   │   ├── NearbyCreatorCard.tsx
+│   │   │   ├── NearbyCreatorsMap.tsx
+│   │   │   ├── NearbySessionListItem.tsx
+│   │   │   ├── NearbySidebar.tsx
+│   │   │   ├── ReviewPhotoUpload.tsx
+│   │   │   ├── SeedLocationsDialog.tsx
+│   │   │   ├── SuggestCategoryDialog.tsx
+│   │   │   └── UnifiedNearbyMap.tsx
+│   │   ├── notifications
+│   │   │   └── SmartNudgeBanner.tsx
+│   │   ├── onboarding
+│   │   │   ├── claim-flow
+│   │   │   │   ├── ClaimedProfileGlow.tsx
+│   │   │   │   ├── CreditThumb.tsx
+│   │   │   │   ├── DisambiguationStep.tsx
+│   │   │   │   ├── EmailSaveStep.tsx
+│   │   │   │   ├── OptionalFaceVerifyStep.tsx
+│   │   │   │   ├── ProfilePreviewStep.tsx
+│   │   │   │   ├── ProfileRevealStep.tsx
+│   │   │   │   ├── SearchOrPasteStep.tsx
+│   │   │   │   ├── StudioComingAliveLoader.tsx
+│   │   │   │   ├── UniversalClaimFlow.tsx
+│   │   │   │   ├── VerifyMatchesStep.tsx
+│   │   │   │   ├── profileFallbacks.ts
+│   │   │   │   └── types.ts
+│   │   │   ├── AIProfileDiscoveryStep.tsx
+│   │   │   ├── AddPortfolioStep.tsx
+│   │   │   ├── ConnectionSuccessStep.tsx
+│   │   │   ├── FirstStampReveal.tsx
+│   │   │   ├── FirstWinSheet.tsx
+│   │   │   ├── FunnelStepper.tsx
+│   │   │   ├── GetStartedChecklist.tsx
+│   │   │   ├── InteractiveOnboarding.tsx
+│   │   │   ├── MatchedProfilesStep.tsx
+│   │   │   ├── OnboardingTooltip.tsx
+│   │   │   ├── OnboardingXPCounter.tsx
+│   │   │   ├── ProfileLaunchScreen.tsx
+│   │   │   ├── VibePicker.tsx
+│   │   │   └── WorkspacePreviewStep.tsx
+│   │   ├── opportunity
+│   │   │   ├── __tests__
+│   │   │   │   └── ScoutedGigsSection.test.tsx
+│   │   │   ├── AIJobDescriptionGenerator.tsx
+│   │   │   ├── ApplicantPipeline.tsx
+│   │   │   ├── BookmarkButton.tsx
+│   │   │   ├── CastingCallsRail.tsx
+│   │   │   ├── CastingFieldsForm.tsx
+│   │   │   ├── CompBoard.tsx
+│   │   │   ├── EasyApplyButton.tsx
+│   │   │   ├── GigCard.tsx
+│   │   │   ├── GigRailCard.tsx
+│   │   │   ├── OpportunityAnalytics.tsx
+│   │   │   ├── SavedOpportunitiesDialog.tsx
+│   │   │   ├── ScoutEvidence.tsx
+│   │   │   ├── ScoutGigDialog.tsx
+│   │   │   ├── ScoutPreferencesDialog.tsx
+│   │   │   ├── ScoutedGigsSection.tsx
+│   │   │   └── ShortlistedGigs.tsx
+│   │   ├── orders
+│   │   │   ├── BuyerOrderCard.tsx
+│   │   │   ├── OrderStatusBadge.tsx
+│   │   │   └── SellerOrderCard.tsx
+│   │   ├── passport
+│   │   │   ├── __tests__
+│   │   │   │   ├── PassportDirectoryCard.test.tsx
+│   │   │   │   ├── PassportKretoEntry.test.tsx
+│   │   │   │   ├── PassportPreviewCard.test.tsx
+│   │   │   │   ├── PassportSmartActions.test.tsx
+│   │   │   │   ├── PublicPassportHero.test.tsx
+│   │   │   │   └── RoleStamp.test.tsx
+│   │   │   ├── model
+│   │   │   │   ├── CompCardPreview.tsx
+│   │   │   │   ├── ModelStatsEditor.tsx
+│   │   │   │   ├── ModelStrip.tsx
+│   │   │   │   └── SocialFeedIngest.tsx
+│   │   │   ├── BookedThisMonthChip.tsx
+│   │   │   ├── HireMeTrustBar.tsx
+│   │   │   ├── HoloCard.tsx
+│   │   │   ├── KretoActionCenter.tsx
+│   │   │   ├── KretoPassportBuilder.tsx
+│   │   │   ├── LevelUpCard.tsx
+│   │   │   ├── PassportAnchorStrip.tsx
+│   │   │   ├── PassportCommandCenter.tsx
+│   │   │   ├── PassportCreditsCta.tsx
+│   │   │   ├── PassportDirectoryCard.tsx
+│   │   │   ├── PassportHero.tsx
+│   │   │   ├── PassportHiringGlance.tsx
+│   │   │   ├── PassportKretoEntry.tsx
+│   │   │   ├── PassportLoader.tsx
+│   │   │   ├── PassportMomentum.tsx
+│   │   │   ├── PassportOverview.tsx
+│   │   │   ├── PassportPreviewCard.tsx
+│   │   │   ├── PassportShareSheet.tsx
+│   │   │   ├── PassportSmartActions.tsx
+│   │   │   ├── PublicPassportHero.tsx
+│   │   │   ├── RecentlyWorkedWith.tsx
+│   │   │   ├── ReplySLABadge.tsx
+│   │   │   ├── RoleStamp.tsx
+│   │   │   ├── TaggedCreditsClaimCTA.tsx
+│   │   │   ├── ThriveRemembersChip.tsx
+│   │   │   └── TrustOpportunityCenter.tsx
+│   │   ├── perks
+│   │   │   ├── __tests__
+│   │   │   │   └── PerkTierCard.test.tsx
+│   │   │   └── PerkTierCard.tsx
+│   │   ├── product
+│   │   │   ├── ProductDetailDialog.tsx
+│   │   │   ├── ProductReviewDialog.tsx
+│   │   │   ├── ProductReviewsList.tsx
+│   │   │   └── PurchaseProductDialog.tsx
+│   │   ├── profile
+│   │   │   ├── __tests__
+│   │   │   │   ├── AchievementCardProof.test.tsx
+│   │   │   │   ├── BrandPassportHero.test.tsx
+│   │   │   │   ├── CreditsSectionFocus.test.tsx
+│   │   │   │   ├── FinishProfileBanner.test.tsx
+│   │   │   │   ├── ProfileQRDialog.test.tsx
+│   │   │   │   ├── PublicProfileWrapped.test.tsx
+│   │   │   │   └── SocialStatsInline.test.tsx
+│   │   │   ├── AIProfileEnhancer.tsx
+│   │   │   ├── AboutSection.tsx
+│   │   │   ├── AchievementBadges.tsx
+│   │   │   ├── AchievementCard.tsx
+│   │   │   ├── AddDigitalProductDialog.tsx
+│   │   │   ├── AudioWaveformPlayer.tsx
+│   │   │   ├── AvailabilityCalendarSection.tsx
+│   │   │   ├── AvailabilityIndicator.tsx
+│   │   │   ├── AwardsSection.tsx
+│   │   │   ├── BlockchainVerifiedBadge.tsx
+│   │   │   ├── BookingWindowsCard.tsx
+│   │   │   ├── BrandPassportHero.tsx
+│   │   │   ├── ClaimContinueBanner.tsx
+│   │   │   ├── ClaimProfileDialog.tsx
+│   │   │   ├── CoSignsSection.tsx
+│   │   │   ├── CollabIntentSelector.tsx
+│   │   │   ├── CollaborationHistory.tsx
+│   │   │   ├── CompanyProfileEditDialog.tsx
+│   │   │   ├── CompanyProfileView.tsx
+│   │   │   ├── ConnectPlatformsCard.tsx
+│   │   │   ├── CreateServiceDialog.tsx
+│   │   │   ├── CreativeCircleBadge.tsx
+│   │   │   ├── CredentialVerificationCard.tsx
+│   │   │   ├── CreditCoverPlaceholder.tsx
+│   │   │   ├── CreditEndorsementDialog.tsx
+│   │   │   ├── CreditScore.tsx
+│   │   │   ├── CreditVerificationPanel.tsx
+│   │   │   ├── CreditsSection.tsx
+│   │   │   ├── CustomProjectRequestDialog.tsx
+│   │   │   ├── DigitalProductsSection.tsx
+│   │   │   ├── DiscoveriesInbox.tsx
+│   │   │   ├── EmbeddableCreditsWidget.tsx
+│   │   │   ├── ExperienceTimeline.tsx
+│   │   │   ├── FinishProfileBanner.tsx
+│   │   │   ├── ICDBCreditForm.tsx
+│   │   │   ├── ICDBTimeline.tsx
+│   │   │   ├── ImportFromWebsiteDialog.tsx
+│   │   │   ├── ImportReviewBanner.tsx
+│   │   │   ├── IndustryStatsSection.tsx
+│   │   │   ├── InviteCodesCard.tsx
+│   │   │   ├── LeaveCompanyReviewDialog.tsx
+│   │   │   ├── MediaPlayerModal.tsx
+│   │   │   ├── NotificationSettings.tsx
+│   │   │   ├── PendingDiscoveriesDialog.tsx
+│   │   │   ├── PlatformConnectionCard.tsx
+│   │   │   ├── PortfolioAnalytics.tsx
+│   │   │   ├── PortfolioGrid.tsx
+│   │   │   ├── PortfolioSection.tsx
+│   │   │   ├── PressLinksSection.tsx
+│   │   │   ├── ProTrialBanner.tsx
+│   │   │   ├── ProfileActions.tsx
+│   │   │   ├── ProfileCompletionProgress.tsx
+│   │   │   ├── ProfileDashboardDrawer.tsx
+│   │   │   ├── ProfileEditDialog.tsx
+│   │   │   ├── ProfileOptimizationHub.tsx
+│   │   │   ├── ProfileQRDialog.tsx
+│   │   │   ├── ProfileQuickNav.tsx
+│   │   │   ├── ProfileRatingSummary.tsx
+│   │   │   ├── ProfileShareModal.tsx
+│   │   │   ├── ProfileStrengthBar.tsx
+│   │   │   ├── ProfileStrengthScore.tsx
+│   │   │   ├── ProfileVisibilityDashboard.tsx
+│   │   │   ├── PublicProfileWrapped.tsx
+│   │   │   ├── PushNotificationsInfo.tsx
+│   │   │   ├── RateCardSection.tsx
+│   │   │   ├── RefreshUniverseButton.tsx
+│   │   │   ├── RescanAllLinksCard.tsx
+│   │   │   ├── ReviewsSection.tsx
+│   │   │   ├── SaveToShortlistButton.tsx
+│   │   │   ├── ScoutDiscoveryBanner.tsx
+│   │   │   ├── ServicePackagesSection.tsx
+│   │   │   ├── SettingsTab.tsx
+│   │   │   ├── ShareProfileDialog.tsx
+│   │   │   ├── ShareUnclaimedProfileDialog.tsx
+│   │   │   ├── ShareableCreatorCard.tsx
+│   │   │   ├── ShareableProfileCard.tsx
+│   │   │   ├── SkillsSection.tsx
+│   │   │   ├── SkillsVerification.tsx
+│   │   │   ├── SocialLinksSection.tsx
+│   │   │   ├── SocialStatsInline.tsx
+│   │   │   ├── SocialStatsSection.tsx
+│   │   │   ├── StorageUsageCard.tsx
+│   │   │   ├── SubRolesPicker.tsx
+│   │   │   ├── SubscriptionPromptCard.tsx
+│   │   │   ├── TestimonialsSection.tsx
+│   │   │   ├── TrustSignals.tsx
+│   │   │   ├── UnclaimedProfileSuggestion.tsx
+│   │   │   ├── UnifiedWorkHistory.tsx
+│   │   │   ├── VerificationAppealDialog.tsx
+│   │   │   ├── VerificationBadge.tsx
+│   │   │   ├── VerificationProgress.tsx
+│   │   │   ├── VerificationProgressModal.tsx
+│   │   │   ├── VerificationReportCard.tsx
+│   │   │   ├── VerifiedCreditsSection.tsx
+│   │   │   ├── VideoIntroSection.tsx
+│   │   │   ├── VideoThumbnailPicker.tsx
+│   │   │   ├── ViewProfileTabs.tsx
+│   │   │   ├── WalletSection.tsx
+│   │   │   ├── WhoViewedProfile.tsx
+│   │   │   └── WorkWithMeSection.tsx
+│   │   ├── project
+│   │   │   ├── __tests__
+│   │   │   │   ├── MilestoneBoard.payee.test.tsx
+│   │   │   │   └── ProjectNotes.continuity.test.tsx
+│   │   │   ├── board
+│   │   │   │   ├── AssigneePicker.tsx
+│   │   │   │   └── notifyAssignee.ts
+│   │   │   ├── chat
+│   │   │   │   ├── ChatActionChips.tsx
+│   │   │   │   └── ChatAttachment.tsx
+│   │   │   ├── contracts
+│   │   │   │   ├── ContractBuilder.tsx
+│   │   │   │   ├── ContractViewer.tsx
+│   │   │   │   └── ContractsList.tsx
+│   │   │   ├── expense
+│   │   │   │   ├── AIFinanceInsights.tsx
+│   │   │   │   ├── ExpenseCategories.ts
+│   │   │   │   ├── ExpenseForm.tsx
+│   │   │   │   ├── ExpenseList.tsx
+│   │   │   │   └── SpendingAnalytics.tsx
+│   │   │   ├── files
+│   │   │   │   ├── FileBrowser.tsx
+│   │   │   │   ├── FilePreviewDialog.tsx
+│   │   │   │   ├── FileThumbnail.tsx
+│   │   │   │   ├── ImportLinkDialog.tsx
+│   │   │   │   └── ResumableUploadList.tsx
+│   │   │   ├── finance
+│   │   │   │   ├── AgentFinanceSummary.tsx
+│   │   │   │   ├── FinanceHub.tsx
+│   │   │   │   ├── MarkPaidBankTransferDialog.tsx
+│   │   │   │   └── PaymentRequestsReview.tsx
+│   │   │   ├── flow
+│   │   │   │   ├── NextStepBar.tsx
+│   │   │   │   └── ProjectFlowTimeline.tsx
+│   │   │   ├── invoice
+│   │   │   │   ├── AIMarkupHelper.tsx
+│   │   │   │   ├── InvoiceBrandingForm.tsx
+│   │   │   │   ├── InvoicePaymentForm.tsx
+│   │   │   │   ├── InvoicePreview.tsx
+│   │   │   │   └── PricingCoPilot.tsx
+│   │   │   ├── mobile
+│   │   │   │   ├── MobileProjectHub.tsx
+│   │   │   │   └── VoiceTaskCapture.tsx
+│   │   │   ├── schedule
+│   │   │   │   └── ScheduleWorkspace.tsx
+│   │   │   ├── studio
+│   │   │   │   ├── __tests__
+│   │   │   │   │   ├── StudioActivitySummary.test.tsx
+│   │   │   │   │   ├── StudioCreateHero.test.tsx
+│   │   │   │   │   ├── StudioCreatedAcknowledgement.test.tsx
+│   │   │   │   │   ├── StudioFoldersBar.test.tsx
+│   │   │   │   │   ├── StudioOutcomeComposer.test.tsx
+│   │   │   │   │   ├── StudioProjectsDashboard.test.tsx
+│   │   │   │   │   ├── StudioPulse.test.tsx
+│   │   │   │   │   ├── StudioStages.test.tsx
+│   │   │   │   │   ├── StudioWrapped.test.tsx
+│   │   │   │   │   ├── VoiceFirstCreateModal.test.tsx
+│   │   │   │   │   └── studioHome.selectors.test.ts
+│   │   │   │   ├── AddCreditSection.tsx
+│   │   │   │   ├── AutopilotProjectGuide.tsx
+│   │   │   │   ├── BriefDropZone.tsx
+│   │   │   │   ├── BriefSection.tsx
+│   │   │   │   ├── BriefVoiceRecorder.tsx
+│   │   │   │   ├── CallHistorySection.tsx
+│   │   │   │   ├── CampaignStudioSection.tsx
+│   │   │   │   ├── ContentStudioSection.tsx
+│   │   │   │   ├── DeliverableCommentsSheet.tsx
+│   │   │   │   ├── DeliverablesSection.tsx
+│   │   │   │   ├── EpisodeDetailDialog.tsx
+│   │   │   │   ├── EventCrmSection.tsx
+│   │   │   │   ├── EventGuestMatchesSection.tsx
+│   │   │   │   ├── EventHeroCard.tsx
+│   │   │   │   ├── EventOutreachSegmentBuilder.tsx
+│   │   │   │   ├── EventPostRecapSection.tsx
+│   │   │   │   ├── EventProducerDashboard.tsx
+│   │   │   │   ├── EventRsvpQuestionsBuilder.tsx
+│   │   │   │   ├── EventSeatingPlanner.tsx
+│   │   │   │   ├── EventSponsorsKanban.tsx
+│   │   │   │   ├── EventStudioSection.tsx
+│   │   │   │   ├── FileCommentsSheet.tsx
+│   │   │   │   ├── HideableSection.tsx
+│   │   │   │   ├── ImportedSourcesCard.tsx
+│   │   │   │   ├── LivePresencePile.tsx
+│   │   │   │   ├── MilestoneStrip.tsx
+│   │   │   │   ├── ModelingStudioSection.tsx
+│   │   │   │   ├── MoneySection.tsx
+│   │   │   │   ├── MoodPicker.tsx
+│   │   │   │   ├── MoodboardAIDialog.tsx
+│   │   │   │   ├── MoodboardThumb.tsx
+│   │   │   │   ├── MoodboardViewer.tsx
+│   │   │   │   ├── MoveToFolderSheet.tsx
+│   │   │   │   ├── MusicStudioSection.tsx
+│   │   │   │   ├── NewRoomLaunchScreen.tsx
+│   │   │   │   ├── NextStepCard.tsx
+│   │   │   │   ├── PadPreviewSection.tsx
+│   │   │   │   ├── PeopleSection.tsx
+│   │   │   │   ├── PodcastStudioSection.tsx
+│   │   │   │   ├── ProactiveCards.tsx
+│   │   │   │   ├── ProductionPrepSection.tsx
+│   │   │   │   ├── ProjectCompleteDialog.tsx
+│   │   │   │   ├── PublishRecapDialog.tsx
+│   │   │   │   ├── RequestPaymentCard.tsx
+│   │   │   │   ├── SendInvoiceNudge.tsx
+│   │   │   │   ├── ShareReviewLinkDialog.tsx
+│   │   │   │   ├── SortableSection.tsx
+│   │   │   │   ├── StudioAICreate.tsx
+│   │   │   │   ├── StudioActivitySummary.tsx
+│   │   │   │   ├── StudioBrainPanel.tsx
+│   │   │   │   ├── StudioCardsGrid.tsx
+│   │   │   │   ├── StudioCreateHero.tsx
+│   │   │   │   ├── StudioCreatedAcknowledgement.tsx
+│   │   │   │   ├── StudioFoldersBar.tsx
+│   │   │   │   ├── StudioMoveDock.tsx
+│   │   │   │   ├── StudioOutcomeComposer.tsx
+│   │   │   │   ├── StudioOverflowToggle.tsx
+│   │   │   │   ├── StudioProjectsDashboard.tsx
+│   │   │   │   ├── StudioPulse.tsx
+│   │   │   │   ├── StudioPulseFeed.tsx
+│   │   │   │   ├── StudioRoom.tsx
+│   │   │   │   ├── StudioStages.tsx
+│   │   │   │   ├── StudioTimer.tsx
+│   │   │   │   ├── StudioWrapped.tsx
+│   │   │   │   ├── SuggestFoldersDialog.tsx
+│   │   │   │   ├── VaultTab.tsx
+│   │   │   │   ├── VibeHeader.tsx
+│   │   │   │   ├── VoiceFirstCreateModal.tsx
+│   │   │   │   ├── WidgetErrorBoundary.tsx
+│   │   │   │   ├── WorkSection.tsx
+│   │   │   │   ├── WorkflowShell.tsx
+│   │   │   │   ├── WrapProjectCard.tsx
+│   │   │   │   ├── moodGradient.ts
+│   │   │   │   ├── studioCardHelpers.ts
+│   │   │   │   ├── studioHome.selectors.ts
+│   │   │   │   ├── studioHome.types.ts
+│   │   │   │   └── useStudioGlobalModals.tsx
+│   │   │   ├── tasks
+│   │   │   │   ├── TaskCard.tsx
+│   │   │   │   ├── TaskEditorDialog.tsx
+│   │   │   │   ├── TasksWorkspace.tsx
+│   │   │   │   └── taskUtils.ts
+│   │   │   ├── today
+│   │   │   │   ├── TodayActivityFeed.tsx
+│   │   │   │   ├── TodayTasksPanel.tsx
+│   │   │   │   └── TodayWorkspace.tsx
+│   │   │   ├── workflow
+│   │   │   │   ├── CallSheetTab.tsx
+│   │   │   │   ├── ExchangeLedgerTab.tsx
+│   │   │   │   ├── RevisionsTab.tsx
+│   │   │   │   ├── RollCallTab.tsx
+│   │   │   │   ├── RunOfShowTab.tsx
+│   │   │   │   └── SplitSheetTab.tsx
+│   │   │   ├── AIAutomation.tsx
+│   │   │   ├── AIBriefBuilder.tsx
+│   │   │   ├── AccountingDashboard.tsx
+│   │   │   ├── ActivityTimeline.tsx
+│   │   │   ├── AgentModeBanner.tsx
+│   │   │   ├── ApprovalWorkflows.tsx
+│   │   │   ├── BriefHub.tsx
+│   │   │   ├── CallInviteSheet.tsx
+│   │   │   ├── CollaborativeWorkspace.tsx
+│   │   │   ├── ConfirmCreditBanner.tsx
+│   │   │   ├── CorkBoard.tsx
+│   │   │   ├── CreativeAssetLibrary.tsx
+│   │   │   ├── CreativeBoard.tsx
+│   │   │   ├── DeliverablesBoard.tsx
+│   │   │   ├── DeskTabContent.tsx
+│   │   │   ├── DocumentCollaboration.tsx
+│   │   │   ├── GuestStudioShareDialog.tsx
+│   │   │   ├── InviteCollaboratorDialog.tsx
+│   │   │   ├── InviteToProjectDialog.tsx
+│   │   │   ├── InvoiceGenerator.tsx
+│   │   │   ├── MessagePanel.tsx
+│   │   │   ├── MilestoneBoard.tsx
+│   │   │   ├── MyPendingInvitations.tsx
+│   │   │   ├── NotificationBell.tsx
+│   │   │   ├── PaymentDispute.tsx
+│   │   │   ├── PaymentVerification.tsx
+│   │   │   ├── PendingInvitations.tsx
+│   │   │   ├── PostAsOpportunityDialog.tsx
+│   │   │   ├── PreCallLobby.tsx
+│   │   │   ├── ProGate.tsx
+│   │   │   ├── ProjectCreditsDialog.tsx
+│   │   │   ├── ProjectInviteAcceptBanner.tsx
+│   │   │   ├── ProjectNotes.tsx
+│   │   │   ├── ProjectPresence.tsx
+│   │   │   ├── ProjectSettings.tsx
+│   │   │   ├── ProjectSettingsMenu.tsx
+│   │   │   ├── ProjectTemplatePicker.tsx
+│   │   │   ├── ProjectTemplates.tsx
+│   │   │   ├── ProjectTemplatesLibrary.tsx
+│   │   │   ├── ReviewPromptDialog.tsx
+│   │   │   ├── ScopeGuardian.tsx
+│   │   │   ├── SimpleFileSharing.tsx
+│   │   │   ├── SimpleProgressTracker.tsx
+│   │   │   ├── SimpleProjectChat.tsx
+│   │   │   ├── SimpleProjectHeader.tsx
+│   │   │   ├── SimpleTaskList.tsx
+│   │   │   ├── SmartBriefBuilder.tsx
+│   │   │   ├── StartCallSheet.tsx
+│   │   │   ├── StartProjectDialog.tsx
+│   │   │   ├── StartProjectFromMatchDialog.tsx
+│   │   │   ├── StudioToolBar.tsx
+│   │   │   ├── TaskBoard.tsx
+│   │   │   ├── TaskCalendar.tsx
+│   │   │   ├── VideoCallSheet.tsx
+│   │   │   ├── WorkspaceQuickPanel.tsx
+│   │   │   └── WorkspaceSidebar.tsx
+│   │   ├── sales
+│   │   │   ├── ConversionFunnel.tsx
+│   │   │   ├── EmailSetupWizard.tsx
+│   │   │   ├── GmailSettings.tsx
+│   │   │   └── LeadPipelineKanban.tsx
+│   │   ├── scene
+│   │   │   ├── __tests__
+│   │   │   │   ├── MagazineArticleCard.test.tsx
+│   │   │   │   ├── MagazineSpotlightA11y.test.tsx
+│   │   │   │   └── MagazineWallPublishCta.test.tsx
+│   │   │   ├── CirclesTab.tsx
+│   │   │   ├── ClipsWall.tsx
+│   │   │   ├── CoverImageEditor.tsx
+│   │   │   ├── LiveActivityTicker.tsx
+│   │   │   ├── MagazineArticleCard.tsx
+│   │   │   ├── MagazineArticleModal.tsx
+│   │   │   ├── MagazineArticleViewer.tsx
+│   │   │   ├── MagazineCarousel.tsx
+│   │   │   ├── MagazineEditor.tsx
+│   │   │   ├── MagazineWall.tsx
+│   │   │   ├── MagicComposeDialog.tsx
+│   │   │   ├── PodcastPlayer.tsx
+│   │   │   ├── RoomsTab.tsx
+│   │   │   ├── SceneContentPreviews.tsx
+│   │   │   ├── SceneHero.tsx
+│   │   │   ├── SparkComposer.tsx
+│   │   │   └── SparkWall.tsx
+│   │   ├── scout
+│   │   │   ├── __tests__
+│   │   │   │   ├── ScoutResultsWrapped.test.tsx
+│   │   │   │   ├── ScoutWrapped.test.tsx
+│   │   │   │   ├── gigState.test.ts
+│   │   │   │   └── scoutWrapped.signals.test.ts
+│   │   │   ├── ScoutKretoAssist.tsx
+│   │   │   ├── ScoutResultsWrapped.tsx
+│   │   │   ├── ScoutScanButton.tsx
+│   │   │   ├── ScoutScanProvider.tsx
+│   │   │   ├── ScoutWrapped.tsx
+│   │   │   ├── gigState.ts
+│   │   │   ├── scout.types.ts
+│   │   │   ├── scoutScanContext.ts
+│   │   │   └── scoutWrapped.signals.ts
+│   │   ├── search
+│   │   │   ├── __tests__
+│   │   │   │   ├── UnifiedSearchDropdown.hero.test.tsx
+│   │   │   │   └── UnifiedSearchDropdown.loader.test.tsx
+│   │   │   ├── SearchResultsSuggestions.tsx
+│   │   │   ├── SearchV2.tsx
+│   │   │   ├── UnifiedSearchDropdown.tsx
+│   │   │   └── VoiceWaveform.tsx
+│   │   ├── sessions
+│   │   │   ├── __tests__
+│   │   │   │   └── joinTicketedEvent.test.tsx
+│   │   │   ├── AIHostEventCard.tsx
+│   │   │   ├── ContinueAsCircle.tsx
+│   │   │   ├── CreateSessionDialog.tsx
+│   │   │   ├── EditEventDialog.tsx
+│   │   │   ├── EventAnalyticsDialog.tsx
+│   │   │   ├── EventArchetypePicker.tsx
+│   │   │   ├── EventCheckInDialog.tsx
+│   │   │   ├── EventCohosts.tsx
+│   │   │   ├── EventComments.tsx
+│   │   │   ├── EventCommunityHub.tsx
+│   │   │   ├── EventCoverPicker.tsx
+│   │   │   ├── EventGroupChatCard.tsx
+│   │   │   ├── EventGuestRoster.tsx
+│   │   │   ├── EventHeroCard.tsx
+│   │   │   ├── EventHostToolsDialog.tsx
+│   │   │   ├── EventInlineChat.tsx
+│   │   │   ├── EventModeFormatPicker.tsx
+│   │   │   ├── EventPassCard.tsx
+│   │   │   ├── EventPhotoWall.tsx
+│   │   │   ├── EventRecapButton.tsx
+│   │   │   ├── EventResponsesDialog.tsx
+│   │   │   ├── EventShareKit.tsx
+│   │   │   ├── GuestPassDialog.tsx
+│   │   │   ├── GuestRsvpDialog.tsx
+│   │   │   ├── InviteByEmailDialog.tsx
+│   │   │   ├── JoinOnlineCard.tsx
+│   │   │   ├── LocationSearchInput.tsx
+│   │   │   ├── MyEventMatches.tsx
+│   │   │   ├── PayoutsConnectWarning.tsx
+│   │   │   ├── ScanFlyerDialog.tsx
+│   │   │   ├── ScoutEventDialog.tsx
+│   │   │   ├── SessionCard.tsx
+│   │   │   ├── SessionChat.tsx
+│   │   │   ├── SessionDetailDialog.tsx
+│   │   │   ├── SessionParticipants.tsx
+│   │   │   ├── SessionsSection.tsx
+│   │   │   └── index.ts
+│   │   ├── settings
+│   │   │   ├── __tests__
+│   │   │   │   └── SettingsShell.test.tsx
+│   │   │   ├── BlockedUsersCard.tsx
+│   │   │   ├── CreatorSiteSectionEditor.tsx
+│   │   │   ├── CreatorSiteSettings.tsx
+│   │   │   ├── SettingsNav.tsx
+│   │   │   ├── SettingsShell.tsx
+│   │   │   ├── TelegramConnectCard.tsx
+│   │   │   └── TelegramStatusCard.tsx
+│   │   ├── skeletons
+│   │   │   ├── CircleSkeletons.tsx
+│   │   │   └── MessagesSkeletons.tsx
+│   │   ├── storage
+│   │   │   ├── QuotaExceededDialog.tsx
+│   │   │   └── StorageMeter.tsx
+│   │   ├── studio-reference
+│   │   │   ├── StudioEmptyState.tsx
+│   │   │   ├── StudioFeatureShell.tsx
+│   │   │   ├── StudioPrimaryCard.tsx
+│   │   │   └── StudioSectionTabs.tsx
+│   │   ├── swipe
+│   │   │   ├── __tests__
+│   │   │   │   └── SwipeFeatureAuthStates.test.tsx
+│   │   │   ├── GuestSwipePreview.tsx
+│   │   │   ├── LikesYouGrid.tsx
+│   │   │   ├── MatchModal.tsx
+│   │   │   ├── MatchPulse.tsx
+│   │   │   ├── ProfilePreviewSheet.tsx
+│   │   │   ├── SwipeCard.tsx
+│   │   │   ├── SwipeFeature.tsx
+│   │   │   ├── SwipeStack.tsx
+│   │   │   └── index.ts
+│   │   ├── thrive
+│   │   │   └── DeckRenderer.tsx
+│   │   ├── thrive-ai
+│   │   │   ├── __tests__
+│   │   │   │   └── LeadsTab.duplicates.test.tsx
+│   │   │   ├── outreach
+│   │   │   │   ├── AddEmailStepDialog.tsx
+│   │   │   │   ├── BulkSendDialog.tsx
+│   │   │   │   ├── CampaignHistory.tsx
+│   │   │   │   ├── ComposeDialog.tsx
+│   │   │   │   ├── LinkLeadDialog.tsx
+│   │   │   │   ├── OutreachTopBar.tsx
+│   │   │   │   ├── SaveTemplateDialog.tsx
+│   │   │   │   ├── SequenceCard.tsx
+│   │   │   │   ├── types.ts
+│   │   │   │   ├── useBulkSend.ts
+│   │   │   │   ├── useOutreachData.ts
+│   │   │   │   ├── useOutreachMedia.ts
+│   │   │   │   └── useOutreachMutations.ts
+│   │   │   ├── LeadsTab.tsx
+│   │   │   └── OutreachTab.tsx
+│   │   ├── thrivefund
+│   │   │   ├── CampaignCard.tsx
+│   │   │   └── TrustPanel.tsx
+│   │   ├── thrivepay
+│   │   │   ├── FinancialSummaryPanel.tsx
+│   │   │   ├── InvoiceChaseDrawer.tsx
+│   │   │   ├── InvoiceSepaBeneficiaryCard.tsx
+│   │   │   ├── KrePayAIInsights.tsx
+│   │   │   ├── KrePayDashboard.tsx
+│   │   │   ├── MoneyBrief.tsx
+│   │   │   ├── MoneyStreakChip.tsx
+│   │   │   ├── PaymentLinksSection.tsx
+│   │   │   ├── PaymentStatusTimeline.tsx
+│   │   │   ├── SnapReceiptFAB.tsx
+│   │   │   ├── TransactionDetailDrawer.tsx
+│   │   │   ├── TrustControlsCard.tsx
+│   │   │   └── WeeklyMoneyInsights.tsx
+│   │   ├── today
+│   │   │   ├── __tests__
+│   │   │   │   ├── TodayCommandCenter.test.tsx
+│   │   │   │   ├── TodayDashboard.test.tsx
+│   │   │   │   ├── TodayDeck.test.tsx
+│   │   │   │   ├── today.facts.test.ts
+│   │   │   │   └── today.selectors.test.ts
+│   │   │   ├── radar
+│   │   │   │   ├── __tests__
+│   │   │   │   │   ├── TodayRadar.test.tsx
+│   │   │   │   │   └── radar.logic.test.ts
+│   │   │   │   ├── RadarLead.tsx
+│   │   │   │   ├── RadarLists.tsx
+│   │   │   │   ├── RadarLive.tsx
+│   │   │   │   ├── RadarPeople.tsx
+│   │   │   │   ├── RadarProposals.tsx
+│   │   │   │   ├── RadarSignals.tsx
+│   │   │   │   ├── TodayRadar.tsx
+│   │   │   │   ├── radar.logic.ts
+│   │   │   │   ├── radar.queries.ts
+│   │   │   │   └── useRadar.ts
+│   │   │   ├── TodayCard.tsx
+│   │   │   ├── TodayCommandCenter.tsx
+│   │   │   ├── TodayDashboard.tsx
+│   │   │   ├── TodayDeck.tsx
+│   │   │   ├── TodayMetricsDashboard.tsx
+│   │   │   ├── TodayMiniPassport.tsx
+│   │   │   ├── TodayMomentum.tsx
+│   │   │   ├── TodayOpportunities.tsx
+│   │   │   ├── today.actions.ts
+│   │   │   ├── today.facts.ts
+│   │   │   ├── today.selectors.ts
+│   │   │   ├── today.types.ts
+│   │   │   └── todayMetrics.selectors.ts
+│   │   ├── typography
+│   │   │   ├── Heading.tsx
+│   │   │   └── StaggerReveal.tsx
+│   │   ├── ui
+│   │   │   ├── glass
+│   │   │   │   ├── CarouselPositionDots.tsx
+│   │   │   │   ├── GlassButton.tsx
+│   │   │   │   ├── GlassCarousel.tsx
+│   │   │   │   ├── GlassDrawer.tsx
+│   │   │   │   ├── GlassInput.tsx
+│   │   │   │   ├── GlassModal.tsx
+│   │   │   │   ├── GlassNavbar.tsx
+│   │   │   │   ├── GlassPanel.tsx
+│   │   │   │   ├── GlassStatusPill.tsx
+│   │   │   │   ├── GlassSurface.tsx
+│   │   │   │   └── index.ts
+│   │   │   ├── accordion.tsx
+│   │   │   ├── alert-dialog.tsx
+│   │   │   ├── alert.tsx
+│   │   │   ├── aspect-ratio.tsx
+│   │   │   ├── avatar.tsx
+│   │   │   ├── badge.tsx
+│   │   │   ├── breadcrumb.tsx
+│   │   │   ├── button.tsx
+│   │   │   ├── calendar.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── carousel.tsx
+│   │   │   ├── chart.tsx
+│   │   │   ├── checkbox.tsx
+│   │   │   ├── collapsible.tsx
+│   │   │   ├── command.tsx
+│   │   │   ├── context-menu.tsx
+│   │   │   ├── creative-loader.tsx
+│   │   │   ├── creator-orbit-loader.tsx
+│   │   │   ├── cta-button.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── drawer.tsx
+│   │   │   ├── dropdown-menu.tsx
+│   │   │   ├── empty-state.tsx
+│   │   │   ├── error-message.tsx
+│   │   │   ├── first-time-hint.tsx
+│   │   │   ├── form.tsx
+│   │   │   ├── framed-avatar.tsx
+│   │   │   ├── glass-cta.tsx
+│   │   │   ├── hover-card.tsx
+│   │   │   ├── image-loader.tsx
+│   │   │   ├── input-otp.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── loading-spinner.tsx
+│   │   │   ├── menubar.tsx
+│   │   │   ├── navigation-menu.tsx
+│   │   │   ├── page-header.tsx
+│   │   │   ├── pagination.tsx
+│   │   │   ├── popover.tsx
+│   │   │   ├── profile-skeleton.tsx
+│   │   │   ├── progress.tsx
+│   │   │   ├── radio-group.tsx
+│   │   │   ├── resizable.tsx
+│   │   │   ├── scroll-area.tsx
+│   │   │   ├── section-card.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── separator.tsx
+│   │   │   ├── sheet.tsx
+│   │   │   ├── sidebar.tsx
+│   │   │   ├── skeleton-card.tsx
+│   │   │   ├── skeleton.tsx
+│   │   │   ├── skip-link.tsx
+│   │   │   ├── slider.tsx
+│   │   │   ├── smart-cover.tsx
+│   │   │   ├── smart-widget.tsx
+│   │   │   ├── sonner.tsx
+│   │   │   ├── status-avatar.tsx
+│   │   │   ├── swipe-card.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toast.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   ├── toggle-group.tsx
+│   │   │   ├── toggle.tsx
+│   │   │   ├── tooltip-hint.tsx
+│   │   │   ├── tooltip.tsx
+│   │   │   └── use-toast.ts
+│   │   ├── user
+│   │   │   ├── ReportBlockDialog.tsx
+│   │   │   └── UserActionMenu.tsx
+│   │   ├── wallet
+│   │   │   ├── StatusProgressCard.tsx
+│   │   │   ├── ThriveWalletCard.tsx
+│   │   │   ├── WalletAddBankSheet.tsx
+│   │   │   ├── WalletPayoutSheet.tsx
+│   │   │   ├── WalletTopUpDialog.tsx
+│   │   │   ├── WalletTransferDialog.tsx
+│   │   │   └── WalletXPSection.tsx
+│   │   ├── wrapped
+│   │   │   ├── __tests__
+│   │   │   │   ├── FeatureWrapped.test.tsx
+│   │   │   │   └── WrappedShell.test.tsx
+│   │   │   ├── FeatureWrapped.tsx
+│   │   │   ├── WrappedShell.tsx
+│   │   │   ├── WrappedSignals.tsx
+│   │   │   └── WrappedStatus.tsx
+│   │   ├── AccountSwitcher.tsx
+│   │   ├── ApplyToOpportunityDialog.tsx
+│   │   ├── AuthGate.tsx
+│   │   ├── AuthPrompt.tsx
+│   │   ├── BottomNav.tsx
+│   │   ├── BrandLogo.tsx
+│   │   ├── CircleToCrewRedirect.tsx
+│   │   ├── ConnectionGateBanner.tsx
+│   │   ├── CurrencySelector.tsx
+│   │   ├── DirectMessageDialog.tsx
+│   │   ├── DiscoverReadyBanner.tsx
+│   │   ├── DiscoveryGate.tsx
+│   │   ├── EditOpportunityDialog.tsx
+│   │   ├── ErrorBoundary.tsx
+│   │   ├── ErrorBoundaryFallback.tsx
+│   │   ├── FeatureLockedBanner.tsx
+│   │   ├── FeeCalculator.tsx
+│   │   ├── FeeStructure.tsx
+│   │   ├── FeedbackWidget.tsx
+│   │   ├── FirstTimeUserGuide.tsx
+│   │   ├── Footer.tsx
+│   │   ├── FreeTierGate.tsx
+│   │   ├── GlobalErrorBoundary.tsx
+│   │   ├── GuestBanner.tsx
+│   │   ├── ImageCropDialog.tsx
+│   │   ├── InviteCircleCard.tsx
+│   │   ├── InviteDialog.tsx
+│   │   ├── LanguageSwitcher.tsx
+│   │   ├── MessagesDialog.tsx
+│   │   ├── ModeThemeSync.tsx
+│   │   ├── Navbar.tsx
+│   │   ├── NetworkStatus.tsx
+│   │   ├── NewsletterPopup.tsx
+│   │   ├── NotificationCenter.tsx
+│   │   ├── OGPromotionBanner.tsx
+│   │   ├── PWAInstallPrompt.tsx
+│   │   ├── PageTip.tsx
+│   │   ├── PageTransition.tsx
+│   │   ├── PasswordStrengthIndicator.tsx
+│   │   ├── PostOpportunityDialog.tsx
+│   │   ├── ProfileActivationGate.tsx
+│   │   ├── ProfileCompletionBanner.tsx
+│   │   ├── ProfileCompletionCard.tsx
+│   │   ├── ProfileVisibilityBanner.tsx
+│   │   ├── PushNotificationPrompt.tsx
+│   │   ├── QuickActionFab.tsx
+│   │   ├── QuickPostModal.tsx
+│   │   ├── RollCall.tsx
+│   │   ├── SEO.tsx
+│   │   ├── SavedSparksDialog.tsx
+│   │   ├── SearchBar.tsx
+│   │   ├── SettingsDrawer.tsx
+│   │   ├── SocialShareButtons.tsx
+│   │   ├── StatusBadge.tsx
+│   │   ├── SupportDialog.tsx
+│   │   ├── ThemeToggle.tsx
+│   │   ├── ThrivePresence.tsx
+│   │   ├── ThriveStatusCard.tsx
+│   │   ├── UpgradeDialog.tsx
+│   │   ├── VibeThemeSync.tsx
+│   │   └── WalletCard.tsx
+│   ├── config
+│   │   └── kretopiaV1.ts
+│   ├── contexts
+│   │   ├── AuthContext.tsx
+│   │   ├── ProfileContext.tsx
+│   │   └── VideoCallContext.tsx
+│   ├── data
+│   │   └── testimonials.ts
+│   ├── hooks
+│   │   ├── __tests__
+│   │   │   ├── useAccountTone.test.tsx
+│   │   │   ├── useMagazineArticleEngagement.test.ts
+│   │   │   ├── useProjectFlow.test.ts
+│   │   │   ├── useSwipeGestures.test.tsx
+│   │   │   ├── useSwipeGestures.touch.test.tsx
+│   │   │   └── useSwipeProfiles.test.tsx
+│   │   ├── use-mobile.tsx
+│   │   ├── use-toast.ts
+│   │   ├── useAccountTone.ts
+│   │   ├── useActivityPing.ts
+│   │   ├── useAgentRole.ts
+│   │   ├── useAuth.tsx
+│   │   ├── useAutoHideNavbar.ts
+│   │   ├── useAutoSaveDraft.ts
+│   │   ├── useAvatarUpload.tsx
+│   │   ├── useCallHistory.ts
+│   │   ├── useClients.ts
+│   │   ├── useConnectedUsers.ts
+│   │   ├── useCrewUnread.ts
+│   │   ├── useCurrencyConversion.ts
+│   │   ├── useCurrentGeoCountry.ts
+│   │   ├── useDeskAgentWatch.ts
+│   │   ├── useDeskIntent.ts
+│   │   ├── useDraftRecovery.ts
+│   │   ├── useDuplicateAccounts.ts
+│   │   ├── useFeatureGate.ts
+│   │   ├── useFeatureUsage.ts
+│   │   ├── useFileSizeLimit.ts
+│   │   ├── useFileUpload.tsx
+│   │   ├── useFirstTimeUser.tsx
+│   │   ├── useFitTitleOneLine.ts
+│   │   ├── useFoundingMemberProgress.ts
+│   │   ├── useInView.ts
+│   │   ├── useIncomingCall.ts
+│   │   ├── useLocationBookmarks.ts
+│   │   ├── useLocationCategories.ts
+│   │   ├── useMagazineArticleEngagement.ts
+│   │   ├── useMediaQuery.ts
+│   │   ├── useMyCredits.ts
+│   │   ├── useNativeCapacitor.ts
+│   │   ├── useNavMode.ts
+│   │   ├── useNetworkStats.ts
+│   │   ├── useNotifications.tsx
+│   │   ├── useNow.ts
+│   │   ├── useOGPromotion.tsx
+│   │   ├── useOnboarding.tsx
+│   │   ├── usePendingAgentActions.ts
+│   │   ├── useProfileData.tsx
+│   │   ├── useProjectData.ts
+│   │   ├── useProjectFlow.ts
+│   │   ├── useProjectFlowExtras.ts
+│   │   ├── useProjectLimit.ts
+│   │   ├── useProjectMoneySignal.ts
+│   │   ├── useProjectTimer.ts
+│   │   ├── usePushNotifications.tsx
+│   │   ├── useReducedMotion.ts
+│   │   ├── useReferralNetwork.ts
+│   │   ├── useRepliesOwed.ts
+│   │   ├── useSavedOpportunity.tsx
+│   │   ├── useScrollReveal.ts
+│   │   ├── useSiteAnalytics.ts
+│   │   ├── useStartDirectCall.ts
+│   │   ├── useStorageQuota.ts
+│   │   ├── useStreakUpdate.tsx
+│   │   ├── useStudioPresence.ts
+│   │   ├── useStudioRole.ts
+│   │   ├── useSurfaceAgentWatch.ts
+│   │   ├── useSwipeActions.ts
+│   │   ├── useSwipeGestures.tsx
+│   │   ├── useSwipeProfiles.ts
+│   │   ├── useTaggedCredits.ts
+│   │   ├── useThriveFund.ts
+│   │   ├── useTrinidadVoice.ts
+│   │   ├── useTypingIndicator.ts
+│   │   ├── useUnclaimedProfileMatch.ts
+│   │   ├── useUndoSwipe.tsx
+│   │   ├── useUserBlocks.ts
+│   │   ├── useUserRole.tsx
+│   │   ├── useV1Flag.ts
+│   │   ├── useVoiceSearch.ts
+│   │   ├── useWalletConnection.tsx
+│   │   └── useWishlist.tsx
+│   ├── i18n
+│   │   ├── locales
+│   │   │   ├── en.json
+│   │   │   ├── es.json
+│   │   │   └── fr.json
+│   │   └── index.ts
+│   ├── integrations
+│   │   ├── lovable
+│   │   │   └── index.ts
+│   │   └── supabase
+│   │       ├── client.ts
+│   │       ├── legacyClient.ts
+│   │       ├── legacyTypes.ts
+│   │       ├── previewAuthStorage.ts
+│   │       └── types.ts
+│   ├── lib
+│   │   ├── __tests__
+│   │   │   ├── edge
+│   │   │   │   ├── agentRsvpEvent.test.ts
+│   │   │   │   ├── batchMilestonePayout.test.ts
+│   │   │   │   ├── captureMilestonePayment.test.ts
+│   │   │   │   ├── createMilestonePayment.test.ts
+│   │   │   │   ├── fakeSupabase.ts
+│   │   │   │   ├── marketplaceWebhookPayee.test.ts
+│   │   │   │   └── supabaseJsStub.ts
+│   │   │   ├── acceptInvitation.test.ts
+│   │   │   ├── agentActionBinding.test.ts
+│   │   │   ├── agentDmBinding.test.ts
+│   │   │   ├── appChrome.test.ts
+│   │   │   ├── approvalValidity.test.ts
+│   │   │   ├── authRedirect.test.ts
+│   │   │   ├── batchPayout.test.ts
+│   │   │   ├── cacheSweep.test.ts
+│   │   │   ├── claimLink.test.ts
+│   │   │   ├── companyHiringGoal.test.ts
+│   │   │   ├── creditErrors.test.ts
+│   │   │   ├── deriveTargetDateFromDeliverables.test.ts
+│   │   │   ├── discoverCreatives.test.ts
+│   │   │   ├── discoveryPages.test.ts
+│   │   │   ├── draftAndNoteSave.test.ts
+│   │   │   ├── emailSettingsColumns.test.ts
+│   │   │   ├── epkPdfGenerator.test.ts
+│   │   │   ├── eventAuthRedirect.test.ts
+│   │   │   ├── eventEntry.test.ts
+│   │   │   ├── eventInviteBudget.test.ts
+│   │   │   ├── executionGuard.test.ts
+│   │   │   ├── guestWallet.test.ts
+│   │   │   ├── inferBudgetFromText.test.ts
+│   │   │   ├── inferPaymentsInvolved.test.ts
+│   │   │   ├── inferWorkspaceType.test.ts
+│   │   │   ├── invoiceProvenance.test.ts
+│   │   │   ├── leadExtraction.test.ts
+│   │   │   ├── matchComplement.test.ts
+│   │   │   ├── matchRanking.test.ts
+│   │   │   ├── matchReasons.test.ts
+│   │   │   ├── matchScoring.test.ts
+│   │   │   ├── meetingClientConsent.test.ts
+│   │   │   ├── meetingContextAccess.test.ts
+│   │   │   ├── meetingParticipantAccess.test.ts
+│   │   │   ├── milestonePayable.test.ts
+│   │   │   ├── newRoomCaution.test.ts
+│   │   │   ├── nextEvent.test.ts
+│   │   │   ├── notificationGuards.test.ts
+│   │   │   ├── orderConfirmation.test.ts
+│   │   │   ├── orgAccess.test.ts
+│   │   │   ├── outboundBudget.test.ts
+│   │   │   ├── outboundSenders.test.ts
+│   │   │   ├── parseTaskDueDate.test.ts
+│   │   │   ├── payoutAndEscrow.test.ts
+│   │   │   ├── phoneOtp.test.ts
+│   │   │   ├── pledgeRequest.test.ts
+│   │   │   ├── pledgeVerification.test.ts
+│   │   │   ├── premiumSwitch.test.ts
+│   │   │   ├── productFilePaths.test.ts
+│   │   │   ├── profileCompletion.test.ts
+│   │   │   ├── projectAccess.test.ts
+│   │   │   ├── projectInvites.test.ts
+│   │   │   ├── publicCheckoutInput.test.ts
+│   │   │   ├── purchaseEntitlement.test.ts
+│   │   │   ├── recordingAccess.test.ts
+│   │   │   ├── recordingConsent.test.ts
+│   │   │   ├── referralEngine.test.ts
+│   │   │   ├── resolveMilestonePayee.test.ts
+│   │   │   ├── scoutEvidence.test.ts
+│   │   │   ├── scoutGigSummary.test.ts
+│   │   │   ├── scoutListing.test.ts
+│   │   │   ├── scoutPay.test.ts
+│   │   │   ├── scoutScan.test.ts
+│   │   │   ├── scoutSources.test.ts
+│   │   │   ├── shareLinkScope.test.ts
+│   │   │   ├── stageParticipants.test.ts
+│   │   │   ├── stageRecordingConsent.test.ts
+│   │   │   ├── stageTicket.test.ts
+│   │   │   ├── stripeWebhookSignature.test.ts
+│   │   │   ├── studioAccess.test.ts
+│   │   │   ├── studioNotifications.test.ts
+│   │   │   ├── studioOutcomeRouter.test.ts
+│   │   │   ├── subscriptionLimits.test.ts
+│   │   │   ├── ticketCheckout.test.ts
+│   │   │   ├── ticketPurchase.test.ts
+│   │   │   ├── transactionalEmailPolicy.test.ts
+│   │   │   ├── utils.test.ts
+│   │   │   ├── validation.test.ts
+│   │   │   ├── walletInflow.test.ts
+│   │   │   ├── walletTransfer.test.ts
+│   │   │   ├── webhookFreshness.test.ts
+│   │   │   └── webhookLedger.test.ts
+│   │   ├── mcp
+│   │   │   ├── tools
+│   │   │   │   ├── get-my-passport.ts
+│   │   │   │   ├── list-my-credits.ts
+│   │   │   │   ├── list-my-studios.ts
+│   │   │   │   ├── list-scouted-gigs.ts
+│   │   │   │   └── search-creators.ts
+│   │   │   └── index.ts
+│   │   ├── outreach
+│   │   │   └── emailSettingsColumns.ts
+│   │   ├── passport
+│   │   │   ├── __tests__
+│   │   │   │   ├── creditEvidence.test.ts
+│   │   │   │   ├── hiringGlance.test.ts
+│   │   │   │   └── roleStamp.test.ts
+│   │   │   ├── creditEvidence.ts
+│   │   │   ├── hiringGlance.ts
+│   │   │   ├── professionProfiles.ts
+│   │   │   ├── roleStamp.ts
+│   │   │   ├── shareTargets.ts
+│   │   │   └── standing.ts
+│   │   ├── profile
+│   │   │   ├── profileColumns.ts
+│   │   │   └── profileService.ts
+│   │   ├── acceptInvitation.ts
+│   │   ├── accessibility.ts
+│   │   ├── afterClaimNudges.ts
+│   │   ├── agentActionPresentation.ts
+│   │   ├── agentOrchestrator.ts
+│   │   ├── agentPersonas.tsx
+│   │   ├── agentResultCards.ts
+│   │   ├── agentRiskUI.ts
+│   │   ├── ambassadorAttribution.ts
+│   │   ├── analytics.ts
+│   │   ├── appChrome.ts
+│   │   ├── approvalValidity.ts
+│   │   ├── authProviderHints.ts
+│   │   ├── authRedirect.ts
+│   │   ├── badgeLabel.ts
+│   │   ├── brandLexicon.ts
+│   │   ├── cacheSweep.ts
+│   │   ├── calendarLinks.ts
+│   │   ├── callPreflight.ts
+│   │   ├── claimLink.ts
+│   │   ├── companyHiringGoal.ts
+│   │   ├── connectionGate.ts
+│   │   ├── constants.ts
+│   │   ├── createDirectMatch.ts
+│   │   ├── createEventStudio.ts
+│   │   ├── creativeRecord.ts
+│   │   ├── creditErrors.ts
+│   │   ├── creditEvidence.ts
+│   │   ├── creditSystem.ts
+│   │   ├── csvBriefParser.ts
+│   │   ├── dailyFrame.ts
+│   │   ├── deckExport.ts
+│   │   ├── deckMetrics.ts
+│   │   ├── deckThemes.ts
+│   │   ├── deriveTargetDateFromDeliverables.ts
+│   │   ├── discoverCreatives.ts
+│   │   ├── discoveryPages.ts
+│   │   ├── draftStorage.ts
+│   │   ├── edgeCaseTests.ts
+│   │   ├── epkPdfGenerator.ts
+│   │   ├── error-capture.ts
+│   │   ├── error-page.ts
+│   │   ├── errorHandling.ts
+│   │   ├── errorLogger.ts
+│   │   ├── eventActions.ts
+│   │   ├── eventArchetypes.ts
+│   │   ├── eventAuthRedirect.ts
+│   │   ├── eventEntry.ts
+│   │   ├── eventFormats.ts
+│   │   ├── extractBriefDocument.ts
+│   │   ├── extractInvokeError.ts
+│   │   ├── featureFlags.ts
+│   │   ├── feedCache.ts
+│   │   ├── fileSizeLimits.ts
+│   │   ├── foundingMember.ts
+│   │   ├── fundCategories.ts
+│   │   ├── fuzzyLocation.ts
+│   │   ├── guestUtils.ts
+│   │   ├── guestWallet.ts
+│   │   ├── industryBadge.ts
+│   │   ├── inferBudgetFromText.ts
+│   │   ├── inferPaymentsInvolved.ts
+│   │   ├── inferWorkspaceType.ts
+│   │   ├── initials.ts
+│   │   ├── intentMatching.ts
+│   │   ├── intents.ts
+│   │   ├── invoiceProvenance.ts
+│   │   ├── kGradient.ts
+│   │   ├── landingFunnel.ts
+│   │   ├── landingMetrics.ts
+│   │   ├── lazyWithRetry.ts
+│   │   ├── locationGroups.ts
+│   │   ├── lovable-error-reporting.ts
+│   │   ├── matchComplement.ts
+│   │   ├── matchRanking.ts
+│   │   ├── matchReasons.ts
+│   │   ├── matchScoring.ts
+│   │   ├── mediaUtils.ts
+│   │   ├── messageAttachments.ts
+│   │   ├── modelUnits.ts
+│   │   ├── moneyStreak.ts
+│   │   ├── newRoomCaution.ts
+│   │   ├── nextEvent.ts
+│   │   ├── nfcUtils.ts
+│   │   ├── noteSave.ts
+│   │   ├── notifyPhaseAdvanced.ts
+│   │   ├── notifyUser.ts
+│   │   ├── opportunityColumns.ts
+│   │   ├── opportunityMatch.ts
+│   │   ├── parseTaskDueDate.ts
+│   │   ├── passportId.ts
+│   │   ├── pendingPost.ts
+│   │   ├── platformAnalytics.ts
+│   │   ├── platformFees.ts
+│   │   ├── postgrestFilter.ts
+│   │   ├── premiumSwitch.ts
+│   │   ├── profileCompletion.ts
+│   │   ├── profileViewTracking.ts
+│   │   ├── projectColumns.ts
+│   │   ├── projectFiles.ts
+│   │   ├── projectInvites.ts
+│   │   ├── pushNotifications.ts
+│   │   ├── referralEngine.ts
+│   │   ├── resumableUpload.ts
+│   │   ├── scaffoldProject.ts
+│   │   ├── scoutEvidence.ts
+│   │   ├── scoutGigSummary.ts
+│   │   ├── scoutListing.ts
+│   │   ├── scoutPay.ts
+│   │   ├── scoutScan.ts
+│   │   ├── searchCatalog.ts
+│   │   ├── serviceWorker.ts
+│   │   ├── skillNames.ts
+│   │   ├── speedVerticals.ts
+│   │   ├── stageParticipants.ts
+│   │   ├── statusEngine.ts
+│   │   ├── streaks.ts
+│   │   ├── studioImport.ts
+│   │   ├── studioNotifications.ts
+│   │   ├── subscriptionConfig.ts
+│   │   ├── subscriptionLimits.ts
+│   │   ├── subscriptionPlans.ts
+│   │   ├── sw-update.ts
+│   │   ├── taskEnhancer.ts
+│   │   ├── thriveCopilot.ts
+│   │   ├── thriveVoice.ts
+│   │   ├── thumbnailExtractor.ts
+│   │   ├── toRoman.ts
+│   │   ├── utils.ts
+│   │   ├── validation.ts
+│   │   ├── version-check.ts
+│   │   ├── welcomeMatch.ts
+│   │   └── workspaceConfigs.ts
+│   ├── pages
+│   │   ├── __tests__
+│   │   │   ├── ClaimGig.test.tsx
+│   │   │   ├── CompanyOnboarding.test.tsx
+│   │   │   ├── CreatorWorkHome.test.tsx
+│   │   │   ├── CreditVerify.test.tsx
+│   │   │   ├── CreditsDashboard.test.tsx
+│   │   │   ├── Scout.test.tsx
+│   │   │   ├── Spotlight.test.tsx
+│   │   │   └── WorkHome.company.test.tsx
+│   │   ├── messages
+│   │   │   ├── __tests__
+│   │   │   │   └── MessagesEmptyState.test.tsx
+│   │   │   ├── ChatHeader.tsx
+│   │   │   ├── ConversationListPanel.tsx
+│   │   │   ├── EmptyChatState.tsx
+│   │   │   ├── MessageBubble.tsx
+│   │   │   ├── MessageComposer.tsx
+│   │   │   ├── MessagesEmptyState.tsx
+│   │   │   ├── types.ts
+│   │   │   ├── useChatMessages.ts
+│   │   │   ├── useConversations.ts
+│   │   │   └── useSendMessage.ts
+│   │   ├── profile
+│   │   │   ├── ProfileContentSections.tsx
+│   │   │   ├── ProfileDialogs.tsx
+│   │   │   └── ProfileVerificationSection.tsx
+│   │   ├── About.tsx
+│   │   ├── AcceptInvite.tsx
+│   │   ├── Accounting.tsx
+│   │   ├── Admin.tsx
+│   │   ├── AdminBroadcast.tsx
+│   │   ├── AdminDisputes.tsx
+│   │   ├── AdminWeeklyNote.tsx
+│   │   ├── AgentsActivity.tsx
+│   │   ├── Ambassador.tsx
+│   │   ├── Ambassadors.tsx
+│   │   ├── Auth.tsx
+│   │   ├── BookingPage.tsx
+│   │   ├── BrandVault.tsx
+│   │   ├── BrandVerify.tsx
+│   │   ├── BrandWorkHome.tsx
+│   │   ├── CallPage.tsx
+│   │   ├── CheckIn.tsx
+│   │   ├── Circle.tsx
+│   │   ├── CircleChatView.tsx
+│   │   ├── CircleDetail.tsx
+│   │   ├── Circles.tsx
+│   │   ├── Claim.tsx
+│   │   ├── ClaimEvent.tsx
+│   │   ├── ClaimGig.tsx
+│   │   ├── ClaimProfile.tsx
+│   │   ├── ClientDetail.tsx
+│   │   ├── Clients.tsx
+│   │   ├── CommunityGuidelines.tsx
+│   │   ├── CompCard.tsx
+│   │   ├── CompCardBuilder.tsx
+│   │   ├── CompanyOnboarding.tsx
+│   │   ├── CopilotMemory.tsx
+│   │   ├── CreativeCircle.tsx
+│   │   ├── CreatorEPK.tsx
+│   │   ├── CreatorSite.tsx
+│   │   ├── CreatorSiteByUsername.tsx
+│   │   ├── CreatorWorkHome.tsx
+│   │   ├── CreditVerify.tsx
+│   │   ├── CreditsDashboard.tsx
+│   │   ├── CuratedStage.tsx
+│   │   ├── DailyCheckIn.tsx
+│   │   ├── DemoAgent.tsx
+│   │   ├── Discover.tsx
+│   │   ├── DisputeCredit.tsx
+│   │   ├── DisputeManage.tsx
+│   │   ├── EmailUnsubscribe.tsx
+│   │   ├── EndorseSkill.tsx
+│   │   ├── EventBackstage.tsx
+│   │   ├── EventConfirmed.tsx
+│   │   ├── EventCrewMode.tsx
+│   │   ├── EventPage.tsx
+│   │   ├── Events.tsx
+│   │   ├── FeedbackAdmin.tsx
+│   │   ├── FounderKitMetrics.tsx
+│   │   ├── FounderKitOnePager.tsx
+│   │   ├── FoundingMember.tsx
+│   │   ├── Fund.tsx
+│   │   ├── FundCampaign.tsx
+│   │   ├── FundManage.tsx
+│   │   ├── FundNew.tsx
+│   │   ├── GuestCall.tsx
+│   │   ├── GuestPass.tsx
+│   │   ├── GuestPay.tsx
+│   │   ├── GuestStudio.tsx
+│   │   ├── Guide.tsx
+│   │   ├── HandleResolver.tsx
+│   │   ├── ICDBDiscovery.tsx
+│   │   ├── ICDBProjectPage.tsx
+│   │   ├── Inbox.tsx
+│   │   ├── Install.tsx
+│   │   ├── Intel.tsx
+│   │   ├── JoinGuestStudio.tsx
+│   │   ├── JoinWithCode.tsx
+│   │   ├── KretoTab.tsx
+│   │   ├── Landing.tsx
+│   │   ├── ListingDetail.tsx
+│   │   ├── Magazine.tsx
+│   │   ├── MagazineArticlePage.tsx
+│   │   ├── ManageHub.tsx
+│   │   ├── ManageOpportunities.tsx
+│   │   ├── Match.tsx
+│   │   ├── Meetup.tsx
+│   │   ├── MeetupManage.tsx
+│   │   ├── Messages.tsx
+│   │   ├── MyPurchases.tsx
+│   │   ├── NearbyCreators.tsx
+│   │   ├── NewRoomPage.tsx
+│   │   ├── NotFound.tsx
+│   │   ├── Notifications.tsx
+│   │   ├── OAuthConsent.tsx
+│   │   ├── Onboarding.tsx
+│   │   ├── Opportunities.tsx
+│   │   ├── OpportunityDashboard.tsx
+│   │   ├── OpportunityDetail.tsx
+│   │   ├── PartnerDirectory.tsx
+│   │   ├── PartnerSubmit.tsx
+│   │   ├── PassportDirectory.tsx
+│   │   ├── PayInvoice.tsx
+│   │   ├── PayLink.tsx
+│   │   ├── PaymentCanceled.tsx
+│   │   ├── PaymentSuccess.tsx
+│   │   ├── PerksTab.tsx
+│   │   ├── PersonalRoom.tsx
+│   │   ├── Podcast.tsx
+│   │   ├── PostOpportunity.tsx
+│   │   ├── Privacy.tsx
+│   │   ├── ProductionPage.tsx
+│   │   ├── Profile.tsx
+│   │   ├── ProjectReview.tsx
+│   │   ├── ProjectsList.tsx
+│   │   ├── PurchaseSuccess.tsx
+│   │   ├── Recordings.tsx
+│   │   ├── SalesDashboard.tsx
+│   │   ├── Scene.tsx
+│   │   ├── Scout.tsx
+│   │   ├── SearchResults.tsx
+│   │   ├── Settings.tsx
+│   │   ├── ShareRedirects.tsx
+│   │   ├── SharedDeck.tsx
+│   │   ├── Shortlists.tsx
+│   │   ├── SoundStages.tsx
+│   │   ├── SpeedIndex.tsx
+│   │   ├── SpeedRecap.tsx
+│   │   ├── SpeedSession.tsx
+│   │   ├── Spotlight.tsx
+│   │   ├── StudioImport.tsx
+│   │   ├── StudioRecap.tsx
+│   │   ├── SubmitReview.tsx
+│   │   ├── Subscription.tsx
+│   │   ├── TalentFinder.tsx
+│   │   ├── TalentManager.tsx
+│   │   ├── Terms.tsx
+│   │   ├── TestEmails.tsx
+│   │   ├── ThriveDesk.tsx
+│   │   ├── ThriveGenerate.tsx
+│   │   ├── ThrivePay.tsx
+│   │   ├── Unsubscribe.tsx
+│   │   ├── VerifyOpportunity.tsx
+│   │   ├── ViewProfile.tsx
+│   │   ├── WaitlistAdmin.tsx
+│   │   ├── WebsiteBuilder.tsx
+│   │   ├── Welcome.tsx
+│   │   ├── WorkHome.tsx
+│   │   └── WorkHomeSkeleton.tsx
+│   ├── test
+│   │   └── setup.ts
+│   ├── utils
+│   │   └── eventConfirmationEmail.ts
+│   ├── App.tsx
+│   ├── index.css
+│   ├── main.tsx
+│   └── vite-env.d.ts
+├── supabase
+│   ├── functions
+│   │   ├── _shared
+│   │   │   ├── email-templates
+│   │   │   │   ├── email-change.tsx
+│   │   │   │   ├── invite.tsx
+│   │   │   │   ├── magic-link.tsx
+│   │   │   │   ├── reauthentication.tsx
+│   │   │   │   ├── recovery.tsx
+│   │   │   │   └── signup.tsx
+│   │   │   ├── import
+│   │   │   │   ├── providers
+│   │   │   │   │   ├── csv.ts
+│   │   │   │   │   ├── monday.ts
+│   │   │   │   │   ├── notion.ts
+│   │   │   │   │   └── slack.ts
+│   │   │   │   ├── crypto.ts
+│   │   │   │   ├── registry.ts
+│   │   │   │   ├── types.ts
+│   │   │   │   └── writer.ts
+│   │   │   ├── transactional-email-templates
+│   │   │   │   ├── application-confirmation.tsx
+│   │   │   │   ├── application-status-update.tsx
+│   │   │   │   ├── credit-chain-invite.tsx
+│   │   │   │   ├── curated-stage-invite.tsx
+│   │   │   │   ├── day2-engagement.tsx
+│   │   │   │   ├── event-blast.tsx
+│   │   │   │   ├── event-invite.tsx
+│   │   │   │   ├── event-registration-confirmation.tsx
+│   │   │   │   ├── event-reminder.tsx
+│   │   │   │   ├── new-applicant-notification.tsx
+│   │   │   │   ├── onboarding-reminder.tsx
+│   │   │   │   ├── re-engagement.tsx
+│   │   │   │   ├── registry.ts
+│   │   │   │   ├── send-email.ts
+│   │   │   │   ├── speed-session-recap.tsx
+│   │   │   │   ├── speed-session-reminder.tsx
+│   │   │   │   ├── speed-session-rsvp-confirmed.tsx
+│   │   │   │   ├── thrivefund-campaign-failed.tsx
+│   │   │   │   ├── thrivefund-campaign-funded.tsx
+│   │   │   │   ├── thrivefund-pledge-confirmed.tsx
+│   │   │   │   ├── universe-scan-findings.tsx
+│   │   │   │   └── welcome.tsx
+│   │   │   ├── admin-guard.ts
+│   │   │   ├── agentActionBinding.ts
+│   │   │   ├── agentAuthority.ts
+│   │   │   ├── agentDmBinding.ts
+│   │   │   ├── aiLimits.ts
+│   │   │   ├── aiModels.ts
+│   │   │   ├── aiRateLimit.ts
+│   │   │   ├── bankRequest.ts
+│   │   │   ├── batchPayout.ts
+│   │   │   ├── callerAuth.ts
+│   │   │   ├── copilotContext.ts
+│   │   │   ├── cron-auth.ts
+│   │   │   ├── email-kit.tsx
+│   │   │   ├── emailSender.ts
+│   │   │   ├── embed.ts
+│   │   │   ├── escrowAuth.ts
+│   │   │   ├── escrowOrderAction.ts
+│   │   │   ├── executionGuard.ts
+│   │   │   ├── fetchWithTimeout.ts
+│   │   │   ├── getPaidLink.ts
+│   │   │   ├── guestVerification.ts
+│   │   │   ├── guestWalletCredit.ts
+│   │   │   ├── leadExtraction.ts
+│   │   │   ├── meetingContextAccess.ts
+│   │   │   ├── meetingParticipantAccess.ts
+│   │   │   ├── milestonePayable.ts
+│   │   │   ├── milestoneProjectSync.ts
+│   │   │   ├── notificationGuards.ts
+│   │   │   ├── orderConfirmation.ts
+│   │   │   ├── orgAccess.ts
+│   │   │   ├── outboundBudget.ts
+│   │   │   ├── outboundText.ts
+│   │   │   ├── payoutRequest.ts
+│   │   │   ├── phoneOtp.ts
+│   │   │   ├── platformFees.ts
+│   │   │   ├── pledgeRequest.ts
+│   │   │   ├── pledgeVerification.ts
+│   │   │   ├── premiumSwitch.ts
+│   │   │   ├── productFilePaths.ts
+│   │   │   ├── projectAccess.ts
+│   │   │   ├── promptIsolation.ts
+│   │   │   ├── publicCheckoutInput.ts
+│   │   │   ├── purchaseEntitlement.ts
+│   │   │   ├── rate-limiter.ts
+│   │   │   ├── recordingAccess.ts
+│   │   │   ├── recordingConsent.ts
+│   │   │   ├── recordingRetention.ts
+│   │   │   ├── require-user.ts
+│   │   │   ├── resolveMilestonePayee.ts
+│   │   │   ├── roomSessionLimits.ts
+│   │   │   ├── scoutSources.ts
+│   │   │   ├── shareLinkScope.ts
+│   │   │   ├── ssrf.ts
+│   │   │   ├── stageTicket.ts
+│   │   │   ├── stripeEnv.ts
+│   │   │   ├── stripeSignature.ts
+│   │   │   ├── studioAIGate.ts
+│   │   │   ├── studioAccess.ts
+│   │   │   ├── studioOutcomeRouter.ts
+│   │   │   ├── subscriptionPrices.ts
+│   │   │   ├── subscriptionRoomLimits.ts
+│   │   │   ├── ticketCheckout.ts
+│   │   │   ├── ticketPurchase.ts
+│   │   │   ├── transactionalEmailPolicy.ts
+│   │   │   ├── validation.ts
+│   │   │   ├── walletTopup.ts
+│   │   │   ├── walletTransfer.ts
+│   │   │   ├── webhookFreshness.ts
+│   │   │   ├── webhookLedger.ts
+│   │   │   └── weeklyEmail.ts
+│   │   ├── accept-call-action-item
+│   │   │   └── index.ts
+│   │   ├── accept-project-invitation
+│   │   │   └── index.ts
+│   │   ├── accept-room-knock
+│   │   │   └── index.ts
+│   │   ├── activate-og-promotion
+│   │   │   └── index.ts
+│   │   ├── agent-orchestrator
+│   │   │   └── index.ts
+│   │   ├── agent-rsvp-event
+│   │   │   └── index.ts
+│   │   ├── agent-send-dm
+│   │   │   └── index.ts
+│   │   ├── agent-vouch-credit
+│   │   │   └── index.ts
+│   │   ├── ai-autofill-profile
+│   │   │   └── index.ts
+│   │   ├── ai-credit-import
+│   │   │   └── index.ts
+│   │   ├── ai-finance
+│   │   │   └── index.ts
+│   │   ├── ai-markup-suggest
+│   │   │   └── index.ts
+│   │   ├── ai-pricing-copilot
+│   │   │   └── index.ts
+│   │   ├── ai-support
+│   │   │   └── index.ts
+│   │   ├── ai-talent-match
+│   │   │   └── index.ts
+│   │   ├── analyze-profile-url
+│   │   │   └── index.ts
+│   │   ├── apply-to-stage
+│   │   │   └── index.ts
+│   │   ├── auth-email-hook
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── auto-discover-creatives
+│   │   │   └── index.ts
+│   │   ├── auto-epk-updater
+│   │   │   └── index.ts
+│   │   ├── auto-outreach-watch
+│   │   │   └── index.ts
+│   │   ├── auto-resolve-disputes
+│   │   │   └── index.ts
+│   │   ├── backfill-credit-media
+│   │   │   └── index.ts
+│   │   ├── batch-enrich-profiles
+│   │   │   └── index.ts
+│   │   ├── batch-milestone-payout
+│   │   │   └── index.ts
+│   │   ├── book-meeting
+│   │   │   └── index.ts
+│   │   ├── bulk-import-profiles
+│   │   │   └── index.ts
+│   │   ├── bulk-submit-projects
+│   │   │   └── index.ts
+│   │   ├── capture-milestone-payment
+│   │   │   └── index.ts
+│   │   ├── challenge-deadline-reminder
+│   │   │   └── index.ts
+│   │   ├── check-connect-status
+│   │   │   └── index.ts
+│   │   ├── check-subscription
+│   │   │   └── index.ts
+│   │   ├── checkout-event-tickets
+│   │   │   └── index.ts
+│   │   ├── checkout-stage-ticket
+│   │   │   └── index.ts
+│   │   ├── claim-and-create-profile
+│   │   │   └── index.ts
+│   │   ├── complete-product-purchase
+│   │   │   └── index.ts
+│   │   ├── compose-magazine-article
+│   │   │   └── index.ts
+│   │   ├── connect-platform
+│   │   │   └── index.ts
+│   │   ├── convert-currency
+│   │   │   └── index.ts
+│   │   ├── copilot-collaborator-tools
+│   │   │   └── index.ts
+│   │   ├── copilot-executor
+│   │   │   └── index.ts
+│   │   ├── copilot-planner
+│   │   │   └── index.ts
+│   │   ├── create-agent-proposal
+│   │   │   └── index.ts
+│   │   ├── create-checkout
+│   │   │   └── index.ts
+│   │   ├── create-circle-room
+│   │   │   └── index.ts
+│   │   ├── create-connect-account
+│   │   │   └── index.ts
+│   │   ├── create-connect-login-link
+│   │   │   └── index.ts
+│   │   ├── create-curated-stage
+│   │   │   └── index.ts
+│   │   ├── create-direct-video-call
+│   │   │   └── index.ts
+│   │   ├── create-event-room
+│   │   │   └── index.ts
+│   │   ├── create-founder-checkout
+│   │   │   └── index.ts
+│   │   ├── create-invoice-checkout
+│   │   │   └── index.ts
+│   │   ├── create-meeting
+│   │   │   └── index.ts
+│   │   ├── create-milestone-payment
+│   │   │   └── index.ts
+│   │   ├── create-payment-link-checkout
+│   │   │   └── index.ts
+│   │   ├── create-sound-stage
+│   │   │   └── index.ts
+│   │   ├── create-speed-group-room
+│   │   │   └── index.ts
+│   │   ├── create-video-guest-link
+│   │   │   └── index.ts
+│   │   ├── create-video-room
+│   │   │   └── index.ts
+│   │   ├── credits-ai-insights
+│   │   │   └── index.ts
+│   │   ├── customer-portal
+│   │   │   └── index.ts
+│   │   ├── daily-match-digest
+│   │   │   └── index.ts
+│   │   ├── daily-recording-webhook
+│   │   │   └── index.ts
+│   │   ├── desk-agent
+│   │   │   └── index.ts
+│   │   ├── desk-agent-watch
+│   │   │   └── index.ts
+│   │   ├── desk-ai
+│   │   │   └── index.ts
+│   │   ├── desk-daily-nudge
+│   │   │   └── index.ts
+│   │   ├── detect-duplicate-accounts
+│   │   │   └── index.ts
+│   │   ├── discover-creators
+│   │   │   └── index.ts
+│   │   ├── discover-profiles
+│   │   │   └── index.ts
+│   │   ├── draft-gig-application
+│   │   │   └── index.ts
+│   │   ├── draft-lead-reply
+│   │   │   └── index.ts
+│   │   ├── draft-outreach-email
+│   │   │   └── index.ts
+│   │   ├── elevate-brief
+│   │   │   └── index.ts
+│   │   ├── embed-copilot-memory
+│   │   │   └── index.ts
+│   │   ├── end-curated-stage
+│   │   │   └── index.ts
+│   │   ├── end-sound-stage
+│   │   │   └── index.ts
+│   │   ├── end-stage-turn
+│   │   │   └── index.ts
+│   │   ├── enhance-gig
+│   │   │   └── index.ts
+│   │   ├── enhance-listing-ai
+│   │   │   └── index.ts
+│   │   ├── enhance-task
+│   │   │   └── index.ts
+│   │   ├── enrich-creator-profile
+│   │   │   └── index.ts
+│   │   ├── enrich-credits
+│   │   │   └── index.ts
+│   │   ├── enrich-press-links
+│   │   │   └── index.ts
+│   │   ├── ep-daily-briefing
+│   │   │   └── index.ts
+│   │   ├── epk-og-image
+│   │   │   └── index.ts
+│   │   ├── event-og-image
+│   │   │   └── index.ts
+│   │   ├── event-pass-qr
+│   │   │   └── index.ts
+│   │   ├── event-reminders
+│   │   │   └── index.ts
+│   │   ├── extract-brief
+│   │   │   └── index.ts
+│   │   ├── extract-client-details
+│   │   │   └── index.ts
+│   │   ├── extract-copilot-memory
+│   │   │   └── index.ts
+│   │   ├── extract-event-details
+│   │   │   └── index.ts
+│   │   ├── extract-gig-details
+│   │   │   └── index.ts
+│   │   ├── feedback-chat
+│   │   │   └── index.ts
+│   │   ├── fetch-discogs-credits
+│   │   │   └── index.ts
+│   │   ├── fetch-imdb-credits
+│   │   │   └── index.ts
+│   │   ├── fetch-link-metadata
+│   │   │   └── index.ts
+│   │   ├── fetch-musicbrainz-credits
+│   │   │   └── index.ts
+│   │   ├── fetch-og-data
+│   │   │   └── index.ts
+│   │   ├── fetch-portfolio-data
+│   │   │   └── index.ts
+│   │   ├── fetch-spotify-credits
+│   │   │   └── index.ts
+│   │   ├── fetch-youtube-credits
+│   │   │   └── index.ts
+│   │   ├── fetch-youtube-playlist
+│   │   │   └── index.ts
+│   │   ├── finalize-challenges
+│   │   │   └── index.ts
+│   │   ├── gen-campaign-matrix
+│   │   │   └── index.ts
+│   │   ├── gen-content-shotlist
+│   │   │   └── index.ts
+│   │   ├── gen-event-runsheet
+│   │   │   └── index.ts
+│   │   ├── gen-music-temp
+│   │   │   └── index.ts
+│   │   ├── gen-podcast-questions
+│   │   │   └── index.ts
+│   │   ├── gen-release-checklist
+│   │   │   └── index.ts
+│   │   ├── generate-bio
+│   │   │   └── index.ts
+│   │   ├── generate-board-image
+│   │   │   └── index.ts
+│   │   ├── generate-challenges
+│   │   │   └── index.ts
+│   │   ├── generate-clips
+│   │   │   └── index.ts
+│   │   ├── generate-content
+│   │   │   ├── index.test.ts
+│   │   │   └── index.ts
+│   │   ├── generate-deal-memo
+│   │   │   └── index.ts
+│   │   ├── generate-event-cover
+│   │   │   └── index.ts
+│   │   ├── generate-event-recap
+│   │   │   └── index.ts
+│   │   ├── generate-gig-cover
+│   │   │   └── index.ts
+│   │   ├── generate-gig-description
+│   │   │   └── index.ts
+│   │   ├── generate-ice-breakers
+│   │   │   └── index.ts
+│   │   ├── generate-magazine-article
+│   │   │   └── index.ts
+│   │   ├── generate-match-explanation
+│   │   │   └── index.ts
+│   │   ├── generate-moodboard-image
+│   │   │   └── index.ts
+│   │   ├── generate-opportunity-image
+│   │   │   └── index.ts
+│   │   ├── generate-site
+│   │   │   └── index.ts
+│   │   ├── generate-sitemap
+│   │   │   └── index.ts
+│   │   ├── generate-studio-copy
+│   │   │   └── index.ts
+│   │   ├── generate-studio-image
+│   │   │   └── index.ts
+│   │   ├── generate-vapid-keys
+│   │   │   └── index.ts
+│   │   ├── geocode-location
+│   │   │   └── index.ts
+│   │   ├── get-connect-balance
+│   │   │   └── index.ts
+│   │   ├── get-download-urls
+│   │   │   └── index.ts
+│   │   ├── get-onboarding-matches
+│   │   │   └── index.ts
+│   │   ├── get-payment-intent
+│   │   │   └── index.ts
+│   │   ├── get-recording-link
+│   │   │   └── index.ts
+│   │   ├── gig-moderator
+│   │   │   └── index.ts
+│   │   ├── go-live-stage
+│   │   │   └── index.ts
+│   │   ├── guest-wallet-me
+│   │   │   └── index.ts
+│   │   ├── guest-wallet-session
+│   │   │   └── index.ts
+│   │   ├── guest-wallet-topup
+│   │   │   └── index.ts
+│   │   ├── guest-wallet-webhook
+│   │   │   └── index.ts
+│   │   ├── handle-email-suppression
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── handle-email-unsubscribe
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── handle-unsubscribe
+│   │   │   └── index.ts
+│   │   ├── import-analyze
+│   │   │   └── index.ts
+│   │   ├── import-odos-members
+│   │   │   └── index.ts
+│   │   ├── import-profile-from-url
+│   │   │   └── index.ts
+│   │   ├── import-profile-url
+│   │   │   └── index.ts
+│   │   ├── import-run
+│   │   │   └── index.ts
+│   │   ├── import-suggest
+│   │   │   └── index.ts
+│   │   ├── import-worker
+│   │   │   └── index.ts
+│   │   ├── inbox-triage-agent
+│   │   │   └── index.ts
+│   │   ├── infer-passport-profession
+│   │   │   └── index.ts
+│   │   ├── integration-oauth-callback
+│   │   │   └── index.ts
+│   │   ├── integration-oauth-start
+│   │   │   └── index.ts
+│   │   ├── integration-revoke
+│   │   │   └── index.ts
+│   │   ├── invite-to-stage
+│   │   │   └── index.ts
+│   │   ├── invoice-pay-info
+│   │   │   └── index.ts
+│   │   ├── invoice-report-bank-transfer
+│   │   │   └── index.ts
+│   │   ├── join-paid-circle
+│   │   │   └── index.ts
+│   │   ├── join-sound-stage
+│   │   │   └── index.ts
+│   │   ├── join-speed-session
+│   │   │   └── index.ts
+│   │   ├── knock-personal-room
+│   │   │   └── index.ts
+│   │   ├── krepay-ai-insights
+│   │   │   └── index.ts
+│   │   ├── lookup-auth-providers
+│   │   │   └── index.ts
+│   │   ├── match-event-guests
+│   │   │   └── index.ts
+│   │   ├── mcp
+│   │   │   └── index.ts
+│   │   ├── merge-accounts-init
+│   │   │   └── index.ts
+│   │   ├── merge-accounts-lookup
+│   │   │   └── index.ts
+│   │   ├── merge-accounts-verify
+│   │   │   └── index.ts
+│   │   ├── mint-meeting-token
+│   │   │   └── index.ts
+│   │   ├── mint-video-token
+│   │   │   └── index.ts
+│   │   ├── moderate-campaign
+│   │   │   └── index.ts
+│   │   ├── moderate-opportunity
+│   │   │   └── index.ts
+│   │   ├── money-agent-watch
+│   │   │   └── index.ts
+│   │   ├── notify-speed-pool-ping
+│   │   │   └── index.ts
+│   │   ├── notify-speed-session-update
+│   │   │   └── index.ts
+│   │   ├── notify-swipe
+│   │   │   └── index.ts
+│   │   ├── og-campaign
+│   │   │   └── index.ts
+│   │   ├── og-magazine
+│   │   │   └── index.ts
+│   │   ├── onboarding-discover
+│   │   │   └── index.ts
+│   │   ├── optimize-event-seating
+│   │   │   └── index.ts
+│   │   ├── payment-link-info
+│   │   │   └── index.ts
+│   │   ├── polish-magazine-article
+│   │   │   └── index.ts
+│   │   ├── preview-transactional-email
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── process-challenge-winners
+│   │   │   └── index.ts
+│   │   ├── process-drip-campaign
+│   │   │   └── index.ts
+│   │   ├── process-email-queue
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── process-outreach-queue
+│   │   │   └── index.ts
+│   │   ├── process-partner-submission
+│   │   │   └── index.ts
+│   │   ├── process-scheduled-campaigns
+│   │   │   └── index.ts
+│   │   ├── production-detail
+│   │   │   └── index.ts
+│   │   ├── project-og-image
+│   │   │   └── index.ts
+│   │   ├── promote-raised-hand
+│   │   │   └── index.ts
+│   │   ├── promote-waitlist
+│   │   │   └── index.ts
+│   │   ├── public-stats
+│   │   │   └── index.ts
+│   │   ├── purchase-digital-product
+│   │   │   └── index.ts
+│   │   ├── purchase-event-ticket
+│   │   │   └── index.ts
+│   │   ├── purge-expired-recordings
+│   │   │   └── index.ts
+│   │   ├── raise-hand-stage
+│   │   │   └── index.ts
+│   │   ├── record-stage-outcome
+│   │   │   └── index.ts
+│   │   ├── redeem-project-guest-link
+│   │   │   └── index.ts
+│   │   ├── redeem-project-share
+│   │   │   └── index.ts
+│   │   ├── redeem-video-guest-link
+│   │   │   └── index.ts
+│   │   ├── refresh-my-universe
+│   │   │   └── index.ts
+│   │   ├── release-escrow
+│   │   │   └── index.ts
+│   │   ├── review-stage-application
+│   │   │   └── index.ts
+│   │   ├── route-studio-outcome
+│   │   │   └── index.ts
+│   │   ├── route-studio-post
+│   │   │   └── index.ts
+│   │   ├── route-thrive-intent
+│   │   │   └── index.ts
+│   │   ├── route-vault-file
+│   │   │   └── index.ts
+│   │   ├── rsvp-curated-stage
+│   │   │   └── index.ts
+│   │   ├── rsvp-speed-session
+│   │   │   └── index.ts
+│   │   ├── scan-receipt
+│   │   │   └── index.ts
+│   │   ├── scope-guardian
+│   │   │   └── index.ts
+│   │   ├── scout-gig-detail
+│   │   │   └── index.ts
+│   │   ├── scout-gigs
+│   │   │   └── index.ts
+│   │   ├── scout-leads
+│   │   │   └── index.ts
+│   │   ├── scrape-thumbnail
+│   │   │   └── index.ts
+│   │   ├── search-credits-web
+│   │   │   └── index.ts
+│   │   ├── search-icdb
+│   │   │   └── index.ts
+│   │   ├── seed-atlas-locations
+│   │   │   └── index.ts
+│   │   ├── seed-icdb
+│   │   │   └── index.ts
+│   │   ├── send-activity-digest
+│   │   │   └── index.ts
+│   │   ├── send-broadcast-email
+│   │   │   └── index.ts
+│   │   ├── send-circle-invite
+│   │   │   └── index.ts
+│   │   ├── send-credit-invite
+│   │   │   └── index.ts
+│   │   ├── send-day2-engagement
+│   │   │   └── index.ts
+│   │   ├── send-event-blast
+│   │   │   └── index.ts
+│   │   ├── send-event-invite
+│   │   │   └── index.ts
+│   │   ├── send-event-reminders
+│   │   │   └── index.ts
+│   │   ├── send-founder-note-reminder
+│   │   │   └── index.ts
+│   │   ├── send-get-paid-link
+│   │   │   └── index.ts
+│   │   ├── send-invoice-chase
+│   │   │   └── index.ts
+│   │   ├── send-invoice-email
+│   │   │   └── index.ts
+│   │   ├── send-notification-email
+│   │   │   └── index.ts
+│   │   ├── send-onboarding-reminders
+│   │   │   └── index.ts
+│   │   ├── send-outreach-draft
+│   │   │   └── index.ts
+│   │   ├── send-outreach-email
+│   │   │   └── index.ts
+│   │   ├── send-phone-otp
+│   │   │   └── index.ts
+│   │   ├── send-project-invitation
+│   │   │   └── index.ts
+│   │   ├── send-push-notification
+│   │   │   └── index.ts
+│   │   ├── send-reengagement
+│   │   │   └── index.ts
+│   │   ├── send-reengagement-emails
+│   │   │   └── index.ts
+│   │   ├── send-streak-warning
+│   │   │   └── index.ts
+│   │   ├── send-test-emails
+│   │   │   └── index.ts
+│   │   ├── send-transactional-email
+│   │   │   ├── deno.json
+│   │   │   └── index.ts
+│   │   ├── send-user-email
+│   │   │   └── index.ts
+│   │   ├── send-waitlist-invite
+│   │   │   └── index.ts
+│   │   ├── send-weekly-digest
+│   │   │   └── index.ts
+│   │   ├── send-weekly-matches
+│   │   │   └── index.ts
+│   │   ├── spark-ideas
+│   │   │   └── index.ts
+│   │   ├── speed-icebreakers
+│   │   │   └── index.ts
+│   │   ├── speed-session-autocancel
+│   │   │   └── index.ts
+│   │   ├── speed-session-matcher
+│   │   │   └── index.ts
+│   │   ├── speed-session-recap
+│   │   │   └── index.ts
+│   │   ├── speed-session-reminders
+│   │   │   └── index.ts
+│   │   ├── sponsor-radar
+│   │   │   └── index.ts
+│   │   ├── sso-authorize
+│   │   │   └── index.ts
+│   │   ├── sso-token
+│   │   │   └── index.ts
+│   │   ├── sso-userinfo
+│   │   │   └── index.ts
+│   │   ├── stage-reminders
+│   │   │   └── index.ts
+│   │   ├── start-stage-transcription
+│   │   │   └── index.ts
+│   │   ├── start-stage-turn
+│   │   │   └── index.ts
+│   │   ├── stripe-marketplace-webhook
+│   │   │   └── index.ts
+│   │   ├── stripe-wallet-webhook
+│   │   │   └── index.ts
+│   │   ├── studio-ingest
+│   │   │   └── index.ts
+│   │   ├── suggest-studio-folders
+│   │   │   └── index.ts
+│   │   ├── surface-agent-watch
+│   │   │   └── index.ts
+│   │   ├── sync-daily-recordings
+│   │   │   └── index.ts
+│   │   ├── sync-social-stats
+│   │   │   └── index.ts
+│   │   ├── telegram-link-start
+│   │   │   └── index.ts
+│   │   ├── telegram-setup-webhook
+│   │   │   └── index.ts
+│   │   ├── telegram-status
+│   │   │   └── index.ts
+│   │   ├── telegram-webhook
+│   │   │   └── index.ts
+│   │   ├── thrive-ai-chat
+│   │   │   └── index.ts
+│   │   ├── thrive-creative-tools
+│   │   │   └── index.ts
+│   │   ├── thrive-document-engine
+│   │   │   └── index.ts
+│   │   ├── thrive-memory-extract
+│   │   │   └── index.ts
+│   │   ├── thrive-memory-tool
+│   │   │   └── index.ts
+│   │   ├── thrive-voice-tts
+│   │   │   └── index.ts
+│   │   ├── thrive-voice-turn
+│   │   │   └── index.ts
+│   │   ├── thrivefund-ai-assist
+│   │   │   └── index.ts
+│   │   ├── thrivefund-create-pledge
+│   │   │   └── index.ts
+│   │   ├── thrivefund-finalize-campaign
+│   │   │   └── index.ts
+│   │   ├── thrivefund-release-milestone
+│   │   │   └── index.ts
+│   │   ├── transcribe-call
+│   │   │   └── index.ts
+│   │   ├── transcribe-voice-note
+│   │   │   └── index.ts
+│   │   ├── universal-search
+│   │   │   └── index.ts
+│   │   ├── update-unclaimed-profiles
+│   │   │   └── index.ts
+│   │   ├── update-verification-score
+│   │   │   └── index.ts
+│   │   ├── validate-event-promo
+│   │   │   └── index.ts
+│   │   ├── validate-waitlist-ai
+│   │   │   └── index.ts
+│   │   ├── verify-brand-credit
+│   │   │   └── index.ts
+│   │   ├── verify-circle-payment
+│   │   │   └── index.ts
+│   │   ├── verify-credentials
+│   │   │   └── index.ts
+│   │   ├── verify-credit
+│   │   │   └── index.ts
+│   │   ├── verify-event-ticket
+│   │   │   └── index.ts
+│   │   ├── verify-founder-payment
+│   │   │   └── index.ts
+│   │   ├── verify-guest-opportunity
+│   │   │   └── index.ts
+│   │   ├── verify-profile
+│   │   │   └── index.ts
+│   │   ├── verify-profile-claim
+│   │   │   └── index.ts
+│   │   ├── verify-stage-ticket
+│   │   │   └── index.ts
+│   │   ├── voice-command
+│   │   │   └── index.ts
+│   │   ├── voice-to-task
+│   │   │   └── index.ts
+│   │   ├── wallet-add-bank
+│   │   │   └── index.ts
+│   │   ├── wallet-balance
+│   │   │   └── index.ts
+│   │   ├── wallet-payout
+│   │   │   └── index.ts
+│   │   ├── wallet-topup
+│   │   │   └── index.ts
+│   │   ├── wallet-topup-confirm
+│   │   │   └── index.ts
+│   │   ├── wallet-transfer
+│   │   │   └── index.ts
+│   │   ├── weekly-recap
+│   │   │   └── index.ts
+│   │   └── weekly-universe-scan
+│   │       └── index.ts
+│   ├── migrations
+│   │   ├── 20250930073034_21346291-5bef-42d1-8439-e372ed607250.sql
+│   │   ├── 20250930073044_cd8f8ca6-943d-473e-946e-6082a0bae8da.sql
+│   │   ├── 20250930081656_4c8638fb-5d4b-4990-bbe1-c92ef94cfa03.sql
+│   │   ├── 20250930084337_1d786f87-9384-4f9b-9b25-d843dfba25e5.sql
+│   │   ├── 20250930101623_d27492f7-7c95-476a-a773-e17ee5e982a6.sql
+│   │   ├── 20250930101636_12099e83-39d9-4f6f-a3b1-4192c12ae2ae.sql
+│   │   ├── 20250930105322_5a15983e-cec3-4cbc-8d4c-65ef9cb34f43.sql
+│   │   ├── 20250930110244_2a25b6b1-ed35-4024-af6a-14f93f384e2a.sql
+│   │   ├── 20250930110444_40cf3801-a539-48d5-820b-23921cd189b2.sql
+│   │   ├── 20250930110718_317c2f4c-5455-4bfa-a91f-54b9282081b8.sql
+│   │   ├── 20250930111539_775a73e5-e5bc-405f-b3d5-963c74be7c2a.sql
+│   │   ├── 20250930134421_06de0a1d-39bc-480f-be1a-3d08373cc286.sql
+│   │   ├── 20250930141941_c6db1045-3991-4a90-8f37-bf98d8083d4e.sql
+│   │   ├── 20250930155148_308d4931-ae3c-4df2-b39f-84795e377116.sql
+│   │   ├── 20250930155404_d180a68b-a555-4044-8230-446f9e6a7964.sql
+│   │   ├── 20250930160355_6b71b24b-6536-49e2-8aa0-632353964b6c.sql
+│   │   ├── 20250930161101_913e1232-972e-4bb6-ae3a-07fdeb1f686f.sql
+│   │   ├── 20250930234954_6818edcf-303d-4999-a588-84e40e649a34.sql
+│   │   ├── 20250930235110_dea043a1-3c49-4b2e-82d2-aca11e407dab.sql
+│   │   ├── 20251001001314_95f78cda-5ba9-4a9b-8cd1-fd5e6dab60c0.sql
+│   │   ├── 20251001001606_ab4f91f9-68e0-449c-8eb6-0bf36e399f65.sql
+│   │   ├── 20251001001903_3bf5f753-597f-47b0-acc6-c8263cf24218.sql
+│   │   ├── 20251001002358_cf1b23b6-abb1-4ead-85b2-7c1573f9f5cd.sql
+│   │   ├── 20251001003256_50e598df-fedc-47e3-b885-2d1eba371e01.sql
+│   │   ├── 20251001003520_83d0780d-2fec-471d-b2bd-1d9d19e85fa7.sql
+│   │   ├── 20251001004351_75565394-56ad-4947-b744-1ee0cb609cc1.sql
+│   │   ├── 20251001004736_7cced20c-8be0-42e7-83e5-2ac5031c0501.sql
+│   │   ├── 20251001005203_015d27f7-cc7e-44ed-9d5c-6bc70e010215.sql
+│   │   ├── 20251001011543_639e1eea-54c0-4023-92c0-5c62458df0a8.sql
+│   │   ├── 20251001013745_b97e8a10-80a7-4223-aa7a-0cdfe2eeaa34.sql
+│   │   ├── 20251001013800_f612beb2-a9fd-4b58-adad-a4b6eddb3e44.sql
+│   │   ├── 20251001013811_886e2ad8-e4a4-4679-b9a3-760f9cb2afdb.sql
+│   │   ├── 20251001013943_3b53870c-41d8-4253-be74-18eb38079823.sql
+│   │   ├── 20251001013957_c362f9dd-b18b-46b7-85a7-19443ebc5891.sql
+│   │   ├── 20251001015353_e7bdf987-5065-453d-bfaf-e75d89629627.sql
+│   │   ├── 20251001025012_27a1d5d5-e09c-464f-8d07-f434b2a47fd8.sql
+│   │   ├── 20251001031941_38a4b208-64c4-4c85-afd9-55deaed92f01.sql
+│   │   ├── 20251001032158_fbad0b14-a659-4a48-a9e4-7be0c41eecbc.sql
+│   │   ├── 20251001033906_d49387b8-cf48-4bb0-adaf-c89d6ba66a45.sql
+│   │   ├── 20251001040029_e8d405a3-2a40-4e86-8eb1-49a0cf103544.sql
+│   │   ├── 20251001042821_2df234ae-fbf8-4d8e-860d-ff16b9811dc8.sql
+│   │   ├── 20251001043818_57586304-32da-401a-8621-eea469d652a5.sql
+│   │   ├── 20251001044725_06e5d61b-d1e3-41e4-be98-b7eabe424992.sql
+│   │   ├── 20251001050214_5dcf0444-4802-4bac-9b41-25836c170ea4.sql
+│   │   ├── 20251001052808_a2a78ad2-579d-46f2-a8be-a07a6f64f74b.sql
+│   │   ├── 20251001071212_47177b5f-6097-45b6-9ab8-21e27ffd738a.sql
+│   │   ├── 20251001113332_9593790c-9050-4880-bbc4-4654a602f753.sql
+│   │   ├── 20251001113414_6772bcb9-73fa-4963-a4ba-c991b28555e2.sql
+│   │   ├── 20251001115025_ee50b1af-79ed-4a3d-90f0-7fe12b34ce70.sql
+│   │   ├── 20251001115041_a9f18bac-e5a9-4cbb-97c6-1664a046a8e9.sql
+│   │   ├── 20251001115338_76b137b4-7486-4cdf-b5f7-b1aab5ba602d.sql
+│   │   ├── 20251001230851_02d8acb5-ee8b-43c4-ba09-7b61357a92e5.sql
+│   │   ├── 20251002002709_273f311a-0052-4e8a-804b-497daeb53b9c.sql
+│   │   ├── 20251002002723_78078f0d-dcc3-41ca-8298-d82a9f1bdb03.sql
+│   │   ├── 20251002004618_679b7c5a-df33-47b0-b5e0-5ab3f89a3191.sql
+│   │   ├── 20251002012414_fee0a3f2-757b-4178-88ee-a0d4a5f93122.sql
+│   │   ├── 20251002013121_502908d4-b961-4d54-9f02-76effea116f9.sql
+│   │   ├── 20251002032701_2989d664-80b7-42fb-aeb1-d6a7d0dda3cb.sql
+│   │   ├── 20251002034653_3473831d-a7dd-47d8-b8c7-48e53278f60a.sql
+│   │   ├── 20251002040311_0f18b8b6-8593-40f6-989f-090ad8fbc0e2.sql
+│   │   ├── 20251003043954_e45480e1-1660-4699-92c4-73bb1718af32.sql
+│   │   ├── 20251003044705_eb41989c-b22a-489a-9fd3-efabbfc9ff50.sql
+│   │   ├── 20251003045234_5183536c-f54d-4ac3-b503-d47153d4b43f.sql
+│   │   ├── 20251003051702_f1224762-3702-4a68-99c6-3b53e8ad01fe.sql
+│   │   ├── 20251003052115_bc890db8-59fa-4831-acc2-38ceba872d8e.sql
+│   │   ├── 20251003082340_c2d36fc7-799b-4fd0-b61f-9ba870e5ce74.sql
+│   │   ├── 20251003082550_be8d7b69-4c4b-49bd-80b0-1376193b26ad.sql
+│   │   ├── 20251003082910_fcd9278d-b886-43b3-bc31-7579d9fdb2fc.sql
+│   │   ├── 20251003105840_f9f078c3-ec6a-4620-abe2-1e597082543c.sql
+│   │   ├── 20251003105908_d72ecf43-eeb0-4aeb-8f1e-69ff988b9f6b.sql
+│   │   ├── 20251003110442_96fc3937-7e45-4ba7-9fa6-77d138c0cf3c.sql
+│   │   ├── 20251003171922_d896ff66-1242-400c-8e57-1c10fe1ab389.sql
+│   │   ├── 20251004031510_60f5d7bd-d987-4b39-9565-c4d951666672.sql
+│   │   ├── 20251004032858_52579cb5-2633-4358-a1dc-0a5b4f2f8e66.sql
+│   │   ├── 20251004044422_7bdcce99-3456-47e7-b06b-89b3597c78ae.sql
+│   │   ├── 20251004052317_0663cf7e-b5c4-494b-af80-e8067f8f551e.sql
+│   │   ├── 20251004063133_8bf1ae1f-e33b-4c41-bc19-5cc8d6d9c47f.sql
+│   │   ├── 20251004064639_adeb92cb-27ac-4e18-a154-fbd998c40882.sql
+│   │   ├── 20251004073953_534f2533-3b66-451f-ac7d-7d7229c3b213.sql
+│   │   ├── 20251004081722_9a2f57d5-70c5-464d-82ea-0601e34a5ad3.sql
+│   │   ├── 20251004081757_d902431b-9438-4d6e-a961-04d076d85732.sql
+│   │   ├── 20251004085952_cd859f52-378c-482d-9998-cd6276466881.sql
+│   │   ├── 20251004095311_894a2a94-437a-4e6a-8a69-c57caf67d30d.sql
+│   │   ├── 20251004120223_c0496dab-8ace-452d-a341-7729a22700d3.sql
+│   │   ├── 20251004120300_bbf19112-2c5d-40ac-aa67-7c7153557ffa.sql
+│   │   ├── 20251004123408_3c64a2f5-f731-4e9b-9253-7eca57077503.sql
+│   │   ├── 20251005010939_eccabe5b-d93a-40f4-a63c-59f924c69dfa.sql
+│   │   ├── 20251005011320_2f4bfe20-f82c-44ab-8664-168adff12e03.sql
+│   │   ├── 20251005012652_39405d18-4d44-4d6f-b778-200cee16ae5a.sql
+│   │   ├── 20251005012834_13b77d58-d214-4bfe-8f74-9f48fb0fa3ae.sql
+│   │   ├── 20251005013100_4437688c-7f91-4ada-8b5c-a6a423dc6fb7.sql
+│   │   ├── 20251005013337_2883d7c6-6289-4281-a1b7-f97880d6dd76.sql
+│   │   ├── 20251005013601_e63c6845-c8b8-459c-aa14-07bb9ee3178b.sql
+│   │   ├── 20251005014449_95e72a3e-88fa-47c3-b1eb-e8887d2a7bfe.sql
+│   │   ├── 20251005015758_b9e4f171-77e7-4c49-9dfb-d190bc2010cc.sql
+│   │   ├── 20251005020111_0b420d9a-d9b9-476f-bf68-687acd27847a.sql
+│   │   ├── 20251005022421_07b706df-21d8-4ddf-9471-5a015020db05.sql
+│   │   ├── 20251005031153_de959469-dbb5-4b53-844a-357e3a33d256.sql
+│   │   ├── 20251005034654_7d5971b3-35b1-4292-b01a-d8a2485c4450.sql
+│   │   ├── 20251005035209_d765d4d1-fbd5-4287-ab6b-88411605630b.sql
+│   │   ├── 20251005045632_723bee42-755a-47e5-9792-2ee38c0fdcc0.sql
+│   │   ├── 20251005045700_e2cd4f37-d7d0-4b6b-b58b-e1a062d006c0.sql
+│   │   ├── 20251005050526_f291c3b0-72e4-4499-8b55-ec1b4c0a1807.sql
+│   │   ├── 20251005050728_2a4115d8-8807-4ee7-9845-ce9d648985f4.sql
+│   │   ├── 20251005052612_647c5aad-1d92-4f38-9a4c-6f8808f78986.sql
+│   │   ├── 20251005061355_f7687819-b10b-4c58-9415-ce5e49faf565.sql
+│   │   ├── 20251005075858_14d0e562-20c3-4590-aa98-ba6a93bd1c72.sql
+│   │   ├── 20251005084037_2c1be0f4-cd1b-42de-a1ae-6bb2ad613a75.sql
+│   │   ├── 20251005084056_9258a0e8-159a-4886-97cd-27c8356b9d45.sql
+│   │   ├── 20251005084425_da4918b6-1d3b-4408-9a1a-3a3b64d6f689.sql
+│   │   ├── 20251005085553_28d4b993-c378-4867-9e00-dee4c0889001.sql
+│   │   ├── 20251005085925_64254e0e-bca6-4c45-82e7-9a18ec52fb85.sql
+│   │   ├── 20251005085938_3d511176-a6da-4c14-bce5-c14d8dcc169a.sql
+│   │   ├── 20251005092925_e11a9b08-24d1-473f-ae0f-06ff73985c17.sql
+│   │   ├── 20251005094500_ba4fca21-4993-45ec-a410-19724c5e5b7f.sql
+│   │   ├── 20251005094830_a94ae824-c185-4565-bdfd-b62d7162f297.sql
+│   │   ├── 20251005095825_de295741-de95-40ad-8504-423fb0c18362.sql
+│   │   ├── 20251005142252_45537ab4-1199-4dfd-8242-85f58edf6dc1.sql
+│   │   ├── 20251006021754_3de59ae2-9d2f-4e5d-acac-26f12ba003f4.sql
+│   │   ├── 20251008005645_26cda0ed-8408-462d-9853-11907e2d3590.sql
+│   │   ├── 20251008012451_6843e4c4-3211-433c-be84-1afda112798c.sql
+│   │   ├── 20251008013305_0d7fbc95-d678-4cd9-a3a8-fda164f9b3a1.sql
+│   │   ├── 20251008014258_ed274b0e-013c-4493-ab7c-1aa2ae85eebe.sql
+│   │   ├── 20251008014624_4f51a0e3-ad6b-4372-99cb-4e30d1e6a905.sql
+│   │   ├── 20251008021922_7f0d5894-df8c-421a-89db-12476512cb36.sql
+│   │   ├── 20251008023603_c3110b7d-be9b-4f23-af14-29bff8297380.sql
+│   │   ├── 20251008023619_5b26673f-2986-4185-8707-bc1c410ad0b1.sql
+│   │   ├── 20251008035951_d02b7d2a-8c5f-4c1a-b558-b910c58c74ac.sql
+│   │   ├── 20251008055322_a7d8ef27-ae3a-429e-924b-f102a1efe449.sql
+│   │   ├── 20251008065313_42500ac4-e284-4c25-9dc1-e051ee3d2cc0.sql
+│   │   ├── 20251008094917_81d7d504-3116-474c-985e-7e75ebd19e69.sql
+│   │   ├── 20251008100308_f32c6874-a5be-4f3f-a1db-847d4e051ebc.sql
+│   │   ├── 20251008100332_24241058-ace0-4c66-beda-439e97d49033.sql
+│   │   ├── 20251008100854_aa722356-9186-4e4a-bd62-b6cf4a179aec.sql
+│   │   ├── 20251008105851_a3fac3f2-6780-42a0-9742-0a4b682ed657.sql
+│   │   ├── 20251008110136_10b0b052-ffe5-4862-96c7-52b8143a1c0f.sql
+│   │   ├── 20251008132224_781a019f-c8bd-47da-8bcd-d3fb9cd74953.sql
+│   │   ├── 20251009055205_2eb5c033-6a5e-4e2b-bfdd-72003fb84c2e.sql
+│   │   ├── 20251009094218_37c04b65-4ad4-48dc-aff0-c08367b12a7a.sql
+│   │   ├── 20251009163731_e76c7ec6-8e53-49a2-968b-8405da01815e.sql
+│   │   ├── 20251009165347_d010cbbd-2df1-4acd-9c2b-2aa62ef3f711.sql
+│   │   ├── 20251010033627_7fba1129-0729-44a9-ba36-e7b8b58f1d0f.sql
+│   │   ├── 20251010034513_2cfbdfb0-f85d-4e07-8796-98dfe5a4f10c.sql
+│   │   ├── 20251010035016_394139a5-7450-4c5d-8470-2d0595fd12fb.sql
+│   │   ├── 20251011034256_db600dac-7e19-4b26-b442-c5195404bb17.sql
+│   │   ├── 20251012054036_6ddc0b58-22eb-4675-bb7f-1dd87a9e86b9.sql
+│   │   ├── 20251012054117_3ac8e6cc-60f1-484c-8896-0980908fe496.sql
+│   │   ├── 20251012063836_1c96f98a-1e53-4417-b344-89575488dfbb.sql
+│   │   ├── 20251013092343_e23e065d-31d2-47cc-846c-e3bf296ecabb.sql
+│   │   ├── 20251013111709_ff278e43-039c-459b-a3c2-d9d308116fab.sql
+│   │   ├── 20251013113421_039278d2-64ac-42ad-9bda-29ba89896237.sql
+│   │   ├── 20251013114442_7c09c8d4-0334-4816-803b-4939810ddce0.sql
+│   │   ├── 20251013124105_cacd5dd1-d6c2-4ee1-8255-7ba8c74d0a90.sql
+│   │   ├── 20251013132653_f56dba4d-3a6a-407b-8a44-3202155d09b6.sql
+│   │   ├── 20251013141735_198fd3e1-d166-4163-8348-fba5edd800ee.sql
+│   │   ├── 20251013145523_1f3e696e-01a1-4421-99f4-34175b34ce44.sql
+│   │   ├── 20251013145752_14994895-83de-43a6-86f5-fcd8d239c19b.sql
+│   │   ├── 20251013150027_635703e4-7114-4f84-a8a7-6314c0447a89.sql
+│   │   ├── 20251013162337_8d6ba74c-4f44-4c32-b76f-5ae65b22d421.sql
+│   │   ├── 20251013162430_9c0602de-728c-4906-a605-6134cf4a6315.sql
+│   │   ├── 20251013162449_edcd1abe-6d43-44dd-b299-7845a6e7200c.sql
+│   │   ├── 20251013162519_99a15f0d-9102-4cb4-89c3-5af67bb99463.sql
+│   │   ├── 20251015103900_19c3f591-13cf-4214-9991-81688dc4311e.sql
+│   │   ├── 20251016055526_d653edb8-49a3-4d35-8cf3-75c716d19621.sql
+│   │   ├── 20251018061959_0574636b-011a-4c6a-a79b-68fe89ee5905.sql
+│   │   ├── 20251019093636_bc17dd87-96f8-42f0-a5e6-6a9bfb2669a1.sql
+│   │   ├── 20251019104747_a3a416a2-fad9-42ad-9d54-9bf0d304a640.sql
+│   │   ├── 20251019110541_0d9e36f4-31f6-4748-ada3-36af0131f386.sql
+│   │   ├── 20251019110843_b1206bc2-882f-42de-a9b5-1a688b647e21.sql
+│   │   ├── 20251019113245_778cd505-bc6d-4d30-94f9-98583e63abf8.sql
+│   │   ├── 20251019124116_cfc1a0b8-9389-4c67-a540-cae4a4c7d6e9.sql
+│   │   ├── 20251020015834_02d95dab-61e1-44d7-b730-4d60175dc3c6.sql
+│   │   ├── 20251020015856_30d8cd52-a8e7-46c6-abc6-5efa6d122b6d.sql
+│   │   ├── 20251020150013_50def693-c14d-4834-8bb0-6941d9cf09ac.sql
+│   │   ├── 20251020150103_591f9ebe-9297-4507-a6bf-1856fe2cea3a.sql
+│   │   ├── 20251020150233_c3b79e04-adbe-4aac-acf7-79c010803d07.sql
+│   │   ├── 20251020150317_1834c9af-4a1e-498c-8bc4-7d7f566818ad.sql
+│   │   ├── 20251020151134_2099a07c-961b-4374-9498-dcb00412c64c.sql
+│   │   ├── 20251022032204_6489e16e-faca-489e-8362-55e35c6ea779.sql
+│   │   ├── 20251022115344_4096e85e-6bf7-40ac-b61c-57f40531b48e.sql
+│   │   ├── 20251023011736_e640b5a4-362c-44e5-a915-e1a01d63116c.sql
+│   │   ├── 20251026022814_5e44659d-0720-422a-9811-9fed4d44f03b.sql
+│   │   ├── 20251104054337_5bf61544-88a4-4de8-a03c-e8f058049d2e.sql
+│   │   ├── 20251104070002_e1a92114-64be-4d1b-9ff4-8302d5852ddd.sql
+│   │   ├── 20251105014616_b5cc6912-a488-4710-b2df-56fc18ffe367.sql
+│   │   ├── 20251109022231_3c1b2d1c-5bf4-44e5-bd85-3eff0857e1bf.sql
+│   │   ├── 20251110010703_d091bbbe-e681-4f94-a7f3-185b0410500a.sql
+│   │   ├── 20251117161128_11e6f7f8-a37f-4d22-88ca-1b2683b08ae3.sql
+│   │   ├── 20251118012046_52585a6d-8dab-4e72-932e-9740d509492f.sql
+│   │   ├── 20251118013335_8fce18a2-bd9e-47a7-9a49-fdc6ec4021a7.sql
+│   │   ├── 20251118013352_635d60e2-c3c2-41ea-8233-982ff3b39e62.sql
+│   │   ├── 20251121035940_625e03c2-c2fd-4db7-8818-28f13a154f0c.sql
+│   │   ├── 20251124032207_e1164ce3-f2df-402c-9f0b-12054a23c436.sql
+│   │   ├── 20251202045058_ce60f47e-3ace-4247-8c7f-dc4ee3f0bbef.sql
+│   │   ├── 20251202050354_0ea3296f-dc3c-4a79-a242-0b8c4c1af96b.sql
+│   │   ├── 20251203124917_b7d33d32-d6e2-4ecf-b715-4ab7a4a9c992.sql
+│   │   ├── 20251203141654_48c3e2fe-3a2f-42cf-aa98-a20ef1c084e1.sql
+│   │   ├── 20251203141744_5f62249a-de98-4f8b-abf7-63ac53b3fa27.sql
+│   │   ├── 20251205042049_1cc762e6-92dd-426a-9d64-558e820d1966.sql
+│   │   ├── 20251205052615_f038270d-ce0e-496b-81ac-646eecd4a320.sql
+│   │   ├── 20251205053137_9ea21653-ae25-4feb-82d7-4c3db8a271ff.sql
+│   │   ├── 20251206071044_3cf4ea41-a51b-4a2f-bd7c-bcedb8f3db53.sql
+│   │   ├── 20251208114418_a2e5aa28-c1da-4ca8-86a7-e55236507bda.sql
+│   │   ├── 20251208120723_7d21d30f-9112-4620-922e-52aef2cfad5d.sql
+│   │   ├── 20251208131937_19108dde-d551-4d30-a4e9-a8976fccf0ec.sql
+│   │   ├── 20251208131953_1a2f7a66-7f42-4e93-bf92-74c5d7f7f96c.sql
+│   │   ├── 20251208132516_18e7aa87-cfaa-4834-a5ed-641a0261deb8.sql
+│   │   ├── 20251208140519_ff548d93-d0dd-47a6-8aef-82707a983490.sql
+│   │   ├── 20251208141032_dd9eaa21-f27f-4775-9924-ef9af6794f68.sql
+│   │   ├── 20251209040343_d54e24ef-9444-4b70-8fad-5a74d18e3c97.sql
+│   │   ├── 20251210101509_439e2f2e-77a4-44fd-8d06-d1198149093c.sql
+│   │   ├── 20251210135657_fea2ac67-edb7-4662-a464-524b55e34547.sql
+│   │   ├── 20251211034759_907891e2-2759-4312-acaa-77b9870a1c1c.sql
+│   │   ├── 20251211055550_cd54cab8-2aa8-44c8-af62-bd927fe05386.sql
+│   │   ├── 20251213061246_61ae10db-dba7-49d0-9af7-8771b4c9898c.sql
+│   │   ├── 20251213062305_faccb68e-d3fa-414e-9aa3-cd0de9a9fc39.sql
+│   │   ├── 20251213074052_03b1918e-3364-47c6-ac7a-999831516340.sql
+│   │   ├── 20251213102431_f8cff7b1-facb-440f-a6d7-5b4bd586d418.sql
+│   │   ├── 20251213113954_7b4d5e7f-bf02-406b-98b5-59d3d91bf088.sql
+│   │   ├── 20251213114349_f54e8dcb-6e06-4bdc-b5a9-a9c29421a3cc.sql
+│   │   ├── 20251213121626_fdeb8d7a-2fd0-4f55-9a51-47b0fd8d626a.sql
+│   │   ├── 20251213133541_cb5c6eb0-af49-4e92-a1e2-d58683ee7c77.sql
+│   │   ├── 20251213134056_345dfc9d-a597-4950-b16b-f5f863d08383.sql
+│   │   ├── 20251214033231_2c3f6b8b-ff01-4776-927d-068228494725.sql
+│   │   ├── 20251214042738_dfdf39ff-0504-49a4-8d14-1de3bea994bf.sql
+│   │   ├── 20251214071107_ad747722-e076-4e18-a876-4d5d59b4df71.sql
+│   │   ├── 20251214120432_74209eab-9137-4421-936f-08c3a010e4c0.sql
+│   │   ├── 20251222033109_f02ed701-2a4d-4c2a-a6f9-f3ee34e1ec25.sql
+│   │   ├── 20251222033123_6f4081f7-6ace-4f54-98ef-fdd40bf53f54.sql
+│   │   ├── 20251222034054_226b01b6-c4a0-4c7c-a8bd-cc02bd93f5b2.sql
+│   │   ├── 20251222045653_88dd1fba-3e8d-40f0-911b-c39995943529.sql
+│   │   ├── 20251222050258_53c11bfe-537a-4456-b204-3c4e294da664.sql
+│   │   ├── 20251222170724_f01eea08-dc52-4bbc-9ffa-d0aa02179989.sql
+│   │   ├── 20251222170735_abaed550-cb7b-4e5c-ac7f-fb749570bd24.sql
+│   │   ├── 20251224062015_2f3b75d6-0ace-4fa8-9a8d-9beb36db4b7f.sql
+│   │   ├── 20251224063124_e1ebf783-61df-4daf-a570-aa2f52515b1b.sql
+│   │   ├── 20251224063145_33161f64-0296-4b8f-8c16-7ab9f31d0c91.sql
+│   │   ├── 20251224063547_48358719-b6bb-4c18-b4ce-288e80f751de.sql
+│   │   ├── 20251225025404_861a554e-24f3-40b4-8344-4a0d07c9ce0c.sql
+│   │   ├── 20251225043946_518ee599-32ef-40d4-bf48-e3ad2f8cf2a8.sql
+│   │   ├── 20251229092018_bd7b7404-18cb-417b-b272-556c0c20aad3.sql
+│   │   ├── 20251229182924_08117079-3555-441f-a01f-abec854477ad.sql
+│   │   ├── 20251230053432_ee45eb12-bc9f-46bc-b583-4724f69ea9be.sql
+│   │   ├── 20251230053649_26a559c1-baa8-47b8-82b9-261edd8fb21f.sql
+│   │   ├── 20251230054945_8d1da0f9-3913-4c20-aac5-9fcd642d225b.sql
+│   │   ├── 20251230055840_ac4d8cb4-7835-4d7a-96e5-f77c80709c90.sql
+│   │   ├── 20251230072733_6c522e00-e829-4f40-baae-7b9c93446081.sql
+│   │   ├── 20260103095027_4eff8a94-72d5-416f-b050-4c8abc5da650.sql
+│   │   ├── 20260117025629_e61ced04-f433-4b7d-9429-469a25108cb6.sql
+│   │   ├── 20260121012424_36cbc056-0c1f-49fd-8203-23cac4750858.sql
+│   │   ├── 20260121225858_7a5363df-54fe-49cf-b968-792a851e70ab.sql
+│   │   ├── 20260122034412_e0fe2d3b-3ede-4cb9-8518-cd24eba5e8f7.sql
+│   │   ├── 20260123075557_3a21dd17-ec23-48c7-bbcb-3990db9ad7d2.sql
+│   │   ├── 20260123081230_fbdde5f5-4454-421b-a3b6-3d97ddb08e3b.sql
+│   │   ├── 20260127104356_6d7d8165-4148-4eb8-8d4d-1f30e0cbfa8a.sql
+│   │   ├── 20260127104611_acc2108c-37fd-43df-8599-05c6698ae53d.sql
+│   │   ├── 20260127105734_8e382976-cc38-4e30-a9cb-b858c893f3ae.sql
+│   │   ├── 20260127111753_719ec858-5232-4df1-8307-ac370bf9aa35.sql
+│   │   ├── 20260127112439_e17124b9-0153-461a-b24d-759d58725337.sql
+│   │   ├── 20260127112955_57b3741d-a485-49b2-9fe0-50d4444f0c3c.sql
+│   │   ├── 20260127114753_40f7e8b1-ff1b-4655-901b-80b925ec9347.sql
+│   │   ├── 20260127121008_de19d6a8-9d17-4389-a6d0-50e9a57422f5.sql
+│   │   ├── 20260127164601_fa1fc101-373e-4ddf-818e-e651bb4d5e6f.sql
+│   │   ├── 20260127164738_d16ab79a-8aa1-4dd2-b85e-4eb4c4dab4d1.sql
+│   │   ├── 20260130001936_8ffead64-4733-44d4-892c-b38374d495ec.sql
+│   │   ├── 20260130002124_b18ab25e-d08d-460b-b096-924d434b0e9b.sql
+│   │   ├── 20260207065806_1f512dec-9529-4086-b2e3-96ae1d7dc43c.sql
+│   │   ├── 20260211023630_cda03f27-d9a8-4270-b234-252be3599b89.sql
+│   │   ├── 20260211030809_1d80dd91-523c-4523-9824-d31ad8a74589.sql
+│   │   ├── 20260211031317_ce54d079-2cba-47a0-854e-a260c7c6229d.sql
+│   │   ├── 20260211035643_8911028d-fe4e-47d1-8fa5-28e0306c31d4.sql
+│   │   ├── 20260211045535_ebeeebd3-4ad3-4a6b-ad07-84ca766ad4da.sql
+│   │   ├── 20260211050740_2b17af3e-4996-4240-ae28-67ead2901bea.sql
+│   │   ├── 20260211053752_e4b907fa-b3f8-49b5-8300-f068d4144dd6.sql
+│   │   ├── 20260211055411_e7a22166-5dee-4a9d-a7fd-720025859ac8.sql
+│   │   ├── 20260211070557_02fdc0bd-3d97-46ba-8747-79f5677377d3.sql
+│   │   ├── 20260211081613_376aa0e2-c4ff-4e89-ad7c-6e103b93dd59.sql
+│   │   ├── 20260211085044_140e8645-96f2-400f-be57-91d962507485.sql
+│   │   ├── 20260211143038_60ddb294-896b-4c6b-b978-1234a91e4e1b.sql
+│   │   ├── 20260211150210_4d14cd05-5903-46e6-8228-0fff498f62da.sql
+│   │   ├── 20260211151221_4d07a2ee-37af-4212-a417-b238b50606de.sql
+│   │   ├── 20260211151835_1f0a1ff2-34a2-4e7a-9763-431c6879490d.sql
+│   │   ├── 20260211153602_88b17bb5-326b-429c-9f39-80e681f62542.sql
+│   │   ├── 20260211172225_0a783d8f-c168-4073-83ef-a1ea9b96348f.sql
+│   │   ├── 20260211174626_50a660fe-79c7-4b4c-bdfc-b84a4d67816d.sql
+│   │   ├── 20260211180828_2dea0f89-9832-4086-ae0e-f1412a9fd292.sql
+│   │   ├── 20260212030036_68a224ce-a4e8-48bc-9d35-430063f8dab2.sql
+│   │   ├── 20260212030048_0806b746-fd6f-4aa1-a036-ff72692d2224.sql
+│   │   ├── 20260213015251_5db036d6-787a-4580-88ee-de5be70bf3d8.sql
+│   │   ├── 20260213023822_6e8670ea-b07c-41ac-945c-6ddfaeacf65f.sql
+│   │   ├── 20260213074431_d8225b84-798d-471a-b68a-2a5306f0b16f.sql
+│   │   ├── 20260214042357_bdf9c920-45cc-4524-9ad0-303859d2928b.sql
+│   │   ├── 20260214062406_72c9de74-6ce6-4e86-ae50-97c4a2bb547c.sql
+│   │   ├── 20260214070122_898de853-5af0-4475-a026-f6434c2b75be.sql
+│   │   ├── 20260214070908_c0fa3b9b-04ba-4699-aaf8-99ce7c46dce9.sql
+│   │   ├── 20260214124141_ceaad3b7-5af3-4f0e-bc1a-3b67934affde.sql
+│   │   ├── 20260214124405_782e82c1-ac26-4cc1-9878-aacc7801f55e.sql
+│   │   ├── 20260215090247_1d97a276-304e-461a-91cc-fc18e3d1d98f.sql
+│   │   ├── 20260215090950_c1f38698-2094-48e9-bbd3-f9f54844ff74.sql
+│   │   ├── 20260215092548_486dbc93-1c3a-4249-bf5f-8ade27fbb99e.sql
+│   │   ├── 20260215103619_fc3191f4-aeca-4073-a61c-365e11cb4ae7.sql
+│   │   ├── 20260215110059_080447c9-d276-4d9e-8b78-75a0239db4e4.sql
+│   │   ├── 20260215112523_6638d5e2-9411-4196-9871-c9108d47170f.sql
+│   │   ├── 20260215122600_b8e5325b-8c87-460d-9219-7db30d6cfd48.sql
+│   │   ├── 20260215123819_823c5bcf-b313-4829-a64f-90776ee799cc.sql
+│   │   ├── 20260215130136_24c9c0a3-ff9d-4492-86f4-bfbd212e584a.sql
+│   │   ├── 20260215190500_ed276f9c-44ea-430b-8dc6-e372ba15f183.sql
+│   │   ├── 20260216092925_6b04c8e4-d50d-45d8-889f-caed2c064a68.sql
+│   │   ├── 20260216095326_f6be0b82-82bb-43a0-8a7d-85142fa8f458.sql
+│   │   ├── 20260216100840_8deafdb5-0571-4bca-8602-a33efaf793b3.sql
+│   │   ├── 20260216120254_ccd5d532-e938-468e-a488-fb899fcbf6da.sql
+│   │   ├── 20260217071053_b7d07818-db59-404a-89d8-8617d29a18dc.sql
+│   │   ├── 20260217110716_efaa821d-72f8-4423-baa3-ff2eb82d2d3d.sql
+│   │   ├── 20260217111140_ae19dbed-aa80-4851-ac28-258d24c25e9c.sql
+│   │   ├── 20260217111849_abc66362-1baa-4c43-b988-8cadd8c7e90c.sql
+│   │   ├── 20260217112240_6df970d9-7954-44ba-a6dd-5a32b694e7db.sql
+│   │   ├── 20260217115915_ab62e102-69fc-4233-8f0e-fbd4c1aacbd1.sql
+│   │   ├── 20260217124143_22c84c6a-5ae1-49f3-94bf-452d4f826012.sql
+│   │   ├── 20260218080558_5f993a46-3599-4a9c-a96b-ffde50ebc436.sql
+│   │   ├── 20260218080810_d86c42cc-3798-4ac9-b694-7ff646045dbf.sql
+│   │   ├── 20260226161854_b6211de1-37d8-45da-8e75-931790fc45c2.sql
+│   │   ├── 20260228122023_47193ce7-7c6d-451a-99eb-92538d3993cb.sql
+│   │   ├── 20260301085402_21c3f5dc-dc76-4858-a501-bf281cba0449.sql
+│   │   ├── 20260301085453_fe64bcaf-8d93-47f3-aa4e-7ca2f82cd781.sql
+│   │   ├── 20260301235658_ea35efd1-e68f-40cc-82d9-093527fcde32.sql
+│   │   ├── 20260303121516_a55851d9-994a-4577-afd0-946c53b82e29.sql
+│   │   ├── 20260303121615_bad4932f-6446-4133-bd9a-3b07d75f1830.sql
+│   │   ├── 20260303130130_53f748eb-6894-46d7-ba8d-720dcc898086.sql
+│   │   ├── 20260304160855_cc5f9a1d-a584-4a57-b80d-b0b5f0dd1c89.sql
+│   │   ├── 20260304165536_2958b538-28fd-41cb-94ec-25f934866d55.sql
+│   │   ├── 20260304170526_2dd5e3c4-60f2-4ef9-9f3f-4639df812c59.sql
+│   │   ├── 20260304171701_de258aaf-59c9-4c6b-bcfd-89f51c5c796a.sql
+│   │   ├── 20260304182854_b21049c6-2111-4149-b15a-4be38cd93333.sql
+│   │   ├── 20260304183046_b9867ab4-db66-460f-aed6-79d1a036ef34.sql
+│   │   ├── 20260304185616_0cf16ab4-4b96-4fe5-a7ee-1132380e11e3.sql
+│   │   ├── 20260305002001_b11f4d45-9965-4b2a-a53b-f69530303513.sql
+│   │   ├── 20260305002012_c29dd4b1-487e-4520-85da-a82ced373ab1.sql
+│   │   ├── 20260306101009_e8f67004-770e-4faf-a420-37909d013a13.sql
+│   │   ├── 20260306194625_5627fcaa-e692-44af-833c-e46c695aa9e0.sql
+│   │   ├── 20260307132546_7189ba72-0d31-4815-8d4e-b390cfef5afa.sql
+│   │   ├── 20260311145452_e916dcc9-4fde-4c1f-87a3-9f5a81794b8c.sql
+│   │   ├── 20260311145742_ef5b8283-4097-46bc-8aea-4d53433b67c0.sql
+│   │   ├── 20260314121319_916f2d98-30bb-4184-85f0-85d150cda501.sql
+│   │   ├── 20260326154115_1902ea22-e806-470a-b359-fa2df825c181.sql
+│   │   ├── 20260326155556_777c1637-17e6-4116-9d78-a96a1ec3411e.sql
+│   │   ├── 20260326173125_47a96948-c321-46e5-9025-5ebbe6f40188.sql
+│   │   ├── 20260326174420_dac49154-7273-46c3-b79f-3cba30ca1118.sql
+│   │   ├── 20260326175249_86e05f4b-a10c-457a-8d06-74e50b2febb0.sql
+│   │   ├── 20260326192740_c9000692-dc9e-4151-8edc-aa4baac80365.sql
+│   │   ├── 20260326214258_d0aac539-d928-4302-969b-6f9d910ca803.sql
+│   │   ├── 20260326215352_182d2a00-7ddc-4d7e-947b-7ccbc7d554de.sql
+│   │   ├── 20260326230141_2f1d864f-cb33-4282-8afa-687ced80e3a5.sql
+│   │   ├── 20260326231110_d8117ddb-1356-4ab0-900c-dc6fe7573f7d.sql
+│   │   ├── 20260326234301_a37e3aa3-ced3-4d12-8e38-daa8488f13c9.sql
+│   │   ├── 20260326235045_78cdbead-1320-4079-89da-084e6fed30fb.sql
+│   │   ├── 20260327013721_73a81b34-aefa-41d4-b47d-aeac29318599.sql
+│   │   ├── 20260327014406_3f60ce28-f64d-4c17-86e5-f4a281e0eab1.sql
+│   │   ├── 20260327022023_11c66261-e606-4181-9f77-7e8975718c1f.sql
+│   │   ├── 20260327163700_3239571d-bc08-4f2d-98af-10bd0556ed84.sql
+│   │   ├── 20260327164056_1b50eb14-988a-487e-bbde-8f492ba5d90a.sql
+│   │   ├── 20260327223242_5a40d534-9d33-4989-bbd5-95e56ce0b0d9.sql
+│   │   ├── 20260327223504_ec80a981-9bc7-45e5-9fb0-38fc9c4bcf10.sql
+│   │   ├── 20260327223528_515bbf2d-1723-4fca-b50f-d14e664192d0.sql
+│   │   ├── 20260327223557_88884eec-4c1f-4212-89fc-9c3da0ab1691.sql
+│   │   ├── 20260327224106_8c0180a5-9b02-4305-93b5-e5ac474f64c1.sql
+│   │   ├── 20260327224132_e6032d61-6423-4e1e-9f5e-11f334c3d807.sql
+│   │   ├── 20260327234827_5ffa51ce-0a32-472a-826e-bb04f972ef8f.sql
+│   │   ├── 20260328001800_276b1405-a6d1-4dd6-b5d2-644f5ef59b08.sql
+│   │   ├── 20260328003640_805cdd09-9c85-480b-9ea4-cbaa564384ab.sql
+│   │   ├── 20260328004606_76a58f8c-81ee-4855-b9d4-22b15def81a3.sql
+│   │   ├── 20260328011648_34f8725f-32b8-401d-917b-4ae347305a18.sql
+│   │   ├── 20260328014900_ef981186-24ae-4a1a-b4f6-6bc9b637975a.sql
+│   │   ├── 20260328020719_ac924995-c567-4ee2-a5c5-1eac7d4ede77.sql
+│   │   ├── 20260328160038_91c60727-39ac-4968-8dc2-203af270cc0f.sql
+│   │   ├── 20260328163842_2bb0825c-dc07-444a-a033-8b1b2f42fdf9.sql
+│   │   ├── 20260328172603_eb907fde-00ac-46aa-9456-64cd4e47a3ac.sql
+│   │   ├── 20260330151741_a64606c3-198d-47ef-afc0-d3c73da9135f.sql
+│   │   ├── 20260330162535_8744f8eb-509b-47d6-9d5d-a47234c85c26.sql
+│   │   ├── 20260330163827_790a045b-0aa2-4476-ab36-f800957e3e3d.sql
+│   │   ├── 20260330163840_78039ee4-7f93-4534-ae19-ce49fe6dbd8b.sql
+│   │   ├── 20260331011647_cc6b7132-428e-4972-bf16-0b920cadb0c1.sql
+│   │   ├── 20260401235249_7be2c169-0b04-4adb-9ed9-0ce9be72d23e.sql
+│   │   ├── 20260402000053_914422af-f28d-4afb-ad19-311b42435061.sql
+│   │   ├── 20260402003458_d6b27894-d473-4e89-b3c4-ad45fc3cf606.sql
+│   │   ├── 20260402004501_8b14cb26-65c7-485f-b9f3-0145d62d8783.sql
+│   │   ├── 20260402005532_1d614b8a-05fe-4ad4-b00f-6932ac57ed28.sql
+│   │   ├── 20260402012218_a077d0b5-6104-4c44-802b-7bb88330f471.sql
+│   │   ├── 20260402072022_79f4a05d-f166-4fc2-9289-8209617997c8.sql
+│   │   ├── 20260403005106_99815b3b-4ce2-45eb-9f5a-9a8173a3d6bc.sql
+│   │   ├── 20260406202140_938b53d3-1e50-4b83-ac19-eea55c29a712.sql
+│   │   ├── 20260406203200_412486be-ae77-4b8f-b535-e714b2a78688.sql
+│   │   ├── 20260406203637_a900b91e-d10b-4c33-8e5a-12cfd61c3115.sql
+│   │   ├── 20260406203737_607c68e2-d4e6-479d-bb0b-4338d9ed0596.sql
+│   │   ├── 20260406203809_f204a767-171d-45d6-afc4-b6ca8d268cba.sql
+│   │   ├── 20260406215333_00a1103d-01d1-4683-b98b-2f5ac4b33877.sql
+│   │   ├── 20260406220458_7bb91f9a-8ca7-4105-b1e5-277e68bb092f.sql
+│   │   ├── 20260407210742_152b5b35-2af1-4771-be38-d09b41ac094c.sql
+│   │   ├── 20260408205038_1eb6c379-360d-4f73-846e-7ca173be7828.sql
+│   │   ├── 20260408205948_0922ae49-e52d-42c8-ac73-fda3ff0db2bd.sql
+│   │   ├── 20260408210003_b402377d-5cde-4e5d-9bb1-36f327f9be17.sql
+│   │   ├── 20260408214234_fa20e89a-c261-4faf-a061-12107eb686be.sql
+│   │   ├── 20260408223410_a06f4f03-a4be-492d-b3d0-0e92ba6920fa.sql
+│   │   ├── 20260409152830_d26e5517-9571-440b-ac2e-fbcdf28e1f36.sql
+│   │   ├── 20260410004947_63528519-263b-45a9-a104-70abb1476e64.sql
+│   │   ├── 20260411174809_09e034bd-c5f9-4674-92e3-4e90a9f3e08c.sql
+│   │   ├── 20260411180328_f37392f8-de52-4e12-a9a5-a1239561795e.sql
+│   │   ├── 20260411192609_53d82452-5041-49f9-8071-6522e8848258.sql
+│   │   ├── 20260412180009_01b9e214-fb07-41c0-8e7f-d2830a8a2e14.sql
+│   │   ├── 20260412200830_4ff40b8a-07e4-42ac-af07-cbad86f4ca25.sql
+│   │   ├── 20260412212420_ed5f8719-0965-409c-8dff-6ecab38d5922.sql
+│   │   ├── 20260412220014_91c8ec81-3a17-4bc4-9c94-8db408016093.sql
+│   │   ├── 20260412233208_40cc3b78-3af5-49e8-b11b-357730507dba.sql
+│   │   ├── 20260412235053_6f3b7b26-2a78-47cf-82a9-6b7dab8f911c.sql
+│   │   ├── 20260413000526_email_infra.sql
+│   │   ├── 20260413011847_6d4e078e-8fb2-4dcb-a3e1-ecffdfd8ab6f.sql
+│   │   ├── 20260413013354_b08c1010-7a3c-47d0-928d-ade75e8eb29d.sql
+│   │   ├── 20260413013500_f886772c-432c-42d9-b5f7-1401125681be.sql
+│   │   ├── 20260413014116_d60f676d-11ed-47ad-91ff-d3a6c47aba01.sql
+│   │   ├── 20260413015316_ac2ec093-485d-4cab-b9a0-58a5b2bb2f46.sql
+│   │   ├── 20260413204307_c1857ed0-c24b-4196-84e8-6f70013b4bd1.sql
+│   │   ├── 20260414014142_fae7fb92-046b-4570-9dd2-dacc1b17b5b6.sql
+│   │   ├── 20260414162510_b6f47b2b-4235-4638-a689-105fcce83d73.sql
+│   │   ├── 20260414162855_7051b6a7-5a28-46d3-b8c5-23bfd957b0da.sql
+│   │   ├── 20260415033709_4876e4a5-a8fa-4731-88c8-d65afbc85ece.sql
+│   │   ├── 20260415171541_8d4f325e-1db8-4ddb-a76a-972150b4199d.sql
+│   │   ├── 20260415175950_dc49dfe9-3a8c-4362-9cfb-8815e91db4a1.sql
+│   │   ├── 20260415193800_c3cdb7bd-3adb-4345-97b6-515290132885.sql
+│   │   ├── 20260417012400_1369c607-b284-4a37-8a4b-a735af8558a5.sql
+│   │   ├── 20260417161733_a69999f9-720a-4669-a085-eec721b33b49.sql
+│   │   ├── 20260417163021_4745d595-f978-4e9e-ada9-23b1a25c31e2.sql
+│   │   ├── 20260417175616_fa109872-cbd8-40fd-8c10-bd32b83f9870.sql
+│   │   ├── 20260417182006_d66867e0-b635-40a4-840a-39b53c9472f2.sql
+│   │   ├── 20260417183206_87fab86d-4322-4347-ada1-54d87236bdec.sql
+│   │   ├── 20260417183418_ebc9d6f7-7e09-4b68-ab86-ab137944e64b.sql
+│   │   ├── 20260417191317_7b836845-12dd-45bb-8eb0-65c6aec0a704.sql
+│   │   ├── 20260418015414_e789a2a6-0646-4c93-9c0d-7a7328b57153.sql
+│   │   ├── 20260418195422_61ecc9a0-dcd5-4531-9414-49f15da25bab.sql
+│   │   ├── 20260418221214_0098d7b1-d45f-4086-be6a-93b3a6179144.sql
+│   │   ├── 20260418224249_f5853858-8605-46ff-bfe6-f49c63b1ca28.sql
+│   │   ├── 20260418233125_3408c65f-89ef-42ca-8ac9-5c46513f2c51.sql
+│   │   ├── 20260419014818_a635ada8-ac7f-459f-9ff3-1b6728a45d3d.sql
+│   │   ├── 20260419025805_3916b962-6a0e-4ada-b465-b1fd4904dd89.sql
+│   │   ├── 20260419122142_b03dd5fb-b73d-4cf0-9317-506bc6fa8e1b.sql
+│   │   ├── 20260419132136_d9cefddc-2458-4686-a95d-603c93fa116b.sql
+│   │   ├── 20260419134613_5ed8a63d-6981-4165-9ddc-f8700380d29c.sql
+│   │   ├── 20260419142440_602f76ce-e9fe-4265-b910-0ff99641b06f.sql
+│   │   ├── 20260419143937_eec1d5a8-5d05-4fef-b358-9f0e1e543e3f.sql
+│   │   ├── 20260419145505_7eea5611-5a09-4775-9be8-30e794b4168b.sql
+│   │   ├── 20260419162145_8518cf56-ea31-4384-995f-47bfdb9db819.sql
+│   │   ├── 20260419162457_9315b75c-ec60-4372-bddf-a5437b1c1c6d.sql
+│   │   ├── 20260419162823_1325a5e9-1e15-42fe-a157-8d0a7d521efd.sql
+│   │   ├── 20260419193349_dc97d9be-a467-4125-a834-5d136be4aab8.sql
+│   │   ├── 20260420131659_18f4f97c-782a-42bb-8e67-dcc2149c1b63.sql
+│   │   ├── 20260420140851_c90459d0-a18e-427d-be72-bfc831694fac.sql
+│   │   ├── 20260420141136_1851cdd8-509d-4d58-9e18-5d68685ce09e.sql
+│   │   ├── 20260420144611_875ccfc9-a2ff-4a8b-b9a7-46b73ba89b2a.sql
+│   │   ├── 20260420152029_79184f6c-a8c2-4cb5-b60d-41d4ef84559d.sql
+│   │   ├── 20260420153544_c73f3057-d3d6-4889-857f-a9ea55068928.sql
+│   │   ├── 20260420154857_08e10590-2247-4786-9e16-0143b93d34e1.sql
+│   │   ├── 20260420201228_fd8792d3-73b5-4836-8ca3-9f692b332476.sql
+│   │   ├── 20260420211934_09ac7d61-92ef-4df8-890e-ec3e7069cd94.sql
+│   │   ├── 20260420231612_d9c64d34-c802-4dc7-8812-15e0765a0aba.sql
+│   │   ├── 20260421201443_1c0b20a9-0340-46b6-833b-0e1212031510.sql
+│   │   ├── 20260421221238_fd9f35c3-3c87-4467-ae47-e88f4790419b.sql
+│   │   ├── 20260421221741_517005a2-4520-4f34-b9d7-f1ac92018b03.sql
+│   │   ├── 20260421224452_94168a16-2209-44b9-959c-6ba27e01fa58.sql
+│   │   ├── 20260421224854_8653a996-044b-4ff4-90d5-10b55f29b765.sql
+│   │   ├── 20260422000628_6b5cca09-f950-4ebc-9f1a-de91360bb3aa.sql
+│   │   ├── 20260422012942_acfb29f6-02e1-426a-a97d-7de3e69bd13b.sql
+│   │   ├── 20260422201610_cb5574fb-8506-46a5-a738-0bf7ad39a98d.sql
+│   │   ├── 20260422213903_f7495087-8533-4205-ac97-a05f2e3c081e.sql
+│   │   ├── 20260422223324_411107d2-f0e5-4d03-9b5c-c9c1605b6df7.sql
+│   │   ├── 20260423164345_cd79a067-279c-49ea-b71c-c1588b0f6fe4.sql
+│   │   ├── 20260423202831_1f997883-abbc-4b5b-9803-46f4bc95ec8f.sql
+│   │   ├── 20260423231527_a204e5d9-1349-48d7-8151-31578c0ead0f.sql
+│   │   ├── 20260424211153_dac0d05d-eaae-45e9-b182-d493b32179c9.sql
+│   │   ├── 20260424223022_8cb6d2e1-1c2a-4193-9a5a-108c8c54b040.sql
+│   │   ├── 20260424235925_a17745bc-0bba-40fd-9dca-e1155632e37a.sql
+│   │   ├── 20260425001853_623812ef-19a3-4f89-b8d9-31128e9a87e7.sql
+│   │   ├── 20260425153812_0c59b036-e965-4201-8dfd-189e02689ce9.sql
+│   │   ├── 20260425173333_76f0097f-bba1-4134-adf2-f44f33941e6e.sql
+│   │   ├── 20260425173951_bcf4315b-d563-47cb-82cd-97ecb00bae9a.sql
+│   │   ├── 20260425183040_2a627629-0eab-47c4-b353-2ffcc8049294.sql
+│   │   ├── 20260425235407_f91847a5-4289-47c3-822a-0a16b9cc5422.sql
+│   │   ├── 20260426002644_ebf43bfd-fd71-4bfc-bc12-d644ca8bc244.sql
+│   │   ├── 20260426020106_afdddf22-7805-4322-892a-76de71dc0a70.sql
+│   │   ├── 20260426132237_4078e073-8654-4888-a262-1cbc07bd3f07.sql
+│   │   ├── 20260426135409_e8ff1264-3f94-4d4f-b00e-f565805d94fd.sql
+│   │   ├── 20260427233527_24b56c78-da78-4353-baf4-56ae3f3bed5f.sql
+│   │   ├── 20260427234910_c02c82e1-6542-4a2a-a403-13fb6d020df1.sql
+│   │   ├── 20260428000102_a7aa787d-7ec7-4b52-b674-9b99ac94a352.sql
+│   │   ├── 20260428000159_756df3dc-f87c-4222-bb5e-1850bd19d8e1.sql
+│   │   ├── 20260428001208_0d5af0db-a837-4e1d-94d4-0106ebffa04a.sql
+│   │   ├── 20260428001345_f95b6dea-ef73-4868-9fc7-4ff7f334f071.sql
+│   │   ├── 20260428040057_3ac2c305-c611-47b5-8cfd-eb009bc6dc0d.sql
+│   │   ├── 20260428042201_3ae13012-0e94-46ee-960f-0ceee5f1e2d1.sql
+│   │   ├── 20260428043909_8c95e2fc-ebdd-490c-adfa-6f3d7c2230e8.sql
+│   │   ├── 20260428044340_f39891ae-4639-48aa-8017-d38107752917.sql
+│   │   ├── 20260428123000_d4a90e1e-2e53-4943-bc6f-e868b4e7d3d5.sql
+│   │   ├── 20260428125341_7a189840-92b7-485e-af4d-ba3fad3f7690.sql
+│   │   ├── 20260428132326_b905093c-22ef-4177-a3ab-93dfe63973fd.sql
+│   │   ├── 20260428235816_6268f558-a318-46f5-8163-b4ca3cb369f3.sql
+│   │   ├── 20260429004410_65cf16c0-5f7c-4a98-9eab-d917b9a2bf77.sql
+│   │   ├── 20260429005820_ac91560f-b8ca-43a5-b99d-431eaa6e9257.sql
+│   │   ├── 20260429010827_b0a18a70-c5b4-4501-9d5b-c794c633ce44.sql
+│   │   ├── 20260429014055_be8f3218-9322-4f67-ac08-c2ec449afe66.sql
+│   │   ├── 20260429014154_2712933d-91e0-4ed6-9517-af246da777a6.sql
+│   │   ├── 20260429023135_79e73735-e70d-49fc-a94c-16b95f01ecee.sql
+│   │   ├── 20260429041642_fa4d4bd3-cb0e-4f12-af7f-ae5f900801cc.sql
+│   │   ├── 20260430013853_3347597c-08c6-4175-aa47-61831b95ff4a.sql
+│   │   ├── 20260430040656_f1cd7a90-1f81-4627-b393-18a50f45b9b3.sql
+│   │   ├── 20260430115230_e48f8e03-d9f1-4008-a9e5-2b62c067c54c.sql
+│   │   ├── 20260430125224_465b6c87-30a9-4fd8-a731-c59025e2c4d5.sql
+│   │   ├── 20260430130332_4a440905-efcd-4990-b9a1-7d4f739dc5fa.sql
+│   │   ├── 20260430133456_8c4add95-190a-40ea-8cbd-844deaf7e884.sql
+│   │   ├── 20260430134434_2db7e5f0-b844-4de0-843d-0e37484e8e50.sql
+│   │   ├── 20260430221601_1e4134af-0cb9-4ddd-a749-efd6ed1f9dc1.sql
+│   │   ├── 20260501002255_4195b981-dd18-421c-b087-2dfdd5b95059.sql
+│   │   ├── 20260501151222_ff994605-65c6-4227-b0f2-ec66df294d5b.sql
+│   │   ├── 20260501181138_f425efbc-ba5e-4f6a-baa0-7440d2dfe2cb.sql
+│   │   ├── 20260501195229_6c02fde1-feca-49a7-852d-b95828a0f1a1.sql
+│   │   ├── 20260501201445_1e56ef9e-a9dd-4d68-adb7-c12d6ed84af3.sql
+│   │   ├── 20260501201506_91641200-5edc-4167-9332-a5d5578c4b27.sql
+│   │   ├── 20260501205047_051c3bee-5975-4a2d-9105-16bfce0e3831.sql
+│   │   ├── 20260501210843_cb6ec67e-00bc-4193-82c3-c3947f294e40.sql
+│   │   ├── 20260501215821_83135538-42e8-46f0-921c-dd50d39510d3.sql
+│   │   ├── 20260501232138_0020a8df-b19a-4f6a-8b8c-5f706fe11b83.sql
+│   │   ├── 20260502001945_2b90b7a1-84da-46df-8ae1-2d59db49f63d.sql
+│   │   ├── 20260502002005_ddd06f07-cc10-4995-a6c8-723c02c1df24.sql
+│   │   ├── 20260502005203_a121f273-d5af-4678-859f-0a72966a8537.sql
+│   │   ├── 20260502005258_81267a38-9c33-49c6-b74f-49cc11e5793e.sql
+│   │   ├── 20260502122249_e32fcc29-7e82-44e5-9b58-f012de89a9a9.sql
+│   │   ├── 20260502133603_541fba31-5bce-45d1-b60f-81e952cbb6a7.sql
+│   │   ├── 20260502152223_e13c2f98-7917-4ece-9f63-6c18731486b7.sql
+│   │   ├── 20260502161310_6893fc8b-262e-4436-a3f0-a46a7ecc1e78.sql
+│   │   ├── 20260502162444_81598371-0266-4949-831b-02c914880de8.sql
+│   │   ├── 20260502165926_18cc6248-8692-454b-b7c5-27957b2414f9.sql
+│   │   ├── 20260502224404_d273510f-ca92-46e7-8954-030ab40c3cae.sql
+│   │   ├── 20260502231733_be935f2d-88b3-43ed-884e-16228f943e9d.sql
+│   │   ├── 20260502234214_de7cbe21-4225-4f92-971a-56235ffe381b.sql
+│   │   ├── 20260503031048_58e530a6-491f-4608-b0e7-026f99918b68.sql
+│   │   ├── 20260503163349_91187d7d-8fe4-4518-a4d1-eb9281eaf19f.sql
+│   │   ├── 20260504000351_e44d7674-b69d-48dd-9a52-5f89f6945fbb.sql
+│   │   ├── 20260504115911_438c709c-617c-4079-b671-6632b2a4e762.sql
+│   │   ├── 20260504121038_9effc700-07c7-47f9-9c44-56f609df7e58.sql
+│   │   ├── 20260504162748_427b2950-be81-4ffe-a29b-ad0bd285c37e.sql
+│   │   ├── 20260504203621_56a12acd-a570-42a8-b941-c490f43ac835.sql
+│   │   ├── 20260504222202_4c9eda6d-655e-4c54-b586-999e8fbc4e00.sql
+│   │   ├── 20260504232714_f2fa4f2e-264e-4c6c-96c2-07e4edf1332c.sql
+│   │   ├── 20260505045503_f109322c-989e-448f-a10c-f14c9625e68a.sql
+│   │   ├── 20260505045530_33432ad1-0f0a-42d4-b957-b1b95dc18081.sql
+│   │   ├── 20260505123546_8fdaec85-7394-482b-9b2e-f5902199d25e.sql
+│   │   ├── 20260505125513_451ed218-df53-4d6d-a911-eab78884bb0f.sql
+│   │   ├── 20260505130254_77a88dac-f6d6-49a0-ba06-7a35d5d78885.sql
+│   │   ├── 20260505133625_8ed52822-9757-4202-a0e6-aaa28a191bbd.sql
+│   │   ├── 20260505165847_9537cf71-e934-4c0d-8267-c86fe5eee527.sql
+│   │   ├── 20260505193824_0b7a8639-9f94-4399-a51e-87e7338a3217.sql
+│   │   ├── 20260505194821_bdb90f5a-31f8-43cb-b769-c72795ed197d.sql
+│   │   ├── 20260505200805_d17d1f40-706b-49bd-9699-4c23bba7b598.sql
+│   │   ├── 20260506001409_814d22b5-c9fe-49c7-a5bb-191a040bdb80.sql
+│   │   ├── 20260506004514_00646e55-af8d-4bf2-b535-10b1950e4c61.sql
+│   │   ├── 20260506142239_6bc6f465-024c-4885-83ff-391056103e15.sql
+│   │   ├── 20260506154657_67829751-c1be-4bcc-a3df-2add941d8cc3.sql
+│   │   ├── 20260506163834_5cb6b2b6-5ac2-40f0-93c3-dffce690978e.sql
+│   │   ├── 20260506184314_e919a210-7be3-4818-9088-9d2c3574b6a2.sql
+│   │   ├── 20260506190703_eff14ec1-7330-40d7-ba12-b32aa6a5555d.sql
+│   │   ├── 20260506234034_db20869d-363b-46ae-acb1-638ec2b46326.sql
+│   │   ├── 20260508004828_07216428-041f-46aa-9bb0-b584a8828770.sql
+│   │   ├── 20260508005816_e96969bd-5367-4adc-9265-0d0c7d25bc35.sql
+│   │   ├── 20260508010103_167f282e-2cd7-43e7-a914-c6be1e8f01f0.sql
+│   │   ├── 20260508011824_fa3bebb9-19a2-44e8-8da4-a84936b01461.sql
+│   │   ├── 20260508013501_133cd73a-1ad4-4bb9-ba21-297ef5c1c84e.sql
+│   │   ├── 20260508015017_5d4b8f34-38fa-4068-9617-2207781675fa.sql
+│   │   ├── 20260508021757_ebb325e8-49f0-4003-81c5-8da4a0d4f47f.sql
+│   │   ├── 20260508133719_0b6d0772-517a-41c5-be38-83aa7331e4a4.sql
+│   │   ├── 20260508135047_53bc9d55-f3be-49e3-84ca-cb24bedfc9ec.sql
+│   │   ├── 20260508140452_46a8c5b9-d4ec-4c4f-b873-276b8c979574.sql
+│   │   ├── 20260508141059_6b00a154-9119-4e53-820d-2efb6640eab4.sql
+│   │   ├── 20260508141949_f3cac92b-87b8-4aa7-a189-955834aee14f.sql
+│   │   ├── 20260508142016_18e8e3f7-ad84-43bc-ace3-f0b057d0fdd7.sql
+│   │   ├── 20260508143639_5dd69c45-fa6c-4167-807b-55d1476fcb40.sql
+│   │   ├── 20260508150335_7769fa01-28ad-441e-b7a9-988c8b898823.sql
+│   │   ├── 20260508184610_75158aff-6b22-4308-a0c6-1fdba06bb381.sql
+│   │   ├── 20260509004356_9010e1fc-2b03-41f8-a613-05d3d5c36197.sql
+│   │   ├── 20260509145740_78531c51-278b-4a48-9341-e9b3c0ed0c9d.sql
+│   │   ├── 20260509151944_eb41e694-da9f-488f-be21-4fa8f995190f.sql
+│   │   ├── 20260509152929_b9441320-de0d-47ea-9191-9143112fa3ac.sql
+│   │   ├── 20260509180202_377912bd-34bb-4562-8a81-8df0f6ce913b.sql
+│   │   ├── 20260509185913_40083f5c-7d6e-4ef5-b08d-f59c9fb9213d.sql
+│   │   ├── 20260509193036_73483874-4c24-4105-a9ba-a0b1f33a86c5.sql
+│   │   ├── 20260509235233_d6be4321-ecd4-441e-ab4c-5ac6ec7ed39b.sql
+│   │   ├── 20260510004402_ec787d12-f2e8-48b3-820e-d8bd18942f03.sql
+│   │   ├── 20260510131909_8d686523-8852-4e04-a989-c0127945aec0.sql
+│   │   ├── 20260510135809_02a2b101-52f6-4a37-b706-554441d1922d.sql
+│   │   ├── 20260510164451_4436bd83-f594-4618-8418-c6efd9bf6e75.sql
+│   │   ├── 20260510231348_5d3b6bae-e3ee-4abb-88be-4fca08e57ea3.sql
+│   │   ├── 20260510231420_51a75ed8-2f37-4fb4-97ea-65a3cb96ac04.sql
+│   │   ├── 20260510235044_62a7dc52-87e0-4287-8bae-c7f9199357be.sql
+│   │   ├── 20260511004645_4e5a5d2b-07a5-43e0-be91-849d5356da14.sql
+│   │   ├── 20260511010037_ac6029c4-2017-4472-b45c-87c9492d7be8.sql
+│   │   ├── 20260511015907_3464ce9d-3920-4354-92d2-df2741aecb37.sql
+│   │   ├── 20260511023654_3b86e6dc-2309-4bf6-8f57-711accff8b37.sql
+│   │   ├── 20260511211444_e02138f9-1b49-48a3-9cef-6b2d5b288adf.sql
+│   │   ├── 20260512115721_ec9fad76-b8db-40d3-bb52-867f305314af.sql
+│   │   ├── 20260512150419_74b4ef54-2b36-4cd6-9cd1-cfd570369979.sql
+│   │   ├── 20260512150454_eb1a46be-1338-47af-93cb-ce97e3257f11.sql
+│   │   ├── 20260512151542_ae954259-df60-4ef5-ad2b-32683bb765f5.sql
+│   │   ├── 20260512153518_847ad641-6330-44ea-8b30-918e1794003c.sql
+│   │   ├── 20260512153648_8f2aac3f-ce8e-4faa-87c9-037078a95c20.sql
+│   │   ├── 20260512153727_af00ed8e-fd44-4547-9f3b-b737cc855278.sql
+│   │   ├── 20260512154211_ed653305-eafe-4388-b137-39d9f74d5fa2.sql
+│   │   ├── 20260512154833_314546b8-8539-429c-9770-00942882c43e.sql
+│   │   ├── 20260512184606_bccd1043-1693-478a-85c4-e2a51d0ad478.sql
+│   │   ├── 20260512185847_69b70876-62c8-4e21-a375-70e668d3337d.sql
+│   │   ├── 20260512225916_49f8cb1d-966e-45bf-8a5e-bcd28958d7f6.sql
+│   │   ├── 20260513201612_0ffaa8c8-ef30-44a9-8399-2fd06b938821.sql
+│   │   ├── 20260514195553_5abdb365-85a6-4ece-b191-279f549820c0.sql
+│   │   ├── 20260516230915_f006680d-9cfa-46da-8bfe-66b5dec62f02.sql
+│   │   ├── 20260517023050_f877e196-e47b-4ede-a7e6-08f04857010d.sql
+│   │   ├── 20260517125613_d94d18a2-fcd2-4bf3-837a-52aaad19d8da.sql
+│   │   ├── 20260517145121_0a7c99cf-d501-41aa-94c7-c49e14f52bc1.sql
+│   │   ├── 20260517150243_76aa24e7-9398-42fd-a772-2fd2c6e4ce0d.sql
+│   │   ├── 20260517155645_ebd57d99-d772-4113-864c-a5ec4859b533.sql
+│   │   ├── 20260517234348_be1c9a26-079f-4c69-9662-0cf76e46cac6.sql
+│   │   ├── 20260517235429_d964dcb9-aec0-4589-a12c-20bfae64df4f.sql
+│   │   ├── 20260518143517_5bcc8e29-308f-4c3d-b87c-119423b3f7cc.sql
+│   │   ├── 20260518150637_3e972ba0-1995-4ff9-9da0-b83f997f32c5.sql
+│   │   ├── 20260520145537_3f62ed6f-0791-4e5b-80a5-e8d47c0a73d2.sql
+│   │   ├── 20260524111719_539bd00d-6618-4073-a941-2b356bcecd7e.sql
+│   │   ├── 20260524111824_6c250a05-ec3a-4a4d-be0d-322e01a3cdeb.sql
+│   │   ├── 20260525205711_4f272aba-0f04-48c0-ba3f-6b8111ecbeab.sql
+│   │   ├── 20260528125850_6b5c8803-258c-4ced-b9cc-908a22fa1308.sql
+│   │   ├── 20260602182007_501ddd58-bf71-4ad2-aa7b-622f742933ff.sql
+│   │   ├── 20260602213717_12269f02-197b-4e3d-b016-56c90eb6fcd6.sql
+│   │   ├── 20260602213831_74daa8de-ba4c-463e-b3e0-abb04ae78852.sql
+│   │   ├── 20260603141521_790921be-6044-40be-aef7-2b0b51ac5109.sql
+│   │   ├── 20260603181115_6e0c1004-660a-4c2c-916f-3661ba05cb21.sql
+│   │   ├── 20260605003905_d19f8d77-b07b-4e74-9746-597571cd3aa3.sql
+│   │   ├── 20260605211554_9d991fd7-c4a9-4e4d-a20d-a2fb0d5aeb26.sql
+│   │   ├── 20260605213606_20f95f2a-2540-4541-8f16-0582592d9506.sql
+│   │   ├── 20260606155128_5901a673-871a-4dc1-a0bf-c902fd42c68e.sql
+│   │   ├── 20260606171646_e56dd164-4a2c-4098-aa20-0f241d8385f2.sql
+│   │   ├── 20260606224851_9295558d-3066-4f30-8f21-3d9bdc36960d.sql
+│   │   ├── 20260610214533_2e433a88-0d66-4014-b96c-c67e7d8452a9.sql
+│   │   ├── 20260611132243_ed1bf3bd-23a8-4630-b1c0-a5643f23afaa.sql
+│   │   ├── 20260611193233_65f3f436-75c5-49b9-a0a2-cc78df2afa2d.sql
+│   │   ├── 20260612214115_25e73cb5-7c32-4107-9751-76dde0a5439c.sql
+│   │   ├── 20260613145235_a0dcda58-796d-48d3-9805-48b68dbd0d22.sql
+│   │   ├── 20260613151226_50ccf831-06be-4fd8-bd9b-51380b27dbc8.sql
+│   │   ├── 20260613154035_a8090bcd-a8f6-4027-8974-a1b8db6729a6.sql
+│   │   ├── 20260613164049_c55ed900-a6ec-4da2-a6c7-65236c8ab51a.sql
+│   │   ├── 20260614165658_d9321f63-51cb-4902-94cf-993b9086eba2.sql
+│   │   ├── 20260614175434_6df2fc2c-445e-4da9-8574-a1cf0ecad547.sql
+│   │   ├── 20260614194443_cda26018-b4d3-4a87-8670-fa19cddd2ab9.sql
+│   │   ├── 20260615111657_b0529b6e-d425-420b-8166-c65d114474fd.sql
+│   │   ├── 20260619170040_956a73b4-6276-460a-b975-bdbc2abab21b.sql
+│   │   ├── 20260619174556_2e425c3f-9494-499d-b94b-aa48d01967d8.sql
+│   │   ├── 20260620180808_dd84fef9-9d04-4607-9cdd-3f7c983c3123.sql
+│   │   ├── 20260620182931_649bb9ae-3b2c-4367-8947-d223620f6635.sql
+│   │   ├── 20260622134014_635426d9-c49f-493e-bdd9-ba546ecac915.sql
+│   │   ├── 20260622181709_9fc40a2d-7fa5-45c1-9e52-8400fd6346cb.sql
+│   │   ├── 20260622224718_15eb0482-1045-4f65-b822-e6c69aa47e35.sql
+│   │   ├── 20260623175337_78d0953d-2935-4878-8fa1-9602382591d9.sql
+│   │   ├── 20260623182056_a05ce391-be21-47d0-93f0-7b698dc67908.sql
+│   │   ├── 20260623214827_72d49ac2-b7a2-4bee-a57a-7748f577b3d9.sql
+│   │   ├── 20260623215804_315329fb-403e-48e2-a54f-9526866a0555.sql
+│   │   ├── 20260623231628_e5bff074-9d5b-4d21-9009-ad82c36494d4.sql
+│   │   ├── 20260708150000_profile_split_phase1_create_tables.sql
+│   │   ├── 20260708160000_profile_split_phase2_backfill.sql
+│   │   ├── 20260708170000_profile_split_phase2_sync_trigger.sql
+│   │   ├── 20260726080239_a263a9fc-ed34-4c2e-8a99-966e03eb1eb3.sql
+│   │   ├── 20260727044050_65d2d333-43e0-4912-b9f5-bd92f132db66.sql
+│   │   ├── 20260730071009_52fe5c3a-065b-4f11-b9ba-db4403a0c1af.sql
+│   │   ├── 20260730071049_f1076492-4502-4509-82bf-d505f65db86e.sql
+│   │   ├── 20260803090817_673989f0-23a3-4fb9-8f5a-527042bc1fc7.sql
+│   │   ├── 20260803091710_8f59697e-2bc6-40fc-be79-87f720d68322.sql
+│   │   ├── 20260803093711_221a5737-cbd5-41c8-95fb-9bc67ae73494.sql
+│   │   ├── 20260804103153_2e1c09c1-fc9d-4193-86e2-c2d38acffb2e.sql
+│   │   ├── 20260804103219_7b08bad7-a540-44ab-968f-dbba8b421565.sql
+│   │   ├── 20260806054700_prevent_self_cosign.sql
+│   │   ├── 20260807120000_discovered_credit_not_verified.sql
+│   │   ├── 20260808090000_fix_discovered_credits_insert_rls.sql
+│   │   ├── 20260809070000_match_email_respect_preferences.sql
+│   │   ├── 20260812071205_c57b2c1c-1974-49bb-9075-ffff9ffb5e30.sql
+│   │   ├── 20260812071229_6da33af2-b170-4a48-b8ab-fa0a5c4ad475.sql
+│   │   ├── 20260817013618_c3d355d9-0cd9-45c6-b268-35d81a3f5cdf.sql
+│   │   ├── 20260817140000_harden_credit_dispute_resolution_rls.sql
+│   │   ├── 20260818120000_thrivefund_milestone_release_idempotency.sql
+│   │   ├── 20260819090000_studio_ai_create.sql
+│   │   ├── 20260819140000_fix_credits_peer_status_constraint.sql
+│   │   ├── 20260823223419_43def0af-be27-4a94-892e-2e8b0ad37eef.sql
+│   │   ├── 20260823223514_222e9e03-bb14-4fa5-b270-d3463f77d476.sql
+│   │   ├── 20260823223643_22855e43-4d0e-4a4a-a20b-247340af6158.sql
+│   │   ├── 20260823223831_16515069-d20a-416b-a50b-d7e0cb4a1daf.sql
+│   │   ├── 20260823223916_0a595ca9-d1b4-40a0-bba0-ca8a9de56faf.sql
+│   │   ├── 20260823224906_5b895fba-5a6e-479f-a57a-f17d8880e80d.sql
+│   │   ├── 20260823233103_162964ca-c4f8-45b5-afc6-8be5b8c28205.sql
+│   │   ├── 20260824000000_hire_loop_notification_supplement.sql
+│   │   ├── 20260824061125_e93a47c5-7437-453b-a946-b1fe23bf4920.sql
+│   │   ├── 20260824100000_milestones_privilege_hardening.sql
+│   │   ├── 20260824120000_milestone_commission_transfer_idempotency.sql
+│   │   ├── 20260825100000_studio_role_based_money_rls.sql
+│   │   ├── 20260825110000_close_public_recap_rls_gap.sql
+│   │   ├── 20260825233323_826e17ec-1884-43e6-9f40-3e15fc0a81f5.sql
+│   │   ├── 20260831030014_607a69f0-ba16-49ec-96a5-1937bada181f.sql
+│   │   ├── 20260902013000_invoice_sepa_bank_transfer_sandbox.sql
+│   │   ├── 20260903000000_fix_rsvp_to_event_conflict_target.sql
+│   │   ├── 20260903010000_allow_cancelled_jam_participant_status.sql
+│   │   ├── 20260903020000_notify_on_event_rsvp.sql
+│   │   ├── 20260903164706_event_gallery_and_participant_comments.sql
+│   │   ├── 20260903200000_close_review_and_endorsement_fabrication_gaps.sql
+│   │   ├── 20260904033125_475cdf4d-330c-47cb-ae14-e5c1ec2eded8.sql
+│   │   ├── 20260904033142_94beeff5-5756-462f-a0b1-fa09c534640c.sql
+│   │   ├── 20260904090000_close_connection_self_accept_gap.sql
+│   │   ├── 20260904110000_close_project_credit_claim_gap.sql
+│   │   ├── 20260904120000_fix_all_mutable_search_path_functions.sql
+│   │   ├── 20260904150000_lock_profiles_privileged_columns.sql
+│   │   ├── 20260904170000_standardize_partner_submissions_admin_check.sql
+│   │   ├── 20260904180000_fix_invoices_status_column_grant.sql
+│   │   ├── 20260904200000_lock_referral_network_writes.sql
+│   │   ├── 20260904210000_lock_credit_verification_columns.sql
+│   │   ├── 20260904220000_lock_streak_tables_writes.sql
+│   │   ├── 20260904230000_fix_analytics_user_id_spoofing.sql
+│   │   ├── 20260904240000_enforce_check_in_points_server_side.sql
+│   │   ├── 20260904250000_restrict_talent_manager_lookup.sql
+│   │   ├── 20260905100000_close_campaign_moderation_bypass.sql
+│   │   ├── 20260905110000_lock_opportunities_guest_contact_columns.sql
+│   │   ├── 20260905120000_notify_event_comment_rpc.sql
+│   │   ├── 20260905130000_kreto_conversation_sessions.sql
+│   │   ├── 20260905140000_mutual_connections_batch_rpc.sql
+│   │   ├── 20260906120000_event_host_comment_moderation.sql
+│   │   ├── 20260909100000_magazine_engagement_and_moderated_publishing.sql
+│   │   ├── 20260910120000_prevent_self_vouch_and_replay.sql
+│   │   ├── 20260910120100_fix_storage_policy_missing_role_scope.sql
+│   │   ├── 20260910120200_fix_status_check_constraint_drift.sql
+│   │   ├── 20260910130000_fix_studio_money_rls_table_level_revoke.sql
+│   │   ├── 20260910140000_close_icdb_role_claim_rewrite_gap.sql
+│   │   ├── 20260910140000_lock_manager_earnings_and_transfer_limit_rpcs.sql
+│   │   ├── 20260910150000_lock_projects_financial_columns_update.sql
+│   │   ├── 20260910150000_oauth_client_secret_rotation.sql
+│   │   ├── 20260910150100_lock_wallet_topups_direct_insert.sql
+│   │   ├── 20260910160000_ai_feature_rate_limit_infra.sql
+│   │   ├── 20260910160000_lock_profile_split_tables.sql
+│   │   ├── 20260910160100_close_guest_opportunity_anon_bypass.sql
+│   │   ├── 20260910170000_opportunity_publish_cap_infra.sql
+│   │   ├── 20260910180000_close_ai_usage_counter_bypass.sql
+│   │   ├── 20260910190000_close_projects_money_blind_write_and_invoices_regression.sql
+│   │   ├── 20260911100000_close_collaborator_invite_role_escalation_gap.sql
+│   │   ├── 20260912100000_enforce_opportunity_monthly_posting_cap.sql
+│   │   ├── 20260912110000_enforce_daily_swipe_limit_server_side.sql
+│   │   ├── 20260912120000_gate_matches_direct_insert.sql
+│   │   ├── 20260912130000_minimal_org_workspace_layer.sql
+│   │   ├── 20260912140000_repair_projects_grants_new_room_regression.sql
+│   │   ├── 20260913100000_exclude_org_id_from_projects_grant.sql
+│   │   ├── 20260913110000_milestones_select_grant_dynamic_exclusion.sql
+│   │   ├── 20260913120000_lock_payment_links_usage_counters.sql
+│   │   ├── 20260913130000_add_transactions_user_index.sql
+│   │   ├── 20260913140000_create_engagements_table.sql
+│   │   ├── 20260914090000_reconcile_stale_orch_runs.sql
+│   │   ├── 20260914100000_create_credit_evidence.sql
+│   │   ├── 20260914110000_reassert_projects_grants_new_room.sql
+│   │   ├── 20260915090000_widen_public_profiles_safe_view.sql
+│   │   ├── 20260915100000_agent_action_source_and_receipts.sql
+│   │   ├── 20260915100000_close_event_ticket_capacity_race_and_status_drift.sql
+│   │   ├── 20260915100000_document_call_transcript_host_only_visibility.sql
+│   │   ├── 20260915100500_register_send_dm_tool.sql
+│   │   ├── 20260915110000_add_recording_retention_tracking.sql
+│   │   ├── 20260916090000_add_missing_profiles_is_discoverable.sql
+│   │   ├── 20261006120000_restrict_ai_usage_counter_rpcs.sql
+│   │   ├── 20261006130000_drop_client_write_policies_on_ai_usage_counters.sql
+│   │   ├── 20261006160000_create_ai_rate_limit_table.sql
+│   │   ├── 20261009090000_lock_down_public_definer_functions.sql
+│   │   ├── 20261009090100_close_open_write_policies.sql
+│   │   ├── 20261009090200_studio_pending_invitees_and_collaborator_writes.sql
+│   │   ├── 20261009090300_scouted_event_claim_rpc.sql
+│   │   ├── 20261009090400_scouted_event_claim_close_policies.sql
+│   │   ├── 20261009100000_opportunity_claim_by_token.sql
+│   │   └── 20261015100000_invoices_provider_reference.sql
+│   └── config.toml
+├── .env.example
+├── .gitignore
+├── .prettierignore
+├── .prettierrc
+├── .tmp-tsconfig.app.json
+├── ACCESSIBILITY_AUDIT.md
+├── ACTIVATION_MODEL.md
+├── ADMIN_UX_QA.md
+├── AGENTS.md
+├── AI_AUTOMATION_AUDIT.md
+├── AI_FEATURES.md
+├── AI_POWERED_UX_AUDIT.md
+├── ANALYTICS_DASHBOARD_PLAN.md
+├── ANALYTICS_EVENT_TAXONOMY.md
+├── ANIMATION_AUDIT.md
+├── AUTH_UX_AUDIT.md
+├── BETA_AUDIT.md
+├── BETA_LAUNCH_CHECKLIST.md
+├── BETA_ROADMAP.md
+├── CAT_UX_AUDIT.md
+├── COMPONENT_HIERARCHY_AUDIT.md
+├── COMPREHENSIVE_PLATFORM_AUDIT_2025.md
+├── CONVERSION_OPTIMIZATION_REPORT.md
+├── CORE_SURFACES_AUDIT.md
+├── CORE_SURFACES_QA.md
+├── COSIGN_MIGRATION_ACTION.md
+├── DEADLINE_DAY_ACCESSIBILITY_REPORT.md
+├── DEADLINE_DAY_BROWSER_VERIFICATION.md
+├── DEADLINE_DAY_EVENTS_AND_UX_AUDIT.md
+├── DEADLINE_DAY_PERFORMANCE_REPORT.md
+├── DEADLINE_DAY_RELEASE_GATE.md
+├── EDGE_FUNCTION_DEPLOYMENT_REPORT.md
+├── EDGE_FUNCTION_MANIFEST.md
+├── EMAIL_RELEASE_AUDIT.md
+├── EMAIL_STRIPE_SANDBOX_QA.md
+├── ENTERPRISE_FOUNDATION_DESIGN_PROPOSAL.md
+├── ESCROW_FLOW_AUDIT.md
+├── ESCROW_IDEMPOTENCY_REPORT.md
+├── ESCROW_PRIVILEGE_MIGRATION_RUNBOOK.md
+├── ESCROW_RLS_NEGATIVE_TEST_REPORT.md
+├── ESCROW_SANDBOX_TEST_REPORT.md
+├── ESCROW_STATE_MACHINE.md
+├── ESCROW_TRANSFER_IDEMPOTENCY_REPORT.md
+├── ESCROW_WEBHOOK_IMPLEMENTATION_REPORT.md
+├── ESCROW_WEBHOOK_VERIFICATION_REPORT.md
+├── EVENT_COMMENTS_RELIABILITY_REPORT.md
+├── EVENT_COMMUNICATION_DELIVERY_REPORT.md
+├── EVENT_IMAGE_UPLOAD_SECURITY_REPORT.md
+├── EVENT_REMINDERS_N1_FIX_REPORT.md
+├── FEATURE_AUDIT.md
+├── FEATURE_SURFACE_AUDIT.md
+├── FEATURE_SURFACE_QA.md
+├── FINAL_AUGUST_31_RELEASE_REPORT.md
+├── FINAL_GAP_CLOSURE_REPORT.md
+├── FINAL_KREPAY_RELEASE_REPORT.md
+├── FINAL_QA_REPORT.md
+├── FINAL_SECURITY_EMAIL_PAYMENT_QA.md
+├── FINAL_UX_QA.md
+├── FINAL_UX_UI_AI_RELEASE_REPORT.md
+├── FIXES_COMPLETED.md
+├── FUNCTION_SECURITY_MATRIX.md
+├── FUNNELS.md
+├── GLOBAL_HEADER_UX_AUDIT.md
+├── GLOBAL_PAGE_CONTAINER_ALIGNMENT_REPORT.md
+├── GLOBAL_PAGE_OVERHAUL_REPORT.md
+├── GLOBAL_UI_WRAP_POLISH_REPORT.md
+├── GLOBAL_UX_QA.md
+├── GLOBAL_UX_SYSTEM_AUDIT.md
+├── GLOBAL_UX_UI_INVENTORY.md
+├── HIRE_LOOP_AUDIT.md
+├── HIRE_NOTIFICATION_VERIFICATION.md
+├── HIRE_TO_KREPAY_E2E_REPORT.md
+├── IMAGE_LOADER_ROLLOUT_REPORT.md
+├── INVESTOR_DECK_350K.md
+├── INVESTOR_DECK_V2.md
+├── INVESTOR_DECK_V3.md
+├── INVITE_MATERIALS.md
+├── IRL_FEATURES.md
+├── KAEN_ONBOARDING.md
+├── KREPAY_BANK_CONNECTION_SECURITY_REPORT.md
+├── KREPAY_COUNTRY_MATRIX_AND_TOBAGO_PILOT.md
+├── KREPAY_CRITICAL_SECURITY_RUNBOOK.md
+├── KREPAY_DASHBOARD_DATA_CONTRACT.md
+├── KREPAY_ESCROW_RELEASE_GATE.md
+├── KREPAY_LIVE_PAYMENT_CHECKLIST.md
+├── KREPAY_LIVE_RELEASE_GATE.md
+├── KREPAY_PAYMENT_AUDIT.md
+├── KREPAY_PAYMENT_CAPABILITY_MATRIX.md
+├── KREPAY_PAYMENT_SYSTEM_INVENTORY.md
+├── KREPAY_PRODUCTION_BLOCKERS.md
+├── KREPAY_RELEASE_GATE.md
+├── KREPAY_SECURITY_VERIFICATION_REPORT.md
+├── KREPAY_STRIPE_CONFIGURATION_REPORT.md
+├── KREPAY_STRIPE_DASHBOARD_RUNBOOK.md
+├── KREPAY_STRIPE_REPLACEMENT_DECISION_MEMO.md
+├── KREPAY_STRIPE_SANDBOX_REPORT.md
+├── KREPAY_STRIPE_SECRET_INVENTORY.md
+├── KREPAY_UX_UI_REPORT.md
+├── KREPAY_WALLET_NEGATIVE_TEST_MATRIX.md
+├── KREPAY_WEBHOOK_TEST_PLAN.md
+├── KRETOPIA_MTD_FUNNEL_AUDIT_AUG_1_14_2026.md
+├── KRETOPIA_WORKTREE_RECOVERY_INVENTORY.md
+├── KRETO_3D_PILOT_IMPLEMENTATION_REPORT.md
+├── KRETO_3D_REFERENCE_AND_RIGHTS_AUDIT.md
+├── KRETO_ACCESSIBILITY_REPORT.md
+├── KRETO_BUNDLE_SIZE_REPORT.md
+├── KRETO_CHARACTER_ASSET_REPORT.md
+├── KRETO_CHAT_LAYOUT_REPORT.md
+├── KRETO_CONVERSATION_SESSIONS_SPEC.md
+├── KRETO_DYNAMIC_SITEMAP_REPORT.md
+├── KRETO_EVENTS_MUTUAL_CONNECTIONS_REPORT.md
+├── KRETO_FUNCTIONALITY_FIX_REPORT.md
+├── KRETO_GLOBAL_PRESENCE_SYSTEM.md
+├── KRETO_GLOBAL_RELEASE_GATE.md
+├── KRETO_HERO_AND_NEW_ROOM_REFERENCE_REPORT.md
+├── KRETO_HERO_NEW_ROOM_ACCESSIBILITY_REPORT.md
+├── KRETO_HERO_NEW_ROOM_BROWSER_MATRIX.md
+├── KRETO_HERO_NEW_ROOM_PERFORMANCE_REPORT.md
+├── KRETO_HERO_NEW_ROOM_RELEASE_GATE.md
+├── KRETO_HERO_SCENE_REPORT.md
+├── KRETO_IDENTITY_MARK_REPORT.md
+├── KRETO_LANDING_CONDENSE_PROPOSAL.md
+├── KRETO_NEW_ROOM_ACCESSIBILITY_REPORT.md
+├── KRETO_NEW_ROOM_BROWSER_VERIFICATION.md
+├── KRETO_NEW_ROOM_INTEGRATION_REPORT.md
+├── KRETO_NEW_ROOM_PERFORMANCE_REPORT.md
+├── KRETO_NEW_ROOM_RELEASE_GATE.md
+├── KRETO_NEW_ROOM_STATE_MAPPING_AUDIT.md
+├── KRETO_ORIGINALITY_AND_REFERENCE_REPORT.md
+├── KRETO_PERFORMANCE_BUDGET_REPORT.md
+├── KRETO_PILOT_VERIFICATION_REPORT.md
+├── KRETO_PLATFORM_ACCELERATION_AUDIT.md
+├── KRETO_PRIVACY_AND_TRUST_REPORT.md
+├── KRETO_ROLLOUT_PHASE_B_REPORT.md
+├── KRETO_ROLLOUT_PHASE_C_REPORT.md
+├── KRETO_SEO_ACCESSIBILITY_P3_REPORT.md
+├── KRETO_STAGE_RECORDINGS_CONVERSION_AUDIT.md
+├── KRETO_STATE_MACHINE_REPORT.md
+├── KRETO_SURFACE_PLACEMENT_MAP.md
+├── Kretopia_Full_Platform_Audit_v1.md
+├── LANDING_ACCESSIBILITY_REPORT.md
+├── LANDING_BROWSER_VERIFICATION_MATRIX.md
+├── LANDING_CLAIM_PASSPORT_SECTION_REPORT.md
+├── LANDING_CONCISE_CTA_REPORT.md
+├── LANDING_CONVERSION_REPORT.md
+├── LANDING_CTA_HIERARCHY_REPORT.md
+├── LANDING_DAY_NIGHT_VISUAL_QA.md
+├── LANDING_FINAL_CONVERSION_AUDIT.md
+├── LANDING_FINAL_RELEASE_GATE.md
+├── LANDING_HERO_AVATAR_ASSET_AUDIT.md
+├── LANDING_HERO_BROWSER_VERIFICATION_MATRIX.md
+├── LANDING_HERO_CTA_REPORT.md
+├── LANDING_HERO_MOTION_ACCESSIBILITY_REPORT.md
+├── LANDING_HERO_PERFORMANCE_REPORT.md
+├── LANDING_HERO_RELEASE_GATE.md
+├── LANDING_HERO_REPLACEMENT_REPORT.md
+├── LANDING_HERO_SIGNAL_FIELD_AUDIT.md
+├── LANDING_HERO_VISUAL_OVERHAUL_REPORT.md
+├── LANDING_KRETOPIA_LOOP_VISUAL_REPORT.md
+├── LANDING_MOTION_SYSTEM_AUDIT.md
+├── LANDING_PAGE_AUDIT.md
+├── LANDING_PAGE_QA_REPORT.md
+├── LANDING_PERFORMANCE_SEO_REPORT.md
+├── LANDING_PROGRESSIVE_CARDS.md
+├── LANDING_TUTORIAL_SYSTEM_REPORT.md
+├── LANDING_V2_AUDIT.md
+├── LAUNCH_CHECKLIST.md
+├── LAUNCH_READINESS_REPORT.md
+├── LAUNCH_VALIDATION_CHECKLIST.md
+├── LOVABLE_CLOUD_ACCESS_REPORT.md
+├── LOVABLE_CLOUD_EXECUTION_REPORT.md
+├── LOVABLE_CLOUD_MIGRATION_RUNBOOK.md
+├── LOVABLE_CLOUD_SQL_EXECUTION_REPORT.md
+├── LOVABLE_GRANT_DRIFT_SUPPORT_DRAFT.md
+├── LOVABLE_LANDING_VIDEOCALL_QA.md
+├── LOVABLE_RELEASE_READINESS.md
+├── MAJOR_PAGE_UX_OVERHAUL.md
+├── MENU_MODAL_UX_REPORT.md
+├── MESSAGES_INBOX_LAYOUT_FIX_REPORT.md
+├── MIGRATION_APPLICATION_REPORT.md
+├── MONITORING_SETUP.md
+├── MOTION_SYSTEM.md
+├── MULTI_FEATURE_OVERHAUL_PHASE1_AUDIT.md
+├── MVP_OPTIMIZATION_PLAN.md
+├── NAVBAR_STYLE_ROLLBACK_REPORT.md
+├── NEW_ROOM_ACCESSIBILITY_REPORT.md
+├── NEW_ROOM_AI_INTAKE_SPEC.md
+├── NEW_ROOM_APPROVAL_AND_SECURITY.md
+├── NEW_ROOM_DRAFT_CONTRACT.md
+├── NEW_ROOM_GUIDED_CREATION_REPORT.md
+├── NEW_ROOM_INPUT_MODES.md
+├── NEW_ROOM_PERFORMANCE_REPORT.md
+├── NEW_ROOM_RELEASE_GATE.md
+├── NEW_ROOM_STUDIO_INITIALIZATION.md
+├── NEW_ROOM_UX_AUDIT.md
+├── NEW_ROOM_VOICE_UX_REPORT.md
+├── NOTIFICATION_FLOW_VERIFICATION.md
+├── NOTIFICATION_MIGRATION_REPORT.md
+├── OG_PROMOTION_GUIDE.md
+├── ON_STAGE_ACCESSIBILITY_REPORT.md
+├── ON_STAGE_BROWSER_VERIFICATION_MATRIX.md
+├── ON_STAGE_FULL_SCREEN_AUDIT.md
+├── ON_STAGE_INVITE_AND_SHARE_REPORT.md
+├── ON_STAGE_PERFORMANCE_REPORT.md
+├── ON_STAGE_RECORDING_AND_REPLAY_REPORT.md
+├── ON_STAGE_RELEASE_GATE.md
+├── ON_STAGE_SCREEN_SHARE_REPORT.md
+├── ON_STAGE_SECURITY_AND_PERMISSION_REPORT.md
+├── ON_STAGE_UX_UI_ARCHITECTURE.md
+├── ON_STAGE_VIDEO_QUALITY_REPORT.md
+├── ORPHANED_PAGES_CLEANUP_REPORT.md
+├── PASSPORT_AND_CONVERSION_AUDIT.md
+├── PASSPORT_MAIN_CHARACTER_QA.md
+├── PASSPORT_SHARE_QA.md
+├── PASSPORT_STUDIO_REARCHITECTURE_AUDIT.md
+├── PERFORMANCE_REPORT.md
+├── PERFORMANCE_VALIDATION_REPORT.md
+├── PLATFORM_AUDIT_2025.md
+├── PLATFORM_AUDIT_2026.md
+├── PLATFORM_HEALTH_CRITICAL_REPORT.md
+├── PLATFORM_HEALTH_REPORT.md
+├── PLATFORM_IMPROVEMENT_PLAN.md
+├── PRIMARY_SURFACE_AUDIT.md
+├── PRIVATE_BETA_EXIT_CHECKLIST.md
+├── PRIVILEGE_DRIFT_INVESTIGATION.md
+├── PRIVILEGE_VERIFICATION_QUERIES.sql
+├── PROJECT_AUTOPILOT_AUDIT.md
+├── PUBLIC_PASSPORT_ROUTE_FIX_REPORT.md
+├── README.md
+├── RECORDINGS_REPLAY_MODAL_REPORT.md
+├── REFACTORING_COMPLETE.md
+├── REPOSITORY_TREE.txt
+├── RESPONSIVE_A11Y_MATRIX.md
+├── RESPONSIVE_ACCESSIBILITY_QA.md
+├── ROADMAP.md
+├── SCOUT_DESIGN_SYSTEM_REFERENCE.md
+├── SCOUT_SCAN_PERFORMANCE_REPORT.md
+├── SECURITY_AUDIT_2026.md
+├── SECURITY_CHECKLIST.md
+├── SECURITY_DATA_INTEGRITY_RECHECK.md
+├── SECURITY_RELEASE_GATE.md
+├── SITE_STATUS.md
+├── SOUNDSTAGES_AUDIT.md
+├── STAGE_UX_UI_OVERHAUL_REPORT.md
+├── STRATEGIC_MVP_PLAN_2025.md
+├── STRIPE_ACCESS_BLOCKER.md
+├── STRIPE_CONNECT_ACCOUNT_STATUS_REPORT.md
+├── STRIPE_PLATFORM_ACCESS_REPORT.md
+├── STRIPE_SECURITY_AUDIT.md
+├── STRIPE_TEST_CONFIGURATION_REPORT.md
+├── STRIPE_WEBHOOK_ENDPOINT_MATRIX.md
+├── STUDIO_AVATAR_REMOVAL_REPORT.md
+├── STUDIO_CAROUSEL_AUDIT.md
+├── STUDIO_CONTAINER_ALIGNMENT_REPORT.md
+├── STUDIO_CTA_STANDARDIZATION_REPORT.md
+├── STUDIO_CURRENT_STATE_AUDIT.md
+├── STUDIO_DASHBOARD_DATA_CONTRACT.md
+├── STUDIO_DROPZONE_SECURITY_AND_AI_REPORT.md
+├── STUDIO_FINDING1_REMEDIATION_PLAN.md
+├── STUDIO_FINDING3_REMEDIATION_REPORT.md
+├── STUDIO_FINDING4_REMEDIATION_REPORT.md
+├── STUDIO_INFORMATION_ARCHITECTURE_OVERHAUL.md
+├── STUDIO_LOOSE_PROJECTS_QA.md
+├── STUDIO_MARKETING_CREATION_REPORT.md
+├── STUDIO_NEW_ROOM_QA.md
+├── STUDIO_OVERHAUL_CURRENT_STATE.md
+├── STUDIO_OVERHAUL_QA.md
+├── STUDIO_OVERHAUL_V2_AUDIT.md
+├── STUDIO_OVERHAUL_V2_IMPLEMENTATION_REPORT.md
+├── STUDIO_PROJECTS_NAMING_AUDIT.md
+├── STUDIO_REFERENCE_SURFACE_AUDIT.md
+├── STUDIO_ROLE_VISIBILITY_REPORT.md
+├── STUDIO_ROOM_NAVIGATOR_REPORT.md
+├── STUDIO_ROOM_PROGRESS_MODEL.md
+├── SUBSCRIPTION_GUIDE.md
+├── TEST_GATE_REPORT.md
+├── THRIVEDESK_ANALYSIS.md
+├── THRIVEIN_MIGRATION_PHASE1_INVENTORY.md
+├── THRIVEIN_SSO_DOCS.md
+├── TITLE_ANIMATION_AUDIT.md
+├── TODAY_COMMAND_CENTER_QA.md
+├── TODAY_COMPONENT_CONSOLIDATION_REPORT.md
+├── TODAY_PERSONALIZATION_AND_INTERACTION_REPORT.md
+├── TRELLO_CARD_VALIDATION_REPORT.md
+├── TRELLO_RELEASE_INVENTORY.md
+├── TYPOGRAPHY_SYSTEM.md
+├── UX_NAVIGATION_AUDIT.md
+├── WALLET_ACCESS_REMEDIATION_PLAN.md
+├── WALLET_CLIENT_PATH_VERIFICATION_REPORT.md
+├── WALLET_SECURITY_VERIFICATION_REPORT.md
+├── bun.lock
+├── bun.lockb
+├── bunfig.toml
+├── capacitor.config.ts
+├── components.json
+├── eslint.config.js
+├── index.html
+├── package-lock.json
+├── package.json
+├── postcss.config.js
+├── tailwind.config.ts
+├── tsconfig.app.json
+├── tsconfig.json
+├── tsconfig.node.json
+├── vite.config.ts
+└── vitest.config.ts
+
+510 directories, 3386 files
