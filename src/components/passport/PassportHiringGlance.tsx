@@ -1,10 +1,11 @@
-import { CheckCircle2, Clock, Globe, Shield } from "lucide-react";
+import { CheckCircle2, Clock, Globe, Handshake, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
 import type { HiringGlance } from "@/lib/passport/hiringGlance";
 
 const EVIDENCE_STYLE: Record<CreditEvidenceStatus, { icon: typeof CheckCircle2; className: string }> = {
   verified: { icon: CheckCircle2, className: "text-[hsl(var(--signal-teal))]" },
+  co_signed: { icon: Handshake, className: "text-[hsl(var(--signal-teal))]" },
   publicly_sourced: { icon: Globe, className: "text-muted-foreground" },
   pending: { icon: Clock, className: "text-muted-foreground" },
   self_claimed: { icon: Shield, className: "text-muted-foreground" },
@@ -96,7 +97,7 @@ export function PassportHiringGlance({ glance, firstName, className }: PassportH
       )}
 
       <p className="text-[10px] leading-relaxed text-muted-foreground">
-        Confirmed = a collaborator, a linked platform or Kretopia verified it. Self-claimed credits are the creator's own word.
+        Verified = confirmed by a linked platform or Kretopia. Co-signed = collaborators who worked on it vouch for it. Self-declared credits are the creator's own word.
       </p>
     </section>
   );

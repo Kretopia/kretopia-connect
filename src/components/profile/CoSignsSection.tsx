@@ -4,7 +4,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getShareUrl } from "@/lib/constants";
-import { ShieldCheck, Shield, Clock, Globe, ShieldQuestion, BellRing, UserPlus } from "lucide-react";
+import { ShieldCheck, Shield, Clock, Globe, Handshake, ShieldQuestion, BellRing, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
@@ -44,6 +44,12 @@ const GROUP_META: Record<CreditEvidenceStatus, { label: string; description: str
     icon: ShieldCheck,
     badgeClass: "bg-[hsl(var(--signal-teal))]/15 text-[hsl(var(--signal-teal))] border-[hsl(var(--signal-teal))]/40",
   },
+  co_signed: {
+    label: "Co-signed",
+    description: "Collaborators who worked on it vouch for it. Not yet verified by an authoritative source.",
+    icon: Handshake,
+    badgeClass: "bg-[hsl(var(--signal-teal))]/10 text-[hsl(var(--signal-teal))] border-[hsl(var(--signal-teal))]/30",
+  },
   publicly_sourced: {
     label: "Publicly Sourced",
     description: "Kreto found this from public information and you confirmed it's yours.",
@@ -57,14 +63,14 @@ const GROUP_META: Record<CreditEvidenceStatus, { label: string; description: str
     badgeClass: "bg-muted text-muted-foreground border-border",
   },
   self_claimed: {
-    label: "Self-claimed",
+    label: "Self-declared",
     description: "Added by you. Ask a collaborator to co-sign it to build trust.",
     icon: Shield,
     badgeClass: "bg-muted text-muted-foreground border-border",
   },
 };
 
-const GROUP_ORDER: CreditEvidenceStatus[] = ["verified", "pending", "self_claimed", "publicly_sourced"];
+const GROUP_ORDER: CreditEvidenceStatus[] = ["verified", "co_signed", "pending", "self_claimed", "publicly_sourced"];
 
 /**
  * Co-Signs — four evidence-state carousels built from the same `credits`
@@ -74,7 +80,7 @@ const GROUP_ORDER: CreditEvidenceStatus[] = ["verified", "pending", "self_claime
  *
  * This is NOT the star-rating testimonial system (that's ReviewsSection,
  * its own "Reviews" tab) — this is evidence status for specific credit
- * claims. Never implies Self-claimed equals Verified.
+ * claims. Never implies Self-declared equals Verified.
  */
 export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
   const [endorsementCredit, setEndorsementCredit] = useState<Credit | null>(null);
@@ -117,7 +123,7 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
 
   const groups = useMemo(() => {
     const buckets: Record<CreditEvidenceStatus, Credit[]> = {
-      verified: [], publicly_sourced: [], pending: [], self_claimed: [],
+      verified: [], co_signed: [], publicly_sourced: [], pending: [], self_claimed: [],
     };
     for (const c of credits) {
       buckets[classifyCreditEvidence(c)].push(c);

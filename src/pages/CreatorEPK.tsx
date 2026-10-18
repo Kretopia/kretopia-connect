@@ -119,7 +119,7 @@ interface Credit {
   credit_category?: string;
   verification_status?: string | null;
   endorsement_count?: number | null;
-  /** How the evidence reads (verified / publicly sourced / pending / self-claimed). */
+  /** How the evidence reads (verified / co-signed / publicly sourced / pending / self-declared). */
   evidence?: CreditEvidenceStatus;
   basis?: string;
   isVerified?: boolean;
@@ -333,7 +333,7 @@ const CreatorEPK = () => {
         const manualCredits = (creditsRes.data || []).map((c: any) => {
           // "Verified" means the same thing here as on the owner's own Stamps tab. An
           // AI-confidence score or an imported source is NOT confirmation; those
-          // read as publicly sourced / self-claimed, never as verified.
+          // read as publicly sourced / self-declared, never as verified.
           const evidence = classifyCreditEvidence(c);
           const tier: Credit['verificationTier'] = evidence === 'verified' ? ((c.endorsement_count || 0) > 0 ? 'peer' : 'icdb') : 'manual';
           return {

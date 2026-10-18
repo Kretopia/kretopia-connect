@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import { CreditCoverPlaceholder } from "./CreditCoverPlaceholder";
 import { HoloCard } from "@/components/passport/HoloCard";
-import { classifyCreditEvidence } from "@/lib/passport/creditEvidence";
+import { classifyCreditEvidence, creditEvidenceLabel, creditEvidenceMeaning } from "@/lib/passport/creditEvidence";
 
 export interface AchievementCardProps {
   variant: "credit" | "press" | "award" | "stat";
@@ -58,16 +58,15 @@ export const AchievementCard = ({
   // just noise. Verification state below is the one place color is earned.
   const getVariantStyles = () => "border-border/60 hover:border-white/20";
 
-  // 3-tier verification, collapsed to two colors: pink = trusted (verified
-  // or peer-vouched), neutral = not yet (pending or self-claimed). Fewer
-  // hues than the old amber/primary/muted split, same real distinction.
+  // Proof status, one vocabulary shared with Credits (lib/passport/creditEvidence.ts):
+  // teal = trusted (verified, or co-signed by collaborators), neutral = not yet (pending,
+  // publicly sourced, or self-declared).
   const VerificationBadge = () => {
-    const isPending = verificationStatus === "pending" || verificationStatus === "pending_review";
     const hasPeers = endorsementCount > 0;
     const evidence = classifyCreditEvidence({ verification_status: verificationStatus, endorsement_count: endorsementCount });
 
-    let label = "Self-claimed";
-    let why = "Added by the creator. Not yet verified by collaborators or an authoritative source.";
+    let label = creditEvidenceLabel("self_claimed");
+    let why = creditEvidenceMeaning("self_claimed");
     let Icon: any = Shield;
     let cls = "bg-muted text-muted-foreground border-border";
 
@@ -87,18 +86,18 @@ export const AchievementCard = ({
       Icon = ShieldCheck;
       cls = "bg-[hsl(var(--signal-teal))]/15 text-[hsl(var(--signal-teal))] border-[hsl(var(--signal-teal))]/40";
     } else if (evidence === "publicly_sourced") {
-      label = "Publicly Sourced";
+      label = creditEvidenceLabel("publicly_sourced");
       why = "Kreto found this from public information and you confirmed it's yours. Not yet independently verified.";
       Icon = Shield;
       cls = "bg-muted text-muted-foreground border-border";
-    } else if (hasPeers) {
-      label = `Vouched · ${endorsementCount}`;
-      why = `Vouched by ${endorsementCount} collaborator${endorsementCount === 1 ? "" : "s"} who worked on this project.`;
+    } else if (evidence === "co_signed") {
+      label = `${creditEvidenceLabel("co_signed")} · ${endorsementCount}`;
+      why = `Co-signed by ${endorsementCount} collaborator${endorsementCount === 1 ? "" : "s"} who worked on this project. Not yet verified by an authoritative source.`;
       Icon = ShieldCheck;
       cls = "bg-[hsl(var(--signal-teal))]/10 text-[hsl(var(--signal-teal))] border-[hsl(var(--signal-teal))]/30";
-    } else if (isPending) {
-      label = "Pending";
-      why = "Verification request sent. Waiting on collaborators to confirm.";
+    } else if (evidence === "pending") {
+      label = creditEvidenceLabel("pending");
+      why = "Verification request sent. Waiting on a reply or review: it does not count as proof yet.";
       Icon = Clock;
       cls = "bg-muted text-muted-foreground border-border";
     }

@@ -6,7 +6,6 @@ const SECTIONS = [
   { id: "hire-me", label: "Hire Me" },
   { id: "stamps", label: "Stamps" },
   { id: "activity", label: "Activity" },
-  { id: "record", label: "Full record" },
   { id: "insights", label: "Next steps" },
 ];
 

@@ -84,7 +84,7 @@ export function buildHiringGlance(credits: GlanceCreditInput[], counts: GlanceCo
   }
   const topRoles = [...roleCounts.values()].sort((a, b) => b.count - a.count || a.role.localeCompare(b.role)).slice(0, MAX_ROLES);
 
-  const rank: Record<CreditEvidenceStatus, number> = { verified: 0, publicly_sourced: 1, pending: 2, self_claimed: 3 };
+  const rank: Record<CreditEvidenceStatus, number> = { verified: 0, co_signed: 1, publicly_sourced: 2, pending: 3, self_claimed: 4 };
   const proof = rows
     .filter((r) => (r.c.project_name || r.c.title) && r.c.role)
     .sort((a, b) => rank[a.evidence] - rank[b.evidence] || (b.c.year ?? 0) - (a.c.year ?? 0))
