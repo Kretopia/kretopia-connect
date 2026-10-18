@@ -16,6 +16,9 @@ const db = vi.hoisted(() => ({
     bio: "A bio that is comfortably more than twenty characters long.",
   },
   rows: [] as Record<string, unknown>[],
+  // stable objects: the grid's effects depend on `user` and `toast`, so a new one per render would re-render forever
+  auth: { user: { id: "viewer" }, loading: false },
+  toasts: { toast: () => {} },
 }));
 
 // One chainable stand-in for the query builder. It remembers the table and the selected columns so the
@@ -37,8 +40,8 @@ vi.mock("@/integrations/supabase/client", () => {
   };
   return { supabase: { from: make, functions: { invoke: vi.fn() } } };
 });
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "viewer" }, loading: false }) }));
-vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => db.auth }));
+vi.mock("@/hooks/use-toast", () => ({ useToast: () => db.toasts }));
 
 import { BrowseCreators } from "../BrowseCreators";
 
