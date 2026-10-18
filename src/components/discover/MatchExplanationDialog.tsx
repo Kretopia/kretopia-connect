@@ -1,11 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sparkles, MapPin, Briefcase, Heart, Lightbulb } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface MatchExplanationDialogProps {
   open: boolean;
@@ -16,107 +12,26 @@ interface MatchExplanationDialogProps {
     title: string;
     location: string;
     image: string;
-    matchScore?: number;
+    /** Why this person was suggested, from real fields and signals (see lib/matchReasons.ts). */
     matchReasons?: string[];
-    ai_match_score?: number;
     match_reasons?: string[];
+    /** @deprecated Ignored. A ranking weight is not a percentage and is no longer shown. */
+    matchScore?: number;
+    /** @deprecated Ignored, as above. */
+    ai_match_score?: number;
   };
   onConnect: () => void;
   onPass: () => void;
 }
 
-export const MatchExplanationDialog = ({ 
-  open, 
-  onOpenChange, 
-  match,
-  onConnect,
-  onPass
-}: MatchExplanationDialogProps) => {
-  const [loading, setLoading] = useState(false);
-  const [aiScore, setAiScore] = useState<number | null>(null);
-  const [aiReasons, setAiReasons] = useState<string[]>([]);
-  
-  // Reset AI data whenever we open for a different match
-  useEffect(() => {
-    if (open) {
-      setAiScore(null);
-      setAiReasons([]);
-    }
-  }, [open, match.user_id]);
-  
-  const score = aiScore ?? match.matchScore ?? match.ai_match_score ?? 85;
-  const reasons = aiReasons.length > 0 ? aiReasons : (match.matchReasons || match.match_reasons || []);
-
-  // Generate AI explanation when dialog opens
-  useEffect(() => {
-    const generateExplanation = async () => {
-      if (!open || !match.user_id) return;
-      
-      setLoading(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Get current user profile
-        const { data: currentProfile } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, role, bio, professional_skills, location')
-          .eq('user_id', user.id)
-          .single();
-
-        // Get target user profile
-        const { data: targetProfile } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, role, bio, professional_skills, location')
-          .eq('user_id', match.user_id)
-          .single();
-
-        if (!currentProfile || !targetProfile) return;
-
-        // Call AI edge function
-        const { data: aiMatch, error } = await supabase.functions.invoke('generate-match-explanation', {
-          body: {
-            currentUser: currentProfile,
-            targetUser: targetProfile
-          }
-        });
-
-        if (error) {
-          console.error('[MatchExplanationDialog] Edge function error:', error);
-          throw error;
-        }
-
-        if (aiMatch) {
-          setAiScore(aiMatch.score ?? 85);
-          setAiReasons(aiMatch.reasons ?? []);
-        }
-      } catch (error) {
-        console.error('[MatchExplanationDialog] Error generating AI explanation:', error);
-        // Use fallback reasons based on available data
-        const fallbackReasons = [];
-        if (match.title) fallbackReasons.push(`${match.title} with complementary creative skills`);
-        if (match.location) fallbackReasons.push(`Based in ${match.location}`);
-        fallbackReasons.push("Great collaboration potential based on your profiles");
-        setAiReasons(fallbackReasons);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    generateExplanation();
-  }, [open, match.user_id]);
-
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return "from-green-500 to-emerald-500";
-    if (score >= 70) return "from-primary to-primary/80";
-    return "from-primary to-primary";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 85) return "Perfect Match";
-    if (score >= 70) return "Great Match";
-    return "Good Match";
-  };
+/**
+ * "Why you match": the concrete reasons this person was suggested, and nothing else. It used to show a
+ * percentage with a "Perfect Match" label (defaulting to 85% when no score was passed in) and, when the AI
+ * call failed, generic reasons such as "great collaboration potential" that no data supported. A score
+ * that is not a measure of anything, and reasons that are not true of these two people, are not shown.
+ */
+export const MatchExplanationDialog = ({ open, onOpenChange, match, onConnect, onPass }: MatchExplanationDialogProps) => {
+  const reasons = match.matchReasons ?? match.match_reasons ?? [];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -126,9 +41,7 @@ export const MatchExplanationDialog = ({
             <Lightbulb className="h-5 w-5 text-primary" />
             Why you match
           </DialogTitle>
-          <DialogDescription>
-            Why you and {match.name} would work great together
-          </DialogDescription>
+          <DialogDescription>What you and {match.name} have in common on Kretopia</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -153,43 +66,32 @@ export const MatchExplanationDialog = ({
             </div>
           </div>
 
-          {/* Match Score */}
-          <div className="text-center space-y-2">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br ${getScoreColor(score)} text-white shadow-lg`}>
-              <div className="text-2xl font-bold">{score}%</div>
-            </div>
-            <p className="text-sm font-medium">{getScoreLabel(score)}</p>
-          </div>
-
-          {/* Match Reasons */}
+          {/* Reasons */}
           <div className="space-y-2">
             <h4 className="text-sm font-medium flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" />
-              Why you'll work great together
+              Why they were suggested
             </h4>
-            {loading ? (
-              <div className="flex items-center justify-center py-6">
-                <div className="flex flex-col items-center gap-2">
-                  <KretopiaSpinner className="h-6 w-6 text-primary" />
-                  <p className="text-xs text-muted-foreground">AI analyzing compatibility...</p>
-                </div>
-              </div>
-            ) : (
+            {reasons.length > 0 ? (
               <ul className="space-y-2">
-                {reasons.map((reason, index) => (
-                  <li key={index} className="flex items-start gap-2 text-sm p-2 rounded-lg bg-primary/5 border border-primary/10">
+                {reasons.map((reason) => (
+                  <li key={reason} className="flex items-start gap-2 text-sm p-2 rounded-lg bg-primary/5 border border-primary/10">
                     <Heart className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                     <span>{reason}</span>
                   </li>
                 ))}
               </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground p-2 rounded-lg bg-muted/40">
+                No shared craft, skills, city or history yet. Open their Passport to see their work and decide for yourself.
+              </p>
             )}
           </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="flex-1"
               onClick={() => {
                 onPass();
@@ -198,7 +100,7 @@ export const MatchExplanationDialog = ({
             >
               Pass
             </Button>
-            <Button 
+            <Button
               className="flex-1 bg-green-500 hover:bg-green-600"
               onClick={() => {
                 onConnect();
