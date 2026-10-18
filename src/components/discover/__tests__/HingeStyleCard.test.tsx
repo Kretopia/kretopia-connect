@@ -103,3 +103,47 @@ describe("HingeStyleCard", () => {
     expect(onViewProfile).not.toHaveBeenCalled();
   });
 });
+
+describe("HingeStyleCard: why you connect (similar and complementary)", () => {
+  const chips = () => screen.getByText("Why you connect").parentElement!.textContent ?? "";
+
+  it("names a complementary craft and the skills they bring, not only the shared ones", () => {
+    renderCard({
+      role: "Fashion stylist",
+      _matchSignals: { sameSector: false, sameCity: false, pastCollab: false, skillOverlapRatio: 0, sharedSkills: [], complementaryCraft: true, newSkills: ["wardrobe", "set styling"] },
+    });
+    expect(chips()).toContain("Complements your craft · Fashion stylist");
+    expect(chips()).toContain("Brings skills you don't list: Wardrobe, Set styling");
+    expect(chips()).not.toContain("Shared craft");
+  });
+
+  it("names a shared craft, the city and shared skills for a similar profile", () => {
+    renderCard({
+      _matchSignals: { sameSector: true, sameCity: true, pastCollab: false, skillOverlapRatio: 0.5, sharedSkills: ["lighting"] },
+    });
+    expect(chips()).toContain("Shared craft · Photographer");
+    expect(chips()).toContain("Shared skills: Lighting");
+    expect(chips()).toContain("Based in Los Angeles");
+    expect(chips()).not.toContain("Complements");
+  });
+
+  it("puts 'Already interested in you' first when they have swiped right on you", () => {
+    renderCard({
+      _likedYou: true,
+      _matchSignals: { sameSector: true, sameCity: false, pastCollab: false, skillOverlapRatio: 0 },
+    });
+    expect(chips().indexOf("Already interested in you")).toBeGreaterThanOrEqual(0);
+    expect(chips().indexOf("Already interested in you")).toBeLessThan(chips().indexOf("Shared craft"));
+  });
+
+  it("does not repeat their openness as a reason: the card already shows it as their intent", () => {
+    renderCard({ _matchSignals: { sameSector: true, sameCity: false, pastCollab: false, skillOverlapRatio: 0 } });
+    expect(chips()).not.toContain("Open to collaborating");
+    expect(screen.getByText(/Seeking collaborators/i)).toBeInTheDocument();
+  });
+
+  it("shows no 'Why you connect' block when nothing is true, instead of inventing one", () => {
+    renderCard({ _matchSignals: { sameSector: false, sameCity: false, pastCollab: false, skillOverlapRatio: 0 } });
+    expect(screen.queryByText("Why you connect")).toBeNull();
+  });
+});

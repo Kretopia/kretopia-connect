@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { buildMatchReasons, RECENT_ACTIVITY_DAYS } from "../matchReasons";
-import { buildMyMatchContext, computeMatchScore, MATCH_SCORE_MAX } from "../matchScoring";
+import {
+  buildMyMatchContext,
+  COMPLEMENTARY_CRAFT_WEIGHT,
+  computeMatchScore,
+  MATCH_SCORE_MAX,
+  NEW_SKILL_WEIGHT,
+} from "../matchScoring";
 
 const NOW = Date.parse("2026-10-18T12:00:00Z");
 const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString();
@@ -114,5 +120,81 @@ describe("the ranking weight is not a percentage", () => {
     const me = buildMyMatchContext({ role: "Editor", professional_skills: ["Lighting", "Editing"] }, new Set(), "viewer");
     const result = computeMatchScore(me, { userId: "x", skills: ["editing", "Sound", "EDITING"] });
     expect(result.sharedSkills).toEqual(["editing"]);
+  });
+});
+
+describe("similar versus complementary", () => {
+  it("names a complementary craft and the skills they bring, and never calls the same craft complementary", () => {
+    expect(
+      labels({
+        signals: { complementaryCraft: true, sameSector: false, newSkills: ["colour grading", "sound design"], skillOverlapRatio: 0, sharedSkills: [] },
+        role: "Colourist",
+        max: 5,
+      }),
+    ).toEqual(["Complements your craft · Colourist", "Brings skills you don't list: Colour grading, Sound design"]);
+
+    expect(labels({ signals: { complementaryCraft: true, sameSector: true } , role: "Photographer" })).toEqual(["Shared craft · Photographer"]);
+  });
+
+  it("only counts skills they bring when the craft is a complement (a bare long skill list proves nothing)", () => {
+    expect(labels({ signals: { complementaryCraft: false, newSkills: ["a", "b"] } })).toEqual([]);
+    expect(labels({ signals: { newSkills: ["a"] } })).toEqual([]);
+  });
+
+  it("caps the skills they bring at three and counts the rest", () => {
+    const [, brought] = buildMatchReasons({
+      signals: { complementaryCraft: true, newSkills: ["a", "b", "c", "d"], skillOverlapRatio: 0 },
+      role: "R",
+      now: NOW,
+      max: 5,
+    });
+    expect(brought.label).toBe("Brings skills you don't list: A, B, C +1");
+  });
+
+  it("puts 'already interested in you' first: it is the one fact that is mutual", () => {
+    const all = labels({
+      likedYou: true,
+      signals: { sameSector: true, pastCollab: true, skillOverlapRatio: 0 },
+      role: "Editor",
+      max: 5,
+    });
+    expect(all[0]).toBe("Already interested in you");
+    expect(labels({ likedYou: false })).toEqual([]);
+    expect(labels({})).toEqual([]);
+  });
+});
+
+describe("the complementary weight keeps the ceiling where it was", () => {
+  it("a complement with two skills you lack is worth the same 40 as the same craft", () => {
+    expect(COMPLEMENTARY_CRAFT_WEIGHT + 2 * NEW_SKILL_WEIGHT).toBe(40);
+  });
+
+  it("scores a photographer's complement above a stranger and level with a same-craft candidate", () => {
+    const me = buildMyMatchContext({ role: "Photographer", professional_skills: ["lighting"] }, new Set(), "viewer");
+    const nothing = computeMatchScore(me, { userId: "n", role: "Chef", skills: [] });
+    const stylist = computeMatchScore(me, { userId: "s", role: "Fashion stylist", skills: ["wardrobe", "set styling"] });
+    const same = computeMatchScore(me, { userId: "p", role: "Videographer", skills: [] });
+    expect(stylist.complementaryCraft).toBe(true);
+    expect(stylist.sameSector).toBe(false);
+    expect(stylist.newSkills).toEqual(["wardrobe", "set styling"]);
+    expect(same.sameSector).toBe(true);
+    expect(same.complementaryCraft).toBe(false);
+    expect(stylist.score).toBeGreaterThan(nothing.score + 30);
+    // 40 against 40, apart from the per-candidate jitter (under 10 either way)
+    expect(Math.abs(stylist.score - same.score)).toBeLessThan(10);
+  });
+
+  it("never exceeds the documented ceiling, whichever case a candidate is in", () => {
+    const me = buildMyMatchContext({ role: "Photographer", location: "Lagos", professional_skills: ["lighting"] }, new Set(["x"]), "v");
+    const best = computeMatchScore(me, { userId: "x", role: "Fashion stylist", location: "Lagos", skills: ["lighting", "a", "b", "c"] });
+    expect(best.complementaryCraft).toBe(true);
+    expect(best.score).toBeLessThanOrEqual(MATCH_SCORE_MAX);
+  });
+
+  it("gives a complement no skills bonus for skills it lists that you already have", () => {
+    const me = buildMyMatchContext({ role: "Photographer", professional_skills: ["wardrobe"] }, new Set(), "viewer");
+    const r = computeMatchScore(me, { userId: "s", role: "Fashion stylist", skills: ["wardrobe"] });
+    expect(r.newSkills).toEqual([]);
+    expect(r.sharedSkills).toEqual(["wardrobe"]);
   });
 });
