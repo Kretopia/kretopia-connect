@@ -288,7 +288,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
               location: explanationProfile.location,
               lastActiveAt: explanationProfile.updated_at,
               collabIntent: explanationProfile.collab_intent,
-              max: 5,
+              likedYou: explanationProfile._likedYou,
+              max: 6,
             }).map((r) => r.label),
           }}
           onConnect={() => handleLike(explanationProfile, { type: 'profile', label: 'their profile' })}

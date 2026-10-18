@@ -143,6 +143,47 @@ describe("useSwipeProfiles", () => {
   });
 });
 
+describe("useSwipeProfiles: similar and complementary collaborators", () => {
+  beforeEach(() => {
+    db.rawProfiles = [];
+    db.safeProfiles = [];
+    db.mySwipes = [];
+    db.likedMe = [];
+    sessionStorage.clear();
+  });
+
+  it("ranks a complementary craft that brings skills you lack above someone with nothing in common, and says why", async () => {
+    db.safeProfiles = [
+      member("chef", { role: "Chef", location: "Elsewhere", professional_skills: [] }),
+      member("stylist", { role: "Fashion stylist", location: "Elsewhere", professional_skills: ["wardrobe", "set styling"] }),
+    ];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map((p) => p.user_id)).toEqual(["stylist", "chef"]);
+    const signals = result.current.profiles[0]._matchSignals!;
+    expect(signals.complementaryCraft).toBe(true);
+    expect(signals.sameSector).toBe(false);
+    expect(signals.newSkills).toEqual(["wardrobe", "set styling"]);
+    expect(result.current.profiles[1]._matchSignals!.complementaryCraft).toBe(false);
+  });
+
+  it("marks, and only marks, the people who have already swiped right on you", async () => {
+    db.likedMe = [{ user_id: "fan" }];
+    db.safeProfiles = [member("fan"), member("other")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    const byId = Object.fromEntries(result.current.profiles.map((p) => [p.user_id, p._likedYou]));
+    expect(byId).toEqual({ fan: true, other: false });
+  });
+
+  it("still offers real members when none of them is similar or complementary (nobody is hidden for scoring low)", async () => {
+    db.safeProfiles = [member("a", { role: "Chef" }), member("b", { role: "Plumber" }), member("c", { role: "Teacher" })];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map((p) => p.user_id).sort()).toEqual(["a", "b", "c"]);
+  });
+});
+
 describe("fromSafeRow", () => {
   it("leaves unknown fields empty instead of inventing them", () => {
     const p = fromSafeRow({ user_id: "u", full_name: "U", role: "Dancer" });
