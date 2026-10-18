@@ -1,12 +1,21 @@
 /**
- * Shared credit evidence classification — the ONE place that decides
- * whether a credit reads as Verified / Publicly Sourced / Pending /
- * Self-claimed. Extracted from AchievementCard's inline logic so the
- * Stamps grid and the Co-Signs carousels can never drift out of sync
- * on what "Verified" actually means.
+ * Shared credit evidence classification — the ONE place that decides how a
+ * credit reads, on the Passport AND in Credits, so the same credit can never
+ * be "Verified" in one and "Pending" in the other:
+ *
+ *   self_claimed  Self-declared: the creator added it; nothing independent backs it yet.
+ *   co_signed     Co-signed: collaborators who worked on it vouch for it.
+ *   pending       Pending: a confirmation or review is under way and does not count yet.
+ *   verified      Verified: confirmed by an authoritative source or Kretopia's verification.
+ *   publicly_sourced  Found in public records and claimed by the creator; not independently verified.
+ *
+ * Only a credit's own proof fields decide this (verification_status and the
+ * number of collaborators who co-signed). A subscription, a payment, a plan,
+ * an approval of the page or a profile score never turns a credit into proof,
+ * so none of them is even an input here.
  */
 
-export type CreditEvidenceStatus = "verified" | "publicly_sourced" | "pending" | "self_claimed";
+export type CreditEvidenceStatus = "verified" | "co_signed" | "publicly_sourced" | "pending" | "self_claimed";
 
 export interface EvidenceInput {
   verification_status?: string | null;
@@ -15,9 +24,18 @@ export interface EvidenceInput {
 
 const EVIDENCE_LABEL: Record<CreditEvidenceStatus, string> = {
   verified: "Verified",
-  publicly_sourced: "Publicly Sourced",
+  co_signed: "Co-signed",
+  publicly_sourced: "Publicly sourced",
   pending: "Pending",
-  self_claimed: "Self-claimed",
+  self_claimed: "Self-declared",
+};
+
+const EVIDENCE_MEANING: Record<CreditEvidenceStatus, string> = {
+  verified: "Confirmed by an authoritative source or through Kretopia's verification.",
+  co_signed: "Collaborators who worked on it vouch for it. Not yet verified by an authoritative source.",
+  publicly_sourced: "Found in public records and claimed by its owner. Not independently verified.",
+  pending: "A confirmation or review is under way. It does not count as proof yet.",
+  self_claimed: "Added by its owner. Nothing independent confirms it yet.",
 };
 
 export function classifyCreditEvidence(credit: EvidenceInput): CreditEvidenceStatus {
@@ -29,12 +47,30 @@ export function classifyCreditEvidence(credit: EvidenceInput): CreditEvidenceSta
 
   if (isVerified) return "verified";
   if (verificationStatus === "auto_discovered") return "publicly_sourced";
-  if (hasPeers || isPending) return "pending";
+  // A review under way outranks the co-signs already received: until it is done the credit does not count.
+  if (isPending) return "pending";
+  if (hasPeers) return "co_signed";
   return "self_claimed";
 }
 
 export function creditEvidenceLabel(status: CreditEvidenceStatus): string {
   return EVIDENCE_LABEL[status];
+}
+
+/**
+ * What the owner can do next to strengthen a credit, from its status and whether it has evidence attached
+ * (a link or a file). null when there is nothing for them to do: verified, or co-signed and in good standing.
+ */
+export function creditNextStep(status: CreditEvidenceStatus, hasEvidence: boolean): string | null {
+  if (status === "self_claimed") return hasEvidence ? "Ask a collaborator to co-sign it." : "Add a link or a file as evidence.";
+  if (status === "publicly_sourced") return "Ask a collaborator to co-sign it.";
+  if (status === "pending") return "Waiting on a reply or a review.";
+  return null;
+}
+
+/** One plain sentence saying what the status does and does not prove. */
+export function creditEvidenceMeaning(status: CreditEvidenceStatus): string {
+  return EVIDENCE_MEANING[status];
 }
 
 const PLATFORM_SOURCE_LABEL: Record<string, string> = {
@@ -61,6 +97,7 @@ export function creditEvidenceBasis(credit: EvidenceInput & { source?: string | 
     return platform ? `Verified on ${platform}` : "Verified by Kretopia";
   }
   if (status === "publicly_sourced") return "Found in public records";
+  if (status === "co_signed") return `Co-signed by ${peers} collaborator${peers === 1 ? "" : "s"}`;
   if (status === "pending") return "Awaiting confirmation";
-  return "Self-claimed";
+  return "Self-declared";
 }

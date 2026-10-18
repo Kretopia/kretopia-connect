@@ -15,7 +15,8 @@ import { CreditEndorsementDialog } from "./CreditEndorsementDialog";
 import { MediaPlayerModal } from "./MediaPlayerModal";
 import { getBestPlayableMediaUrl, getModalMediaType } from "@/lib/mediaUtils";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -63,9 +64,25 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const reducedMotion = useReducedMotion();
 
+  // `?credit=<id>` is how Credits leads to one entry here: bring that stamp into view and mark it for a moment.
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get("credit");
+  const [highlightId, setHighlightId] = useState<string | null>(null);
+
   useEffect(() => {
     fetchCredits();
   }, [userId]);
+
+  useEffect(() => {
+    if (!focusId || loading || !carouselApi) return;
+    const index = credits.findIndex((c) => c.id === focusId);
+    if (index < 0) return;
+    carouselApi.scrollTo(index, reducedMotion);
+    document.getElementById(`credit-${focusId}`)?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
+    setHighlightId(focusId);
+    const t = window.setTimeout(() => setHighlightId(null), 2400);
+    return () => window.clearTimeout(t);
+  }, [focusId, loading, carouselApi, credits, reducedMotion]);
 
   const fetchCredits = async () => {
     try {
@@ -343,7 +360,13 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
                 const playableUrl = getBestPlayableMediaUrl(credit);
                 return (
                   <CarouselItem key={credit.id} className="pl-4 basis-auto">
-                    <div className="w-72">
+                    <div
+                      id={`credit-${credit.id}`}
+                      className={cn(
+                        "w-72 scroll-mt-24 rounded-xl transition-shadow",
+                        highlightId === credit.id && "ring-2 ring-[hsl(var(--signal-teal))] ring-offset-2 ring-offset-background",
+                      )}
+                    >
                       <AchievementCard
                         variant="credit"
                         title={credit.project_name}

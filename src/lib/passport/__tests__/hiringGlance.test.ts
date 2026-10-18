@@ -22,8 +22,8 @@ describe("creditEvidenceBasis", () => {
   it("never lets a weaker state read as confirmed", () => {
     expect(creditEvidenceBasis({ verification_status: "auto_discovered" })).toBe("Found in public records");
     expect(creditEvidenceBasis({ verification_status: "pending_review" })).toBe("Awaiting confirmation");
-    expect(creditEvidenceBasis({ verification_status: "unverified" })).toBe("Self-claimed");
-    expect(creditEvidenceBasis({})).toBe("Self-claimed");
+    expect(creditEvidenceBasis({ verification_status: "unverified" })).toBe("Self-declared");
+    expect(creditEvidenceBasis({})).toBe("Self-declared");
   });
 });
 
@@ -108,5 +108,32 @@ describe("buildHiringGlance", () => {
     );
     expect(g.confirmed).toBe(0);
     expect(g.proof[0]).toMatchObject({ evidence: "publicly_sourced", basis: "Claimed from a project record" });
+  });
+});
+
+describe("buildHiringGlance: proof order", () => {
+  it("ranks verified, then co-signed, then publicly sourced, then pending, then self-declared", () => {
+    const g = buildHiringGlance(
+      [
+        credit({ id: "self", project_name: "Self", verification_status: "unverified" }),
+        credit({ id: "pend", project_name: "Pend", verification_status: "pending" }),
+        credit({ id: "pub", project_name: "Pub", verification_status: "auto_discovered" }),
+        credit({ id: "co", project_name: "Co", verification_status: "unverified", endorsement_count: 2 }),
+        credit({ id: "ver", project_name: "Ver", verification_status: "verified" }),
+      ],
+      {},
+      NOW,
+    );
+    // only the strongest few are shown: the order is the point
+    expect(g.proof.map((p) => p.evidence)).toEqual(["verified", "co_signed", "publicly_sourced"]);
+    const weaker = buildHiringGlance(
+      [
+        credit({ id: "self", project_name: "Self", verification_status: "unverified" }),
+        credit({ id: "pend", project_name: "Pend", verification_status: "pending" }),
+      ],
+      {},
+      NOW,
+    );
+    expect(weaker.proof.map((p) => p.evidence)).toEqual(["pending", "self_claimed"]);
   });
 });

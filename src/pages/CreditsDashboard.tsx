@@ -12,11 +12,10 @@ import { CreditsHireMePanel, type HireMeProfile } from "@/components/credits/Cre
 import { CreditsActivityTimeline } from "@/components/credits/CreditsActivityTimeline";
 import { CreditsAIInsights } from "@/components/credits/CreditsAIInsights";
 import { CreditsErrorState } from "@/components/credits/CreditsPrimitives";
-import { CreditsFullRecord } from "@/components/credits/CreditsFullRecord";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
-import { User, Briefcase, Award, Activity, FileText, Sparkles as SparklesIcon } from "lucide-react";
+import { User, Briefcase, Award, Activity, Sparkles as SparklesIcon } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 
 type OwnProfile = IdentityProfile & HireMeProfile;
@@ -155,7 +154,6 @@ export default function CreditsDashboard() {
     },
     { id: "stamps", label: "Stamps", icon: Award, content: <CreditsStampsPanel credits={credits} loading={loading} query={query} /> },
     { id: "activity", label: "Activity", icon: Activity, content: <CreditsActivityTimeline credits={credits} loading={loading} /> },
-    { id: "record", label: "Full Record", icon: FileText, content: <CreditsFullRecord /> },
     {
       id: "insights",
       label: "Next Steps",

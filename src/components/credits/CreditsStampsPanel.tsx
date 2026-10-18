@@ -1,8 +1,17 @@
-import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Clock3, FileWarning, Link2, Plus, Handshake } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Plus, ShieldCheck, UserCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type { MyCredit } from "@/hooks/useMyCredits";
 import { DashboardPanel, CreditsEmptyState, CreditsPanelSkeleton } from "./CreditsPrimitives";
 import { resolveCreditThumbnail } from "@/lib/thumbnailExtractor";
+import {
+  classifyCreditEvidence,
+  creditEvidenceBasis,
+  creditEvidenceLabel,
+  creditEvidenceMeaning,
+  creditNextStep,
+  type CreditEvidenceStatus,
+} from "@/lib/passport/creditEvidence";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -12,19 +21,20 @@ interface Props {
   index?: number;
 }
 
-function statusChip(c: MyCredit) {
-  if (c.verification_status === "verified") {
-    return { icon: ShieldCheck, label: "Verified", cls: "text-emerald-300 border-emerald-400/25 bg-emerald-400/10" };
-  }
-  if (!c.url && !c.primary_media_url) {
-    return { icon: FileWarning, label: "Needs evidence", cls: "text-amber-300 border-amber-400/25 bg-amber-400/10" };
-  }
-  return { icon: Clock3, label: "Pending co-sign", cls: "text-muted-foreground border-border bg-muted/30" };
-}
+/** The same five statuses the Passport shows, from the same classifier, so a credit reads the same in both places. */
+const STATUS_CHIP: Record<CreditEvidenceStatus, { icon: LucideIcon; cls: string }> = {
+  verified: { icon: ShieldCheck, cls: "text-emerald-300 border-emerald-400/25 bg-emerald-400/10" },
+  co_signed: { icon: Handshake, cls: "text-teal-300 border-teal-400/25 bg-teal-400/10" },
+  publicly_sourced: { icon: Globe, cls: "text-muted-foreground border-border bg-muted/30" },
+  pending: { icon: Clock3, cls: "text-muted-foreground border-border border-dashed bg-muted/30" },
+  self_claimed: { icon: UserCheck, cls: "text-muted-foreground border-border bg-muted/30" },
+};
 
 /**
  * CreditsStampsPanel — the person's own stamps, rendered inline in Credits.
- * No "My Stamps" label, no category counters: the list itself is the record.
+ * Each row says what proof it has (verified, co-signed, pending, self-declared), why, what to do next, and
+ * leads to the same credit on the Passport, where it is shown in full. No "My Stamps" label, no category
+ * counters: the list itself is the record.
  */
 export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
   const navigate = useNavigate();
@@ -36,14 +46,24 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
       title="Stamps"
       index={index}
       action={
-        <button
-          type="button"
-          onClick={() => navigate("/profile?add=credit")}
-          className="btn-glass btn-glass-outline inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold"
-        >
-          <Plus className="h-3.5 w-3.5" aria-hidden />
-          Add credit
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/profile")}
+            className="btn-glass btn-glass-ghost inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold"
+          >
+            Open Passport
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate("/profile?add=credit")}
+            className="btn-glass btn-glass-outline inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden />
+            Add credit
+          </button>
+        </div>
       }
     >
       {loading ? (
@@ -64,7 +84,10 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
       ) : (
         <ul className="space-y-2">
           {credits.map((c) => {
-            const chip = statusChip(c);
+            const status = classifyCreditEvidence(c);
+            const chip = STATUS_CHIP[status];
+            const hasEvidence = Boolean(c.url || c.primary_media_url);
+            const nextStep = creditNextStep(status, hasEvidence);
             const img = resolveCreditThumbnail(c.thumbnail_url, c.primary_media_url, c.url);
             return (
               <li key={c.id}>
@@ -81,12 +104,31 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
                     <p className="truncate text-xs text-muted-foreground">
                       {[c.role, c.client_brand, c.year].filter(Boolean).join(" · ")}
                     </p>
+                    <p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
+                      {creditEvidenceBasis(c)}
+                      {nextStep ? ` · ${nextStep}` : ""}
+                    </p>
+                    <Link
+                      to={`/profile?credit=${c.id}`}
+                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground underline-offset-2 hover:underline"
+                    >
+                      View on Passport
+                      <ArrowUpRight className="h-3 w-3" aria-hidden />
+                    </Link>
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    {c.endorsement_count > 0 && (
-                      <span className="hidden items-center gap-1 rounded-full border border-border px-2 py-1 text-[10px] font-medium text-muted-foreground sm:inline-flex">
-                        <Handshake className="h-3 w-3" aria-hidden />
-                        {c.endorsement_count}
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span
+                      title={creditEvidenceMeaning(status)}
+                      className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold", chip.cls)}
+                    >
+                      <chip.icon className="h-3 w-3" aria-hidden />
+                      {creditEvidenceLabel(status)}
+                      {status === "co_signed" && c.endorsement_count > 0 ? ` · ${c.endorsement_count}` : ""}
+                    </span>
+                    {status !== "verified" && !hasEvidence && (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/25 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                        <FileWarning className="h-3 w-3" aria-hidden />
+                        No evidence yet
                       </span>
                     )}
                     {c.url && (
@@ -100,10 +142,6 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
                         <Link2 className="h-3.5 w-3.5" />
                       </a>
                     )}
-                    <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold", chip.cls)}>
-                      <chip.icon className="h-3 w-3" aria-hidden />
-                      <span className="hidden sm:inline">{chip.label}</span>
-                    </span>
                   </div>
                 </div>
               </li>
