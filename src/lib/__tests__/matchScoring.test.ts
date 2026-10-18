@@ -96,7 +96,9 @@ describe("computeMatchScore", () => {
   });
 
   it("is deterministic: the same viewer and candidate always get the same score, other viewers get a different jitter", () => {
-    const candidate = { userId: "stranger", role: "Dancer", location: "Lagos" };
+    // A craft that neither matches nor complements a photographer's (a dancer now would: see matchComplement.ts),
+    // so the score is the jitter alone.
+    const candidate = { userId: "stranger", role: "Chef", location: "Lagos" };
     const meA = buildMyMatchContext({ role: "Photographer" }, new Set(), "viewer-a");
     const meB = buildMyMatchContext({ role: "Photographer" }, new Set(), "viewer-b");
     expect(computeMatchScore(meA, candidate).score).toBe(computeMatchScore(meA, candidate).score);

@@ -4,7 +4,8 @@
  * both places instead of two hand-rolled heuristics drifting apart.
  *
  * Priority order (per the Match overhaul brief), highest weight first:
- *   1. Same sector/craft   -- 40
+ *   1. Same sector/craft   -- 40 (or, for a different craft that is usually combined with yours,
+ *      30 + up to 10 for skills you lack: the two cases are exclusive, so the ceiling is the same)
  *   2. Same city            -- 25
  *   3. Past collaboration   -- 35
  *   4. Shared skills ratio  -- up to 20
@@ -21,6 +22,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { getRoleStampCategory, type RoleStampCategory } from "@/lib/passport/roleStamp";
 import { stableUnit } from "@/lib/matchRanking";
+import { isComplementaryCraft, skillsTheyBring } from "@/lib/matchComplement";
 
 export interface MatchProfileInput {
   userId: string;
@@ -37,6 +39,10 @@ export interface MatchSignals {
   skillOverlapRatio: number;
   /** The skills both people actually list (lowercased, no duplicates): the evidence behind skillOverlapRatio. */
   sharedSkills?: string[];
+  /** Different crafts that are usually combined (lib/matchComplement.ts). Never true together with sameSector. */
+  complementaryCraft?: boolean;
+  /** The skills they list that you do not (lowercased, no duplicates). Only counted for a complementary craft. */
+  newSkills?: string[];
 }
 
 export interface MatchScoreResult extends MatchSignals {
@@ -50,6 +56,10 @@ export interface MatchScoreResult extends MatchSignals {
 
 /** The largest value `score` can take. Kept next to the weights so the two cannot drift. */
 export const MATCH_SCORE_MAX = 40 + 25 + 35 + 20 + 10;
+/** A complementary craft is worth a little less than the same craft, and skills you lack top it up to the same 40. */
+export const COMPLEMENTARY_CRAFT_WEIGHT = 30;
+export const NEW_SKILL_WEIGHT = 5;
+export const NEW_SKILLS_COUNTED = 2;
 
 /** "Los Angeles, CA" -> "los angeles". Same city-extraction rule already
  *  used across discovery (useSwipeProfiles, BrowseCreators) -- kept
@@ -128,7 +138,9 @@ export function buildMyMatchContext(
 }
 
 export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInput): MatchScoreResult {
-  const sameSector = getRoleStampCategory({ role: candidate.role, sub_roles: candidate.subRoles }) === me.sector;
+  const theirSector = getRoleStampCategory({ role: candidate.role, sub_roles: candidate.subRoles });
+  const sameSector = theirSector === me.sector;
+  const complementaryCraft = !sameSector && isComplementaryCraft(me.sector, theirSector);
   const sameCity = !!me.city && extractCity(candidate.location) === me.city;
   const pastCollab = me.pastCollabIds.has(candidate.userId);
 
@@ -138,12 +150,15 @@ export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInp
   const denominator = Math.max(me.skills.size, theirSkills.length, 1);
   const skillOverlapRatio = overlap / denominator;
 
+  const newSkills = complementaryCraft ? skillsTheyBring(me.skills, theirSkills) : [];
+
   const score =
     (sameSector ? 40 : 0) +
+    (complementaryCraft ? COMPLEMENTARY_CRAFT_WEIGHT + Math.min(newSkills.length, NEW_SKILLS_COUNTED) * NEW_SKILL_WEIGHT : 0) +
     (sameCity ? 25 : 0) +
     (pastCollab ? 35 : 0) +
     skillOverlapRatio * 20 +
     stableUnit(`${me.seed}:${candidate.userId}`) * 10;
 
-  return { score, sameSector, sameCity, pastCollab, skillOverlapRatio, sharedSkills };
+  return { score, sameSector, sameCity, pastCollab, skillOverlapRatio, sharedSkills, complementaryCraft, newSkills };
 }

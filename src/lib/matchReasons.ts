@@ -11,9 +11,12 @@
 import type { MatchSignals } from "@/lib/matchScoring";
 
 export type MatchReasonKey =
+  | "interested-in-you"
   | "past-collab"
   | "shared-craft"
+  | "complementary-craft"
   | "shared-skills"
+  | "new-skills"
   | "same-city"
   | "recent-activity"
   | "open-to-collab";
@@ -33,6 +36,8 @@ export interface MatchReasonInput {
   lastActiveAt?: string | null;
   /** The suggested person's own `collab_intent`. */
   collabIntent?: string | null;
+  /** They have already swiped right on you (the "Interested" list shows the same fact to you). */
+  likedYou?: boolean;
   /** How many reasons to return, strongest first. Default 3. */
   max?: number;
   /** Injected for tests. */
@@ -46,17 +51,19 @@ const MAX_SKILLS_SHOWN = 3;
 
 const sentenceCase = (s: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
-function skillsLabel(shared: string[]): string {
-  const shown = shared.slice(0, MAX_SKILLS_SHOWN).map(sentenceCase).join(", ");
-  const more = shared.length - MAX_SKILLS_SHOWN;
-  return more > 0 ? `Shared skills: ${shown} +${more}` : `Shared skills: ${shown}`;
+function skillsLabel(prefix: string, skills: string[]): string {
+  const shown = skills.slice(0, MAX_SKILLS_SHOWN).map(sentenceCase).join(", ");
+  const more = skills.length - MAX_SKILLS_SHOWN;
+  return more > 0 ? `${prefix}: ${shown} +${more}` : `${prefix}: ${shown}`;
 }
 
 export function buildMatchReasons(input: MatchReasonInput): MatchReason[] {
-  const { signals, role, location, lastActiveAt, collabIntent } = input;
+  const { signals, role, location, lastActiveAt, collabIntent, likedYou } = input;
   const max = input.max ?? 3;
   const now = input.now ?? Date.now();
   const out: MatchReason[] = [];
+
+  if (likedYou) out.push({ key: "interested-in-you", label: "Already interested in you" });
 
   if (signals?.pastCollab) out.push({ key: "past-collab", label: "You've worked together before" });
 
@@ -65,12 +72,23 @@ export function buildMatchReasons(input: MatchReasonInput): MatchReason[] {
     out.push({ key: "shared-craft", label: r ? `Shared craft · ${r}` : "Shared craft" });
   }
 
+  // A different craft that is usually combined with yours: the complement of "shared craft", never both.
+  if (signals?.complementaryCraft && !signals?.sameSector) {
+    const r = (role ?? "").trim();
+    out.push({ key: "complementary-craft", label: r ? `Complements your craft · ${r}` : "Complements your craft" });
+  }
+
   const shared = signals?.sharedSkills ?? [];
   if (shared.length > 0) {
-    out.push({ key: "shared-skills", label: skillsLabel(shared) });
+    out.push({ key: "shared-skills", label: skillsLabel("Shared skills", shared) });
   } else if ((signals?.skillOverlapRatio ?? 0) > 0.3) {
     // A source that only knows the ratio (no names) still says what it knows, no more.
     out.push({ key: "shared-skills", label: "Similar skills" });
+  }
+
+  const brought = signals?.newSkills ?? [];
+  if (signals?.complementaryCraft && brought.length > 0) {
+    out.push({ key: "new-skills", label: skillsLabel("Brings skills you don't list", brought) });
   }
 
   if (signals?.sameCity) {

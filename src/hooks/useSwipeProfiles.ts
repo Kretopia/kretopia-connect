@@ -39,6 +39,8 @@ export interface SwipeProfile {
   /** Why this profile ranked where it did — same-sector/city/past-collab/
    *  skill-overlap, computed once here so cards don't need to re-derive it. */
   _matchSignals?: MatchSignals;
+  /** They have already swiped right on you (the Interested list shows you the same fact). */
+  _likedYou?: boolean;
 }
 
 /** Columns the cross-user safe view (public_profiles_safe) can supply. */
@@ -282,7 +284,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         return { score: score + socialProof + interest + hasPhoto, _matchSignals: signals };
       };
 
-      const scored = filtered.map(p => ({ ...p, ...scoreProfile(p) }));
+      const scored = filtered.map(p => ({ ...p, ...scoreProfile(p), _likedYou: likedYouIds.has(p.user_id) }));
 
       const cacheKey = `swipe_order_${currentUserId}`;
       if (forceRescan) sessionStorage.removeItem(cacheKey);
