@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BrandLogo } from '@/components/BrandLogo';
 import { extractSkillsArray } from '@/lib/matchScoring';
+import { buildMatchReasons, type MatchReasonKey } from '@/lib/matchReasons';
 import { badgeLabel } from '@/lib/badgeLabel';
 import { CardContent } from '@/components/ui/card';
 import { SwipeCard } from '@/components/ui/swipe-card';
@@ -8,7 +9,7 @@ import { HoloCard } from '@/components/passport/HoloCard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Heart, X, MapPin, Briefcase, Sparkles, Star,
+  Heart, X, MapPin, Briefcase, Sparkles, Star, Clock, Puzzle,
   ChevronDown, Eye, Handshake, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -91,13 +92,30 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [handlePassClick, handleConnectClick, onViewProfile, profile]);
 
-  const signals = profile._matchSignals;
-  const commonGround = [
-    signals?.sameSector && { icon: Briefcase, label: `Shared craft · ${profile.role || 'Creator'}` },
-    signals?.sameCity && { icon: MapPin, label: `Local to you · ${profile.location || ''}` },
-    signals?.pastCollab && { icon: Handshake, label: 'Worked together before' },
-    !signals?.pastCollab && (signals?.skillOverlapRatio || 0) > 0.3 && { icon: Sparkles, label: 'Similar skills' },
-  ].filter(Boolean) as { icon: typeof Briefcase; label: string }[];
+  // The same reasons the grid and the explanation dialog give (lib/matchReasons.ts): similar craft, a craft that
+  // complements yours, skills you share or lack, city, recent activity, an earlier collaboration, interest in you.
+  // Their stated openness to collaborating is left out here: the card already shows it as their intent below.
+  const REASON_ICONS: Record<MatchReasonKey, typeof Briefcase> = {
+    'interested-in-you': Heart,
+    'past-collab': Handshake,
+    'shared-craft': Briefcase,
+    'complementary-craft': Puzzle,
+    'shared-skills': Sparkles,
+    'new-skills': Puzzle,
+    'same-city': MapPin,
+    'recent-activity': Clock,
+    'open-to-collab': Handshake,
+  };
+  const commonGround = buildMatchReasons({
+    signals: profile._matchSignals,
+    role: profile.role,
+    location: profile.location,
+    lastActiveAt: profile.updated_at,
+    likedYou: profile._likedYou,
+    max: 5,
+  })
+    .filter((r) => r.key !== 'open-to-collab')
+    .map((r) => ({ icon: REASON_ICONS[r.key], label: r.label }));
 
   return (
     <SwipeCard

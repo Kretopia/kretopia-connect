@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Search, SlidersHorizontal, Sparkles, Star, Verified, MapPin,
-  Bell, BellOff, Bookmark, X, Trash2,
+  Bell, BellOff, Bookmark, X, Trash2, ArrowRight,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ import { ProfileActivationGate } from "@/components/ProfileActivationGate";
 import { getDiscoveryMissingFields } from "@/lib/profileCompletion";
 import { buildMyMatchContext, computeMatchScore, extractCity, extractSkillsArray, fetchPastCollaboratorIds } from "@/lib/matchScoring";
 import { buildMatchReasons, type MatchReason } from "@/lib/matchReasons";
-import { isPositivelyRealMember } from "@/lib/matchRanking";
+import { isPositivelyRealMember, orderCandidates } from "@/lib/matchRanking";
 
 interface CreatorRow {
   user_id: string;
@@ -83,6 +83,7 @@ export function BrowseCreators() {
   // captured before the state update is applied.
   const [refreshToken, setRefreshToken] = useState(0);
   const [results, setResults] = useState<CreatorRow[]>([]);
+  const [backfilled, setBackfilled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -127,8 +128,12 @@ export function BrowseCreators() {
 
   useEffect(() => { loadSaved(); }, [loadSaved]);
 
-  const runFilterSearch = useCallback(async () => {
+  // `override` is the backfill: the same search with no criteria, run when the criteria matched nobody.
+  const runFilterSearch = useCallback(async (override?: { query: string; filters: Filters; backfill: boolean }) => {
+    const searchText = override?.query ?? query;
+    const crit = override?.filters ?? filters;
     setLoading(true);
+    setBackfilled(!!override?.backfill);
     try {
       let q = supabase
         .from("profiles")
@@ -144,12 +149,12 @@ export function BrowseCreators() {
       // up in its own "Recommended" results at a high score).
       if (user?.id) q = q.neq("user_id", user.id);
 
-      if (filters.role) q = q.ilike("role", `%${filters.role}%`);
-      if (filters.location) q = q.ilike("location", `%${filters.location}%`);
-      if (filters.verifiedOnly) q = (q as any).neq("verification_tier", "none").not("verification_tier", "is", null);
-      if (filters.minRating > 0) q = q.gte("average_rating", filters.minRating);
-      if (query.trim()) {
-        const likeQ = escapePostgrestValue(`%${query}%`);
+      if (crit.role) q = q.ilike("role", `%${crit.role}%`);
+      if (crit.location) q = q.ilike("location", `%${crit.location}%`);
+      if (crit.verifiedOnly) q = (q as any).neq("verification_tier", "none").not("verification_tier", "is", null);
+      if (crit.minRating > 0) q = q.gte("average_rating", crit.minRating);
+      if (searchText.trim()) {
+        const likeQ = escapePostgrestValue(`%${searchText}%`);
         q = q.or(`full_name.ilike.${likeQ},role.ilike.${likeQ},bio.ilike.${likeQ}`);
       }
 
@@ -159,7 +164,7 @@ export function BrowseCreators() {
       // `is_claimed`, and imports finish "onboarding" without any XP or ID check). A
       // minimum-rating filter needs data the view doesn't carry, so it skips this tier.
       const loadSafeTier = async () => {
-        if (filters.minRating > 0) return [] as Record<string, any>[];
+        if (crit.minRating > 0) return [] as Record<string, any>[];
         let sq = supabase
           .from("public_profiles_safe")
           .select("user_id, full_name, avatar_url, cover_image_url, role, location, verification_tier, professional_skills, bio, badge, onboarding_completed, xp, id_verified, updated_at")
@@ -169,11 +174,11 @@ export function BrowseCreators() {
           .neq("avatar_url", "")
           .limit(120);
         if (user?.id) sq = sq.neq("user_id", user.id);
-        if (filters.role) sq = sq.ilike("role", `%${filters.role}%`);
-        if (filters.location) sq = sq.ilike("location", `%${filters.location}%`);
-        if (filters.verifiedOnly) sq = (sq as any).neq("verification_tier", "none").not("verification_tier", "is", null);
-        if (query.trim()) {
-          const likeQ = escapePostgrestValue(`%${query}%`);
+        if (crit.role) sq = sq.ilike("role", `%${crit.role}%`);
+        if (crit.location) sq = sq.ilike("location", `%${crit.location}%`);
+        if (crit.verifiedOnly) sq = (sq as any).neq("verification_tier", "none").not("verification_tier", "is", null);
+        if (searchText.trim()) {
+          const likeQ = escapePostgrestValue(`%${searchText}%`);
           sq = sq.or(`full_name.ilike.${likeQ},role.ilike.${likeQ},bio.ilike.${likeQ}`);
         }
         const { data: safeData, error: safeError } = await sq;
@@ -207,8 +212,8 @@ export function BrowseCreators() {
         return true;
       });
 
-      if (filters.skill) {
-        const s = filters.skill.toLowerCase();
+      if (crit.skill) {
+        const s = crit.skill.toLowerCase();
         rows = rows.filter(r => {
           const skills = Array.isArray(r.professional_skills) ? r.professional_skills : [];
           return skills.some((sk: any) => String(sk).toLowerCase().includes(s));
@@ -245,7 +250,11 @@ export function BrowseCreators() {
         });
 
         if (sort === "recommended") {
-          rows = rows.sort((a, b) => (b.match_rank || 0) - (a.match_rank || 0));
+          // Same final ordering as the deck (lib/matchRanking.ts): relevance, a boost for recent activity, ties broken
+          // by freshness then id, and no run of three of the same role when another is close behind.
+          rows = orderCandidates(
+            rows.map((r) => ({ ...r, score: r.match_rank ?? 0, updated_at: r.last_active_date ?? r.updated_at ?? null })),
+          );
         } else if (sort === "nearest") {
           const myCity = extractCity(meProfile?.location);
           rows = rows.sort((a, b) => {
@@ -260,6 +269,14 @@ export function BrowseCreators() {
             return bTime - aTime;
           });
         }
+      }
+
+      // Criteria that match nobody must not leave an empty feed while real members exist: run the same search
+      // without them and say so. (Only once: the backfill itself never backfills.)
+      const hasCriteria = !!(searchText.trim() || crit.role || crit.location || crit.skill || crit.verifiedOnly || crit.minRating > 0);
+      if (rows.length === 0 && hasCriteria && !override) {
+        await runFilterSearch({ query: "", filters: EMPTY_FILTERS, backfill: true });
+        return;
       }
 
       setResults(rows.slice(0, 60));
@@ -318,7 +335,7 @@ export function BrowseCreators() {
     setQuery(s.query || "");
     setFilters({ ...EMPTY_FILTERS, ...(s.filters || {}) });
     setAiMode(false);
-    setTimeout(runFilterSearch, 0);
+    setTimeout(() => runFilterSearch(), 0);
   };
 
   const deleteSaved = async (id: string) => {
@@ -403,7 +420,7 @@ export function BrowseCreators() {
                 <Button size="sm" variant="ghost" className="flex-1 text-xs" onClick={() => { setFilters(EMPTY_FILTERS); }}>
                   Clear
                 </Button>
-                <Button size="sm" className="flex-1 text-xs" onClick={runFilterSearch}>Apply</Button>
+                <Button size="sm" className="flex-1 text-xs" onClick={() => runFilterSearch()}>Apply</Button>
               </div>
             </PopoverContent>
           </Popover>
@@ -489,6 +506,12 @@ export function BrowseCreators() {
           )}
         </Card>
       ) : (
+        <>
+        {backfilled && (
+          <p className="text-xs text-muted-foreground" role="status">
+            Nobody matches that search exactly. Here are other real members you may want to meet.
+          </p>
+        )}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
           {results.map(c => (
             <button
@@ -550,10 +573,14 @@ export function BrowseCreators() {
                     ))}
                   </ul>
                 )}
+                <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-primary group-hover:underline">
+                  View Passport <ArrowRight className="h-2.5 w-2.5" aria-hidden />
+                </span>
               </div>
             </button>
           ))}
         </div>
+        </>
       )}
 
       {/* Save dialog */}
