@@ -41,6 +41,17 @@ describe("StudioFeatureShell wrapped", () => {
     expect(screen.getByRole("region", { name: /Everything in Match/ })).toContainElement(screen.getByText("tabs"));
   });
 
+  it("hideTitle passes through: the panel keeps its name, the line is not drawn", () => {
+    render(
+      <StudioFeatureShell wrapped={{ name: "Spotlight", hideTitle: true }}>
+        <p>stories</p>
+      </StudioFeatureShell>,
+    );
+    const region = screen.getByRole("region", { name: /Everything in Spotlight/ });
+    expect(region.querySelector("h2")).toHaveClass("sr-only");
+    expect(within(region).getByText("stories")).toBeInTheDocument();
+  });
+
   it("without the prop it renders its children exactly as before", () => {
     render(
       <StudioFeatureShell>

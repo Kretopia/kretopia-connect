@@ -61,6 +61,8 @@ interface Props {
   onBack: () => void;
   isPublicPage?: boolean;
   isAuthenticated?: boolean;
+  /** Rendered inside the reader dialog: leave room on the right for the dialog's own close button. */
+  inDialog?: boolean;
 }
 
 // Past this many characters of raw markdown, the article collapses behind
@@ -68,7 +70,7 @@ interface Props {
 // short pieces (most how-to/community posts) never show the affordance at all.
 const READ_MORE_THRESHOLD = 1400;
 
-export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, isAuthenticated = true }: Props) => {
+export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, isAuthenticated = true, inDialog = false }: Props) => {
   const { isEditorOrAdmin } = useUserRole();
   const { user } = useAuth();
   const [showEditor, setShowEditor] = useState(false);
@@ -119,7 +121,7 @@ export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, i
       transition={{ duration: 0.3 }}
       className="max-w-3xl mx-auto"
     >
-      <div className="flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10 border-b border-border/50">
+      <div className={cn("flex items-center justify-between px-4 py-3 sticky top-0 bg-background z-10 border-b border-border/50", inDialog && "pr-16")}>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5 -ml-2">
             <ArrowLeft className="h-4 w-4" />
@@ -282,12 +284,22 @@ export const MagazineArticleViewer = ({ article, onBack, isPublicPage = false, i
             onClick={toggleLike}
             className={cn("gap-1.5", liked && "text-[hsl(var(--energy))]")}
             aria-pressed={liked}
+            aria-label={`Like this story, ${likeCount} ${likeCount === 1 ? "like" : "likes"}`}
+            title="Like"
           >
-            <Heart className={cn("h-4 w-4", liked && "fill-current")} />
+            <Heart className={cn("h-4 w-4", liked && "fill-current")} aria-hidden />
             {likeCount}
           </Button>
-          <Button variant="ghost" size="sm" onClick={openComments} className="gap-1.5">
-            <MessageCircle className="h-4 w-4" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={openComments}
+            className="gap-1.5"
+            aria-expanded={commentsOpen}
+            aria-label={`${commentsOpen ? "Hide" : "Show"} comments, ${commentCount} ${commentCount === 1 ? "comment" : "comments"}`}
+            title="Comments"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden />
             {commentCount}
           </Button>
         </div>
