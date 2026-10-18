@@ -15,6 +15,8 @@ import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { Building2, Camera, ArrowRight, ArrowLeft, CheckCircle2, Globe, MapPin, Users, Briefcase, Sparkles, Upload } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
+import { INTENTS, normalizeIntents, type PrimaryIntent } from "@/lib/intents";
+import { HIRING_GOALS, intentColumnsFor, mergeGoalIntents } from "@/lib/companyHiringGoal";
 
 const STEPS = [
   { id: 1, title: "Company Info", icon: Building2 },
@@ -32,15 +34,6 @@ const COMPANY_SIZES = [
   "Solo (1)", "2–10", "11–50", "51–200", "201–500", "500+",
 ];
 
-const HIRING_GOALS = [
-  "Find freelance talent for projects",
-  "Build a roster of go-to creators",
-  "Hire full-time creative staff",
-  "Commission specific creative work",
-  "Sponsor / partner with creators",
-  "Other",
-];
-
 export default function CompanyOnboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -51,6 +44,9 @@ export default function CompanyOnboarding() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState("");
+
+  // What this account already says it is here to do (profiles.primary_intents): the saved side of the goal question.
+  const [savedIntents, setSavedIntents] = useState<PrimaryIntent[]>([]);
 
   const [form, setForm] = useState({
     company_name: "",
@@ -68,7 +64,7 @@ export default function CompanyOnboarding() {
     const loadExisting = async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("company_name, company_industry, company_size, company_tagline, company_about, company_address, website, company_logo_url")
+        .select("company_name, company_industry, company_size, company_tagline, company_about, company_address, website, company_logo_url, primary_intents, primary_intent")
         .eq("user_id", user.id)
         .single();
       if (data) {
@@ -83,6 +79,7 @@ export default function CompanyOnboarding() {
           website: data.website || "",
         }));
         if (data.company_logo_url) setLogoUrl(data.company_logo_url);
+        setSavedIntents(normalizeIntents((data as any).primary_intents ?? (data as any).primary_intent));
       }
     };
     loadExisting();
@@ -123,6 +120,9 @@ export default function CompanyOnboarding() {
   const handleFinish = async () => {
     if (!user) return;
     setLoading(true);
+    // The chosen goal becomes the account's saved intent (the record Home, nudges and matching read); a missing,
+    // "Other" or unknown choice leaves the saved intents exactly as they are.
+    const intentColumns = intentColumnsFor(mergeGoalIntents(savedIntents, form.hiring_goal), savedIntents);
     const { error } = await supabase.from("profiles").update({
       company_name: form.company_name.trim(),
       company_industry: form.company_industry,
@@ -132,7 +132,10 @@ export default function CompanyOnboarding() {
       company_address: form.company_address.trim(),
       website: form.website.trim(),
       company_logo_url: logoUrl || null,
-      onboarding_complete: true,
+      // `onboarding_completed` is the column. The field that used to be sent here, without the "d", is not a
+      // column of profiles, so the whole update was rejected as an unknown column.
+      onboarding_completed: true,
+      ...(intentColumns ?? {}),
     } as any).eq("user_id", user.id);
 
     if (error) {
@@ -141,6 +144,7 @@ export default function CompanyOnboarding() {
       return;
     }
 
+    if (intentColumns) setSavedIntents(intentColumns.primary_intents);
     toast({ title: "Welcome to Kretopia!", description: "Your company page is ready." });
     // "/work" isn't a real route (App.tsx only defines "/desk" for
     // WorkHome/BrandWorkHome) — every brand finishing onboarding was
@@ -308,8 +312,13 @@ export default function CompanyOnboarding() {
 
                 <div>
                   <Label>What are you looking to do on Kretopia?</Label>
+                  {savedIntents.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Currently set: {savedIntents.map((id) => INTENTS.find((i) => i.id === id)?.label).filter(Boolean).join(" + ")}. Pick a goal to update it.
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 gap-2 mt-2">
-                    {HIRING_GOALS.map(goal => (
+                    {HIRING_GOALS.map(({ label: goal }) => (
                       <button
                         key={goal}
                         onClick={() => setForm(f => ({ ...f, hiring_goal: f.hiring_goal === goal ? "" : goal }))}
