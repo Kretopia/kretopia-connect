@@ -35,11 +35,21 @@ export interface MatchSignals {
   sameCity: boolean;
   pastCollab: boolean;
   skillOverlapRatio: number;
+  /** The skills both people actually list (lowercased, no duplicates): the evidence behind skillOverlapRatio. */
+  sharedSkills?: string[];
 }
 
 export interface MatchScoreResult extends MatchSignals {
+  /**
+   * A RANKING WEIGHT, not a percentage: the weights above add up to 130 (40 + 25 + 35 + 20 + 10), so it
+   * can exceed 100, and its last 10 points are a deterministic tie-break, not a property of the person.
+   * It decides the order and is never shown. What people see are the concrete reasons (matchReasons.ts).
+   */
   score: number;
 }
+
+/** The largest value `score` can take. Kept next to the weights so the two cannot drift. */
+export const MATCH_SCORE_MAX = 40 + 25 + 35 + 20 + 10;
 
 /** "Los Angeles, CA" -> "los angeles". Same city-extraction rule already
  *  used across discovery (useSwipeProfiles, BrowseCreators) -- kept
@@ -123,7 +133,8 @@ export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInp
   const pastCollab = me.pastCollabIds.has(candidate.userId);
 
   const theirSkills = [...new Set((candidate.skills || []).map(s => s.toLowerCase().trim()).filter(Boolean))];
-  const overlap = theirSkills.filter((s) => me.skills.has(s)).length;
+  const sharedSkills = theirSkills.filter((s) => me.skills.has(s));
+  const overlap = sharedSkills.length;
   const denominator = Math.max(me.skills.size, theirSkills.length, 1);
   const skillOverlapRatio = overlap / denominator;
 
@@ -134,5 +145,5 @@ export function computeMatchScore(me: MyMatchContext, candidate: MatchProfileInp
     skillOverlapRatio * 20 +
     stableUnit(`${me.seed}:${candidate.userId}`) * 10;
 
-  return { score, sameSector, sameCity, pastCollab, skillOverlapRatio };
+  return { score, sameSector, sameCity, pastCollab, skillOverlapRatio, sharedSkills };
 }

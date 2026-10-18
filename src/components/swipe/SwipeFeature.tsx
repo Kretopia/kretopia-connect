@@ -5,6 +5,7 @@ import { useSwipeActions } from '@/hooks/useSwipeActions';
 import { MatchModal } from './MatchModal';
 import { ProfilePreviewSheet } from './ProfilePreviewSheet';
 import { MatchExplanationDialog } from '@/components/discover/MatchExplanationDialog';
+import { buildMatchReasons } from '@/lib/matchReasons';
 import { HingeStyleCard } from '@/components/discover/HingeStyleCard';
 import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/SwipeFilters';
 import { supabase } from '@/integrations/supabase/client';
@@ -280,7 +281,15 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
             name: explanationProfile.full_name,
             title: explanationProfile.role,
             location: explanationProfile.location || '',
-            image: explanationProfile.avatar_url || ''
+            image: explanationProfile.avatar_url || '',
+            matchReasons: buildMatchReasons({
+              signals: explanationProfile._matchSignals,
+              role: explanationProfile.role,
+              location: explanationProfile.location,
+              lastActiveAt: explanationProfile.updated_at,
+              collabIntent: explanationProfile.collab_intent,
+              max: 5,
+            }).map((r) => r.label),
           }}
           onConnect={() => handleLike(explanationProfile, { type: 'profile', label: 'their profile' })}
           onPass={() => handlePass(explanationProfile)}

@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { ProfileActivationGate } from "@/components/ProfileActivationGate";
 import { getDiscoveryMissingFields } from "@/lib/profileCompletion";
 import { buildMyMatchContext, computeMatchScore, extractCity, extractSkillsArray, fetchPastCollaboratorIds } from "@/lib/matchScoring";
+import { buildMatchReasons, type MatchReason } from "@/lib/matchReasons";
 import { isPositivelyRealMember } from "@/lib/matchRanking";
 
 interface CreatorRow {
@@ -37,8 +38,12 @@ interface CreatorRow {
   average_rating: number | null;
   professional_skills: any;
   last_active_date?: string | null;
-  match_score?: number;
-  match_reason?: string;
+  updated_at?: string | null;
+  collab_intent?: string | null;
+  /** Ranking weight only (see matchScoring.ts): decides the order, is never shown as a percentage. */
+  match_rank?: number;
+  /** Why this person was suggested, from real fields and signals (see matchReasons.ts). */
+  match_reasons?: MatchReason[];
 }
 
 interface SavedSearch {
@@ -127,7 +132,7 @@ export function BrowseCreators() {
     try {
       let q = supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, verification_tier, average_rating, professional_skills, bio, is_claimed, badge, last_active_date")
+        .select("user_id, full_name, avatar_url, cover_image_url, role, sub_roles, location, verification_tier, average_rating, professional_skills, bio, is_claimed, badge, last_active_date, collab_intent")
         .eq("onboarding_completed", true)
         .not("full_name", "is", null)
         .not("avatar_url", "is", null)
@@ -228,26 +233,25 @@ export function BrowseCreators() {
             skills: extractSkillsArray(r.professional_skills),
           });
           const sectorBoost = prioritizeSector && signals.sameSector ? 0 : (signals.sameSector ? -40 : 0);
-          const reason = signals.pastCollab
-            ? "You've worked together before"
-            : signals.sameSector
-            ? "Same sector as you"
-            : signals.sameCity
-            ? "Same city as you"
-            : signals.skillOverlapRatio > 0.2
-            ? "Shares your skills"
-            : undefined;
-          return { ...r, match_score: Math.round(score + sectorBoost), match_reason: reason };
+          const reasons = buildMatchReasons({
+            signals,
+            role: r.role,
+            location: r.location,
+            lastActiveAt: r.last_active_date ?? r.updated_at,
+            collabIntent: r.collab_intent,
+            max: 2,
+          });
+          return { ...r, match_rank: Math.round(score + sectorBoost), match_reasons: reasons };
         });
 
         if (sort === "recommended") {
-          rows = rows.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
+          rows = rows.sort((a, b) => (b.match_rank || 0) - (a.match_rank || 0));
         } else if (sort === "nearest") {
           const myCity = extractCity(meProfile?.location);
           rows = rows.sort((a, b) => {
             const aNear = myCity && extractCity(a.location) === myCity ? 1 : 0;
             const bNear = myCity && extractCity(b.location) === myCity ? 1 : 0;
-            return bNear - aNear || (b.match_score || 0) - (a.match_score || 0);
+            return bNear - aNear || (b.match_rank || 0) - (a.match_rank || 0);
           });
         } else {
           rows = rows.sort((a, b) => {
@@ -534,14 +538,17 @@ export function BrowseCreators() {
                       <Star className="h-2.5 w-2.5 fill-current" />{Number(c.average_rating).toFixed(1)}
                     </Badge>
                   ) : null}
-                  {typeof c.match_score === "number" && (
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0 border-primary/30 text-primary">
-                      {c.match_score}% match
-                    </Badge>
-                  )}
                 </div>
-                {c.match_reason && (
-                  <p className="text-[9px] text-muted-foreground line-clamp-2 mt-1 italic">{c.match_reason}</p>
+                {c.match_reasons && c.match_reasons.length > 0 && (
+                  <ul className="mt-1.5 flex flex-wrap gap-1" aria-label={`Why ${c.full_name} is suggested`}>
+                    {c.match_reasons.map((reason) => (
+                      <li key={reason.key}>
+                        <Badge variant="outline" className="max-w-full whitespace-normal text-left text-[9px] font-normal leading-tight px-1.5 py-0.5 border-primary/30 text-primary">
+                          {reason.label}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
             </button>
