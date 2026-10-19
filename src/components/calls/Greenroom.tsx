@@ -1,3 +1,4 @@
+import { CallBrand } from "@/components/calls/CallMediaControls";
 // Greenroom — pre-call warmup. Mic + cam OFF by default.
 // Device pickers, self preview, knock-or-join CTA. Mobile-first.
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -135,21 +136,22 @@ export const Greenroom = ({
   }, [joining, needsName, guestName]);
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#05070D] text-white">
+    <div className="k-call-surface absolute inset-0 flex flex-col">
       {/* Header */}
-      <header className="px-4 pt-4 pb-2 shrink-0">
+      <header className="k-call-header shrink-0">
+        <CallBrand />
         <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80 font-semibold">
           Greenroom
         </p>
         <h1 className="text-lg sm:text-xl font-bold truncate">{title}</h1>
-        <p className="text-xs text-white/50 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Camera and mic are off. Turn them on when you're ready.
         </p>
       </header>
 
       {/* Preview */}
       <div className="flex-1 min-h-0 flex items-center justify-center px-4 py-3">
-        <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-video rounded-2xl overflow-hidden bg-[#05070D] ring-1 ring-white/10 shadow-2xl">
+        <div className="k-call-preview relative w-full max-w-md overflow-hidden bg-background ring-1 ring-border shadow-2xl">
           {cam && !permError ? (
             <video
               ref={videoRef}
@@ -159,17 +161,17 @@ export const Greenroom = ({
               className="w-full h-full object-cover [transform:scaleX(-1)]"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/50 px-6 text-center">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground px-6 text-center">
               <VideoOff className="h-10 w-10" />
               <p className="text-xs">{permError ?? "Camera off"}</p>
             </div>
           )}
-          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-gradient-to-t from-black/70 to-transparent flex items-center justify-between">
+          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-background/90 flex items-center justify-between">
             <p className="text-xs font-medium">
               {needsName ? guestName || "You" : "You"}
             </p>
             {mic && (
-              <span className="flex items-center gap-1 text-[11px] text-emerald-400">
+              <span className="flex items-center gap-1 text-[11px] text-success">
                 <Mic className="h-3 w-3" /> live
               </span>
             )}
@@ -179,51 +181,50 @@ export const Greenroom = ({
 
       {/* Controls */}
       <div
-        className="px-4 pt-3 border-t border-white/5 shrink-0 space-y-3"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+        className="k-call-footer space-y-2 max-h-[60dvh] overflow-y-auto"
       >
         {needsName && (
           <Input
             placeholder="Your name"
             value={guestName}
             onChange={(e) => onGuestNameChange?.(e.target.value)}
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/40 h-11"
+            className="bg-secondary border-border text-foreground placeholder:text-muted-foreground h-11"
           />
         )}
 
         <div className="flex items-center justify-center gap-3">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setMic((v) => !v)}
             aria-label={mic ? "Mute mic" : "Unmute mic"}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
-              mic ? "bg-white/10 text-white" : "bg-white/5 text-white/70"
+              mic ? "bg-secondary text-foreground" : "bg-secondary text-muted-foreground"
             }`}
           >
             {mic ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => setCam((v) => !v)}
             aria-label={cam ? "Camera off" : "Camera on"}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
-              cam ? "bg-white/10 text-white" : "bg-white/5 text-white/70"
+              cam ? "bg-secondary text-foreground" : "bg-secondary text-muted-foreground"
             }`}
           >
             {cam ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => setShowSettings((v) => !v)}
             aria-label="Device settings"
-            className="h-12 w-12 rounded-full flex items-center justify-center bg-white/5 text-white/70 hover:bg-white/10"
+            className="h-12 w-12 rounded-full flex items-center justify-center bg-secondary text-muted-foreground hover:bg-secondary"
           >
             <Settings2 className="h-5 w-5" />
-          </button>
+          </Button>
         </div>
 
         {showSettings && (
-          <div className="space-y-2 rounded-xl bg-white/5 p-3 ring-1 ring-white/10">
+          <div className="space-y-2 rounded-xl bg-secondary p-3 ring-1 ring-border">
             <DevicePicker label="Microphone" value={micId} onChange={setMicId} options={mics} />
             <DevicePicker label="Camera" value={camId} onChange={setCamId} options={cams} />
             {speakers.length > 0 && (
@@ -272,12 +273,12 @@ function DevicePicker({
 }) {
   return (
     <label className="block">
-      <span className="text-[11px] uppercase tracking-wider text-white/50">{label}</span>
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
       <div className="relative mt-1">
         <select
           value={value ?? options[0]?.deviceId ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full appearance-none h-10 rounded-lg bg-black/40 border border-white/10 px-3 pr-8 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="w-full appearance-none h-10 rounded-lg bg-secondary border border-border px-3 pr-8 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/60"
         >
           {options.length === 0 && <option value="">Default</option>}
           {options.map((o) => (
@@ -286,7 +287,7 @@ function DevicePicker({
             </option>
           ))}
         </select>
-        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40 pointer-events-none" />
+        <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
       </div>
     </label>
   );

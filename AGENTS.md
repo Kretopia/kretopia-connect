@@ -29,10 +29,10 @@
 - Keep Landing flight imperative with one predecoded exclusive pose beneath opaque media; contiguous eased peek slides share Flying endpoints, outer-only hysteresis and full-box heading corridors without near-media rotation, because only media may hide Kreto and transitions must follow scroll direction.
 
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
-- Omit page back rows; retain step navigation, reader close and sidebar dismissal.
-- Call reminders reuse live state and sync; explicit Stop/Save uses Daily events and recording IDs.
+- Omit back rows; keep step navigation, reader close and sidebar dismissal.
+- Call reminders reuse live state/sync and Daily IDs. Call chrome uses safe-area grids and Daily media/sidebar state without iframe remounts, so mobile controls stay reachable.
 - Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
-- Split Home and optional global mascot UI with separate Suspense boundaries, because unused code must not block pages.
+- Isolate Home/optional mascots with Suspense so unused code cannot block pages.
 - Mount Landing chapters after Hero's first render, warm videos near the viewport and reveal text before entry, because late downloads and invisible entrances compound waiting.
