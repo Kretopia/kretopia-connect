@@ -43,7 +43,7 @@ describe("persistent call window", () => {
   it("owns one Studio call across routes, clears on end and starts idle after refresh", async () => {
     function StoreHarness() {
       const store = useVideoCall(); const navigate = useNavigate();
-      return <><span data-testid="active">{store.studioCall?.roomUrl ?? "idle"}</span><button onClick={() => store.openStudioCall({open:true, onOpenChange:vi.fn(), projectName:"Studio", roomUrl:"room-one", token:null, callId:null, userName:"Creator"})}>Join</button><button onClick={() => navigate("/scout")}>Navigate</button><button onClick={store.closeStudioCall}>Ended</button></>;
+      return <><span data-testid="active">{store.studioCall?.roomUrl ?? "idle"}</span><button onClick={() => store.openStudioCall({open:true, onOpenChange:vi.fn(), projectName:"Studio", roomUrl:"room-one", token:null, callId:null, userName:"Creator"})}>Join</button><button onClick={() => navigate("/scout")}>Navigate</button><button onClick={() => store.closeStudioCall()}>Ended</button></>;
     }
     const view = render(<MemoryRouter><VideoCallProvider><StoreHarness /></VideoCallProvider></MemoryRouter>);
     expect(screen.getByTestId("active")).toHaveTextContent("idle");

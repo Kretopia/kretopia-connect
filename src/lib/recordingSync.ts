@@ -88,3 +88,19 @@ export function readSyncOutcome(data: unknown, sinceTs?: number): RecordingSyncO
   const processing = results.some((r) => typeof r.skipped === "string" && r.skipped.startsWith("status="));
   return { stored: stored.length > 0 && !processing };
 }
+
+/**
+ * Reads the answer of `sync-daily-recordings` for ONE known recording (a segment saved with "Save").
+ * The recording's own id is the proof, so no timestamp is involved: comparing the device's clock with
+ * Daily's start time drops a recording whenever the device heard "recording started" a second after
+ * Daily began it, or its clock is ahead. It counts as stored only when that recording has its row and is
+ * not still being finalised.
+ */
+export function readSegmentOutcome(data: unknown, recordingId: string): RecordingSyncOutcome {
+  const d = data as { results?: Array<{ recording_id?: string; transcript_id?: string; skipped?: string; error?: string }> } | null;
+  const results = Array.isArray(d?.results) ? d!.results! : [];
+  const mine = results.find((r) => r.recording_id === recordingId);
+  if (!mine || mine.error || !mine.transcript_id) return { stored: false };
+  const processing = typeof mine.skipped === "string" && mine.skipped.startsWith("status=");
+  return { stored: !processing };
+}

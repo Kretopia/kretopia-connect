@@ -73,16 +73,42 @@ export interface VideoCallSheetProps {
 
 type Phase = "lobby" | "live";
 
+let nextOwner = 0;
+
+/**
+ * What every caller renders. The call itself lives in the app shell (PersistentStudioCall) so that it survives
+ * navigation, which means this component only hands it over and keeps it in step:
+ *  - open with a room: start the call for this caller; a second call is refused (and the user told);
+ *  - props change while open (overlay actions, flags, a new room): the live call follows;
+ *  - `open` becomes false while this caller is still mounted: the call ends, as it did when the sheet itself closed;
+ *  - the caller unmounting (navigating away) does NOT end it.
+ */
 export function VideoCallSheet(props: VideoCallSheetProps) {
-  const { openStudioCall } = useVideoCall();
+  const { openStudioCall, updateStudioCall, closeStudioCall } = useVideoCall();
+  const owner = useRef<string>();
+  owner.current ??= `studio-call-${++nextOwner}`;
   const callback = useRef(props.onOpenChange);
   callback.current = props.onOpenChange;
+  const forward = useRef((value: boolean) => callback.current(value)).current;
+  const started = useRef(false);
+  const active = props.open && !!props.roomUrl;
+
   useEffect(() => {
-    if (!props.open || !props.roomUrl) return;
-    openStudioCall({ ...props, onOpenChange: value => callback.current(value) });
-    // Capture one call configuration; navigation must not replace the active call.
+    if (!active) return;
+    const config = { ...props, onOpenChange: forward };
+    if (started.current) updateStudioCall(config, owner.current);
+    else started.current = openStudioCall(config, owner.current);
+    // One effect for every prop the live call renders or reads; `props` itself is a new object each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.open, props.roomUrl, openStudioCall]);
+  }, [active, props.projectName, props.roomUrl, props.token, props.callId, props.userName, props.userAvatar, props.projectId, props.directCallId,
+    props.roomName, props.lobbyCta, props.meetingShareUrl, props.peerUserId, props.peerName, props.onPeerBlocked, props.overlayActions,
+    props.isHost, props.autoStartRecording, props.backstage, forward, openStudioCall, updateStudioCall]);
+
+  useEffect(() => {
+    if (active || !started.current) return;
+    started.current = false;
+    closeStudioCall(owner.current);
+  }, [active, closeStudioCall]);
   return null;
 }
 
@@ -433,7 +459,7 @@ export const PersistentStudioCall = ({
                 <Button variant="ghost"
                   type="button"
                   onClick={() => setInviteOpen(true)}
-                  className="absolute bottom-40 right-3 z-10 min-h-11 px-3.5 py-1.5 rounded-lg bg-secondary hover:bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5 backdrop-blur-sm border border-border"
+                  className="!absolute bottom-40 right-3 z-10 min-h-11 px-3.5 py-1.5 rounded-lg bg-secondary hover:bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5 backdrop-blur-sm border border-border"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   Invite people
@@ -519,7 +545,7 @@ export const PersistentStudioCall = ({
               {/* Video area */}
               <div className="k-call-video relative flex-1 min-h-0">
                 <div ref={containerRef} className="absolute inset-0" />
-                {!backstage && <RecordingReminder visible={recordingControls.reminder} onStop={recordingControls.stopRecording} onSave={recordingControls.saveRecording} segment={recordingControls.segment} />}
+                {!backstage && <RecordingReminder visible={recordingControls.reminder} onStop={recordingControls.stopRecording} onSave={recordingControls.saveRecording} onDismiss={recordingControls.dismissReminder} segment={recordingControls.segment} onClearSegment={recordingControls.clearSegment} />}
                 {joining && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background text-foreground gap-3 z-10">
                     <KretopiaSpinner className="h-8 w-8 text-primary" />

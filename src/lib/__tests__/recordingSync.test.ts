@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { POST_CALL_SYNC_DELAYS_MS, readSyncOutcome, scheduleRecordingSync } from "../recordingSync";
+import { POST_CALL_SYNC_DELAYS_MS, readSegmentOutcome, readSyncOutcome, scheduleRecordingSync } from "../recordingSync";
 
 describe("scheduleRecordingSync", () => {
   beforeEach(() => {
@@ -75,5 +75,22 @@ describe("readSyncOutcome: only an answer about THIS call counts", () => {
     expect(readSyncOutcome({ since_ts: 123, results: [{ transcript_id: "t1" }] }, SINCE).stored).toBe(false);
     expect(readSyncOutcome(null, SINCE).stored).toBe(false);
     expect(readSyncOutcome({ since_ts: SINCE, results: [{ transcript_id: "t1" }] }, undefined).stored).toBe(false);
+  });
+});
+
+describe("readSegmentOutcome: one recording, proved by its own id", () => {
+  it("stored when that recording has its row and is not being finalised, whatever else is in the room", () => {
+    expect(readSegmentOutcome({ results: [{ recording_id: "old", transcript_id: "t0" }, { recording_id: "seg", transcript_id: "t1" }] }, "seg")).toEqual({ stored: true });
+    expect(readSegmentOutcome({ results: [{ recording_id: "seg", transcript_id: "t1", skipped: "already ready" }] }, "seg").stored).toBe(true);
+  });
+  it("not stored for another recording, while processing, on an error, or when it is missing", () => {
+    expect(readSegmentOutcome({ results: [{ recording_id: "old", transcript_id: "t0" }] }, "seg").stored).toBe(false);
+    expect(readSegmentOutcome({ results: [{ recording_id: "seg", skipped: "status=in-progress" }] }, "seg").stored).toBe(false);
+    expect(readSegmentOutcome({ results: [{ recording_id: "seg", error: "insert failed" }] }, "seg").stored).toBe(false);
+    expect(readSegmentOutcome({ results: [] }, "seg").stored).toBe(false);
+    expect(readSegmentOutcome(null, "seg").stored).toBe(false);
+  });
+  it("does not need the server to echo a timestamp (an older deployment answers the same way)", () => {
+    expect(readSegmentOutcome({ since_ts: undefined, results: [{ recording_id: "seg", transcript_id: "t1" }] }, "seg").stored).toBe(true);
   });
 });

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import kMark from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 export function CallBrand() {
-  return <span className="flex shrink-0 items-center gap-2"><span className="relative h-7 w-7 flex items-center justify-center"><span aria-hidden="true" className="k-gradient-text text-xl font-black">K</span><img src={kMark.url} alt="Kretopia" className="absolute inset-0 h-full w-full object-contain bg-background" onError={(event) => { event.currentTarget.hidden = true; }} /></span><span className="text-xs font-semibold">Kretopia</span></span>;
+  return <span className="k-call-brand flex shrink-0 items-center gap-2"><span className="relative h-7 w-7 flex items-center justify-center"><span aria-hidden="true" className="k-gradient-text text-xl font-black">K</span><img src={kMark.url} alt="Kretopia" className="absolute inset-0 h-full w-full object-contain bg-background" onError={(event) => { event.currentTarget.hidden = true; }} /></span><span className="k-call-brand-name text-xs font-semibold">Kretopia</span></span>;
 }
 
 /** Presentation only: Daily remains authoritative for devices and sidebar state. */
