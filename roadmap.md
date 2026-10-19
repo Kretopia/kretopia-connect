@@ -1,5 +1,10 @@
 # Roadmap
 
+## Studio Calls Slice 4
+- [ ] Audit and adjust mobile call surfaces at 320, 360, 375 and 414px: safe areas, reachable controls, dominant video and shared branding.
+- [ ] Run focused recording regressions and mobile visual checks; preserve all call/recording behavior and do not deploy.
+- [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable in this session.
+
 ## Studio Calls Slice 3
 - [x] Add explicit Stop/Save reminder with existing state/sync; no call or pipeline changes.
 - [x] 85 focused regressions and preview compilation pass; isolated reminder renders with two working actions, unchanged video bounds and no runtime errors.
