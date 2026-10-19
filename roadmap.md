@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Studio Calls Slice 4
-- [ ] Audit and adjust mobile call surfaces at 320, 360, 375 and 414px: safe areas, reachable controls, dominant video and shared branding.
-- [ ] Run focused recording regressions and mobile visual checks; preserve all call/recording behavior and do not deploy.
+- [x] Adjust mobile live/floating/guest calls and lobbies at 320, 360, 375 and 414px: safe-area grids, 44px targets, dominant video and shared branding.
+- [x] 45 focused tests and automatic preview compilation pass; 48 isolated browser cases in light/dark show no overflow, overlapping or obstructed controls. No deployment or recording pipeline changes.
+- [ ] Verify real Daily video/sidebar rendering and physical-device safe areas — blocked: external legacy session/live call unavailable; browser checks simulate Daily only.
 - [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable in this session.
 
 ## Studio Calls Slice 3

@@ -11,6 +11,8 @@
 .k-call-controls > button { min-width: 0; width: 100%; height: 48px; padding: 4px 2px; border-radius: 8px; flex-direction: column; gap: 2px; font-size: 11px; line-height: 14px; }
 .k-call-controls > button span { font-size: inherit; }
 .k-call-surface .k-call-icon { width: 44px; height: 44px; padding: 0; flex-shrink: 0; }
+.k-call-surface .btn-glass-primary { background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
+.k-call-surface .btn-glass-danger { background: hsl(var(--destructive)) !important; color: hsl(var(--destructive-foreground)) !important; }
 .k-call-video { background: hsl(var(--muted)); min-width: 0; }
 .k-call-video > aside { bottom: 76px; }
 .k-call-video > aside .grid > button { white-space: normal; min-height: 44px; height: auto; padding-block: 8px; }

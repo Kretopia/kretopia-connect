@@ -109,7 +109,7 @@ export const PreCallLobby = ({
               className="w-full h-full object-cover [transform:scaleX(-1)]"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-muted-foreground">
               <VideoOff className="h-10 w-10" />
               <p className="text-xs">{camError ?? "Camera off"}</p>
             </div>
