@@ -12,7 +12,7 @@ const setup = () => {
   const call = daily();
   const ref = { current: call as unknown as DailyCall };
   const hook = renderHook(() => useRecordingReminder(ref, "studio-room"));
-  const start = () => act(() => hook.result.current.onStarted({ action: "recording-started", recordingId: "rec-1", instanceId: "instance-1" }));
+  const start = () => act(() => hook.result.current.onStarted({ action: "recording-started", callClientId: "test-call", recordingId: "rec-1", instanceId: "instance-1" }));
   return { ...hook, call, ref, start };
 };
 beforeEach(() => {
@@ -62,7 +62,7 @@ describe("Studio recording reminder", () => {
     act(() => result.current.onStopped());
     expect(call.startRecording).toHaveBeenCalledTimes(1);
     expect(result.current.state.phase).toBe("requested");
-    act(() => result.current.onStarted({ action: "recording-started", recordingId: "rec-2" }));
+    act(() => result.current.onStarted({ action: "recording-started", callClientId: "test-call", recordingId: "rec-2" }));
     await act(async () => vi.advanceTimersByTimeAsync(45_000));
     expect(result.current.segment).toBe("saved");
     expect(result.current.state.phase).toBe("recording");
