@@ -8,7 +8,7 @@ import { AdmitQueue } from "@/components/calls/AdmitQueue";
 import { cn } from "@/lib/utils";
 import { liveRecordingCopy } from "@/lib/recordingState";
 import { RecordingReminder } from "@/components/calls/RecordingReminder";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { PersistentStudioCall } from "@/components/project/VideoCallSheet";
 import { PersistentCallWindow, ConfirmCallLeave } from "./PersistentCallWindow";
 
@@ -31,6 +31,7 @@ export function GlobalVideoCallHost() {
   const {
     meetingId,
     studioCall, closeStudioCall,
+    startedAt, connectionStatus,
     phase,
     containerRef,
     callRef,
@@ -49,8 +50,11 @@ export function GlobalVideoCallHost() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const handleStudioClose = useCallback((open: boolean) => {
+    if (!open) { closeStudioCall(); studioCall?.onOpenChange(false); }
+  }, [closeStudioCall, studioCall]);
 
-  if (studioCall) return <PersistentStudioCall {...studioCall} onOpenChange={open => { if (!open) { closeStudioCall(); studioCall.onOpenChange(false); } }} />;
+  if (studioCall) return <PersistentStudioCall {...studioCall} onOpenChange={handleStudioClose} />;
   if (!meetingId) return null;
 
   const docked = location.pathname === `/meet/${meetingId}`;
@@ -65,7 +69,7 @@ export function GlobalVideoCallHost() {
   const handleToggleShare = () => toggleShare().catch((e) => toast({ title: "Couldn't share", description: e?.message, variant: "destructive" }));
 
   return (
-    <><PersistentCallWindow route={`/meet/${meetingId}`} title={title} call={callRef.current} startedAt={null} recordingPhase={recordingPhase} active={live} onLeave={() => { void leave(); }}>
+    <><PersistentCallWindow route={`/meet/${meetingId}`} title={title} call={callRef.current} startedAt={startedAt} status={connectionStatus} recordingPhase={recordingPhase} active={live} onLeave={() => { void leave(); }}>
       {/* Docked-only header */}
       <div className={cn("k-call-header flex shrink-0 items-center justify-between border-b", !docked && "hidden")}>
         <CallBrand />
