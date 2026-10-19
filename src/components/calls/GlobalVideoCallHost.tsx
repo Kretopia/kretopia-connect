@@ -5,6 +5,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useVideoCall } from "@/contexts/VideoCallContext";
 import { AdmitQueue } from "@/components/calls/AdmitQueue";
 import { cn } from "@/lib/utils";
+import { liveRecordingCopy } from "@/lib/recordingState";
+import { RecordingReminder } from "@/components/calls/RecordingReminder";
 
 /**
  * Renders exactly ONE persistent DOM node for the Daily iframe
@@ -30,6 +32,7 @@ export function GlobalVideoCallHost() {
     isHost,
     title,
     recording,
+    recordingPhase, recordingReminder, recordingSegment, stopRecording, saveRecording,
     sharing,
     micOn,
     leave,
@@ -45,6 +48,7 @@ export function GlobalVideoCallHost() {
 
   const docked = location.pathname === `/meet/${meetingId}`;
   const live = phase === "live";
+  const recordingCopy = liveRecordingCopy(recordingPhase);
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(`${window.location.origin}/meet/${meetingId}`);
@@ -70,10 +74,10 @@ export function GlobalVideoCallHost() {
         <div className="min-w-0">
           <p className="text-sm font-semibold truncate">{title}</p>
           <p className="text-[11px] text-white/50 flex items-center gap-1.5">
-            {recording ? (
+            {recordingCopy ? (
               <>
                 <Circle className="h-2 w-2 fill-destructive text-destructive" />
-                <span className="text-destructive font-medium">Recording</span>
+                <span role="status" className="text-foreground font-medium">{recordingCopy.label}</span>
               </>
             ) : (
               "Live"
@@ -95,6 +99,8 @@ export function GlobalVideoCallHost() {
       <div className="relative flex-1 min-h-0 bg-black">
         <div ref={containerRef} className="absolute inset-0" />
         {docked && <AdmitQueue call={callRef.current} isHost={isHost} />}
+        {docked && <RecordingReminder visible={recordingReminder} segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} />}
+        {!docked && recordingReminder && <div className="fixed bottom-64 right-4 w-80 max-w-[calc(100vw-2rem)]"><RecordingReminder visible segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} /></div>}
 
         {/* Floating-only mini controls, overlaid on the video itself. */}
         <div className={cn("absolute inset-0 flex flex-col justify-between p-1.5 pointer-events-none", docked && "hidden")}>
@@ -166,6 +172,7 @@ export function GlobalVideoCallHost() {
             variant="ghost"
             size="sm"
             onClick={handleToggleRecord}
+            disabled={["requested", "stopping", "processing"].includes(recordingPhase)}
             className={cn(
               "rounded-full gap-2 h-10 px-4 border border-white/10",
               recording ? "bg-destructive text-destructive-foreground border-transparent" : "bg-white/5 text-white hover:bg-white/10",

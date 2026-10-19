@@ -31,7 +31,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PreCallLobby } from "./PreCallLobby";
 import { CallInviteSheet } from "./CallInviteSheet";
 import { CallPreflightGate } from "@/components/calls/CallPreflightGate";
-import { useLiveRecording } from "@/hooks/useLiveRecording";
+import { useRecordingReminder } from "@/hooks/useRecordingReminder";
+import { RecordingReminder } from "@/components/calls/RecordingReminder";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
 
 interface VideoCallSheetProps {
@@ -99,7 +100,10 @@ export const VideoCallSheet = ({
   const [phase, setPhase] = useState<Phase>("lobby");
   const [joining, setJoining] = useState(false);
   // Recording lifecycle (requested, recording, stopping, processing, failed), driven by Daily's events.
-  const { dispatch: dispatchRecording, active: recording, copy: recordingCopy } = useLiveRecording();
+  const recordingControls = useRecordingReminder(callRef, roomName ?? roomUrl?.split("/").pop());
+  const { dispatch: dispatchRecording, active: recording, copy: recordingCopy, state: recordingState } = recordingControls;
+  const recordingControlsRef = useRef(recordingControls);
+  recordingControlsRef.current = recordingControls;
   const [sharing, setSharing] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [safetyMode, setSafetyMode] = useState<null | "report" | "block">(null);
@@ -156,7 +160,7 @@ export const VideoCallSheet = ({
 
       frame.on("left-meeting", () => onOpenChange(false));
       frame.on("recording-started", (ev: any) => {
-        dispatchRecording({ type: "started" });
+        recordingControlsRef.current.onStarted(ev);
         didRecordRef.current = true;
         const startedByMe = ev?.local;
         if (!startedByMe) {
@@ -166,7 +170,7 @@ export const VideoCallSheet = ({
           });
         }
       });
-      frame.on("recording-stopped", () => dispatchRecording({ type: "stopped" }));
+      frame.on("recording-stopped", () => recordingControlsRef.current.onStopped());
       frame.on("recording-error", (ev: { errorMsg?: string; error?: string } | undefined) => {
         dispatchRecording({ type: "error", message: ev?.errorMsg ?? ev?.error ?? null });
         toast({
@@ -329,6 +333,8 @@ export const VideoCallSheet = ({
   };
 
   const toggleRecording = async () => {
+    if (recordingState.phase === "recording") { recordingControls.stopRecording(); return; }
+    if (["requested", "stopping", "processing"].includes(recordingState.phase)) return;
     const stopping = recording;
     try {
       dispatchRecording({ type: stopping ? "stop-requested" : "start-requested" });
@@ -489,6 +495,7 @@ export const VideoCallSheet = ({
               {/* Video area */}
               <div className="relative flex-1 min-h-0 bg-black">
                 <div ref={containerRef} className="absolute inset-0" />
+                {!backstage && <RecordingReminder visible={recordingControls.reminder} onStop={recordingControls.stopRecording} onSave={recordingControls.saveRecording} segment={recordingControls.segment} />}
                 {joining && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b0b0f] text-white gap-3 z-10">
                     <KretopiaSpinner className="h-8 w-8 text-primary" />
@@ -529,6 +536,7 @@ export const VideoCallSheet = ({
                       variant="ghost"
                       size="sm"
                       onClick={toggleRecording}
+                      disabled={["requested", "stopping", "processing"].includes(recordingState.phase)}
                       className={`rounded-full gap-2 h-10 px-4 border ${
                         recording
                           ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-transparent"

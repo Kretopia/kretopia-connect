@@ -3,7 +3,7 @@ import { type DailyCall } from "@daily-co/daily-js";
 import { createDailyFrameAsync, teardownDailyCall } from "@/lib/dailyFrame";
 import { supabase } from "@/integrations/supabase/client";
 import { extractInvokeError } from "@/lib/extractInvokeError";
-import { useLiveRecording } from "@/hooks/useLiveRecording";
+import { useRecordingReminder } from "@/hooks/useRecordingReminder";
 import type { LiveRecordingPhase } from "@/lib/recordingState";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
 
@@ -75,6 +75,10 @@ interface VideoCallContextValue {
    *  entirely (e.g. "Done" on the ended screen), not on route navigation. */
   reset: () => void;
   toggleRecord: () => Promise<void>;
+  recordingReminder: boolean;
+  recordingSegment: "processing" | "saved" | "failed" | null;
+  stopRecording: () => void;
+  saveRecording: () => void;
   toggleShare: () => Promise<void>;
   toggleMic: () => Promise<void>;
   micOn: boolean;
@@ -93,13 +97,16 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<VideoCallPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("Joining call");
-  const { state: live, dispatch: dispatchRecording, active: recording } = useLiveRecording();
   const didRecordRef = useRef(false);
   const callStartedAtRef = useRef<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
+  const recordingControls = useRecordingReminder(callRef, tokenInfo?.roomUrl.split("/").pop());
+  const { state: live, dispatch: dispatchRecording, active: recording } = recordingControls;
+  const recordingControlsRef = useRef(recordingControls);
+  recordingControlsRef.current = recordingControls;
   const [micOn, setMicOn] = useState(false);
 
   const openMeeting = useCallback(
@@ -184,11 +191,11 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
         });
       }
     });
-    frame.on("recording-started", () => {
+    frame.on("recording-started", (ev) => {
       didRecordRef.current = true;
-      dispatchRecording({ type: "started" });
+      recordingControlsRef.current.onStarted(ev);
     });
-    frame.on("recording-stopped", () => dispatchRecording({ type: "stopped" }));
+    frame.on("recording-stopped", () => recordingControlsRef.current.onStopped());
     frame.on("recording-error", (ev: { errorMsg?: string; error?: string } | undefined) =>
       dispatchRecording({ type: "error", message: ev?.errorMsg ?? ev?.error ?? null }),
     );
@@ -270,6 +277,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleRecord = useCallback(async () => {
+    if (live.phase === "recording") { recordingControlsRef.current.stopRecording(); return; }
+    if (["requested", "stopping", "processing"].includes(live.phase)) return;
     const stopping = recording;
     try {
       dispatchRecording({ type: stopping ? "stop-requested" : "start-requested" });
@@ -280,7 +289,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       /* surfaced via toast at the call site */
       throw new Error("Recording unavailable");
     }
-  }, [recording, dispatchRecording]);
+  }, [recording, live.phase, dispatchRecording]);
 
   const toggleShare = useCallback(async () => {
     try {
@@ -311,6 +320,10 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     recordingPhase: live.phase,
     recordingStartedAt: live.startedAt,
     recordingError: live.error,
+    recordingReminder: recordingControls.reminder,
+    recordingSegment: recordingControls.segment,
+    stopRecording: recordingControls.stopRecording,
+    saveRecording: recordingControls.saveRecording,
     sharing,
     role,
     isHost: role === "host",

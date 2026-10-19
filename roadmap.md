@@ -1,5 +1,11 @@
 # Roadmap
 
+## Studio Calls Slice 3
+- [x] Add explicit Stop/Save reminder with existing state/sync; no call or pipeline changes.
+- [x] 85 focused regressions and preview compilation pass; isolated reminder renders with two working actions, unchanged video bounds and no runtime errors.
+- [ ] Verify real Daily checkpoint and replay read-back — blocked: external legacy session/live call unavailable in this sandbox.
+- [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable in this session.
+
 ## Landing clean loading
 - [x] Remove chapter video posters, avoid duplicate resource loads, fast-start remux three remaining videos without re-encoding; remove floating guest signup CTA. No automatic signup dialog exists in current Landing source.
 - [x] Desktop/mobile: no posters, no signup dialog or floating signup CTA; 33 regressions and automatic compilation pass. No deployment. Actual video playback cannot be verified through sandbox media delivery (readyState 0).
