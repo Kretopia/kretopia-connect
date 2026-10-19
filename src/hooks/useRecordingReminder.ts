@@ -85,7 +85,7 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
         return;
       }
       live.dispatch({ type: "start-requested" });
-      try { call.startRecording(); }
+      try { call.startRecording(finished.instanceId ? { instanceId: finished.instanceId } : undefined); }
       catch (error) { live.dispatch({ type: "error", message: error instanceof Error ? error.message : null }); }
     }
   };
