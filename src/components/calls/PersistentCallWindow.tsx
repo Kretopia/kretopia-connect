@@ -50,7 +50,7 @@ export function PersistentCallWindow({ children, route, title, call, startedAt, 
   const recording = liveRecordingCopy(recordingPhase);
   return <>
     <div ref={root} data-call-window={docked ? "full" : minimized ? "minimized" : "floating"} className={cn("k-call-surface k-persistent-call z-[60]", docked ? "fixed inset-0 flex flex-col" : "k-call-mini fixed flex flex-col rounded-lg border border-border shadow-xl", minimized && "k-call-mini-collapsed", !active && "hidden")}>
-      <div className={cn("k-call-mini-header", docked && "hidden")} onPointerDown={e => {
+      <div hidden={docked} className={cn("k-call-mini-header", docked && "hidden")} onPointerDown={e => {
         if (e.pointerType !== "mouse" || (e.target as HTMLElement).closest("button") || !window.matchMedia("(min-width: 768px)").matches) return;
         const bounds = root.current?.getBoundingClientRect(); if (!bounds) return;
         drag.current = { x: e.clientX, y: e.clientY, left: bounds.left, top: bounds.top }; e.currentTarget.setPointerCapture(e.pointerId);
@@ -68,12 +68,12 @@ export function PersistentCallWindow({ children, route, title, call, startedAt, 
         </div>
       </div>
       <div className="k-call-persistent-content flex flex-1 min-h-0 flex-col">{children}</div>
-      <div className={cn("k-call-mini-actions", docked && "hidden")}>
+      <div hidden={docked} className={cn("k-call-mini-actions", docked && "hidden")}>
         <div className="flex items-center min-w-0 flex-1 gap-1 overflow-hidden">{names.map((name, index) => <PersonAvatar key={`${index}-${name}`} src={null} name={name} className="h-6 w-6" />)}<span className="truncate text-xs text-muted-foreground">{names.join(", ")}</span></div>
         <Button variant="ghost" className="k-call-icon" title={minimized ? "Expand miniature" : "Minimize call"} aria-label={minimized ? "Expand miniature" : "Minimize call"} onClick={() => setMinimized(v => !v)}>{minimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}</Button>
         <Button variant="ghost" className="k-call-icon text-destructive" title="Leave call" aria-label="Leave call" onClick={() => setConfirm(true)}><PhoneOff className="h-4 w-4" /></Button>
       </div>
-      <Button variant="ghost" className={cn("k-call-icon absolute right-3 top-[calc(60px+env(safe-area-inset-top,0px))] z-20 bg-secondary", !docked && "hidden")} title="Minimize call" aria-label="Minimize call" onClick={() => setMinimized(true)}><Minimize2 className="h-4 w-4" /></Button>
+      {docked && <Button variant="ghost" className="k-call-icon absolute right-3 top-[calc(60px+env(safe-area-inset-top,0px))] z-20 bg-secondary" title="Minimize call" aria-label="Minimize call" onClick={() => setMinimized(true)}><Minimize2 className="h-4 w-4" /></Button>}
     </div>
     <ConfirmCallLeave open={confirm} onOpenChange={setConfirm} onLeave={onLeave} />
   </>;
