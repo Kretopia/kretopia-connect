@@ -25,7 +25,7 @@
 .k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
 .k-call-mini-collapsed .k-call-persistent-content { height: 0; overflow: hidden; visibility: hidden; }
 @media (max-width: 767px) { .k-call-mini .k-call-persistent-content { height: 80px; } .k-call-mini-collapsed .k-call-persistent-content { height: 0; } }
-@media (min-width: 768px) { .k-call-mini { left: var(--call-left, auto); top: var(--call-top, auto); } .k-call-mini-header { cursor: move; touch-action: none; } }
+@media (min-width: 768px) { .k-call-mini { left: var(--call-left, auto); top: var(--call-top, auto); bottom: var(--call-bottom, calc(96px + env(safe-area-inset-bottom, 0px))); } .k-call-mini-header { cursor: move; touch-action: none; } }
 @media (min-width: 640px) { .k-call-floating { width: 280px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } .k-call-surface .k-call-preview { aspect-ratio: 16 / 9; } }
 @media (prefers-reduced-motion: reduce) { .k-call-surface button { transition: none; transform: none; } }
 

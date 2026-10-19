@@ -41,7 +41,7 @@ export function PersistentCallWindow({ children, route, title, call, startedAt, 
     return () => { call.off("participant-updated", read); call.off("participant-joined", read); call.off("participant-left", read); };
   }, [call]);
   useEffect(() => {
-    const clearPosition = () => { root.current?.style.removeProperty("--call-left"); root.current?.style.removeProperty("--call-top"); };
+    const clearPosition = () => { root.current?.style.removeProperty("--call-left"); root.current?.style.removeProperty("--call-top"); root.current?.style.removeProperty("--call-bottom"); };
     clearPosition(); window.addEventListener("resize", clearPosition);
     return () => window.removeEventListener("resize", clearPosition);
   }, [docked, minimized]);
@@ -59,6 +59,7 @@ export function PersistentCallWindow({ children, route, title, call, startedAt, 
         const left = Math.max(12, Math.min(window.innerWidth - element.offsetWidth - 12, start.left + e.clientX - start.x));
         const top = Math.max(80, Math.min(window.innerHeight - element.offsetHeight - 96, start.top + e.clientY - start.y));
         element.style.setProperty("--call-left", `${left}px`); element.style.setProperty("--call-top", `${top}px`);
+        element.style.setProperty("--call-bottom", "auto");
       }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
         <GripHorizontal aria-hidden className="hidden md:block h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1"><CallBrand /><p className="truncate text-xs font-semibold mt-1">{title}</p><p role="status" className="truncate text-xs text-muted-foreground">{status} · {elapsed}{recording ? ` · ${recording.label}` : ""}</p></div>

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within, act } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 import { VideoCallProvider } from "@/contexts/VideoCallContext";
@@ -35,7 +35,9 @@ describe("Studio single-frame lifetime", () => {
     expect(document.querySelector("iframe")).toBe(iframe);
     expect(fake.create).toHaveBeenCalledOnce(); expect(fake.call.join).toHaveBeenCalledOnce();
     expect(fake.call.destroy).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", {name:"Leave call"}));
+    const mini = document.querySelector('.k-call-mini-actions');
+    if (!mini) throw new Error("Miniature missing");
+    fireEvent.click(within(mini as HTMLElement).getByRole("button", {name:"Leave call"}));
     expect(fake.call.leave).not.toHaveBeenCalled();
     fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", {name:"Leave call"}));
     await waitFor(() => expect(document.querySelector("iframe")).toBeNull());
