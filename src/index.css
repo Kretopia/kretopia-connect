@@ -18,6 +18,14 @@
 .k-call-video > aside .grid > button { white-space: normal; min-height: 44px; height: auto; padding-block: 8px; }
 .k-call-surface .k-call-preview { height: 100%; max-height: 100%; width: auto; max-width: 100%; aspect-ratio: 3 / 4; border-radius: 8px; background: hsl(var(--muted)); }
 .k-call-floating { width: min(280px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: 210px; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+.k-call-mini { width: min(320px, calc(100vw - 24px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); overflow: hidden; }
+.k-call-mini-header { display: flex; align-items: center; gap: 4px; padding: 8px; background: hsl(var(--background)); border-bottom: 1px solid hsl(var(--border)); }
+.k-call-mini-actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; background: hsl(var(--background)); }
+.k-call-mini .k-call-persistent-content { height: 160px; flex: none; }
+.k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
+.k-call-mini-collapsed .k-call-persistent-content { height: 0; overflow: hidden; visibility: hidden; }
+@media (max-width: 767px) { .k-call-mini .k-call-persistent-content { height: 80px; } .k-call-mini-collapsed .k-call-persistent-content { height: 0; } }
+@media (min-width: 768px) { .k-call-mini { left: var(--call-left, auto); top: var(--call-top, auto); } .k-call-mini-header { cursor: move; touch-action: none; } }
 @media (min-width: 640px) { .k-call-floating { width: 280px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } .k-call-surface .k-call-preview { aspect-ratio: 16 / 9; } }
 @media (prefers-reduced-motion: reduce) { .k-call-surface button { transition: none; transform: none; } }
 
