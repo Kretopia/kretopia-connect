@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { requireUser } from "../_shared/require-user.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,9 @@ serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const guard = await requireUser(req);
+  if (!guard.ok) return guard.response;
 
   try {
     const { currentUser, targetUser } = await req.json();
@@ -161,18 +165,8 @@ Analyze compatibility and generate match explanation.`;
   } catch (error) {
     console.error("Error in generate-match-explanation:", error);
     return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        // Fallback match data
-        score: 85,
-        reasons: [
-          "Complementary skills that align well",
-          "Great potential for collaboration",
-          "Similar creative interests",
-          "Compatible work styles"
-        ]
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Match explanation unavailable" }),
+      { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

@@ -1,0 +1,53 @@
+name: Deploy Edge Functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      functions:
+        description: Function names to deploy, space separated (folder names under supabase/functions)
+        required: true
+        type: string
+      verify_jwt:
+        description: Verify JWT on these functions (turn off only for webhooks and cron endpoints)
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploy-edge-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    env:
+      FUNCTIONS: ${{ inputs.functions }}
+      VERIFY_JWT: ${{ inputs.verify_jwt }}
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+
+      - name: Validate function names
+        run: |
+          set -euo pipefail
+          for fn in $FUNCTIONS; do
+            [[ "$fn" =~ ^[a-z0-9][a-z0-9-]*$ ]] || { echo "invalid name: $fn"; exit 1; }
+            [ -f "supabase/functions/$fn/index.ts" ] || { echo "no such function: $fn"; exit 1; }
+          done
+
+      - name: Deploy
+        run: |
+          set -euo pipefail
+          flag=""
+          [ "$VERIFY_JWT" = "false" ] && flag="--no-verify-jwt"
+          for fn in $FUNCTIONS; do
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_ID" $flag
+          done

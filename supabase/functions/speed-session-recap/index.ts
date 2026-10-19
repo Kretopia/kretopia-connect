@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
         const met: Peer[] = metIds.map((id) => profMap.get(id)).filter(Boolean);
 
         try {
-          await admin.functions.invoke("send-transactional-email", {
+          const { error: mailErr } = await admin.functions.invoke("send-transactional-email", {
             body: {
               templateName: "speed-session-recap",
               recipientEmail: me.email,
@@ -149,21 +149,25 @@ Deno.serve(async (req) => {
               },
             },
           });
-          stats.emails++;
+          if (mailErr) { stats.errors++; console.error("[recap] send", uid, mailErr); }
+          else stats.emails++;
         } catch (e) {
           stats.errors++;
           console.error("[recap] send", uid, e);
         }
       }
 
-      await admin.from("speed_sessions").update({ recap_sent_at: new Date().toISOString() }).eq("id", s.id);
+      const { error: sentErr } = await admin.from("speed_sessions").update({ recap_sent_at: new Date().toISOString() }).eq("id", s.id);
+      if (sentErr) { stats.errors++; console.error("[recap] mark sent", s.id, sentErr); }
     } catch (e) {
       stats.errors++;
       console.error("[recap] session", s.id, e);
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, ...stats }), {
+  const allFailed = stats.errors > 0 && stats.emails === 0;
+  return new Response(JSON.stringify({ ok: stats.errors === 0, ...stats }), {
+    status: allFailed ? 500 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

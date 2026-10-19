@@ -4,7 +4,7 @@
 // next read" or "the compare-and-swap lost"; edge tests about idempotency and races need that.
 //
 // Supported: select / insert / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
-// gt, order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
+// gt / gte / lte, order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
 // a test never silently passes on a query the stand-in does not understand.
 
 type Row = Record<string, any>;
@@ -120,6 +120,8 @@ export class MemoryDb {
         return chain;
       },
       gt: (c: string, v: any) => (filters.push((r) => r[c] > v), chain),
+      gte: (c: string, v: any) => (filters.push((r) => r[c] >= v), chain),
+      lte: (c: string, v: any) => (filters.push((r) => r[c] <= v), chain),
       ilike: (c: string, pat: string) => (filters.push((r) => like(pat).test(String(r[c] ?? ""))), chain),
       or: (expr: string) => {
         const terms = expr.split(",").map((t) => {

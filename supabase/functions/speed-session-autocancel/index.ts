@@ -50,10 +50,11 @@ Deno.serve(async (req) => {
         .eq("session_id", s.id);
       if ((count ?? 0) >= MIN_FOR_PAIRS) continue;
 
-      await admin
+      const { error: modeErr } = await admin
         .from("speed_sessions")
         .update({ fallback_mode: "group" })
         .eq("id", s.id);
+      if (modeErr) { stats.errors++; console.error("[fallback] mode", s.id, modeErr); continue; }
       stats.fellback++;
 
       const { data: rsvps } = await admin
@@ -78,7 +79,9 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, ...stats }), {
+  const allFailed = stats.errors > 0 && stats.fellback === 0;
+  return new Response(JSON.stringify({ ok: stats.errors === 0, ...stats }), {
+    status: allFailed ? 500 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

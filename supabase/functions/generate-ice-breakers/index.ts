@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.58.0';
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { requireUser } from "../_shared/require-user.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,9 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  const guard = await requireUser(req);
+  if (!guard.ok) return guard.response;
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -121,7 +125,7 @@ Return ONLY a JSON array of 4 strings, no other text. Example: ["message1", "mes
   } catch (error) {
     console.error('Error generating ice breakers:', error);
     return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: 'Ice breakers unavailable',
       iceBreakers: [
         "Hey! I noticed we matched - what kind of projects are you working on?",
         "Love your portfolio! Would be great to chat about a collaboration.",
