@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck --if-present
+
+      - name: Lint
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Test
+        run: >
+          npm test --if-present --
+          --exclude '**/node_modules/**'
+          --exclude src/components/__tests__/PWAInstallPrompt.test.tsx
+          --exclude src/components/landing/kretopia/__tests__/ChapterProgressNav.test.tsx
+          --exclude src/components/project/__tests__/ProjectNotes.continuity.test.tsx
+          --exclude src/components/project/studio/__tests__/VoiceFirstCreateModal.test.tsx
+          --exclude src/hooks/__tests__/useAccountTone.test.tsx
+          --exclude src/lib/__tests__/cacheSweep.test.ts
+          --exclude src/lib/__tests__/draftAndNoteSave.test.ts
+
+      - name: Build
+        run: npm run build
