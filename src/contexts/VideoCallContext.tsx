@@ -3,6 +3,9 @@ import { type DailyCall } from "@daily-co/daily-js";
 import { createDailyFrameAsync, teardownDailyCall } from "@/lib/dailyFrame";
 import { supabase } from "@/integrations/supabase/client";
 import { extractInvokeError } from "@/lib/extractInvokeError";
+import { useLiveRecording } from "@/hooks/useLiveRecording";
+import type { LiveRecordingPhase } from "@/lib/recordingState";
+import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
 
 /**
  * VideoCallContext — CEO hotfix (24/09/2026): "/meet/:meetingId" (CallPage.tsx)
@@ -48,7 +51,13 @@ interface VideoCallContextValue {
   phase: VideoCallPhase;
   error: string | null;
   title: string;
+  /** True while a recording is actually running (recording or stopping). */
   recording: boolean;
+  /** Where the recording is in its lifecycle: requested, recording, stopping, processing, saved or failed. */
+  recordingPhase: LiveRecordingPhase;
+  /** When the running recording started (ms epoch), null when none is running. */
+  recordingStartedAt: number | null;
+  recordingError: string | null;
   sharing: boolean;
   role: string | null;
   isHost: boolean;
@@ -84,7 +93,9 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   const [phase, setPhase] = useState<VideoCallPhase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("Joining call");
-  const [recording, setRecording] = useState(false);
+  const { state: live, dispatch: dispatchRecording, active: recording } = useLiveRecording();
+  const didRecordRef = useRef(false);
+  const callStartedAtRef = useRef<number | null>(null);
   const [sharing, setSharing] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [guestName, setGuestName] = useState("");
@@ -152,6 +163,37 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     }
     callRef.current = frame;
     const prefs = joinPrefsRef.current;
+    // Listeners go on before join so an event fired while joining is not lost.
+    frame.on("left-meeting", () => {
+      setPhase("ended");
+      // A cloud recording is finalised some time after the call ends (longer calls take longer). Look
+      // for it for ~10 minutes and stop once it is stored; Recordings is the only place it appears.
+      if (didRecordRef.current) {
+        didRecordRef.current = false;
+        const since = callStartedAtRef.current ? Math.floor(callStartedAtRef.current / 1000) : undefined;
+        scheduleRecordingSync({
+          roomName: tokenInfo.roomUrl.split("/").pop() || undefined,
+          sinceTs: since,
+          run: async ({ roomName, sinceTs }) => {
+            const { data, error: syncErr } = await supabase.functions.invoke("sync-daily-recordings", {
+              body: { room_name: roomName, since_ts: sinceTs },
+            });
+            if (syncErr) throw syncErr;
+            return readSyncOutcome(data, sinceTs);
+          },
+        });
+      }
+    });
+    frame.on("recording-started", () => {
+      didRecordRef.current = true;
+      dispatchRecording({ type: "started" });
+    });
+    frame.on("recording-stopped", () => dispatchRecording({ type: "stopped" }));
+    frame.on("recording-error", (ev: { errorMsg?: string; error?: string } | undefined) =>
+      dispatchRecording({ type: "error", message: ev?.errorMsg ?? ev?.error ?? null }),
+    );
+    frame.on("local-screen-share-started", () => setSharing(true));
+    frame.on("local-screen-share-stopped", () => setSharing(false));
     try {
       await frame.join({
         url: tokenInfo.roomUrl,
@@ -160,6 +202,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
         startVideoOff: !prefs.cam,
         startAudioOff: !prefs.mic,
       });
+      callStartedAtRef.current = Date.now();
       if (prefs.micDeviceId || prefs.camDeviceId || prefs.speakerDeviceId) {
         try {
           await (frame as any).setInputDevicesAsync?.({
@@ -179,12 +222,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       setPhase("error");
       return;
     }
-    frame.on("left-meeting", () => setPhase("ended"));
-    frame.on("recording-started", () => setRecording(true));
-    frame.on("recording-stopped", () => setRecording(false));
-    frame.on("local-screen-share-started", () => setSharing(true));
-    frame.on("local-screen-share-stopped", () => setSharing(false));
-  }, [tokenInfo]);
+  }, [tokenInfo, dispatchRecording]);
 
   // Starts the frame once phase reaches "live" AND the persistent container
   // has actually been committed to the DOM (containerRef.current is only
@@ -221,7 +259,9 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     setPhase("idle");
     setError(null);
     setTitle("Joining call");
-    setRecording(false);
+    dispatchRecording({ type: "reset" });
+    didRecordRef.current = false;
+    callStartedAtRef.current = null;
     setSharing(false);
     setRole(null);
     setGuestName("");
@@ -230,14 +270,17 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggleRecord = useCallback(async () => {
+    const stopping = recording;
     try {
-      if (recording) await callRef.current?.stopRecording();
+      dispatchRecording({ type: stopping ? "stop-requested" : "start-requested" });
+      if (stopping) await callRef.current?.stopRecording();
       else await callRef.current?.startRecording();
-    } catch {
+    } catch (e) {
+      dispatchRecording({ type: "error", message: e instanceof Error ? e.message : null });
       /* surfaced via toast at the call site */
       throw new Error("Recording unavailable");
     }
-  }, [recording]);
+  }, [recording, dispatchRecording]);
 
   const toggleShare = useCallback(async () => {
     try {
@@ -265,6 +308,9 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     error,
     title,
     recording,
+    recordingPhase: live.phase,
+    recordingStartedAt: live.startedAt,
+    recordingError: live.error,
     sharing,
     role,
     isHost: role === "host",

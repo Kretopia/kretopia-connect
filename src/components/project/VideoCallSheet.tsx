@@ -31,6 +31,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PreCallLobby } from "./PreCallLobby";
 import { CallInviteSheet } from "./CallInviteSheet";
 import { CallPreflightGate } from "@/components/calls/CallPreflightGate";
+import { useLiveRecording } from "@/hooks/useLiveRecording";
+import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
 
 interface VideoCallSheetProps {
   open: boolean;
@@ -96,7 +98,8 @@ export const VideoCallSheet = ({
   const didRecordRef = useRef<boolean>(false);
   const [phase, setPhase] = useState<Phase>("lobby");
   const [joining, setJoining] = useState(false);
-  const [recording, setRecording] = useState(false);
+  // Recording lifecycle (requested, recording, stopping, processing, failed), driven by Daily's events.
+  const { dispatch: dispatchRecording, active: recording, copy: recordingCopy } = useLiveRecording();
   const [sharing, setSharing] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [safetyMode, setSafetyMode] = useState<null | "report" | "block">(null);
@@ -153,7 +156,7 @@ export const VideoCallSheet = ({
 
       frame.on("left-meeting", () => onOpenChange(false));
       frame.on("recording-started", (ev: any) => {
-        setRecording(true);
+        dispatchRecording({ type: "started" });
         didRecordRef.current = true;
         const startedByMe = ev?.local;
         if (!startedByMe) {
@@ -163,7 +166,15 @@ export const VideoCallSheet = ({
           });
         }
       });
-      frame.on("recording-stopped", () => setRecording(false));
+      frame.on("recording-stopped", () => dispatchRecording({ type: "stopped" }));
+      frame.on("recording-error", (ev: { errorMsg?: string; error?: string } | undefined) => {
+        dispatchRecording({ type: "error", message: ev?.errorMsg ?? ev?.error ?? null });
+        toast({
+          title: "Recording failed",
+          description: "The recording stopped with an error. Nothing from this attempt was saved. You can start it again.",
+          variant: "destructive",
+        });
+      });
       frame.on("local-screen-share-started", () => setSharing(true));
       frame.on("local-screen-share-stopped", () => setSharing(false));
 
@@ -216,10 +227,13 @@ export const VideoCallSheet = ({
         });
         if (!cancelled) setJoining(false);
         if (!cancelled && isHost && autoStartRecording && !backstage) {
+          dispatchRecording({ type: "start-requested" });
+          // startRecording() returns nothing; a refusal arrives as a `recording-error` event.
           try {
-            void frame.startRecording();
+            frame.startRecording();
           } catch (e) {
             console.warn("[VideoCallSheet] auto-record failed", e);
+            dispatchRecording({ type: "error", message: e instanceof Error ? e.message : null });
           }
         }
       } catch (err: any) {
@@ -256,34 +270,42 @@ export const VideoCallSheet = ({
           });
       }
 
-      if (duration > 30) {
-        if (didRecordRef.current) {
-          sonnerToast.success("Recap is being prepared", {
-            description: "Find it in Messages › Calls in ~2 min. We'll pull action items + decisions.",
-            duration: 10_000,
-            action: {
-              label: "Open Calls",
-              onClick: () => navigate("/messages?tab=calls"),
-            },
-          });
-          // Poll Daily directly for the finished recording (doesn't rely on
-          // the Daily → Supabase webhook being configured). Daily needs
-          // 30-60s after leave() to finalize; try a couple of times.
-          const derived = roomName ?? roomUrl?.split("/").pop() ?? undefined;
-          const sync = () =>
-            supabase.functions
-              .invoke("sync-daily-recordings", { body: { room_name: derived } })
-              .catch((e) => console.warn("[VideoCallSheet] sync failed", e));
-          setTimeout(sync, 45_000);
-          setTimeout(sync, 120_000);
-        } else {
-          sonnerToast("Want a recap next time?", {
-            description: "Tap Record during a call and we'll auto-summarize action items + decisions.",
-            duration: 7_000,
-          });
-        }
+      if (didRecordRef.current) {
+        sonnerToast.success("Recap is being prepared", {
+          description: "We're saving your recording. It shows up in Recordings a few minutes after the call ends; longer calls take longer.",
+          duration: 10_000,
+          action: {
+            label: "Open Recordings",
+            onClick: () => navigate("/recordings"),
+          },
+        });
+        // Poll Daily directly for the finished recording (doesn't rely on the Daily → Supabase webhook
+        // being configured). Daily finalises a recording some time after leave(), longer for longer
+        // calls, so keep looking for ~10 minutes and stop as soon as it is stored.
+        const derived = roomName ?? roomUrl?.split("/").pop() ?? undefined;
+        const sinceTs = startedAtRef.current ? Math.floor(startedAtRef.current / 1000) : undefined;
+        scheduleRecordingSync({
+          roomName: derived,
+          sinceTs,
+          run: async ({ roomName: rn, sinceTs: since }) => {
+            const { data, error } = await supabase.functions.invoke("sync-daily-recordings", {
+              body: { room_name: rn, since_ts: since },
+            });
+            if (error) throw error;
+            return readSyncOutcome(data, since);
+          },
+          onStored: () =>
+            sonnerToast.success("Recording saved", {
+              description: "It is in Recordings now.",
+              action: { label: "Open Recordings", onClick: () => navigate("/recordings") },
+            }),
+        });
+      } else if (duration > 30) {
+        sonnerToast("Want a recap next time?", {
+          description: "Tap Record during a call and we'll auto-summarize action items + decisions.",
+          duration: 7_000,
+        });
       }
-
 
       const f = frame ?? callRef.current;
       callRef.current = null;
@@ -307,11 +329,15 @@ export const VideoCallSheet = ({
   };
 
   const toggleRecording = async () => {
+    const stopping = recording;
     try {
-      if (recording) await callRef.current?.stopRecording();
+      dispatchRecording({ type: stopping ? "stop-requested" : "start-requested" });
+      if (stopping) await callRef.current?.stopRecording();
       else await callRef.current?.startRecording();
-    } catch (e: any) {
-      toast({ title: "Recording unavailable", description: e?.message, variant: "destructive" });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : undefined;
+      dispatchRecording({ type: "error", message });
+      toast({ title: "Recording unavailable", description: message, variant: "destructive" });
     }
   };
 
@@ -400,10 +426,23 @@ export const VideoCallSheet = ({
                           <Circle className="h-2 w-2 fill-amber-400 text-amber-400" />
                           <span className="text-amber-400 font-bold uppercase tracking-wide">Backstage · doors closed</span>
                         </>
-                      ) : recording ? (
+                      ) : recordingCopy ? (
                         <>
-                          <Circle className="h-2 w-2 fill-destructive text-destructive" />
-                          <span className="text-destructive font-medium">Recording</span>
+                          <Circle
+                            className={`h-2 w-2 ${
+                              recordingCopy.tone === "danger"
+                                ? "fill-destructive text-destructive"
+                                : recordingCopy.tone === "success"
+                                  ? "fill-emerald-400 text-emerald-400"
+                                  : "fill-amber-400 text-amber-400"
+                            }`}
+                          />
+                          <span
+                            role="status"
+                            className={`font-medium ${recordingCopy.tone === "danger" ? "text-destructive" : "text-white/80"}`}
+                          >
+                            {recordingCopy.label}
+                          </span>
                         </>
                       ) : joining ? (
                         "Connecting…"

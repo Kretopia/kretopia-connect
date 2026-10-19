@@ -142,11 +142,18 @@ serve(async (req) => {
       { headers: { Authorization: `Bearer ${DAILY_API_KEY}` } },
     );
     if (!linkRes.ok) {
+      // Daily's answer stays in the server log; the client gets a sentence it can show.
       const body = await linkRes.text();
       console.error("[get-recording-link] Daily error", linkRes.status, body);
+      const gone = linkRes.status === 404;
       return new Response(
-        JSON.stringify({ error: "Daily access-link failed", status: linkRes.status, details: body }),
-        { status: linkRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        JSON.stringify({
+          error: gone
+            ? "This recording is no longer available."
+            : "The recording could not be opened right now. Try again in a moment.",
+          code: gone ? "recording_unavailable" : "recording_link_failed",
+        }),
+        { status: gone ? 404 : 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
     const { download_link, expires } = await linkRes.json();

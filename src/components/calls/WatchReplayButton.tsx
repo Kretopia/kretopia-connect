@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
+import { extractInvokeError } from "@/lib/extractInvokeError";
 import { RecordingReplayDialog } from "./RecordingReplayDialog";
 
 /**
@@ -46,8 +47,9 @@ export const WatchReplayButton = ({
       const link = (data as any)?.download_link;
       if (!link) throw new Error("No recording URL returned");
       setUrl(link);
-    } catch (e: any) {
-      setError(e?.message ?? "The recording may still be processing.");
+    } catch (e) {
+      // The edge function's own sentence ("no longer available", "not allowed", ...) beats the SDK's generic one.
+      setError((await extractInvokeError(e)) || "The recording may still be processing.");
     } finally {
       setLoading(false);
     }
