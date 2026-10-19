@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { safeFetch } from "../_shared/ssrf.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -189,7 +190,7 @@ serve(async (req) => {
         
         // Fetch Open Graph data for thumbnail and title
         try {
-          const spotifyResponse = await fetch(url, {
+          const { response: spotifyResponse } = await safeFetch(url, {
             headers: {
               "User-Agent": "Mozilla/5.0 (compatible; ThriveBot/1.0)",
             },
@@ -268,7 +269,7 @@ serve(async (req) => {
       // Fallback: fetch OG data directly if oEmbed didn't return enough
       if (!data.title || !data.thumbnailUrl) {
         try {
-          const response = await fetch(url, {
+          const { response } = await safeFetch(url, {
             headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
           });
           
@@ -303,7 +304,7 @@ serve(async (req) => {
     // If no specific platform detected, try to fetch OG data
     if (data.platform === "unknown") {
       try {
-        const response = await fetch(url, {
+        const { response } = await safeFetch(url, {
           headers: {
             "User-Agent": "Mozilla/5.0 (compatible; ThriveBot/1.0)",
           },

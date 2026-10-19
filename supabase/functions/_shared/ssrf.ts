@@ -34,6 +34,14 @@ export function isBlockedIp(ip: string): boolean {
   const v6 = ip.toLowerCase().replace(/^\[|\]$/g, "");
   if (v6 === "::" || v6 === "::1") return true;
   if (v6.startsWith("fe80") || v6.startsWith("fc") || v6.startsWith("fd")) return true;
+  // An IPv4 address carried in IPv6: ::ffff:7f00:1, ::7f00:1, 64:ff9b::7f00:1 (the URL parser writes
+  // [::ffff:127.0.0.1] in this hex form).
+  const carried = v6.match(/^(?:::(?:ffff:)?|64:ff9b::)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+  if (carried) {
+    const hi = parseInt(carried[1], 16);
+    const lo = parseInt(carried[2], 16);
+    return isBlockedIp(`${hi >> 8}.${hi & 255}.${lo >> 8}.${lo & 255}`);
+  }
   if (v6.startsWith("::ffff:")) return isBlockedIp(v6.slice(7));
   return false;
 }

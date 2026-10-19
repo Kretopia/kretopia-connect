@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
+import { safeFetch } from "../_shared/ssrf.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -70,11 +71,22 @@ serve(async (req) => {
     console.log("Fetching Open Graph data for:", url);
 
     // Fetch the page HTML
-    const response = await fetch(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; ThriveBot/1.0; +https://lovable.app)",
-      },
-    });
+    let response: Response;
+    try {
+      ({ response } = await safeFetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; ThriveBot/1.0; +https://lovable.app)",
+        },
+      }));
+    } catch (e) {
+      if (e instanceof Error && /^(Blocked|Only http)/.test(e.message)) {
+        return new Response(
+          JSON.stringify({ error: "URL not allowed", success: false }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw e;
+    }
 
     if (!response.ok) {
       throw new Error(`Failed to fetch URL: ${response.status}`);
@@ -167,7 +179,7 @@ serve(async (req) => {
       "hollywoodreporter.com",
       "billboard.com",
       "rollingstone.com",
-    ].some((d) => domain.includes(d));
+    ].some((d) => domain === d || domain.endsWith(`.${d}`));
 
     return new Response(
       JSON.stringify({
