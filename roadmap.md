@@ -2,7 +2,8 @@
 
 ## Studio Calls Slice 3
 - [x] Add explicit Stop/Save reminder with existing state/sync; no call or pipeline changes.
-- [ ] Run focused regressions and preview compilation.
+- [x] 85 focused regressions and preview compilation pass; isolated reminder renders with two working actions, unchanged video bounds and no runtime errors.
+- [ ] Verify real Daily checkpoint and replay read-back — blocked: external legacy session/live call unavailable in this sandbox.
 - [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable in this session.
 
 ## Landing clean loading
