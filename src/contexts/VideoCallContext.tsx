@@ -6,6 +6,7 @@ import { extractInvokeError } from "@/lib/extractInvokeError";
 import { useRecordingReminder } from "@/hooks/useRecordingReminder";
 import type { LiveRecordingPhase } from "@/lib/recordingState";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
+import type { VideoCallSheetProps } from "@/components/project/VideoCallSheet";
 
 /**
  * VideoCallContext — CEO hotfix (24/09/2026): "/meet/:meetingId" (CallPage.tsx)
@@ -46,6 +47,9 @@ interface TokenInfo {
 }
 
 interface VideoCallContextValue {
+  studioCall: VideoCallSheetProps | null;
+  openStudioCall: (props: VideoCallSheetProps) => void;
+  closeStudioCall: () => void;
   meetingId: string | null;
   shareToken: string | undefined;
   phase: VideoCallPhase;
@@ -87,6 +91,7 @@ interface VideoCallContextValue {
 const VideoCallContext = createContext<VideoCallContextValue | undefined>(undefined);
 
 export function VideoCallProvider({ children }: { children: ReactNode }) {
+  const [studioCall, setStudioCall] = useState<VideoCallSheetProps | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
   const joinPrefsRef = useRef<JoinPrefs>({ mic: false, cam: false });
@@ -111,6 +116,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
 
   const openMeeting = useCallback(
     async (nextMeetingId: string, nextShareToken: string | undefined, userName: string | undefined) => {
+      if (studioCall || (phase === "live" && meetingId !== nextMeetingId)) return;
       // Already the active meeting (e.g. navigated back to /meet/:id while
       // live/lobby) -- don't re-fetch a token or reset progress.
       if (meetingId === nextMeetingId && phase !== "idle" && phase !== "ended" && phase !== "error") {
@@ -138,7 +144,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
         setPhase("error");
       }
     },
-    [meetingId, phase],
+    [meetingId, phase, studioCall],
   );
 
   const joinLive = useCallback((prefs: JoinPrefs, userName: string) => {
@@ -311,6 +317,12 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   }, [micOn]);
 
   const value: VideoCallContextValue = {
+    studioCall,
+    openStudioCall: useCallback((props: VideoCallSheetProps) => {
+      if (phase === "live") return;
+      setStudioCall(current => current ?? { ...props, open: true });
+    }, [phase]),
+    closeStudioCall: useCallback(() => setStudioCall(null), []),
     meetingId,
     shareToken,
     phase,
