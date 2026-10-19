@@ -24,7 +24,7 @@ Payments, Stripe, Daily keys, Twilio, Gmail, OAuth, secrets, UI, copy, branding,
 
 ## Risks remaining
 1. ~~P0 project takeover~~ closed 2026-10-19 (M0a applied, PR #227). Remaining on that table: members can still edit other `projects` columns (M1).
-2. **P1** Unauthenticated URL fetchers without the SSRF guard; `call_transcripts` column updates; `database_export_*` buckets; Sentry Replay unmasked; `computeOpportunityMatch` vanity badge.
+2. **P1** `call_transcripts` column updates; `database_export_*` buckets; Sentry Replay unmasked; `computeOpportunityMatch` vanity badge.
 3. Edge code in `main` is not what runs in production until pasted or deployed (PR #225 functions included). CLI deploys reset JWT flags.
 4. The cron jobs exist only in the production database.
 5. Lint and 7 test files are red on `main` (listed in `CI_POLICY.md`); both lockfiles are unusable outside Lovable.
@@ -44,4 +44,4 @@ Environment `production`: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`. Option
 None written here. M0a, drafted earlier in `docs/roadmap/schema-impact-report.md`, was approved and applied to production on 2026-10-19 and is recorded in PR #227. Other changes are described in prose in `SECURITY_BASELINE.md`.
 
 ## Next 7 days
-Day 1: confirm backup plan and PITR (M0a is done). Day 2: SSRF guard on three fetchers. Day 3: inspect and move `database_export_*`; make `feedback-screenshots` private. Day 4: Sentry masking PR and DSN. Day 5: uptime monitors and Grafana alerts for webhooks and stalled recordings. Day 6: restore rehearsal on a scratch project. Day 7: fix the 7 excluded tests and the lockfile; remove `continue-on-error` from lint.
+Day 1: confirm backup plan and PITR (M0a is done). Day 2: deploy the SSRF fix (done in code). Day 3: inspect and move `database_export_*`; make `feedback-screenshots` private. Day 4: Sentry masking PR and DSN. Day 5: uptime monitors and Grafana alerts for webhooks and stalled recordings. Day 6: restore rehearsal on a scratch project. Day 7: fix the 7 excluded tests and the lockfile; remove `continue-on-error` from lint.

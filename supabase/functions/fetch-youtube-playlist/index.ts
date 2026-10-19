@@ -10,7 +10,7 @@ serve(async (req) => {
 
   try {
     const { playlistId } = await req.json();
-    if (!playlistId) {
+    if (typeof playlistId !== "string" || !/^[A-Za-z0-9_-]{10,64}$/.test(playlistId)) {
       return new Response(JSON.stringify({ error: "playlistId required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
