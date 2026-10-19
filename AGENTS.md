@@ -30,7 +30,7 @@
 
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit back rows; keep step navigation, reader close and sidebar dismissal.
-- Call reminders reuse live state/sync and Daily IDs. Call chrome uses safe-area grids and Daily media/sidebar state without iframe remounts, so mobile controls stay reachable.
+- Call reminders reuse live sync/Daily IDs. The shell owns Studio calls; route/minimize changes resize one iframe, never rejoin. Safe-area chrome reads Daily state; refresh starts idle and exit requires confirmation.
 - Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.

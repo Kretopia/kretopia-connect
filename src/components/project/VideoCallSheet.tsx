@@ -123,6 +123,7 @@ export const PersistentStudioCall = ({
   const didRecordRef = useRef<boolean>(false);
   const [phase, setPhase] = useState<Phase>("lobby");
   const [joining, setJoining] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("Connecting");
   // Recording lifecycle (requested, recording, stopping, processing, failed), driven by Daily's events.
   const recordingControls = useRecordingReminder(callRef, roomName ?? roomUrl?.split("/").pop());
   const { dispatch: dispatchRecording, active: recording, copy: recordingCopy, state: recordingState } = recordingControls;
@@ -182,6 +183,7 @@ export const PersistentStudioCall = ({
       }
       callRef.current = frame;
       setMediaCall(frame);
+      frame.on("network-connection", event => setConnectionStatus(event.event === "connected" ? "Live" : "Reconnecting"));
 
       frame.on("left-meeting", () => onOpenChange(false));
       frame.on("recording-started", (ev: any) => {
@@ -254,7 +256,7 @@ export const PersistentStudioCall = ({
           startVideoOff: !joinPrefs.cam,
           startAudioOff: !joinPrefs.mic,
         });
-        if (!cancelled) setJoining(false);
+        if (!cancelled) { setJoining(false); setConnectionStatus("Live"); }
         if (!cancelled && isHost && autoStartRecording && !backstage) {
           dispatchRecording({ type: "start-requested" });
           // startRecording() returns nothing; a refusal arrives as a `recording-error` event.
@@ -408,7 +410,7 @@ export const PersistentStudioCall = ({
 
   return createPortal(
     <>
-      <StudioCallSurface live={phase === "live"} open={open} onOpenChange={onOpenChange} route={originRoute} title={projectName} call={mediaCall} startedAt={startedAtRef.current} recordingPhase={recordingState.phase} status={joining ? "Connecting" : "Live"} onLeave={() => { void endConfirmed(); }}>
+      <StudioCallSurface live={phase === "live"} open={open} onOpenChange={onOpenChange} route={originRoute} title={projectName} call={mediaCall} startedAt={startedAtRef.current} recordingPhase={recordingState.phase} status={connectionStatus} onLeave={() => { void endConfirmed(); }}>
           {/* Phase 1: Pre-call lobby */}
           {phase === "lobby" ? (
             <div className="relative h-full">
