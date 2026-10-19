@@ -1,7 +1,6 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { PersistentCallWindow } from "../PersistentCallWindow";
 import { VideoCallProvider, useVideoCall } from "@/contexts/VideoCallContext";
 
@@ -21,7 +20,7 @@ describe("persistent call window", () => {
     fireEvent.click(screen.getByText("Scout"));
     expect(document.querySelector('[data-call-window="floating"]')).toBeTruthy();
     expect(screen.getByTitle("single call")).toBe(frame);
-    fireEvent.click(screen.getByRole("button", { name: "Minimize call" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Minimize call" })[0]);
     expect(document.querySelector('[data-call-window="minimized"]')).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Expand miniature" }));
     expect(document.querySelector('[data-call-window="floating"]')).toBeTruthy();
@@ -38,7 +37,7 @@ describe("persistent call window", () => {
     fireEvent.click(screen.getByRole("button", { name: "Stay in call" }));
     expect(leave).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Leave call" }));
-    fireEvent.click(screen.getByRole("button", { name: "Leave call", exact: true }).closest('[role="alertdialog"]') ? screen.getAllByRole("button", { name: "Leave call" }).at(-1) as HTMLElement : screen.getAllByRole("button", { name: "Leave call" }).at(-1) as HTMLElement);
+    fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Leave call" }));
     expect(leave).toHaveBeenCalledOnce();
   });
   it("owns one Studio call across routes, clears on end and starts idle after refresh", async () => {
