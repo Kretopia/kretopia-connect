@@ -1,6 +1,8 @@
 # Schema impact report: PROPOSED, NOT APPLIED
 
-Status: nothing in this document has been run or added as a migration file. No migration will be added without explicit approval. Based on reading `origin/main` migrations; the live legacy backend was not inspected (Supabase connector not authorised), so live policies, grants and row counts are unknown. Migrations `20260824100000` and `20260825100000` are headed "PREPARED, NOT APPLIED" and their live state is unknown.
+Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
+
+Status (original, October 3): nothing in this document has been run or added as a migration file. No migration will be added without explicit approval. Based on reading `origin/main` migrations; the live legacy backend was not inspected (Supabase connector not authorised), so live policies, grants and row counts are unknown. Migrations `20260824100000` and `20260825100000` are headed "PREPARED, NOT APPLIED" and their live state is unknown.
 
 Read-only preflight (run once the connector is authorised, before any apply): dump `pg_policies` and `information_schema.column_privileges` for the tables below; count `project_collaborators` by `(status, role)`; count `project_deliverables` by `status`; count `invoices`/`milestones` with `status = 'paid'` grouped by `payment_method` and `payment_intent_id IS NULL`.
 
@@ -21,6 +23,8 @@ END $$;
 CREATE TRIGGER trg_guard_project_created_by BEFORE UPDATE OF created_by ON public.projects
   FOR EACH ROW EXECUTE FUNCTION public.guard_project_created_by();
 ```
+**Applied 2026-10-19** to the production database, exactly as written above, file `supabase/migrations/20261019120000_guard_project_created_by.sql`. Verified: catalog (trigger enabled, BEFORE UPDATE OF `created_by`, row level); a `member`-role collaborator running `UPDATE projects SET created_by = <self>` got `projects.created_by is immutable` and the owner was unchanged; an update that leaves `created_by` unchanged still succeeds. Preflight: no DB function or client code changes `projects.created_by`; 75 projects, none without an owner. The service-role path (`auth.uid()` NULL) was not exercised with a real ownership change, on purpose.
+
 Risk: a legitimate ownership-transfer path would break. None found: the only client `created_by` update is `ClaimEvent.tsx:80`, on `creative_jams`, not `projects`; the service role is unaffected. Rollback: `DROP TRIGGER trg_guard_project_created_by`. Acceptance: member B runs `UPDATE projects SET created_by = B` as an authenticated user → error; owner A's other updates still succeed; service-role update still succeeds.
 
 **M0b. Pin role on self-accept.** Current: `WITH CHECK (user_id = auth.uid() AND status = 'accepted')` (20260413014116:2-7); the invitee can change `role` (and any other column) while accepting.
