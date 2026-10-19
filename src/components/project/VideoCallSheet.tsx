@@ -512,6 +512,7 @@ export const VideoCallSheet = ({
               <div
                 className="k-call-footer"
               >
+                <CallMediaControls call={callRef.current} />
                 <div className="k-call-controls">
                   <Button
                     type="button"

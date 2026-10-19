@@ -105,8 +105,8 @@ export default function CallPage() {
   if (phase === "lobby") {
     const ctaLabel = isHost ? "Start call" : "Knock to join";
     return (
-      <div className="min-h-[100dvh] bg-[#0b0b0f] text-white">
-        <div className="relative min-h-[100dvh]">
+      <div className="k-call-surface h-[100dvh]">
+        <div className="relative h-[100dvh]">
           <CallPreflightGate
             shareUrl={typeof window !== "undefined" ? window.location.href : null}
             onCancel={() => { reset(); navigate("/"); }}
@@ -125,7 +125,7 @@ export default function CallPage() {
                 <Button
                   variant="ghost"
                   onClick={copyLink}
-                  className="w-full text-white/80 hover:text-white hover:bg-white/10"
+                  className="w-full min-h-11 text-foreground hover:bg-accent"
                 >
                   <Copy className="h-4 w-4" />
                   Copy invite link
