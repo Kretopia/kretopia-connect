@@ -1,5 +1,11 @@
 # Roadmap
 
+## Studio Calls Slice 4
+- [x] Adjust mobile live/floating/guest calls and lobbies at 320, 360, 375 and 414px: safe-area grids, 44px targets, dominant video and shared branding.
+- [x] 45 focused tests and automatic preview compilation pass; 48 isolated browser cases in light/dark show no overflow, overlapping or obstructed controls. No deployment or recording pipeline changes.
+- [ ] Verify real Daily video/sidebar rendering and physical-device safe areas — blocked: external legacy session/live call unavailable; browser checks simulate Daily only.
+- [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable in this session.
+
 ## Studio Calls Slice 3
 - [x] Add explicit Stop/Save reminder with existing state/sync; no call or pipeline changes.
 - [x] 85 focused regressions and preview compilation pass; isolated reminder renders with two working actions, unchanged video bounds and no runtime errors.

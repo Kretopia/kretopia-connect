@@ -1,3 +1,4 @@
+import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Mic, MicOff, PhoneOff, Maximize2, ScreenShare, Circle, Copy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -60,20 +61,20 @@ export function GlobalVideoCallHost() {
   return (
     <div
       className={cn(
-        "z-[60]",
+        "k-call-surface z-[60]",
         !live
           ? "hidden"
           : docked
-            ? "fixed inset-0 flex flex-col bg-[#0b0b0f] text-white"
-            : "fixed bottom-20 right-4 sm:bottom-4 flex flex-col rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 bg-[#0b0b0f]",
+            ? "fixed inset-0 flex flex-col bg-background text-foreground"
+            : "k-call-floating fixed flex flex-col rounded-lg overflow-hidden shadow-2xl ring-1 ring-border bg-background",
       )}
-      style={docked ? undefined : { width: 224, height: 168 }}
     >
       {/* Docked-only header */}
-      <div className={cn("flex items-center justify-between px-4 py-3 border-b border-white/5", !docked && "hidden")}>
-        <div className="min-w-0">
+      <div className={cn("k-call-header flex shrink-0 items-center justify-between border-b", !docked && "hidden")}>
+        <CallBrand />
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold truncate">{title}</p>
-          <p className="text-[11px] text-white/50 flex items-center gap-1.5">
+          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
             {recordingCopy ? (
               <>
                 <Circle className="h-2 w-2 fill-destructive text-destructive" />
@@ -84,71 +85,72 @@ export function GlobalVideoCallHost() {
             )}
           </p>
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={leave}
-          className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10"
-          aria-label="Close"
+          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary"
+          aria-label="Leave call"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
 
       {/* Middle slot -- the persistent container lives here, in the same
           tree position whether docked or floating. */}
-      <div className="relative flex-1 min-h-0 bg-black">
+      <div className="k-call-video relative flex-1 min-h-0">
         <div ref={containerRef} className="absolute inset-0" />
         {docked && <AdmitQueue call={callRef.current} isHost={isHost} />}
         {docked && <RecordingReminder visible={recordingReminder} segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} />}
-        {!docked && recordingReminder && <div className="fixed bottom-64 right-4 w-80 max-w-[calc(100vw-2rem)]"><RecordingReminder visible segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} /></div>}
+        {!docked && recordingReminder && <div className="fixed bottom-[calc(306px+env(safe-area-inset-bottom,0px))] right-3 w-80 max-w-[calc(100vw-2rem)]"><RecordingReminder visible segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} /></div>}
 
         {/* Floating-only mini controls, overlaid on the video itself. */}
         <div className={cn("absolute inset-0 flex flex-col justify-between p-1.5 pointer-events-none", docked && "hidden")}>
           <div className="flex items-center justify-end pointer-events-auto">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => navigate(`/meet/${meetingId}`)}
               aria-label="Expand call"
-              className="h-6 w-6 rounded-md flex items-center justify-center bg-black/50 text-white hover:bg-black/70"
+              className="k-call-icon rounded-lg flex items-center justify-center bg-muted/50 text-foreground hover:bg-background/90"
             >
               <Maximize2 className="h-3 w-3" />
-            </button>
+            </Button>
           </div>
           <div className="flex items-center justify-center gap-1.5 pointer-events-auto">
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => void toggleMic()}
               aria-label={micOn ? "Mute" : "Unmute"}
-              className="h-7 w-7 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20"
+              className="k-call-icon rounded-lg flex items-center justify-center bg-secondary text-foreground hover:bg-accent"
             >
               {micOn ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost"
               type="button"
               onClick={() => void leave()}
               aria-label="Leave call"
-              className="h-7 w-7 rounded-full flex items-center justify-center bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="k-call-icon rounded-lg flex items-center justify-center bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               <PhoneOff className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Docked-only bottom control bar */}
       <div
-        className={cn("px-3 pt-3 border-t border-white/5", !docked && "hidden")}
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+        className={cn("k-call-footer", !docked && "hidden")}
       >
-        <div className="flex items-center justify-center gap-2 flex-wrap">
+        <CallMediaControls call={callRef.current} />
+        <div className="k-call-controls">
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            aria-label={sharing ? "Stop screen sharing" : "Share screen"}
             onClick={handleToggleShare}
             className={cn(
-              "rounded-full gap-2 h-10 px-4 border border-white/10",
-              sharing ? "bg-primary text-primary-foreground border-transparent" : "bg-white/5 text-white hover:bg-white/10",
+              "rounded-full gap-2 h-10 px-4 border border-border",
+              sharing ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary text-foreground hover:bg-secondary",
             )}
           >
             <ScreenShare className="h-4 w-4" />
@@ -158,24 +160,12 @@ export function GlobalVideoCallHost() {
             type="button"
             variant="ghost"
             size="sm"
-            onClick={() => void toggleMic()}
-            className={cn(
-              "rounded-full gap-2 h-10 px-4 border border-white/10",
-              !micOn ? "bg-white/5 text-white hover:bg-white/10" : "bg-primary text-primary-foreground border-transparent",
-            )}
-          >
-            {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-            {micOn ? "Mute" : "Unmute"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
+            aria-label={recording ? "Stop recording" : "Start recording"}
             onClick={handleToggleRecord}
             disabled={["requested", "stopping", "processing"].includes(recordingPhase)}
             className={cn(
-              "rounded-full gap-2 h-10 px-4 border border-white/10",
-              recording ? "bg-destructive text-destructive-foreground border-transparent" : "bg-white/5 text-white hover:bg-white/10",
+              "rounded-full gap-2 h-10 px-4 border border-border",
+              recording ? "bg-destructive text-destructive-foreground border-transparent" : "bg-secondary text-foreground hover:bg-secondary",
             )}
           >
             <Circle className={cn("h-3 w-3", recording && "fill-current")} />
@@ -186,7 +176,7 @@ export function GlobalVideoCallHost() {
             variant="ghost"
             size="sm"
             onClick={copyLink}
-            className="rounded-full gap-2 h-10 px-4 border border-white/10 bg-white/5 text-white hover:bg-white/10"
+            className="rounded-full gap-2 h-10 px-4 border border-border bg-secondary text-foreground hover:bg-secondary"
           >
             <Copy className="h-4 w-4" />
             Invite

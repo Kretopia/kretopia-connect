@@ -92,53 +92,53 @@ export const AdmitQueue = ({ call, isHost }: Props) => {
     <>
       {/* Floating pill — always visible to host while anyone is waiting */}
       {queue.length > 0 && !open && (
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setOpen(true)}
           className="absolute top-3 right-3 z-30 flex items-center gap-2 px-3 py-2 rounded-full bg-primary text-primary-foreground shadow-glow text-sm font-semibold"
         >
           <DoorOpen className="h-4 w-4" />
           {queue.length} waiting
-        </button>
+        </Button>
       )}
 
       {/* Slide-up sheet */}
       {open && (
         <div className="absolute inset-0 z-40 pointer-events-none">
           <div
-            className="absolute inset-0 bg-black/60 pointer-events-auto"
+            className="absolute inset-0 bg-background/80 pointer-events-auto"
             onClick={() => setOpen(false)}
           />
           <div
-            className="absolute inset-x-0 bottom-0 pointer-events-auto bg-[#05070D] text-white rounded-t-2xl ring-1 ring-white/10 shadow-2xl"
+            className="absolute inset-x-0 bottom-0 pointer-events-auto bg-background text-foreground rounded-t-lg ring-1 ring-border shadow-2xl"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
           >
-            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-white/5">
+            <div className="flex items-center justify-between px-4 pt-3 pb-2 border-b border-border">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
                 <p className="text-sm font-semibold">
                   Waiting room {queue.length > 0 && `· ${queue.length}`}
                 </p>
               </div>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setOpen(false)}
-                className="h-8 w-8 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10"
+                className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary"
                 aria-label="Close"
               >
                 <X className="h-4 w-4" />
-              </button>
+              </Button>
             </div>
 
             {queue.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-white/60">
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground">
                 Nobody's waiting right now.
               </div>
             ) : (
               <>
-                <ul className="max-h-[50vh] overflow-y-auto divide-y divide-white/5">
+                <ul className="max-h-[50vh] overflow-y-auto divide-y divide-border">
                   {queue.map((k) => (
-                    <li key={k.id} className="flex items-center gap-3 px-4 py-3">
+                    <li key={k.id} className="flex flex-wrap items-center gap-2 px-3 py-3">
                       <Avatar className="h-9 w-9">
                         <AvatarFallback className="bg-primary/20 text-primary text-xs font-semibold">
                           {k.name.slice(0, 2).toUpperCase()}
@@ -149,7 +149,7 @@ export const AdmitQueue = ({ call, isHost }: Props) => {
                         size="sm"
                         variant="ghost"
                         onClick={() => deny(k.id)}
-                        className="h-9 px-3 rounded-full bg-white/5 hover:bg-white/10 text-white/80"
+                        className="h-11 px-3 rounded-full bg-secondary hover:bg-secondary text-foreground"
                       >
                         <X className="h-4 w-4" />
                         Deny
@@ -157,7 +157,7 @@ export const AdmitQueue = ({ call, isHost }: Props) => {
                       <Button
                         size="sm"
                         onClick={() => admit(k.id)}
-                        className="h-9 px-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                        className="h-11 px-3 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
                       >
                         <Check className="h-4 w-4" />
                         Admit

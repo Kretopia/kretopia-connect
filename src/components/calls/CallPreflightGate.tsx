@@ -43,9 +43,9 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
 
   if (!result) {
     return (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#05070D] text-white gap-3">
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background text-foreground gap-3">
         <KretopiaSpinner className="h-6 w-6 text-primary" />
-        <p className="text-sm text-white/70">Checking your device…</p>
+        <p className="text-sm text-muted-foreground">Checking your device…</p>
       </div>
     );
   }
@@ -69,26 +69,26 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#05070D] text-white">
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 font-semibold">
+    <div className="k-call-surface absolute inset-0 flex flex-col">
+      <header className="k-call-header flex items-center justify-between border-b shrink-0">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
           Can't start the call here
         </p>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onCancel}
           aria-label="Close"
-          className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/80 transition-colors"
+          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </header>
 
       <div
         className="flex-1 min-h-0 overflow-y-auto px-5 py-6 flex flex-col items-center justify-center text-center gap-4"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 24px)" }}
       >
-        <div className="h-14 w-14 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center">
+        <div className="h-14 w-14 rounded-full bg-warning/15 text-warning flex items-center justify-center">
           <ShieldAlert className="h-7 w-7" />
         </div>
         <h2 className="text-lg font-semibold leading-snug max-w-sm">
@@ -96,7 +96,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
         </h2>
 
         {shareUrl && (
-          <p className="text-xs text-white/50 max-w-sm">
+          <p className="text-xs text-muted-foreground max-w-sm">
             Copy the link below and open it in Safari, Chrome, Firefox, or Edge to
             join.
           </p>
@@ -104,7 +104,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
 
         {shareUrl && (
           <div className="w-full max-w-sm space-y-2">
-            <div className="px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 font-mono text-[11px] text-white/80 break-all text-left">
+            <div className="px-3 py-2.5 rounded-lg bg-secondary border border-border font-mono text-[11px] text-foreground break-all text-left">
               {shareUrl}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -112,7 +112,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
                 type="button"
                 variant="outline"
                 onClick={copy}
-                className="h-11 gap-2 bg-white/5 border-white/10 text-white hover:bg-white/10 hover:text-white"
+                className="h-11 gap-2 bg-secondary border-border text-foreground hover:bg-secondary hover:text-foreground"
               >
                 {copied ? (
                   <>
@@ -149,7 +149,7 @@ export const CallPreflightGate = ({ shareUrl, onCancel, children }: Props) => {
         )}
 
         {result.issues.length > 1 && (
-          <details className="text-[11px] text-white/40 mt-2">
+          <details className="text-[11px] text-muted-foreground mt-2">
             <summary className="cursor-pointer">Technical details</summary>
             <ul className="mt-2 list-disc list-inside text-left">
               {result.issues.map((i) => (
