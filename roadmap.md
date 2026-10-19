@@ -1,5 +1,10 @@
 # Roadmap
 
+## Studio Calls Slice 5
+- [ ] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant preview, mute, return, minimize and confirmed leave.
+- [ ] Check single-frame lifecycle, navigation, minimize/expand and end cleanup with focused tests and mobile/desktop checks.
+- [ ] Open one reviewable PR — pending tool availability; no deployment.
+
 ## Studio Calls Slice 4
 - [x] Adjust mobile live/floating/guest calls and lobbies at 320, 360, 375 and 414px: safe-area grids, 44px targets, dominant video and shared branding.
 - [x] 45 focused tests and automatic preview compilation pass; 48 isolated browser cases in light/dark show no overflow, overlapping or obstructed controls. No deployment or recording pipeline changes.
