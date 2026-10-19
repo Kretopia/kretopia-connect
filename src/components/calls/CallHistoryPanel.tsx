@@ -103,7 +103,7 @@ export const CallHistoryPanel = () => {
                       >
                         <Sparkles className="h-3.5 w-3.5" />
                         <span className="hidden sm:inline">
-                          {c.transcriptStatus === "ready" ? "Recap" : "Listening…"}
+                          {c.transcriptStatus === "ready" ? "Recap" : c.transcriptStatus === "failed" ? "Details" : "Listening…"}
                         </span>
                       </Button>
                     )}

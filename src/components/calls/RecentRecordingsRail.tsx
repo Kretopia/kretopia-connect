@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { describeStoredRecording } from "@/lib/recordingState";
 
 type Row = {
   id: string;
@@ -19,6 +20,8 @@ type Row = {
   created_at: string;
   recording_id: string | null;
   summary: string | null;
+  /** Only read to tell a skipped transcript from a failed one; never displayed. */
+  error: string | null;
 };
 
 const KIND_LABEL: Record<string, string> = {
@@ -67,7 +70,7 @@ export const RecentRecordingsRail = ({ onLoad }: RecentRecordingsRailProps = {})
     (async () => {
       const { data } = await supabase
         .from("call_transcripts")
-        .select("id, call_kind, status, duration_seconds, created_at, recording_id, summary")
+        .select("id, call_kind, status, duration_seconds, created_at, recording_id, summary, error")
         .order("created_at", { ascending: false })
         .limit(8);
       if (!cancelled) {
@@ -107,42 +110,52 @@ export const RecentRecordingsRail = ({ onLoad }: RecentRecordingsRailProps = {})
               </div>
             </div>
 
-            <div className="mt-2.5 flex-1 min-h-[2.5rem]">
-              {r.status === "ready" && r.summary ? (
-                <p className="text-xs text-muted-foreground line-clamp-2">{r.summary}</p>
-              ) : r.status === "failed" ? (
-                <p className="text-xs text-destructive/80">Transcription failed</p>
-              ) : (
-                <p className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                  <KretopiaSpinner className="h-3 w-3" /> Transcribing…
-                </p>
-              )}
-            </div>
+            {(() => {
+              const state = describeStoredRecording(r);
+              return (
+                <>
+                  <div className="mt-2.5 flex-1 min-h-[2.5rem]">
+                    {state.canOpenRecap && r.summary ? (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{r.summary}</p>
+                    ) : state.inProgress ? (
+                      <p className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
+                        <KretopiaSpinner className="h-3 w-3" /> {state.transcriptLabel}
+                      </p>
+                    ) : (
+                      <p className={cn("text-xs", state.tone === "danger" ? "text-destructive/80" : "text-muted-foreground")}>
+                        {state.transcriptLabel}
+                        {state.transcriptDetail && <span className="block text-[10px] text-muted-foreground/70">{state.transcriptDetail}</span>}
+                      </p>
+                    )}
+                  </div>
 
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setRecapId(r.id)}
-                disabled={r.status !== "ready"}
-                className={cn(
-                  "flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
-                  "bg-white/5 hover:bg-white/10 text-foreground",
-                )}
-              >
-                <Sparkles className="h-3 w-3 text-[hsl(var(--color-accent))]" />
-                Notes
-              </button>
-              {r.recording_id && (
-                <WatchReplayButton
-                  transcriptId={r.id}
-                  variant="ghost"
-                  size="sm"
-                  label="Watch"
-                  title={KIND_LABEL[r.call_kind] || "Call"}
-                  subtitle={`${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}${fmtDur(r.duration_seconds) ? ` · ${fmtDur(r.duration_seconds)}` : ""}`}
-                />
-              )}
-            </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setRecapId(r.id)}
+                      disabled={!state.canOpenRecap}
+                      className={cn(
+                        "flex-1 inline-flex items-center justify-center gap-1.5 h-8 rounded-lg text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
+                        "bg-white/5 hover:bg-white/10 text-foreground",
+                      )}
+                    >
+                      <Sparkles className="h-3 w-3 text-[hsl(var(--color-accent))]" />
+                      Notes
+                    </button>
+                    {state.canReplay && (
+                      <WatchReplayButton
+                        transcriptId={r.id}
+                        variant="ghost"
+                        size="sm"
+                        label="Watch"
+                        title={KIND_LABEL[r.call_kind] || "Call"}
+                        subtitle={`${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}${fmtDur(r.duration_seconds) ? ` · ${fmtDur(r.duration_seconds)}` : ""}`}
+                      />
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
           </CarouselItem>
         ))}

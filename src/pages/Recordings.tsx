@@ -4,13 +4,15 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { loadRecordings, type RecordingRow } from "@/lib/loadRecordings";
+import { describeStoredRecording, type RecordingTone } from "@/lib/recordingState";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WatchReplayButton } from "@/components/calls/WatchReplayButton";
 import { CallRecapSheet } from "@/components/calls/CallRecapSheet";
 import { formatDistanceToNow } from "date-fns";
-import { Video, Sparkles, Clock, FileVideo, RefreshCw } from "lucide-react";
+import { Video, Sparkles, Clock, FileVideo, RefreshCw, AlertCircle } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { toast as sonnerToast } from "sonner";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -19,20 +21,17 @@ import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial
 import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
 
 const RECORDINGS_TUTORIAL: TutorialStep[] = [
-  { icon: Video, title: "Every call gets recorded", body: "Tap Record during any Kretopia call. The replay lands here about a minute after it ends." },
+  { icon: Video, title: "Every call gets recorded", body: "Tap Record during any Kretopia call. The replay lands here a few minutes after it ends: longer calls take a little longer." },
   { icon: Sparkles, title: "Kreto transcribes it for you", body: "Each recording is transcribed and summarized automatically — no manual note-taking." },
   { icon: FileVideo, title: "Pull the recap", body: "Open Recap on any call to get Kreto's extracted action items, not just a wall of transcript." },
 ];
 
-type Row = {
-  id: string;
-  call_kind: string;
-  status: "pending" | "transcribing" | "ready" | "failed";
-  duration_seconds: number | null;
-  created_at: string;
-  recording_id: string | null;
-  project_id: string | null;
-  summary: string | null;
+type Row = RecordingRow;
+
+/** What `sync-daily-recordings` answers: one entry per Daily recording it looked at. */
+type SyncAnswer = {
+  scanned?: number;
+  results?: Array<{ recording_id?: string; transcript_id?: string; skipped?: string; error?: string }>;
 };
 
 const fmtDur = (s: number | null) => {
@@ -59,15 +58,16 @@ export default function Recordings() {
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [recapId, setRecapId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Which call kinds actually appear in the loaded rows, in KIND_LABEL's
   // declared order — drives the filter tabs below. A page with recordings
   // from 8 possible kinds otherwise has no way to narrow the list.
   const kindsPresent = Object.keys(KIND_LABEL).filter((k) => rows.some((r) => r.call_kind === k));
 
-  const load = async () => {
+  const load = async (opts: { quiet?: boolean } = {}) => {
     if (!user?.id) return;
-    setLoading(true);
+    if (!opts.quiet) setLoading(true);
     // No client-side kind/role filtering here on purpose -- RLS
     // (public.user_can_view_call_transcript) is the sole authorization
     // boundary and decides what this query actually returns. For
@@ -77,20 +77,15 @@ export default function Recordings() {
     // 20260915100000_document_call_transcript_host_only_visibility.sql for
     // the full rationale). project/direct/circle rows are additionally
     // visible to their participants.
-    const { data, error } = await supabase
-      .from("call_transcripts")
-      .select("id, call_kind, status, duration_seconds, created_at, recording_id, project_id, summary")
-      .not("recording_id", "is", null)
-      // Exclude recordings purge-expired-recordings has already deleted from
-      // Daily (see _shared/recordingRetention.ts) -- their recording_url is
-      // gone, so "Watch replay" would just fail; the transcript/summary
-      // stays queryable elsewhere, this page is specifically about playable
-      // recordings.
-      .is("recording_deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    if (error) console.error("[Recordings]", error);
-    setRows((data as Row[]) ?? []);
+    const result = await loadRecordings();
+    if (result.error) {
+      console.error("[Recordings]", result.error);
+      // A failed refresh keeps the list already on screen instead of replacing it with an error.
+      if (!opts.quiet) setLoadError(result.error);
+    } else {
+      setLoadError(null);
+      setRows(result.rows);
+    }
     setLoading(false);
   };
 
@@ -102,6 +97,21 @@ export default function Recordings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // While a recap is still being produced, look again every 15 s (for at most ~10 min) so it appears
+  // without a manual refresh. A recap that has been pending for longer is shown as delayed, not polled.
+  const waitingOnRecap = rows.some((r) => describeStoredRecording(r).inProgress);
+  useEffect(() => {
+    if (!waitingOnRecap) return;
+    let ticks = 0;
+    const timer = setInterval(() => {
+      ticks += 1;
+      if (ticks > 40) return clearInterval(timer);
+      void load({ quiet: true });
+    }, 15_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waitingOnRecap, user?.id]);
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -109,12 +119,26 @@ export default function Recordings() {
         body: { limit: 50 },
       });
       if (error) throw error;
-      const results = (data as any)?.results ?? [];
-      const added = results.filter((r: any) => r.transcript_id && !r.skipped).length;
-      sonnerToast.success(
-        added > 0 ? `Pulled ${added} new recording${added === 1 ? "" : "s"}` : "All caught up",
-        { description: `Scanned ${(data as any)?.scanned ?? 0} recent recordings from Daily.` },
-      );
+      const answer = data as SyncAnswer | null;
+      const results = answer?.results ?? [];
+      const added = results.filter((r) => r.transcript_id && !r.skipped).length;
+      const failed = results.filter((r) => r.error).length;
+      const processing = results.filter((r) => typeof r.skipped === "string" && r.skipped.startsWith("status=")).length;
+      if (failed > 0) {
+        sonnerToast.error(`${failed} recording${failed === 1 ? "" : "s"} could not be saved`, {
+          description: "Try again in a moment. The ones that were saved are on this page.",
+        });
+      } else {
+        sonnerToast.success(
+          added > 0 ? `Pulled ${added} new recording${added === 1 ? "" : "s"}` : processing > 0 ? "Still processing" : "All caught up",
+          {
+            description:
+              processing > 0
+                ? `${processing} recording${processing === 1 ? " is" : "s are"} still being finalised by Daily. Longer calls take longer.`
+                : `Scanned ${answer?.scanned ?? 0} recent recordings from Daily.`,
+          },
+        );
+      }
       await load();
     } catch (e: any) {
       sonnerToast.error("Couldn't sync", { description: e?.message || "Try again in a moment." });
@@ -155,12 +179,23 @@ export default function Recordings() {
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        Recordings finalize ~1 min after a call ends. Tap Sync now to pull the latest.
+        Recordings are finalised a few minutes after a call ends (longer calls take longer). Tap Sync now to pull the latest.
       </p>
 
       <div>
         {loading ? (
           <KretopiaLoader size="sm" label="Loading…" className="py-12" />
+        ) : loadError && rows.length === 0 ? (
+          <Card role="alert" className="p-8 text-center rounded-2xl shadow-none border-dashed border-destructive/40">
+            <AlertCircle className="h-10 w-10 mx-auto text-destructive/70 mb-3" aria-hidden />
+            <p className="font-semibold text-sm">Couldn't load your recordings</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+              This is a loading problem, not an empty list. Your recordings are not affected.
+            </p>
+            <Button type="button" size="sm" variant="outline" className="mt-4" onClick={() => void load()}>
+              Try again
+            </Button>
+          </Card>
         ) : rows.length === 0 ? (
           <Card className="p-8 text-center rounded-2xl shadow-none border-dashed border-border/60">
             <FileVideo className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
@@ -199,6 +234,13 @@ export default function Recordings() {
   );
 }
 
+const TONE_CLASS: Record<RecordingTone, string> = {
+  progress: "bg-secondary text-secondary-foreground",
+  success: "bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))]",
+  warning: "bg-amber-500/15 text-amber-600",
+  danger: "bg-destructive/15 text-destructive",
+};
+
 function RecordingsList({ rows, onRecap }: { rows: Row[]; onRecap: (id: string) => void }) {
   if (rows.length === 0) {
     return <p className="text-center text-sm text-muted-foreground py-8">No recordings in this category.</p>;
@@ -208,7 +250,9 @@ function RecordingsList({ rows, onRecap }: { rows: Row[]; onRecap: (id: string) 
       {rows.map((r) => {
         const dur = fmtDur(r.duration_seconds);
         const kindLabel = KIND_LABEL[r.call_kind] ?? r.call_kind;
-        const processing = r.status === "pending" || r.status === "transcribing";
+        // The replay and the recap are separate: the row exists because Daily reported the recording
+        // finished, so a transcript that is queued, skipped or failed never hides the replay.
+        const state = describeStoredRecording(r);
         return (
           <Card key={r.id} className="p-4 flex items-start gap-3 rounded-2xl shadow-none border-border/60">
             <span className="h-10 w-10 rounded-xl bg-[hsl(var(--energy)/0.12)] flex items-center justify-center shrink-0">
@@ -217,44 +261,43 @@ function RecordingsList({ rows, onRecap }: { rows: Row[]; onRecap: (id: string) 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-0.5">
                 <p className="text-sm font-semibold">{kindLabel}</p>
-                {processing ? (
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
-                    Kreto listening…
-                  </Badge>
-                ) : r.status === "ready" ? (
-                  <Badge className="h-4 px-1.5 text-[10px] bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))] border-0">
-                    Ready
-                  </Badge>
-                ) : r.status === "failed" ? (
-                  <Badge variant="destructive" className="h-4 px-1.5 text-[10px]">
-                    Failed
-                  </Badge>
-                ) : null}
+                <Badge className={`h-4 px-1.5 text-[10px] border-0 ${TONE_CLASS[state.tone]}`}>
+                  {state.transcriptLabel}
+                </Badge>
               </div>
               <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <Clock className="h-3 w-3" />
                 {formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}
                 {dur && <span>· {dur}</span>}
               </p>
-              {r.summary && (
+              {r.summary && state.canOpenRecap && (
                 <p className="text-xs text-muted-foreground mt-1.5 line-clamp-2">{r.summary}</p>
               )}
+              {state.transcriptDetail && (
+                <p className="text-xs text-muted-foreground mt-1.5">{state.transcriptDetail}</p>
+              )}
               <div className="flex items-center gap-2 mt-2">
-                <WatchReplayButton
-                  transcriptId={r.id}
-                  title={kindLabel}
-                  subtitle={`${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}${dur ? ` · ${dur}` : ""}`}
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1 text-xs"
-                  onClick={() => onRecap(r.id)}
-                >
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Recap
-                </Button>
+                {state.canReplay ? (
+                  <WatchReplayButton
+                    transcriptId={r.id}
+                    title={kindLabel}
+                    subtitle={`${formatDistanceToNow(new Date(r.created_at), { addSuffix: true })}${dur ? ` · ${dur}` : ""}`}
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground">{state.recordingLabel}</span>
+                )}
+                {state.canOpenRecap && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 gap-1 text-xs"
+                    onClick={() => onRecap(r.id)}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Recap
+                  </Button>
+                )}
               </div>
             </div>
           </Card>
