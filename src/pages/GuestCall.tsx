@@ -1,3 +1,4 @@
+import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { type DailyCall } from "@daily-co/daily-js";
@@ -144,7 +145,7 @@ export default function GuestCall() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-[#0b0b0f] flex flex-col text-white">
+    <div className="k-call-surface fixed inset-0 flex flex-col">
       <SEO title="Join the call · Kretopia" description="Join a live Kretopia room." />
 
       {/* Name entry lobby */}
@@ -156,7 +157,7 @@ export default function GuestCall() {
             </div>
             <div>
               <h1 className="text-xl font-semibold">You're invited to a live call</h1>
-              <p className="text-sm text-white/60 mt-1">Enter your name to join.</p>
+              <p className="text-sm text-muted-foreground mt-1">Enter your name to join.</p>
             </div>
             <Input
               placeholder="Your name"
@@ -164,7 +165,7 @@ export default function GuestCall() {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && join()}
               autoFocus
-              className="bg-white/5 border-white/10 text-white placeholder:text-white/40"
+              className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
             />
             <Button
               className="w-full h-11 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -173,7 +174,7 @@ export default function GuestCall() {
             >
               Join call
             </Button>
-            <p className="text-[11px] text-white/40">
+            <p className="text-[11px] text-muted-foreground">
               Powered by Kretopia. Camera & mic permission required.
             </p>
           </div>
@@ -184,7 +185,7 @@ export default function GuestCall() {
         <div className="flex-1 flex items-center justify-center p-6 text-center">
           <div>
             <p className="font-semibold mb-1">Couldn't join</p>
-            <p className="text-sm text-white/60">{errorMsg}</p>
+            <p className="text-sm text-muted-foreground">{errorMsg}</p>
           </div>
         </div>
       )}
@@ -193,7 +194,7 @@ export default function GuestCall() {
         <div className="flex-1 flex items-center justify-center p-6 text-center">
           <div>
             <p className="font-semibold mb-1">You left the call</p>
-            <p className="text-sm text-white/60">It's safe to close this tab.</p>
+            <p className="text-sm text-muted-foreground">It's safe to close this tab.</p>
           </div>
         </div>
       )}
@@ -202,14 +203,12 @@ export default function GuestCall() {
       {phase === "live" && (
         <>
           {/* Header */}
-          <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0 bg-[#0b0b0f]">
+          <header className="k-call-header flex items-center justify-between border-b shrink-0">
             <div className="flex items-center gap-2 min-w-0">
-              <span className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                <span className="text-base">📹</span>
-              </span>
+              <CallBrand />
               <div className="min-w-0">
                 <p className="text-sm font-semibold truncate leading-tight">Kretopia call</p>
-                <p className="text-[11px] text-white/50 leading-tight flex items-center gap-1.5">
+                <p className="text-[11px] text-muted-foreground leading-tight flex items-center gap-1.5">
                   {recording ? (
                     <>
                       <Circle className="h-2 w-2 fill-destructive text-destructive" />
@@ -223,72 +222,43 @@ export default function GuestCall() {
                 </p>
               </div>
             </div>
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={leave}
-              aria-label="Close call"
-              className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/80"
+              aria-label="Leave call"
+              className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground"
             >
               <X className="h-4 w-4" />
-            </button>
+            </Button>
           </header>
 
           {/* Video area */}
-          <div className="relative flex-1 min-h-0 bg-black">
+          <div className="k-call-video relative flex-1 min-h-0">
             <div ref={containerRef} className="absolute inset-0" />
             {joining && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70 gap-3">
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/90 gap-3">
                 <KretopiaSpinner className="h-7 w-7 text-primary" />
-                <p className="text-sm text-white/80">Connecting to the room…</p>
+                <p className="text-sm text-foreground">Connecting to the room…</p>
               </div>
             )}
           </div>
 
           {/* Controls */}
           <div
-            className="px-3 pt-3 border-t border-white/5 bg-[#0b0b0f] shrink-0"
-            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+            className="k-call-footer"
           >
-            <div className="flex items-center justify-center gap-2 flex-wrap">
+            <CallMediaControls call={callRef.current} />
+            <div className="k-call-controls">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={toggleMic}
-                className={`rounded-full gap-2 h-10 px-4 border border-white/10 ${
-                  mic
-                    ? "bg-white/5 text-white hover:bg-white/10"
-                    : "bg-destructive text-destructive-foreground border-transparent"
-                }`}
-              >
-                {mic ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
-                <span className="text-sm font-medium hidden sm:inline">{mic ? "Mute" : "Unmute"}</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={toggleCam}
-                className={`rounded-full gap-2 h-10 px-4 border border-white/10 ${
-                  cam
-                    ? "bg-white/5 text-white hover:bg-white/10"
-                    : "bg-destructive text-destructive-foreground border-transparent"
-                }`}
-              >
-                {cam ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-                <span className="text-sm font-medium hidden sm:inline">{cam ? "Camera" : "Off"}</span>
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
+                aria-label={sharing ? "Stop screen sharing" : "Share screen"}
                 onClick={toggleShare}
-                className={`rounded-full gap-2 h-10 px-4 border border-white/10 ${
+                className={`rounded-full gap-2 h-10 px-4 border border-border ${
                   sharing
                     ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent"
-                    : "bg-white/5 text-white hover:bg-white/10"
+                    : "bg-secondary text-foreground hover:bg-secondary"
                 }`}
               >
                 <ScreenShare className="h-4 w-4" />
@@ -301,7 +271,7 @@ export default function GuestCall() {
                 className="rounded-full gap-2 h-11 px-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg"
               >
                 <PhoneOff className="h-4 w-4" />
-                <span className="text-sm font-semibold">End</span>
+                <span className="text-sm font-semibold">Leave</span>
               </Button>
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast as sonnerToast } from "sonner";
@@ -383,7 +384,7 @@ export const VideoCallSheet = ({
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
           side="bottom"
-          className="h-[100dvh] sm:h-[92dvh] p-0 flex flex-col bg-[#0b0b0f] border-t-0 gap-0 [&>button.absolute]:hidden"
+          className="k-call-surface h-[100dvh] sm:h-[92dvh] max-h-[100dvh] p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden"
         >
           {/* Phase 1: Pre-call lobby */}
           {phase === "lobby" ? (
@@ -404,33 +405,31 @@ export const VideoCallSheet = ({
                 />
               </CallPreflightGate>
               {roomUrl && (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setInviteOpen(true)}
-                  className="absolute top-3 left-1/2 -translate-x-1/2 z-10 px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-white text-xs font-medium flex items-center gap-1.5 backdrop-blur-sm border border-white/10"
+                  className="absolute bottom-40 right-3 z-10 min-h-11 px-3.5 py-1.5 rounded-lg bg-secondary hover:bg-secondary text-foreground text-xs font-medium flex items-center gap-1.5 backdrop-blur-sm border border-border"
                 >
                   <UserPlus className="h-3.5 w-3.5" />
                   Invite people
-                </button>
+                </Button>
               )}
             </div>
           ) : (
             <>
               {/* Header */}
-              <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0 bg-[#0b0b0f]">
+              <header className="k-call-header flex items-center justify-between border-b shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="h-7 w-7 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                    <span className="text-base">📹</span>
-                  </span>
+                  <CallBrand />
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white truncate leading-tight">
+                    <p className="text-sm font-semibold text-foreground truncate leading-tight">
                       {projectName}
                     </p>
-                    <p className="text-[11px] text-white/50 leading-tight flex items-center gap-1.5">
+                    <p className="text-[11px] text-muted-foreground leading-tight flex items-center gap-1.5">
                       {backstage ? (
                         <>
-                          <Circle className="h-2 w-2 fill-amber-400 text-amber-400" />
-                          <span className="text-amber-400 font-bold uppercase tracking-wide">Backstage · doors closed</span>
+                          <Circle className="h-2 w-2 fill-warning text-warning" />
+                          <span className="text-warning font-bold uppercase tracking-wide">Backstage · doors closed</span>
                         </>
                       ) : recordingCopy ? (
                         <>
@@ -439,13 +438,13 @@ export const VideoCallSheet = ({
                               recordingCopy.tone === "danger"
                                 ? "fill-destructive text-destructive"
                                 : recordingCopy.tone === "success"
-                                  ? "fill-emerald-400 text-emerald-400"
-                                  : "fill-amber-400 text-amber-400"
+                                  ? "fill-success text-success"
+                                  : "fill-warning text-warning"
                             }`}
                           />
                           <span
                             role="status"
-                            className={`font-medium ${recordingCopy.tone === "danger" ? "text-destructive" : "text-white/80"}`}
+                            className={`font-medium ${recordingCopy.tone === "danger" ? "text-destructive" : "text-foreground"}`}
                           >
                             {recordingCopy.label}
                           </span>
@@ -462,13 +461,13 @@ export const VideoCallSheet = ({
                   {peerUserId && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button
+                        <Button variant="ghost"
                           type="button"
                           aria-label="Safety options"
-                          className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/80 transition-colors"
+                          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors"
                         >
                           <ShieldAlert className="h-4 w-4" />
-                        </button>
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuItem onClick={() => setSafetyMode("report")} className="text-destructive focus:text-destructive">
@@ -481,25 +480,25 @@ export const VideoCallSheet = ({
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={handleEnd}
-                    aria-label="Close call"
-                    className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/80 transition-colors"
+                    aria-label="Leave call"
+                    className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors"
                   >
                     <X className="h-4 w-4" />
-                  </button>
+                  </Button>
                 </div>
               </header>
 
               {/* Video area */}
-              <div className="relative flex-1 min-h-0 bg-black">
+              <div className="k-call-video relative flex-1 min-h-0">
                 <div ref={containerRef} className="absolute inset-0" />
                 {!backstage && <RecordingReminder visible={recordingControls.reminder} onStop={recordingControls.stopRecording} onSave={recordingControls.saveRecording} segment={recordingControls.segment} />}
                 {joining && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#0b0b0f] text-white gap-3 z-10">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-background text-foreground gap-3 z-10">
                     <KretopiaSpinner className="h-8 w-8 text-primary" />
-                    <p className="text-sm font-medium text-white">Connecting to the room…</p>
+                    <p className="text-sm font-medium text-foreground">Connecting to the room…</p>
                   </div>
                 )}
                 {overlayActions && (
@@ -511,19 +510,19 @@ export const VideoCallSheet = ({
 
               {/* Controls */}
               <div
-                className="px-3 pt-3 border-t border-white/5 bg-[#0b0b0f] shrink-0"
-                style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}
+                className="k-call-footer"
               >
-                <div className="flex items-center justify-center gap-2 flex-wrap">
+                <div className="k-call-controls">
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
+                    aria-label={sharing ? "Stop screen sharing" : "Share screen"}
                     onClick={toggleScreenShare}
                     className={`rounded-full gap-2 h-10 px-4 border ${
                       sharing
                         ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent"
-                        : "bg-white/15 text-white border-white/30 hover:bg-white/25"
+                        : "bg-secondary text-foreground border-border hover:bg-accent"
                     }`}
                   >
                     <ScreenShare className="h-4 w-4" />
@@ -535,12 +534,13 @@ export const VideoCallSheet = ({
                       type="button"
                       variant="ghost"
                       size="sm"
+                      aria-label={recording ? "Stop recording" : "Start recording"}
                       onClick={toggleRecording}
                       disabled={["requested", "stopping", "processing"].includes(recordingState.phase)}
                       className={`rounded-full gap-2 h-10 px-4 border ${
                         recording
                           ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-transparent"
-                          : "bg-white/15 text-white border-white/30 hover:bg-white/25"
+                          : "bg-secondary text-foreground border-border hover:bg-accent"
                       }`}
                     >
                       <Circle className={`h-3 w-3 ${recording ? "fill-current" : ""}`} />
@@ -554,7 +554,7 @@ export const VideoCallSheet = ({
                       variant="ghost"
                       size="sm"
                       onClick={muteAll}
-                      className="rounded-full gap-2 h-10 px-4 border bg-white/15 text-white border-white/30 hover:bg-white/25"
+                      className="rounded-full gap-2 h-10 px-4 border bg-secondary text-foreground border-border hover:bg-accent"
                       title="Mute every speaker except you"
                     >
                       <MicOff className="h-4 w-4" />
@@ -567,7 +567,7 @@ export const VideoCallSheet = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => setInviteOpen(true)}
-                    className="rounded-full gap-2 h-10 px-4 border bg-white/15 text-white border-white/30 hover:bg-white/25"
+                    className="rounded-full gap-2 h-10 px-4 border bg-secondary text-foreground border-border hover:bg-accent"
                   >
                     <UserPlus className="h-4 w-4" />
                     <span className="text-sm font-medium">Invite</span>
@@ -579,7 +579,7 @@ export const VideoCallSheet = ({
                     className="rounded-full gap-2 h-11 px-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg"
                   >
                     <PhoneOff className="h-4 w-4" />
-                    <span className="text-sm font-semibold">End</span>
+                    <span className="text-sm font-semibold">Leave</span>
                   </Button>
                 </div>
               </div>

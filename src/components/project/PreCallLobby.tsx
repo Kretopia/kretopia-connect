@@ -1,3 +1,4 @@
+import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Video, VideoOff, X, Users } from "lucide-react";
@@ -76,28 +77,29 @@ export const PreCallLobby = ({
   }, [cam]);
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[#0b0b0f] text-white">
+    <div className="k-call-surface absolute inset-0 flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-white/5 shrink-0">
-        <div className="min-w-0">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-white/40 font-semibold">
+      <header className="k-call-header flex items-center justify-between border-b shrink-0">
+        <CallBrand />
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
             Ready to join
           </p>
           <p className="text-base font-semibold truncate">{projectName}</p>
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={onCancel}
           aria-label="Cancel"
-          className="h-9 w-9 rounded-full flex items-center justify-center bg-white/5 hover:bg-white/10 text-white/80 transition-colors shrink-0"
+          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors shrink-0"
         >
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </header>
 
       {/* Camera preview */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4 bg-black">
-        <div className="relative w-full max-w-md aspect-[3/4] sm:aspect-video rounded-2xl overflow-hidden bg-[#111] ring-1 ring-white/10 shadow-2xl">
+      <div className="relative flex-1 min-h-0 flex items-center justify-center px-4 py-4 bg-muted">
+        <div className="k-call-preview relative w-full max-w-md overflow-hidden bg-muted ring-1 ring-border shadow-2xl">
           {cam && !camError ? (
             <video
               ref={videoRef}
@@ -107,20 +109,20 @@ export const PreCallLobby = ({
               className="w-full h-full object-cover [transform:scaleX(-1)]"
             />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white/50">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-muted-foreground">
               <VideoOff className="h-10 w-10" />
               <p className="text-xs">{camError ?? "Camera off"}</p>
             </div>
           )}
 
           {/* Bottom gradient label */}
-          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-gradient-to-t from-black/70 to-transparent">
+          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-background/90">
             <p className="text-xs font-medium">You</p>
           </div>
 
           {/* Floating participants preview */}
           {participantsPreview.length > 0 && (
-            <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-black/50 backdrop-blur-sm text-[11px] font-medium">
+            <div className="absolute top-3 right-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-muted/50 backdrop-blur-sm text-[11px] font-medium">
               <Users className="h-3 w-3" />
               {participantsPreview.length} in room
             </div>
@@ -130,34 +132,33 @@ export const PreCallLobby = ({
 
       {/* Mic/Cam toggles + Join */}
       <div
-        className="px-4 pt-4 border-t border-white/5 shrink-0 space-y-4"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+        className="k-call-footer space-y-2"
       >
         <div className="flex items-center justify-center gap-3">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setMic((v) => !v)}
             aria-label={mic ? "Mute mic" : "Unmute mic"}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
               mic
-                ? "bg-white/10 text-white hover:bg-white/15"
+                ? "bg-secondary text-foreground hover:bg-secondary"
                 : "bg-destructive text-destructive-foreground"
             }`}
           >
             {mic ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost"
             type="button"
             onClick={() => setCam((v) => !v)}
             aria-label={cam ? "Turn camera off" : "Turn camera on"}
             className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
               cam
-                ? "bg-white/10 text-white hover:bg-white/15"
+                ? "bg-secondary text-foreground hover:bg-secondary"
                 : "bg-destructive text-destructive-foreground"
             }`}
           >
             {cam ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-          </button>
+          </Button>
         </div>
 
         <Button
