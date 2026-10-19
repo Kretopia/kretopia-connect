@@ -1,85 +1,90 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// Query builder: records the filters; the terminal `.is()` or the bare chain resolves from `plan`.
 const plan = vi.hoisted(() => ({
-  calls: [] as { usedRetentionFilter: boolean }[],
-  respond: null as null | ((usedRetentionFilter: boolean) => { data: unknown; error: unknown }),
+  from: vi.fn(),
+  select: vi.fn(),
+  not: vi.fn(),
+  order: vi.fn(),
+  limit: vi.fn(),
+  is: vi.fn(),
 }));
 
 vi.mock("@/integrations/supabase/client", () => {
-  const make = () => {
-    let usedRetentionFilter = false;
-    const chain: any = {
-      select: () => chain,
-      not: () => chain,
-      order: () => chain,
-      limit: () => chain,
-      is: (col: string) => {
-        if (col === "recording_deleted_at") usedRetentionFilter = true;
-        return chain;
-      },
-      then: (ok: any, bad: any) => {
-        plan.calls.push({ usedRetentionFilter });
-        return Promise.resolve(plan.respond!(usedRetentionFilter)).then(ok, bad);
-      },
-    };
-    return chain;
-  };
-  return { supabase: { from: () => make() } };
+  const chain = { select: plan.select, not: plan.not, order: plan.order, limit: plan.limit, is: plan.is };
+  plan.from.mockReturnValue(chain);
+  plan.select.mockReturnValue(chain);
+  plan.not.mockReturnValue(chain);
+  plan.order.mockReturnValue(chain);
+  return { supabase: { from: plan.from } };
 });
 
-import { isMissingRetentionColumn, loadRecordings, resetLoadRecordingsCache } from "../loadRecordings";
+import { loadRecordings, type RecordingRow } from "../loadRecordings";
+import { describeStoredRecording, TRANSCRIPT_STALLED_AFTER_MS } from "../recordingState";
 
-const missingColumn = { code: "42703", message: "column call_transcripts.recording_deleted_at does not exist" };
-const row = (id: string) => ({ id, call_kind: "project", status: "failed", recording_id: `rec-${id}`, error: null });
+const NOW = Date.parse("2026-10-19T03:15:00Z");
+const row = (over: Partial<RecordingRow> = {}): RecordingRow => ({
+  id: "a", call_kind: "project", status: "ready", recording_id: "rec-a",
+  duration_seconds: 120, created_at: new Date(NOW - 60_000).toISOString(),
+  project_id: "project-a", summary: "Stored recap", error: null, ...over,
+});
 
 beforeEach(() => {
-  plan.calls = [];
-  resetLoadRecordingsCache();
+  vi.clearAllMocks();
+  plan.limit.mockResolvedValue({ data: [row()], error: null });
 });
 
 describe("loadRecordings", () => {
-  it("lists the recordings when the backend has the retention column", async () => {
-    plan.respond = () => ({ data: [row("a")], error: null });
-    const r = await loadRecordings();
-    expect(r.error).toBeNull();
-    expect(r.rows.map((x) => x.id)).toEqual(["a"]);
-    expect(plan.calls).toEqual([{ usedRetentionFilter: true }]);
+  it("loads stored recordings with one canonical query and never queries recording_deleted_at", async () => {
+    const rows = [row(), row({ id: "b", recording_id: "rec-b" })];
+    plan.limit.mockResolvedValue({ data: rows, error: null });
+    expect(await loadRecordings()).toEqual({ rows, error: null });
+    expect(plan.from).toHaveBeenCalledExactlyOnceWith("call_transcripts");
+    expect(plan.select).toHaveBeenCalledExactlyOnceWith("id, call_kind, status, duration_seconds, created_at, recording_id, project_id, summary, error");
+    expect(plan.not).toHaveBeenCalledExactlyOnceWith("recording_id", "is", null);
+    expect(plan.order).toHaveBeenCalledExactlyOnceWith("created_at", { ascending: false });
+    expect(plan.limit).toHaveBeenCalledExactlyOnceWith(100);
+    expect(plan.is).not.toHaveBeenCalled();
   });
 
-  it("still lists them when the backend lacks the column (production today): one retry without the filter", async () => {
-    plan.respond = (filtered) => (filtered ? { data: null, error: missingColumn } : { data: [row("a"), row("b")], error: null });
-    const r = await loadRecordings();
-    expect(r.error).toBeNull();
-    expect(r.rows).toHaveLength(2);
-    expect(plan.calls).toEqual([{ usedRetentionFilter: true }, { usedRetentionFilter: false }]);
+  it("preserves the caller's limit", async () => {
+    await loadRecordings(25);
+    expect(plan.limit).toHaveBeenCalledExactlyOnceWith(25);
   });
 
-  it("remembers that the column is missing instead of failing the first query on every load", async () => {
-    plan.respond = (filtered) => (filtered ? { data: null, error: missingColumn } : { data: [row("a")], error: null });
-    await loadRecordings();
-    plan.calls = [];
-    await loadRecordings();
-    expect(plan.calls).toEqual([{ usedRetentionFilter: false }]);
+  it.each([
+    ["ready", {}, { transcript: "ready", canReplay: true, canOpenRecap: true }],
+    ["queued", { status: "pending", summary: null }, { transcript: "queued", canReplay: true, inProgress: true }],
+    ["processing", { status: "transcribing", summary: null }, { transcript: "processing", canReplay: true, inProgress: true }],
+    ["delayed", { status: "pending", summary: null, created_at: new Date(NOW - TRANSCRIPT_STALLED_AFTER_MS - 1000).toISOString() }, { transcript: "stalled", canReplay: true, inProgress: false }],
+    ["no recap", { status: "failed", summary: null, error: "Recording too large for inline transcription (42529331 bytes, max 8388608). Chunking not yet implemented." }, { transcript: "skipped", canReplay: true, canOpenRecap: false }],
+    ["failed recap", { status: "failed", summary: null, error: "Gemini error 500: boom" }, { transcript: "failed", canReplay: true, canOpenRecap: false, tone: "danger" }],
+  ] satisfies [string, Partial<RecordingRow>, object][])("preserves replay and %s state after loading", async (_name, over, expected) => {
+    const stored = row(over);
+    plan.limit.mockResolvedValue({ data: [stored], error: null });
+    const result = await loadRecordings();
+    expect(result).toEqual({ rows: [stored], error: null });
+    const loaded = result.rows[0];
+    expect(loaded).toBeDefined();
+    if (!loaded) throw new Error("Recording did not load");
+    expect(describeStoredRecording(loaded, NOW)).toMatchObject(expected);
   });
 
-  it("an unrelated error is reported as an error, never as an empty list", async () => {
-    plan.respond = () => ({ data: null, error: { code: "PGRST301", message: "JWT expired" } });
-    const r = await loadRecordings();
-    expect(r).toEqual({ rows: [], error: "JWT expired" });
-    expect(plan.calls).toHaveLength(1);
+  it("returns query errors distinctly and allows the next explicit retry to load", async () => {
+    plan.limit.mockResolvedValueOnce({ data: null, error: { code: "PGRST301", message: "JWT expired" } });
+    expect(await loadRecordings()).toEqual({ rows: [], error: "JWT expired" });
+    expect(plan.from).toHaveBeenCalledTimes(1);
+    expect(await loadRecordings()).toEqual({ rows: [row()], error: null });
+    expect(plan.from).toHaveBeenCalledTimes(2);
+    expect(plan.is).not.toHaveBeenCalled();
   });
 
-  it("an error on the fallback query is reported too", async () => {
-    plan.respond = (filtered) => ({ data: null, error: filtered ? missingColumn : { message: "boom" } });
-    expect(await loadRecordings()).toEqual({ rows: [], error: "boom" });
+  it("preserves the fallback error message", async () => {
+    plan.limit.mockResolvedValue({ data: null, error: { message: "" } });
+    expect(await loadRecordings()).toEqual({ rows: [], error: "Couldn't load recordings" });
   });
 
-  it("recognises the missing column by code or by name", () => {
-    expect(isMissingRetentionColumn(missingColumn)).toBe(true);
-    expect(isMissingRetentionColumn({ message: "column recording_deleted_at does not exist" })).toBe(true);
-    expect(isMissingRetentionColumn({ code: "42703", message: "column x does not exist" })).toBe(true);
-    expect(isMissingRetentionColumn({ code: "PGRST301", message: "JWT expired" })).toBe(false);
-    expect(isMissingRetentionColumn(null)).toBe(false);
+  it("returns an empty list only when the query succeeds without rows", async () => {
+    plan.limit.mockResolvedValue({ data: null, error: null });
+    expect(await loadRecordings()).toEqual({ rows: [], error: null });
   });
 });
