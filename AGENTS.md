@@ -30,6 +30,7 @@
 
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit page back rows; retain step navigation, reader close and sidebar dismissal.
+- Call reminders reuse live state and sync; explicit Stop/Save uses Daily events and recording IDs.
 - Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
