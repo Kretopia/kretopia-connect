@@ -112,7 +112,7 @@ Deno.serve(async (req) => {
         if (!email) continue;
 
         try {
-          await admin.functions.invoke("send-transactional-email", {
+          const { error: mailErr } = await admin.functions.invoke("send-transactional-email", {
             body: {
               templateName: "speed-session-reminder",
               recipientEmail: email,
@@ -132,11 +132,12 @@ Deno.serve(async (req) => {
               },
             },
           });
-          stats.emails++;
+          if (mailErr) { stats.errors++; console.error("[reminders] email", mailErr); }
+          else stats.emails++;
         } catch (e) { stats.errors++; console.error("[reminders] email", e); }
       }
 
-      await admin
+      const { error: flagErr } = await admin
         .from("speed_sessions")
         .update({
           reminders_sent: { ...sent, [w.key]: new Date().toISOString() },
@@ -144,18 +145,21 @@ Deno.serve(async (req) => {
           reminder_sent_at: w.key === "starting_soon" ? new Date().toISOString() : (s as any).reminder_sent_at,
         })
         .eq("id", s.id);
+      if (flagErr) { stats.errors++; console.error("[reminders] flag", s.id, flagErr); }
     }
   }
 
   } catch (e) {
     console.error("[reminders] fatal", e);
-    return new Response(JSON.stringify({ ok: false, error: String(e), ...stats }), {
-      status: 200,
+    return new Response(JSON.stringify({ ok: false, error: "internal", ...stats }), {
+      status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 
-  return new Response(JSON.stringify({ ok: true, ...stats }), {
+  const allFailed = stats.errors > 0 && stats.emails + stats.pushes === 0;
+  return new Response(JSON.stringify({ ok: stats.errors === 0, ...stats }), {
+    status: allFailed ? 500 : 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 });

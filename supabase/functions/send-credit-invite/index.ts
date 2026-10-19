@@ -109,8 +109,9 @@ serve(async (req) => {
       let token: string | null = existing?.token ?? null;
       if (!token) {
         token = crypto.randomUUID();
-        await supabase.from('credit_endorsements').update({ token })
+        const { error: tokenErr } = await supabase.from('credit_endorsements').update({ token })
           .eq('credit_id', credit_id).eq('endorser_email', email);
+        if (tokenErr) throw tokenErr;
       }
 
       const claimUrl = `${baseUrl}/credit-verify?token=${encodeURIComponent(token)}`;
@@ -119,9 +120,9 @@ serve(async (req) => {
       );
       const whatsappUrl = `https://wa.me/?text=${whatsappText}`;
 
-      // Try to send email via the transactional email system
+      let emailSent = false;
       try {
-        await supabase.functions.invoke('send-transactional-email', {
+        const { error: mailErr } = await supabase.functions.invoke('send-transactional-email', {
           body: {
             templateName: 'credit-chain-invite',
             recipientEmail: email,
@@ -137,12 +138,14 @@ serve(async (req) => {
             },
           },
         });
+        if (mailErr) console.log('Email send failed:', mailErr);
+        else emailSent = true;
       } catch (emailErr) {
         // If transactional email system isn't set up, log but don't fail
         console.log('Email send skipped (system may not be configured):', emailErr);
       }
 
-      results.push({ email, name, claim_url: claimUrl, whatsapp_url: whatsappUrl });
+      results.push({ email, name, claim_url: claimUrl, whatsapp_url: whatsappUrl, email_sent: emailSent });
     }
 
     return new Response(JSON.stringify({ success: true, invites: results }), {
