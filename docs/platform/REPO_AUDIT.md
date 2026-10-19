@@ -57,7 +57,7 @@ Scanned 2026-10-19 on `main` @ `6693b982d`. Read-only: repo code, migrations, an
 - Credit invites mint a token on first send and reuse it after; email idempotency key per credit and address.
 
 ## 9. Security, RLS, storage (production catalog, read-only, 2026-10-19)
-- **P0, open: any accepted collaborator (any role) can take ownership of a project** (`projects` UPDATE has no `WITH CHECK` or guard trigger). Fix drafted in `docs/roadmap/schema-impact-report.md` M0a, awaiting approval. Detail in `docs/security/SECURITY_BASELINE.md`.
+- **P0, closed 2026-10-19: any accepted collaborator (any role) could take ownership of a project** (`projects` UPDATE had no `WITH CHECK` or guard trigger). Migration M0a (`docs/roadmap/schema-impact-report.md`) was approved and applied to production; verified. Detail in `docs/security/SECURITY_BASELINE.md`.
 - `call_transcripts`: every column is updatable by its creator (`recording_id`, `project_id`, `created_by`). **P1**
 - 0 public tables without RLS. 11 `INSERT ... WITH CHECK (true)` intake policies (analytics, client errors, RSVPs, newsletter, partner signup, unsubscribe); no UPDATE/DELETE/ALL `true` policy for a non-service role. Unbounded anonymous inserts are a spam and cost risk (`analytics_events` holds 1.4 M rows). **P2**
 - 183 SECURITY DEFINER functions are executable by `anon`. The 25 sensitive ones sampled check `auth.uid()` or an admin role and pin `search_path`; the six without checks take no arguments (trigger functions). No exploit found; revoking `anon` on non-public RPCs is defence in depth. **P2**

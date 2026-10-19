@@ -15,7 +15,8 @@ owner, collaborator (accepted, role `member`), creative (accepted), client (acce
 | Object and action | owner | collab | creative | client | guest | pending | denied | removed | unrelated | anon |
 |---|---|---|---|---|---|---|---|---|---|---|
 | `projects` select | A | A | A | A | A | D | D | D | D | D |
-| `projects` update | A | A* | A* | A* | A* | D | D | D | D | D |
+| `projects` update (any column except `created_by`) | A | A* | A* | A* | A* | D | D | D | D | D |
+| `projects` update `created_by` | D | D | D | D | D | D | D | D | D | D |
 | `project_files` / `project_messages` select | A | A | A | A | A* | D | D | D | D | D |
 | `milestones` amounts select | A | A | A | D | D | D | D | D | D | D |
 | `milestones` update status | A | D | D | D | D | D | D | D | D | D |
@@ -32,7 +33,7 @@ owner, collaborator (accepted, role `member`), creative (accepted), client (acce
 | `storage` `meeting-recordings` | D | D | D | D | D | D | D | D | D | D |
 
 ## Divergences open today (from `docs/roadmap/canonical-product-and-permission-map.md`, rechecked on production 2026-10-19)
-- `projects` UPDATE has no `WITH CHECK`, no guard trigger, and `created_by` is updatable: any accepted member, whatever the role, can take ownership (`schema-impact-report.md` M0a). Test: a guest-role member sets `created_by` to self; it must fail.
+- `projects` UPDATE still has no `WITH CHECK`: any accepted member can edit other project columns. Taking ownership is closed (trigger `trg_guard_project_created_by`, M0a, applied 2026-10-19); keep it under test: a guest-role member sets `created_by` to self and it must fail.
 - Guests read every project message and file (no audience flag).
 - Pending is no longer access (`user_has_project_access` excludes it) and the self-accept role pin exists (`trg_guard_project_collaborator_self_update`); keep both under test.
 
