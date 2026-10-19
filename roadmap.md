@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Studio Calls Slice 5
-- [ ] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant preview, mute, return, minimize and confirmed leave.
-- [ ] Check single-frame lifecycle, navigation, minimize/expand and end cleanup with focused tests and mobile/desktop checks.
-- [ ] Open one reviewable PR — pending tool availability; no deployment.
+- [x] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant initials/live iframe, mute, return, minimize and confirmed leave. Desktop drag; mobile safe-area placement; refresh starts idle.
+- [x] 49 focused tests pass, including actual Studio controller with simulated Daily: one creation/join across routes and minimize, cleanup after confirmed end. Automatic preview compilation OK. Isolated desktop/320/360/375/414px checks pass with one stable iframe and 44px controls.
+- [ ] Verify real authenticated Daily navigation/reconnect and CTA clearance on populated pages — blocked: external legacy live session unavailable; simulated checks cannot certify live media or all page overlays.
+- [ ] Open one reviewable PR — blocked: GitHub PR tooling unavailable; no deployment.
 
 ## Studio Calls Slice 4
 - [x] Adjust mobile live/floating/guest calls and lobbies at 320, 360, 375 and 414px: safe-area grids, 44px targets, dominant video and shared branding.
