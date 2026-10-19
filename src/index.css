@@ -21,6 +21,7 @@
 .k-call-mini { width: min(320px, calc(100vw - 24px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); overflow: hidden; }
 .k-call-mini-header { display: flex; align-items: center; gap: 4px; padding: 8px; background: hsl(var(--background)); border-bottom: 1px solid hsl(var(--border)); }
 .k-call-mini-actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; background: hsl(var(--background)); }
+.k-call-mini-header[hidden], .k-call-mini-actions[hidden] { display: none; }
 .k-call-mini .k-call-persistent-content { height: 160px; flex: none; }
 .k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
 .k-call-mini-collapsed .k-call-persistent-content { height: 0; overflow: hidden; visibility: hidden; }
