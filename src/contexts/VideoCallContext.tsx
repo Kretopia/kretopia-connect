@@ -6,6 +6,7 @@ import { extractInvokeError } from "@/lib/extractInvokeError";
 import { useRecordingReminder } from "@/hooks/useRecordingReminder";
 import type { LiveRecordingPhase } from "@/lib/recordingState";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
+import type { VideoCallSheetProps } from "@/components/project/VideoCallSheet";
 
 /**
  * VideoCallContext — CEO hotfix (24/09/2026): "/meet/:meetingId" (CallPage.tsx)
@@ -46,6 +47,11 @@ interface TokenInfo {
 }
 
 interface VideoCallContextValue {
+  startedAt: number | null;
+  connectionStatus: string;
+  studioCall: VideoCallSheetProps | null;
+  openStudioCall: (props: VideoCallSheetProps) => void;
+  closeStudioCall: () => void;
   meetingId: string | null;
   shareToken: string | undefined;
   phase: VideoCallPhase;
@@ -87,6 +93,9 @@ interface VideoCallContextValue {
 const VideoCallContext = createContext<VideoCallContextValue | undefined>(undefined);
 
 export function VideoCallProvider({ children }: { children: ReactNode }) {
+  const [studioCall, setStudioCall] = useState<VideoCallSheetProps | null>(null);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState("Connecting");
   const containerRef = useRef<HTMLDivElement>(null);
   const callRef = useRef<DailyCall | null>(null);
   const joinPrefsRef = useRef<JoinPrefs>({ mic: false, cam: false });
@@ -111,6 +120,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
 
   const openMeeting = useCallback(
     async (nextMeetingId: string, nextShareToken: string | undefined, userName: string | undefined) => {
+      if (studioCall || (phase === "live" && meetingId !== nextMeetingId)) return;
       // Already the active meeting (e.g. navigated back to /meet/:id while
       // live/lobby) -- don't re-fetch a token or reset progress.
       if (meetingId === nextMeetingId && phase !== "idle" && phase !== "ended" && phase !== "error") {
@@ -138,7 +148,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
         setPhase("error");
       }
     },
-    [meetingId, phase],
+    [meetingId, phase, studioCall],
   );
 
   const joinLive = useCallback((prefs: JoinPrefs, userName: string) => {
@@ -173,6 +183,12 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     // Listeners go on before join so an event fired while joining is not lost.
     frame.on("left-meeting", () => {
       setPhase("ended");
+      setStartedAt(null);
+      setSharing(false);
+      setMicOn(false);
+      callRef.current = null;
+      startedForTokenRef.current = null;
+      void frame?.destroy();
       // A cloud recording is finalised some time after the call ends (longer calls take longer). Look
       // for it for ~10 minutes and stop once it is stored; Recordings is the only place it appears.
       if (didRecordRef.current) {
@@ -201,6 +217,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     );
     frame.on("local-screen-share-started", () => setSharing(true));
     frame.on("local-screen-share-stopped", () => setSharing(false));
+    frame.on("network-connection", (event) => setConnectionStatus(event.event === "connected" ? "Live" : "Reconnecting"));
+    frame.on("participant-updated", () => setMicOn(Boolean(frame?.participants().local?.audio)));
     try {
       await frame.join({
         url: tokenInfo.roomUrl,
@@ -210,6 +228,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
         startAudioOff: !prefs.mic,
       });
       callStartedAtRef.current = Date.now();
+      setStartedAt(callStartedAtRef.current);
+      setConnectionStatus("Live");
       if (prefs.micDeviceId || prefs.camDeviceId || prefs.speakerDeviceId) {
         try {
           await (frame as any).setInputDevicesAsync?.({
@@ -225,6 +245,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       console.error("[VideoCallContext] join failed", err);
+      callRef.current = null;
+      void teardownDailyCall(frame);
       setError(err?.message || "Failed to join");
       setPhase("error");
       return;
@@ -257,6 +279,7 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const reset = useCallback(() => {
+    if (callRef.current && phase === "live") return;
     const frame = callRef.current;
     callRef.current = null;
     startedForTokenRef.current = null;
@@ -274,7 +297,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     setGuestName("");
     setTokenInfo(null);
     setMicOn(false);
-  }, []);
+    setStartedAt(null);
+  }, [phase]);
 
   const toggleRecord = useCallback(async () => {
     if (live.phase === "recording") { recordingControlsRef.current.stopRecording(); return; }
@@ -311,6 +335,13 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   }, [micOn]);
 
   const value: VideoCallContextValue = {
+    startedAt, connectionStatus,
+    studioCall,
+    openStudioCall: useCallback((props: VideoCallSheetProps) => {
+      if (phase === "live") return;
+      setStudioCall(current => current ?? { ...props, open: true });
+    }, [phase]),
+    closeStudioCall: useCallback(() => setStudioCall(null), []),
     meetingId,
     shareToken,
     phase,

@@ -8,6 +8,9 @@ import { AdmitQueue } from "@/components/calls/AdmitQueue";
 import { cn } from "@/lib/utils";
 import { liveRecordingCopy } from "@/lib/recordingState";
 import { RecordingReminder } from "@/components/calls/RecordingReminder";
+import { useCallback, useState } from "react";
+import { PersistentStudioCall } from "@/components/project/VideoCallSheet";
+import { PersistentCallWindow, ConfirmCallLeave } from "./PersistentCallWindow";
 
 /**
  * Renders exactly ONE persistent DOM node for the Daily iframe
@@ -27,6 +30,8 @@ import { RecordingReminder } from "@/components/calls/RecordingReminder";
 export function GlobalVideoCallHost() {
   const {
     meetingId,
+    studioCall, closeStudioCall,
+    startedAt, connectionStatus,
     phase,
     containerRef,
     callRef,
@@ -44,7 +49,12 @@ export function GlobalVideoCallHost() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [confirmLeave, setConfirmLeave] = useState(false);
+  const handleStudioClose = useCallback((open: boolean) => {
+    if (!open) { closeStudioCall(); studioCall?.onOpenChange(false); }
+  }, [closeStudioCall, studioCall]);
 
+  if (studioCall) return <PersistentStudioCall {...studioCall} onOpenChange={handleStudioClose} />;
   if (!meetingId) return null;
 
   const docked = location.pathname === `/meet/${meetingId}`;
@@ -59,16 +69,7 @@ export function GlobalVideoCallHost() {
   const handleToggleShare = () => toggleShare().catch((e) => toast({ title: "Couldn't share", description: e?.message, variant: "destructive" }));
 
   return (
-    <div
-      className={cn(
-        "k-call-surface z-[60]",
-        !live
-          ? "hidden"
-          : docked
-            ? "fixed inset-0 flex flex-col bg-background text-foreground"
-            : "k-call-floating fixed flex flex-col rounded-lg overflow-hidden shadow-2xl ring-1 ring-border bg-background",
-      )}
-    >
+    <><PersistentCallWindow route={`/meet/${meetingId}`} title={title} call={callRef.current} startedAt={startedAt} status={connectionStatus} recordingPhase={recordingPhase} active={live} onLeave={() => { void leave(); }}>
       {/* Docked-only header */}
       <div className={cn("k-call-header flex shrink-0 items-center justify-between border-b", !docked && "hidden")}>
         <CallBrand />
@@ -87,7 +88,7 @@ export function GlobalVideoCallHost() {
         </div>
         <Button variant="ghost"
           type="button"
-          onClick={leave}
+          onClick={() => setConfirmLeave(true)}
           className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary"
           aria-label="Leave call"
         >
@@ -104,7 +105,7 @@ export function GlobalVideoCallHost() {
         {!docked && recordingReminder && <div className="fixed bottom-[calc(306px+env(safe-area-inset-bottom,0px))] right-3 w-80 max-w-[calc(100vw-2rem)]"><RecordingReminder visible segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} /></div>}
 
         {/* Floating-only mini controls, overlaid on the video itself. */}
-        <div className={cn("absolute inset-0 flex flex-col justify-between p-1.5 pointer-events-none", docked && "hidden")}>
+        <div className="hidden">
           <div className="flex items-center justify-end pointer-events-auto">
             <Button variant="ghost"
               type="button"
@@ -183,7 +184,7 @@ export function GlobalVideoCallHost() {
           </Button>
           <Button
             type="button"
-            onClick={() => void leave()}
+            onClick={() => setConfirmLeave(true)}
             className="rounded-full gap-2 h-11 px-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
           >
             <PhoneOff className="h-4 w-4" />
@@ -191,7 +192,7 @@ export function GlobalVideoCallHost() {
           </Button>
         </div>
       </div>
-    </div>
+    </PersistentCallWindow><ConfirmCallLeave open={confirmLeave} onOpenChange={setConfirmLeave} onLeave={() => { void leave(); }} /></>
   );
 }
 

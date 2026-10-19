@@ -1,6 +1,9 @@
 import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { useVideoCall } from "@/contexts/VideoCallContext";
+import { PersistentCallWindow, ConfirmCallLeave } from "@/components/calls/PersistentCallWindow";
 import { toast as sonnerToast } from "sonner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -36,7 +39,7 @@ import { useRecordingReminder } from "@/hooks/useRecordingReminder";
 import { RecordingReminder } from "@/components/calls/RecordingReminder";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
 
-interface VideoCallSheetProps {
+export interface VideoCallSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projectName: string;
@@ -70,7 +73,20 @@ interface VideoCallSheetProps {
 
 type Phase = "lobby" | "live";
 
-export const VideoCallSheet = ({
+export function VideoCallSheet(props: VideoCallSheetProps) {
+  const { openStudioCall } = useVideoCall();
+  const callback = useRef(props.onOpenChange);
+  callback.current = props.onOpenChange;
+  useEffect(() => {
+    if (!props.open || !props.roomUrl) return;
+    openStudioCall({ ...props, onOpenChange: value => callback.current(value) });
+    // Capture one call configuration; navigation must not replace the active call.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.open, props.roomUrl, openStudioCall]);
+  return null;
+}
+
+export const PersistentStudioCall = ({
   open,
   onOpenChange,
   projectName,
@@ -93,7 +109,13 @@ export const VideoCallSheet = ({
   backstage = false,
 }: VideoCallSheetProps) => {
   const { toast } = useToast();
-  const navigate = useNavigate();
+  const routeNavigate = useNavigate();
+  const navigateRef = useRef(routeNavigate);
+  navigateRef.current = routeNavigate;
+  const navigate = useRef((path: string) => navigateRef.current(path)).current;
+  const location = useLocation();
+  const originRoute = useRef(location.pathname).current;
+  const [confirmLeave, setConfirmLeave] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const callRef = useRef<DailyCall | null>(null);
   const [mediaCall, setMediaCall] = useState<DailyCall | null>(null);
@@ -101,6 +123,7 @@ export const VideoCallSheet = ({
   const didRecordRef = useRef<boolean>(false);
   const [phase, setPhase] = useState<Phase>("lobby");
   const [joining, setJoining] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState("Connecting");
   // Recording lifecycle (requested, recording, stopping, processing, failed), driven by Daily's events.
   const recordingControls = useRecordingReminder(callRef, roomName ?? roomUrl?.split("/").pop());
   const { dispatch: dispatchRecording, active: recording, copy: recordingCopy, state: recordingState } = recordingControls;
@@ -160,6 +183,7 @@ export const VideoCallSheet = ({
       }
       callRef.current = frame;
       setMediaCall(frame);
+      frame.on("network-connection", event => setConnectionStatus(event.event === "connected" ? "Live" : "Reconnecting"));
 
       frame.on("left-meeting", () => onOpenChange(false));
       frame.on("recording-started", (ev: any) => {
@@ -194,7 +218,7 @@ export const VideoCallSheet = ({
           if (!fellBack && now - lowSince > 5_000) {
             fellBack = true;
             try {
-              void frame!.setLocalVideo(false);
+              void frame?.setLocalVideo(false);
               toast({
                 title: "Switched to audio-only",
                 description: "Your connection looks weak — video is off so the call stays clear.",
@@ -232,7 +256,7 @@ export const VideoCallSheet = ({
           startVideoOff: !joinPrefs.cam,
           startAudioOff: !joinPrefs.mic,
         });
-        if (!cancelled) setJoining(false);
+        if (!cancelled) { setJoining(false); setConnectionStatus("Live"); }
         if (!cancelled && isHost && autoStartRecording && !backstage) {
           dispatchRecording({ type: "start-requested" });
           // startRecording() returns nothing; a refusal arrives as a `recording-error` event.
@@ -329,12 +353,14 @@ export const VideoCallSheet = ({
   }, [phase, roomUrl, token, callId, userName, directCallId, onOpenChange, joinPrefs, toast, navigate, isHost, autoStartRecording, backstage]);
 
 
-  const handleEnd = async () => {
+  const endConfirmed = async () => {
     try { await callRef.current?.leave(); } catch {}
     try { callRef.current?.destroy(); } catch {}
     callRef.current = null;
     onOpenChange(false);
   };
+
+  const handleEnd = () => setConfirmLeave(true);
 
   const toggleRecording = async () => {
     if (recordingState.phase === "recording") { recordingControls.stopRecording(); return; }
@@ -382,13 +408,9 @@ export const VideoCallSheet = ({
 
   const derivedRoomName = roomName ?? roomUrl?.split("/").pop() ?? "";
 
-  return (
+  return createPortal(
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          side="bottom"
-          className="k-call-surface h-[100dvh] sm:h-[92dvh] max-h-[100dvh] p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden"
-        >
+      <StudioCallSurface live={phase === "live"} open={open} onOpenChange={onOpenChange} route={originRoute} title={projectName} call={mediaCall} startedAt={startedAtRef.current} recordingPhase={recordingState.phase} status={connectionStatus} onLeave={() => { void endConfirmed(); }}>
           {/* Phase 1: Pre-call lobby */}
           {phase === "lobby" ? (
             <div className="relative h-full">
@@ -589,8 +611,8 @@ export const VideoCallSheet = ({
               </div>
             </>
           )}
-        </SheetContent>
-      </Sheet>
+      </StudioCallSurface>
+      <ConfirmCallLeave open={confirmLeave} onOpenChange={setConfirmLeave} onLeave={() => { void endConfirmed(); }} />
 
       {/* Invite sheet — available from both lobby & live so callers can add contacts before joining */}
       {roomUrl && (
@@ -627,5 +649,10 @@ export const VideoCallSheet = ({
         />
       )}
     </>
-  );
+  , document.body);
 };
+
+function StudioCallSurface({ live, open, onOpenChange, ...props }: React.ComponentProps<typeof PersistentCallWindow> & { live: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
+  if (live) return <PersistentCallWindow {...props} />;
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="k-call-surface h-[100dvh] sm:h-[92dvh] max-h-[100dvh] p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden">{props.children}</SheetContent></Sheet>;
+}
