@@ -56,7 +56,7 @@ describe("daily-recording-webhook wiring", () => {
   it("checks freshness only on the timestamped signature, before the payload is parsed or any event acted on", () => {
     const freshness = source.indexOf("checkWebhookTimestamp(timestamp");
     const parse = source.indexOf("JSON.parse(raw)");
-    const findCall = source.indexOf("findCall(admin");
+    const findCall = source.indexOf("findCallByRoom(admin");
     expect(freshness).toBeGreaterThan(-1);
     expect(parse).toBeGreaterThan(freshness);
     expect(findCall).toBeGreaterThan(freshness);

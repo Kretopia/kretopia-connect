@@ -4,11 +4,20 @@
 // Trigger: invoked by `daily-recording-webhook` (background) with
 //   { transcript_id, recording_id }
 // Auth: service-role only (verify_jwt = false; we check the bearer token).
+//
+// Outcomes (the recording itself is already stored and replayable before this runs):
+//   200 {ok}                 transcript + recap written, row "ready".
+//   200 {skipped:"too_large"} the recording is over the inline cap: the row is marked with
+//                            transcript_skipped (see _shared/recordingTranscript.ts) and the host is told
+//                            the replay is saved. An expected outcome, not a failure.
+//   200 {skipped:"claimed"}  another run already owns, or finished, this row: nothing is done twice.
+//   500                      a real failure: the row is marked "failed" with the reason and can be retried.
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { INLINE_TRANSCRIPT_MAX_BYTES, transcriptSkippedError } from "../_shared/recordingTranscript.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,7 +39,8 @@ serve(async (req) => {
     });
   }
 
-  let transcriptId: string | null = null;
+  // Set once this run owns the row; only an owner may mark it failed.
+  let claimedId: string | null = null;
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -38,7 +48,6 @@ serve(async (req) => {
 
   try {
     const { transcript_id, recording_id } = await req.json();
-    transcriptId = transcript_id;
     if (!transcript_id || !recording_id) throw new Error("transcript_id and recording_id required");
 
     const DAILY_API_KEY = Deno.env.get("DAILY_API_KEY");
@@ -46,11 +55,27 @@ serve(async (req) => {
     if (!DAILY_API_KEY) throw new Error("DAILY_API_KEY missing");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    await admin.from("call_transcripts").update({ status: "transcribing" }).eq("id", transcript_id);
+    // Claim the row. Only a pending or failed row may start; a row that is running or ready belongs to
+    // another run (the job inserts action items, so two runs on one row would duplicate them).
+    const { data: claimed, error: claimErr } = await admin
+      .from("call_transcripts")
+      .update({ status: "transcribing", error: null })
+      .eq("id", transcript_id)
+      .in("status", ["pending", "failed"])
+      .select("id");
+    if (claimErr) throw new Error(`Could not claim the transcript row: ${claimErr.message}`);
+    if (claimed?.length) claimedId = transcript_id;
+    if (!claimed?.length) {
+      // Not ours to run; leave the row exactly as it is.
+      return new Response(JSON.stringify({ ok: true, skipped: "claimed", transcript_id }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // 1. Get a fresh download link (Daily access links expire ~120s).
     const linkRes = await fetch(`${DAILY_API}/recordings/${recording_id}/access-link`, {
       headers: { Authorization: `Bearer ${DAILY_API_KEY}` },
+      signal: AbortSignal.timeout(15_000),
     });
     if (!linkRes.ok) throw new Error(`Daily access-link failed: ${linkRes.status}`);
     const { download_link } = await linkRes.json();
@@ -59,22 +84,18 @@ serve(async (req) => {
     // 2. Download the recording (Daily records as MP4 with audio track).
     //    Edge workers have a hard memory ceiling and we hold the buffer +
     //    its base64 form + the JSON body at once, so keep the cap low and
-    //    bail out on the Content-Length before buffering anything.
-    const MAX_INLINE_BYTES = 8 * 1024 * 1024;
-    const audioRes = await fetch(download_link);
+    //    bail out on the Content-Length before buffering anything. A recording over the cap is
+    //    not a failure: it is stored and replayable, only the automatic recap is skipped.
+    const audioRes = await fetch(download_link, { signal: AbortSignal.timeout(60_000) });
     if (!audioRes.ok) throw new Error(`Recording download failed: ${audioRes.status}`);
     const declaredSize = Number(audioRes.headers.get("content-length") ?? 0);
-    if (declaredSize > MAX_INLINE_BYTES) {
+    if (declaredSize > INLINE_TRANSCRIPT_MAX_BYTES) {
       await audioRes.body?.cancel();
-      throw new Error(
-        `Recording too large for inline transcription (${declaredSize} bytes, max ${MAX_INLINE_BYTES}). Chunking not yet implemented.`,
-      );
+      return await skipTooLarge(admin, transcript_id, declaredSize);
     }
     const audioBuf = await audioRes.arrayBuffer();
-    if (audioBuf.byteLength > MAX_INLINE_BYTES) {
-      throw new Error(
-        `Recording too large for inline transcription (${audioBuf.byteLength} bytes, max ${MAX_INLINE_BYTES}). Chunking not yet implemented.`,
-      );
+    if (audioBuf.byteLength > INLINE_TRANSCRIPT_MAX_BYTES) {
+      return await skipTooLarge(admin, transcript_id, audioBuf.byteLength);
     }
 
     const base64Audio = bufferToBase64(audioBuf);
@@ -84,6 +105,7 @@ serve(async (req) => {
     //    using tool calling for structured output.
     const aiRes = await fetch(GATEWAY, {
       method: "POST",
+      signal: AbortSignal.timeout(100_000),
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
@@ -313,11 +335,11 @@ serve(async (req) => {
       e instanceof Error ? `${e.message}\n${e.stack ?? ""}` : String(e),
     );
 
-    if (transcriptId) {
+    if (claimedId) {
       await admin
         .from("call_transcripts")
         .update({ status: "failed", error: e instanceof Error ? e.message : "Unknown" })
-        .eq("id", transcriptId);
+        .eq("id", claimedId);
     }
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
@@ -325,6 +347,44 @@ serve(async (req) => {
     );
   }
 });
+
+/**
+ * The recording is stored and replayable but too big for the inline transcript call. Marks the row so
+ * the UI says so (and nothing retries it), and tells the host the replay is saved.
+ */
+async function skipTooLarge(admin: ReturnType<typeof createClient>, transcriptId: string, bytes: number): Promise<Response> {
+  const mb = (n: number) => `${Math.round(n / (1024 * 1024))} MB`;
+  const { error } = await admin
+    .from("call_transcripts")
+    .update({
+      status: "failed",
+      error: transcriptSkippedError("too_large", `${mb(bytes)}, limit ${mb(INLINE_TRANSCRIPT_MAX_BYTES)}`),
+    })
+    .eq("id", transcriptId);
+  if (error) throw new Error(`Could not record the skipped transcript: ${error.message}`);
+
+  // Best-effort: the host should learn the recording is saved even though there is no recap.
+  try {
+    const { data: t } = await admin.from("call_transcripts").select("created_by").eq("id", transcriptId).maybeSingle();
+    if (t?.created_by) {
+      await admin.from("notifications").insert({
+        user_id: t.created_by,
+        type: "call_recording_saved",
+        title: "Your recording is saved",
+        message: "The replay is in Recordings. This call is too long for an automatic recap.",
+        action_url: "/recordings",
+        action_text: "Open Recordings",
+        category: "calls",
+        priority: "normal",
+      });
+    }
+  } catch (e) {
+    console.warn("[transcribe-call] saved-recording notice failed", e);
+  }
+  return new Response(JSON.stringify({ ok: true, skipped: "too_large", transcript_id: transcriptId }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 function bufferToBase64(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);

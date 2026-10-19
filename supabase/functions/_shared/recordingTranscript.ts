@@ -34,3 +34,34 @@ export function isTranscriptSkipped(error: string | null | undefined): boolean {
 export function transcriptSkipReason(error: string | null | undefined): TranscriptSkipReason | null {
   return isTranscriptSkipped(error) ? "too_large" : null;
 }
+
+/** A transcript job that has not moved for this long is treated as lost and may be queued again. */
+export const TRANSCRIPT_STALLED_AFTER_MS = 20 * 60 * 1000;
+/** A row still "pending" this long after it was created never had its job picked up. */
+export const TRANSCRIPT_UNSTARTED_AFTER_MS = 2 * 60 * 1000;
+
+export interface QueueDecisionRow {
+  status: string;
+  error?: string | null;
+  created_at?: string | null;
+}
+
+/**
+ * Should a webhook/sync that finds this row queue a transcript job?
+ *
+ * A job that is already running or done must not be queued twice (the job inserts action items, so a
+ * second run would duplicate them), and a transcript that was skipped on purpose is final. Daily can
+ * deliver the same event more than once within seconds, so a fresh "pending" row is left alone: only a
+ * row whose job evidently never started (pending for a couple of minutes) or never finished (running for
+ * 20 minutes) is queued again. A failed transcript is retried: that is what a retry or "Sync now" is for.
+ */
+export function shouldQueueTranscription(row: QueueDecisionRow | null | undefined, now: number = Date.now()): boolean {
+  if (!row) return true;
+  if (row.status === "ready") return false;
+  if (row.status === "failed") return !isTranscriptSkipped(row.error);
+  const created = row.created_at ? Date.parse(row.created_at) : NaN;
+  const age = Number.isFinite(created) ? now - created : Number.POSITIVE_INFINITY;
+  if (row.status === "pending") return age > TRANSCRIPT_UNSTARTED_AFTER_MS;
+  if (row.status === "transcribing") return age > TRANSCRIPT_STALLED_AFTER_MS;
+  return false;
+}

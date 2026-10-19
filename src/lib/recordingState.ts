@@ -1,4 +1,4 @@
-import { isTranscriptSkipped } from "../../supabase/functions/_shared/recordingTranscript";
+import { TRANSCRIPT_STALLED_AFTER_MS, isTranscriptSkipped } from "../../supabase/functions/_shared/recordingTranscript";
 
 /**
  * One vocabulary for "what state is this recording in", on both sides of a call.
@@ -44,8 +44,8 @@ export interface StoredRecordingState {
   tone: RecordingTone;
 }
 
-/** A transcript that has been pending or transcribing this long is not "in progress" any more. */
-export const TRANSCRIPT_STALLED_AFTER_MS = 20 * 60 * 1000;
+/** A transcript that has been pending or transcribing this long is not "in progress" any more (the server re-queues it after the same delay). */
+export { TRANSCRIPT_STALLED_AFTER_MS };
 
 export function describeStoredRecording(f: StoredRecordingFacts, now: number = Date.now()): StoredRecordingState {
   const availability: RecordingAvailability = !f.recording_id ? "none" : f.recording_deleted_at ? "expired" : "available";
