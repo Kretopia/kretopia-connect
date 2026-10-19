@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export function CallBrand() {
-  return <span className="flex shrink-0 items-center gap-2"><BrandLogo iconOnly size="sm" /><span className="hidden sm:inline text-xs font-semibold">Kretopia</span></span>;
+  return <span className="flex shrink-0 items-center gap-2"><BrandLogo iconOnly size="sm" /><span className="text-xs font-semibold">Kretopia</span></span>;
 }
 
 /** Presentation only: Daily remains authoritative for devices and sidebar state. */

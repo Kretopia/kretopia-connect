@@ -96,6 +96,7 @@ export const VideoCallSheet = ({
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const [mediaCall, setMediaCall] = useState<DailyCall | null>(null);
   const startedAtRef = useRef<number | null>(null);
   const didRecordRef = useRef<boolean>(false);
   const [phase, setPhase] = useState<Phase>("lobby");
@@ -158,6 +159,7 @@ export const VideoCallSheet = ({
         return;
       }
       callRef.current = frame;
+      setMediaCall(frame);
 
       frame.on("left-meeting", () => onOpenChange(false));
       frame.on("recording-started", (ev: any) => {
@@ -314,6 +316,7 @@ export const VideoCallSheet = ({
 
       const f = frame ?? callRef.current;
       callRef.current = null;
+      setMediaCall(null);
       // Fire-and-forget async teardown; awaiting destroy prevents the next
       // mount from crashing on a half-torn-down singleton.
       void (async () => {
@@ -512,7 +515,7 @@ export const VideoCallSheet = ({
               <div
                 className="k-call-footer"
               >
-                <CallMediaControls call={callRef.current} />
+                <CallMediaControls call={mediaCall} />
                 <div className="k-call-controls">
                   <Button
                     type="button"

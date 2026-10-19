@@ -42,6 +42,7 @@ export default function GuestCall() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const callRef = useRef<DailyCall | null>(null);
+  const [mediaCall, setMediaCall] = useState<DailyCall | null>(null);
 
   const join = async () => {
     if (!token || !name.trim()) return;
@@ -65,6 +66,7 @@ export default function GuestCall() {
         showFullscreenButton: true,
       });
       callRef.current = frame;
+      setMediaCall(frame);
 
       frame.on("left-meeting", () => setPhase("ended"));
       frame.on("local-screen-share-started", () => setSharing(true));
@@ -247,7 +249,7 @@ export default function GuestCall() {
           <div
             className="k-call-footer"
           >
-            <CallMediaControls call={callRef.current} />
+            <CallMediaControls call={mediaCall} />
             <div className="k-call-controls">
               <Button
                 type="button"
