@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import type { DailyCall } from "@daily-co/daily-js";
 import { Mic, MicOff, Video, VideoOff, Users, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BrandLogo } from "@/components/BrandLogo";
+import kMark from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 export function CallBrand() {
-  return <span className="flex shrink-0 items-center gap-2"><BrandLogo iconOnly size="sm" /><span className="text-xs font-semibold">Kretopia</span></span>;
+  return <span className="flex shrink-0 items-center gap-2"><span className="relative h-7 w-7 flex items-center justify-center"><span aria-hidden="true" className="k-gradient-text text-xl font-black">K</span><img src={kMark.url} alt="Kretopia" className="absolute inset-0 h-full w-full object-contain bg-background" onError={(event) => { event.currentTarget.hidden = true; }} /></span><span className="text-xs font-semibold">Kretopia</span></span>;
 }
 
 /** Presentation only: Daily remains authoritative for devices and sidebar state. */

@@ -1,4 +1,3 @@
-import { CallBrand } from "@/components/calls/CallMediaControls";
 // AdmitQueue — host-only overlay listing knockers waiting at the door.
 // Mounts on top of an active Daily call frame; uses Daily waiting-participant
 // events so we don't poll. Mobile-first slide-up sheet.

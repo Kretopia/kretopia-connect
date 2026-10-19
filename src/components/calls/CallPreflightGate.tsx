@@ -1,4 +1,3 @@
-import { CallBrand } from "@/components/calls/CallMediaControls";
 import { useEffect, useState } from "react";
 import { ShieldAlert, Copy, ExternalLink, X, Check } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";

@@ -1,4 +1,4 @@
-import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
+import { CallBrand } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Video, VideoOff, X, Users } from "lucide-react";
