@@ -31,3 +31,6 @@ Items found while doing the product corrections of 2026-10-21 that need a produc
 
 ## KrePay proof of payment
 - Design only: `docs/product/KREPAY_PROOF_OF_PAYMENT.md`, with five open questions at its end (default reviewer, retention, whether a bare reference can reach Verified, whether `manual_bank_transfers.status` already has the four values, scope of currencies).
+
+## Projects
+- **Archiving a project does not work.** `projects_status_check` allows only active, completed, paused and cancelled, but the project settings menu, the older settings component and the server tool that archives a project all write `status: 'archived'`, which the database rejects. Found 2026-10-21 while testing M11; no project is archived. Fix: allow `archived` in the check (a migration, needs approval) or have the app use an allowed status.
