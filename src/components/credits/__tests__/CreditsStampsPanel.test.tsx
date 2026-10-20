@@ -1,9 +1,20 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import type { MyCredit } from "@/hooks/useMyCredits";
 
 const nav = vi.hoisted(() => ({ navigate: vi.fn() }));
+const db = vi.hoisted(() => ({ requests: [] as Array<Record<string, unknown>> }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "me" } }) }));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { from: () => ({ select: () => ({ eq: () => ({ order: () => Promise.resolve({ data: db.requests, error: null }) }) }) }) },
+}));
+vi.mock("@/components/profile/CreditEndorsementDialog", () => ({
+  CreditEndorsementDialog: ({ credit, onOpenChange }: any) => (
+    <div role="dialog" aria-label="ask dialog"><span>asking for {credit.project_name}</span><button onClick={() => onOpenChange(false)}>close ask</button></div>
+  ),
+}));
 vi.mock("react-router-dom", async (orig) => ({ ...(await orig<typeof import("react-router-dom")>()), useNavigate: () => nav.navigate }));
 vi.mock("@/lib/thumbnailExtractor", () => ({ resolveCreditThumbnail: () => null }));
 
@@ -28,9 +39,11 @@ const credit = (over: Partial<MyCredit> & { id: string; project_name: string }):
 
 const renderPanel = (credits: MyCredit[]) =>
   render(
-    <MemoryRouter>
-      <CreditsStampsPanel credits={credits} query="" />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <CreditsStampsPanel credits={credits} query="" />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 const row = (name: string) => screen.getByRole("heading", { name }).closest("li")!;
@@ -56,7 +69,7 @@ describe("Credits stamps: what proof each credit has", () => {
   it("no longer calls a co-signed credit 'Pending co-sign' (it has co-signs), nor shows 'Verified' for anything else", () => {
     renderPanel(credits);
     expect(screen.queryByText(/Pending co-sign/)).toBeNull();
-    expect(screen.getAllByText("Verified")).toHaveLength(1);
+    expect(screen.getAllByText("Verified").filter((el) => !el.closest("details"))).toHaveLength(1);
   });
 
   it("explains each status in its tooltip with what it does and does not prove", () => {
@@ -102,5 +115,53 @@ describe("Credits stamps: what proof each credit has", () => {
     const { unmount } = renderPanel([]);
     expect(screen.getAllByText("No credits on your record yet").length).toBeGreaterThan(0);
     unmount();
+  });
+});
+
+describe("Credits stamps: asking for a co-sign and seeing where it stands", () => {
+  const credits = [
+    credit({ id: "v", project_name: "Verified film", verification_status: "verified" }),
+    credit({ id: "n", project_name: "Bare claim" }),
+    credit({ id: "w", project_name: "Waiting doc" }),
+    credit({ id: "a", project_name: "Answered clip", endorsement_count: 1 }),
+    credit({ id: "d", project_name: "Declined reel" }),
+  ];
+  const ago = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString();
+
+  it("offers Ask for a co-sign on a credit nobody confirmed, not on a verified one, and opens the existing request flow", async () => {
+    db.requests = [];
+    renderPanel(credits);
+    expect(within(row("Verified film")).queryByRole("button", { name: /Ask/ })).toBeNull();
+    fireEvent.click(within(row("Bare claim")).getByRole("button", { name: "Ask for a co-sign" }));
+    expect(await screen.findByText("asking for Bare claim")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("close ask"));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "ask dialog" })).toBeNull());
+  });
+
+  it("shows pending, accepted and declined with who and when, and never offers a second request to someone who has not answered", async () => {
+    db.requests = [
+      { credit_id: "w", token: "t1", endorser_name: "Ada", status: "pending", requested_at: ago(3), responded_at: null },
+      { credit_id: "a", token: "t2", endorser_name: "Grace", status: "accepted", requested_at: ago(9), responded_at: ago(8) },
+      { credit_id: "d", token: "t3", endorser_name: "Linus", status: "declined", requested_at: ago(9), responded_at: ago(7) },
+      { credit_id: "n", token: "t4", endorser_name: "Odd", status: "something_new", requested_at: ago(1), responded_at: null },
+    ];
+    renderPanel(credits);
+    expect(await within(row("Waiting doc")).findByText("Request sent to Ada · Pending, asked 3 days ago")).toBeInTheDocument();
+    expect(within(row("Waiting doc")).queryByRole("button", { name: /Ask/ })).toBeNull();
+    expect(within(row("Answered clip")).getByText(/^Co-signed by Grace on /)).toBeInTheDocument();
+    expect(within(row("Answered clip")).queryByRole("button", { name: /Ask/ })).toBeNull();
+    expect(within(row("Declined reel")).getByText(/^Linus declined on /)).toBeInTheDocument();
+    expect(within(row("Declined reel")).getByRole("button", { name: "Ask someone else" })).toBeInTheDocument();
+    expect(within(row("Bare claim")).queryByText(/Odd/)).toBeNull();
+    expect(within(row("Bare claim")).getByRole("button", { name: "Ask for a co-sign" })).toBeInTheDocument();
+  });
+
+  it("explains the statuses once, in plain words, without claiming certainty", () => {
+    db.requests = [];
+    renderPanel(credits);
+    const legend = document.querySelector("details")!;
+    expect(legend.textContent).toContain("Verified means the contribution was confirmed by the relevant collaborator or client");
+    expect(legend.textContent).toContain("never proof and never 100% certain");
+    for (const label of ["Self-declared", "Co-signed", "AI-checked", "Verified"]) expect(within(legend).getByText(label)).toBeInTheDocument();
   });
 });

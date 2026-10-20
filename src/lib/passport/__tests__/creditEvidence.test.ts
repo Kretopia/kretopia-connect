@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  aiCheckNote,
   classifyCreditEvidence,
   creditEvidenceBasis,
   creditEvidenceLabel,
   creditEvidenceMeaning,
   creditNextStep,
+  VERIFICATION_LEGEND,
   type CreditEvidenceStatus,
 } from "../creditEvidence";
 
@@ -88,5 +90,35 @@ describe("creditNextStep: what the owner can do about it", () => {
     expect(creditNextStep("pending", true)).toBe("Waiting on a reply or a review.");
     expect(creditNextStep("verified", true)).toBeNull();
     expect(creditNextStep("co_signed", false)).toBeNull();
+  });
+});
+
+describe("AI-checked: a lead beside the status, never proof", () => {
+  it("describes what the check found in plain words and never as certain", () => {
+    expect(aiCheckNote(0.92)).toBe("AI-checked: possible public evidence found (not proof)");
+    expect(aiCheckNote(0.1)).toBe("AI-checked: no public evidence found");
+    expect(aiCheckNote(0.5)).toBe("AI-checked: inconclusive");
+    for (const never of [null, undefined, Number.NaN, "0.9" as unknown as number]) expect(aiCheckNote(never)).toBeNull();
+    for (const c of [0, 0.29, 0.3, 0.69, 0.7, 1]) expect(aiCheckNote(c)).not.toMatch(/100%|certain|confirmed|verified/i);
+  });
+
+  it("is mentioned in the basis of a credit that is not verified, and never changes the status", () => {
+    expect(classifyCreditEvidence({ verification_status: "unverified", ai_confidence: 0.95 })).toBe("self_claimed");
+    expect(creditEvidenceBasis({ verification_status: "unverified", ai_confidence: 0.95 })).toBe("Self-declared · AI-checked: possible public evidence found (not proof)");
+    expect(creditEvidenceBasis({ endorsement_count: 1, ai_confidence: 0.1 })).toBe("Co-signed by 1 collaborator · AI-checked: no public evidence found");
+    expect(creditEvidenceBasis({ verification_status: "unverified" })).toBe("Self-declared");
+  });
+
+  it("does not add the AI note to a credit that is already verified", () => {
+    expect(creditEvidenceBasis({ verification_status: "verified", ai_confidence: 0.9, source: "youtube" })).toBe("Verified on YouTube");
+  });
+});
+
+describe("the legend", () => {
+  it("defines the four statuses a reader meets, with the owner's sentence for Verified and no claim of certainty", () => {
+    expect(VERIFICATION_LEGEND.map((l) => l.label)).toEqual(["Self-declared", "Co-signed", "AI-checked", "Verified"]);
+    const verified = VERIFICATION_LEGEND.find((l) => l.key === "verified")!;
+    expect(verified.meaning.startsWith("Verified means the contribution was confirmed by the relevant collaborator or client.")).toBe(true);
+    expect(VERIFICATION_LEGEND.find((l) => l.key === "ai_checked")!.meaning).toMatch(/never proof and never 100% certain/);
   });
 });

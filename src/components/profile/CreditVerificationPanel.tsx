@@ -39,7 +39,7 @@ interface ResolvedEndorsement extends PendingEndorsement {
 // rendered here only in case a row is ever set to it manually or by a future
 // job; the card never claims an expiry mechanism is running today.
 const RESOLVED_STATUS_META: Record<ResolvedEndorsement["status"], { label: string; icon: typeof Check; tagClassName: string }> = {
-  accepted: { label: "Verified — co-signed", icon: ShieldCheck, tagClassName: "bg-[hsl(var(--signal-teal))] text-black" },
+  accepted: { label: "Co-signed", icon: ShieldCheck, tagClassName: "bg-[hsl(var(--signal-teal))] text-black" },
   declined: { label: "Declined", icon: XCircle, tagClassName: "bg-muted text-muted-foreground" },
   expired: { label: "Expired — no response", icon: Clock, tagClassName: "bg-muted text-muted-foreground" },
 };

@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { MyCredit } from "@/hooks/useMyCredits";
 import { DashboardPanel, CreditsEmptyState, CreditsPanelSkeleton } from "./CreditsPrimitives";
 import { resolveCreditThumbnail } from "@/lib/thumbnailExtractor";
+import { useAuth } from "@/hooks/useAuth";
+import { useCosignRequests } from "@/hooks/useCosignRequests";
+import { describeCosignRequest, leadingCosignRequest } from "@/lib/passport/cosignRequests";
+import { CreditEndorsementDialog } from "@/components/profile/CreditEndorsementDialog";
+import { VerificationLegend } from "@/components/passport/VerificationLegend";
 import {
   classifyCreditEvidence,
   creditEvidenceBasis,
@@ -38,6 +44,9 @@ const STATUS_CHIP: Record<CreditEvidenceStatus, { icon: LucideIcon; cls: string 
  */
 export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { byCredit: requestsByCredit, refresh: refreshRequests } = useCosignRequests(user?.id);
+  const [askCredit, setAskCredit] = useState<MyCredit | null>(null);
 
   return (
     <DashboardPanel
@@ -82,6 +91,8 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
           />
         )
       ) : (
+        <>
+        <VerificationLegend className="mb-3" />
         <ul className="space-y-2">
           {credits.map((c) => {
             const status = classifyCreditEvidence(c);
@@ -89,6 +100,8 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
             const hasEvidence = Boolean(c.url || c.primary_media_url);
             const nextStep = creditNextStep(status, hasEvidence);
             const img = resolveCreditThumbnail(c.thumbnail_url, c.primary_media_url, c.url);
+            const request = leadingCosignRequest(requestsByCredit.get(c.id));
+            const canAsk = Boolean(user) && status !== "verified" && request?.state !== "pending" && request?.state !== "accepted";
             return (
               <li key={c.id}>
                 <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 transition-colors hover:border-primary/40">
@@ -108,13 +121,30 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
                       {creditEvidenceBasis(c)}
                       {nextStep ? ` · ${nextStep}` : ""}
                     </p>
+                    {request && (
+                      <p className={cn("mt-0.5 text-[11px] leading-snug", request.state === "accepted" ? "text-teal-300" : request.state === "pending" ? "text-muted-foreground" : "text-destructive")}>
+                        {describeCosignRequest(request)}
+                      </p>
+                    )}
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <Link
                       to={`/profile?credit=${c.id}`}
-                      className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground underline-offset-2 hover:underline"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-foreground underline-offset-2 hover:underline"
                     >
                       View on Passport
                       <ArrowUpRight className="h-3 w-3" aria-hidden />
                     </Link>
+                    {canAsk && (
+                      <button
+                        type="button"
+                        onClick={() => setAskCredit(c)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        <Handshake className="h-3 w-3" aria-hidden />
+                        {request ? "Ask someone else" : "Ask for a co-sign"}
+                      </button>
+                    )}
+                    </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     <span
@@ -148,6 +178,15 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
             );
           })}
         </ul>
+        {askCredit && user && (
+          <CreditEndorsementDialog
+            open
+            onOpenChange={(open) => { if (!open) { setAskCredit(null); void refreshRequests(); } }}
+            credit={{ id: askCredit.id, project_name: askCredit.project_name, role: askCredit.role, year: askCredit.year ?? undefined }}
+            userId={user.id}
+          />
+        )}
+        </>
       )}
     </DashboardPanel>
   );
