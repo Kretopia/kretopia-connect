@@ -12,13 +12,21 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
+// The YouTube sync stores the audience as `subscriberCount`, usually a numeric string; the others use one numeric field.
 const platforms = [
-  { id: "youtube", icon: Youtube, label: "YouTube", field: "subscribers" },
-  { id: "instagram", icon: Instagram, label: "Instagram", field: "followers" },
-  { id: "tiktok", icon: Music, label: "TikTok", field: "followers" },
-  { id: "twitter", icon: Twitter, label: "X", field: "followers" },
-  { id: "spotify", icon: Music, label: "Spotify listeners", field: "monthlyListeners" },
+  { id: "youtube", icon: Youtube, label: "YouTube", fields: ["subscribers", "subscriberCount"] },
+  { id: "instagram", icon: Instagram, label: "Instagram", fields: ["followers"] },
+  { id: "tiktok", icon: Music, label: "TikTok", fields: ["followers"] },
+  { id: "twitter", icon: Twitter, label: "X", fields: ["followers"] },
+  { id: "spotify", icon: Music, label: "Spotify listeners", fields: ["monthlyListeners"] },
 ] as const;
+
+/** A count the sync really stored: a non-negative number, or a string of digits. Anything else is not shown. */
+export const readAudienceCount = (value: unknown): number | null => {
+  if (typeof value === "number") return Number.isFinite(value) && value >= 0 ? value : null;
+  if (typeof value === "string" && /^\d{1,12}$/.test(value.trim())) return Number(value.trim());
+  return null;
+};
 
 type ReachMetric = { label: string; value: number; icon: typeof Youtube; syncedAt: string | null };
 
@@ -35,8 +43,8 @@ export const SocialStatsInline = ({ userId }: SocialStatsInlineProps) => {
       const platform = platforms.find((item) => item.id === row.platform);
       const details = row.platform_data;
       if (!platform || !details || typeof details !== "object" || Array.isArray(details)) return [];
-      const value = details[platform.field];
-      return typeof value === "number" && Number.isFinite(value) && value >= 0
+      const value = platform.fields.map((field) => readAudienceCount(details[field])).find((count) => count !== null) ?? null;
+      return value !== null
         ? [{ label: platform.label, value, icon: platform.icon, syncedAt: row.last_synced_at }]
         : [];
     });
