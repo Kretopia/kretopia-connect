@@ -153,3 +153,29 @@ describe("the lobby", () => {
     expect(invite.className).toMatch(/(^|\s)!absolute(\s|$)/);
   });
 });
+
+describe("one call toolbar", () => {
+  it("keeps every critical control in the top bar, once each, and has no footer bars", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    await joined();
+    const bar = within(screen.getByRole("toolbar", { name: "Call controls" }));
+    for (const name of ["Mute microphone", "Turn camera off", "Share screen", "Participants", "Chat", "Start recording", "Leave call"]) {
+      expect(bar.getAllByRole("button", { name })).toHaveLength(1);
+    }
+    expect(screen.getAllByRole("toolbar")).toHaveLength(1);
+    expect(document.querySelector(".k-call-footer")).toBeNull();
+    expect(document.querySelector(".k-call-controls")).toBeNull();
+    expect(screen.getByRole("toolbar").closest("header")).toBeTruthy();
+  });
+
+  it("keeps the toolbar actions working: share, record and the invite entry in the menu", async () => {
+    fake.call.startScreenShare = vi.fn(async () => {});
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    await joined();
+    fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: "Share screen" }));
+    await waitFor(() => expect(fake.call.startScreenShare).toHaveBeenCalled());
+    fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: "Start recording" }));
+    await waitFor(() => expect(fake.call.startRecording).toHaveBeenCalled());
+    expect(within(screen.getByRole("toolbar")).getByRole("button", { name: "More call options" })).toBeTruthy();
+  });
+});

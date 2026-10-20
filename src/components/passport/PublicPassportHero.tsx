@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
@@ -7,6 +8,7 @@ import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicato
 import { TrustSignals } from "@/components/profile/TrustSignals";
 import { cn } from "@/lib/utils";
 import {
+  CalendarDays,
   CheckCircle2,
   Fingerprint,
   FolderPlus,
@@ -57,6 +59,8 @@ interface PublicPassportHeroProps {
   children?: ReactNode;
   showBio?: boolean;
   showActions?: boolean;
+  /** The creative's booking page, set only when they have active booking hours; no path, no booking action. */
+  bookingPath?: string | null;
 }
 
 export function PublicPassportHero({
@@ -75,6 +79,7 @@ export function PublicPassportHero({
   children,
   showBio = true,
   showActions = true,
+  bookingPath = null,
 }: PublicPassportHeroProps) {
   const passportId = useMemo(
     () => profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—",
@@ -157,6 +162,14 @@ export function PublicPassportHero({
 
            {showActions && !isOwner && (
             <div className="grid grid-cols-2 gap-2 border-t border-border/60 pt-4">
+              {bookingPath && (
+                <div className="col-span-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <span className="text-xs font-medium text-foreground">Available to book</span>
+                  <Button asChild size="sm" className="gap-1.5">
+                    <Link to={bookingPath}><CalendarDays className="h-4 w-4" />Book</Link>
+                  </Button>
+                </div>
+              )}
               {!isSignedIn ? (
                 <Button onClick={onJoin} className="col-span-2 gap-2"><UserPlus className="h-4 w-4" />Connect with {profile.full_name?.split(" ")[0] || "this creator"}</Button>
               ) : connected ? (

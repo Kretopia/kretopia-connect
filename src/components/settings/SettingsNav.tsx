@@ -16,14 +16,14 @@ interface SettingsNavProps {
 /**
  * CDO audit canonical Settings navigation (L4: SettingsNav). Persistent,
  * categorized, with an active state -- desktop renders it as a sidebar
- * column, mobile as a horizontal scrollable row of the same buttons
- * (no separate mobile component to keep in sync).
+ * column, mobile as a wrapping row of the same buttons, so every section stays visible
+ * without a hidden horizontal scroll (no separate mobile component to keep in sync).
  */
 export function SettingsNav({ domains, active, onSelect }: SettingsNavProps) {
   return (
     <nav
       aria-label="Settings sections"
-      className="flex gap-1 overflow-x-auto pb-2 md:w-48 md:shrink-0 md:flex-col md:overflow-visible md:pb-0"
+      className="flex flex-wrap gap-1 pb-2 md:w-48 md:shrink-0 md:flex-col md:flex-nowrap md:pb-0"
     >
       {domains.map((d) => {
         const Icon = d.icon;

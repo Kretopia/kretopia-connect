@@ -323,7 +323,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "relative h-8 w-8 sm:h-10 sm:w-10 lg:hidden",
+                  "relative h-8 w-8 sm:h-10 sm:w-10",
                   isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
                 )}
                 aria-label="Search"
@@ -332,10 +332,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
               </Button>
             </SheetTrigger>
             <SheetContent side="top" className="w-full">
-              <SheetHeader>
+              <SheetHeader className="mx-auto w-full max-w-2xl">
                 <SheetTitle>Search</SheetTitle>
               </SheetHeader>
-              <div className="mt-4">
+              <div className="mx-auto mt-4 w-full max-w-2xl">
                 <UnifiedSearchDropdown variant="hero" placeholder="Search Kretopia" autoFocus />
               </div>
             </SheetContent>

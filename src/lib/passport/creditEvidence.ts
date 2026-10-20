@@ -20,6 +20,8 @@ export type CreditEvidenceStatus = "verified" | "co_signed" | "publicly_sourced"
 export interface EvidenceInput {
   verification_status?: string | null;
   endorsement_count?: number | null;
+  /** Result of Kreto's public-source check, 0 to 1. It never changes the status; it is only mentioned beside it. */
+  ai_confidence?: number | null;
 }
 
 const EVIDENCE_LABEL: Record<CreditEvidenceStatus, string> = {
@@ -31,12 +33,32 @@ const EVIDENCE_LABEL: Record<CreditEvidenceStatus, string> = {
 };
 
 const EVIDENCE_MEANING: Record<CreditEvidenceStatus, string> = {
-  verified: "Confirmed by an authoritative source or through Kretopia's verification.",
+  verified: "Confirmed by someone other than its owner: the relevant collaborator or client, the platform it comes from, or Kretopia's own record of the work.",
   co_signed: "Collaborators who worked on it vouch for it. Not yet verified by an authoritative source.",
   publicly_sourced: "Found in public records and claimed by its owner. Not independently verified.",
   pending: "A confirmation or review is under way. It does not count as proof yet.",
   self_claimed: "Added by its owner. Nothing independent confirms it yet.",
 };
+
+/**
+ * The four words a reader meets on a credit, in the order of how much they prove, with what each one means.
+ * The Verified sentence is the owner's; the last part is true to the data: credits Kretopia records itself or
+ * imports from a platform are marked Verified too, and every credit says which basis it has.
+ */
+export const VERIFICATION_LEGEND: ReadonlyArray<{ key: "self_claimed" | "co_signed" | "ai_checked" | "verified"; label: string; meaning: string }> = [
+  { key: "self_claimed", label: "Self-declared", meaning: "Added by its owner. Nothing independent confirms it yet." },
+  { key: "co_signed", label: "Co-signed", meaning: "A collaborator who worked on it vouches for it. It is not Verified until it is confirmed." },
+  { key: "ai_checked", label: "AI-checked", meaning: "Kreto searched public sources for signs of it. That is a lead, never proof and never 100% certain, and it does not make a credit Verified on its own." },
+  { key: "verified", label: "Verified", meaning: "Verified means the contribution was confirmed by the relevant collaborator or client. Credits Kretopia records itself or finds on a platform such as YouTube or IMDb are marked Verified too, and each credit shows which basis it has." },
+];
+
+/** What Kreto's public-source check found, in plain words, or null when it never ran. Never a claim of certainty. */
+export function aiCheckNote(aiConfidence: number | null | undefined): string | null {
+  if (typeof aiConfidence !== "number" || !Number.isFinite(aiConfidence)) return null;
+  if (aiConfidence >= 0.7) return "AI-checked: possible public evidence found (not proof)";
+  if (aiConfidence < 0.3) return "AI-checked: no public evidence found";
+  return "AI-checked: inconclusive";
+}
 
 export function classifyCreditEvidence(credit: EvidenceInput): CreditEvidenceStatus {
   const verificationStatus = credit.verification_status ?? "unverified";
@@ -96,8 +118,10 @@ export function creditEvidenceBasis(credit: EvidenceInput & { source?: string | 
     const platform = PLATFORM_SOURCE_LABEL[(credit.source || "").toLowerCase()];
     return platform ? `Verified on ${platform}` : "Verified by Kretopia";
   }
-  if (status === "publicly_sourced") return "Found in public records";
-  if (status === "co_signed") return `Co-signed by ${peers} collaborator${peers === 1 ? "" : "s"}`;
-  if (status === "pending") return "Awaiting confirmation";
-  return "Self-declared";
+  const ai = aiCheckNote(credit.ai_confidence);
+  const withAi = (basis: string) => (ai ? `${basis} · ${ai}` : basis);
+  if (status === "publicly_sourced") return withAi("Found in public records");
+  if (status === "co_signed") return withAi(`Co-signed by ${peers} collaborator${peers === 1 ? "" : "s"}`);
+  if (status === "pending") return withAi("Awaiting confirmation");
+  return withAi("Self-declared");
 }

@@ -3,12 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Copy, CheckCircle2, QrCode, Link2, TrendingUp, Users, Zap, ArrowRight, Share2, Gift } from "lucide-react";
+import { Copy, CheckCircle2, QrCode, Link2, TrendingUp, Users, Zap, ArrowRight, Share2, Gift, UserPlus } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useAuth } from "@/hooks/useAuth";
 import { useReferralNetwork } from "@/hooks/useReferralNetwork";
 import { getAllNetworkTiers, getReferralsToNextTier, getProRewardText } from "@/lib/referralEngine";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +35,7 @@ const CreativeCircle = () => {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
   const [personalLink, setPersonalLink] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +101,16 @@ const CreativeCircle = () => {
       />
 
       <StudioFeatureShell wrapped={{ name: "Creative Circle" }}>
+
+      <div className="flex justify-end">
+        <Button
+          size="sm"
+          className="gap-1.5"
+          onClick={() => document.getElementById("invite-friends")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" })}
+        >
+          <UserPlus className="h-4 w-4" /> Invite friends
+        </Button>
+      </div>
 
       {/* Hero — Current Tier, as a real Passport-grade identity surface
           (same HoloCard treatment as the owner Passport / Today's mini
@@ -198,11 +210,11 @@ const CreativeCircle = () => {
       </div>
 
       {/* Invite Action */}
-      <Card className="overflow-hidden rounded-2xl shadow-none border-border/60">
+      <Card id="invite-friends" className="overflow-hidden rounded-2xl shadow-none border-border/60 scroll-mt-24">
         <div className="p-5 space-y-4">
           <h2 className="font-bold text-lg tracking-tight flex items-center gap-2">
             <Users className="h-5 w-5" style={{ color: "hsl(var(--energy))" }} />
-            Invite Creatives
+            Invite friends
           </h2>
 
           {personalLink ? (

@@ -40,6 +40,17 @@ describe("Daily-backed call controls", () => {
     expect(call.startRecording).not.toHaveBeenCalled();
     expect(call.stopRecording).not.toHaveBeenCalled();
   });
+  it("toolbar mode keeps the same four controls icon-only and puts extra items after them", () => {
+    const call = { participants: vi.fn(() => ({ local: { audio: true, video: true } })), on: vi.fn(), off: vi.fn(), setActiveSpeakerMode: vi.fn(), setTheme: vi.fn(async () => ({})), setLocalAudio: vi.fn(), setLocalVideo: vi.fn(), setSidebarView: vi.fn() };
+    render(<CallMediaControls call={call as unknown as DailyCall} toolbar><button>extra</button></CallMediaControls>);
+    const bar = screen.getByRole("toolbar", { name: "Call controls" });
+    expect(Array.from(bar.querySelectorAll("button")).map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual(["Mute microphone", "Turn camera off", "Participants", "Chat", "extra"]);
+    expect(bar.textContent).toBe("extra");
+    fireEvent.click(screen.getByRole("button", { name: "Mute microphone" }));
+    expect(call.setLocalAudio).toHaveBeenCalledExactlyOnceWith(false);
+    fireEvent.click(screen.getByRole("button", { name: "Chat" }));
+    expect(call.setSidebarView).toHaveBeenCalledWith("chat");
+  });
   it("unsubscribes on unmount without destroying the call", () => {
     const { call, unmount } = setup(); unmount();
     expect(call.off.mock.calls.map(([event]) => event)).toEqual(["participant-updated", "joined-meeting"]);

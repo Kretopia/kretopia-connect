@@ -1,8 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { differenceInCalendarDays } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
 import { getShareUrl } from "@/lib/constants";
 import { ShieldCheck, Shield, Clock, Globe, Handshake, ShieldQuestion, BellRing, UserPlus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +8,12 @@ import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots
 import { HoloCard } from "@/components/passport/HoloCard";
 import { EmptyState } from "@/components/ui/empty-state";
 import { CreditEndorsementDialog } from "./CreditEndorsementDialog";
-import { classifyCreditEvidence, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { classifyCreditEvidence, creditEvidenceBasis, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { describeCosignRequest, leadingCosignRequest, type CosignRequest } from "@/lib/passport/cosignRequests";
+import { useCosignRequests } from "@/hooks/useCosignRequests";
+import { VerificationLegend } from "@/components/passport/VerificationLegend";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { cn } from "@/lib/utils";
 
 interface Credit {
   id: string;
@@ -23,18 +24,13 @@ interface Credit {
   platform?: string | null;
   verification_status?: string | null;
   endorsement_count?: number | null;
+  ai_confidence?: number | null;
+  source?: string | null;
 }
 
 interface CoSignsSectionProps {
   credits: Credit[];
   userId: string;
-}
-
-interface PendingRequest {
-  credit_id: string;
-  token: string | null;
-  endorser_name: string | null;
-  requested_at: string;
 }
 
 const GROUP_META: Record<CreditEvidenceStatus, { label: string; description: string; icon: typeof ShieldCheck; badgeClass: string }> = {
@@ -87,33 +83,21 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
   const [reminder, setReminder] = useState<{ link: string; name?: string | null } | null>(null);
   const reducedMotion = useReducedMotion();
 
-  // Requests the user already sent and nobody has answered yet. Without this a
-  // pending credit was a dead end ("Awaiting response", no way to nudge anyone).
+  // Every request the user sent, whatever its state: pending ones can be nudged, answered ones show who and when.
   // If the read is blocked or empty the cards simply fall back to "ask someone".
-  const { data: pendingRequests = [] } = useQuery({
-    queryKey: ["credit-cosign-pending", userId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("credit_endorsements")
-        .select("credit_id, token, endorser_name, requested_at")
-        .eq("requested_by", userId)
-        .eq("status", "pending")
-        .order("requested_at", { ascending: false });
-      if (error) return [] as PendingRequest[];
-      return (data || []) as PendingRequest[];
-    },
-    enabled: !!userId,
-    staleTime: 60_000,
-  });
+  const { byCredit: requestsByCredit, refresh: refreshRequests } = useCosignRequests(userId);
   const pendingByCredit = useMemo(() => {
-    const m = new Map<string, PendingRequest>();
-    for (const r of pendingRequests) if (!m.has(r.credit_id)) m.set(r.credit_id, r);
+    const m = new Map<string, CosignRequest>();
+    for (const [creditId, list] of requestsByCredit) {
+      const waiting = list.find((r) => r.state === "pending");
+      if (waiting) m.set(creditId, waiting);
+    }
     return m;
-  }, [pendingRequests]);
+  }, [requestsByCredit]);
 
   const openRemind = (c: Credit) => {
     const req = pendingByCredit.get(c.id);
-    setReminder(req?.token ? { link: getShareUrl(`/credit-verify?token=${encodeURIComponent(req.token)}`), name: req.endorser_name } : null);
+    setReminder(req?.token ? { link: getShareUrl(`/credit-verify?token=${encodeURIComponent(req.token)}`), name: req.signer } : null);
     setEndorsementCredit(c);
   };
   const openAsk = (c: Credit) => {
@@ -158,6 +142,7 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
             <p className="mt-0.5 text-xs text-muted-foreground">
               A credit someone else confirmed is what lets a client trust your experience at a glance.
             </p>
+            <VerificationLegend className="mt-2" />
           </div>
           {nextToConfirm && (
             <Button size="sm" className="shrink-0 gap-1.5" onClick={() => openAsk(nextToConfirm)}>
@@ -194,7 +179,7 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
                 status={status}
                 label={meta.label}
                 reducedMotion={reducedMotion}
-                pendingByCredit={pendingByCredit}
+                requestsByCredit={requestsByCredit}
                 onRequestCosign={openAsk}
                 onRemind={openRemind}
               />
@@ -206,7 +191,7 @@ export function CoSignsSection({ credits, userId }: CoSignsSectionProps) {
       {endorsementCredit && (
         <CreditEndorsementDialog
           open={!!endorsementCredit}
-          onOpenChange={(open) => { if (!open) { setEndorsementCredit(null); setReminder(null); } }}
+          onOpenChange={(open) => { if (!open) { setEndorsementCredit(null); setReminder(null); void refreshRequests(); } }}
           credit={endorsementCredit}
           userId={userId}
           reminder={reminder}
@@ -221,7 +206,7 @@ function EvidenceCarousel({
   status,
   label,
   reducedMotion,
-  pendingByCredit,
+  requestsByCredit,
   onRequestCosign,
   onRemind,
 }: {
@@ -229,7 +214,7 @@ function EvidenceCarousel({
   status: CreditEvidenceStatus;
   label: string;
   reducedMotion: boolean;
-  pendingByCredit: Map<string, PendingRequest>;
+  requestsByCredit: Map<string, CosignRequest[]>;
   onRequestCosign: (c: Credit) => void;
   onRemind: (c: Credit) => void;
 }) {
@@ -254,10 +239,11 @@ function EvidenceCarousel({
                     <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                       {[c.client_brand || c.platform, c.year].filter(Boolean).join(" · ")}
                     </p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{creditEvidenceBasis(c)}</p>
                     <CardAction
                       credit={c}
                       status={status}
-                      request={pendingByCredit.get(c.id)}
+                      requests={requestsByCredit.get(c.id)}
                       onAsk={onRequestCosign}
                       onRemind={onRemind}
                     />
@@ -282,31 +268,33 @@ function EvidenceCarousel({
 function CardAction({
   credit,
   status,
-  request,
+  requests,
   onAsk,
   onRemind,
 }: {
   credit: Credit;
   status: CreditEvidenceStatus;
-  request?: PendingRequest;
+  requests?: CosignRequest[];
   onAsk: (c: Credit) => void;
   onRemind: (c: Credit) => void;
 }) {
-  // A request is out and unanswered: show how long, and make nudging one tap.
-  if (request || status === "pending") {
-    const days = request ? Math.max(0, differenceInCalendarDays(new Date(), new Date(request.requested_at))) : null;
-    const waiting = days === null ? "Awaiting response" : days === 0 ? "Asked today" : `Asked ${days} day${days === 1 ? "" : "s"} ago`;
+  const lead = leadingCosignRequest(requests);
+  const line = lead ? describeCosignRequest(lead) : null;
+  const tone = lead?.state === "accepted" ? "text-[hsl(var(--signal-teal))]" : lead?.state === "declined" || lead?.state === "expired" ? "text-destructive" : "text-muted-foreground";
+
+  // A request is out and unanswered: say who and for how long, and make nudging one tap (never a second request).
+  if (lead?.state === "pending" || (!lead && status === "pending")) {
     return (
       <div className="mt-auto pt-2">
-        <p className="text-[11px] text-muted-foreground">{waiting}</p>
+        <p className={cn("text-[11px]", tone)}>{line ?? "Awaiting response"}</p>
         <Button
           size="sm"
           variant="outline"
           className="mt-1.5 h-8 w-full gap-1.5 text-xs"
-          onClick={() => (request?.token ? onRemind(credit) : onAsk(credit))}
+          onClick={() => (lead?.token ? onRemind(credit) : onAsk(credit))}
         >
           <BellRing className="h-3.5 w-3.5" />
-          {request?.token ? "Send a reminder" : "Ask someone"}
+          {lead?.token ? "Send a reminder" : "Ask someone"}
         </Button>
       </div>
     );
@@ -314,17 +302,20 @@ function CardAction({
   if (status === "verified") {
     return (
       <div className="mt-auto pt-2">
+        {line && <p className={cn("text-[11px]", tone)}>{line}</p>}
         <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px] text-muted-foreground" onClick={() => onAsk(credit)}>
           Add another co-sign
         </Button>
       </div>
     );
   }
+  const answeredNo = lead?.state === "declined" || lead?.state === "expired";
   return (
     <div className="mt-auto pt-2">
+      {line && <p className={cn("mb-1.5 text-[11px]", tone)}>{line}</p>}
       <Button size="sm" className="h-8 w-full gap-1.5 text-xs" onClick={() => onAsk(credit)}>
         <ShieldCheck className="h-3.5 w-3.5" />
-        Ask for a co-sign
+        {answeredNo ? "Ask someone else" : "Ask for a co-sign"}
       </Button>
     </div>
   );
