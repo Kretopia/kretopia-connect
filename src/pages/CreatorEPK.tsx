@@ -157,6 +157,7 @@ const CreatorEPK = () => {
   const [credits, setCredits] = useState<Credit[]>([]);
   // True totals from the database: `credits` only holds the newest 12.
   const [glanceCounts, setGlanceCounts] = useState<GlanceCounts>({});
+  const [bookable, setBookable] = useState(false);
   const glance = useMemo(
     () =>
       buildHiringGlance(
@@ -243,7 +244,7 @@ const CreatorEPK = () => {
         // Fetch all data in parallel
         // A portfolio piece is not a credit, and `source` can be NULL, which `.neq` would silently drop.
         const notPortfolio = 'source.is.null,source.neq.portfolio';
-        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes, totalRes, confirmedRes, earliestRes] = await Promise.all([
+        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes, totalRes, confirmedRes, earliestRes, bookingRes] = await Promise.all([
           // Portfolio items (from credits with source=portfolio)
           supabase
             .from('credits')
@@ -311,7 +312,11 @@ const CreatorEPK = () => {
           supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).or(notPortfolio),
           supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('verification_status', 'verified').or(notPortfolio),
           supabase.from('credits').select('year').eq('user_id', userId).not('year', 'is', null).or(notPortfolio).order('year', { ascending: true }).limit(1),
+          // Anyone may read a creative's active booking hours (that is what the booking page uses), so this is a safe public signal.
+          supabase.from('creator_booking_windows').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('is_active', true),
         ]);
+
+        setBookable((bookingRes.count ?? 0) > 0);
 
         setGlanceCounts({
           total: totalRes.count ?? null,
@@ -516,6 +521,7 @@ const CreatorEPK = () => {
           passport={
           <PublicPassportHero
             profile={profile}
+            bookingPath={bookable && profile.username ? `/@${profile.username}/book` : null}
             glance={
               <div className="space-y-3">
                 <PassportHiringGlance glance={glance} firstName={firstName} />

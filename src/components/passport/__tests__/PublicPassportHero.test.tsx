@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/profile/AvailabilityIndicator", () => ({ AvailabilityIndicator: () => null }));
@@ -68,5 +69,44 @@ describe("PublicPassportHero", () => {
   it("offers no outbound link of any kind from the Passport card", () => {
     const { container } = render_();
     expect(container.querySelectorAll("a[target=_blank]")).toHaveLength(0);
+  });
+
+  describe("booking", () => {
+    const withBooking = (bookingPath: string | null, isOwner = false) =>
+      render(
+        <MemoryRouter>
+          <PublicPassportHero
+            profile={profile}
+            connectionStatus="none"
+            isOwner={isOwner}
+            isSignedIn={false}
+            isConnecting={false}
+            onConnect={() => {}}
+            onMessage={() => {}}
+            onCollaborate={() => {}}
+            onAddToProject={() => {}}
+            onShare={() => {}}
+            onJoin={() => {}}
+            bookingPath={bookingPath}
+          />
+        </MemoryRouter>,
+      );
+
+    it("shows 'Available to book' and a Book link to the booking page only when the creative has booking hours", () => {
+      withBooking("/@maya/book");
+      expect(screen.getByText("Available to book")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "Book" })).toHaveAttribute("href", "/@maya/book");
+    });
+
+    it("shows no booking action, and no dead end, when there are no booking hours", () => {
+      withBooking(null);
+      expect(screen.queryByText("Available to book")).toBeNull();
+      expect(screen.queryByRole("link", { name: "Book" })).toBeNull();
+    });
+
+    it("does not offer the owner a way to book themselves", () => {
+      withBooking("/@maya/book", true);
+      expect(screen.queryByRole("link", { name: "Book" })).toBeNull();
+    });
   });
 });
