@@ -1,6 +1,6 @@
 # Schema impact report: PROPOSED, NOT APPLIED
 
-Update 2026-10-20: **M5 (`call_transcripts` has no client UPDATE) is APPLIED to production** (approved; see M5 below). Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
+Update 2026-10-20: **M6 (guard on the payer columns of `projects`) is APPLIED to production** (approved; see M6 below). **M5 (`call_transcripts` has no client UPDATE) is APPLIED to production** (approved; see M5 below). Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
 
 Status (original, October 3): nothing in this document has been run or added as a migration file. No migration will be added without explicit approval. Based on reading `origin/main` migrations; the live legacy backend was not inspected (Supabase connector not authorised), so live policies, grants and row counts are unknown. Migrations `20260824100000` and `20260825100000` are headed "PREPARED, NOT APPLIED" and their live state is unknown.
 
@@ -104,7 +104,7 @@ Risk: LOW. Realtime UPDATE events keep reaching subscribers (they depend on SELE
 
 Acceptance (after apply, as a creator of a transcript): an UPDATE of `recording_id` or `project_id` is refused; the Recordings page, a call recap and a recording link still work; a new recording still produces a row (service role). A migration file and the captured pre-state would be added in the same PR as the approval.
 
-## M6: payer and agent columns on `projects` are writable by any accepted collaborator (NEEDS APPROVAL, not applied, no SQL on purpose)
+## M6: payer and agent columns on `projects` are writable by any accepted collaborator (APPLIED 2026-10-20)
 
 Evidence, production, read-only, 2026-10-20 (the one write test ran in a block that always rolls back):
 - The `projects` UPDATE policy admits the owner and every accepted collaborator whatever their role, and `authenticated` holds UPDATE on all columns except four money columns (`client_price`, `creative_payout`, `margin_type`, `margin_value`, which are protected by column grants and were confirmed refused). M0a closed `created_by` only.
@@ -117,7 +117,7 @@ Proposal (same shape as M0a, because an RLS `WITH CHECK` cannot compare old and 
 
 Product decision, not proposed here: who may change `status`, `recap_published`, `recap_summary`, `budget`, `deadline`, `video_room_url`, `match_id` and `event_id`. Today a guest can mark a project completed (which creates pending credits for all collaborators through `auto_generate_project_credits`) or publish its recap. Options: owner-only for status and recap; or role-based. This is the role-blind remainder of M1 below.
 
-Risk: LOW for the guard. Rollback: drop the trigger and its function. Acceptance (after apply, rolled-back tests): an accepted guest and an accepted member are refused when changing `client_user_id`; the owner and the service role succeed; ordinary edits by members (title, description, cover, folder) still pass.
+Risk: LOW for the guard. Rollback: drop the trigger and its function. **Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020130000_guard_project_payer_columns.sql` (trigger `trg_guard_project_payer_columns`, BEFORE UPDATE OF the four columns, owner or service role only; unchanged values pass). Verified in production with rolled-back tests: an accepted guest is refused on `client_user_id`, `creative_user_ids`, `agent_user_id` and `agent_mode`; an accepted member is refused on `client_user_id`; the owner and the service role succeed; a guest's ordinary edit and a no-op write of the guarded columns still pass; both guard triggers (`created_by`, payer columns) are enabled; data unchanged afterwards (75 projects, 0 with a client, 0 paid milestones).
 
 ## Mapping of the Slice D asks to where they landed
 
