@@ -139,7 +139,7 @@ Proposal (needs a migration, an edge function change and a frontend change, in t
 
 Risk: MEDIUM (three surfaces, one anonymous entry point). Rollback: the migration is additive; reverting the RPC and the frontend restores today's behaviour. Acceptance: a signed-out visitor with the emailed link gets the preview; the same project id and address without the secret gets nothing; a legacy invitation still works; an accepted or withdrawn invitation's token stops working; the owner's invite flow and the signed-in accept flow are unchanged.
 
-## M8: one `call_transcripts` row per recording, enforced by the database (NEEDS APPROVAL, not applied, no SQL on purpose)
+## M8: one `call_transcripts` row per recording, enforced by the database (APPLIED 2026-10-20)
 
 Evidence, production, read-only, 2026-10-20:
 - `call_transcripts.recording_id` is nullable text with no unique index; the table has only its primary key and three plain indexes (call, project, creator).
@@ -150,6 +150,8 @@ Evidence, production, read-only, 2026-10-20:
 Proposal: a unique index on `recording_id`. A plain unique index allows several NULLs in PostgreSQL, so rows without a recording id (if a non-Daily source ever appears) are unaffected. The table is tiny, so building it takes no noticeable lock.
 
 Code change in the same PR (after approval): when the insert in `ensureTranscriptRow` fails with the unique-violation code, read the winner back and return it as "not created", instead of throwing. Without this, the losing delivery of a race answers an error and relies on the provider's retry to recover; with it, the race ends quietly. The existing delete-your-own-duplicate step stays as a belt-and-braces check. A test with an injected unique violation covers it.
+
+**Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020160000_call_transcripts_recording_id_unique.sql` (index `call_transcripts_recording_id_key`, valid, unique; 30 rows before and after). Verified in production with rolled-back tests: a second row for an existing recording id is refused (23505); a new id is accepted; two rows with a NULL id are accepted; updating a row to another row's id is refused; no test row left behind. The code change (`ensureTranscriptRow` reads the winner back on 23505, with three tests and two mutation checks) ships with the recordings paste (PR #225 set, `_shared/recordingRow.ts`). Until then the older functions in production, whose insert would fail on a duplicate, answer an error and rely on Daily's retry, which then finds the existing row.
 
 Risk: LOW. The index cannot fail on today's data. The one behaviour change is that a duplicate insert, from any code still running the older functions, now fails instead of silently creating a second row. Rollback: drop the index (the code change is harmless without it). Acceptance (after apply, rolled-back): inserting a second row with an existing recording id is refused; two rows with a NULL recording id are still allowed; the Recordings page, a webhook replay and "Sync now" still work.
 

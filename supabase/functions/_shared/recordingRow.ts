@@ -2,11 +2,11 @@
 // transcript job. Used by daily-recording-webhook (Daily pushes) and sync-daily-recordings (we pull), so
 // both paths agree on what "this recording is stored" means and neither can create a second row.
 //
-// Not covered by a unique index: call_transcripts has none on recording_id (adding one is a migration),
-// so a read-then-insert alone lets two concurrent deliveries of the same event each insert a row. The
-// insert is therefore followed by a read of every row for that recording, ordered (created_at, id); the
-// first one wins and any other inserter deletes the row it just made. Both inserters see the same order,
-// so exactly one survives. The deleted row has no transcript yet, so nothing is lost.
+// A unique index on recording_id (migration 20261020160000) makes the database refuse a second row, so the
+// loser of a race gets a unique violation and reads the winner back. The older safeguard stays for a database
+// without that index: the insert is followed by a read of every row for that recording, ordered (created_at,
+// id); the first one wins and any other inserter deletes the row it just made. Both inserters see the same
+// order, so exactly one survives. The deleted row has no transcript yet, so nothing is lost.
 
 import { shouldQueueTranscription, type QueueDecisionRow } from "./recordingTranscript.ts";
 
@@ -83,7 +83,14 @@ export async function ensureTranscriptRow(
       created_by: input.call.host_id,
     })
     .select("id");
-  if (insertErr) throw new Error(`call_transcripts insert failed: ${insertErr.message}`);
+  if (insertErr) {
+    // 23505 = unique violation: another delivery inserted this recording first, and its row is the answer.
+    if (insertErr.code === "23505") {
+      const winner = (await list())[0];
+      if (winner) return { ...winner, created: false };
+    }
+    throw new Error(`call_transcripts insert failed: ${insertErr.message}`);
+  }
   const myId: string | undefined = Array.isArray(inserted) ? inserted[0]?.id : (inserted as { id?: string } | null)?.id;
   if (!myId) throw new Error("call_transcripts insert returned no id");
 

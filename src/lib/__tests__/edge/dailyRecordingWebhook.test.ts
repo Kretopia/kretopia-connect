@@ -189,6 +189,40 @@ describe("daily-recording-webhook: the canonical row, once", () => {
   });
 });
 
+describe("daily-recording-webhook: the unique index on recording_id", () => {
+  const UNIQUE = { code: "23505", message: 'duplicate key value violates unique constraint "call_transcripts_recording_id_key"' };
+
+  it("the loser of a race gets the unique violation and answers with the winner's row, not an error", async () => {
+    let raced = false;
+    world.db.hooks.beforeInsert = (table: string, _incoming: unknown, db: MemoryDb) => {
+      if (table !== "call_transcripts" || raced) return;
+      raced = true;
+      db.seed("call_transcripts", [{ id: "aaa-winner", recording_id: REC, status: "pending", error: null, created_at: "2000-01-01T00:00:00.000Z", call_kind: "project", call_id: "call-1", created_by: HOST }]);
+      return UNIQUE;
+    };
+    const { res, json } = await deliver(ready());
+    expect(res.status).toBe(200);
+    expect(json).toMatchObject({ transcript_id: "aaa-winner", created: false, dedup: true });
+    expect(rows()).toHaveLength(1);
+    expect(world.db.writes("call_transcripts", "delete")).toHaveLength(0);
+  });
+
+  it("a unique violation with no row to read back is still an error, never a silent success", async () => {
+    world.db.hooks.beforeInsert = (table: string) => (table === "call_transcripts" ? UNIQUE : undefined);
+    const { res } = await deliver(ready());
+    expect(res.status).toBe(500);
+    expect(rows()).toHaveLength(0);
+    expect(dispatches()).toHaveLength(0);
+  });
+
+  it("another insert error is still an error", async () => {
+    world.db.hooks.beforeInsert = () => ({ code: "23502", message: "null value in column" });
+    const { res } = await deliver(ready());
+    expect(res.status).toBe(500);
+    expect(rows()).toHaveLength(0);
+  });
+});
+
 describe("daily-recording-webhook: a replay queues a job only when the row needs one", () => {
   const seedRow = (over: Record<string, unknown>) =>
     world.db.seed("call_transcripts", [{ id: "row-1", recording_id: REC, call_kind: "project", call_id: "call-1", created_by: HOST, error: null, created_at: new Date().toISOString(), ...over }]);
