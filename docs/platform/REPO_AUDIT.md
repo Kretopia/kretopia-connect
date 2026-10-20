@@ -27,6 +27,7 @@ Scanned 2026-10-19 on `main` @ `6693b982d`. Read-only: repo code, migrations, an
 21 active jobs: `ai-discovery-morning/evening` (06:00, 18:00), `challenge-deadline-reminders` (6 h), `auto-rotate-challenges` (2 h), `process-outreach-queue-daily`, `process-scheduled-campaigns` (5 min), `daily-enrich-incomplete-profiles`, `thrivefund-auto-finalize` (15 min), `auto-resolve-disputes-daily`, `weekly-universe-scan`, `desk-daily-nudge`, `gig-moderator-daily` (03:00), `daily-scout-gigs` (07:00), `daily-match-digest-08utc`, `inbox-triage-agent-every-10min`, `auto-outreach-watch-every-6h`, `money-agent-watch-daily`, `stage-reminders` (15 min), `speed-session-reminders-every-2-min`, `speed-session-autocancel-every-5-min`, `speed-session-recap-hourly`, `event-reminders-every-15-min`.
 - The one `cron.schedule` in the migrations (`reconcile-stale-orch-runs`) is not among the production jobs; all 21 production jobs exist only in the database and cannot be rebuilt from the repo. **P1**
 - No job reports failure anywhere: pg_cron records an HTTP call, not the function's outcome.
+- Run history had no retention and reached 1.66 GB; cleaned on 2026-10-20 and capped by the daily job `prune-cron-run-details` (14 days). That job brings the active jobs from 22 to 23; like the others it exists only in the database, and its definition is recorded in `supabase/migrations/20261020180000_prune_cron_run_details.sql`.
 
 ## 5. Critical DB paths
 - Money: `milestones`, `invoices`, `wallet_transfers`, `stripe_webhook_events`.
