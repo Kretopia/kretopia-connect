@@ -86,6 +86,20 @@ Proposal: additive columns `invoices.paid_source` / `milestones.paid_source` (`p
 
 Risk: HIGH (payments). Backfill: `paid` with a `payment_intent_id` becomes `provider_confirmed` only after matching the Stripe event; everything else becomes `legacy_unknown`. Never infer. Rollback: additive columns, UI falls back to current `status`; the RPC changes are reverted from the preflight dump. Acceptance: manual mark shows "recorded by issuer, not provider-confirmed" and never "Paid — thank you"; a signed webhook event shows "provider-confirmed" with a receipt id; a failed transfer leaves the commission unpaid; a replayed webhook event changes nothing.
 
+## M5: `call_transcripts` has no client UPDATE (NEEDS APPROVAL, not applied, no SQL on purpose)
+
+Evidence, production, read-only, 2026-10-20:
+- Policies on the table: `service role manages transcripts` (ALL, service role), `view own/participant transcripts` (SELECT, `user_can_view_call_transcript`), `creator can update own transcript` (UPDATE, `created_by = auth.uid()`, no WITH CHECK). There is no INSERT or DELETE policy for clients.
+- Column privileges: both `anon` and `authenticated` hold UPDATE on all 25 columns, including `recording_id`, `created_by`, `project_id`, `call_kind`, `call_id`, `participants`, `transcript`, `summary`, `recording_url`. For `anon`, RLS stops it today (`auth.uid()` is null); the grant is still wider than needed.
+- Who writes the table: only the service role. `daily-recording-webhook`, `sync-daily-recordings`, `transcribe-call`, `get-recording-link` (caches `recording_url`), `purge-expired-recordings` and `_shared/recordingRow.ts` all use the admin client. `accept-call-action-item` and `get-recording-link` read the table with the caller's client and only SELECT. The frontend never updates it: the references are `CallRecapSheet` (select and a realtime subscription), `RecentRecordingsRail`, `useCallHistory`, `loadRecordings` (all select). No SQL function in `public` updates it, and none is `SECURITY INVOKER` over it.
+- Therefore no legitimate flow needs a client UPDATE.
+
+Proposal: remove the client UPDATE path entirely: drop the `creator can update own transcript` policy and revoke UPDATE on the table from `anon` and `authenticated`. Keep SELECT, the service-role policy and all edge writers untouched. Optional hardening, separate decision: also revoke INSERT from `anon` and `authenticated` (no INSERT policy exists, so RLS already blocks it).
+
+Risk: LOW. Realtime UPDATE events keep reaching subscribers (they depend on SELECT, not on the UPDATE privilege). If a client write exists that this scan missed, it fails with `permission denied` instead of silently changing the row. Rollback: re-grant UPDATE to `authenticated` and recreate the policy with the same predicate (kept in this section).
+
+Acceptance (after apply, as a creator of a transcript): an UPDATE of `recording_id` or `project_id` is refused; the Recordings page, a call recap and a recording link still work; a new recording still produces a row (service role). A migration file and the captured pre-state would be added in the same PR as the approval.
+
 ## Mapping of the Slice D asks to where they landed
 
 | Ask | Landed in |

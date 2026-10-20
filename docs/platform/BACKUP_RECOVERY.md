@@ -21,7 +21,7 @@ Production is the legacy Supabase project. Facts marked "confirm" are not readab
 1. Confirm the plan, backup schedule, and PITR in the dashboard; record it here.
 2. Storage has no scheduled copy. Add a nightly copy of the private buckets that hold user work (`project-files`, `message-attachments`, `payment-proofs`, `dispute-evidence`, `deal-memos`, `product-files`) to a second provider.
 3. Export cron job names and schedules into the repo (never the command: it embeds secrets).
-4. Two private buckets named `database_export_*` hold ad-hoc dumps. Decide who owns them; move them offline.
+4. Two private buckets named `database_export_*` hold ad-hoc dumps (13 Jul 2026, 62 MB; 28 Sep 2026, 96 MB; one object each, no client policy can read them). Decide who owns them; move them offline, then delete them from the project.
 5. No restore has ever been rehearsed.
 
 ## Restore procedure (database)
