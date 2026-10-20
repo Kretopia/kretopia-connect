@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import { createAnalyticsThrottle } from "@/lib/analyticsThrottle";
+
+// One per tab. A loop that calls trackEvent over and over is cut down here, before it costs a network
+// round trip to the auth server (getUser) and a row in analytics_events for every call.
+const throttle = createAnalyticsThrottle();
+let lastCapWarning = 0;
 
 // Generate a session ID that persists during the browser session
 const getSessionId = (): string => {
@@ -27,6 +33,15 @@ export const trackEvent = async ({
   userId,
 }: TrackEventParams) => {
   try {
+    const decision = throttle.check(eventName, window.location.pathname, properties);
+    if (decision !== "allow") {
+      if (decision === "cap" && Date.now() - lastCapWarning > 60_000) {
+        lastCapWarning = Date.now();
+        console.warn("[analytics] too many events in the last minute, dropping the excess");
+      }
+      return;
+    }
+
     const sessionId = getSessionId();
     
     // Get current user if not provided

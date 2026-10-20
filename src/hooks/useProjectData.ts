@@ -258,14 +258,21 @@ export function useProjectData(projectId: string | undefined) {
   }, [userId, fetchProjects]);
 
   useEffect(() => {
+    if (projectId && userId) fetchProjectData(true);
+  }, [projectId, userId, fetchProjectData]);
+
+  // Opening a project is counted once per project and user. It used to share the effect above, so it fired again
+  // whenever fetchProjectData changed identity (its callback depends on navigate, which changes with the URL).
+  // In 2026, 90 sessions wrote about 1.2 million of exactly these two events; what set the loop off was not
+  // reproduced, but this was the effect that fired them.
+  useEffect(() => {
     if (projectId && userId) {
-      fetchProjectData(true);
       import("@/lib/analytics").then(({ analytics }) => {
         analytics.pageView("thrivedesk");
         analytics.featureUsed("thrivedesk_opened", { project_id: projectId });
       });
     }
-  }, [projectId, userId, fetchProjectData]);
+  }, [projectId, userId]);
 
   useEffect(() => {
     if (!projectId) return;
