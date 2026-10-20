@@ -32,3 +32,14 @@ Scope: Edge Functions only. No migrations, no frontend, no secrets. Workflow: `.
 
 ## Never from this workflow
 Migrations, `supabase db push`, secret changes, frontend Publish (Lovable), cron changes.
+
+## Pending pastes into the Lovable project `kretopia-app` (checked 2026-10-20)
+Production edge functions run the copy in `kretopia-app`, not `main`. On 2026-10-20 that project was compared with `main` file by file (read-only). Paste **shared files first, then the function**: a function whose import is missing does not start, and every call to it fails.
+
+Already in `kretopia-app` and compatible, nothing to paste: `_shared/projectAccess.ts` (same exports), `_shared/aiModels.ts`, `_shared/embed.ts`.
+
+1. **PR #228, SSRF guard** (security, smallest): overwrite `_shared/ssrf.ts` (the copy there is the older one without the IPv6-mapped hex fix), then `fetch-og-data`, `fetch-portfolio-data`, `fetch-youtube-playlist` (`index.ts` each). Verify: an ordinary public page still loads in a link preview.
+2. **PR #237, invitation secret (M7)**: new `_shared/inviteSecret.ts`, `_shared/outboundText.ts`, `_shared/outboundBudget.ts`, then `send-project-invitation/index.ts`. The copy of this function in `kretopia-app` is far older than `main`, so the paste also turns on what `main` already had: a send budget (20 invitations per inviter per hour, 3 per address per hour, recorded in `email_send_log`, table and columns checked in production), inviters limited to owner, collaborator, creative and client (not guests), cleaned recipient addresses, and the sender changes from `info@kretopia.com` to `noreply@kretopia.com` (same domain). Frontend is already published. Verify: invite a test address, the email arrives, its sign-in link opens the Studio, an `email_send_log` row with template `project-invitation-direct` appears.
+3. **PR #225, recordings**: new `_shared/findCallByRoom.ts`, `recordingRow.ts`, `recordingTranscript.ts`, `webhookFreshness.ts`, `recordingAccess.ts`, `meetingParticipantAccess.ts`, then `daily-recording-webhook`, `sync-daily-recordings`, `transcribe-call`, `get-recording-link` (`index.ts` each). Production `get-recording-link` is an older, weaker copy. Verify with the recording path check above.
+
+None of these needs a migration or a secret. After each paste, watch the function's logs for 10 minutes (Verify section).
