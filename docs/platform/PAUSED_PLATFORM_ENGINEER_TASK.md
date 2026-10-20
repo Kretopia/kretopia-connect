@@ -1,4 +1,6 @@
-# Paused: platform engineer task
+# Platform engineer task (paused 2026-10-21, resumed the same day: M11 applied)
+
+> **Update 2026-10-21:** the owner said "apply M11" and it was applied to production (migration `20261021100000`, report M11, verified with rolled-back tests). The notes below are kept as they were at the pause; everything under "Resume instruction" is done, and what remains is the pending pastes, the backup check and the open items.
 
 Paused on 2026-10-21 by the owner, who asked for a product-corrective task first (`docs/product/PRODUCT_CORRECTIONS_REPORT.md`). Nothing below has been resumed or changed since the pause.
 
