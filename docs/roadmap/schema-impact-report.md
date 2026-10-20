@@ -155,7 +155,7 @@ Code change in the same PR (after approval): when the insert in `ensureTranscrip
 
 Risk: LOW. The index cannot fail on today's data. The one behaviour change is that a duplicate insert, from any code still running the older functions, now fails instead of silently creating a second row. Rollback: drop the index (the code change is harmless without it). Acceptance (after apply, rolled-back): inserting a second row with an existing recording id is refused; two rows with a NULL recording id are still allowed; the Recordings page, a webhook replay and "Sync now" still work.
 
-## M9: the `feedback-screenshots` bucket is public and nothing uses it (NEEDS APPROVAL, not applied, no SQL on purpose)
+## M9: the `feedback-screenshots` bucket is public and nothing uses it (APPLIED 2026-10-20)
 
 Evidence, production and code, read-only, 2026-10-20:
 - The bucket is public, empty (0 objects), with no size limit and no MIME restriction. The `feedback` table has 7 rows and none has a `screenshot_url`.
@@ -164,6 +164,8 @@ Evidence, production and code, read-only, 2026-10-20:
 - Exposure today: nothing is stored, so nothing leaks. What remains is that any signed-in user can host arbitrary files, of any size and type, at a public address on the product's storage domain, and the next feature that saves a screenshot there would publish it to everyone. **P2**
 
 Proposal: make the bucket private; replace the open read policy with one that lets the uploader (their own folder) and admins read; cap the file size and allow image types only. Keep the upload policy as it is. Because nothing uploads or reads today, no flow breaks. If a screenshot feature is built later, the admin tab must request a signed link instead of using the stored URL as is.
+
+**Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020170000_feedback_screenshots_private.sql`: the bucket is private, capped at 5 MB, and limited to PNG, JPEG, WebP and GIF; the open read policy was replaced by "Uploaders and admins can view feedback screenshots" (signed-in users, own folder or admin); the upload policy is unchanged. Verified in production with a rolled-back object: an anonymous request sees 0 objects, the uploader sees theirs, another signed-in user sees 0, an admin sees all, a user can upload to their own folder and not to someone else's; the bucket stayed empty; public buckets went from 12 to 11. The size and type limits are enforced by the Storage API on upload, not by row-level security, so they were checked in the catalog but not exercised with a real upload.
 
 Risk: LOW. Rollback: make the bucket public again and restore the old read policy. Acceptance (after apply, rolled-back where possible): an anonymous request for an object path is refused; a signed-in user can still upload into their own folder and not into another's; an admin can read it; a file over the cap or of a non-image type is refused.
 
