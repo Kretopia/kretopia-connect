@@ -21,7 +21,7 @@ Production catalog, read-only, 2026-10-20. Nothing was changed. This replaces th
 
 ## What the exposure really is
 - The predicates answer "is user U a member of project/meeting/crew X?" for any pair of UUIDs. Both UUIDs would have to be known, so this is an oracle with a high bar: **P3**. `is_meeting_member` is the one already noted.
-- `get_or_create_guest_token_for_invite(project, email)` returns a guest preview token for a pending invite when the caller supplies the project id and the invited email. Knowledge of those two values is the only check. Intended for the email-invite preview, but anyone holding a project id and guessing an invited address gets read-only guest access. **P2**; a fix would tie the token to the emailed link rather than to the address.
+- `get_or_create_guest_token_for_invite(project, email)` returns a guest preview token for a pending invite when the caller supplies the project id and the invited email. Knowledge of those two values is the only check. Intended for the email-invite preview, but anyone holding a project id and guessing an invited address gets read-only guest access. **P2**; the written report is `schema-impact-report.md` M7 (tie the token to a secret in the emailed link).
 - `get_nearby_*` return rows with user or creator ids; whether they only return public rows was not reviewed.
 
 ## Recommendation

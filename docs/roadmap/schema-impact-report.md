@@ -119,6 +119,22 @@ Product decision, not proposed here: who may change `status`, `recap_published`,
 
 Risk: LOW for the guard. Rollback: drop the trigger and its function. **Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020130000_guard_project_payer_columns.sql` (trigger `trg_guard_project_payer_columns`, BEFORE UPDATE OF the four columns, owner or service role only; unchanged values pass). Verified in production with rolled-back tests: an accepted guest is refused on `client_user_id`, `creative_user_ids`, `agent_user_id` and `agent_mode`; an accepted member is refused on `client_user_id`; the owner and the service role succeed; a guest's ordinary edit and a no-op write of the guarded columns still pass; both guard triggers (`created_by`, payer columns) are enabled; data unchanged afterwards (75 projects, 0 with a client, 0 paid milestones).
 
+## M7: the email-invite preview token is minted from a project id and an email (NEEDS APPROVAL, not applied, no SQL on purpose)
+
+Evidence, production and code, read-only, 2026-10-20:
+- The invitation email links to `/accept-invite/<projectId>?email=<email>` (`send-project-invitation/index.ts`). The page, for a signed-out visitor, calls `get_or_create_guest_token_for_invite(project, email)` (`AcceptInvite.tsx`). The function is callable by anonymous users and checks only that a **pending** invite exists for that email on that project; it then returns the existing live token for that email or mints one. The link carries no secret: the project id and the address are the whole credential.
+- What a token gives (all anonymous RPCs): the project summary (title, description, status, owner id, client name, cover), the project's file list (up to 200 rows with their file URLs), the accepted team (names, avatars, roles), the pulse feed, and the ability to **post** to the pulse as a guest.
+- Tokens are strong (24 random bytes) but never expire: `expires_at` is null and the mint does not set it. Production has 8 guest tokens, all live, 0 revoked, 1 of them an "Email invite preview"; 13 pending invitations have an email address. A token stays valid after the invite is accepted or withdrawn unless someone revokes it (this overlaps M3).
+- Exposure: anyone who knows a project id and a pending invitee's address (forwarded or logged links, a leaked project id plus a guessed address) can open the guest view. **P2**, not exploited as far as the data shows.
+
+Proposal (needs a migration, an edge function change and a frontend change, in this order):
+1. Additive migration: an unguessable invite secret stored with the pending invitation (nullable, so existing rows are untouched).
+2. `send-project-invitation` (edge function, manual paste) generates the secret and puts it in the emailed link; the invite page forwards it.
+3. The mint requires the secret when the invitation has one. Invitations created before the change have none, so they keep the email-only check until they are accepted or removed; after that the fallback can be deleted. Old emails keep working in the meantime; nothing breaks for the 13 pending invites.
+4. Minted tokens get a finite `expires_at`, and are revoked when the invitation is accepted or withdrawn (shares work with M3).
+
+Risk: MEDIUM (three surfaces, one anonymous entry point). Rollback: the migration is additive; reverting the RPC and the frontend restores today's behaviour. Acceptance: a signed-out visitor with the emailed link gets the preview; the same project id and address without the secret gets nothing; a legacy invitation still works; an accepted or withdrawn invitation's token stops working; the owner's invite flow and the signed-in accept flow are unchanged.
+
 ## Mapping of the Slice D asks to where they landed
 
 | Ask | Landed in |
