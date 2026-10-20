@@ -540,7 +540,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
                 <p className="text-sm text-muted-foreground">Display language</p>
                 <LanguageSwitcher variant="full" />
               </div>
@@ -677,8 +677,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* In-App */}
-              <div className="flex items-center justify-between">
-                <Label htmlFor="in_app_all" className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                <Label htmlFor="in_app_all" className="flex min-w-0 flex-col gap-1">
                   <span>In-App Notifications</span>
                   <span className="font-normal text-sm text-muted-foreground">
                     Show notifications in the app
@@ -704,8 +704,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
               <div className="space-y-4">
                 <h4 className="font-medium">Email Notifications</h4>
                 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email_matches" className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <Label htmlFor="email_matches" className="flex min-w-0 flex-col gap-1">
                     <span>New Matches</span>
                     <span className="font-normal text-sm text-muted-foreground">
                       When you match with someone
@@ -718,8 +718,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email_messages" className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <Label htmlFor="email_messages" className="flex min-w-0 flex-col gap-1">
                     <span>New Messages</span>
                     <span className="font-normal text-sm text-muted-foreground">
                       When you receive a message
@@ -732,8 +732,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email_projects" className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <Label htmlFor="email_projects" className="flex min-w-0 flex-col gap-1">
                     <span>Project Updates</span>
                     <span className="font-normal text-sm text-muted-foreground">
                       Updates on your active projects
@@ -746,8 +746,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="email_opportunities" className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                  <Label htmlFor="email_opportunities" className="flex min-w-0 flex-col gap-1">
                     <span>New Opportunities</span>
                     <span className="font-normal text-sm text-muted-foreground">
                       Opportunities matching your profile
@@ -1085,7 +1085,7 @@ function CaribbeanVoiceToggle() {
   const { optIn, setOptIn, isTTGeo } = useTrinidadVoice();
   return (
     <div className="flex items-start justify-between gap-4 pt-4 border-t border-border">
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">Caribbean voice</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {isTTGeo
