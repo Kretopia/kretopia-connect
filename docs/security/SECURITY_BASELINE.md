@@ -31,12 +31,12 @@ Facts below are from the repo and read-only catalog queries on production, 2026-
 - AI endpoints without a session were closed here (`generate-match-explanation`, `generate-ice-breakers`); 27 functions have rate limiting, the rest do not. **P2**
 - 500 responses across most functions echo `error.message`. Rule in `RELIABILITY_RULES.md`; fix per function when touched. **P2**
 - CORS is `*` on all functions; acceptable with bearer auth, not for cookie auth.
-- Sentry Replay records text and media unmasked (`SENTRY_PLAN.md`). **P1**
+- ~~Sentry Replay records text and media unmasked~~ fixed: `src/lib/sentryInit.ts` masks all text and inputs, blocks media, captures no network bodies. Production has no DSN today, so nothing was being recorded (`SENTRY_PLAN.md`).
 
 ## 5. Secrets at risk (names only)
 `SUPABASE_SERVICE_ROLE_KEY` (used by nearly every function; one leak bypasses all RLS), `CRON_SECRET` (rotated 2026-10-06 after a leak), `DAILY_API_KEY` (account-wide: every room and recording), `DAILY_WEBHOOK_HMAC_SECRET`, `STRIPE_SECRET_KEY_*` and Stripe webhook secrets, `LOVABLE_API_KEY` (AI spend), `TELEGRAM_API_KEY`, `SUPABASE_ACCESS_TOKEN` (deploy), `SENTRY_AUTH_TOKEN`. Rotate on any exposure; never paste values into chat, issues, or logs.
 
 ## 6. Order of work
-0. ~~M0a project takeover~~ done 2026-10-19. 1. ~~SSRF guard on the fetchers~~ done. 2. `call_transcripts` column grants (approval). 3. `database_export_*` buckets. 4. Private `feedback-screenshots`. 5. Branch protection and CI (`CI_POLICY.md`). 6. Unique index on `call_transcripts.recording_id`. 7. Revoke `anon` EXECUTE on non-public RPCs. 8. Rate limits on intake tables. 9. Replay masking. 10. Per-function error-body cleanup.
+0. ~~M0a project takeover~~ done 2026-10-19. 1. ~~SSRF guard on the fetchers~~ done. 2. `call_transcripts` column grants (approval). 3. `database_export_*` buckets. 4. Private `feedback-screenshots`. 5. Branch protection and CI (`CI_POLICY.md`). 6. Unique index on `call_transcripts.recording_id`. 7. Revoke `anon` EXECUTE on non-public RPCs. 8. Rate limits on intake tables. 9. ~~Replay masking~~ done. 10. Per-function error-body cleanup.
 
 No new migration is drafted in this change: the one clear exploit (M0a) was already drafted in `schema-impact-report.md` and has now been applied with approval; the `call_transcripts` change is described in prose until approved.

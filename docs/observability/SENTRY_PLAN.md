@@ -5,12 +5,12 @@ Status: `@sentry/react` ^10.17 is already installed and initialised in `src/main
 ## What exists today
 - `Sentry.init` with `dsn: import.meta.env.VITE_SENTRY_DSN || ""`, `enabled: import.meta.env.PROD`, `environment: MODE`.
 - `tracesSampleRate: 1.0` (every transaction), `replaysSessionSampleRate: 0.1`, `replaysOnErrorSampleRate: 1.0`.
-- Replay runs with `maskAllText: false` and `blockAllMedia: false`: call screens, messages, invoices, and Passport data can be recorded in clear.
+- Replay is masked (`src/lib/sentryInit.ts`): `maskAllText`, `maskAllInputs` and `blockAllMedia` are on and network bodies are not captured; a unit test fails if any is switched off. Before this, call screens, messages, invoices and Passport data would have been recorded in clear once a DSN was set. The production build has `dsn: ""`, so nothing was recorded.
 - No release tag, no source maps, nothing in Edge Functions.
 - Second channel: `setupGlobalErrorLogging()` writes to `client_error_logs` (656 rows, latest today). Keep it; it works without a DSN.
 
 ## Changes to make (config only, one small PR, needs approval because it touches `src/main.tsx`)
-1. Set `maskAllText: true` and `blockAllMedia: true` in `replayIntegration`.
+1. ~~Set `maskAllText: true` and `blockAllMedia: true` in `replayIntegration`.~~ Done.
 2. Set `tracesSampleRate: 0.1`, `replaysSessionSampleRate: 0.01`; keep `replaysOnErrorSampleRate: 1.0` (masked).
 3. Add `release` from the build (`import.meta.env.VITE_RELEASE`, the git SHA) so an issue maps to a commit.
 4. `beforeSend`: drop `user.email`, `user.ip_address`, request bodies, and breadcrumbs from `/functions/v1/*` payloads. Keep `user.id` only.
