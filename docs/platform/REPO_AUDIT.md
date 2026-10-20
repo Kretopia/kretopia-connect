@@ -64,7 +64,7 @@ Scanned 2026-10-19 on `main` @ `6693b982d`. Read-only: repo code, migrations, an
 - Storage: 12 public buckets (avatars, campaign-media, email-assets, event-photos, feedback-screenshots, listing-images, location-images, location-photos, media, opportunities, partner-logos, portfolio) and 12 private, including `meeting-recordings`, `payment-proofs`, `dispute-evidence`, `project-files`, `message-attachments`. Two private buckets named `database_export_*` hold data dumps: confirm their contents, policies and retention. **P1**
 - 29 functions show no auth signal. 21 use the service role and are public by design (OG images, sitemap, payment-link pages, unsubscribe). Unauthenticated URL fetchers (`fetch-og-data`, `fetch-portfolio-data`) were open to SSRF and the shared guard had an IPv6 bypass: fixed in the SSRF PR after #227 (see `SECURITY_BASELINE.md`).
 - Unauthenticated AI spend, fixed here: `generate-match-explanation`, `generate-ice-breakers`.
-- Sentry Replay runs with `maskAllText: false`, `blockAllMedia: false` in production. **P1** privacy.
+- Sentry Replay was configured with `maskAllText: false`, `blockAllMedia: false`; now masked and media-blocked (`src/lib/sentryInit.ts`). The production build has an empty DSN, so no replay was recorded before the fix.
 
 ## 10. CI/CD and monitoring gaps
 - No CI, branch protection, or typecheck gate before this change. Added: `ci.yml`, `deploy-edge-functions.yml` (manual).
