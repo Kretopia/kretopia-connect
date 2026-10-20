@@ -8,7 +8,7 @@ import { AdmitQueue } from "@/components/calls/AdmitQueue";
 import { cn } from "@/lib/utils";
 import { liveRecordingCopy } from "@/lib/recordingState";
 import { RecordingReminder } from "@/components/calls/RecordingReminder";
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { PersistentStudioCall } from "@/components/project/VideoCallSheet";
 import { PersistentCallWindow, ConfirmCallLeave } from "./PersistentCallWindow";
 
@@ -38,7 +38,7 @@ export function GlobalVideoCallHost() {
     isHost,
     title,
     recording,
-    recordingPhase, recordingReminder, recordingSegment, stopRecording, saveRecording,
+    recordingPhase, recordingReminder, recordingSegment, stopRecording, saveRecording, dismissRecordingReminder, clearRecordingSegment,
     sharing,
     micOn,
     leave,
@@ -50,9 +50,15 @@ export function GlobalVideoCallHost() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [confirmLeave, setConfirmLeave] = useState(false);
+  // One identity for the life of the call: PersistentStudioCall re-runs its call effect (leave + rejoin) when it changes.
+  const studioCallRef = useRef(studioCall);
+  studioCallRef.current = studioCall;
   const handleStudioClose = useCallback((open: boolean) => {
-    if (!open) { closeStudioCall(); studioCall?.onOpenChange(false); }
-  }, [closeStudioCall, studioCall]);
+    if (open) return;
+    const entry = studioCallRef.current; // read before closing: closing clears it
+    closeStudioCall();
+    entry?.onOpenChange(false);
+  }, [closeStudioCall]);
 
   if (studioCall) return <PersistentStudioCall {...studioCall} onOpenChange={handleStudioClose} />;
   if (!meetingId) return null;
@@ -101,8 +107,7 @@ export function GlobalVideoCallHost() {
       <div className="k-call-video relative flex-1 min-h-0">
         <div ref={containerRef} className="absolute inset-0" />
         {docked && <AdmitQueue call={callRef.current} isHost={isHost} />}
-        {docked && <RecordingReminder visible={recordingReminder} segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} />}
-        {!docked && recordingReminder && <div className="fixed bottom-[calc(306px+env(safe-area-inset-bottom,0px))] right-3 w-80 max-w-[calc(100vw-2rem)]"><RecordingReminder visible segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} /></div>}
+        <RecordingReminder visible={recordingReminder} segment={recordingSegment} onStop={stopRecording} onSave={saveRecording} onDismiss={dismissRecordingReminder} onClearSegment={clearRecordingSegment} />
 
         {/* Floating-only mini controls, overlaid on the video itself. */}
         <div className="hidden">

@@ -1,10 +1,19 @@
-import { useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { DailyCall, DailyEventObjectRecordingStarted } from "@daily-co/daily-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveRecording } from "@/hooks/useLiveRecording";
-import { POST_CALL_SYNC_DELAYS_MS, readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
+import {
+  POST_CALL_SYNC_DELAYS_MS,
+  readSegmentOutcome,
+  readSyncOutcome,
+  scheduleRecordingSync,
+} from "@/lib/recordingSync";
 
 export const RECORDING_REMINDER_MS = 15 * 60_000;
+/** How long "Segment saved" stays on screen before it clears itself. */
+export const SEGMENT_SAVED_NOTICE_MS = 8_000;
+/** Without a recording id the segment can only be found by time; this absorbs latency and a slow device clock. */
+const UNKNOWN_ID_SINCE_MARGIN_S = 60;
 type SegmentState = "processing" | "saved" | "failed" | null;
 
 /** Explicit segment controls around the existing, event-driven live recording state. */
@@ -12,6 +21,8 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
   const live = useLiveRecording();
   const [reminder, setReminder] = useState(false);
   const [segment, setSegment] = useState<SegmentState>(null);
+  // "Not now": the reminder comes back one full interval after the dismissal, for this recording only.
+  const [snooze, setSnooze] = useState<{ startedAt: number; until: number } | null>(null);
   const latest = useRef(live.state);
   latest.current = live.state;
   const intent = useRef<"stop" | "save" | null>(null);
@@ -22,9 +33,10 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
   useEffect(() => {
     setReminder(false);
     if (live.state.phase !== "recording" || live.state.startedAt === null) return;
-    const timer = setTimeout(() => setReminder(true), Math.max(0, live.state.startedAt + RECORDING_REMINDER_MS - Date.now()));
+    const due = snooze && snooze.startedAt === live.state.startedAt ? snooze.until : live.state.startedAt + RECORDING_REMINDER_MS;
+    const timer = setTimeout(() => setReminder(true), Math.max(0, due - Date.now()));
     return () => clearTimeout(timer);
-  }, [live.state.phase, live.state.startedAt]);
+  }, [live.state.phase, live.state.startedAt, snooze]);
   useEffect(() => {
     if (live.state.phase === "failed") intent.current = null;
     if (live.state.phase === "idle") {
@@ -32,13 +44,24 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
       generation.current += 1;
       cancelSync.current?.();
       setSegment(null);
+      setSnooze(null);
     }
   }, [live.state.phase]);
   useEffect(() => () => cancelSync.current?.(), []);
+  // "Segment saved" is news, not state: it clears itself.
+  useEffect(() => {
+    if (segment !== "saved") return;
+    const timer = setTimeout(() => setSegment((current) => (current === "saved" ? null : current)), SEGMENT_SAVED_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [segment]);
 
   const onStarted = (event?: DailyEventObjectRecordingStarted) => {
     if (latest.current.phase !== "recording" && latest.current.phase !== "stopping") {
-      segmentRef.current = { id: event?.recordingId, instanceId: event?.instanceId, since: Math.floor(Date.now() / 1000) };
+      segmentRef.current = {
+        id: event?.recordingId,
+        instanceId: event?.instanceId,
+        since: Math.floor(Date.now() / 1000) - UNKNOWN_ID_SINCE_MARGIN_S,
+      };
     }
     live.dispatch({ type: "started" });
   };
@@ -57,14 +80,13 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
       sinceTs: finished.since,
       run: async ({ roomName: room, sinceTs }) => {
         try {
+          // With the recording's id the answer is matched by id and no timestamp is sent (the device's clock
+          // is not Daily's); without one, only a time window can find it.
           const { data, error } = await supabase.functions.invoke("sync-daily-recordings", {
-            body: { room_name: room, since_ts: sinceTs },
+            body: finished.id ? { room_name: room } : { room_name: room, since_ts: sinceTs },
           });
           if (error) throw error;
-          // Neither an older segment nor the new running segment proves this checkpoint saved.
-          const results = Array.isArray(data?.results) ? data.results : [];
-          const scoped = finished.id ? results.filter((r: { recording_id?: string }) => r.recording_id === finished.id) : [];
-          const outcome = readSyncOutcome({ since_ts: data?.since_ts, results: scoped }, sinceTs);
+          const outcome = finished.id ? readSegmentOutcome(data, finished.id) : readSyncOutcome(data, sinceTs);
           if (!outcome.stored && Date.now() >= stoppedAt + POST_CALL_SYNC_DELAYS_MS[3] && generation.current === currentGeneration) setSegment("failed");
           return outcome;
         } catch (error) {
@@ -104,6 +126,16 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
       live.dispatch({ type: "error", message: error instanceof Error ? error.message : null });
     }
   };
-  return { ...live, reminder, segment, onStarted, onStopped,
+
+  /** Hides the reminder without touching the recording, and asks again one interval later. */
+  const dismissReminder = useCallback(() => {
+    const startedAt = latest.current.startedAt;
+    setReminder(false);
+    if (startedAt !== null) setSnooze({ startedAt, until: Date.now() + RECORDING_REMINDER_MS });
+  }, []);
+  /** Clears a segment notice the user has read (a failure stays until they do). */
+  const clearSegment = useCallback(() => setSegment((current) => (current === "processing" ? current : null)), []);
+
+  return { ...live, reminder, segment, onStarted, onStopped, dismissReminder, clearSegment,
     stopRecording: () => finish("stop"), saveRecording: () => finish("save") };
 }

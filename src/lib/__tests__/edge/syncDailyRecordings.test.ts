@@ -104,6 +104,18 @@ describe("sync-daily-recordings: stores this call's recording, once", () => {
   });
 });
 
+describe("sync-daily-recordings: asked for a room without a timestamp (a saved segment is found by its id)", () => {
+  it("returns the room's recordings even when they started before the caller's clock says they did", async () => {
+    // The device heard "recording started" 2 s after Daily began it; a since_ts taken from the device dropped the recording.
+    daily([rec("seg", { start_ts: NOW - 2 })]);
+    const withSince = await sync({ room_name: ROOM, since_ts: NOW });
+    expect(withSince.json.results).toEqual([]);
+    const without = await sync({ room_name: ROOM });
+    expect(without.json.results.map((r: any) => r.recording_id)).toEqual(["seg"]);
+    expect(without.json.results[0].transcript_id).toBeTruthy();
+  });
+});
+
 describe("sync-daily-recordings: says what Daily is still doing", () => {
   it("a recording still being finalised is 'status=…', one Daily cancelled is 'unavailable=…'", async () => {
     daily([rec("a", { status: "in-progress" }), rec("b", { status: "canceled" })]);

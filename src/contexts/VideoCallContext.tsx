@@ -6,6 +6,7 @@ import { extractInvokeError } from "@/lib/extractInvokeError";
 import { useRecordingReminder } from "@/hooks/useRecordingReminder";
 import type { LiveRecordingPhase } from "@/lib/recordingState";
 import { readSyncOutcome, scheduleRecordingSync } from "@/lib/recordingSync";
+import { toast } from "sonner";
 import type { VideoCallSheetProps } from "@/components/project/VideoCallSheet";
 
 /**
@@ -46,12 +47,28 @@ interface TokenInfo {
   roomUrl: string;
 }
 
+/** The one Studio call, with the caller (sheet facade) that owns it. */
+export type StudioCallEntry = VideoCallSheetProps & { owner?: string };
+
+const BUSY_TITLE = "You're already in a call";
+const BUSY_DESCRIPTION = "Leave it before starting another.";
+
+const sameConfig = (a: StudioCallEntry, b: StudioCallEntry) => {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof StudioCallEntry>;
+  for (const key of keys) if (a[key] !== b[key]) return false;
+  return true;
+};
+
 interface VideoCallContextValue {
   startedAt: number | null;
   connectionStatus: string;
-  studioCall: VideoCallSheetProps | null;
-  openStudioCall: (props: VideoCallSheetProps) => void;
-  closeStudioCall: () => void;
+  studioCall: StudioCallEntry | null;
+  /** Starts the Studio call for `owner`. False (and the user is told) when another call is already live. */
+  openStudioCall: (props: VideoCallSheetProps, owner?: string) => boolean;
+  /** Keeps the live call's configuration (overlay, flags, callbacks) in step with its owner. No-op for anyone else. */
+  updateStudioCall: (props: VideoCallSheetProps, owner?: string) => void;
+  /** Ends the Studio call. With `owner`, only if that caller started it. */
+  closeStudioCall: (owner?: string) => void;
   meetingId: string | null;
   shareToken: string | undefined;
   phase: VideoCallPhase;
@@ -85,6 +102,8 @@ interface VideoCallContextValue {
   recordingSegment: "processing" | "saved" | "failed" | null;
   stopRecording: () => void;
   saveRecording: () => void;
+  dismissRecordingReminder: () => void;
+  clearRecordingSegment: () => void;
   toggleShare: () => Promise<void>;
   toggleMic: () => Promise<void>;
   micOn: boolean;
@@ -93,7 +112,10 @@ interface VideoCallContextValue {
 const VideoCallContext = createContext<VideoCallContextValue | undefined>(undefined);
 
 export function VideoCallProvider({ children }: { children: ReactNode }) {
-  const [studioCall, setStudioCall] = useState<VideoCallSheetProps | null>(null);
+  const [studioCall, setStudioCallState] = useState<StudioCallEntry | null>(null);
+  // Read by callbacks that must keep one identity for the life of the call (changing it re-runs the call's effect).
+  const studioRef = useRef<StudioCallEntry | null>(null);
+  const setStudioCall = useCallback((next: StudioCallEntry | null) => { studioRef.current = next; setStudioCallState(next); }, []);
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [connectionStatus, setConnectionStatus] = useState("Connecting");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -117,10 +139,21 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   const recordingControlsRef = useRef(recordingControls);
   recordingControlsRef.current = recordingControls;
   const [micOn, setMicOn] = useState(false);
+  const phaseRef = useRef<VideoCallPhase>("idle");
+  phaseRef.current = phase;
 
   const openMeeting = useCallback(
     async (nextMeetingId: string, nextShareToken: string | undefined, userName: string | undefined) => {
-      if (studioCall || (phase === "live" && meetingId !== nextMeetingId)) return;
+      if (studioCall || (phase === "live" && meetingId !== nextMeetingId)) {
+        toast(BUSY_TITLE, { description: BUSY_DESCRIPTION });
+        // Not in a /meet call: the page would otherwise wait on "Loading meeting…" forever.
+        if (phase !== "live") {
+          setMeetingId(nextMeetingId);
+          setError(`${BUSY_TITLE}. ${BUSY_DESCRIPTION}`);
+          setPhase("error");
+        }
+        return;
+      }
       // Already the active meeting (e.g. navigated back to /meet/:id while
       // live/lobby) -- don't re-fetch a token or reset progress.
       if (meetingId === nextMeetingId && phase !== "idle" && phase !== "ended" && phase !== "error") {
@@ -152,11 +185,14 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   );
 
   const joinLive = useCallback((prefs: JoinPrefs, userName: string) => {
+    // A new call starts with a clean recording: nothing of the previous one carries over.
+    dispatchRecording({ type: "reset" });
+    didRecordRef.current = false;
     joinPrefsRef.current = prefs;
     userNameRef.current = userName;
     setMicOn(prefs.mic);
     setPhase("live");
-  }, []);
+  }, [dispatchRecording]);
 
   // Daily frame lifecycle -- runs once per "live" entry for a given
   // tokenInfo, attached to the ONE persistent container GlobalVideoCallHost
@@ -189,6 +225,9 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
       callRef.current = null;
       startedForTokenRef.current = null;
       void frame?.destroy();
+      // Leaving mid-recording sends no "stopped" event: without this the next call opens with a recording
+      // that is not there, and its stop-or-save reminder fires on a call that is not being recorded.
+      dispatchRecording({ type: "reset" });
       // A cloud recording is finalised some time after the call ends (longer calls take longer). Look
       // for it for ~10 minutes and stop once it is stored; Recordings is the only place it appears.
       if (didRecordRef.current) {
@@ -337,11 +376,34 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
   const value: VideoCallContextValue = {
     startedAt, connectionStatus,
     studioCall,
-    openStudioCall: useCallback((props: VideoCallSheetProps) => {
-      if (phase === "live") return;
-      setStudioCall(current => current ?? { ...props, open: true });
-    }, [phase]),
-    closeStudioCall: useCallback(() => setStudioCall(null), []),
+    openStudioCall: useCallback((props: VideoCallSheetProps, owner?: string) => {
+      const current = studioRef.current;
+      if (phaseRef.current === "live") {
+        toast(BUSY_TITLE, { description: BUSY_DESCRIPTION });
+        return false;
+      }
+      if (current && current.owner !== owner) {
+        // The page that started this call was left and has been opened again: the same room is the same call,
+        // so it takes over (no second frame, no message). Any other room is a second call.
+        if (current.roomUrl && current.roomUrl === props.roomUrl) { setStudioCall({ ...props, open: true, owner }); return true; }
+        toast(BUSY_TITLE, { description: BUSY_DESCRIPTION });
+        return false;
+      }
+      if (!current) setStudioCall({ ...props, open: true, owner });
+      return true;
+    }, [setStudioCall]),
+    updateStudioCall: useCallback((props: VideoCallSheetProps, owner?: string) => {
+      const current = studioRef.current;
+      if (!current || current.owner !== owner) return;
+      const next = { ...props, open: true, owner };
+      if (!sameConfig(current, next)) setStudioCall(next);
+    }, [setStudioCall]),
+    closeStudioCall: useCallback((owner?: string) => {
+      const current = studioRef.current;
+      // Only a string scopes the close: this is also used directly as an onClick, which passes the event.
+      if (!current || (typeof owner === "string" && current.owner !== owner)) return;
+      setStudioCall(null);
+    }, [setStudioCall]),
     meetingId,
     shareToken,
     phase,
@@ -355,6 +417,8 @@ export function VideoCallProvider({ children }: { children: ReactNode }) {
     recordingSegment: recordingControls.segment,
     stopRecording: recordingControls.stopRecording,
     saveRecording: recordingControls.saveRecording,
+    dismissRecordingReminder: recordingControls.dismissReminder,
+    clearRecordingSegment: recordingControls.clearSegment,
     sharing,
     role,
     isHost: role === "host",
