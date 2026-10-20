@@ -139,6 +139,20 @@ Proposal (needs a migration, an edge function change and a frontend change, in t
 
 Risk: MEDIUM (three surfaces, one anonymous entry point). Rollback: the migration is additive; reverting the RPC and the frontend restores today's behaviour. Acceptance: a signed-out visitor with the emailed link gets the preview; the same project id and address without the secret gets nothing; a legacy invitation still works; an accepted or withdrawn invitation's token stops working; the owner's invite flow and the signed-in accept flow are unchanged.
 
+## M8: one `call_transcripts` row per recording, enforced by the database (NEEDS APPROVAL, not applied, no SQL on purpose)
+
+Evidence, production, read-only, 2026-10-20:
+- `call_transcripts.recording_id` is nullable text with no unique index; the table has only its primary key and three plain indexes (call, project, creator).
+- Today: 30 rows, 30 distinct non-null recording ids, 0 duplicated ids, 0 null ids. A unique index would build cleanly with nothing to repair.
+- The rule "one row per recording" is enforced only in code, in `_shared/recordingRow.ts`: look up, insert, read back every row for that recording, and the loser of a race deletes its own row. That works only while every writer runs this code. The version of the recording functions running in production today is older and has no such check; once PR #225 is pasted, all writers (the Daily webhook and the sync) go through it.
+- Why it matters: a second row for the same recording means a second transcript job (AI cost), a duplicate entry in Recordings, and a replay that can show or overwrite the wrong one.
+
+Proposal: a unique index on `recording_id`. A plain unique index allows several NULLs in PostgreSQL, so rows without a recording id (if a non-Daily source ever appears) are unaffected. The table is tiny, so building it takes no noticeable lock.
+
+Code change in the same PR (after approval): when the insert in `ensureTranscriptRow` fails with the unique-violation code, read the winner back and return it as "not created", instead of throwing. Without this, the losing delivery of a race answers an error and relies on the provider's retry to recover; with it, the race ends quietly. The existing delete-your-own-duplicate step stays as a belt-and-braces check. A test with an injected unique violation covers it.
+
+Risk: LOW. The index cannot fail on today's data. The one behaviour change is that a duplicate insert, from any code still running the older functions, now fails instead of silently creating a second row. Rollback: drop the index (the code change is harmless without it). Acceptance (after apply, rolled-back): inserting a second row with an existing recording id is refused; two rows with a NULL recording id are still allowed; the Recordings page, a webhook replay and "Sync now" still work.
+
 ## Mapping of the Slice D asks to where they landed
 
 | Ask | Landed in |
