@@ -3,6 +3,7 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
 import { cleanRecipientEmail } from "../_shared/outboundText.ts";
+import { hashInviteSecret, INVITE_PREVIEW_TOKEN_DAYS, newInviteSecret } from "../_shared/inviteSecret.ts";
 import {
   PROJECT_INVITES_PER_ACTOR_PER_HOUR,
   PROJECT_INVITES_PER_RECIPIENT_PER_HOUR,
@@ -170,8 +171,38 @@ const handler = async (req: Request): Promise<Response> => {
     // - New users     → type: 'invite' (creates a passwordless account)
     // Falls back to the public guest preview if neither can be issued.
     let magicLink: string | null = null;
+
+    // A secret travels in the link and only its hash is stored on the pending invitation, so the
+    // signed-out preview fallback cannot be opened with just a project id and an address. If it cannot
+    // be stored the link goes out without one and the invitation keeps the older address-only check.
+    let secretQuery = "";
     if (email) {
-      const redirectTo = `${APP_URL}/accept-invite/${projectId}?email=${encodeURIComponent(email)}`;
+      try {
+        const { data: pending, error: pendingErr } = await admin
+          .from("project_collaborators")
+          .select("id, email")
+          .eq("project_id", projectId)
+          .eq("status", "pending");
+        if (pendingErr) throw pendingErr;
+        const ids = (pending ?? [])
+          .filter((row: { id: string; email: string | null }) => (row.email ?? "").toLowerCase() === email.toLowerCase())
+          .map((row: { id: string }) => row.id);
+        if (ids.length) {
+          const secret = newInviteSecret();
+          const { error: storeErr } = await admin
+            .from("project_collaborators")
+            .update({ invite_secret_hash: await hashInviteSecret(secret) })
+            .in("id", ids);
+          if (storeErr) throw storeErr;
+          secretQuery = `&t=${encodeURIComponent(secret)}`;
+        }
+      } catch (e: any) {
+        console.warn("invite secret not stored (non-fatal):", e?.message);
+      }
+    }
+
+    if (email) {
+      const redirectTo = `${APP_URL}/accept-invite/${projectId}?email=${encodeURIComponent(email)}${secretQuery}`;
       const tryGenerate = async (type: "magiclink" | "invite") => {
         const { data, error } = await admin.auth.admin.generateLink({
           type,
@@ -195,16 +226,18 @@ const handler = async (req: Request): Promise<Response> => {
     // Read-only guest preview as a fallback (existing flow)
     let guestToken: string | null = null;
     if (!magicLink && email && project?.created_by) {
-      const { data: existing } = await admin
+      const { data: existingTokens } = await admin
         .from("guest_studio_tokens")
-        .select("token")
+        .select("token, expires_at")
         .eq("project_id", projectId)
         .eq("guest_email", email.toLowerCase())
-        .is("revoked_at", null)
-        .maybeSingle();
+        .is("revoked_at", null);
+      const live = (existingTokens ?? []).find(
+        (row: { token: string; expires_at: string | null }) => !row.expires_at || new Date(row.expires_at).getTime() > Date.now(),
+      );
 
-      if (existing?.token) {
-        guestToken = existing.token;
+      if (live?.token) {
+        guestToken = live.token;
       } else {
         const { data: minted } = await admin
           .from("guest_studio_tokens")
@@ -213,6 +246,7 @@ const handler = async (req: Request): Promise<Response> => {
             created_by: project.created_by,
             guest_email: email.toLowerCase(),
             label: `Invite for ${email}`,
+            expires_at: new Date(Date.now() + INVITE_PREVIEW_TOKEN_DAYS * 24 * 60 * 60 * 1000).toISOString(),
           })
           .select("token")
           .single();
@@ -227,7 +261,7 @@ const handler = async (req: Request): Promise<Response> => {
       ? magicLink
       : guestToken
       ? `${APP_URL}/guest/${encodeURIComponent(guestToken)}`
-      : `${APP_URL}/accept-invite/${projectId}?email=${encodeURIComponent(email || "")}`;
+      : `${APP_URL}/accept-invite/${projectId}?email=${encodeURIComponent(email || "")}${secretQuery}`;
 
     console.log(`Sending project invitation: magic=${!!magicLink}, token=${!!guestToken}, url=${projectUrl.slice(0, 80)}...`);
 

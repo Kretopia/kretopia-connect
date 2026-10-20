@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { acceptInvitation } from "@/lib/acceptInvitation";
+import { mintGuestInviteToken } from "@/lib/guestInviteToken";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -28,6 +29,8 @@ const AcceptInvite = () => {
   const [processing, setProcessing] = useState(true);
   const [preview, setPreview] = useState<ProjectPreview | null>(null);
   const email = searchParams.get("email");
+  // The invitation email carries a secret (`t`) that the server requires for the signed-out preview.
+  const inviteSecret = searchParams.get("t");
 
   // Fetch lightweight project preview for OG tags + on-screen share card
   useEffect(() => {
@@ -77,17 +80,10 @@ const AcceptInvite = () => {
         // user can open the workspace immediately without signing up.
         if (!user) {
           if (email && projectId) {
-            try {
-              const { data: token } = await supabase.rpc(
-                "get_or_create_guest_token_for_invite",
-                { _project_id: projectId, _email: email },
-              );
-              if (token) {
-                navigate(`/guest/${encodeURIComponent(token as string)}`, { replace: true });
-                return;
-              }
-            } catch (e) {
-              console.warn("guest token lookup failed", e);
+            const token = await mintGuestInviteToken(supabase, projectId, email, inviteSecret);
+            if (token) {
+              navigate(`/guest/${encodeURIComponent(token)}`, { replace: true });
+              return;
             }
           }
           const qs = email ? `?email=${encodeURIComponent(email)}` : '';
@@ -251,7 +247,7 @@ const AcceptInvite = () => {
       });
       navigate("/circle");
     }
-  }, [user, loading, projectId, email, navigate, toast]);
+  }, [user, loading, projectId, email, inviteSecret, navigate, toast]);
 
   const ogImage = projectId
     ? `${SUPABASE_URL}/functions/v1/project-og-image?project_id=${projectId}`

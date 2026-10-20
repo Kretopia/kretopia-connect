@@ -20374,7 +20374,7 @@ export type Database = {
         }[]
       }
       get_or_create_guest_token_for_invite: {
-        Args: { _email: string; _project_id: string }
+        Args: { _email: string; _project_id: string; _secret?: string }
         Returns: string
       }
       get_own_payment_identifiers: {
