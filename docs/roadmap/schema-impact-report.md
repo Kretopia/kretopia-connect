@@ -169,7 +169,7 @@ Proposal: make the bucket private; replace the open read policy with one that le
 
 Risk: LOW. Rollback: make the bucket public again and restore the old read policy. Acceptance (after apply, rolled-back where possible): an anonymous request for an object path is refused; a signed-in user can still upload into their own folder and not into another's; an admin can read it; a file over the cap or of a non-image type is refused.
 
-## M10: the database is 85% junk, and the open intake tables have no guard (STEPS 1, 2 AND 3 DONE 2026-10-20; steps 4 and 5 still need approval)
+## M10: the database is 85% junk, and the open intake tables have no guard (STEPS 1, 2 AND 3 DONE 2026-10-20; steps 4 and 5 NOT PURSUED, owner decision)
 
 Evidence, production, read-only, 2026-10-20 (counts and dates only; `cron.job.command` and run-detail commands were not read, they embed secrets):
 - Database size 2,814 MB. Largest tables: `cron.job_run_details` 1,662 MB (59%), `analytics_events` 896 MB (32%), `net._http_response` 166 MB, then everything else in single-digit MB.
@@ -190,9 +190,32 @@ Proposals, each separate and in this order:
 
 **Step 3 built 2026-10-20** (frontend only, PR #245, ships with the next Publish): `src/lib/analyticsThrottle.ts` is used by `trackEvent` before anything else happens. The same event on the same page with the same properties is dropped while it keeps repeating within 5 seconds (the clock restarts on every attempt, so a loop firing every few milliseconds is reduced to its first event), and at most 60 events per minute per tab are sent. The limit comes from production: over 45 days, 99.9% of session-minutes had 34 events or fewer, the maximum was 70 once (a landing page visit with many distinct event types), and 1 of 11,728 reached 60. Dropped events never reach the auth server either (`trackEvent` called `getUser` over the network for every event). The loop that wrote the 1.2 million rows was found to be two events, `page_view` with page `thrivedesk` and `feature_used` `thrivedesk_opened`, 607,000 of each, fired by one effect in `src/hooks/useProjectData.ts` that re-ran whenever `fetchProjectData` changed identity (its callback depends on `navigate`, which changes with the URL). That effect is now split so opening a project is counted once per project and user. What set the loop off was not reproduced: the current code has no obvious tight loop, and it stopped in September, around the fix for the 403 on the Studio milestones query, which suggests an error path re-triggering the fetch. The throttle is the safety net whatever the trigger.
 
+**Steps 4 and 5 not pursued (2026-10-20).** The owner decided to skip step 5 (trimming the 1.2 million looped analytics rows); the plan was approved first and then stopped by the permission classifier as a mass delete, and was not retried. Step 4 (a database cap per session) was not built either: the client throttle covers the cause that was seen, and a trigger adds work to every insert on a table that accepts anonymous writes. What this leaves: `analytics_events` stays at about 896 MB, roughly 770 MB of it looped duplicates, and it no longer grows that way (500 to 800 events a day). To pick step 5 up later: stage the rows to keep in a schema the API does not expose (never in `public`, the copy holds IP addresses), then in one locked transaction add the rows inserted meanwhile, check the count is between 200,000 and 210,000, truncate and put the rows back; nothing references the table, it has no triggers and is in no publication. Reopen step 4 if a script ever floods the table despite the client throttle.
+
 Risk: 1 and 2 LOW (history only; Supabase keeps its own logs). 3 LOW. 4 LOW to MEDIUM (a wrong threshold drops real events; start generous, log what is refused). 5 MEDIUM (deletes business data; needs a decision on what to keep). Rollback: 1, 2 and 5 are not reversible except from a backup, so take a backup or export the rows to be deleted first; 3 and 4 are reverted by reverting the code or dropping the trigger.
 
 Also noted, and not pursued: `anon` and `authenticated` hold INSERT, DELETE, TRUNCATE and a few other privileges on 343 of the 345 public tables. That is the platform default; row-level security gates INSERT and DELETE, and the API does not expose TRUNCATE. A per-table revoke on `call_transcripts` alone would change nothing, and a revoke across 345 tables is a large change for no practical gain.
+
+## M11: who may change a project's status, recap and commercial settings (DECIDED 2026-10-20; NEEDS APPROVAL to apply, not applied, no SQL on purpose)
+
+Decision, taken on the owner's delegation: **only the project owner, the project's client (`client_user_id`, which only the owner can set since M6) and the service role may change** `status`, `recap_published`, `recap_summary`, `recap_token`, `budget`, `deadline`, `currency`, `deal_type`, `workspace_type`, `match_id`, `event_id` and `track_as_credit`. Every other accepted collaborator, guests and members alike, gets an error. These columns stay open to accepted collaborators because they are day-to-day collaboration or personal organisation: `title`, `description`, `cover_url`, `mood`, `studio_folder_id`, `pinned_stage`, `setup_completed`, the video-call fields, `spark_room_id`, `client_name`, `client_id`. The interface already limits title, cover and mood to the owner, so moving them later is a separate, small decision.
+
+Why these twelve:
+- `status` starts the credit generation when it becomes completed, and it is how a project is archived or closed.
+- `recap_published` and `recap_summary` publish a public page about the project; `recap_token` is its address.
+- `budget`, `deadline`, `currency`, `deal_type`, `workspace_type` are the commercial terms.
+- `match_id` and `event_id` link the project to other objects, and a match also grants access: `user_has_project_access` lets both people of the match into the project, so a collaborator who sets it adds a third party.
+- `track_as_credit` decides whether finishing the project creates Passport credits.
+
+Evidence (code and production, read-only, 2026-10-20):
+- The interface already treats these as owner actions: the project settings menu, the wrap-up card (the only place the recap dialog is opened) and the header editor all check `isOwner`; the server tool that archives a project refuses anyone but the owner. The older `ProjectSettings` component that edits budget, deadline and status is not rendered anywhere.
+- The one client path that completes a project, after the last milestone is paid (`MilestoneBoard`), runs after `confirm_milestone_paid_offline`, which only the owner or the client can call. That is why the client is in the rule. The server paths that complete a project (the Stripe webhook, `capture-milestone-payment`) and archive it use the service role.
+- No client code writes `match_id`, `event_id`, `recap_token`, `currency`, `deal_type` or `workspace_type` after creation.
+- Production: 75 projects (72 active, 3 completed), 1 with a match, 0 with an event, 0 published recaps, 13 with `track_as_credit` on; 7 accepted guests and 26 accepted members can write these columns today. No sign of misuse that can be seen from the data.
+
+Proposal: a guard of the same shape as M0a and M6 (a trigger, because a row-level policy cannot compare old and new values), firing only when one of the twelve columns changes; unchanged values pass, so a full-row update by a member still works.
+
+Risk: LOW to MEDIUM. A flow I could not see in the code, such as a member who legitimately completes a project, would get an error instead of a silent change; the error names the rule. Start with this list and widen it only if needed. Rollback: drop the trigger and its function. Acceptance (after apply, rolled-back tests): an accepted guest and an accepted member are refused on each of the twelve; the owner, the client and the service role succeed; editing the description, folder or pinned stage as a member still works; completing a project through the last milestone payment still works for the client.
 
 ## Mapping of the Slice D asks to where they landed
 
