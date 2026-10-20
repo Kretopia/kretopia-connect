@@ -121,7 +121,7 @@ export function GlobalVideoCallHost() {
           <Button type="button" variant="ghost" title="Copy invite link" aria-label="Copy invite link" onClick={copyLink} className="k-call-icon rounded-lg bg-secondary text-foreground hover:bg-accent">
             <Copy className="h-4 w-4" />
           </Button>
-          <Button type="button" title="Leave call" aria-label="Leave call" onClick={() => setConfirmLeave(true)} className="k-call-icon rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <Button type="button" variant="destructive" title="Leave call" aria-label="Leave call" onClick={() => setConfirmLeave(true)} className="k-call-icon rounded-lg">
             <PhoneOff className="h-4 w-4" />
           </Button>
         </CallMediaControls>

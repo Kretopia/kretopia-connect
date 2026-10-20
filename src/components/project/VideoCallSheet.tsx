@@ -562,10 +562,11 @@ export const PersistentStudioCall = ({
                   </DropdownMenu>
                   <Button
                     type="button"
+                    variant="destructive"
                     onClick={handleEnd}
                     title="Leave call"
                     aria-label="Leave call"
-                    className="k-call-icon rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="k-call-icon rounded-lg"
                   >
                     <PhoneOff className="h-4 w-4" />
                   </Button>
