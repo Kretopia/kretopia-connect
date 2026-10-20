@@ -1,6 +1,6 @@
 # Schema impact report: PROPOSED, NOT APPLIED
 
-Update 2026-10-20: **M5 (`call_transcripts` has no client UPDATE) is APPLIED to production** (approved; see M5 below). Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
+Update 2026-10-20: **M6 (guard on the payer columns of `projects`) is APPLIED to production** (approved; see M6 below). **M5 (`call_transcripts` has no client UPDATE) is APPLIED to production** (approved; see M5 below). Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
 
 Status (original, October 3): nothing in this document has been run or added as a migration file. No migration will be added without explicit approval. Based on reading `origin/main` migrations; the live legacy backend was not inspected (Supabase connector not authorised), so live policies, grants and row counts are unknown. Migrations `20260824100000` and `20260825100000` are headed "PREPARED, NOT APPLIED" and their live state is unknown.
 
@@ -56,6 +56,8 @@ Risk: callers must pass their own id (edge callers use the service role, where `
 
 ## M1: strict membership RLS (the 'pending' problem)
 
+Update 2026-10-20: the `pending` part is already closed in production: `user_has_project_access()` there says "'pending' is NOT access" and requires `accepted`, and `is_project_member` exists. What remains of M1 is that policies are role-blind (any accepted collaborator, guests included, can write); the sharpest case is M6.
+
 Current: `user_has_project_access()` admits `pending` (20260427234910:24-29) so invitees can load the accept banner. It also gates `project_files` and storage (20260420201228:60-103), `creative_assets`, `project_deliverables`, `project_notes`, call transcripts and `board-assets`. Pending invitees can therefore read files, notes, transcripts and recordings before accepting. Policies are role-blind beyond money columns.
 
 Proposal: add `public.is_project_member(project_id, user_id)` = owner OR accepted collaborator (plus existing match participants). Keep `user_has_project_access()` only for the minimal project-shell read (`projects` SELECT, the invitee's own `project_collaborators` row) so the accept banner still renders. Re-point data-table and storage policies to `is_project_member`. Add role predicates for notes / time entries (`hourly_rate`) per `get_project_role`. Apply the money-column migration `20260825100000` only after its preflight.
@@ -101,6 +103,21 @@ Risk: LOW. Realtime UPDATE events keep reaching subscribers (they depend on SELE
 **Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020120000_call_transcripts_no_client_update.sql` (drop the policy, revoke UPDATE from `anon` and `authenticated`; the optional INSERT revoke was not part of the approval and was not done). Verified in production: before, a creator's UPDATE of their own row succeeded; after, it fails with `permission denied for table call_transcripts`; the creator can still SELECT their row; `service_role` can still UPDATE (the edge writers); the table still has 30 rows and the only policies left are the service-role ALL and the SELECT policy; the table ACL for `anon` and `authenticated` went from `arwdDxtm` to `ardDxtm` (no `w`). Each check ran inside a block that always rolls back.
 
 Acceptance (after apply, as a creator of a transcript): an UPDATE of `recording_id` or `project_id` is refused; the Recordings page, a call recap and a recording link still work; a new recording still produces a row (service role). A migration file and the captured pre-state would be added in the same PR as the approval.
+
+## M6: payer and agent columns on `projects` are writable by any accepted collaborator (APPLIED 2026-10-20)
+
+Evidence, production, read-only, 2026-10-20 (the one write test ran in a block that always rolls back):
+- The `projects` UPDATE policy admits the owner and every accepted collaborator whatever their role, and `authenticated` holds UPDATE on all columns except four money columns (`client_price`, `creative_payout`, `margin_type`, `margin_value`, which are protected by column grants and were confirmed refused). M0a closed `created_by` only.
+- Writable by an accepted `guest` (7 exist in production; 26 accepted `member`s): `client_user_id`, `agent_user_id`, `creative_user_ids`, `agent_mode`, and also `status`, `budget`, `deadline`, `recap_published`, `recap_summary`, `video_room_url`, `match_id`, `event_id`. A rolled-back test as a real guest confirmed that setting `client_user_id` to themselves succeeds (1 row).
+- Why `client_user_id` matters: it is the payer authority. `confirm_milestone_paid_offline`, `update_milestone_workflow_status` (approve), `escrowAuth.ts` (escrow release), `create-milestone-payment`, `batch-milestone-payout` and `resolveMilestonePayee.ts` all treat `client_user_id` (or the owner) as the party allowed to confirm, approve, pay or release. A collaborator who can name themselves as client can therefore act as the payer. What a falsely "paid" milestone unlocks downstream was not traced in this report.
+- Nothing writes these columns from the app: the frontend and the edge functions only read `client_user_id`, `agent_user_id` and `creative_user_ids` (searched `src/` and `supabase/functions/`). The frontend's project updates touch title, description, status, mood, cover, folder, stage, recap and setup flags.
+- No sign of use: 75 projects, none has `client_user_id` set; 5 milestones (4 pending, 1 requested), none paid. The blast radius today is small, and it grows as soon as the payer flows go live.
+
+Proposal (same shape as M0a, because an RLS `WITH CHECK` cannot compare old and new values): a guard that lets only the project owner (`created_by`) or the service role change `client_user_id`, `agent_user_id`, `creative_user_ids` and `agent_mode`; everyone else gets an error. Nothing legitimate is affected because no client flow writes them. Also noted: `client_id` / `client_name` (CRM link and label) are not payer authority and are left alone.
+
+Product decision, not proposed here: who may change `status`, `recap_published`, `recap_summary`, `budget`, `deadline`, `video_room_url`, `match_id` and `event_id`. Today a guest can mark a project completed (which creates pending credits for all collaborators through `auto_generate_project_credits`) or publish its recap. Options: owner-only for status and recap; or role-based. This is the role-blind remainder of M1 below.
+
+Risk: LOW for the guard. Rollback: drop the trigger and its function. **Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020130000_guard_project_payer_columns.sql` (trigger `trg_guard_project_payer_columns`, BEFORE UPDATE OF the four columns, owner or service role only; unchanged values pass). Verified in production with rolled-back tests: an accepted guest is refused on `client_user_id`, `creative_user_ids`, `agent_user_id` and `agent_mode`; an accepted member is refused on `client_user_id`; the owner and the service role succeed; a guest's ordinary edit and a no-op write of the guarded columns still pass; both guard triggers (`created_by`, payer columns) are enabled; data unchanged afterwards (75 projects, 0 with a client, 0 paid milestones).
 
 ## Mapping of the Slice D asks to where they landed
 
