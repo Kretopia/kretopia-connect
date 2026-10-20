@@ -83,7 +83,7 @@ export function PersistentCallWindow({ children, route, title, call, startedAt, 
         <Button variant="ghost" className="k-call-icon k-call-mini-toggle" title={minimized ? "Expand miniature" : "Minimize call"} aria-label={minimized ? "Expand miniature" : "Minimize call"} onClick={() => setMinimized(v => !v)}>{minimized ? <Maximize2 className="h-4 w-4" /> : <Minimize2 className="h-4 w-4" />}</Button>
         <Button variant="ghost" className="k-call-icon text-destructive" title="Leave call" aria-label="Leave call" onClick={() => setConfirm(true)}><PhoneOff className="h-4 w-4" /></Button>
       </div>
-      {docked && <Button variant="ghost" className="k-call-icon k-call-minimize right-3 top-[calc(60px+env(safe-area-inset-top,0px))] z-20 bg-secondary" title="Minimize call" aria-label="Minimize call" onClick={() => setMinimized(true)}><Minimize2 className="h-4 w-4" /></Button>}
+      {docked && <Button variant="ghost" className="k-call-icon k-call-minimize right-3 top-[calc(var(--call-bar-h,60px)+env(safe-area-inset-top,0px))] z-20 bg-secondary" title="Minimize call" aria-label="Minimize call" onClick={() => setMinimized(true)}><Minimize2 className="h-4 w-4" /></Button>}
     </div>
     <ConfirmCallLeave open={confirm} onOpenChange={setConfirm} onLeave={onLeave} />
   </CallWindowContext.Provider>;

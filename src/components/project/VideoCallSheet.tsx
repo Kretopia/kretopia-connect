@@ -12,11 +12,9 @@ import {
   UserPlus,
   Circle,
   ScreenShare,
-  X,
   MoreVertical,
   Flag,
   Ban,
-  ShieldAlert,
   MicOff,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -508,38 +506,70 @@ export const PersistentStudioCall = ({
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  {peerUserId && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost"
-                          type="button"
-                          aria-label="Safety options"
-                          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors"
-                        >
-                          <ShieldAlert className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <DropdownMenuItem onClick={() => setSafetyMode("report")} className="text-destructive focus:text-destructive">
-                          <Flag className="h-4 w-4 mr-2" /> Report {peerName || "this person"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => setSafetyMode("block")} className="text-destructive focus:text-destructive">
-                          <Ban className="h-4 w-4 mr-2" /> Block & don't reconnect
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                <CallMediaControls call={mediaCall} toolbar>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    title={sharing ? "Stop screen sharing" : "Share screen"}
+                    aria-label={sharing ? "Stop screen sharing" : "Share screen"}
+                    aria-pressed={sharing}
+                    onClick={toggleScreenShare}
+                    className={`k-call-icon rounded-lg ${sharing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-foreground hover:bg-accent"}`}
+                  >
+                    <ScreenShare className="h-4 w-4" />
+                  </Button>
+                  {!backstage && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      title={recording ? "Stop recording" : "Start recording"}
+                      aria-label={recording ? "Stop recording" : "Start recording"}
+                      aria-pressed={recording}
+                      onClick={toggleRecording}
+                      disabled={["requested", "stopping", "processing"].includes(recordingState.phase)}
+                      className={`k-call-icon rounded-lg ${recording ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-secondary text-foreground hover:bg-accent"}`}
+                    >
+                      <Circle className={`h-3.5 w-3.5 ${recording ? "fill-current" : ""}`} />
+                    </Button>
                   )}
-                  <Button variant="ghost"
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" type="button" aria-label="More call options" title="More" className="k-call-icon rounded-lg bg-secondary text-foreground hover:bg-accent">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => setInviteOpen(true)}>
+                        <UserPlus className="h-4 w-4 mr-2" /> Invite people
+                      </DropdownMenuItem>
+                      {isHost && (
+                        <DropdownMenuItem onClick={muteAll} title="Mute every speaker except you">
+                          <MicOff className="h-4 w-4 mr-2" /> Mute all
+                        </DropdownMenuItem>
+                      )}
+                      {peerUserId && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setSafetyMode("report")} className="text-destructive focus:text-destructive">
+                            <Flag className="h-4 w-4 mr-2" /> Report {peerName || "this person"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSafetyMode("block")} className="text-destructive focus:text-destructive">
+                            <Ban className="h-4 w-4 mr-2" /> Block & don't reconnect
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button
                     type="button"
                     onClick={handleEnd}
+                    title="Leave call"
                     aria-label="Leave call"
-                    className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary text-foreground transition-colors"
+                    className="k-call-icon rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
-                    <X className="h-4 w-4" />
+                    <PhoneOff className="h-4 w-4" />
                   </Button>
-                </div>
+                </CallMediaControls>
               </header>
 
               {/* Video area */}
@@ -557,83 +587,6 @@ export const PersistentStudioCall = ({
                     {overlayActions}
                   </div>
                 )}
-              </div>
-
-              {/* Controls */}
-              <div
-                className="k-call-footer"
-              >
-                <CallMediaControls call={mediaCall} />
-                <div className="k-call-controls">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label={sharing ? "Stop screen sharing" : "Share screen"}
-                    onClick={toggleScreenShare}
-                    className={`rounded-full gap-2 h-10 px-4 border ${
-                      sharing
-                        ? "bg-primary text-primary-foreground hover:bg-primary/90 border-transparent"
-                        : "bg-secondary text-foreground border-border hover:bg-accent"
-                    }`}
-                  >
-                    <ScreenShare className="h-4 w-4" />
-                    <span className="text-sm font-medium">{sharing ? "Stop" : "Share"}</span>
-                  </Button>
-
-                  {!backstage && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={recording ? "Stop recording" : "Start recording"}
-                      onClick={toggleRecording}
-                      disabled={["requested", "stopping", "processing"].includes(recordingState.phase)}
-                      className={`rounded-full gap-2 h-10 px-4 border ${
-                        recording
-                          ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-transparent"
-                          : "bg-secondary text-foreground border-border hover:bg-accent"
-                      }`}
-                    >
-                      <Circle className={`h-3 w-3 ${recording ? "fill-current" : ""}`} />
-                      <span className="text-sm font-medium">{recording ? "Stop" : "Record"}</span>
-                    </Button>
-                  )}
-
-                  {isHost && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={muteAll}
-                      className="rounded-full gap-2 h-10 px-4 border bg-secondary text-foreground border-border hover:bg-accent"
-                      title="Mute every speaker except you"
-                    >
-                      <MicOff className="h-4 w-4" />
-                      <span className="text-sm font-medium">Mute all</span>
-                    </Button>
-                  )}
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setInviteOpen(true)}
-                    className="rounded-full gap-2 h-10 px-4 border bg-secondary text-foreground border-border hover:bg-accent"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                    <span className="text-sm font-medium">Invite</span>
-                  </Button>
-
-                  <Button
-                    type="button"
-                    onClick={handleEnd}
-                    className="rounded-full gap-2 h-11 px-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg"
-                  >
-                    <PhoneOff className="h-4 w-4" />
-                    <span className="text-sm font-semibold">Leave</span>
-                  </Button>
-                </div>
               </div>
             </>
           )}

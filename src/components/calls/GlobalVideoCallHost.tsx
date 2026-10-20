@@ -1,6 +1,6 @@
 import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mic, MicOff, PhoneOff, Maximize2, ScreenShare, Circle, Copy, X } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Maximize2, ScreenShare, Circle, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useVideoCall } from "@/contexts/VideoCallContext";
@@ -76,30 +76,55 @@ export function GlobalVideoCallHost() {
 
   return (
     <><PersistentCallWindow route={`/meet/${meetingId}`} title={title} call={callRef.current} startedAt={startedAt} status={connectionStatus} recordingPhase={recordingPhase} active={live} onLeave={() => { void leave(); }}>
-      {/* Docked-only header */}
+      {/* Docked-only header: the one call toolbar */}
       <div className={cn("k-call-header flex shrink-0 items-center justify-between border-b", !docked && "hidden")}>
-        <CallBrand />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold truncate">{title}</p>
-          <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-            {recordingCopy ? (
-              <>
-                <Circle className="h-2 w-2 fill-destructive text-destructive" />
-                <span role="status" className="text-foreground font-medium">{recordingCopy.label}</span>
-              </>
-            ) : (
-              "Live"
-            )}
-          </p>
+        <div className="flex items-center gap-2 min-w-0">
+          <CallBrand />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold truncate">{title}</p>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+              {recordingCopy ? (
+                <>
+                  <Circle className="h-2 w-2 fill-destructive text-destructive" />
+                  <span role="status" className="text-foreground font-medium">{recordingCopy.label}</span>
+                </>
+              ) : (
+                "Live"
+              )}
+            </p>
+          </div>
         </div>
-        <Button variant="ghost"
-          type="button"
-          onClick={() => setConfirmLeave(true)}
-          className="k-call-icon rounded-lg flex items-center justify-center bg-secondary hover:bg-secondary"
-          aria-label="Leave call"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <CallMediaControls call={callRef.current} toolbar>
+          <Button
+            type="button"
+            variant="ghost"
+            title={sharing ? "Stop screen sharing" : "Share screen"}
+            aria-label={sharing ? "Stop screen sharing" : "Share screen"}
+            aria-pressed={sharing}
+            onClick={handleToggleShare}
+            className={cn("k-call-icon rounded-lg", sharing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-foreground hover:bg-accent")}
+          >
+            <ScreenShare className="h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            title={recording ? "Stop recording" : "Start recording"}
+            aria-label={recording ? "Stop recording" : "Start recording"}
+            aria-pressed={recording}
+            onClick={handleToggleRecord}
+            disabled={["requested", "stopping", "processing"].includes(recordingPhase)}
+            className={cn("k-call-icon rounded-lg", recording ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-secondary text-foreground hover:bg-accent")}
+          >
+            <Circle className={cn("h-3.5 w-3.5", recording && "fill-current")} />
+          </Button>
+          <Button type="button" variant="ghost" title="Copy invite link" aria-label="Copy invite link" onClick={copyLink} className="k-call-icon rounded-lg bg-secondary text-foreground hover:bg-accent">
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button type="button" title="Leave call" aria-label="Leave call" onClick={() => setConfirmLeave(true)} className="k-call-icon rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <PhoneOff className="h-4 w-4" />
+          </Button>
+        </CallMediaControls>
       </div>
 
       {/* Middle slot -- the persistent container lives here, in the same
@@ -139,62 +164,6 @@ export function GlobalVideoCallHost() {
               <PhoneOff className="h-3.5 w-3.5" />
             </Button>
           </div>
-        </div>
-      </div>
-
-      {/* Docked-only bottom control bar */}
-      <div
-        className={cn("k-call-footer", !docked && "hidden")}
-      >
-        <CallMediaControls call={callRef.current} />
-        <div className="k-call-controls">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label={sharing ? "Stop screen sharing" : "Share screen"}
-            onClick={handleToggleShare}
-            className={cn(
-              "rounded-full gap-2 h-10 px-4 border border-border",
-              sharing ? "bg-primary text-primary-foreground border-transparent" : "bg-secondary text-foreground hover:bg-secondary",
-            )}
-          >
-            <ScreenShare className="h-4 w-4" />
-            {sharing ? "Stop" : "Share"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-label={recording ? "Stop recording" : "Start recording"}
-            onClick={handleToggleRecord}
-            disabled={["requested", "stopping", "processing"].includes(recordingPhase)}
-            className={cn(
-              "rounded-full gap-2 h-10 px-4 border border-border",
-              recording ? "bg-destructive text-destructive-foreground border-transparent" : "bg-secondary text-foreground hover:bg-secondary",
-            )}
-          >
-            <Circle className={cn("h-3 w-3", recording && "fill-current")} />
-            {recording ? "Stop" : "Record"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={copyLink}
-            className="rounded-full gap-2 h-10 px-4 border border-border bg-secondary text-foreground hover:bg-secondary"
-          >
-            <Copy className="h-4 w-4" />
-            Invite
-          </Button>
-          <Button
-            type="button"
-            onClick={() => setConfirmLeave(true)}
-            className="rounded-full gap-2 h-11 px-6 bg-destructive hover:bg-destructive/90 text-destructive-foreground"
-          >
-            <PhoneOff className="h-4 w-4" />
-            <span className="font-semibold">Leave</span>
-          </Button>
         </div>
       </div>
     </PersistentCallWindow><ConfirmCallLeave open={confirmLeave} onOpenChange={setConfirmLeave} onLeave={() => { void leave(); }} /></>

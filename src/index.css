@@ -6,6 +6,14 @@
 .k-call-surface { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: var(--font-family-brand); min-width: 0; overflow-x: clip; }
 .k-call-header { padding: calc(env(safe-area-inset-top, 0px) + 8px) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); background: hsl(var(--background)); border-color: hsl(var(--border)); gap: 8px; }
 .k-call-footer { padding: 8px max(8px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 8px) max(8px, env(safe-area-inset-left, 0px)); background: hsl(var(--background)); border-top: 1px solid hsl(var(--border)); flex-shrink: 0; }
+.k-call-header { flex-wrap: wrap; }
+.k-call-header > :first-child { flex: 1 1 auto; min-width: 0; }
+.k-call-toolbar { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+@media (max-width: 639px) {
+  .k-call-header > .k-call-toolbar { order: 3; width: 100%; }
+  .k-call-surface .k-call-toolbar > .k-call-icon { flex: 1 1 0; width: auto; min-width: 32px; max-width: 56px; }
+  .k-persistent-call { --call-bar-h: 112px; }
+}
 .k-call-controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(52px, 1fr)); gap: 4px; width: 100%; min-width: 0; }
 .k-call-controls + .k-call-controls { margin-top: 4px; }
 .k-call-controls > button { min-width: 0; width: 100%; height: 48px; padding: 4px 2px; border-radius: 8px; flex-direction: column; gap: 2px; font-size: 11px; line-height: 14px; }
@@ -14,7 +22,6 @@
 .k-call-surface .btn-glass-primary { background: hsl(var(--primary)) !important; color: hsl(var(--primary-foreground)) !important; }
 .k-call-surface .btn-glass-danger { background: hsl(var(--destructive)) !important; color: hsl(var(--destructive-foreground)) !important; }
 .k-call-video { background: hsl(var(--muted)); min-width: 0; }
-.k-call-video > aside { bottom: 76px; }
 .k-call-video > aside .grid > button { white-space: normal; min-height: 44px; height: auto; padding-block: 8px; }
 .k-call-surface .k-call-preview { height: 100%; max-height: 100%; width: auto; max-width: 100%; aspect-ratio: 3 / 4; border-radius: 8px; background: hsl(var(--muted)); }
 .k-call-floating { width: min(280px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: 210px; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
