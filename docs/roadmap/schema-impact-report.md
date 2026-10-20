@@ -1,6 +1,6 @@
 # Schema impact report: PROPOSED, NOT APPLIED
 
-Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
+Update 2026-10-20: **M5 (`call_transcripts` has no client UPDATE) is APPLIED to production** (approved; see M5 below). Update 2026-10-19: **M0a is APPLIED to production** (approved; see M0a below). M0b is also in place (trigger `trg_guard_project_collaborator_self_update`) and M0c is closed (`match_copilot_memories` has no `anon` or `authenticated` EXECUTE). Everything else below is still proposed.
 
 Status (original, October 3): nothing in this document has been run or added as a migration file. No migration will be added without explicit approval. Based on reading `origin/main` migrations; the live legacy backend was not inspected (Supabase connector not authorised), so live policies, grants and row counts are unknown. Migrations `20260824100000` and `20260825100000` are headed "PREPARED, NOT APPLIED" and their live state is unknown.
 
@@ -86,7 +86,7 @@ Proposal: additive columns `invoices.paid_source` / `milestones.paid_source` (`p
 
 Risk: HIGH (payments). Backfill: `paid` with a `payment_intent_id` becomes `provider_confirmed` only after matching the Stripe event; everything else becomes `legacy_unknown`. Never infer. Rollback: additive columns, UI falls back to current `status`; the RPC changes are reverted from the preflight dump. Acceptance: manual mark shows "recorded by issuer, not provider-confirmed" and never "Paid — thank you"; a signed webhook event shows "provider-confirmed" with a receipt id; a failed transfer leaves the commission unpaid; a replayed webhook event changes nothing.
 
-## M5: `call_transcripts` has no client UPDATE (NEEDS APPROVAL, not applied, no SQL on purpose)
+## M5: `call_transcripts` has no client UPDATE (APPLIED 2026-10-20)
 
 Evidence, production, read-only, 2026-10-20:
 - Policies on the table: `service role manages transcripts` (ALL, service role), `view own/participant transcripts` (SELECT, `user_can_view_call_transcript`), `creator can update own transcript` (UPDATE, `created_by = auth.uid()`, no WITH CHECK). There is no INSERT or DELETE policy for clients.
@@ -97,6 +97,8 @@ Evidence, production, read-only, 2026-10-20:
 Proposal: remove the client UPDATE path entirely: drop the `creator can update own transcript` policy and revoke UPDATE on the table from `anon` and `authenticated`. Keep SELECT, the service-role policy and all edge writers untouched. Optional hardening, separate decision: also revoke INSERT from `anon` and `authenticated` (no INSERT policy exists, so RLS already blocks it).
 
 Risk: LOW. Realtime UPDATE events keep reaching subscribers (they depend on SELECT, not on the UPDATE privilege). If a client write exists that this scan missed, it fails with `permission denied` instead of silently changing the row. Rollback: re-grant UPDATE to `authenticated` and recreate the policy with the same predicate (kept in this section).
+
+**Applied 2026-10-20** to the production database with approval, file `supabase/migrations/20261020120000_call_transcripts_no_client_update.sql` (drop the policy, revoke UPDATE from `anon` and `authenticated`; the optional INSERT revoke was not part of the approval and was not done). Verified in production: before, a creator's UPDATE of their own row succeeded; after, it fails with `permission denied for table call_transcripts`; the creator can still SELECT their row; `service_role` can still UPDATE (the edge writers); the table still has 30 rows and the only policies left are the service-role ALL and the SELECT policy; the table ACL for `anon` and `authenticated` went from `arwdDxtm` to `ardDxtm` (no `w`). Each check ran inside a block that always rolls back.
 
 Acceptance (after apply, as a creator of a transcript): an UPDATE of `recording_id` or `project_id` is refused; the Recordings page, a call recap and a recording link still work; a new recording still produces a row (service role). A migration file and the captured pre-state would be added in the same PR as the approval.
 

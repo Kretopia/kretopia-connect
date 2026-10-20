@@ -24,7 +24,7 @@ Payments, Stripe, Daily keys, Twilio, Gmail, OAuth, secrets, UI, copy, branding,
 
 ## Risks remaining
 1. ~~P0 project takeover~~ closed 2026-10-19 (M0a applied, PR #227). Remaining on that table: members can still edit other `projects` columns (M1).
-2. **P1** `call_transcripts` column updates; `database_export_*` buckets; `computeOpportunityMatch` vanity badge.
+2. **P1** `database_export_*` buckets (`call_transcripts` client UPDATE removed 2026-10-20); `computeOpportunityMatch` vanity badge.
 3. Edge code in `main` is not what runs in production until pasted or deployed (PR #225 functions included). CLI deploys reset JWT flags.
 4. The cron jobs exist only in the production database.
 5. Lint and 7 test files are red on `main` (listed in `CI_POLICY.md`); both lockfiles are unusable outside Lovable.
