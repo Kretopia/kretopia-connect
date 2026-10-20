@@ -169,6 +169,27 @@ Proposal: make the bucket private; replace the open read policy with one that le
 
 Risk: LOW. Rollback: make the bucket public again and restore the old read policy. Acceptance (after apply, rolled-back where possible): an anonymous request for an object path is refused; a signed-in user can still upload into their own folder and not into another's; an admin can read it; a file over the cap or of a non-image type is refused.
 
+## M10: the database is 85% junk, and the open intake tables have no guard (NEEDS APPROVAL, not applied, no SQL on purpose)
+
+Evidence, production, read-only, 2026-10-20 (counts and dates only; `cron.job.command` and run-detail commands were not read, they embed secrets):
+- Database size 2,814 MB. Largest tables: `cron.job_run_details` 1,662 MB (59%), `analytics_events` 896 MB (32%), `net._http_response` 166 MB, then everything else in single-digit MB.
+- **`cron.job_run_details`: 1,640,591 rows with no retention.** One job that no longer exists (id 19, ran 2026-04-13 to 2026-07-01) left 1,365,678 of them, one about every 5 seconds. The 21 live jobs add about 1,800 rows a day (12,479 in the last 7 days), 0 failures recorded.
+- **`analytics_events`: 1,399,617 rows, 87% from 90 sessions.** Each of those 90 sessions logged 1,000 to 144,000 events (page views, sign-in and sign-out events, repeated for hours, one signed-in user each); 126,891 rows come from the other ~28,000 sessions. The bursts are in April to August 2026 (up to 648,000 events in July). Since September the table gets 500 to 800 events a day, so whatever looped is no longer doing it.
+- The client helper `src/lib/analytics.ts` has no throttle: any effect that re-fires writes a row each time. The 11 intake tables (analytics, error logs, RSVPs, newsletter, unsubscribe, partner forms) all accept anonymous inserts with `WITH CHECK (true)`; only `analytics_events` is large.
+- Not a risk of leaking data. The costs are disk, backup and restore time, slower queries on the biggest tables, and the chance of the same loop (or a script) filling the disk again.
+
+Proposals, each separate and in this order:
+1. **Retention for pg_cron history (cron change + data deletion).** Delete run details older than 14 days now (about 1.6 million rows, none needed) and schedule a small daily cleanup job so it never grows again.
+2. **Reclaim the disk.** Deleting rows does not shrink the files; the 1.6 GB comes back only after a table rewrite (VACUUM FULL or pg_repack), which locks the table for its duration. For `cron.job_run_details` the lock is harmless; it needs a quiet moment and may not be possible through the connector, in which case it is a dashboard or support task.
+3. **Analytics: stop the loop at the source (frontend, no database change).** Throttle `trackEvent`: drop an identical event on the same page within a few seconds and cap events per session per minute. Optionally find which effect looped (page views and auth state changes).
+4. **Analytics: a database cap per session (migration).** A trigger that refuses events beyond a per-session, per-minute limit, so a loop or a script cannot flood the table even if a client is broken.
+5. **Analytics: clean and keep it short (data deletion, product decision).** Remove the events beyond the first 200 of each of the 90 looping sessions (about 1.2 million rows), and decide a retention for raw events (for example 12 months, summarised before deletion).
+6. The other ten intake tables are small (`site_analytics` about 34,000 rows and 13 MB, error logs about 560 rows, the rest under 50 rows or empty): column length checks are enough there, no rate limit needed now.
+
+Risk: 1 and 2 LOW (history only; Supabase keeps its own logs). 3 LOW. 4 LOW to MEDIUM (a wrong threshold drops real events; start generous, log what is refused). 5 MEDIUM (deletes business data; needs a decision on what to keep). Rollback: 1, 2 and 5 are not reversible except from a backup, so take a backup or export the rows to be deleted first; 3 and 4 are reverted by reverting the code or dropping the trigger.
+
+Also noted, and not pursued: `anon` and `authenticated` hold INSERT, DELETE, TRUNCATE and a few other privileges on 343 of the 345 public tables. That is the platform default; row-level security gates INSERT and DELETE, and the API does not expose TRUNCATE. A per-table revoke on `call_transcripts` alone would change nothing, and a revoke across 345 tables is a large change for no practical gain.
+
 ## Mapping of the Slice D asks to where they landed
 
 | Ask | Landed in |
