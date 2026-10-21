@@ -398,9 +398,9 @@ const Navbar = memo(({ user }: NavbarProps) => {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-[85vw] sm:w-[400px] bg-background text-foreground border-l border-border"
+                className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
-                <SheetHeader className="pr-8 text-left">
+                <SheetHeader className="shrink-0 pr-8 text-left">
                   <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
                   {isCompany && <CompanyModeBadge className="w-fit" />}
@@ -419,7 +419,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     shrink prevention collapsed Subscription to 26px and
                     Switch-to-Company to 18px, both with the second line
                     rendered but invisible underneath the first. */}
-                <div className="flex flex-col gap-1 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] [&>*]:shrink-0">
+                <div className="flex flex-col gap-1 mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] -mx-1 px-1 [&>*]:shrink-0">
                   {isCompany ? (
                     /* Company workspace and the same shared feature access as Creator. */
                     <>
@@ -846,12 +846,12 @@ function MenuGridTile({
       aria-current={isActive ? "page" : undefined}
       aria-label={label}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-foreground/[0.03] px-2 py-3.5 min-h-[76px] text-center transition-colors hover:bg-foreground/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy",
-        isActive && "border-energy/30 bg-energy/10 text-energy",
+        "k-menu-tile relative flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-1.5 py-3.5 min-h-[76px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy",
+        isActive && "is-active text-energy",
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className="text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
+      <Icon className="k-menu-tile-icon h-5 w-5 shrink-0" />
+      <span className="w-full break-words text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
       {badge && (
         <Badge className="absolute top-1.5 right-1.5 bg-primary/15 text-primary text-[9px] px-1.5 h-4">{badge}</Badge>
       )}
@@ -860,7 +860,7 @@ function MenuGridTile({
 }
 
 function MenuGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">{children}</div>;
+  return <div className="grid grid-cols-3 gap-2">{children}</div>;
 }
 
 /* Reusable menu button */
