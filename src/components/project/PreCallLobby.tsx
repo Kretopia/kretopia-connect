@@ -115,9 +115,10 @@ export const PreCallLobby = ({
             </div>
           )}
 
-          {/* Bottom gradient label */}
-          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-background/90">
-            <p className="text-xs font-medium">You</p>
+          {/* Floating name chip -- a small frosted pill instead of the old
+              opaque strip, so the camera preview stays visible behind it */}
+          <div className="absolute bottom-2 left-2 inline-flex items-center rounded-full bg-background/80 backdrop-blur-sm ring-1 ring-border px-2.5 py-1 shadow-sm">
+            <p className="text-xs font-medium text-foreground">You</p>
           </div>
 
           {/* Floating participants preview */}
@@ -165,7 +166,7 @@ export const PreCallLobby = ({
           type="button"
           onClick={() => onJoin({ mic, cam })}
           disabled={joining}
-          className="w-full h-12 rounded-full text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="cta-solid w-full h-12 rounded-full text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           {joining ? (
             <>
