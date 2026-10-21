@@ -26,6 +26,7 @@ import { WrappedShell } from "@/components/wrapped/WrappedShell";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { SectionHeading } from "@/components/typography/Heading";
+import { extractInvokeError } from "@/lib/extractInvokeError";
 
 const ACCENT = "hsl(var(--energy))";
 
@@ -304,7 +305,7 @@ const PostOpportunity = () => {
         body: { action: "send-verification", ...formData, ...(formData.type === "casting" ? casting : {}), image_data: imageData, logo_data: logoData },
       });
 
-      if (error) throw error;
+      if (error) throw new Error((await extractInvokeError(error)) || error.message);
       if (data?.error) throw new Error(data.error);
 
       clearDraft();
