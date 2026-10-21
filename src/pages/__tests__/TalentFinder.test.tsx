@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,9 +21,16 @@ vi.mock("@/components/studio-reference/StudioFeatureShell", () => ({ StudioFeatu
 vi.mock("@/components/brand/KretopiaLoader", () => ({ KretopiaSpinner: () => <span />, KretopiaLoader: () => <span /> }));
 // The criteria search has its own tests; here it only has to be wired to the page's shortlist.
 vi.mock("@/components/match/CriteriaMatch", () => ({
-  CriteriaMatch: ({ onShortlist }: { onShortlist: (id: string, name: string, reasons: string[]) => void }) => (
-    <button onClick={() => onShortlist("t-9", "Cleo Park", ['Works as Creator: Role: "UGC creator"'])}>shortlist from criteria</button>
-  ),
+  CriteriaMatch: ({ brief, onBriefChange, onShortlist }: { brief: string; onBriefChange: (v: string) => void; onShortlist: (id: string, name: string, reasons: string[]) => void }) => {
+    const [draft, setDraft] = useState("");
+    return (
+      <div>
+        <input aria-label="criteria brief" value={brief} onChange={(e) => onBriefChange(e.target.value)} />
+        <input aria-label="criteria draft" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <button onClick={() => onShortlist("t-9", "Cleo Park", ['Works as Creator: Role: "UGC creator"'])}>shortlist from criteria</button>
+      </div>
+    );
+  },
 }));
 
 import TalentFinder from "../TalentFinder";
@@ -72,5 +80,24 @@ describe("Talent Finder", () => {
     fireEvent.click(await screen.findByRole("button", { name: "shortlist from criteria" }));
     await waitFor(() => expect(m.upsert).toHaveBeenCalledOnce());
     expect(m.upsert.mock.calls[0][0]).toMatchObject({ talent_user_id: "t-9", match_score: null, match_reasons: ['Works as Creator: Role: "UGC creator"'], status: "shortlisted" });
+  });
+
+  it("hands the criteria tab the same brief that the other tab holds, so nothing is typed twice", () => {
+    view();
+    fireEvent.change(screen.getByPlaceholderText(/video editor for a music video/i), { target: { value: "I need an editor for a music video" } });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Set criteria" }));
+    expect(screen.getByLabelText("criteria brief")).toHaveValue("I need an editor for a music video");
+    fireEvent.change(screen.getByLabelText("criteria brief"), { target: { value: "A swimwear brand needs UGC creators" } });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Describe it" }));
+    expect(screen.getByPlaceholderText(/video editor for a music video/i)).toHaveValue("A swimwear brand needs UGC creators");
+  });
+
+  it("keeps the criteria being set when the person looks at the other tab and comes back", () => {
+    view();
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Set criteria" }));
+    fireEvent.change(screen.getByLabelText("criteria draft"), { target: { value: "half-built criteria" } });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Describe it" }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Set criteria" }));
+    expect(screen.getByLabelText("criteria draft")).toHaveValue("half-built criteria");
   });
 });

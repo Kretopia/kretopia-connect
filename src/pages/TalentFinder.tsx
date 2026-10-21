@@ -181,8 +181,11 @@ export default function TalentFinder() {
             <TabsTrigger value="brief">Describe it</TabsTrigger>
             <TabsTrigger value="criteria">Set criteria</TabsTrigger>
           </TabsList>
-          <TabsContent value="criteria" className="mt-0">
+          {/* forceMount keeps the criteria, the brief and the results when the person switches tab and comes back. */}
+          <TabsContent value="criteria" forceMount className="mt-0 data-[state=inactive]:hidden">
             <CriteriaMatch
+              brief={brief}
+              onBriefChange={setBrief}
               shortlisted={shortlisted}
               savingId={savingId}
               onShortlist={(id, name, reasons) => void handleShortlist(id, name, null, reasons)}

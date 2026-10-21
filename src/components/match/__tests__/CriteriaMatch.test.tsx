@@ -1,14 +1,16 @@
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CandidateFacts } from "@/lib/matching/evaluate";
 
-const m = vi.hoisted(() => ({ load: vi.fn(), navigate: vi.fn() }));
+const m = vi.hoisted(() => ({ load: vi.fn(), navigate: vi.fn(), read: vi.fn() }));
 
 vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "company-1" } }) }));
 vi.mock("@/lib/matching/candidates", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/matching/candidates")>()), loadCandidatePool: m.load }));
+vi.mock("@/lib/matching/kreto", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/matching/kreto")>()), requestNeedFromBrief: m.read }));
 vi.mock("react-router-dom", async (importOriginal) => ({ ...(await importOriginal<typeof import("react-router-dom")>()), useNavigate: () => m.navigate }));
 vi.mock("@/components/brand/KretopiaLoader", () => ({ KretopiaLoader: ({ label }: { label?: string }) => <span role="progressbar">{label}</span>, KretopiaSpinner: () => <span data-testid="spinner" /> }));
 // Radix Select needs pointer APIs jsdom lacks; a native select has the same value/onChange contract.
@@ -20,6 +22,7 @@ vi.mock("@/components/ui/select", () => ({
   SelectItem: ({ value, children }: { value: string; children: React.ReactNode }) => <option value={value}>{children}</option>,
 }));
 
+import { KretoNeedError } from "@/lib/matching/kreto";
 import { CriteriaMatch } from "../CriteriaMatch";
 
 const facts = (over: Partial<CandidateFacts>): CandidateFacts => ({ userId: "u", fullName: "Someone", role: null, bio: null, location: null, skills: [], links: {}, synced: {}, credits: [], ...over });
@@ -30,11 +33,16 @@ const POOL: CandidateFacts[] = [
 ];
 
 const onShortlist = vi.fn();
+// The page owns the brief; this stands in for it so the textarea behaves as it does there.
+function Page(props: Partial<React.ComponentProps<typeof CriteriaMatch>>) {
+  const [brief, setBrief] = useState("");
+  return <CriteriaMatch brief={brief} onBriefChange={setBrief} onShortlist={onShortlist} shortlisted={{}} savingId={null} {...props} />;
+}
 const view = (props: Partial<React.ComponentProps<typeof CriteriaMatch>> = {}) =>
   render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })}>
       <MemoryRouter>
-        <CriteriaMatch onShortlist={onShortlist} shortlisted={{}} savingId={null} {...props} />
+        <Page {...props} />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -45,6 +53,7 @@ const card = (name: string) => within(screen.getByText(name).closest(".rounded-l
 beforeEach(() => {
   m.load.mockReset();
   m.navigate.mockReset();
+  m.read.mockReset();
   onShortlist.mockReset();
   m.load.mockResolvedValue({ pool: POOL, examined: 3, truncated: false });
 });
@@ -131,18 +140,18 @@ describe("search by criteria", () => {
 
   it("offers a minimum audience only once a platform is chosen, and says what it can be checked against", () => {
     view();
-    expect(screen.queryByLabelText(/Minimum audience/)).toBeNull();
+    expect(screen.queryByLabelText(/minimum audience/i)).toBeNull();
     fireEvent.click(screen.getByLabelText("YouTube"));
-    expect(screen.getByLabelText(/Minimum audience/)).toBeTruthy();
+    expect(screen.getByLabelText(/YouTube minimum audience/i)).toBeTruthy();
     expect(screen.getByText(/only knows a follower count when the account is connected/)).toBeTruthy();
   });
 
   it("lets each group be marked required or preferred", async () => {
     view();
-    const skills = screen.getByRole("group", { name: "Skills (comma separated): how important" });
-    fireEvent.click(within(skills).getByRole("button", { name: "Preferred" }));
-    expect(within(skills).getByRole("button", { name: "Preferred" })).toHaveAttribute("aria-pressed", "true");
-    expect(within(skills).getByRole("button", { name: "Required" })).toHaveAttribute("aria-pressed", "false");
+    const location = screen.getByRole("group", { name: "Location: how important" });
+    fireEvent.click(within(location).getByRole("button", { name: "Preferred" }));
+    expect(within(location).getByRole("button", { name: "Preferred" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(location).getByRole("button", { name: "Required" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("says so, with a way forward, when nothing meets the criteria", async () => {
@@ -201,5 +210,187 @@ describe("next steps", () => {
     fireEvent.click(card("Ana Lopez").getByRole("button", { name: "Message" }));
     expect(m.navigate).toHaveBeenCalledWith("/messages?to=ana");
     expect(card("Ana Lopez").queryByRole("button", { name: /Shortlist/ })).toBeNull();
+  });
+});
+
+const BRIEF = "A swimwear brand looking for TikTok creators in Los Angeles who must have verified past work. Budget $500.";
+const writeBrief = (text = BRIEF) => fireEvent.change(screen.getByLabelText(/Describe what you need/), { target: { value: text } });
+const readButton = () => screen.getByRole("button", { name: /Fill the criteria with Kreto|Re-read my brief|Kreto is reading/ });
+const READING = {
+  need: {
+    craft: { category: "creator", importance: "required" },
+    skills: [{ term: "ugc video", importance: "required" }],
+    themes: [{ term: "swimwear", importance: "preferred" }],
+    location: { text: "Los Angeles", remoteOk: false, importance: "preferred" },
+    platforms: [{ platform: "tiktok", importance: "required" }],
+    backedWork: "required",
+  },
+  ignored: ["budget $500"],
+};
+
+describe("describe the need to Kreto", () => {
+  it("keeps the button off until there is a sentence to read", () => {
+    view();
+    expect(readButton()).toBeDisabled();
+    writeBrief("too short");
+    expect(readButton()).toBeDisabled();
+    writeBrief();
+    expect(readButton()).toBeEnabled();
+  });
+
+  it("fills the criteria for the person to check, says how many and what was left out, and searches nothing by itself", async () => {
+    m.read.mockResolvedValue(READING);
+    view();
+    writeBrief();
+    fireEvent.click(readButton());
+
+    const summary = await screen.findByText(/Kreto set 6 criteria from your brief: 4 required, 2 preferred/);
+    expect(summary.closest("[role=status]")).toHaveTextContent("Not used for matching: budget $500");
+    // the criteria are in the form, where they can be changed
+    expect(screen.getByLabelText("Craft")).toHaveValue("creator");
+    expect(screen.getByRole("list", { name: "Skills, added" })).toHaveTextContent("ugc video");
+    expect(screen.getByRole("list", { name: "Has worked on, added" })).toHaveTextContent("swimwear");
+    expect(screen.getByRole("textbox", { name: "Location" })).toHaveValue("Los Angeles");
+    expect(screen.getByLabelText("TikTok")).toBeChecked();
+    expect(screen.getByLabelText("Include this criterion")).toBeChecked();
+    // reading a brief is not a search: nobody was looked at
+    expect(m.load).not.toHaveBeenCalled();
+    expect(screen.queryByText("Ana Lopez")).toBeNull();
+  });
+
+  it("sends Kreto the brief and nothing else: no profile, no criteria already typed", async () => {
+    m.read.mockResolvedValue(READING);
+    view();
+    fireEvent.change(screen.getByRole("textbox", { name: "Location" }), { target: { value: "Paris" } });
+    writeBrief();
+    fireEvent.click(readButton());
+    await screen.findByText(/Kreto set 6 criteria/);
+    expect(m.read).toHaveBeenCalledTimes(1);
+    expect(m.read.mock.calls[0].slice(1)).toEqual([BRIEF]);
+    expect(m.load).not.toHaveBeenCalled();
+  });
+
+  it("lets the person edit what Kreto set before searching, and the search uses the edited criteria", async () => {
+    m.read.mockResolvedValue(READING);
+    view();
+    writeBrief();
+    fireEvent.click(readButton());
+    await screen.findByText(/Kreto set 6 criteria/);
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove ugc video" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove swimwear" }));
+    fireEvent.click(screen.getByLabelText("Include this criterion"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Location" }), { target: { value: "" } });
+    fireEvent.click(screen.getByLabelText("TikTok"));
+    search();
+    await screen.findByText("Ana Lopez");
+    expect(screen.getByText("Checked against: Works as Creator (required)")).toBeTruthy();
+  });
+
+  it("names every criterion the results were checked against, required ones marked", async () => {
+    view();
+    chooseCreator();
+    fireEvent.click(screen.getByLabelText("TikTok"));
+    search();
+    await screen.findByText("Ana Lopez");
+    expect(screen.getByText("Checked against: Works as Creator (required) · Present on TikTok (required)")).toBeTruthy();
+  });
+
+  it("reads a brief once, however many times the button is pressed while it waits", async () => {
+    let finish: (value: typeof READING) => void = () => undefined;
+    m.read.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    view();
+    writeBrief();
+    fireEvent.click(readButton());
+    expect(await screen.findByRole("button", { name: /Kreto is reading/ })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Kreto is reading/ }));
+    expect(m.read).toHaveBeenCalledTimes(1);
+    expect(screen.getByLabelText(/Describe what you need/)).toBeDisabled();
+    finish(READING);
+    await screen.findByText(/Kreto set 6 criteria/);
+    await waitFor(() => expect(readButton()).toHaveTextContent("Re-read my brief (replaces the criteria below)"));
+  });
+
+  it("keeps the brief and the criteria already typed when Kreto fails, and says what to do", async () => {
+    m.read.mockRejectedValue(new KretoNeedError("timeout"));
+    view();
+    fireEvent.change(screen.getByRole("textbox", { name: "Location" }), { target: { value: "Paris" } });
+    writeBrief();
+    fireEvent.click(readButton());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Kreto took too long. Try again, or set the criteria yourself.");
+    expect(screen.getByLabelText(/Describe what you need/)).toHaveValue(BRIEF);
+    expect(screen.getByRole("textbox", { name: "Location" })).toHaveValue("Paris");
+    expect(readButton()).toBeEnabled();
+    expect(screen.queryByText(/Kreto set/)).toBeNull();
+  });
+
+  it("shows what a brief with nothing to search by contained, without turning it into criteria", async () => {
+    m.read.mockRejectedValue(new KretoNeedError("no_criteria", ["budget $500", "deadline friday"]));
+    view();
+    writeBrief("Budget is $500 and it is due Friday, so nothing fancy.");
+    fireEvent.click(readButton());
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Kreto found nothing to search by in that brief.");
+    expect(alert).toHaveTextContent("Not used for matching: budget $500 · deadline friday");
+  });
+
+  it("treats an unexpected failure as 'Kreto can't be reached', never as a blank form", async () => {
+    m.read.mockRejectedValue(new Error("boom"));
+    view();
+    writeBrief();
+    fireEvent.click(readButton());
+    expect(await screen.findByRole("alert")).toHaveTextContent("Kreto can't be reached right now. You can set the criteria yourself.");
+  });
+
+  it("clears a previous reading's summary when the next one fails, so it cannot describe criteria that were not set", async () => {
+    m.read.mockResolvedValueOnce(READING).mockRejectedValueOnce(new KretoNeedError("rate_limited"));
+    view();
+    writeBrief();
+    fireEvent.click(readButton());
+    await screen.findByText(/Kreto set 6 criteria/);
+    fireEvent.click(readButton());
+    await screen.findByText(/Kreto is busy/);
+    expect(screen.queryByText(/Kreto set 6 criteria/)).toBeNull();
+  });
+
+  it("tells the person that Kreto never sees a profile and that the criteria are theirs to check", () => {
+    view();
+    expect(screen.getByText(/It never sees a profile, it can misread a brief, and you check and edit the criteria before anything is searched/)).toBeTruthy();
+  });
+});
+
+describe("importance per term and per platform", () => {
+  it("adds terms one at a time, each with its own importance that a press changes", () => {
+    view();
+    const skills = screen.getByRole("textbox", { name: "Skills" });
+    fireEvent.change(skills, { target: { value: "premiere" } });
+    fireEvent.keyDown(skills, { key: "Enter" });
+    fireEvent.change(skills, { target: { value: "after effects" } });
+    fireEvent.keyDown(skills, { key: "," });
+    const list = screen.getByRole("list", { name: "Skills, added" });
+    expect(within(list).getByRole("button", { name: "premiere: required. Press to change." })).toBeTruthy();
+    fireEvent.click(within(list).getByRole("button", { name: "after effects: required. Press to change." }));
+    expect(within(list).getByRole("button", { name: "after effects: preferred. Press to change." })).toBeTruthy();
+    expect(within(list).getByRole("button", { name: "premiere: required. Press to change." })).toBeTruthy();
+    expect(skills).toHaveValue("");
+  });
+
+  it("keeps a term still being typed when the search runs, as a required skill", async () => {
+    view();
+    fireEvent.change(screen.getByRole("textbox", { name: "Skills" }), { target: { value: "tiktok editing" } });
+    search();
+    // nobody in the pool lists this skill, so the profiles are behind the button: the criterion is still the one that was typed
+    expect(await screen.findByText("Checked against: Skill: tiktok editing (required)")).toBeTruthy();
+  });
+
+  it("marks a platform required or preferred on its own, apart from the others", async () => {
+    view();
+    fireEvent.click(screen.getByLabelText("TikTok"));
+    fireEvent.click(screen.getByLabelText("YouTube"));
+    const tiktok = screen.getByRole("group", { name: "TikTok: how important" });
+    fireEvent.click(within(tiktok).getByRole("button", { name: "Preferred" }));
+    search();
+    await screen.findByText(/Checked against/);
+    expect(screen.getByText("Checked against: Present on TikTok · Present on YouTube (required)")).toBeTruthy();
   });
 });

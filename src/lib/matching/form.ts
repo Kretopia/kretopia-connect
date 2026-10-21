@@ -1,26 +1,34 @@
-// Turns what is typed into the criteria form into a MatchNeed, or says what is wrong. Pure, so the form's behaviour is
-// tested without rendering it. Free text is split on commas, trimmed, de-duplicated and capped; whatever remains is
-// validated by the same schema Kreto's output will have to satisfy.
+// The criteria form and its two-way conversion with a MatchNeed. The form is what a person edits; a MatchNeed is what is
+// checked. Kreto fills the form from a brief through needToForm, and the person reviews and edits it before anything is
+// searched, so nothing Kreto read is used without being shown. Importance is kept per term and per platform, because a
+// brief can say "must know Premiere, After Effects is a plus".
+//
+// Pure, so the form's behaviour is tested without rendering it. Free text is split on commas, trimmed, de-duplicated and
+// capped; whatever remains is validated by the same schema Kreto's output has to satisfy.
 
 import { matchNeedSchema, PLATFORM_IDS, type Importance, type MatchNeed, type PlatformId } from "./need";
 import type { RoleStampCategory } from "@/lib/passport/roleStamp";
 
+export interface TermItem { term: string; importance: Importance }
+export interface PlatformItem { platform: PlatformId; importance: Importance; /** Digits only, or empty. */ minAudience: string }
+
 export interface CriteriaForm {
   craft: { category: RoleStampCategory | ""; importance: Importance };
-  skills: { text: string; importance: Importance };
-  themes: { text: string; importance: Importance };
+  /** `draft` is text typed but not yet added; it is added as a term when the form is submitted. */
+  skills: { items: TermItem[]; draft: string };
+  themes: { items: TermItem[]; draft: string };
   location: { text: string; remoteOk: boolean; importance: Importance };
-  platforms: { selected: PlatformId[]; minAudience: string; importance: Importance };
+  platforms: PlatformItem[];
   audience: { text: string; importance: Importance };
   backedWork: { on: boolean; importance: Importance };
 }
 
 export const emptyForm = (): CriteriaForm => ({
   craft: { category: "", importance: "required" },
-  skills: { text: "", importance: "required" },
-  themes: { text: "", importance: "preferred" },
+  skills: { items: [], draft: "" },
+  themes: { items: [], draft: "" },
   location: { text: "", remoteOk: false, importance: "preferred" },
-  platforms: { selected: [], minAudience: "", importance: "required" },
+  platforms: [],
   audience: { text: "", importance: "required" },
   backedWork: { on: false, importance: "preferred" },
 });
@@ -40,28 +48,58 @@ export function splitTerms(text: string): string[] {
   return out;
 }
 
+/** Adds the terms in `text` to the list with the given importance, skipping ones already there (case-insensitive). */
+export function addTerms(items: readonly TermItem[], text: string, importance: Importance): TermItem[] {
+  const have = new Set(items.map((i) => i.term.toLowerCase()));
+  const added = splitTerms(text).filter((t) => !have.has(t.toLowerCase())).map((term) => ({ term, importance }));
+  return [...items, ...added];
+}
+
+/** A need as the form shows it, for review and editing. The inverse of formToNeed. */
+export function needToForm(input: MatchNeed): CriteriaForm {
+  const need = matchNeedSchema.parse(input);
+  const form = emptyForm();
+  if (need.craft) form.craft = { category: need.craft.category, importance: need.craft.importance };
+  form.skills.items = need.skills.map((s) => ({ term: s.term, importance: s.importance }));
+  form.themes.items = need.themes.map((t) => ({ term: t.term, importance: t.importance }));
+  if (need.location) form.location = { text: need.location.text, remoteOk: need.location.remoteOk, importance: need.location.importance };
+  form.platforms = need.platforms.map((p) => ({ platform: p.platform, importance: p.importance, minAudience: p.minAudience ? String(p.minAudience) : "" }));
+  if (need.audience) form.audience = { text: need.audience.description, importance: need.audience.importance };
+  if (need.backedWork) form.backedWork = { on: true, importance: need.backedWork };
+  return form;
+}
+
 export type NeedResult = { ok: true; need: MatchNeed } | { ok: false; error: string };
 
 export function formToNeed(form: CriteriaForm): NeedResult {
-  const minAudience = form.platforms.minAudience.trim() ? Number(form.platforms.minAudience.replace(/[,\s]/g, "")) : undefined;
-  if (minAudience !== undefined && (!Number.isInteger(minAudience) || minAudience <= 0)) {
-    return { ok: false, error: "Minimum audience must be a whole number above zero." };
+  const platforms: Array<{ platform: PlatformId; minAudience?: number; importance: Importance }> = [];
+  for (const id of PLATFORM_IDS) {
+    const item = form.platforms.find((p) => p.platform === id);
+    if (!item) continue;
+    const raw = item.minAudience.replace(/[,\s]/g, "");
+    const minAudience = raw ? Number(raw) : undefined;
+    if (minAudience !== undefined && (!Number.isInteger(minAudience) || minAudience <= 0)) {
+      return { ok: false, error: "Minimum audience must be a whole number above zero." };
+    }
+    platforms.push({ platform: id, minAudience, importance: item.importance });
   }
+
+  const skills = addTerms(form.skills.items, form.skills.draft, "required");
+  const themes = addTerms(form.themes.items, form.themes.draft, "preferred");
 
   const candidate = {
     craft: form.craft.category ? { category: form.craft.category, importance: form.craft.importance } : undefined,
-    skills: splitTerms(form.skills.text).map((term) => ({ term, importance: form.skills.importance })),
-    themes: splitTerms(form.themes.text).map((term) => ({ term, importance: form.themes.importance })),
+    skills,
+    themes,
     location: form.location.text.trim() ? { text: form.location.text.trim(), remoteOk: form.location.remoteOk, importance: form.location.importance } : undefined,
-    platforms: PLATFORM_IDS.filter((id) => form.platforms.selected.includes(id)).map((platform) => ({ platform, minAudience, importance: form.platforms.importance })),
+    platforms,
     audience: form.audience.text.trim() ? { description: form.audience.text.trim(), importance: form.audience.importance } : undefined,
     backedWork: form.backedWork.on ? form.backedWork.importance : undefined,
   };
 
   const parsed = matchNeedSchema.safeParse(candidate);
   if (!parsed.success) {
-    const issue = parsed.error.issues[0];
-    const field = String(issue.path[0] ?? "criteria");
+    const field = String(parsed.error.issues[0].path[0] ?? "criteria");
     const hint: Record<string, string> = {
       skills: "Use at most 8 skills.",
       themes: "Use at most 6 themes.",
