@@ -114,7 +114,10 @@ export default function CreditsDashboard() {
     if (overview.missing_evidence > 0)
       return {
         label: `Attach evidence to ${overview.missing_evidence} credit${overview.missing_evidence > 1 ? "s" : ""}`,
-        onClick: () => document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        onClick: () => {
+          setAttachFocusId(null);
+          setAttachOpen(true);
+        },
       };
     if (overview.pending_credits > 0)
       return {
@@ -155,7 +158,23 @@ export default function CreditsDashboard() {
       icon: Briefcase,
       content: profileError ? identityErrorState : <CreditsHireMePanel profile={profile} />,
     },
-    { id: "stamps", label: "Stamps", icon: Award, content: <CreditsStampsPanel credits={credits} loading={loading} query={query} /> },
+    {
+      id: "stamps",
+      label: "Stamps",
+      icon: Award,
+      content: (
+        <CreditsStampsPanel
+          credits={credits}
+          loading={loading}
+          query={query}
+          missingEvidenceCount={overview?.missing_evidence ?? 0}
+          onAttachEvidence={(creditId) => {
+            setAttachFocusId(creditId ?? null);
+            setAttachOpen(true);
+          }}
+        />
+      ),
+    },
     { id: "activity", label: "Activity", icon: Activity, content: <CreditsActivityTimeline credits={credits} loading={loading} /> },
     {
       id: "insights",
