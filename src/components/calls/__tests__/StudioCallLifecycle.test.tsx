@@ -155,12 +155,17 @@ describe("the lobby", () => {
 });
 
 describe("one call toolbar", () => {
-  it("keeps every critical control in the top bar, once each, and has no footer bars", async () => {
+  // Daily's own tray (inside the frame) has mic, camera, screen share, people and chat. The app's top bar only adds
+  // what the tray cannot do, so no control exists twice on the screen.
+  it("holds the minimize arrow, record, the menu and leave once each, and nothing Daily's tray already has", async () => {
     shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
     await joined();
     const bar = within(screen.getByRole("toolbar", { name: "Call controls" }));
-    for (const name of ["Mute microphone", "Turn camera off", "Share screen", "Participants", "Chat", "Start recording", "Leave call"]) {
+    for (const name of ["Minimize call", "Start recording", "More call options", "Leave call"]) {
       expect(bar.getAllByRole("button", { name })).toHaveLength(1);
+    }
+    for (const name of ["Mute microphone", "Turn camera off", "Share screen", "Participants", "Chat"]) {
+      expect(bar.queryByRole("button", { name })).toBeNull();
     }
     expect(screen.getAllByRole("toolbar")).toHaveLength(1);
     expect(document.querySelector(".k-call-footer")).toBeNull();
@@ -168,14 +173,31 @@ describe("one call toolbar", () => {
     expect(screen.getByRole("toolbar").closest("header")).toBeTruthy();
   });
 
-  it("keeps the toolbar actions working: share, record and the invite entry in the menu", async () => {
-    fake.call.startScreenShare = vi.fn(async () => {});
+  it("puts the minimize arrow first in the bar, so it never sits over the frame's own view and settings controls", async () => {
     shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
     await joined();
-    fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: "Share screen" }));
-    await waitFor(() => expect(fake.call.startScreenShare).toHaveBeenCalled());
+    const bar = screen.getByRole("toolbar", { name: "Call controls" });
+    expect(bar.querySelector("button")?.getAttribute("aria-label")).toBe("Minimize call");
+    expect(document.querySelector('[data-call-window="full"] > button[aria-label="Minimize call"]')).toBeNull();
+    expect(document.querySelectorAll('button[aria-label="Minimize call"]')).toHaveLength(1);
+  });
+
+  it("keeps the toolbar actions working: record and the invite entry in the menu", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    await joined();
     fireEvent.click(within(screen.getByRole("toolbar")).getByRole("button", { name: "Start recording" }));
     await waitFor(() => expect(fake.call.startRecording).toHaveBeenCalled());
     expect(within(screen.getByRole("toolbar")).getByRole("button", { name: "More call options" })).toBeTruthy();
+  });
+
+  it("minimizes into the miniature without touching the frame", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    await joined();
+    const iframe = document.querySelector("iframe");
+    fireEvent.click(screen.getByRole("button", { name: "Minimize call" }));
+    expect(document.querySelector('[data-call-window="minimized"]')).toBeTruthy();
+    expect(document.querySelector("iframe")).toBe(iframe);
+    expect(fake.call.leave).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Minimize call" })).toBeNull();
   });
 });

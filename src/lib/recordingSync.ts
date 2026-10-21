@@ -11,8 +11,13 @@
  * canonical call_transcripts row, idempotently). Nothing here creates or marks a recording.
  */
 
-/** Seconds after leaving at which the sync runs: 45 s, 2 min, 5 min, 10 min. */
-export const POST_CALL_SYNC_DELAYS_MS = [45_000, 2 * 60_000, 5 * 60_000, 10 * 60_000] as const;
+/**
+ * When the sync runs after leaving or stopping. The first looks come within seconds, because a short recording is often
+ * ready almost at once and a 45 s wait was the slowest part; the gaps then widen for long recordings, up to ten minutes.
+ */
+export const POST_CALL_SYNC_DELAYS_MS = [3_000, 7_000, 12_000, 20_000, 30_000, 45_000, 70_000, 2 * 60_000, 5 * 60_000, 10 * 60_000] as const;
+/** After this long without the recording being stored, the interface says it is not confirmed. */
+export const POST_CALL_SYNC_GIVE_UP_MS = POST_CALL_SYNC_DELAYS_MS[POST_CALL_SYNC_DELAYS_MS.length - 1];
 
 export interface RecordingSyncOutcome {
   /** The recording started at/after `sinceTs` is stored and nothing in its room is still processing. */

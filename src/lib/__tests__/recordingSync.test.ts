@@ -23,6 +23,11 @@ describe("scheduleRecordingSync", () => {
     expect(run).toHaveBeenCalledTimes(POST_CALL_SYNC_DELAYS_MS.length);
   });
 
+  it("makes its first look within seconds, not after a long wait", () => {
+    expect(POST_CALL_SYNC_DELAYS_MS[0]).toBeLessThanOrEqual(5_000);
+    expect(POST_CALL_SYNC_DELAYS_MS.filter((at) => at <= 30_000).length).toBeGreaterThanOrEqual(4);
+  });
+
   it("stops as soon as the recording is stored and says so once", async () => {
     const run = vi.fn().mockResolvedValueOnce({ stored: false }).mockResolvedValueOnce({ stored: true });
     const onStored = vi.fn();
@@ -46,7 +51,7 @@ describe("scheduleRecordingSync", () => {
     const second = vi.fn(async () => ({ stored: false }));
     scheduleRecordingSync({ roomName: "r4", run: first });
     scheduleRecordingSync({ roomName: "r4", run: second });
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(POST_CALL_SYNC_DELAYS_MS[0]);
     expect(first).not.toHaveBeenCalled();
     expect(second).toHaveBeenCalledTimes(1);
   });

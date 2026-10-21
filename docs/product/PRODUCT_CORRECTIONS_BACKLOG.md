@@ -3,7 +3,7 @@
 Items found while doing the product corrections of 2026-10-21 that need a product decision, a backend or database change, or information the code could not give. None of them was faked or worked around in the interface.
 
 ## Calls
-- **Daily's own tray inside the iframe cannot be hidden from the app.** The app now has one toolbar of its own (the top bar). Daily Prebuilt draws its own control tray inside the iframe, and `daily-js` 0.89 has options to show or hide the leave button, the fullscreen button, the local video and the participants bar, but none for the tray. Whether that tray is visible today could not be checked here (it needs a real call). To have exactly one toolbar on screen, either move the call UI to Daily's call-object mode with fully custom video tiles (large), or accept the tray and keep ours. Decision needed.
+- **Daily's own tray inside the iframe cannot be hidden from the app, so the app's top bar no longer repeats it** (2026-10-21). The top bar keeps only what the tray does not have: the one minimize arrow, Record (the app's own recording flow with its reminder and confirmations), the More menu (invite, mute all, report, block) and Leave. Mic, camera, screen share, people and chat are left to Daily's tray. To hide the tray itself, the call UI would have to move to Daily's call-object mode with custom video tiles (large). Open: Record also exists in Daily's tray (`enable_recording: "cloud"`); pressing that one bypasses the app's reminder, so decide whether to turn the room flag off.
 - The Studio call frame is created with `showFullscreenButton: true`; the meeting frame with `false`. Decide whether Studio should match.
 
 ## Passport: verification and co-signs

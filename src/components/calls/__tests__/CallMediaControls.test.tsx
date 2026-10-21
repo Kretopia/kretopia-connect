@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DailyCall } from "@daily-co/daily-js";
 import { CallMediaControls } from "../CallMediaControls";
+import { CallWindowContext, type CallWindowMode } from "../callWindowContext";
 
 afterEach(cleanup);
 const setup = () => {
@@ -40,16 +41,34 @@ describe("Daily-backed call controls", () => {
     expect(call.startRecording).not.toHaveBeenCalled();
     expect(call.stopRecording).not.toHaveBeenCalled();
   });
-  it("toolbar mode keeps the same four controls icon-only and puts extra items after them", () => {
-    const call = { participants: vi.fn(() => ({ local: { audio: true, video: true } })), on: vi.fn(), off: vi.fn(), setActiveSpeakerMode: vi.fn(), setTheme: vi.fn(async () => ({})), setLocalAudio: vi.fn(), setLocalVideo: vi.fn(), setSidebarView: vi.fn() };
-    render(<CallMediaControls call={call as unknown as DailyCall} toolbar><button>extra</button></CallMediaControls>);
-    const bar = screen.getByRole("toolbar", { name: "Call controls" });
-    expect(Array.from(bar.querySelectorAll("button")).map((b) => b.getAttribute("aria-label") ?? b.textContent)).toEqual(["Mute microphone", "Turn camera off", "Participants", "Chat", "extra"]);
-    expect(bar.textContent).toBe("extra");
-    fireEvent.click(screen.getByRole("button", { name: "Mute microphone" }));
-    expect(call.setLocalAudio).toHaveBeenCalledExactlyOnceWith(false);
-    fireEvent.click(screen.getByRole("button", { name: "Chat" }));
-    expect(call.setSidebarView).toHaveBeenCalledWith("chat");
+  describe("toolbar mode", () => {
+    // Daily's own tray already has mic, camera, screen share, people and chat, so the app's bar must not repeat them.
+    const toolbarCall = () => ({ participants: vi.fn(() => ({ local: { audio: true, video: true } })), on: vi.fn(), off: vi.fn(), setActiveSpeakerMode: vi.fn(), setTheme: vi.fn(async () => ({})), setLocalAudio: vi.fn(), setLocalVideo: vi.fn(), setSidebarView: vi.fn() });
+    const inWindow = (mode: CallWindowMode, minimize: () => void, call = toolbarCall()) => (
+      <CallWindowContext.Provider value={{ mode, rootRef: { current: null }, minimize }}>
+        <CallMediaControls call={call as unknown as DailyCall} toolbar><button>extra</button></CallMediaControls>
+      </CallWindowContext.Provider>
+    );
+    const labels = () => Array.from(screen.getByRole("toolbar", { name: "Call controls" }).querySelectorAll("button")).map((b) => b.getAttribute("aria-label") ?? b.textContent);
+
+    it("holds the one minimize arrow, then the page's own actions, and nothing Daily's tray already has", () => {
+      const minimize = vi.fn();
+      const call = toolbarCall();
+      render(inWindow("full", minimize, call));
+      expect(labels()).toEqual(["Minimize call", "extra"]);
+      fireEvent.click(screen.getByRole("button", { name: "Minimize call" }));
+      expect(minimize).toHaveBeenCalledOnce();
+      expect(call.setLocalAudio).not.toHaveBeenCalled();
+    });
+
+    it("has no minimize arrow when the call is already a miniature, or outside the persistent window", () => {
+      const { rerender } = render(inWindow("floating", vi.fn()));
+      expect(labels()).toEqual(["extra"]);
+      rerender(inWindow("minimized", vi.fn()));
+      expect(labels()).toEqual(["extra"]);
+      rerender(<CallMediaControls call={toolbarCall() as unknown as DailyCall} toolbar><button>extra</button></CallMediaControls>);
+      expect(labels()).toEqual(["extra"]);
+    });
   });
   it("unsubscribes on unmount without destroying the call", () => {
     const { call, unmount } = setup(); unmount();

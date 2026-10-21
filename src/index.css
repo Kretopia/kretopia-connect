@@ -27,30 +27,25 @@
 .k-call-floating { width: min(280px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: 210px; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 .k-call-mini { width: min(320px, calc(100vw - 24px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); overflow: hidden; }
 .k-call-mini-header { display: flex; align-items: center; gap: 4px; padding: 8px; background: hsl(var(--background)); border-bottom: 1px solid hsl(var(--border)); }
-.k-call-mini-actions { display: flex; align-items: center; gap: 4px; padding: 0 8px; background: hsl(var(--background)); }
-.k-call-mini-header[hidden], .k-call-mini-actions[hidden] { display: none; }
-.k-call-surface .k-call-minimize { position: absolute; }
+.k-call-mini-header[hidden] { display: none; }
+.k-call-surface .k-call-mini-header .k-call-icon { width: 36px; height: 36px; }
 .k-call-mini-dot { display: none; }
 .k-call-mini .k-call-persistent-content { height: 160px; flex: none; }
 .k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
-.k-call-mini-collapsed .k-call-persistent-content { height: 0; overflow: hidden; visibility: hidden; }
-/* Phones: the miniature is one 56px pill (mark, status, elapsed, recording, mute, return, leave) on the LEFT above the bottom
-   navigation, so it never sits in the bottom-right corner where the Kreto launcher and Studio dock live. The video stays
-   mounted (hidden) so audio keeps playing; "Return to full call" is the expand. */
+/* Phones: the miniature is a small card on the LEFT above the bottom navigation, so it never sits in the bottom-right corner
+   where the Kreto launcher and Studio dock live. Kretopia mark, status, the video thumbnail and three controls: mute, the one
+   arrow back to the full call, and leave. */
 @media (max-width: 767px) {
-  .k-call-mini { flex-direction: row; align-items: center; left: max(12px, env(safe-area-inset-left, 0px)); right: auto; width: min(calc(100vw - 84px), 288px); height: 56px; max-height: 56px; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); border-radius: 9999px; }
-  .k-call-mini .k-call-persistent-content { height: 0; flex: none; overflow: hidden; visibility: hidden; }
-  .k-call-mini-header { flex: 1 1 auto; min-width: 0; border-bottom: 0; padding: 4px 0 4px 14px; }
-  .k-call-mini-actions { flex: 0 0 auto; padding: 0 6px 0 0; }
+  .k-call-mini { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; width: min(calc(100vw - 84px), 240px); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .k-call-mini .k-call-persistent-content { height: 108px; }
+  .k-call-mini-header { padding: 6px 6px 6px 10px; }
   .k-call-mini-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .k-call-mini-info > p { margin-top: 0; }
-  .k-call-mini-title, .k-call-mini-header .k-call-brand-name, .k-call-mini-toggle { display: none; }
+  .k-call-mini-title, .k-call-mini-header .k-call-brand-name { display: none; }
   .k-call-mini-word { display: none; }
   .k-call-mini-dot { display: inline-block; width: 8px; height: 8px; margin-left: 6px; border-radius: 9999px; background: hsl(var(--destructive)); vertical-align: middle; }
-  .k-call-mini-people { display: none; }
 }
 @media (max-width: 359px) { .k-call-mini-info .k-call-brand { display: none; } }
-/* No avatar strip in the pill at any phone width: the status (elapsed, recording) needs the room more. The card keeps it. */
 @media (min-width: 768px) { .k-call-mini { left: var(--call-left, auto); top: var(--call-top, auto); bottom: var(--call-bottom, calc(96px + env(safe-area-inset-bottom, 0px))); } .k-call-mini-header { cursor: move; touch-action: none; } }
 @media (min-width: 640px) { .k-call-floating { width: 280px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } .k-call-surface .k-call-preview { aspect-ratio: 16 / 9; } }
 @media (prefers-reduced-motion: reduce) { .k-call-surface button { transition: none; transform: none; } }
