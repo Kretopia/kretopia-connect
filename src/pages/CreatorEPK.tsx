@@ -562,18 +562,18 @@ const CreatorEPK = () => {
                 ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
                 : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 lg:flex-nowrap">
               {connectionStatus === 'connected' ? (
                 <>
-                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
+                  <Button onClick={() => setMessageOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
                     <MessageCircle className="h-4 w-4" />
                     Message
                   </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
+                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
                     <Sparkles className="h-4 w-4" />
                     Start a Project
                   </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
+                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
                     <UserPlus2 className="h-4 w-4" />
                     Invite to Project
                   </Button>
