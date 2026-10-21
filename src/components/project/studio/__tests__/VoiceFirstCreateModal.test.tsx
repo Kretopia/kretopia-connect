@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, cleanup, within, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { VoiceFirstCreateModal } from "../VoiceFirstCreateModal";
+import { scaffoldProjectDefaults } from "@/lib/scaffoldProject";
 
 /**
  * Regression coverage for New Room's accessibility contract (NEW_ROOM_UX_AUDIT.md
@@ -22,16 +23,17 @@ import { VoiceFirstCreateModal } from "../VoiceFirstCreateModal";
  */
 
 const mocks = vi.hoisted(() => ({
-  invoke: vi.fn(() => Promise.resolve({
+  invoke: vi.fn((_name?: string, _options?: { body?: Record<string, unknown> }): Promise<{ data: unknown; error: unknown }> => Promise.resolve({
     data: {
       project: { title: "Test Project", summary: "A test brief." },
       deliverables: [{ title: "First task", description: "" }],
     },
     error: null,
   })),
-  projectsInsert: vi.fn(() => ({
+  projectsInsert: vi.fn((_row?: unknown) => ({
     select: () => ({ single: () => Promise.resolve({ data: { id: "new-project-id" }, error: null }) }),
   })),
+  tasksInsert: vi.fn((_rows?: unknown) => Promise.resolve({ data: null, error: null as { message: string } | null })),
   toast: vi.fn(),
   navigate: vi.fn(),
 }));
@@ -41,6 +43,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     functions: { invoke: mocks.invoke },
     from: (table: string) => {
       if (table === "projects") return { insert: mocks.projectsInsert };
+      if (table === "project_tasks") return { insert: mocks.tasksInsert };
       if (table === "profiles") {
         // FeatureAITutorial's useFirstTimeUser() queries this -- an
         // established, non-new profile keeps the tutorial's auto-open
@@ -434,6 +437,309 @@ describe("VoiceFirstCreateModal", () => {
       const [to, opts] = mocks.navigate.mock.calls[0];
       expect(to).toBe("/desk/new-project-id");
       expect(opts).toEqual({ state: { kretoJustCreated: true } });
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------
+// A project from free text: what the person gave, what Kreto suggested, what is missing; a draft that cannot be
+// trusted blindly; and nothing created without the person pressing Create.
+// ---------------------------------------------------------------------------------------------------------------
+
+const REVIEW = "Kreto structured your project — review and edit";
+const inDays = (n: number) => new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
+const answer = (data: unknown) => ({ data, error: null });
+
+function typeBrief(text: string) {
+  fireEvent.change(screen.getByLabelText("Describe your project to Kreto"), { target: { value: text } });
+  fireEvent.click(screen.getByLabelText("Send to Kreto"));
+}
+async function reviewOf(text: string) {
+  typeBrief(text);
+  await screen.findByText(REVIEW);
+}
+const panel = () => screen.getByRole("region", { name: "Where this draft comes from" });
+const group = (name: string) => within(panel()).getByRole("list", { name });
+const hasGroup = (name: string) => within(panel()).queryByRole("list", { name }) !== null;
+async function createRoom() {
+  fireEvent.click(screen.getByText("No — personal/passion"));
+  await uploadCoverImage();
+  fireEvent.click(screen.getByText("Create All & Open"));
+  await waitFor(() => expect(mocks.projectsInsert).toHaveBeenCalled());
+}
+
+describe("a project from free text", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    MockMediaRecorder.instances.length = 0;
+    vi.stubGlobal("MediaRecorder", MockMediaRecorder);
+    stubMicPermission("grant");
+    sessionStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
+  describe("what the person gave, what Kreto suggested, what is missing", () => {
+    it("sorts a draft into the three groups, crediting the person only with what their own words say", async () => {
+      renderModal();
+      await reviewOf("A brand shoot for a client, budget $800.");
+      expect(group("From you")).toHaveTextContent("Budget: $800");
+      expect(group("From you")).toHaveTextContent("Money involved: Yes");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Project name");
+      expect(group("Suggested by Kreto")).toHaveTextContent("The vision");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Starter tasks: 1 drafted");
+      expect(group("Still missing")).toHaveTextContent("Target date");
+      expect(group("Still missing")).toHaveTextContent("Cover image (required)");
+      expect(group("From you")).not.toHaveTextContent("Project name");
+    });
+
+    it("does not read a budget out of what the model wrote: an amount the person never typed is not filled in", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "Swim shoot", summary: "A polished $5k production." }, deliverables: [{ title: "Book the model" }] }));
+      renderModal();
+      await reviewOf("A swimwear shoot next month");
+      expect(screen.getByPlaceholderText("e.g. $2,000")).toHaveValue("");
+      expect(group("Still missing")).toHaveTextContent("Budget");
+      expect(within(panel()).queryByText(/^Budget: /)).toBeNull();
+    });
+
+    it("keeps an amount from a recording a suggestion, because there is no typed text to check it against", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "Reel", summary: "A reel with a $2,000 budget." }, deliverables: [{ title: "Shoot" }] }));
+      renderModal();
+      fireEvent.click(screen.getByLabelText("Describe it by voice instead"));
+      await screen.findByLabelText("Stop recording");
+      fireEvent.click(screen.getByLabelText("Stop recording"));
+      await screen.findByText(REVIEW);
+      expect(screen.getByPlaceholderText("e.g. $2,000")).toHaveValue("$2,000");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Budget: $2,000");
+      expect(hasGroup("From you") ? group("From you").textContent : "").not.toMatch(/Budget/);
+      expect(screen.getByText("Kreto's guess from what you said.")).toBeTruthy();
+    });
+
+    it("moves a value to 'From you' once the person writes it, and a suggested date stays a suggestion until then", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "Carnival", summary: "Two days." }, deliverables: [{ title: "Lock venue", due_date: inDays(40) }] }));
+      renderModal();
+      await reviewOf("A beach carnival");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Target date");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Project name");
+
+      fireEvent.change(screen.getByLabelText("Project name"), { target: { value: "My carnival" } });
+      fireEvent.change(screen.getByLabelText("The vision"), { target: { value: "My own words." } });
+      fireEvent.change(document.querySelector('input[type="date"]') as HTMLInputElement, { target: { value: inDays(60) } });
+      expect(group("From you")).toHaveTextContent("Project name");
+      expect(group("From you")).toHaveTextContent("The vision");
+      expect(group("From you")).toHaveTextContent("Target date");
+      expect(group("Suggested by Kreto")).not.toHaveTextContent("Target date");
+    });
+
+    it("treats the person's own text as theirs when Kreto could not structure it, and says so", async () => {
+      mocks.invoke.mockRejectedValueOnce(new Error("gateway down"));
+      renderModal();
+      await reviewOf("A podcast about swimming, weekly.");
+      expect(group("From you")).toHaveTextContent("Project name");
+      expect(group("From you")).toHaveTextContent("The vision");
+      expect(hasGroup("Suggested by Kreto") ? group("Suggested by Kreto").textContent : "").not.toMatch(/Project name/);
+      expect(screen.getByText(/Kreto couldn't structure this one/)).toBeTruthy();
+    });
+
+    it("remembers where values came from across a refresh", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "Carnival", summary: "Two days." }, deliverables: [{ title: "Lock venue", due_date: inDays(40) }] }));
+      const first = renderModal();
+      await reviewOf("A beach carnival");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Target date");
+      first.unmount();
+
+      renderModal();
+      await screen.findByText(REVIEW);
+      expect(group("Suggested by Kreto")).toHaveTextContent("Target date");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Project name");
+    });
+
+    it("does not turn a draft saved by an older version into the person's own values", async () => {
+      sessionStorage.setItem("new_room_draft:test-user-id", JSON.stringify({
+        ts: Date.now(), brief: { project: { title: "Old draft", summary: "s" } }, selected: [], workspaceType: "general",
+        paymentsInvolved: true, deadline: "2027-01-15", budget: "$900",
+      }));
+      renderModal();
+      await screen.findByText(REVIEW);
+      expect(group("Suggested by Kreto")).toHaveTextContent("Target date");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Budget: $900");
+      expect(group("Suggested by Kreto")).toHaveTextContent("Money involved: Yes");
+    });
+  });
+
+  describe("an answer that cannot be trusted", () => {
+    it.each([
+      ["a project whose title is not text", { project: { title: 42, summary: "x" }, deliverables: [] }],
+      ["a string", "not even json"],
+      ["nothing", null],
+      ["a project that is a list", { project: ["a"], deliverables: [] }],
+    ])("falls back to the person's own words for %s, without an error and without losing the text", async (_name, data) => {
+      mocks.invoke.mockResolvedValueOnce(answer(data));
+      renderModal();
+      await reviewOf("A weekly podcast about swimming.");
+      expect(screen.getByLabelText("Project name")).toHaveValue("A weekly podcast about swimming.");
+      expect(screen.getByLabelText("The vision")).toHaveValue("A weekly podcast about swimming.");
+      expect(screen.queryByText("Kreto couldn't finish that draft.")).toBeNull();
+    });
+
+    it("keeps the tasks it can read, leaves out the rest and says how many", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "P", summary: "s" }, deliverables: [{ title: "Good task" }, { title: "" }, 5, { title: "good task" }] }));
+      renderModal();
+      await reviewOf("Something to make");
+      expect(screen.getByLabelText("Task 1")).toHaveValue("Good task");
+      expect(screen.queryByLabelText("Task 2")).toBeNull();
+      expect(screen.getByText("3 drafted tasks were left out: no readable title, or a repeat.")).toBeTruthy();
+    });
+
+    it("shows a recording or a file Kreto could not use as an error with a way forward, never as an empty draft", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: {}, deliverables: [] }));
+      renderModal();
+      fireEvent.click(screen.getByLabelText("Describe it by voice instead"));
+      await screen.findByLabelText("Stop recording");
+      fireEvent.click(screen.getByLabelText("Stop recording"));
+      expect(await screen.findByText("Kreto couldn't finish that draft.")).toBeTruthy();
+      expect(screen.getByRole("alert")).toHaveTextContent("Kreto couldn't catch what you said.");
+      expect(screen.queryByText(REVIEW)).toBeNull();
+    });
+
+    it("leaves out due dates the model cannot know (past, not a date), keeps the future ones and shows what will be saved", async () => {
+      const soon = inDays(30);
+      mocks.invoke.mockResolvedValueOnce(answer({
+        project: { title: "P", summary: "s" },
+        deliverables: [{ title: "Old news", due_date: "2020-01-01" }, { title: "Words", due_date: "next Friday" }, { title: "Soon", due_date: soon }],
+      }));
+      renderModal();
+      await reviewOf("A launch");
+      expect(screen.getAllByText(/^Suggested due date:/)).toHaveLength(1);
+      expect(screen.getByDisplayValue(soon)).toBeTruthy();
+      expect(screen.getByText(/2 suggested due dates were left out/)).toBeTruthy();
+
+      await createRoom();
+      await waitFor(() => expect(mocks.tasksInsert).toHaveBeenCalled());
+      const rows = mocks.tasksInsert.mock.calls[0][0] as Array<{ title: string; due_date: string | null }>;
+      expect(rows.map((r) => [r.title, r.due_date])).toEqual([["Old news", null], ["Words", null], ["Soon", `${soon}T00:00:00.000Z`]]);
+    });
+
+    it("never carries what the model adds beyond the fields the project supports", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "P", summary: "s", status: "published", role: "admin" }, deliverables: [{ title: "T", assignee: "x" }], permissions: { all: "owner" } }));
+      renderModal();
+      await reviewOf("A thing");
+      await createRoom();
+      const project = mocks.projectsInsert.mock.calls[0][0] as Record<string, unknown>;
+      expect(project.status).toBe("active");
+      expect(project.created_by).toBe("test-user-id");
+      expect(JSON.stringify(project)).not.toMatch(/published|admin|permissions/);
+    });
+  });
+
+  describe("editing and confirming", () => {
+    it("creates nothing until the person presses Create, and Create waits for the money answer and the cover", async () => {
+      renderModal();
+      await reviewOf("A thing to make");
+      expect(mocks.projectsInsert).not.toHaveBeenCalled();
+      expect(screen.getByText("Create All & Open").closest("button")).toBeDisabled();
+      await uploadCoverImage();
+      expect(screen.getByText("Create All & Open").closest("button")).toBeDisabled();
+      fireEvent.click(screen.getByText("No — personal/passion"));
+      expect(screen.getByText("Create All & Open").closest("button")).toBeEnabled();
+      expect(mocks.projectsInsert).not.toHaveBeenCalled();
+    });
+
+    it("creates the task wording the person edited, and no task they emptied", async () => {
+      mocks.invoke.mockResolvedValueOnce(answer({ project: { title: "P", summary: "s" }, deliverables: [{ title: "Draft one" }, { title: "Draft two" }] }));
+      renderModal();
+      await reviewOf("Something");
+      fireEvent.change(screen.getByLabelText("Task 1"), { target: { value: "  My own wording " } });
+      fireEvent.change(screen.getByLabelText("Task 2"), { target: { value: "   " } });
+      await createRoom();
+      await waitFor(() => expect(mocks.tasksInsert).toHaveBeenCalled());
+      const rows = mocks.tasksInsert.mock.calls[0][0] as Array<{ title: string }>;
+      expect(rows.map((r) => r.title)).toEqual(["My own wording"]);
+    });
+
+    it("says so when the starter tasks could not be saved, and lets the room keep its default tasks", async () => {
+      mocks.tasksInsert.mockResolvedValueOnce({ data: null, error: { message: "row-level security" } });
+      renderModal();
+      await reviewOf("Something");
+      await createRoom();
+      await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Studio room ready, without your starter tasks" })));
+      expect(vi.mocked(scaffoldProjectDefaults)).toHaveBeenCalledWith(expect.objectContaining({ skipTasks: false }));
+    });
+
+    it("keeps the draft's tasks out of the defaults when they were saved", async () => {
+      renderModal();
+      await reviewOf("Something");
+      await createRoom();
+      await waitFor(() => expect(vi.mocked(scaffoldProjectDefaults)).toHaveBeenCalled());
+      expect(vi.mocked(scaffoldProjectDefaults)).toHaveBeenCalledWith(expect.objectContaining({ skipTasks: true }));
+      expect(mocks.toast).toHaveBeenCalledWith({ title: "Studio room ready" });
+    });
+  });
+
+  describe("errors and double submissions", () => {
+    it("asks Kreto once however the brief is sent twice (Enter held down, a double tap)", async () => {
+      renderModal();
+      const input = screen.getByLabelText("Describe your project to Kreto");
+      fireEvent.change(input, { target: { value: "A brand film" } });
+      await act(async () => {
+        fireEvent.keyDown(input, { key: "Enter" });
+        fireEvent.keyDown(input, { key: "Enter" });
+        fireEvent.click(screen.getByLabelText("Send to Kreto"));
+      });
+      await screen.findByText(REVIEW);
+      expect(mocks.invoke).toHaveBeenCalledTimes(1);
+    });
+
+    it("drops an answer that arrives after New Room was closed, instead of opening a draft nobody asked for", async () => {
+      let resolve: (v: unknown) => void = () => undefined;
+      mocks.invoke.mockImplementationOnce(() => new Promise((r) => { resolve = r; }));
+      const onOpenChange = vi.fn();
+      const ui = (open: boolean) => (
+        <MemoryRouter>
+          <VoiceFirstCreateModal open={open} onOpenChange={onOpenChange} onCreated={vi.fn()} />
+        </MemoryRouter>
+      );
+      const { rerender } = render(ui(true));
+      typeBrief("A brand film");
+      // Closed while the request is really in flight, not before it was sent.
+      await waitFor(() => expect(mocks.invoke).toHaveBeenCalledTimes(1));
+      rerender(ui(false));
+      await act(async () => { resolve(answer({ project: { title: "Late", summary: "s" }, deliverables: [] })); });
+      rerender(ui(true));
+      expect(await screen.findByRole("heading", { name: "What are you making?" })).toBeTruthy();
+      expect(screen.queryByText(REVIEW)).toBeNull();
+      expect(screen.queryByDisplayValue("Late")).toBeNull();
+    });
+
+    it("keeps a failed recording and sends the same one again, so nothing has to be recorded twice", async () => {
+      mocks.invoke.mockRejectedValueOnce(new Error("offline"));
+      renderModal();
+      fireEvent.click(screen.getByLabelText("Describe it by voice instead"));
+      await screen.findByLabelText("Stop recording");
+      fireEvent.click(screen.getByLabelText("Stop recording"));
+      await screen.findByText("Kreto couldn't finish that draft.");
+
+      fireEvent.click(screen.getByRole("button", { name: "Send the recording again" }));
+      await screen.findByText(REVIEW);
+      expect(mocks.invoke).toHaveBeenCalledTimes(2);
+      const [first, second] = mocks.invoke.mock.calls.map((c) => c[1]?.body?.data_base64);
+      expect(first).not.toBe("");
+      expect(second).toBe(first);
+    });
+
+    it("keeps what was typed when Kreto fails, and goes on with it", async () => {
+      mocks.invoke.mockRejectedValueOnce(new Error("gateway down"));
+      renderModal();
+      await reviewOf("A weekly swimming podcast");
+      expect(screen.getByLabelText("Project name")).toHaveValue("A weekly swimming podcast");
+      expect(mocks.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Kreto couldn't expand that" }));
+    });
+
+    it("limits how much can be sent in one brief", () => {
+      renderModal();
+      expect(screen.getByLabelText("Describe your project to Kreto")).toHaveAttribute("maxLength", "4000");
     });
   });
 });
