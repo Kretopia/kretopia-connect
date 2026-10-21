@@ -118,7 +118,7 @@ export function TodayCommandCenter({
   const wide = useMediaQuery("(min-width: 1024px)");
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
   const bannerWidthClass = wide && finePointer && !reducedMotion
-    ? "mx-auto w-full max-w-[26rem]"
+    ? "mx-auto w-[min(100%,40rem)]"
     : "w-full";
   // Session-only dismissal: no database column for this prompt.
   const [bannerPromptDismissed, setBannerPromptDismissed] = useState(() => {
