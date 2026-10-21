@@ -345,11 +345,11 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     }
   };
 
-  /** Kretopia brand rule: the pink-to-violet line from the business cards. */
+  /** Kretopia brand rule: the accent gradient line from the business cards. */
   const BRAND_TAGLINE = 'THE OPERATING SYSTEM FOR CREATIVE CAREERS';
   const drawBrandRule = (x: number, y: number, w: number, h = 0.6) => {
     const from: [number, number, number] = C.primary;
-    const to: [number, number, number] = [165, 22, 197];
+    const to: [number, number, number] = C.accent;
     const steps = 40;
     for (let i = 0; i < steps; i++) {
       const t = i / (steps - 1);
@@ -932,7 +932,10 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       image: kMarkAsset.url,
       imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.3 },
     });
-    const blob = (await qr.getRawData("png")) as Blob | null;
+    const blob = (await Promise.race([
+      qr.getRawData("png"),
+      new Promise<null>((res) => setTimeout(() => res(null), 2500)),
+    ])) as Blob | null;
     if (blob) {
       const qrData: string = await new Promise((res, rej) => {
         const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
