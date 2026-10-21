@@ -11,7 +11,6 @@ import {
   PhoneOff,
   UserPlus,
   Circle,
-  ScreenShare,
   MoreVertical,
   Flag,
   Ban,
@@ -153,7 +152,6 @@ export const PersistentStudioCall = ({
   const { dispatch: dispatchRecording, active: recording, copy: recordingCopy, state: recordingState } = recordingControls;
   const recordingControlsRef = useRef(recordingControls);
   recordingControlsRef.current = recordingControls;
-  const [sharing, setSharing] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [safetyMode, setSafetyMode] = useState<null | "report" | "block">(null);
   const [joinPrefs, setJoinPrefs] = useState<{ mic: boolean; cam: boolean }>({
@@ -230,8 +228,6 @@ export const PersistentStudioCall = ({
           variant: "destructive",
         });
       });
-      frame.on("local-screen-share-started", () => setSharing(true));
-      frame.on("local-screen-share-stopped", () => setSharing(false));
 
       frame.on("network-quality-change", (ev: any) => {
         const q = ev?.threshold ?? ev?.quality;
@@ -401,15 +397,6 @@ export const PersistentStudioCall = ({
     }
   };
 
-  const toggleScreenShare = async () => {
-    try {
-      if (sharing) await callRef.current?.stopScreenShare();
-      else await callRef.current?.startScreenShare();
-    } catch (e: any) {
-      toast({ title: "Couldn't share screen", description: e?.message, variant: "destructive" });
-    }
-  };
-
   const muteAll = async () => {
     const call = callRef.current;
     if (!call) return;
@@ -507,17 +494,6 @@ export const PersistentStudioCall = ({
                   </div>
                 </div>
                 <CallMediaControls call={mediaCall} toolbar>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    title={sharing ? "Stop screen sharing" : "Share screen"}
-                    aria-label={sharing ? "Stop screen sharing" : "Share screen"}
-                    aria-pressed={sharing}
-                    onClick={toggleScreenShare}
-                    className={`k-call-icon rounded-lg ${sharing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-foreground hover:bg-accent"}`}
-                  >
-                    <ScreenShare className="h-4 w-4" />
-                  </Button>
                   {!backstage && (
                     <Button
                       type="button"

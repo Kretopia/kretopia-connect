@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { DailyCall } from "@daily-co/daily-js";
-import { Mic, MicOff, Video, VideoOff, Users, MessageSquare } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Users, MessageSquare, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useCallWindow } from "./callWindowContext";
 import kMark from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 export function CallBrand() {
@@ -9,8 +10,13 @@ export function CallBrand() {
 }
 
 /** Presentation only: Daily remains authoritative for devices and sidebar state. */
-/** `toolbar` renders the same controls icon-only for the top call bar, followed by `children` (share, record, leave...). */
+/**
+ * `toolbar` is the top call bar: it keeps the call's devices, theme and sidebar wiring running but draws only what
+ * Daily's own tray (mic, camera, screen share, participants, chat) does not have: the one minimize arrow, then
+ * `children` (record, more, leave...). The full set of controls is what the guest call page uses (no `toolbar`).
+ */
 export function CallMediaControls({ call, toolbar = false, children }: { call: DailyCall | null; toolbar?: boolean; children?: ReactNode }) {
+  const win = useCallWindow();
   const [devices, setDevices] = useState({ audio: true, video: true });
   useEffect(() => {
     if (!call) return;
@@ -39,12 +45,10 @@ export function CallMediaControls({ call, toolbar = false, children }: { call: D
     return () => { observer.disconnect(); call.off("participant-updated", read); call.off("joined-meeting", read); };
   }, [call]);
   if (toolbar) {
-    const icon = "k-call-icon rounded-lg bg-secondary text-foreground hover:bg-accent";
     return <div className="k-call-toolbar" role="toolbar" aria-label="Call controls">
-      <Button variant="ghost" className={icon} title={devices.audio ? "Mute microphone" : "Unmute microphone"} disabled={!call} aria-label={devices.audio ? "Mute microphone" : "Unmute microphone"} aria-pressed={!devices.audio} onClick={() => { void call?.setLocalAudio(!devices.audio); }}>{devices.audio ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}</Button>
-      <Button variant="ghost" className={icon} title={devices.video ? "Turn camera off" : "Turn camera on"} disabled={!call} aria-label={devices.video ? "Turn camera off" : "Turn camera on"} aria-pressed={devices.video} onClick={() => { void call?.setLocalVideo(!devices.video); }}>{devices.video ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}</Button>
-      <Button variant="ghost" className={icon} title="Participants" disabled={!call} aria-label="Participants" onClick={() => call?.setSidebarView("people")}><Users className="h-4 w-4" /></Button>
-      <Button variant="ghost" className={icon} title="Chat" disabled={!call} aria-label="Chat" onClick={() => call?.setSidebarView("chat")}><MessageSquare className="h-4 w-4" /></Button>
+      {win?.mode === "full" && (
+        <Button variant="ghost" className="k-call-icon rounded-lg bg-secondary text-foreground hover:bg-accent" title="Minimize call" aria-label="Minimize call" onClick={win.minimize}><Minimize2 className="h-4 w-4" /></Button>
+      )}
       {children}
     </div>;
   }

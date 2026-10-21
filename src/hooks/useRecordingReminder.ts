@@ -3,7 +3,7 @@ import type { DailyCall, DailyEventObjectRecordingStarted } from "@daily-co/dail
 import { supabase } from "@/integrations/supabase/client";
 import { useLiveRecording } from "@/hooks/useLiveRecording";
 import {
-  POST_CALL_SYNC_DELAYS_MS,
+  POST_CALL_SYNC_GIVE_UP_MS,
   readSegmentOutcome,
   readSyncOutcome,
   scheduleRecordingSync,
@@ -87,10 +87,10 @@ export function useRecordingReminder(callRef: RefObject<DailyCall | null>, roomN
           });
           if (error) throw error;
           const outcome = finished.id ? readSegmentOutcome(data, finished.id) : readSyncOutcome(data, sinceTs);
-          if (!outcome.stored && Date.now() >= stoppedAt + POST_CALL_SYNC_DELAYS_MS[3] && generation.current === currentGeneration) setSegment("failed");
+          if (!outcome.stored && Date.now() >= stoppedAt + POST_CALL_SYNC_GIVE_UP_MS && generation.current === currentGeneration) setSegment("failed");
           return outcome;
         } catch (error) {
-          if (Date.now() >= stoppedAt + POST_CALL_SYNC_DELAYS_MS[3] && generation.current === currentGeneration) setSegment("failed");
+          if (Date.now() >= stoppedAt + POST_CALL_SYNC_GIVE_UP_MS && generation.current === currentGeneration) setSegment("failed");
           throw error;
         }
       },

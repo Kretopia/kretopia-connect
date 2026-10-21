@@ -1,6 +1,6 @@
 import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mic, MicOff, PhoneOff, Maximize2, ScreenShare, Circle, Copy } from "lucide-react";
+import { Mic, MicOff, PhoneOff, Maximize2, Circle, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useVideoCall } from "@/contexts/VideoCallContext";
@@ -39,11 +39,9 @@ export function GlobalVideoCallHost() {
     title,
     recording,
     recordingPhase, recordingReminder, recordingSegment, stopRecording, saveRecording, dismissRecordingReminder, clearRecordingSegment,
-    sharing,
     micOn,
     leave,
     toggleRecord,
-    toggleShare,
     toggleMic,
   } = useVideoCall();
   const location = useLocation();
@@ -72,7 +70,6 @@ export function GlobalVideoCallHost() {
     toast({ title: "Invite link copied" });
   };
   const handleToggleRecord = () => toggleRecord().catch((e) => toast({ title: "Recording unavailable", description: e?.message, variant: "destructive" }));
-  const handleToggleShare = () => toggleShare().catch((e) => toast({ title: "Couldn't share", description: e?.message, variant: "destructive" }));
 
   return (
     <><PersistentCallWindow route={`/meet/${meetingId}`} title={title} call={callRef.current} startedAt={startedAt} status={connectionStatus} recordingPhase={recordingPhase} active={live} onLeave={() => { void leave(); }}>
@@ -95,17 +92,6 @@ export function GlobalVideoCallHost() {
           </div>
         </div>
         <CallMediaControls call={callRef.current} toolbar>
-          <Button
-            type="button"
-            variant="ghost"
-            title={sharing ? "Stop screen sharing" : "Share screen"}
-            aria-label={sharing ? "Stop screen sharing" : "Share screen"}
-            aria-pressed={sharing}
-            onClick={handleToggleShare}
-            className={cn("k-call-icon rounded-lg", sharing ? "bg-primary text-primary-foreground hover:bg-primary/90" : "bg-secondary text-foreground hover:bg-accent")}
-          >
-            <ScreenShare className="h-4 w-4" />
-          </Button>
           <Button
             type="button"
             variant="ghost"
