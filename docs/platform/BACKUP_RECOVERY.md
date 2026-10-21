@@ -18,7 +18,7 @@ Production is the legacy Supabase project. Facts marked "confirm" are not readab
 - RTO: database 4 h; Edge Functions and frontend 1 h (redeploy from tag or revert).
 
 ## Gaps (fix in this order)
-1. Confirm the plan, backup schedule, and PITR in the dashboard; record it here.
+1. Confirm the plan, backup schedule, and PITR in the dashboard; record it here. **Still unconfirmed on 2026-10-21:** nothing available to Claude can read it (the Supabase connector is not authorized and the dashboard is the owner's). It gates deleting the two `database_export_*` buckets, which stay.
 2. Storage has no scheduled copy. Add a nightly copy of the private buckets that hold user work (`project-files`, `message-attachments`, `payment-proofs`, `dispute-evidence`, `deal-memos`, `product-files`) to a second provider.
 3. Export cron job names and schedules into the repo (never the command: it embeds secrets).
 4. Two private buckets named `database_export_*` hold ad-hoc dumps (13 Jul 2026, 62 MB; 28 Sep 2026, 96 MB; one object each, no client policy can read them). Decision 2026-10-20: keep them until gap 1 (backups and PITR confirmed) and gap 5 (a restore rehearsed) are closed; then copy them offline and delete them from the project.
