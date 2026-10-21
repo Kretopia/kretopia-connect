@@ -1,5 +1,9 @@
 # Roadmap
 
+## Kreto Computer consistency
+- [ ] Match Studio Make mascot feet to the miniature launcher and share luminous keyboard typing with the feature launcher.
+- [ ] Run focused tests and inspect both mascots in light/dark and reduced motion without publishing.
+
 ## Studio Calls Slice 5
 - [x] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant initials/live iframe, mute, return, minimize and confirmed leave. Desktop drag; mobile safe-area placement; refresh starts idle.
 - [x] 49 focused tests pass, including actual Studio controller with simulated Daily: one creation/join across routes and minimize, cleanup after confirmed end. Automatic preview compilation OK. Isolated desktop/320/360/375/414px checks pass with one stable iframe and 44px controls.
