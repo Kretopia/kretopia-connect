@@ -19,7 +19,7 @@ import { hasProAccess, hasCreatorProAccess } from "@/lib/subscriptionConfig";
 import { useNavigate } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import type { EPKPdfInput } from "@/lib/epkPdfGenerator";
-import { EPK_TEMPLATES, type EPKTemplateId } from "@/lib/epkPdfGenerator";
+import { EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES, type EPKTemplateId } from "@/lib/epkPdfGenerator";
 
 // Editable sections for the EPK
 interface EPKSection {
@@ -91,10 +91,9 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const [tagline, setTagline] = useState("");
   const [sections, setSections] = useState<EPKSection[]>(DEFAULT_SECTIONS);
   const [branding, setBranding] = useState<EPKBranding>({
-    // Default before the creator customizes it -- was flat pink, now the
-    // logo's own violet stop, matching the app's current branding.
-    primaryColor: "#A516C5",
-    accentColor: "#A516C5",
+    // Default before the creator customizes it: the Kretopia pink, shared with the templates.
+    primaryColor: EPK_DEFAULT_ACCENT_HEX,
+    accentColor: EPK_DEFAULT_ACCENT_HEX,
     darkColor: "#05070D",
     logoUrl: "",
     tagline: "",
@@ -607,7 +606,7 @@ const EPKPreview = ({
   tagline?: string;
   sections: EPKSection[];
 }) => {
-  const primary = branding?.primaryColor || "#A516C5";
+  const primary = branding?.primaryColor || EPK_DEFAULT_ACCENT_HEX;
   const dark = branding?.darkColor || "#05070D";
   const { profile, credits, awards, pressLinks, industryStats, reviews } = data;
   // Content-driven sections (credits/awards/press/credentials/reviews) are

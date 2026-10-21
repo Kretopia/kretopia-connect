@@ -33,7 +33,7 @@ export const CarouselPositionDots = ({ api, label, className }: CarouselPosition
   if (count <= 1) return null;
 
   return (
-    <div className={cn("flex items-center justify-center gap-1.5", className)} role="tablist" aria-label={`${label} position`}>
+    <div className={cn("flex items-center justify-center", className)} role="tablist" aria-label={`${label} position`}>
       {Array.from({ length: count }).map((_, i) => (
         <button
           key={i}
@@ -42,11 +42,17 @@ export const CarouselPositionDots = ({ api, label, className }: CarouselPosition
           aria-selected={i === selected}
           aria-label={`Go to slide ${i + 1} of ${count}`}
           onClick={() => api?.scrollTo(i)}
-          className={cn(
-            "h-1.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]",
-            i === selected ? "w-4 bg-[hsl(var(--color-accent))]" : "w-1.5 bg-foreground/25 hover:bg-foreground/40",
-          )}
-        />
+          // The dot is drawn small, the button around it is a 24 px target (WCAG 2.5.8) so it can be hit with a thumb.
+          className="group grid h-6 min-w-6 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "block h-1.5 rounded-full transition-all motion-reduce:transition-none",
+              i === selected ? "w-4 bg-[hsl(var(--color-accent))]" : "w-1.5 bg-foreground/25 group-hover:bg-foreground/40",
+            )}
+          />
+        </button>
       ))}
     </div>
   );

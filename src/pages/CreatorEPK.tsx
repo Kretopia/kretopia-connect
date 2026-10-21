@@ -696,7 +696,7 @@ const CreatorEPK = () => {
               <div className="flex flex-wrap gap-2">{allSkills.slice(0, 12).map((skill, index) => <Badge key={`${skill}-${index}`} variant="secondary">{skill}</Badge>)}</div>
             </section>
           )}
-          <PassportShowcase<PortfolioItem> pieces={portfolioItems} credits={credits} onOpenMedia={setSelectedItem} />
+          <PassportShowcase pieces={portfolioItems} credits={credits} onOpenMedia={(piece) => setSelectedItem(piece)} />
           {industryStats.length > 0 && (
             <section>
               <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Credentials & stats</h3>

@@ -56,7 +56,9 @@ export function PublicProfileWrapped({ userId, fullName, verified, stats, passpo
       eyebrow="Kretopia · Creative Passport"
       title={
         <>
-          {firstName}'s <span className="k-gradient-text">Creative Passport</span>
+          {/* One measured accent (the brand pink), not the logo's blue-violet-pink-orange gradient: on a page a client reads
+              to judge a person, the colour must not compete with the work. */}
+          {firstName}'s <span data-epk-accent className="text-[hsl(var(--k-pink))]">Creative Passport</span>
         </>
       }
       status={
