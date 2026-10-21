@@ -41,6 +41,7 @@ import { PassportKretoEntry } from "@/components/passport/PassportKretoEntry";
 import { EPKPdfEditor } from "@/components/epk/EPKPdfEditor";
 import { PassportShareSheet } from "@/components/passport/PassportShareSheet";
 import { PassportOverview } from "@/components/passport/PassportOverview";
+import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { KretoPassportBuilder } from "@/components/passport/KretoPassportBuilder";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { computeStanding } from "@/lib/passport/standing";
@@ -581,6 +582,7 @@ const ProfileContent = () => {
             show now lives in one unified dashboard on Today
             (TodayMetricsDashboard), reachable from the home screen. */}
 
+        {profile && <PassportCollaborationCta firstName={profile.full_name?.split(' ')[0] || 'you'} isOwner onPreview={() => navigate(`/epk/${profile.user_id}`)} />}
         </section>
         {/* /Identity */}
       </div>
