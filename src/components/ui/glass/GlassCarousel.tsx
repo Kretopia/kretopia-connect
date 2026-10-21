@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { useCarouselScrollable } from "@/hooks/useCarouselScrollable";
 
 export { CarouselItem as GlassCarouselItem };
 
@@ -45,6 +46,8 @@ export const GlassCarousel = ({
 }: GlassCarouselProps) => {
   const [api, setApi] = React.useState<CarouselApi>();
   const reducedMotion = useReducedMotion();
+  // A short list that already fits has nothing to scroll: no previous/next controls for it.
+  const scrollable = useCarouselScrollable(api);
 
   if (loading) {
     return (
@@ -74,8 +77,12 @@ export const GlassCarousel = ({
         aria-label={label}
       >
         <CarouselContent className="-ml-3">{children}</CarouselContent>
-        <CarouselPrevious variant="glass" className="hidden sm:flex -left-3" aria-label={`Previous — ${label}`} />
-        <CarouselNext variant="glass" className="hidden sm:flex -right-3" aria-label={`Next — ${label}`} />
+        {scrollable && (
+          <>
+            <CarouselPrevious variant="glass" className="hidden sm:flex -left-3" aria-label={`Previous — ${label}`} />
+            <CarouselNext variant="glass" className="hidden sm:flex -right-3" aria-label={`Next — ${label}`} />
+          </>
+        )}
       </Carousel>
 
       <CarouselPositionDots api={api} label={label} className="mt-2" />

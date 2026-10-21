@@ -124,10 +124,11 @@ All colors MUST be HSL.
     --energy: 240 11% 8%;
     --energy-foreground: 36 27% 97%;
 
-    /* Fixed print-safe QR palette: the light quiet zone keeps the code scannable in either theme. */
+    /* Fixed print-safe QR palette: the light quiet zone keeps the code scannable in either theme. The accent is the ink,
+       not --energy: --energy is white in the dark themes, which faded the end of the code into its own white paper. */
     --qr-paper: 0 0% 100%;
     --qr-ink: 240 11% 8%;
-    --qr-accent: var(--energy);
+    --qr-accent: var(--qr-ink);
 
     --destructive: 0 70% 52%;
     --destructive-foreground: 0 0% 100%;

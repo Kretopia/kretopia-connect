@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
+import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { EPKReviews } from "@/components/epk/EPKReviews";
@@ -695,19 +696,7 @@ const CreatorEPK = () => {
               <div className="flex flex-wrap gap-2">{allSkills.slice(0, 12).map((skill, index) => <Badge key={`${skill}-${index}`} variant="secondary">{skill}</Badge>)}</div>
             </section>
           )}
-          {credits.length > 0 && (
-            <section>
-              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Selected work</h3>
-              <div className="divide-y divide-border border-y border-border">
-                {credits.slice(0, 5).map((credit) => (
-                  <div key={credit.id} className="flex items-start justify-between gap-4 py-3 text-sm">
-                    <div className="min-w-0"><p className="truncate font-semibold text-foreground">{decodeHtmlEntities(credit.project_name || credit.title || 'Creative work')}</p><p className="truncate text-xs text-muted-foreground">{credit.role}</p></div>
-                    <span className="shrink-0 text-xs text-muted-foreground">{credit.year || (credit.isVerified ? 'Verified' : '')}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
+          <PassportShowcase<PortfolioItem> pieces={portfolioItems} credits={credits} onOpenMedia={setSelectedItem} />
           {industryStats.length > 0 && (
             <section>
               <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Credentials & stats</h3>

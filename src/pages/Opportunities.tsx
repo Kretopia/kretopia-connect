@@ -5,12 +5,10 @@ import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
-import { Radar, Store } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
-import { Button } from "@/components/ui/button";
+import { GigsViewToggle, type GigsView } from "@/components/opportunity/GigsViewToggle";
 
-type Tab = "scouted" | "marketplace";
+type Tab = GigsView;
 
 const Opportunities = () => {
   const [params] = useSearchParams();
@@ -33,31 +31,7 @@ const Opportunities = () => {
         accentTitle="Find your next one."
         subtitle="Real gigs scouted from across the web, plus the Kretopia marketplace — one feed."
       >
-        {/* Segmented toggle */}
-        <div className="inline-flex items-center gap-1 p-1 rounded-full border border-foreground/[0.08] bg-foreground/[0.05] backdrop-blur-sm">
-          <Button variant="ghost" size="sm"
-            aria-pressed={tab === "scouted"}
-            onClick={() => setTab("scouted")}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
-              tab === "scouted" ? "text-primary-foreground bg-primary hover:bg-primary/90 hover:text-primary-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Radar className="h-3.5 w-3.5" />
-            Scouted for you
-          </Button>
-          <Button variant="ghost" size="sm"
-            aria-pressed={tab === "marketplace"}
-            onClick={() => setTab("marketplace")}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
-              tab === "marketplace" ? "bg-secondary text-secondary-foreground" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Store className="h-3.5 w-3.5" />
-            Marketplace
-          </Button>
-        </div>
+        <GigsViewToggle value={tab} onChange={setTab} />
       </EditorialPageHero>
 
       <div className="container mx-auto max-w-5xl px-4 py-8">

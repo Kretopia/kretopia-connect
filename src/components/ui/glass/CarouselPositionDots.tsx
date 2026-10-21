@@ -44,7 +44,7 @@ export const CarouselPositionDots = ({ api, label, className }: CarouselPosition
           onClick={() => api?.scrollTo(i)}
           className={cn(
             "h-1.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]",
-            i === selected ? "w-4 bg-[hsl(var(--color-accent))]" : "w-1.5 bg-white/20 hover:bg-white/35",
+            i === selected ? "w-4 bg-[hsl(var(--color-accent))]" : "w-1.5 bg-foreground/25 hover:bg-foreground/40",
           )}
         />
       ))}
