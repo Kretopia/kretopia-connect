@@ -21,10 +21,11 @@ import {
   FileText, CheckCircle2, RefreshCw, Crown, Briefcase
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { cn } from "@/lib/utils";
 import { useAccountTone } from "@/hooks/useAccountTone";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { extractInvokeError } from "@/lib/extractInvokeError";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CriteriaMatch } from "@/components/match/CriteriaMatch";
 
 interface TalentMatch {
   user_id: string;
@@ -107,20 +108,21 @@ export default function TalentFinder() {
     }
   };
 
-  const handleShortlist = async (talent: TalentMatch) => {
+  // `matchScore` is null when the profile was found by criteria: there is no score to store, only the reasons.
+  const handleShortlist = async (talentId: string, name: string, matchScore: number | null, reasons: string[]) => {
     if (!user) return;
-    setSavingId(talent.user_id);
+    setSavingId(talentId);
     try {
       const { error } = await supabase.from("talent_shortlist").upsert({
         company_user_id: user.id,
-        talent_user_id: talent.user_id,
-        match_score: talent.match_score,
-        match_reasons: talent.match_reasons,
+        talent_user_id: talentId,
+        match_score: matchScore,
+        match_reasons: reasons,
         status: "shortlisted",
       }, { onConflict: "company_user_id,talent_user_id,opportunity_id" });
       if (error) throw error;
-      setShortlisted(prev => ({ ...prev, [talent.user_id]: true }));
-      toast({ title: `${talent.full_name} shortlisted!` });
+      setShortlisted(prev => ({ ...prev, [talentId]: true }));
+      toast({ title: `${name} shortlisted!` });
     } catch {
       toast({ title: "Failed to shortlist", variant: "destructive" });
     } finally {
@@ -131,18 +133,6 @@ export default function TalentFinder() {
   const handlePostAsGig = () => {
     // Navigate to opportunity creation with the brief pre-filled
     navigate("/post-opportunity", { state: { prefillBrief: brief } });
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 85) return "text-primary bg-primary/10 border-primary/25";
-    if (score >= 70) return "text-success bg-success/10 border-success/25";
-    return "text-muted-foreground bg-muted border-border";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 85) return "Excellent";
-    if (score >= 70) return "Strong";
-    return "Good";
   };
 
   return (
@@ -186,6 +176,22 @@ export default function TalentFinder() {
           featureLabel="Smart Talent Finder"
           description="Upgrade to Pro to unlock smart talent matching — describe your project and get instant ranked recommendations."
         >
+          <Tabs defaultValue="brief" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="brief">Describe it</TabsTrigger>
+            <TabsTrigger value="criteria">Set criteria</TabsTrigger>
+          </TabsList>
+          {/* forceMount keeps the criteria, the brief and the results when the person switches tab and comes back. */}
+          <TabsContent value="criteria" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <CriteriaMatch
+              brief={brief}
+              onBriefChange={setBrief}
+              shortlisted={shortlisted}
+              savingId={savingId}
+              onShortlist={(id, name, reasons) => void handleShortlist(id, name, null, reasons)}
+            />
+          </TabsContent>
+          <TabsContent value="brief" className="mt-0 space-y-4">
           {/* Brief Input */}
           {!hasSearched || matches.length === 0 ? (
             <Card className="overflow-hidden rounded-lg shadow-none border-border/60">
@@ -304,14 +310,8 @@ export default function TalentFinder() {
                   <div className="flex items-start gap-3">
                     {/* Rank */}
                     <div className="flex flex-col items-center gap-1 shrink-0">
+                      {/* Kreto's order only: a model-made percentage is not shown, because nothing behind it can be checked. */}
                       <span className="text-xs font-bold text-muted-foreground">#{idx + 1}</span>
-                      <div className={cn(
-                        "px-2 py-0.5 rounded-full border text-xs font-bold",
-                        getScoreColor(talent.match_score)
-                      )}>
-                        {talent.match_score}%
-                      </div>
-                      <span className="text-[9px] text-muted-foreground">{getScoreLabel(talent.match_score)}</span>
                     </div>
 
                     {/* Avatar */}
@@ -373,7 +373,7 @@ export default function TalentFinder() {
                             variant="secondary"
                             className="h-7 text-xs gap-1"
                              disabled={savingId === talent.user_id}
-                            onClick={e => { e.stopPropagation(); handleShortlist(talent); }}
+                            onClick={e => { e.stopPropagation(); handleShortlist(talent.user_id, talent.full_name, talent.match_score, talent.match_reasons); }}
                           >
                             {savingId === talent.user_id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />} Shortlist
                           </Button>
@@ -418,6 +418,8 @@ export default function TalentFinder() {
               </div>
             </div>
           )}
+          </TabsContent>
+          </Tabs>
         </FreeTierGate>
         </StudioFeatureShell>
       </div>

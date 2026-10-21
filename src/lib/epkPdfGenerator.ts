@@ -6,8 +6,9 @@
  * plus the real Kretopia K-mark/wordmark logo assets — bordered cards, a
  * small K-icon eyebrow on every section, colored top-accent bars, badge
  * pills, and a closing contact card. Gated to Creator / Creator+
- * subscribers. The templates' "signal violet" (#A516C5, the logo's own
- * violet stop) was flat pink (#FF2DA1) before the app-wide brand rollback.
+ * subscribers. The accent is the Kretopia pink (#F6288D, a deeper #C41362 on the
+ * light template so small text keeps its contrast on white), not the logo
+ * gradient's violet stop (#A516C5), which read as aggressive on a press kit.
  */
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
@@ -113,21 +114,24 @@ export interface EPKTemplate {
   };
 }
 
+/** The default accent of a press kit (hex), shared with the editor so its swatch and the templates agree. */
+export const EPK_DEFAULT_ACCENT_HEX = "#F6288D";
+
 export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'cinematic-dark',
     name: 'Kretopia Editorial',
-    description: 'The real Kretopia dark canvas — signal violet, bordered cards, editorial type',
+    description: 'The real Kretopia dark canvas — Kretopia pink accent, bordered cards, editorial type',
     previewBg: 'bg-[#05070D]',
-    previewAccent: 'bg-[#A516C5]',
+    previewAccent: 'bg-[#F6288D]',
     previewText: 'text-white',
     palette: {
       bg: [5, 7, 13],            // #05070D — app's real --background (dark)
       surface: [13, 16, 22],
       card: [17, 20, 27],        // #11141B — app's real --card (dark)
       cardBorder: [30, 34, 44],
-      primary: [165, 22, 197],   // #A516C5 — the logo's own violet stop
-      accent: [200, 110, 220],   // lighter tint of #A516C5
+      primary: [246, 40, 141],   // #F6288D — Kretopia pink
+      accent: [255, 120, 184],   // lighter tint of the pink
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [168, 176, 192],    // #A8B0C0 — app's real --muted-foreground (dark)
@@ -138,17 +142,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'clean-light',
     name: 'Editorial Light',
-    description: 'Warm white canvas, same signal violet accent — for print-first EPKs',
+    description: 'Warm white canvas, deeper pink accent — for print-first EPKs',
     previewBg: 'bg-[#FAFAF8]',
-    previewAccent: 'bg-[#A516C5]',
+    previewAccent: 'bg-[#C41362]',
     previewText: 'text-[#1a1a1a]',
     palette: {
       bg: [250, 250, 248],
       surface: [244, 244, 241],
       card: [255, 255, 255],
       cardBorder: [228, 226, 220],
-      primary: [165, 22, 197],   // #A516C5
-      accent: [165, 22, 197],
+      primary: [196, 19, 98],    // #C41362 — pink deep enough for small text on white
+      accent: [196, 19, 98],
       gold: [190, 140, 20],
       white: [26, 26, 26],       // inverted: text is dark
       muted: [110, 110, 115],
@@ -159,17 +163,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'bold-minimal',
     name: 'Pure Black',
-    description: 'Pure black canvas, signal violet accent — striking & modern',
+    description: 'Pure black canvas, Kretopia pink accent — striking & modern',
     previewBg: 'bg-black',
-    previewAccent: 'bg-[#A516C5]',
+    previewAccent: 'bg-[#F6288D]',
     previewText: 'text-white',
     palette: {
       bg: [0, 0, 0],
       surface: [13, 13, 13],
       card: [20, 20, 20],
       cardBorder: [40, 40, 40],
-      primary: [165, 22, 197],
-      accent: [165, 22, 197],
+      primary: [246, 40, 141],
+      accent: [246, 40, 141],
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [140, 140, 140],
@@ -184,9 +188,9 @@ export function getEPKTemplate(id?: string): EPKTemplate {
 }
 
 // Category accent colors for credit cards — a few distinct hues around the
-// same warm/cool split as the rest of the palette, not a random rainbow.
-const CATEGORY_ACCENTS: Record<string, [number, number, number]> = {
-  film: [165, 22, 197],      // #A516C5
+// same warm/cool split as the rest of the palette, not a random rainbow. None is violet.
+export const EPK_CATEGORY_ACCENTS: Record<string, [number, number, number]> = {
+  film: [232, 93, 93],       // coral red (was the logo's violet)
   music: [220, 60, 190],
   tv: [90, 140, 255],
   podcast: [29, 185, 84],
@@ -630,7 +634,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
         // color-block "visual area" with the reference deck's thin
         // colored-top-border card language.
         const catKey = (credit.credit_category || '').toLowerCase();
-        const catColor = Object.entries(CATEGORY_ACCENTS).find(([k]) => catKey.includes(k))?.[1] || C.cardBorder;
+        const catColor = Object.entries(EPK_CATEGORY_ACCENTS).find(([k]) => catKey.includes(k))?.[1] || C.cardBorder;
         doc.setFillColor(...catColor);
         doc.roundedRect(cx, cy, totalCardW, 1.6, 4, 4, 'F');
         doc.rect(cx, cy, totalCardW, 1, 'F');
