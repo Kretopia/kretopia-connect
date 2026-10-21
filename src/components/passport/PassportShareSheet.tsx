@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   Copy, Check, Share2, Mail, MessageCircle, Globe, Lock, Linkedin, Twitter, Instagram, QrCode, ChevronDown,
-  UserRound, FileText, IdCard, Clapperboard, Newspaper, Receipt, Users, FileDown, type LucideIcon,
+  UserRound, FileText, IdCard, Clapperboard, Newspaper, Receipt, Users, FileDown, CalendarRange, type LucideIcon,
 } from "lucide-react";
 import { KretopiaQRCode } from "@/components/brand/KretopiaQRCode";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { getProfessionLayout, type ShareTarget } from "@/lib/passport/professionProfiles";
+import { PassportRetrospectiveDialog } from "./PassportRetrospectiveDialog";
 import { targetsFor, type ShareTargetMeta } from "@/lib/passport/shareTargets";
 
 interface Props {
@@ -59,6 +60,7 @@ export const PassportShareSheet = ({
   const targets = useMemo(() => targetsFor(layout.shareTargets), [layout]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [qrOpenId, setQrOpenId] = useState<string | null>(null);
+  const [retroOpen, setRetroOpen] = useState(false);
 
   const copy = async (t: ShareTargetMeta, silent = false) => {
     try {
@@ -110,6 +112,7 @@ export const PassportShareSheet = ({
     )}`;
 
   return (
+    <>
     <GlassModal open={defaultOpen} onOpenChange={onOpenChange}>
       {trigger && <GlassModalTrigger asChild>{trigger}</GlassModalTrigger>}
       <GlassModalContent className="sm:max-w-md">
@@ -119,6 +122,24 @@ export const PassportShareSheet = ({
         </GlassModalHeader>
 
         <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-0.5">
+          <section aria-labelledby="share-year" className="rounded-xl border border-border/60 bg-card p-3.5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <CalendarRange className="h-4 w-4" aria-hidden />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 id="share-year" className="text-sm font-semibold">Your year on Kretopia</h4>
+                <p className="mt-0.5 text-xs text-muted-foreground">A picture of what you added and co-signed, ready to post.</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              className="mt-3 h-10 w-full"
+              onClick={() => { onOpenChange?.(false); setRetroOpen(true); }}
+            >
+              Create image
+            </Button>
+          </section>
           {targets.map((t) => {
             const locked = t.paidOnly && !canPublishSite;
             const qrOpen = qrOpenId === t.id;
@@ -229,5 +250,7 @@ export const PassportShareSheet = ({
         </div>
       </GlassModalContent>
     </GlassModal>
+    {retroOpen && <PassportRetrospectiveDialog open onOpenChange={setRetroOpen} userId={userId} name={profile.full_name ?? ""} />}
+    </>
   );
 };

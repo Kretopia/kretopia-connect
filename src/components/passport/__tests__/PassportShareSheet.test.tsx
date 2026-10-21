@@ -5,6 +5,9 @@ import { PassportShareSheet } from "../PassportShareSheet";
 const toast = vi.hoisted(() => vi.fn());
 vi.mock("@/hooks/use-toast", () => ({ toast }));
 // qr-code-styling needs a canvas, which jsdom does not have: the mock keeps the payload visible to the test.
+vi.mock("../PassportRetrospectiveDialog", () => ({
+  PassportRetrospectiveDialog: ({ userId, name }: { userId: string; name: string }) => <div data-testid="retro-dialog" data-user={userId} data-name={name} />,
+}));
 vi.mock("@/components/brand/KretopiaQRCode", () => ({
   KretopiaQRCode: ({ data }: { data: string }) => <div data-testid="kretopia-qr" data-value={data} />,
 }));
@@ -74,6 +77,17 @@ describe("Passport share sheet", () => {
     expect(epk.getByRole("img", { name: "QR code for EPK / Media kit" })).toBeTruthy();
     fireEvent.click(epk.getByRole("button", { name: "Hide QR code for EPK / Media kit" }));
     expect(screen.queryByTestId("kretopia-qr")).toBeNull();
+  });
+
+  it("offers 'Your year on Kretopia' first, and opens it for this person after closing the sheet", () => {
+    const onOpenChange = vi.fn();
+    render(<PassportShareSheet userId={USER} profile={profile} canPublishSite defaultOpen onOpenChange={onOpenChange} />);
+    const year = within(screen.getByRole("heading", { name: "Your year on Kretopia" }).closest("section") as HTMLElement);
+    expect(screen.queryByTestId("retro-dialog")).toBeNull();
+    fireEvent.click(year.getByRole("button", { name: "Create image" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.getByTestId("retro-dialog")).toHaveAttribute("data-user", USER);
+    expect(screen.getByTestId("retro-dialog")).toHaveAttribute("data-name", "Ana Lopez");
   });
 
   it("offers an upgrade, not share controls, for a paid target without a paid plan", () => {
