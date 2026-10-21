@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   describeOutcome,
+  describeResend,
   extractEmails,
   inviteByEmail,
   inviteMember,
@@ -191,5 +192,17 @@ describe("describeOutcome", () => {
     expect(describeOutcome({ kind: "already_member" }, "Ann", "account").title).toMatch(/already/i);
     expect(describeOutcome({ kind: "already_pending", emailSent: true }, "a@b.co", "email").title).toMatch(/again/i);
     expect(describeOutcome({ kind: "error", message: "x" }, "Ann", "account").variant).toBe("destructive");
+  });
+});
+
+describe("describeResend", () => {
+  it("says sent only when the email left", () => {
+    expect(describeResend(true, "a@b.co")).toEqual({ title: "Invite resent", description: "Sent again to a@b.co." });
+  });
+  it("says it was not sent, as an error, when the function answered 200 without sending", () => {
+    const copy = describeResend(false, "a@b.co");
+    expect(copy.title).toBe("Email not sent");
+    expect(copy.description).toContain("a@b.co");
+    expect(copy.variant).toBe("destructive");
   });
 });

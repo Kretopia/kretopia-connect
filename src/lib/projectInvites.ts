@@ -152,6 +152,23 @@ export async function inviteMember(args: BaseArgs & { userId: string }): Promise
 }
 
 /** Toast copy for one outcome, so every dialog says the same honest thing. */
+/**
+ * The toast after re-sending an invitation email. The function answers 200 even when the email did not leave
+ * (`emailSent: false`), so only that field says it was sent, never the status alone.
+ */
+export function describeResend(
+  emailSent: boolean,
+  who: string,
+): { title: string; description: string; variant?: "destructive" } {
+  return emailSent
+    ? { title: "Invite resent", description: `Sent again to ${who}.` }
+    : {
+        title: "Email not sent",
+        description: `We couldn't email ${who}. Try again later, or share the guest link.`,
+        variant: "destructive",
+      };
+}
+
 export function describeOutcome(
   outcome: InviteOutcome,
   who: string,
