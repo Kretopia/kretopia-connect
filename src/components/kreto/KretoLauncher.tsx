@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
+// Dedicated cutout with Kreto's round black foot tips (like the waving pose):
+// the shared kreto-producer-hd.png stays legless for surfaces that crop it.
+// Shown at 80-96px, so the small 256px WebP copy carries the weight.
+import kretoProducer from "@/assets/brand/kreto/small/kreto-launcher.webp";
 
 /**
  * KretoLauncher — the single, subtle "open Kreto" affordance on desktop.
