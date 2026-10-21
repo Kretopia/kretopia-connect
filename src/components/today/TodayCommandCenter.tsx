@@ -153,7 +153,7 @@ export function TodayCommandCenter({
       />
 
       {profile && !profile.cover_image_url && !bannerPromptDismissed && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className={`flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between ${bannerWidthClass}`}>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Make your Passport yours</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Add a banner to personalise your profile.</p>
