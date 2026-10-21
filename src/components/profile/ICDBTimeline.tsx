@@ -169,7 +169,7 @@ const POSTER_GRADIENTS = [
   "from-emerald-950 via-teal-900/70 to-black",
   "from-primary via-primary/70 to-black",
   "from-primary via-primary/70 to-black",
-  "from-card via-muted to-background",
+  "from-zinc-900 via-neutral-800/70 to-black",
   "from-slate-900 via-zinc-800/70 to-black",
 ];
 
