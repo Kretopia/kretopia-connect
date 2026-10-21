@@ -66,7 +66,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
-import { CtaButton } from "@/components/ui/cta-button";
+import { pendingRoleClaim } from "@/lib/passport/roleClaim";
 
 interface PlatformRole {
   id: string;
@@ -146,13 +146,14 @@ function CreativeHoloCard({
   const isVerified = role.verification_status === "verified";
   const isVouched =
     (role.endorsement_count || 0) > 0 ||
-    role.verification_status === "peer" ||
-    role.verification_status === "pending";
+    role.verification_status === "peer";
 
   const statusBadge = isVerified ? (
     <Badge className="gap-1 bg-primary/10 text-primary border-primary/30 text-[10px]">
       <ShieldCheck className="h-3 w-3" /> Verified
     </Badge>
+  ) : role.verification_status === "pending" ? (
+    <Badge variant="outline" className="text-[10px] text-muted-foreground">Awaiting acceptance</Badge>
   ) : isVouched ? (
     <Badge className="gap-1 bg-primary/10 text-primary border-primary/30 text-[10px]">
       <ShieldCheck className="h-3 w-3" /> Vouched
@@ -513,11 +514,19 @@ const ProductionPage = () => {
       const extractedThumb = extractThumbnailForStorage(
         production?.external_url || null,
       );
-      const { error } = await supabase.from("credit_role_claims" as never).insert({
-        claimant_id: user.id, project_name: projectName, role: roleName, status: "pending",
-      } as never);
+      const { data: claim, error } = await supabase.from("credits").insert({
+        ...pendingRoleClaim(user.id, projectName, roleName),
+        year: production?.year,
+        platform: production?.platform,
+        location: production?.location,
+        client_brand: production?.client_brand,
+        project_type: production?.type,
+        thumbnail_url: extractedThumb,
+      }).select("id").single();
       if (error) throw error;
-      toast.success("Role claim submitted for approval");
+      if (!claim) throw new Error("No claim returned");
+      setEndorseCredit({ id: claim.id, project_name: projectName, role: roleName, year: production?.year ?? undefined });
+      toast.success("Role saved as pending", { description: "Ask the relevant person or company to accept your claim. It is not confirmed yet." });
       fetchProduction();
     } catch {
       toast.error("Failed to claim credit");
@@ -566,7 +575,7 @@ const ProductionPage = () => {
 
   const handleCollaborate = (role: PlatformRole) => {
     if (!role.has_kretopia_profile) {
-      toast.info(`Invite sent to ${role.full_name || "this creator"} (demo).`);
+      toast.info("This person is not on Kretopia yet. No invitation has been sent.");
       return;
     }
     navigate(`/profile/${role.user_id}`);
@@ -750,12 +759,14 @@ const ProductionPage = () => {
                         requireAuth("propose a new project");
                         return;
                       }
-                      toast.info("Propose a new project (demo flow).");
+                      document.getElementById("production-roll-call")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      toast.info("Choose the person or company from the roll call. Their project invitation requires acceptance.");
                     }}
                   >
                     <MessageSquare className="h-3.5 w-3.5" /> Propose a new project
                   </Button>
                 </div>
+                <p className="mt-3 text-xs text-muted-foreground">Role claims and project proposals require acceptance by the person or company concerned.</p>
               </div>
             </div>
 
@@ -765,7 +776,7 @@ const ProductionPage = () => {
             )}
 
             {/* Roll call — the single creatives grid */}
-            <div>
+            <div id="production-roll-call">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <h3 className="text-sm font-semibold text-foreground">The roll call</h3>
                 <span className="text-xs text-muted-foreground">{allCreatives.length} creative{allCreatives.length === 1 ? "" : "s"}</span>
