@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Copy, Check, Share2, Mail, MessageCircle, Globe, Lock, Linkedin, Twitter, Instagram, QrCode } from "lucide-react";
+import {
+  Copy, Check, Share2, Mail, MessageCircle, Globe, Lock, Linkedin, Twitter, Instagram, QrCode, ChevronDown,
+  UserRound, FileText, IdCard, Clapperboard, Newspaper, Receipt, Users, FileDown, type LucideIcon,
+} from "lucide-react";
+import { KretopiaQRCode } from "@/components/brand/KretopiaQRCode";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   GlassModal,
   GlassModalContent,
@@ -11,7 +15,7 @@ import {
 } from "@/components/ui/glass/GlassModal";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { getProfessionLayout } from "@/lib/passport/professionProfiles";
+import { getProfessionLayout, type ShareTarget } from "@/lib/passport/professionProfiles";
 import { targetsFor, type ShareTargetMeta } from "@/lib/passport/shareTargets";
 
 interface Props {
@@ -23,6 +27,19 @@ interface Props {
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
+
+/** One glyph per target, so the EPK, the website and the rest are told apart at a glance (they all used a globe). */
+const TARGET_ICONS: Record<ShareTarget, LucideIcon> = {
+  profile: UserRound,
+  epk: FileText,
+  compcard: IdCard,
+  reel: Clapperboard,
+  press: Newspaper,
+  rate: Receipt,
+  rollcall: Users,
+  portfolio_pdf: FileDown,
+  site: Globe,
+};
 
 /**
  * Profession-aware share modal. Centered Liquid Glass dialog (focus trap +
@@ -105,86 +122,108 @@ export const PassportShareSheet = ({
           {targets.map((t) => {
             const locked = t.paidOnly && !canPublishSite;
             const qrOpen = qrOpenId === t.id;
+            const Icon = locked ? Lock : TARGET_ICONS[t.id] ?? Globe;
+            const channel = "h-14 flex-col gap-1 px-1 text-xs font-medium";
             return (
-              <div key={t.id} className="rounded-xl border border-border/60 bg-card p-3">
+              <section key={t.id} aria-labelledby={`share-target-${t.id}`} className="rounded-xl border border-border/60 bg-card p-3.5">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
-                    {locked ? <Lock className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+                    <Icon className="h-4 w-4" aria-hidden />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h4 className="text-sm font-semibold">{t.label}</h4>
+                    <div className="flex flex-wrap items-center gap-x-2">
+                      <h4 id={`share-target-${t.id}`} className="text-sm font-semibold">{t.label}</h4>
                       {t.paidOnly && (
                         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                           {canPublishSite ? "Paid" : "Upgrade"}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{t.description}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{t.description}</p>
                   </div>
                 </div>
 
                 {!locked ? (
-                  <>
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      <Button size="icon" variant="default" onClick={() => nativeShare(t)} className="h-8 w-8" aria-label={`Share ${t.label}`}>
-                        <Share2 className="h-3.5 w-3.5" />
+                  <div className="mt-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button variant="default" className="h-10 gap-1.5 px-2" onClick={() => nativeShare(t)} aria-label={`Share ${t.label}`}>
+                        <Share2 className="h-4 w-4" aria-hidden />
+                        Share
                       </Button>
-                      <Button size="icon" variant="outline" onClick={() => copy(t)} className="h-8 w-8" aria-label={`Copy link to ${t.label}`}>
-                        {copiedId === t.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-                      </Button>
-                      <a href={whatsapp(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on WhatsApp`}>
-                        <Button size="icon" variant="outline" className="h-8 w-8" tabIndex={-1}>
-                          <MessageCircle className="h-3.5 w-3.5" />
-                        </Button>
-                      </a>
-                      <a href={linkedin(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on LinkedIn`}>
-                        <Button size="icon" variant="outline" className="h-8 w-8" tabIndex={-1}>
-                          <Linkedin className="h-3.5 w-3.5" />
-                        </Button>
-                      </a>
-                      <a href={twitter(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on X`}>
-                        <Button size="icon" variant="outline" className="h-8 w-8" tabIndex={-1}>
-                          <Twitter className="h-3.5 w-3.5" />
-                        </Button>
-                      </a>
-                      <Button size="icon" variant="outline" onClick={() => shareViaInstagram(t)} className="h-8 w-8" aria-label={`Copy link for Instagram — ${t.label}`}>
-                        <Instagram className="h-3.5 w-3.5" />
-                      </Button>
-                      <a href={email(t)} aria-label={`Share ${t.label} by email`}>
-                        <Button size="icon" variant="outline" className="h-8 w-8" tabIndex={-1}>
-                          <Mail className="h-3.5 w-3.5" />
-                        </Button>
-                      </a>
-                      <Button
-                        size="icon"
-                        variant={qrOpen ? "default" : "outline"}
-                        onClick={() => setQrOpenId(qrOpen ? null : t.id)}
-                        className="h-8 w-8"
-                        aria-label={`${qrOpen ? "Hide" : "Show"} QR code for ${t.label}`}
-                        aria-expanded={qrOpen}
-                      >
-                        <QrCode className="h-3.5 w-3.5" />
+                      <Button variant="outline" className="h-10 gap-1.5 px-2" onClick={() => copy(t)} aria-label={`Copy link to ${t.label}`}>
+                        {copiedId === t.id ? <Check className="h-4 w-4" aria-hidden /> : <Copy className="h-4 w-4" aria-hidden />}
+                        {copiedId === t.id ? "Copied" : "Copy link"}
                       </Button>
                     </div>
 
-                    {qrOpen && (
-                      <div className="mt-3 flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-background p-3">
-                        <QRCodeSVG value={t.href(userId)} size={128} level="M" marginSize={2} title={`QR code for ${t.label}`} />
-                        <p className="text-[11px] text-muted-foreground text-center">Scan to open {t.shortLabel.toLowerCase()}</p>
-                      </div>
-                    )}
-                  </>
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="ghost" size="sm" className="group h-10 w-full justify-between text-xs">
+                          More ways to share
+                          <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none" aria-hidden />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-2 space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          <Button asChild variant="outline" className={channel}>
+                            <a href={whatsapp(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on WhatsApp`}>
+                              <MessageCircle className="h-4 w-4" aria-hidden />
+                              WhatsApp
+                            </a>
+                          </Button>
+                          <Button asChild variant="outline" className={channel}>
+                            <a href={linkedin(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on LinkedIn`}>
+                              <Linkedin className="h-4 w-4" aria-hidden />
+                              LinkedIn
+                            </a>
+                          </Button>
+                          <Button asChild variant="outline" className={channel}>
+                            <a href={twitter(t)} target="_blank" rel="noreferrer" aria-label={`Share ${t.label} on X`}>
+                              <Twitter className="h-4 w-4" aria-hidden />
+                              X
+                            </a>
+                          </Button>
+                          <Button variant="outline" className={channel} onClick={() => shareViaInstagram(t)} aria-label={`Copy link for Instagram: ${t.label}`}>
+                            <Instagram className="h-4 w-4" aria-hidden />
+                            Instagram
+                          </Button>
+                          <Button asChild variant="outline" className={channel}>
+                            <a href={email(t)} aria-label={`Share ${t.label} by email`}>
+                              <Mail className="h-4 w-4" aria-hidden />
+                              Email
+                            </a>
+                          </Button>
+                          <Button
+                            variant={qrOpen ? "default" : "outline"}
+                            className={channel}
+                            onClick={() => setQrOpenId(qrOpen ? null : t.id)}
+                            aria-label={`${qrOpen ? "Hide" : "Show"} QR code for ${t.label}`}
+                            aria-expanded={qrOpen}
+                          >
+                            <QrCode className="h-4 w-4" aria-hidden />
+                            QR code
+                          </Button>
+                        </div>
+
+                        {qrOpen && (
+                          <div className="flex flex-col items-center gap-2 rounded-lg border border-border/60 bg-background p-3">
+                            <div role="img" aria-label={`QR code for ${t.label}`}>
+                              <KretopiaQRCode data={t.href(userId)} size={128} />
+                            </div>
+                            <p className="text-center text-[11px] text-muted-foreground">Scan to open {t.shortLabel.toLowerCase()}</p>
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
                 ) : (
                   <div className="mt-3">
-                    <a href="/subscription">
-                      <Button size="sm" variant="default" className="h-8">
-                        Upgrade to publish
-                      </Button>
-                    </a>
+                    <Button asChild size="sm" variant="default" className="h-9">
+                      <a href="/subscription">Upgrade to publish</a>
+                    </Button>
                   </div>
                 )}
-              </div>
+              </section>
             );
           })}
         </div>
