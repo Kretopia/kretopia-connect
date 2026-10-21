@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Kreto Computer consistency
-- [ ] Match Studio Make mascot feet to the miniature launcher and share luminous keyboard typing with the feature launcher.
-- [ ] Run focused tests and inspect both mascots in light/dark and reduced motion without publishing.
+- [x] Studio Make uses the same round black feet as the launcher; launcher shares keyboard typing/glow with automatic decorative bursts and unchanged opening action.
+- [x] 22 focused tests pass; actual components inspected in isolated light/dark browser view, artwork loaded and reduced motion has zero running animations; automatic compilation OK. Connected Studio account not available for full-page verification. No publication.
 
 ## Studio Calls Slice 5
 - [x] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant initials/live iframe, mute, return, minimize and confirmed leave. Desktop drag; mobile safe-area placement; refresh starts idle.
