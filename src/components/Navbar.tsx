@@ -423,6 +423,47 @@ const Navbar = memo(({ user }: NavbarProps) => {
                   {isCompany ? (
                     /* Company workspace and the same shared feature access as Creator. */
                     <>
+                      {/* ACCOUNT — pinned to the top in Company mode too,
+                          exactly mirroring the Personal Creator menu order. */}
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Account
+                      </p>
+                      <Button
+                        variant="ghost"
+                        className="justify-start gap-3 h-auto w-full py-3"
+                        onClick={() => handleNavigation("/subscription")}
+                      >
+                        {isPro ? (
+                          <Crown className="h-5 w-5 text-accent" />
+                        ) : (
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        )}
+                        <div className="flex flex-col items-start gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Subscription</span>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-[10px] uppercase tracking-wider",
+                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {tierName}
+                            </Badge>
+                          </div>
+                          {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
+                        </div>
+                      </Button>
+                      <div className="px-1 py-1">
+                        <StorageMeter variant="compact" />
+                      </div>
+                      <AccountSwitcher
+                        currentAccountType={accountType}
+                        onSwitch={() => setIsOpen(false)}
+                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
+                      />
+                      <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
+                      <Separator className="my-3" />
                       <MenuGrid>
                         <MenuGridTile
                           icon={Inbox}
@@ -474,42 +515,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
                            { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
                          ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
                        </MenuGrid>
-                      <Separator className="my-3" />
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Account
-                      </p>
-                      <Button
-                        variant="ghost"
-                        className="justify-start gap-3 h-auto w-full py-3"
-                        onClick={() => handleNavigation("/subscription")}
-                      >
-                        {isPro ? (
-                          <Crown className="h-5 w-5 text-accent" />
-                        ) : (
-                          <Sparkles className="h-5 w-5 text-primary" />
-                        )}
-                        <div className="flex flex-col items-start gap-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Subscription</span>
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-[10px] uppercase tracking-wider",
-                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {tierName}
-                            </Badge>
-                          </div>
-                          {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
-                        </div>
-                      </Button>
-                      <AccountSwitcher
-                        currentAccountType={accountType}
-                        onSwitch={() => setIsOpen(false)}
-                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
-                      />
-                      <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                     </>
                   ) : (
                     /* ====== DAILY DRIVER MENU — System + Account only ====== */
