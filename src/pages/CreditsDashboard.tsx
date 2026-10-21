@@ -240,6 +240,14 @@ export default function CreditsDashboard() {
             </div>
           )}
         </StudioFeatureShell>
+
+        <AttachEvidenceDialog
+          open={attachOpen}
+          onOpenChange={setAttachOpen}
+          credits={credits.filter((c) => !c.url && !c.primary_media_url)}
+          focusCreditId={attachFocusId}
+          onAttached={() => refresh()}
+        />
       </div>
     </>
   );
