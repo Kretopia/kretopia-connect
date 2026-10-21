@@ -140,7 +140,9 @@ serve(async (req) => {
         ? `<p style="background: #f3f4f6; padding: 16px; border-radius: 8px; font-style: italic; margin: 16px 0;">"${escapeHtmlText(message)}"</p>`
         : '';
 
-      await resend.emails.send({
+      // The SDK does not throw when Resend refuses a send (for example a sender domain that is not verified): it
+      // returns `error`. Without this check the answer said `emailSent: true` for an email that never left.
+      const { error: sendError } = await resend.emails.send({
         from: "Kretopia <noreply@kretopia.com>",
         to: [recipientEmail],
         subject: `${singleLine(senderName, GET_PAID_NAME_MAX)} wants to pay you 💰`,
@@ -187,6 +189,7 @@ serve(async (req) => {
           </div>
         `,
       });
+      if (sendError) throw new Error(sendError.message || "The email provider refused the message");
       emailSent = true;
       logStep("Email sent successfully");
     } catch (emailErr: any) {

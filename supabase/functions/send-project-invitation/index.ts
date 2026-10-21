@@ -325,7 +325,8 @@ const handler = async (req: Request): Promise<Response> => {
 
       if (emailResponse.error) {
         console.warn("Resend error (non-fatal):", emailResponse.error);
-        emailError = String(emailResponse.error);
+        // Resend answers with an object, and String(object) is "[object Object]": keep the reason readable.
+        emailError = emailResponse.error.message || JSON.stringify(emailResponse.error);
       } else {
         emailSent = true;
       }

@@ -8,12 +8,14 @@ const world = vi.hoisted(() => ({
   db: null as any,
   generateLink: null as null | ((args: any) => Promise<any>),
   sent: [] as Array<{ to: string[]; html: string }>,
+  /** What Resend answers as `error` (null = the send is accepted). */
+  sendError: null as null | { name: string; message: string },
 }));
 
 vi.mock("https://deno.land/std@0.190.0/http/server.ts", () => ({ serve: (h: any) => { world.handler = h; } }));
 vi.mock("https://esm.sh/resend@4.0.0", () => ({
   Resend: class {
-    emails = { send: async (m: any) => { world.sent.push({ to: m.to, html: m.html }); return { data: { id: "mail-1" }, error: null }; } };
+    emails = { send: async (m: any) => { world.sent.push({ to: m.to, html: m.html }); return world.sendError ? { data: null, error: world.sendError } : { data: { id: "mail-1" }, error: null }; } };
   },
 }));
 vi.mock("https://esm.sh/@supabase/supabase-js@2", () => ({
@@ -51,6 +53,7 @@ beforeAll(async () => {
 
 beforeEach(() => {
   world.sent = [];
+  world.sendError = null;
   world.db = new MemoryDb()
     .seed("projects", [{ id: PROJECT, created_by: "owner-1", title: "Q&A shoot" }])
     .seed("profiles", [{ user_id: "owner-1", full_name: "Owner" }])
@@ -148,5 +151,16 @@ describe("send-project-invitation: preview token fallback", () => {
     await invite();
     expect(world.db.rows("guest_studio_tokens")).toHaveLength(1);
     expect(world.sent[0].html).toContain("/guest/live-token");
+  });
+});
+
+describe("send-project-invitation: a refused send", () => {
+  it("answers 200 with emailSent false and a readable reason, not [object Object]", async () => {
+    world.sendError = { name: "validation_error", message: "The kretopia.com domain is not verified." };
+    const res = await invite();
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.emailSent).toBe(false);
+    expect(body.emailError).toBe("The kretopia.com domain is not verified.");
   });
 });
