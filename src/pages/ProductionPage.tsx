@@ -66,6 +66,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
+import { CtaButton } from "@/components/ui/cta-button";
 
 interface PlatformRole {
   id: string;
@@ -512,19 +513,11 @@ const ProductionPage = () => {
       const extractedThumb = extractThumbnailForStorage(
         production?.external_url || null,
       );
-      await supabase.from("credits").insert({
-        user_id: user.id,
-        project_name: projectName,
-        role: roleName,
-        year: production?.year,
-        platform: production?.platform,
-        location: production?.location,
-        client_brand: production?.client_brand,
-        project_type: production?.type,
-        verification_status: "manual",
-        thumbnail_url: extractedThumb,
-      });
-      toast.success(`Claimed "${roleName}" on ${projectName}!`);
+      const { error } = await supabase.from("credit_role_claims" as never).insert({
+        claimant_id: user.id, project_name: projectName, role: roleName, status: "pending",
+      } as never);
+      if (error) throw error;
+      toast.success("Role claim submitted for approval");
       fetchProduction();
     } catch {
       toast.error("Failed to claim credit");
@@ -582,11 +575,12 @@ const ProductionPage = () => {
   const handleInvite = (role: PlatformRole) => {
     if (!role.has_kretopia_profile) {
       toast.info(
-        `Invite to Kretopia sent to ${role.full_name || "this creator"} (demo).`,
+        "Invitations to people not on Kretopia are not available here yet.",
       );
       return;
     }
-    toast.info("Propose new project (demo flow).");
+    navigate(`/profile/${role.user_id}`);
+    toast.info("Connect first. Any project invitation stays pending until they accept.");
   };
 
   const handleVerify = (role: PlatformRole) => {
