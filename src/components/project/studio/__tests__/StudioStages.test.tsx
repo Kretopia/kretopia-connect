@@ -88,7 +88,7 @@ describe("StudioStages — two main components", () => {
   it("puts a Kreto mascot in each stage (the typing one is decorative)", () => {
     render(<StudioStages flow={baseFlow} onPhaseClick={vi.fn()} />);
     const make = screen.getByRole("region", { name: "Make stage" });
-    expect(make.querySelectorAll('[aria-hidden="true"] img[src*="kreto-producer-hd"]').length).toBeGreaterThan(0);
+    expect(make.querySelectorAll('[aria-hidden="true"] img[src*="kreto-launcher"]').length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Deliver stage" }).querySelector('img[src*="k-mark"]')).toBeInTheDocument();
   });
 

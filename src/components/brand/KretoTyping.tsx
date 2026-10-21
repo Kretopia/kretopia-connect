@@ -16,31 +16,32 @@
  * it to signal a real "Kreto is working" state; that is KretoMark's `state`.
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import kretoUrl from "@/assets/brand/kreto/kreto-producer-hd.png";
+import kretoUrl from "@/assets/brand/kreto/small/kreto-launcher.webp";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
 
-/** Source art is 1024×1024; Kreto + laptop occupy x 197–924, y 117–1024. */
-const ART = 1024;
-const BOX = { x: 197, y: 117, w: 727, h: 907 } as const;
+/** Full-body launcher artwork, including the approved round black feet. */
+const ART_WIDTH = 635;
+const ART_HEIGHT = 998;
 
 /** The art, positioned so the visible figure exactly fills the component's box. */
 const ART_STYLE: CSSProperties = {
-  width: `${(ART / BOX.w) * 100}%`,
-  height: `${(ART / BOX.h) * 100}%`,
-  left: `${(-BOX.x / BOX.w) * 100}%`,
-  top: `${(-BOX.y / BOX.h) * 100}%`,
+  width: "100%",
+  height: "100%",
+  left: "0",
+  top: "0",
 };
 
 /** The two black gloves, in art pixels (centre + radii of an ellipse around each). */
 const HANDS = {
-  left: { cx: 448, cy: 778, rx: 72, ry: 68 },
-  right: { cx: 745, cy: 828, rx: 72, ry: 44 },
+  left: { cx: 211, cy: 582, rx: 55, ry: 61 },
+  right: { cx: 474, cy: 619, rx: 56, ry: 37 },
 } as const;
 
-const pct = (n: number) => `${((n / ART) * 100).toFixed(2)}%`;
+const pctX = (n: number) => `${((n / ART_WIDTH) * 100).toFixed(2)}%`;
+const pctY = (n: number) => `${((n / ART_HEIGHT) * 100).toFixed(2)}%`;
 const clipFor = ({ cx, cy, rx, ry }: (typeof HANDS)[keyof typeof HANDS]) =>
-  `ellipse(${pct(rx)} ${pct(ry)} at ${pct(cx)} ${pct(cy)})`;
+  `ellipse(${pctX(rx)} ${pctY(ry)} at ${pctX(cx)} ${pctY(cy)})`;
 
 /** One typing burst (~1.5 s): [time ms, glove travel as % of the art height]. */
 const TYPING_MS = 1500;
@@ -79,8 +80,9 @@ const SPARKS: ReadonlyArray<readonly [number, number, number]> = [
   [64, 12, 700],
 ];
 
-export const KretoTyping = memo(function KretoTyping({ className }: { className?: string }) {
+export const KretoTyping = memo(function KretoTyping({ className, autoPlay = false }: { className?: string; autoPlay?: boolean }) {
   const reducedMotion = useReducedMotion();
+  const rootRef = useRef<HTMLDivElement>(null);
   const baseRef = useRef<HTMLImageElement>(null);
   const leftRef = useRef<HTMLImageElement>(null);
   const rightRef = useRef<HTMLImageElement>(null);
@@ -140,12 +142,35 @@ export const KretoTyping = memo(function KretoTyping({ className }: { className?
     anims[0].onfinish = anims[0].oncancel = finish;
   }, [ready, reducedMotion]);
 
+  // Decorative typing, not a processing status. Pause when hidden/offscreen.
+  useEffect(() => {
+    if (reducedMotion) {
+      cancelAll();
+      return;
+    }
+    if (!autoPlay || !ready) return;
+    const tick = () => {
+      const el = rootRef.current;
+      if (!el || document.hidden || el.getClientRects().length === 0) return;
+      const bounds = el.getBoundingClientRect();
+      if (bounds.bottom <= 0 || bounds.top >= window.innerHeight) return;
+      play();
+    };
+    tick();
+    const timer = window.setInterval(tick, 6000);
+    return () => {
+      window.clearInterval(timer);
+      cancelAll();
+    };
+  }, [autoPlay, ready, reducedMotion, play, cancelAll]);
+
   const layer = "absolute inset-0 h-full w-full select-none object-contain";
 
   return (
     <div
+      ref={rootRef}
       aria-hidden
-      className={cn("relative aspect-[727/907] touch-manipulation select-none overflow-hidden [-webkit-tap-highlight-color:transparent]", className)}
+      className={cn("relative aspect-[635/998] touch-manipulation select-none overflow-hidden [-webkit-tap-highlight-color:transparent]", className)}
       onPointerEnter={play}
       onPointerDown={play}
     >
@@ -154,8 +179,8 @@ export const KretoTyping = memo(function KretoTyping({ className }: { className?
           ref={baseRef}
           src={kretoUrl}
           alt=""
-          width={ART}
-          height={ART}
+          width={256}
+          height={402}
           loading="lazy"
           decoding="async"
           draggable={false}
@@ -165,13 +190,13 @@ export const KretoTyping = memo(function KretoTyping({ className }: { className?
         {/* Laptop-lid glow while he types. */}
         <div
           ref={glowRef}
-          className="pointer-events-none absolute rounded-2xl opacity-0 mix-blend-screen"
+          className="pointer-events-none absolute rounded-2xl bg-energy/60 blur-sm opacity-0 mix-blend-screen"
           style={{
-            left: pct(540),
-            top: pct(520),
-            width: pct(380),
-            height: pct(290),
-            background: "radial-gradient(ellipse at 55% 50%, hsl(var(--energy) / 0.75), transparent 70%)",
+            left: pctX(310),
+            top: pctY(545),
+            width: pctX(190),
+            height: pctY(35),
+            transform: "rotate(-8deg)",
           }}
         />
         {/* The gloves: the same art, cut to each hand, tapped independently. */}
@@ -199,8 +224,8 @@ export const KretoTyping = memo(function KretoTyping({ className }: { className?
             ref={(el) => {
               sparkRefs.current[i] = el;
             }}
-            className="pointer-events-none absolute h-[1.6%] w-[1.6%] rounded-[2px] bg-[hsl(var(--energy))] opacity-0"
-            style={{ left: `${left}%`, top: pct(520) }}
+            className="pointer-events-none absolute h-[1.6%] w-[1.6%] rounded-[2px] bg-energy opacity-0"
+            style={{ left: `${left}%`, top: pctY(550) }}
           />
         ))}
       </div>

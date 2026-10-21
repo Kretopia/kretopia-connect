@@ -1,5 +1,9 @@
 # Roadmap
 
+## Kreto Computer consistency
+- [x] Studio Make uses the same round black feet as the launcher; launcher shares keyboard typing/glow with automatic decorative bursts and unchanged opening action.
+- [x] 22 focused tests pass; actual components inspected in isolated light/dark browser view, artwork loaded and reduced motion has zero running animations; automatic compilation OK. Connected Studio account not available for full-page verification. No publication.
+
 ## Studio Calls Slice 5
 - [x] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant initials/live iframe, mute, return, minimize and confirmed leave. Desktop drag; mobile safe-area placement; refresh starts idle.
 - [x] 49 focused tests pass, including actual Studio controller with simulated Daily: one creation/join across routes and minimize, cleanup after confirmed end. Automatic preview compilation OK. Isolated desktop/320/360/375/414px checks pass with one stable iframe and 44px controls.
