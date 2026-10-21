@@ -564,6 +564,8 @@ const handler = async (req: Request): Promise<Response> => {
       html,
     });
 
+    // The SDK returns `error` instead of throwing when Resend refuses the send: report it, not a success.
+    if (emailResponse.error) throw new Error(emailResponse.error.message || "The email provider refused the message");
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {

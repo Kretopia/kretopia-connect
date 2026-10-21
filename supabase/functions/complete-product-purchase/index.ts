@@ -305,12 +305,14 @@ serve(async (req) => {
             </div>
           `;
 
-          await resend.emails.send({
+          // The SDK returns `error` instead of throwing when Resend refuses the send.
+          const { error: sendError } = await resend.emails.send({
             from: 'Kretopia <noreply@kretopia.com>',
             to: buyerEmail,
             subject: `Purchase Confirmed: ${product.title}`,
             html: emailHtml,
           });
+          if (sendError) throw new Error(sendError.message || "The email provider refused the message");
 
           logStep("Confirmation email sent", { to: buyerEmail });
         }
