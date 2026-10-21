@@ -145,13 +145,16 @@ serve(async (req) => {
             if (!sendSuccess && resendApiKey) {
               try {
                 const resend = new Resend(resendApiKey);
-                await resend.emails.send({
+                // The SDK returns `error` instead of throwing when Resend refuses the send; without this check the
+                // recipient was marked "sent" for an email that never left.
+                const { error: sendError } = await resend.emails.send({
                   from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
                   to: [recipient.email],
                   subject: personalSubject,
                   html: htmlBody,
                   replyTo: userEmail || undefined,
                 });
+                if (sendError) throw new Error(sendError.message || "The email provider refused the message");
                 sendSuccess = true;
               } catch (e) {
                 console.error(`[SCHEDULED-CAMPAIGNS] Resend failed for ${recipient.email}:`, e);

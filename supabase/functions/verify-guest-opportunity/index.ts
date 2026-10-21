@@ -136,6 +136,7 @@ Deno.serve(async (req) => {
 
       // Send verification email via Resend
       const resendKey = Deno.env.get("RESEND_API_KEY");
+      let emailSent = false;
       if (resendKey) {
         const emailRes = await fetch("https://api.resend.com/emails", {
           method: "POST",
@@ -168,10 +169,20 @@ Deno.serve(async (req) => {
         if (!emailRes.ok) {
           console.error("Resend API error:", emailRes.status, emailBody);
         } else {
+          emailSent = true;
           console.log("Verification email sent successfully:", emailBody);
         }
       } else {
         console.error("RESEND_API_KEY not configured");
+      }
+
+      // The opportunity stays unpublished until the link is opened. Answering "success" for a mail that never left
+      // (a refused sender domain, a missing key) leaves the poster waiting for an email that will not come.
+      if (!emailSent) {
+        return new Response(
+          JSON.stringify({ error: "We couldn't send the verification email. Please try again in a few minutes." }),
+          { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       return new Response(

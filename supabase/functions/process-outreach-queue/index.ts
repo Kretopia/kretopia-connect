@@ -175,13 +175,16 @@ serve(async (req) => {
             // Get user email for reply-to
             const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(seq.user_id);
             
-            await resend.emails.send({
+            // The SDK returns `error` instead of throwing when Resend refuses the send; without this check the step
+            // was marked "sent" and the sequence moved on for an email that never left.
+            const { error: sendError } = await resend.emails.send({
               from: `${senderProfile?.full_name || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
               to: [recipientEmail],
               subject: nextEmail.subject,
               html: htmlBody,
               replyTo: authUser?.user?.email || undefined,
             });
+            if (sendError) throw new Error(sendError.message || "The email provider refused the message");
             sendSuccess = true;
             console.log(`[OUTREACH-QUEUE] Sent via Resend: ${seq.id} step ${nextEmail.step_number} to ${recipientEmail}`);
           } catch (e) {

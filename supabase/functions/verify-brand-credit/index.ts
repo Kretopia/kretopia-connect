@@ -102,12 +102,13 @@ serve(async (req) => {
       const verificationLink = `${siteUrl}/verify-credit?token=${data.verification_token}`;
 
       const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+      let emailSent = false;
       if (RESEND_API_KEY) {
         const emailFrom = Deno.env.get('RESEND_FROM_EMAIL') || 'Kretopia <noreply@kretopia.com>';
         const creatorName = profile?.full_name || 'A creator';
         const projectTitle = project?.title || 'a project';
 
-        await fetch('https://api.resend.com/emails', {
+        const emailRes = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${RESEND_API_KEY}`,
@@ -137,6 +138,15 @@ serve(async (req) => {
               </div>
             `,
           }),
+        });
+        emailSent = emailRes.ok;
+        if (!emailSent) console.error('Resend API error:', emailRes.status, await emailRes.text());
+      }
+
+      // Saying "sent" for a mail that was refused (or had no key) hides a lost verification request.
+      if (!emailSent) {
+        return new Response(JSON.stringify({ error: "We couldn't send the verification email. Please try again in a few minutes." }), {
+          status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
