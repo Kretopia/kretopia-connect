@@ -112,15 +112,14 @@ export function TodayCommandCenter({
 }: TodayCommandCenterProps) {
   const reducedMotion = useReducedMotion();
   // Match the banner prompt's width to the deck cards below (TodayDeck):
-  // 88% of the track on touch/narrow swipe, 26rem centered on the 3D roulette,
-  // full width on the flat reduced-motion grid.
+  // the full carousel row on touch/narrow swipe (every card, right edge to
+  // left edge) and on the flat reduced-motion grid, the front card's 26rem
+  // centered span on the 3D roulette.
   const wide = useMediaQuery("(min-width: 1024px)");
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
-  const bannerWidthClass = reducedMotion
-    ? "w-full"
-    : wide && finePointer
-      ? "mx-auto w-full max-w-[26rem]"
-      : "mx-auto w-[88%]";
+  const bannerWidthClass = wide && finePointer && !reducedMotion
+    ? "mx-auto w-full max-w-[26rem]"
+    : "w-full";
   // Session-only dismissal: no database column for this prompt.
   const [bannerPromptDismissed, setBannerPromptDismissed] = useState(() => {
     try {
