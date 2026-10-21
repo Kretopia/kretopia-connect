@@ -162,11 +162,13 @@ export const PreCallLobby = ({
           </Button>
         </div>
 
-        <Button
+        {/* Native button on purpose: the shared Button's glass variant forces
+            its own text color with !important, which washed the label out. */}
+        <button
           type="button"
           onClick={() => onJoin({ mic, cam })}
           disabled={joining}
-          className="cta-solid w-full h-12 rounded-full text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full h-12 inline-flex items-center justify-center rounded-full text-base font-semibold bg-foreground text-background hover:opacity-90 disabled:cursor-wait transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {joining ? (
             <>
@@ -176,7 +178,7 @@ export const PreCallLobby = ({
           ) : (
             ctaLabel
           )}
-        </Button>
+        </button>
       </div>
     </div>
   );
