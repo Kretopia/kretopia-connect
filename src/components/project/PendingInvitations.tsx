@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, UserCheck, UserX, Clock, Users, Send } from "lucide-react";
 import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
+import { describeResend } from "@/lib/projectInvites";
 
 interface PendingInvitationsProps {
   projectId?: string;
@@ -155,7 +156,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
         .select('full_name')
         .eq('user_id', user?.id || '')
         .maybeSingle();
-      const { error } = await supabase.functions.invoke('send-project-invitation', {
+      const { data, error } = await supabase.functions.invoke('send-project-invitation', {
         body: {
           email: invitation.email,
           projectId: invitation.projects.id,
@@ -164,7 +165,7 @@ export const PendingInvitations = ({ projectId, showAll = false }: PendingInvita
         },
       });
       if (error) throw error;
-      toast({ title: "Invite resent", description: `Sent again to ${invitation.email}.` });
+      toast(describeResend(Boolean(data?.emailSent), invitation.email));
     } catch (e: any) {
       toast({ title: "Couldn't resend", description: e.message, variant: "destructive" });
     } finally {
