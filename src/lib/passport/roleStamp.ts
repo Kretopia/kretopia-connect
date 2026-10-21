@@ -68,13 +68,25 @@ export function getRoleStampCategory(profile: {
   role?: string | null;
   sub_roles?: string[] | null;
 }): RoleStampCategory {
+  return matchRoleStampCategory(profile) ?? "creator";
+}
+
+/**
+ * Like getRoleStampCategory, but null when the role text names no craft we recognise (including when it is empty).
+ * The fallback "creator" cannot tell "this person is an influencer / UGC creator" from "we could not read this role",
+ * and anything that compares crafts (matching a company's need to a profile) must not treat the second as the first.
+ */
+export function matchRoleStampCategory(profile: {
+  role?: string | null;
+  sub_roles?: string[] | null;
+}): RoleStampCategory | null {
   const haystack = [profile.role ?? "", ...(profile.sub_roles ?? [])]
     .join(" ")
     .toLowerCase();
-  if (!haystack.trim()) return "creator";
+  if (!haystack.trim()) return null;
 
   for (const [category, re] of MATCHERS) {
     if (re.test(haystack)) return category;
   }
-  return "creator";
+  return null;
 }
