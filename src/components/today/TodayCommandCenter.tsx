@@ -7,6 +7,7 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { GlassCta, GlassCtaButton, OutlineCta, OutlineCtaButton } from "@/components/ui/glass-cta";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useToast } from "@/hooks/use-toast";
 
@@ -110,6 +111,16 @@ export function TodayCommandCenter({
   onSignalsChanged,
 }: TodayCommandCenterProps) {
   const reducedMotion = useReducedMotion();
+  // Match the banner prompt's width to the deck cards below (TodayDeck):
+  // 88% of the track on touch/narrow swipe, 26rem centered on the 3D roulette,
+  // full width on the flat reduced-motion grid.
+  const wide = useMediaQuery("(min-width: 1024px)");
+  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const bannerWidthClass = reducedMotion
+    ? "w-full"
+    : wide && finePointer
+      ? "mx-auto w-full max-w-[26rem]"
+      : "mx-auto w-[88%]";
   // Session-only dismissal: no database column for this prompt.
   const [bannerPromptDismissed, setBannerPromptDismissed] = useState(() => {
     try {
@@ -143,7 +154,7 @@ export function TodayCommandCenter({
       />
 
       {profile && !profile.cover_image_url && !bannerPromptDismissed && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className={`flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between ${bannerWidthClass}`}>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">Make your Passport yours</p>
             <p className="mt-0.5 text-xs text-muted-foreground">Add a banner to personalise your profile.</p>
