@@ -235,7 +235,7 @@ export const Greenroom = ({
           </div>
         )}
 
-        <Button
+        <button
           type="button"
           onClick={() =>
             onJoin({
@@ -247,7 +247,7 @@ export const Greenroom = ({
             })
           }
           disabled={!canJoin}
-          className="cta-solid w-full h-12 rounded-full text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full h-12 inline-flex items-center justify-center rounded-full text-base font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-60 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {joining ? (
             <>
@@ -257,7 +257,7 @@ export const Greenroom = ({
           ) : (
             ctaLabel
           )}
-        </Button>
+        </button>
 
         {secondary}
       </div>
