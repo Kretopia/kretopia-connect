@@ -913,7 +913,7 @@ const CreatorEPK = () => {
             </h3>
             <div className="flex flex-wrap gap-2">
               {profile.achievement_badges.slice(0, 6).map((badge: string, index: number) => (
-                <Badge key={index} variant="outline" className="px-3 py-1 bg-amber-500/10 border-amber-500/60 text-amber-700 dark:text-amber-300 font-semibold">
+                <Badge key={index} variant="outline" className="px-3 py-1 bg-energy/10 border-energy/60 text-energy font-semibold">
                   <Award className="h-3 w-3 mr-1" />
                   {badge}
                 </Badge>
@@ -1019,6 +1019,16 @@ const CreatorEPK = () => {
         )}
         </PublicProfileWrapped>
       </div>
+
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-8 text-center">
+          <div className="h-px w-24 bg-gradient-to-r from-primary via-energy to-accent" aria-hidden="true" />
+          <a href={APP_URL} className="k-gradient-text text-lg font-bold tracking-tight">kretopia</a>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            The Operating System for Creative Careers
+          </p>
+        </div>
+      </footer>
 
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (

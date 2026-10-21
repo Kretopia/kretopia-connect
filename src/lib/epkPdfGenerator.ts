@@ -345,13 +345,36 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     }
   };
 
+  /** Kretopia brand rule: the accent gradient line from the business cards. */
+  const BRAND_TAGLINE = 'THE OPERATING SYSTEM FOR CREATIVE CAREERS';
+  const drawBrandRule = (x: number, y: number, w: number, h = 0.6) => {
+    const from: [number, number, number] = C.primary;
+    const to: [number, number, number] = C.accent;
+    const steps = 40;
+    for (let i = 0; i < steps; i++) {
+      const t = i / (steps - 1);
+      doc.setFillColor(
+        Math.round(from[0] + (to[0] - from[0]) * t),
+        Math.round(from[1] + (to[1] - from[1]) * t),
+        Math.round(from[2] + (to[2] - from[2]) * t),
+      );
+      doc.rect(x + (w / steps) * i, y, w / steps + 0.05, h, 'F');
+    }
+  };
+
   const drawFooter = (num: number, total: number) => {
-    doc.setFillColor(...C.primary);
-    doc.rect(0, PAGE_H - 8, PAGE_W, 0.4, 'F');
+    drawBrandRule(0, PAGE_H - 8, PAGE_W, 0.4);
     doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(...C.dimmed);
     doc.text('kretopia.com', MARGIN, PAGE_H - 3.5);
+    doc.setFontSize(5.5);
+    doc.setFont("helvetica", "bold");
+    doc.setCharSpace(0.6);
+    doc.text(BRAND_TAGLINE, PAGE_W / 2, PAGE_H - 3.5, { align: 'center' });
+    doc.setCharSpace(0);
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "normal");
     doc.text(`${num} / ${total}`, PAGE_W - MARGIN, PAGE_H - 3.5, { align: 'right' });
   };
 
@@ -445,6 +468,10 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   }
 
   drawLogoLockup(MARGIN, 12);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...C.light);
+  doc.text('The Operating System for Creative Careers.', MARGIN, 26);
 
   const heroLeftX = MARGIN;
   const eyebrowY = 34;
@@ -836,7 +863,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   doc.text('together.', MARGIN, closeY + 16);
 
   doc.setFillColor(...C.primary);
-  doc.rect(MARGIN, closeY + 22, 26, 1, 'F');
+  drawBrandRule(MARGIN, closeY + 22, 40, 1);
 
   doc.setFontSize(11);
   doc.setFont("helvetica", "normal");
@@ -890,6 +917,43 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   doc.setTextColor(...C.muted);
   doc.text('Reach me on Kretopia', cardX + 8, cardY + 37);
   doc.link(cardX, cardY + 34, cardW, 5, { url: epkUrl });
+
+  // Kretopia-branded QR, same look as the business cards and Passport exports.
+  try {
+    const { default: QRCodeStyling } = await import("qr-code-styling");
+    const qr = new QRCodeStyling({
+      width: 360, height: 360, data: epkUrl, margin: 12,
+      qrOptions: { errorCorrectionLevel: "H" },
+      dotsOptions: { type: "extra-rounded", gradient: { type: "linear", rotation: Math.PI / 4, colorStops: [
+        { offset: 0, color: "#05070D" }, { offset: 1, color: "#F6288D" }] } },
+      cornersSquareOptions: { type: "extra-rounded", color: "#F6288D" },
+      cornersDotOptions: { type: "dot", color: "#05070D" },
+      backgroundOptions: { color: "#FFFFFF" },
+      image: kMarkAsset.url,
+      imageOptions: { crossOrigin: "anonymous", margin: 6, imageSize: 0.3 },
+    });
+    const blob = (await Promise.race([
+      qr.getRawData("png"),
+      new Promise<null>((res) => setTimeout(() => res(null), 2500)),
+    ])) as Blob | null;
+    if (blob) {
+      const qrData: string = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(blob);
+      });
+      const qrSize = 34;
+      const qrX = cardX + cardW - qrSize - 8;
+      const qrY = cardY + 7;
+      doc.setFillColor(255, 255, 255);
+      doc.roundedRect(qrX - 1.5, qrY - 1.5, qrSize + 3, qrSize + 3, 2, 2, 'F');
+      doc.addImage(qrData, 'PNG', qrX, qrY, qrSize, qrSize);
+      doc.setFontSize(5.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...C.dimmed);
+      doc.setCharSpace(0.5);
+      doc.text('SCAN PASSPORT', qrX + qrSize / 2, qrY + qrSize + 6, { align: 'center' });
+      doc.setCharSpace(0);
+    }
+  } catch { /* QR is a bonus; the clickable link above stays the source of truth */ }
 
   // ════════════════════════════════════════════════════════════
   // FOOTERS — Apply to all pages
