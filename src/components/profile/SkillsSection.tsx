@@ -335,7 +335,7 @@ Thank you so much!`;
               <button
                 type="button"
                 onClick={() => respondToSuggestion(type, skill.skill, "confirm")}
-                className="text-[11px] font-semibold text-white hover:text-[#A516C5] hover:underline transition-colors"
+                className="text-[11px] font-semibold text-foreground hover:text-primary hover:underline transition-colors"
               >
                 Confirm
               </button>
