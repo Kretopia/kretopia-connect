@@ -159,6 +159,16 @@ export function CreditsStampsPanel({ credits, loading, query, index, missingEvid
                         {request ? "Ask someone else" : "Ask for a co-sign"}
                       </button>
                     )}
+                    {!hasEvidence && onAttachEvidence && (
+                      <button
+                        type="button"
+                        onClick={() => onAttachEvidence(c.id)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        <Paperclip className="h-3 w-3" aria-hidden />
+                        Attach evidence
+                      </button>
+                    )}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
