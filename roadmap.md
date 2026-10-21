@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Passport collaboration and stable Holo cards
-- [ ] Make project/role proposals explicitly subject to the recipient's acceptance through existing invitation workflows.
-- [ ] Replace the Passport social-sharing card with a branded collaboration CTA on owner/public views.
-- [ ] Remove pointer-driven Holo inclination globally and run focused checks.
+- [x] Make project/role proposals explicitly subject to the recipient's acceptance through existing invitation workflows.
+- [x] Replace the Passport social-sharing card with a branded collaboration CTA on owner/public views.
+- [x] Remove pointer-driven Holo inclination globally; 47 focused tests pass and compilation is OK.
+- [ ] Verify the connected-account flow on populated Passports — blocked: no automatable legacy session.
 
 ## Kreto Computer consistency
 - [x] Studio Make uses the same round black feet as the launcher; launcher shares keyboard typing/glow with automatic decorative bursts and unchanged opening action.
