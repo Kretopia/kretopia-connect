@@ -285,6 +285,12 @@ export function StartProjectFromMatchDialog({
           status: 'pending',
         });
 
+      if (inviteError) {
+        toast({ title: "Project saved — invitation not sent", description: "Your project is available in Studio. Try inviting them again from the project.", variant: "destructive" });
+        onOpenChange(false);
+        navigate(`/desk/${project.id}`);
+        return;
+      }
       if (!inviteError) {
         // Always send in-app notification regardless of email availability
         await notifyUser({
@@ -296,7 +302,7 @@ export function StartProjectFromMatchDialog({
           priority: 'high',
           link: `/desk/${project.id}`,
           actionUrl: `/desk/${project.id}`,
-          actionText: 'Open Project',
+          actionText: 'Review invitation',
         });
 
         // Send email notification if we have their email
@@ -334,8 +340,8 @@ export function StartProjectFromMatchDialog({
       });
 
       toast({
-        title: "Project created!",
-        description: `${matchedUser.name} has been invited to collaborate`,
+        title: "Project created — invitation pending",
+        description: `${matchedUser.name} must accept before joining.`,
       });
 
       onOpenChange(false);
@@ -358,10 +364,10 @@ export function StartProjectFromMatchDialog({
         <DialogHeader>
           <DialogTitle className="text-2xl flex items-center gap-2">
             <Rocket className="h-6 w-6 text-primary" />
-            Start Project Together
+            Propose a project
           </DialogTitle>
           <DialogDescription>
-            Create a project with your match and start collaborating
+            Create your project and send {matchedUser.name} an invitation. Their participation starts only after they accept — an existing connection is not project consent.
           </DialogDescription>
         </DialogHeader>
 
@@ -485,7 +491,7 @@ export function StartProjectFromMatchDialog({
               ) : (
                 <>
                   <Rocket className="h-5 w-5" />
-                  Create Project
+                  Create & invite
                 </>
               )}
             </Button>

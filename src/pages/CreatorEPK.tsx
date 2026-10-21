@@ -9,6 +9,7 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
+import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
@@ -550,63 +551,23 @@ const CreatorEPK = () => {
             showActions={false}
           >
         {/* Collaboration uses the same existing gated actions. */}
-        {!isOwner && (
-          <div className="border-b border-border pb-5">
-            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
-              Work with {firstName}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {connectionStatus === 'connected'
-                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
-                : connectionStatus === 'pending'
-                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
-                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
-            </p>
-            <div className="flex flex-wrap gap-2 lg:flex-nowrap">
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Button onClick={() => setMessageOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
-                    <Sparkles className="h-4 w-4" />
-                    Start a Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="min-w-0 gap-2 whitespace-nowrap lg:px-3 lg:text-[13px]">
-                    <UserPlus2 className="h-4 w-4" />
-                    Invite to Project
-                  </Button>
-                </>
-              ) : (
-                <CtaButton
-                  onClick={handleConnect}
-                  disabled={isConnecting || connectionStatus === 'pending'}
-                  className="w-full gap-2"
-                >
-                  <UserPlus2 className="h-4 w-4" />
-                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </CtaButton>
-              )}
-            </div>
-            {!currentUserId && (
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate('/auth?type=brand')}
-                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
-              >
-                I'm a brand — find creators like {firstName}
-              </Button>
-            )}
-          </div>
-        )}
+        <PassportCollaborationCta
+          firstName={firstName}
+          isOwner={isOwner}
+          connectionStatus={connectionStatus}
+          isConnecting={isConnecting}
+          onConnect={handleConnect}
+          onMessage={() => setMessageOpen(true)}
+          onPropose={() => setCollaborateOpen(true)}
+          onInvite={() => setInviteOpen(true)}
+          onPreview={() => navigate(`/epk/${profile.user_id}`)}
+        />
 
         {/* Positioning uses a full, themed surface rather than a light side stripe. */}
         {profile.headline || profile.bio ? (() => {
           const longBio = profile.bio && profile.bio.length > 280;
           const body = profile.headline
-            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
+            || (longBio && !bioExpanded ? `${profile.bio?.slice(0, 277)}…` : profile.bio);
           return (
             <div className="rounded-md border border-border bg-secondary p-5">
               <h3 className="text-sm font-semibold text-energy uppercase mb-2">

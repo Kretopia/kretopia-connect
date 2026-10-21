@@ -31,8 +31,9 @@
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit back rows; keep step navigation, reader close and sidebar dismissal.
 - Call reminders reuse live sync/Daily IDs. The shell owns Studio calls; route/minimize changes resize one iframe, never rejoin. Safe-area chrome reads Daily state; refresh starts idle and exit requires confirmation.
-- Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
+- Key Match cards by profile; HoloCard never rotates, avoiding stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
 - Isolate Home/mascots with Suspense; mount chapters after Hero, warm nearby videos and reveal text early to avoid delays.
-- Share lightweight full-body KretoTyping in Studio Make/launcher; pause automatic decorative typing offscreen/reduced motion to prevent motion drift and wasted work.
+- Share KretoTyping in Studio Make/launcher; pause offscreen/reduced motion.
+- Reuse PassportCollaborationCta and pending invite flows; connection is not consent.
