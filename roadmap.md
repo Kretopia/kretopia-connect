@@ -3,7 +3,7 @@
 ## Passport collaboration and stable Holo cards
 - [x] Make project/role proposals explicitly subject to the recipient's acceptance through existing invitation workflows.
 - [x] Replace the Passport social-sharing card with a branded collaboration CTA on owner/public views.
-- [x] Remove pointer-driven Holo inclination globally; 47 focused tests pass and compilation is OK.
+- [x] Remove pointer-driven Holo inclination globally; 47 focused tests pass and compilation is OK. Isolated light/dark browser checks confirm stable bounds and working proposal/invite callbacks; official logo asset delivery is not verified in sandbox.
 - [ ] Verify the connected-account flow on populated Passports — blocked: no automatable legacy session.
 
 ## Kreto Computer consistency
