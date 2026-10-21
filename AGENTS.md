@@ -34,5 +34,5 @@
 - Key Match cards by profile; complete one exit before advancing and neutralize Passport Holo tilt during gestures to avoid stale drag state.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
-- Isolate Home/optional mascots with Suspense so unused code cannot block pages.
-- Mount Landing chapters after Hero's first render, warm videos near the viewport and reveal text before entry, because late downloads and invisible entrances compound waiting.
+- Isolate Home/mascots with Suspense; mount chapters after Hero, warm nearby videos and reveal text early to avoid delays.
+- Share lightweight full-body KretoTyping in Studio Make/launcher; pause automatic decorative typing offscreen/reduced motion to prevent motion drift and wasted work.
