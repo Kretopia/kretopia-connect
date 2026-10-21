@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Plus, ShieldCheck, UserCheck } from "lucide-react";
+import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Paperclip, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { MyCredit } from "@/hooks/useMyCredits";
 import { DashboardPanel, CreditsEmptyState, CreditsPanelSkeleton } from "./CreditsPrimitives";
@@ -59,7 +59,18 @@ export function CreditsStampsPanel({ credits, loading, query, index, missingEvid
       title="Stamps"
       index={index}
       action={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onAttachEvidence && missingEvidenceCount > 0 && (
+            <button
+              type="button"
+              onClick={() => onAttachEvidence()}
+              className="btn-glass btn-glass-primary inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold"
+            >
+              <Paperclip className="h-3.5 w-3.5" aria-hidden />
+              Attach evidence
+              <span className="rounded-full bg-background/20 px-1.5 text-[10px] font-bold">{missingEvidenceCount}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate("/profile")}
