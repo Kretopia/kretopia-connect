@@ -7,6 +7,7 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { GlassCta, GlassCtaButton, OutlineCta, OutlineCtaButton } from "@/components/ui/glass-cta";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useToast } from "@/hooks/use-toast";
 
