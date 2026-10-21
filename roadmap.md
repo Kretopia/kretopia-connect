@@ -85,3 +85,6 @@
 - [ ] Integrate Kreto Robot guidance and Kreto Computer floating image
 - [ ] Apply explicit CPO document principles without inventing requirements
 - [ ] Validate tests and responsive presentation
+
+## Slice K — project creation from brief (guided E2E)
+- [x] Guided end-to-end run by Noé on his connected account (noe@kretopia.com): brief text → extraction review (title, 3 deliverables with dates, €4,500 budget, missing moodboard flagged, draft origin) → project created with deliverables/dates/budget intact. Reported "tout s'affiche nickel". No code or backend changes; no automated session available, verification was user-guided.
