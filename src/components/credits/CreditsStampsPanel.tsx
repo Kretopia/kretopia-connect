@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Plus, ShieldCheck, UserCheck } from "lucide-react";
+import { ArrowUpRight, Clock3, FileWarning, Globe, Handshake, Link2, Paperclip, Plus, ShieldCheck, UserCheck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { MyCredit } from "@/hooks/useMyCredits";
 import { DashboardPanel, CreditsEmptyState, CreditsPanelSkeleton } from "./CreditsPrimitives";
@@ -25,6 +25,10 @@ interface Props {
   loading?: boolean;
   query: string;
   index?: number;
+  /** Credits still missing evidence — drives the header shortcut. */
+  missingEvidenceCount?: number;
+  /** Opens the attach-evidence dialog, optionally focused on one credit. */
+  onAttachEvidence?: (creditId?: string) => void;
 }
 
 /** The same five statuses the Passport shows, from the same classifier, so a credit reads the same in both places. */
@@ -42,7 +46,7 @@ const STATUS_CHIP: Record<CreditEvidenceStatus, { icon: LucideIcon; cls: string 
  * leads to the same credit on the Passport, where it is shown in full. No "My Stamps" label, no category
  * counters: the list itself is the record.
  */
-export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
+export function CreditsStampsPanel({ credits, loading, query, index, missingEvidenceCount = 0, onAttachEvidence }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { byCredit: requestsByCredit, refresh: refreshRequests } = useCosignRequests(user?.id);
@@ -55,7 +59,18 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
       title="Stamps"
       index={index}
       action={
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {onAttachEvidence && missingEvidenceCount > 0 && (
+            <button
+              type="button"
+              onClick={() => onAttachEvidence()}
+              className="btn-glass btn-glass-primary inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold"
+            >
+              <Paperclip className="h-3.5 w-3.5" aria-hidden />
+              Attach evidence
+              <span className="rounded-full bg-background/20 px-1.5 text-[10px] font-bold">{missingEvidenceCount}</span>
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigate("/profile")}
@@ -142,6 +157,16 @@ export function CreditsStampsPanel({ credits, loading, query, index }: Props) {
                       >
                         <Handshake className="h-3 w-3" aria-hidden />
                         {request ? "Ask someone else" : "Ask for a co-sign"}
+                      </button>
+                    )}
+                    {!hasEvidence && onAttachEvidence && (
+                      <button
+                        type="button"
+                        onClick={() => onAttachEvidence(c.id)}
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        <Paperclip className="h-3 w-3" aria-hidden />
+                        Attach evidence
                       </button>
                     )}
                     </div>

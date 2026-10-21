@@ -12,6 +12,7 @@ import { CreditsHireMePanel, type HireMeProfile } from "@/components/credits/Cre
 import { CreditsActivityTimeline } from "@/components/credits/CreditsActivityTimeline";
 import { CreditsAIInsights } from "@/components/credits/CreditsAIInsights";
 import { CreditsErrorState } from "@/components/credits/CreditsPrimitives";
+import { AttachEvidenceDialog } from "@/components/credits/AttachEvidenceDialog";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
@@ -35,6 +36,8 @@ export default function CreditsDashboard() {
   const [profileError, setProfileError] = useState(false);
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachFocusId, setAttachFocusId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth
@@ -111,7 +114,10 @@ export default function CreditsDashboard() {
     if (overview.missing_evidence > 0)
       return {
         label: `Attach evidence to ${overview.missing_evidence} credit${overview.missing_evidence > 1 ? "s" : ""}`,
-        onClick: () => document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        onClick: () => {
+          setAttachFocusId(null);
+          setAttachOpen(true);
+        },
       };
     if (overview.pending_credits > 0)
       return {
@@ -152,7 +158,23 @@ export default function CreditsDashboard() {
       icon: Briefcase,
       content: profileError ? identityErrorState : <CreditsHireMePanel profile={profile} />,
     },
-    { id: "stamps", label: "Stamps", icon: Award, content: <CreditsStampsPanel credits={credits} loading={loading} query={query} /> },
+    {
+      id: "stamps",
+      label: "Stamps",
+      icon: Award,
+      content: (
+        <CreditsStampsPanel
+          credits={credits}
+          loading={loading}
+          query={query}
+          missingEvidenceCount={overview?.missing_evidence ?? 0}
+          onAttachEvidence={(creditId) => {
+            setAttachFocusId(creditId ?? null);
+            setAttachOpen(true);
+          }}
+        />
+      ),
+    },
     { id: "activity", label: "Activity", icon: Activity, content: <CreditsActivityTimeline credits={credits} loading={loading} /> },
     {
       id: "insights",
@@ -218,6 +240,14 @@ export default function CreditsDashboard() {
             </div>
           )}
         </StudioFeatureShell>
+
+        <AttachEvidenceDialog
+          open={attachOpen}
+          onOpenChange={setAttachOpen}
+          credits={credits.filter((c) => !c.url && !c.primary_media_url)}
+          focusCreditId={attachFocusId}
+          onAttached={() => refresh()}
+        />
       </div>
     </>
   );
