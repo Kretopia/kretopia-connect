@@ -12,6 +12,7 @@ import { CreditsHireMePanel, type HireMeProfile } from "@/components/credits/Cre
 import { CreditsActivityTimeline } from "@/components/credits/CreditsActivityTimeline";
 import { CreditsAIInsights } from "@/components/credits/CreditsAIInsights";
 import { CreditsErrorState } from "@/components/credits/CreditsPrimitives";
+import { AttachEvidenceDialog } from "@/components/credits/AttachEvidenceDialog";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
@@ -35,6 +36,8 @@ export default function CreditsDashboard() {
   const [profileError, setProfileError] = useState(false);
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
+  const [attachOpen, setAttachOpen] = useState(false);
+  const [attachFocusId, setAttachFocusId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth
