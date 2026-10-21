@@ -92,7 +92,7 @@ const VARIANT_SRC_SMALL: Partial<Record<KretoCharacterVariant, string>> = {
 
 /** Intrinsic width x height of each source, so the image box is reserved before it loads (no layout shift). */
 const VARIANT_SIZE: Record<KretoCharacterVariant, [number, number]> = {
-  main: [480, 618],
+  main: [480, 746],
   scout: [480, 480],
   connector: [480, 480],
   producer: [480, 480],
