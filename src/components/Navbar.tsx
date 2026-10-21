@@ -331,12 +331,14 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="w-full">
+            <SheetContent side="top" className="k-nav-search-sheet w-full">
               <SheetHeader className="mx-auto w-full max-w-2xl">
-                <SheetTitle>Search</SheetTitle>
+                <SheetTitle className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                  Search <span className="k-gradient-text">Kretopia</span>
+                </SheetTitle>
               </SheetHeader>
-              <div className="mx-auto mt-4 w-full max-w-2xl">
-                <UnifiedSearchDropdown variant="hero" placeholder="Search Kretopia" autoFocus />
+              <div className="k-nav-search mx-auto mt-3 w-full max-w-2xl">
+                <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" autoFocus />
               </div>
             </SheetContent>
           </Sheet>
