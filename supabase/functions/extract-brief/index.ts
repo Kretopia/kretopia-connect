@@ -22,6 +22,22 @@ const corsHeaders = {
 
 type Source = "text" | "csv" | "sheet" | "doc" | "audio";
 
+// Largest inputs one request may carry. Generous on purpose: callers send a whole project description, a pasted CSV or a
+// recording, so these stop abuse and runaway cost, not normal use.
+export const TEXT_MAX = 20_000;
+export const CSV_MAX = 100_000;
+// The app's own file limit is 25 MB, which is about 33.4 million characters of base64.
+export const BASE64_MAX = 36_000_000;
+/** The model has no clock: a date this far ahead is a guess, not a plan. */
+const MAX_YEARS_AHEAD = 3;
+
+/** A request the person can fix: answered with a 400 and a message they can read, never a bare 500. */
+class BriefInputError extends Error {
+  constructor(message: string, public code: string) {
+    super(message);
+  }
+}
+
 interface MoodboardItem {
   url: string; // link to image, Pinterest, IG, Behance, Drive, etc.
   thumbnail_url?: string | null; // direct image URL if known (used for card preview)
@@ -148,7 +164,7 @@ const PERSONAS: Record<WorkspaceType, { role: string; lens: string; example: str
   },
 };
 
-const buildSystemPrompt = (type: WorkspaceType) => {
+export const buildSystemPrompt = (type: WorkspaceType, today: string) => {
   const p = PERSONAS[type] ?? PERSONAS.general;
   return `You are ${p.role}. A creative founder is starting a new project and may have given you only a phrase or two — your job is to RESEARCH AND ELEVATE it into a real production plan.
 
@@ -185,9 +201,37 @@ Rules:
 - Otherwise kind="link", thumbnail_url=null.
 - Never invent references that aren't in the source.
 - Keep titles under 80 chars.
+- Today's date is ${today} (UTC). Resolve relative dates in the brief ("next Friday", "end of November") against it.
+- Set "due_date" to an ISO date (YYYY-MM-DD) only when the brief states or clearly implies that date; otherwise null. Never write a date before today, and never make up dates just to fill the plan.
 - Return ONLY the JSON object, no prose, no markdown fences.
 ${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 };
+
+/** A due date that can be right: a real ISO date, not before today when asked, and not years away. Otherwise null. */
+export function usableDueDate(value: unknown, today: string, dropPast: boolean): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}/.test(value)) return null;
+  const day = value.slice(0, 10);
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) return null;
+  const limit = new Date(`${today}T00:00:00Z`);
+  limit.setUTCFullYear(limit.getUTCFullYear() + MAX_YEARS_AHEAD);
+  if (parsed > limit) return null;
+  return dropPast && day < today ? null : day;
+}
+
+/**
+ * Leaves every deliverable as the model wrote it except its due date, which is checked. `dropPast` is for sources where
+ * the model works dates out (typed text, a recording): there a past date is a guess. In a CSV, a sheet or a document the
+ * person wrote the date, so a past one is kept.
+ */
+export function sanitizeDueDates(brief: BriefOut, today: string, dropPast: boolean): BriefOut {
+  return {
+    ...brief,
+    deliverables: brief.deliverables.map((d) =>
+      d && typeof d === "object" ? { ...d, due_date: usableDueDate((d as DeliverableOut).due_date, today, dropPast) } : d,
+    ),
+  };
+}
 
 async function fetchPublicSheetAsCsv(url: string): Promise<string> {
   // Convert any Google Sheets URL into the CSV export endpoint.
@@ -291,7 +335,8 @@ serve(async (req) => {
     const workspaceType: WorkspaceType = (
       Object.keys(PERSONAS).includes(rawType) ? rawType : "general"
     ) as WorkspaceType;
-    const systemPrompt = buildSystemPrompt(workspaceType);
+    const today = new Date().toISOString().slice(0, 10);
+    const systemPrompt = buildSystemPrompt(workspaceType, today);
 
     if (!source) {
       return new Response(JSON.stringify({ error: "source is required" }), {
@@ -306,12 +351,18 @@ serve(async (req) => {
     if (source === "text") {
       const text: string = body.text ?? "";
       if (!text.trim()) throw new Error("text is required for source=text");
+      if (text.length > TEXT_MAX) {
+        throw new BriefInputError(`That brief is too long (${TEXT_MAX.toLocaleString("en-US")} characters at most). Shorten it or send it in parts.`, "brief_too_long");
+      }
       parts = [
         { type: "text", text: `${ctx}Brief (free-form):\n\n${wrapUntrustedContent("user-provided brief text", text)}` },
       ];
     } else if (source === "csv") {
       const csv: string = body.csv ?? "";
       if (!csv.trim()) throw new Error("csv is required for source=csv");
+      if (csv.length > CSV_MAX) {
+        throw new BriefInputError(`That CSV is too large (${CSV_MAX.toLocaleString("en-US")} characters at most). Send fewer rows.`, "brief_too_long");
+      }
       parts = [
         {
           type: "text",
@@ -322,6 +373,9 @@ serve(async (req) => {
       const url: string = body.url ?? "";
       if (!url) throw new Error("url is required for source=sheet");
       const csv = await fetchPublicSheetAsCsv(url);
+      if (csv.length > CSV_MAX) {
+        throw new BriefInputError(`That sheet is too large (${CSV_MAX.toLocaleString("en-US")} characters at most). Share a shorter tab or fewer rows.`, "brief_too_long");
+      }
       parts = [
         {
           type: "text",
@@ -332,6 +386,7 @@ serve(async (req) => {
       const dataBase64: string = body.data_base64 ?? "";
       const mimeType: string = body.mime_type ?? "application/pdf";
       if (!dataBase64) throw new Error("data_base64 is required for source=doc");
+      if (dataBase64.length > BASE64_MAX) throw new BriefInputError("That file is too large (about 25 MB at most).", "file_too_large");
       parts = [
         {
           type: "text",
@@ -346,6 +401,7 @@ serve(async (req) => {
       const dataBase64: string = body.data_base64 ?? "";
       const mimeType: string = body.mime_type ?? "audio/webm";
       if (!dataBase64) throw new Error("data_base64 is required for source=audio");
+      if (dataBase64.length > BASE64_MAX) throw new BriefInputError("That recording is too large (about 25 MB at most).", "file_too_large");
       parts = [
         {
           type: "text",
@@ -360,7 +416,7 @@ serve(async (req) => {
       throw new Error(`Unknown source: ${source}`);
     }
 
-    const result = await callGemini(parts, systemPrompt, LOVABLE_API_KEY);
+    const result = sanitizeDueDates(await callGemini(parts, systemPrompt, LOVABLE_API_KEY), today, source === "text" || source === "audio");
 
     return new Response(JSON.stringify(result), {
       status: 200,
@@ -368,7 +424,14 @@ serve(async (req) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("extract-brief error:", message);
+    console.error("extract-brief error:", error instanceof BriefInputError ? error.code : message);
+    // Something the person can fix (too long, too large) is theirs to read: a 400 with the reason, not a server error.
+    if (error instanceof BriefInputError) {
+      return new Response(JSON.stringify({ error: message, code: error.code }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
