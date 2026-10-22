@@ -84,6 +84,9 @@ interface StudioRoomProps {
   flow: ProjectFlow;
 }
 
+/** Next steps whose action is already offered on the room itself (chat button, brief section). */
+const DUPLICATED_NEXT_STEPS = ["start-chat", "write-brief"];
+
 /**
  * Studio Room — single scrolling, warm view of a project. Mobile-first.
  * Composes: VibeHeader → BriefSection → WorkSection → MoneySection →
@@ -424,7 +427,9 @@ export const StudioRoom = ({
           content, so it (and its Validate action) stay visible across
           every tab, not just this one -- see StudioPhaseRail.tsx and
           ThriveDesk.tsx's handleValidateStep for the full picture. */}
-      {flow.nextStep && <NextStepCard nextStep={flow.nextStep} onAction={onNavigateToTab} />}
+      {/* "Kick off the conversation" and "Define the project scope" only repeat the Room chat button and the Brief
+          section on this same page, so they are not shown a second time; every later stage keeps its own next move. */}
+      {flow.nextStep && !DUPLICATED_NEXT_STEPS.includes(flow.nextStep.id) && <NextStepCard nextStep={flow.nextStep} onAction={onNavigateToTab} />}
 
       {/* Proactive nudges — render once, responsive layout below */}
       {showAITools && <ProactiveCards project={project} tasks={tasks} onAction={onNavigateToTab} />}

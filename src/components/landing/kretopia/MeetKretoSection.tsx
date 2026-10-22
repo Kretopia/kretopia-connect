@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
-import { GlassCta } from "@/components/ui/glass-cta";
+import { GlassCta, OutlineCtaButton } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { kGlow } from "@/lib/kGradient";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
@@ -146,20 +146,39 @@ export const MeetKretoSection = () => {
               removed, and only becomes part of your official record once you confirm it.
             </p>
 
-            <GlassCta
-              to="/auth?next=/circle&tab=signup&src=meet_kreto"
-              className="mt-9"
-              onClick={() =>
-                trackLandingCtaClick({
-                  ctaId: "meet_kreto",
-                  section: "meet_kreto",
-                  label: "Meet Kreto",
-                  destinationType: "auth",
-                })
-              }
-            >
-              Meet Kreto
-            </GlassCta>
+            {/* Equal grid tracks, like the hero pair: one column on a phone, two equal columns from `sm`. */}
+            <div className="mt-9 grid w-full max-w-[26rem] grid-cols-1 gap-3 sm:grid-cols-2">
+              <GlassCta
+                to="/auth?next=/circle&tab=signup&src=meet_kreto"
+                className="w-full"
+                onClick={() =>
+                  trackLandingCtaClick({
+                    ctaId: "meet_kreto",
+                    section: "meet_kreto",
+                    label: "Meet Kreto",
+                    destinationType: "auth",
+                  })
+                }
+              >
+                Meet Kreto
+              </GlassCta>
+              {/* The command surface beside this copy is Kreto's own walkthrough (KRETO_TUTORIAL), so it is the
+                  existing "how it works" for Kreto: no new page or section. */}
+              <OutlineCtaButton
+                className="w-full"
+                onClick={() => {
+                  trackLandingCtaClick({
+                    ctaId: "meet_kreto_how_it_works",
+                    section: "meet_kreto",
+                    label: "See how it works",
+                    destinationType: "internal",
+                  });
+                  document.getElementById("kreto-how-it-works")?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+                }}
+              >
+                See how it works
+              </OutlineCtaButton>
+            </div>
           </motion.div>
 
           {/* Command surface */}
@@ -169,7 +188,8 @@ export const MeetKretoSection = () => {
             onViewportEnter={() => setInView(true)}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.8 }}
-            className="lg:col-span-5 w-full"
+            id="kreto-how-it-works"
+            className="lg:col-span-5 w-full scroll-mt-24"
           >
             <div
               className="rounded-2xl overflow-hidden"

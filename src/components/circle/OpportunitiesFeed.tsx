@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
@@ -194,8 +194,22 @@ export const OpportunitiesFeed = () => {
       return { opportunities: sorted, creators };
     },
   });
-  const opportunities = data?.opportunities ?? [];
+  const fetched = data?.opportunities;
   const creators = data?.creators ?? {};
+
+  // Aligned with the person's Passport by default: the gigs that overlap their skills, role and place come first, by the
+  // same overlap the cards already use. Priority gigs keep their place at the top, nothing is hidden, and with no
+  // profile signal (the match is null) the existing order is kept: no fit is invented.
+  const opportunities = useMemo(() => {
+    const list = fetched ?? [];
+    if (!viewerProfile) return list;
+    const priority = (o: Opportunity) => {
+      const p = o as Opportunity & { is_priority?: boolean | null; priority_expires_at?: string | null };
+      return p.is_priority && p.priority_expires_at && new Date(p.priority_expires_at) > new Date() ? 1 : 0;
+    };
+    const fit = (o: Opportunity) => computeOpportunityMatch(o, viewerProfile) ?? -1;
+    return [...list].sort((a, b) => priority(b) - priority(a) || fit(b) - fit(a));
+  }, [fetched, viewerProfile]);
 
 
 

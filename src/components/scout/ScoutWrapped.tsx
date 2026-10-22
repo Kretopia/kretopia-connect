@@ -41,9 +41,9 @@ interface ScoutWrappedProps {
  * own facts in it.
  *
  *   header      what this is and when Scout last checked, from `last_run_at`
+ *   Scan now    the one big action, first so it is the primary thing on the card; it calls the same scan
+ *               the For You list used to own, and cannot be fired twice
  *   signals     at most three counts of the person's own list, each a way in
- *   Scan now    the one big action; it calls the same scan the For You list
- *               used to own, and cannot be fired twice
  *   one line    what the last scan did, or why it could not
  *
  * It claims only what Scout does today: public job boards, matched against the
@@ -119,6 +119,14 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
       brandFooter={false}
       aside={<KretoScene scene="scout" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
     >
+      <div className="flex flex-col items-stretch gap-3 sm:items-center">
+        <ScoutScanButton label={buttonLabel} busy={busy} onClick={() => void scan.scanNow()} />
+
+        <p role="status" aria-live="polite" className="min-h-[1.25rem] text-center text-xs text-muted-foreground">
+          {line}
+        </p>
+      </div>
+
       {signalsLoading ? (
         <div className="grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
           {[0, 1, 2, 3].map((i) => (
@@ -143,13 +151,6 @@ export function ScoutWrapped({ onSelectTab }: ScoutWrappedProps) {
         </p>
       )}
 
-      <div className="flex flex-col items-stretch gap-3 sm:items-center">
-        <ScoutScanButton label={buttonLabel} busy={busy} onClick={() => void scan.scanNow()} />
-
-        <p role="status" aria-live="polite" className="min-h-[1.25rem] text-center text-xs text-muted-foreground">
-          {line}
-        </p>
-      </div>
 
       <p className="text-center text-[11px] text-muted-foreground">
         Every gig shows where it came from and how old it is. While this page is open, Scout checks again every {Math.round(LIVE_INTERVAL_MS / 60_000)} minutes.

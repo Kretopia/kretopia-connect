@@ -172,7 +172,11 @@ export const ChapterSection = ({
                 <video
                   ref={videoRef}
                   src={video}
-                  autoPlay
+                  // Only the first chapter asks the browser to play (and so fetch) on its own: `autoplay` overrides
+                  // `preload`, and on every chapter it had all five large files buffering at once on a phone, below the
+                  // fold included. The others are started by the effect above when they come into view, and their
+                  // download is promoted from metadata to full one screen before they are reached.
+                  autoPlay={index === "II"}
                   muted
                   loop
                   playsInline

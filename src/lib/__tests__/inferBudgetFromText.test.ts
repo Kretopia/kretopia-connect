@@ -18,6 +18,11 @@ describe("inferBudgetFromText", () => {
     expect(inferBudgetFromText("$2.5k for the full production")).toBe("$2.5k");
   });
 
+  it("leaves out the comma that ends a clause, so the field shows the amount and nothing else", () => {
+    expect(inferBudgetFromText("Launch film, budget $3,000, due end of November")).toBe("$3,000");
+    expect(inferBudgetFromText("Budget $500, $800 with usage")).toBe("$500");
+  });
+
   it("returns null when no dollar amount appears", () => {
     expect(inferBudgetFromText("A three-day fashion shoot in Port of Spain, crew of six")).toBeNull();
   });

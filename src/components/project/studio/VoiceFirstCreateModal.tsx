@@ -31,6 +31,8 @@ import { inferBudgetFromText } from "@/lib/inferBudgetFromText";
 import { parseTaskDueDate } from "@/lib/parseTaskDueDate";
 import { getNewRoomCautionReasons } from "@/lib/newRoomCaution";
 import { analytics } from "@/lib/analytics";
+import { describeDraftOrigin, describeLeftOut, normalizeExtractedBrief, PROJECT_BRIEF_MAX, type DraftBrief, type NormalizedBrief } from "@/lib/projectDraft";
+import { DraftOriginPanel } from "@/components/project/studio/DraftOriginPanel";
 
 
 /** Real example prompts per workspace type, shown only as composer
@@ -101,9 +103,28 @@ interface VoiceFirstCreateModalProps {
 
 type Mode = "prompt" | "recording" | "thinking" | "review" | "error";
 
-interface ExtractedBrief {
-  project: { title: string; summary: string };
-  deliverables?: Array<{ title: string; description?: string; due_date?: string | null }>;
+type ExtractedBrief = DraftBrief;
+
+/** How the room type of the draft came to be: left at the default, read from what was said, or tapped by the person. */
+type WorkspaceOrigin = "default" | "inferred" | "chosen";
+
+interface ErrorInfo {
+  message: string;
+  retryTo: "prompt" | "link";
+  /** Sends the same recording or file again, so nothing has to be recorded or picked twice. */
+  resend?: { label: string; run: () => void };
+}
+
+/** One request for a draft: what to send, what the person typed, and what to say if it fails. */
+interface ExtractionPlan {
+  buildBody: () => Promise<Record<string, unknown>>;
+  /** What the person typed. Empty for a recording, a file or a sheet. */
+  userWords: string;
+  typeForCall: WorkspaceType;
+  failure: string;
+  failureEvent: string;
+  retryTo: "prompt" | "link";
+  resend?: { label: string; run: () => void };
 }
 
 /**
@@ -177,9 +198,19 @@ export const VoiceFirstCreateModal = ({
   // extract-brief genuinely failed and the app fell back to raw text.
   const [composerFocused, setComposerFocused] = useState(false);
   const [isOffline, setIsOffline] = useState(() => (typeof navigator !== "undefined" ? !navigator.onLine : false));
-  const [errorInfo, setErrorInfo] = useState<{ message: string; retryTo: "prompt" | "link" } | null>(null);
+  const [errorInfo, setErrorInfo] = useState<ErrorInfo | null>(null);
   const [creationError, setCreationError] = useState<string | null>(null);
   const [draftDegraded, setDraftDegraded] = useState(false);
+  // Which parts of the draft are the person's own: Kreto rewrites the name and the vision, so only an edit makes them theirs.
+  const [titleEdited, setTitleEdited] = useState(false);
+  const [summaryEdited, setSummaryEdited] = useState(false);
+  const [workspaceOrigin, setWorkspaceOrigin] = useState<WorkspaceOrigin>("default");
+  // What was left out of Kreto's answer (tasks without a title, dates that cannot be right), told to the person.
+  const [leftOut, setLeftOut] = useState<string[]>([]);
+  // One request for a draft at a time, and a number that tells a late answer it is no longer wanted (the person closed
+  // New Room or started again while it was waiting).
+  const extractingRef = useRef(false);
+  const extractionRef = useRef(0);
   // The "your room is live" celebration (NewRoomLaunchScreen) -- set only
   // once createProject()'s real insert has succeeded, mirroring
   // Onboarding's ProfileLaunchScreen pattern instead of the previous
@@ -238,6 +269,12 @@ export const VoiceFirstCreateModal = ({
       setErrorInfo(null);
       setCreationError(null);
       setDraftDegraded(false);
+      setTitleEdited(false);
+      setSummaryEdited(false);
+      setWorkspaceOrigin("default");
+      setLeftOut([]);
+      extractionRef.current += 1;
+      extractingRef.current = false;
       setCreatedProject(null);
       launchedRef.current = false;
       hydratedRef.current = false;
@@ -258,6 +295,18 @@ export const VoiceFirstCreateModal = ({
           setTrackAsCredit(!!draft.trackAsCredit);
           setDeadline(draft.deadline ?? "");
           setBudget(draft.budget ?? "");
+          setRawInput(draft.rawInput ?? "");
+          setTitleEdited(!!draft.titleEdited);
+          setSummaryEdited(!!draft.summaryEdited);
+          setDraftDegraded(!!draft.draftDegraded);
+          setLeftOut(Array.isArray(draft.leftOut) ? draft.leftOut : []);
+          setWorkspaceOrigin(draft.workspaceOrigin ?? "default");
+          // A draft saved before these were kept cannot say where its values came from: whatever Kreto may have filled in
+          // stays a suggestion rather than becoming the person's own.
+          const knowsOrigin = draft.v === 2;
+          setPaymentsInvolvedInferred(knowsOrigin ? !!draft.paymentsInvolvedInferred : draft.paymentsInvolved != null);
+          setDeadlineInferred(knowsOrigin ? !!draft.deadlineInferred : !!draft.deadline);
+          setBudgetInferred(knowsOrigin ? !!draft.budgetInferred : !!draft.budget);
           setMode("review");
         } else if (!isFresh) {
           sessionStorage.removeItem(draftKey);
@@ -272,12 +321,16 @@ export const VoiceFirstCreateModal = ({
     if (!hydratedRef.current || !draftKey || mode !== "review" || !brief) return;
     try {
       sessionStorage.setItem(draftKey, JSON.stringify({
+        v: 2,
         ts: Date.now(),
         brief, selected: Array.from(selected), workspaceType, coverUrl,
         paymentsInvolved, trackAsCredit, deadline, budget,
+        rawInput, titleEdited, summaryEdited, draftDegraded, leftOut, workspaceOrigin,
+        paymentsInvolvedInferred, deadlineInferred, budgetInferred,
       }));
     } catch { /* sessionStorage unavailable — draft just won't persist */ }
-  }, [draftKey, mode, brief, selected, workspaceType, coverUrl, paymentsInvolved, trackAsCredit, deadline, budget]);
+  }, [draftKey, mode, brief, selected, workspaceType, coverUrl, paymentsInvolved, trackAsCredit, deadline, budget,
+    rawInput, titleEdited, summaryEdited, draftDegraded, leftOut, workspaceOrigin, paymentsInvolvedInferred, deadlineInferred, budgetInferred]);
 
   const clearDraft = useCallback(() => {
     if (draftKey) { try { sessionStorage.removeItem(draftKey); } catch { /* ignore */ } }
@@ -479,95 +532,129 @@ export const VoiceFirstCreateModal = ({
       reader.readAsDataURL(blob);
     });
 
-  const processAudio = async (blob: Blob) => {
+  /** Puts a checked draft on the review screen. */
+  const showDraft = (normalized: NormalizedBrief, plan: ExtractionPlan) => {
+    const next = normalized.brief;
+    const draftText = `${next.project.title} ${next.project.summary}`;
+    setBrief(next);
+    setSelected(new Set((next.deliverables ?? []).map((_, i) => i)));
+    setTitleEdited(false);
+    setSummaryEdited(false);
+    setLeftOut(describeLeftOut(normalized.skippedTasks, normalized.droppedDates));
+    setRawInput(plan.userWords);
+    // A recording or a file says nothing about the type until Kreto has read it; a typed brief was read before the call.
+    if (!plan.userWords && workspaceType === "general") {
+      const inferred = inferWorkspaceType(draftText);
+      setWorkspaceType(inferred);
+      if (inferred !== "general") setWorkspaceOrigin("inferred");
+    }
+    // The person's own words are the only text a budget or a money answer can be read from as theirs. A recording, a
+    // file or a sheet has no typed text on this side, so what is read from the draft stays a suggestion.
+    const words = plan.userWords || draftText;
+    applyInferredPayments(words);
+    applyInferredBudget(words);
+    applyDerivedDeadline(next.deliverables);
+    analytics.newRoomDraftReady(plan.typeForCall, (next.deliverables ?? []).length);
+    setMode("review");
+  };
+
+  /** Kreto could not structure a typed brief: the draft is the person's own words as they are, and says so. */
+  const showTypedDraft = (text: string) => {
+    setBrief({ project: { title: text.slice(0, 60), summary: text } });
+    setSelected(new Set());
+    setTitleEdited(false);
+    setSummaryEdited(false);
+    setLeftOut([]);
+    setRawInput(text);
+    applyInferredPayments(text);
+    applyInferredBudget(text);
+    setDraftDegraded(true);
+    setMode("review");
+  };
+
+  /**
+   * Asks extract-brief for a draft. One request at a time (Enter held down, a double tap or a second pick must not start
+   * another), the answer is checked before anything of it is shown, and an answer that arrives after New Room was closed
+   * or restarted is dropped. A typed brief never blocks: if Kreto fails, the person goes on with their own words.
+   */
+  const extractDraft = async (plan: ExtractionPlan) => {
+    if (extractingRef.current) return;
+    extractingRef.current = true;
+    const id = ++extractionRef.current;
     setDraftDegraded(false);
+    setErrorInfo(null);
+    setMode("thinking");
     try {
-      const data_base64 = await blobToBase64(blob);
-      const { data, error } = await supabase.functions.invoke("extract-brief", {
-        body: { source: "audio", data_base64, mime_type: "audio/webm", workspace_type: workspaceType },
-      });
+      const body = await plan.buildBody();
+      const { data, error } = await supabase.functions.invoke("extract-brief", { body });
+      if (id !== extractionRef.current) return;
       if (error) throw error;
-      const result = (data ?? {}) as ExtractedBrief;
-      if (!result?.project?.title) throw new Error("Couldn't catch what you said");
-      setBrief(result);
-      setSelected(new Set((result.deliverables ?? []).slice(0, 8).map((_, i) => i)));
-      // Only auto-infer if user hadn't picked a type
-      if (workspaceType === "general") {
-        setWorkspaceType(inferWorkspaceType(`${result.project.title} ${result.project.summary}`));
-      }
-      applyInferredPayments(`${result.project.title} ${result.project.summary}`);
-      applyDerivedDeadline(result.deliverables);
-      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
-      analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
-      setMode("review");
+      const normalized = normalizeExtractedBrief(data);
+      if (normalized) showDraft(normalized, plan);
+      else if (plan.userWords) showTypedDraft(plan.userWords);
+      else throw new Error(plan.failure);
     } catch (err: any) {
+      if (id !== extractionRef.current) return;
       console.error(err);
-      analytics.newRoomCreationFailed("voice_extract");
-      setErrorInfo({
-        message: await describeFunctionError(
-          err,
-          "Kreto couldn't catch what you said. Try again or type it instead.",
-        ),
-        retryTo: "prompt",
-      });
+      if (plan.userWords) {
+        // Say why Kreto could not expand it instead of failing silently.
+        const reason = await describeFunctionError(err, "");
+        if (id !== extractionRef.current) return;
+        if (reason) toast({ title: "Kreto couldn't expand that", description: reason });
+        showTypedDraft(plan.userWords);
+        return;
+      }
+      analytics.newRoomCreationFailed(plan.failureEvent);
+      const message = await describeFunctionError(err, plan.failure);
+      if (id !== extractionRef.current) return;
+      setErrorInfo({ message, retryTo: plan.retryTo, resend: plan.resend });
       setMode("error");
+    } finally {
+      if (id === extractionRef.current) extractingRef.current = false;
     }
   };
 
-  const submitText = async () => {
-    const trimmed = textInput.trim();
+  const processAudio = (blob: Blob) => {
+    const plan: ExtractionPlan = {
+      buildBody: async () => ({ source: "audio", data_base64: await blobToBase64(blob), mime_type: "audio/webm", workspace_type: workspaceType }),
+      userWords: "",
+      typeForCall: workspaceType,
+      failure: "Kreto couldn't catch what you said. Try again or type it instead.",
+      failureEvent: "voice_extract",
+      retryTo: "prompt",
+    };
+    // The recording is kept until it has been read, so a failed or offline attempt does not cost the person a second take.
+    plan.resend = { label: "Send the recording again", run: () => void extractDraft(plan) };
+    return extractDraft(plan);
+  };
+
+  const submitText = () => {
+    if (extractingRef.current) return;
+    const trimmed = textInput.trim().slice(0, PROJECT_BRIEF_MAX);
     if (!trimmed) return;
-    setRawInput(trimmed);
-    setDraftDegraded(false);
-    analytics.newRoomInputModeSelected('text');
-    setMode("thinking");
-    // If user hasn't picked a type yet, infer one before calling extract-brief
-    // so the AI uses the right producer persona.
+    // If the person hasn't picked a type yet, infer one before calling extract-brief so the AI uses the right producer persona.
     const typeForCall: WorkspaceType =
       workspaceType !== "general" ? workspaceType : inferWorkspaceType(trimmed);
-    if (typeForCall !== workspaceType) setWorkspaceType(typeForCall);
-    analytics.newRoomTextSubmitted(typeForCall);
-    try {
-      const { data, error } = await supabase.functions.invoke("extract-brief", {
-        body: { source: "text", text: trimmed, workspace_type: typeForCall },
-      });
-      if (error) throw error;
-      const result = (data ?? {}) as ExtractedBrief;
-      const finalBrief: ExtractedBrief = !result?.project?.title
-        ? { project: { title: trimmed.slice(0, 60), summary: trimmed } }
-        : result;
-      setBrief(finalBrief);
-      setSelected(new Set((finalBrief.deliverables ?? []).slice(0, 8).map((_, i) => i)));
-      applyInferredPayments(`${trimmed} ${finalBrief.project.summary}`);
-      applyDerivedDeadline(finalBrief.deliverables);
-      applyInferredBudget(`${trimmed} ${finalBrief.project.summary}`);
-      analytics.newRoomDraftReady(typeForCall, (finalBrief.deliverables ?? []).length);
-      setMode("review");
-    } catch (err: any) {
-      console.error(err);
-      // Don't block — let them proceed with raw text, but say why Kreto
-      // couldn't elevate it instead of failing silently.
-      const reason = await describeFunctionError(err, "");
-      if (reason) {
-        toast({ title: "Kreto couldn't expand that", description: reason });
-      }
-      setBrief({
-        project: {
-          title: trimmed.slice(0, 60),
-          summary: trimmed,
-        },
-      });
-      setSelected(new Set());
-      applyInferredPayments(trimmed);
-      setDraftDegraded(true);
-      setMode("review");
+    if (typeForCall !== workspaceType) {
+      setWorkspaceType(typeForCall);
+      setWorkspaceOrigin("inferred");
     }
+    analytics.newRoomInputModeSelected('text');
+    analytics.newRoomTextSubmitted(typeForCall);
+    return extractDraft({
+      buildBody: async () => ({ source: "text", text: trimmed, workspace_type: typeForCall }),
+      userWords: trimmed,
+      typeForCall,
+      failure: "",
+      failureEvent: "text_extract",
+      retryTo: "prompt",
+    });
   };
 
-  /** "Upload a brief or file" — real capability, not a stub: extract-brief
-   * already supports source="doc" (base64 PDF/image, Gemini multimodal),
-   * it just wasn't wired up in this modal before now. */
+  /** "Upload a brief or file" — real capability, not a stub: extract-brief already supports source="doc" (base64
+   * PDF/image, Gemini multimodal), it just wasn't wired up in this modal before now. */
   const processFile = async (file: File) => {
+    if (extractingRef.current) return;
     analytics.newRoomInputModeSelected('file');
     if (file.size > 25 * 1024 * 1024) {
       toast({
@@ -578,47 +665,26 @@ export const VoiceFirstCreateModal = ({
       return;
     }
     setUploadingFile(true);
-    setDraftDegraded(false);
     analytics.newRoomFileUploaded(file.type || 'unknown');
-    setMode("thinking");
+    const plan: ExtractionPlan = {
+      buildBody: async () => {
+        // Images go through the same compress-before-send step BriefDropZone already uses (resize to <=1280px, re-encode
+        // as JPEG) -- an uncompressed phone photo can be 10-20MB, which is a real, silent cause of intermittent upload failures.
+        const isImage = file.type.startsWith("image/");
+        const { base64: data_base64, mime: mime_type } = isImage
+          ? await compressImage(file)
+          : { base64: await blobToBase64(file), mime: file.type || "application/pdf" };
+        return { source: "doc", data_base64, mime_type, workspace_type: workspaceType };
+      },
+      userWords: "",
+      typeForCall: workspaceType,
+      failure: "Kreto couldn't read that file. Try pasting the brief as text instead.",
+      failureEvent: "file_extract",
+      retryTo: "prompt",
+    };
+    plan.resend = { label: "Send the file again", run: () => void extractDraft(plan) };
     try {
-      // Images go through the same compress-before-send step BriefDropZone
-      // already uses (resize to <=1280px, re-encode as JPEG) -- an
-      // uncompressed phone photo can be 10-20MB, which is a real, silent
-      // cause of intermittent upload failures.
-      const isImage = file.type.startsWith("image/");
-      const { base64: data_base64, mime: mime_type } = isImage
-        ? await compressImage(file)
-        : { base64: await blobToBase64(file), mime: file.type || "application/pdf" };
-      const { data, error } = await supabase.functions.invoke("extract-brief", {
-        body: {
-          source: "doc",
-          data_base64,
-          mime_type,
-          workspace_type: workspaceType,
-        },
-      });
-      if (error) throw error;
-      const result = (data ?? {}) as ExtractedBrief;
-      if (!result?.project?.title) throw new Error("Couldn't read that file");
-      setBrief(result);
-      setSelected(new Set((result.deliverables ?? []).slice(0, 8).map((_, i) => i)));
-      if (workspaceType === "general") {
-        setWorkspaceType(inferWorkspaceType(`${result.project.title} ${result.project.summary}`));
-      }
-      applyInferredPayments(`${result.project.title} ${result.project.summary}`);
-      applyDerivedDeadline(result.deliverables);
-      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
-      analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
-      setMode("review");
-    } catch (err: any) {
-      console.error(err);
-      analytics.newRoomCreationFailed('file_extract');
-      setErrorInfo({
-        message: await describeFunctionError(err, "Kreto couldn't read that file. Try pasting the brief as text instead."),
-        retryTo: "prompt",
-      });
-      setMode("error");
+      await extractDraft(plan);
     } finally {
       setUploadingFile(false);
     }
@@ -630,42 +696,22 @@ export const VoiceFirstCreateModal = ({
     if (file) void processFile(file);
   };
 
-  /** "Paste a link" — scoped honestly to what extract-brief's source="sheet"
-   * actually supports: a public Google Sheet, one row per deliverable. Not
-   * arbitrary URL scraping. */
-  const submitLink = async () => {
+  /** "Paste a link" — scoped honestly to what extract-brief's source="sheet" actually supports: a public Google Sheet,
+   * one row per deliverable. Not arbitrary URL scraping. */
+  const submitLink = () => {
+    if (extractingRef.current) return;
     const url = linkUrl.trim();
     if (!url) return;
     analytics.newRoomInputModeSelected('link');
     analytics.newRoomLinkSubmitted();
-    setDraftDegraded(false);
-    setMode("thinking");
-    try {
-      const { data, error } = await supabase.functions.invoke("extract-brief", {
-        body: { source: "sheet", url, workspace_type: workspaceType },
-      });
-      if (error) throw error;
-      const result = (data ?? {}) as ExtractedBrief;
-      if (!result?.project?.title) throw new Error("Couldn't read that sheet");
-      setBrief(result);
-      setSelected(new Set((result.deliverables ?? []).slice(0, 8).map((_, i) => i)));
-      applyInferredPayments(`${result.project.title} ${result.project.summary}`);
-      applyDerivedDeadline(result.deliverables);
-      applyInferredBudget(`${result.project.title} ${result.project.summary}`);
-      analytics.newRoomDraftReady(workspaceType, (result.deliverables ?? []).length);
-      setMode("review");
-    } catch (err: any) {
-      console.error(err);
-      analytics.newRoomCreationFailed('link_extract');
-      setErrorInfo({
-        message: await describeFunctionError(
-          err,
-          "Kreto couldn't read that link. Make sure the Google Sheet is shared as \"Anyone with the link.\"",
-        ),
-        retryTo: "link",
-      });
-      setMode("error");
-    }
+    return extractDraft({
+      buildBody: async () => ({ source: "sheet", url, workspace_type: workspaceType }),
+      userWords: "",
+      typeForCall: workspaceType,
+      failure: "Kreto couldn't read that link. Make sure the Google Sheet is shared as \"Anyone with the link.\"",
+      failureEvent: "link_extract",
+      retryTo: "link",
+    });
   };
 
   const createProject = async (mode: "all" | "selected" | "none" = "all") => {
@@ -718,28 +764,36 @@ export const VoiceFirstCreateModal = ({
       });
       if (engagementError) console.error("[NewRoom] engagement insert failed", engagementError);
 
-      // Pick which deliverables to seed
+      // Pick which deliverables to seed. A task the person emptied while editing is not a task.
       const all = (brief.deliverables ?? []).slice(0, 8);
-      const picked =
+      const picked = (
         mode === "all"
           ? all
           : mode === "selected"
           ? all.filter((_, i) => selected.has(i))
-          : [];
+          : []
+      ).filter((d) => d.title.trim());
 
+      // supabase-js returns a failed insert as `{ error }` instead of throwing, so the result has to be read: otherwise a
+      // room could open with no starter tasks while this screen reported N.
+      let seeded = 0;
+      let seedFailed = false;
       if (picked.length) {
         const rows = picked.map((d) => ({
           project_id: project.id,
-          title: d.title.slice(0, 200),
+          title: d.title.trim().slice(0, 200),
           description: d.description ?? null,
           status: "todo",
           created_by: user.id,
           due_date: parseTaskDueDate(d.due_date),
         }));
         try {
-          await supabase.from("project_tasks").insert(rows);
+          const { error: seedError } = await supabase.from("project_tasks").insert(rows);
+          if (seedError) throw seedError;
+          seeded = rows.length;
         } catch (e) {
           console.warn("seed tasks failed", e);
+          seedFailed = true;
         }
       }
 
@@ -750,7 +804,7 @@ export const VoiceFirstCreateModal = ({
           projectId: project.id,
           workspaceType,
           userId: user.id,
-          skipTasks: picked.length > 0,
+          skipTasks: seeded > 0,
         });
       } catch (e) {
         console.warn("scaffold defaults failed", e);
@@ -763,7 +817,11 @@ export const VoiceFirstCreateModal = ({
         /* non-fatal */
       }
 
-      toast({ title: "Studio room ready" });
+      toast(
+        seedFailed
+          ? { title: "Studio room ready, without your starter tasks", description: "Kreto couldn't save them, so the room has its default tasks. Add yours inside." }
+          : { title: "Studio room ready" },
+      );
       clearDraft();
       // Show the celebration (NewRoomLaunchScreen) instead of navigating
       // away immediately -- onCreated()/onOpenChange(false)/navigate() now
@@ -772,7 +830,7 @@ export const VoiceFirstCreateModal = ({
       // close this modal yet: several callers' onCreated also flips their
       // own `open` state, which would otherwise unmount this component
       // (and the celebration with it) the instant the insert succeeds.
-      setCreatedProject({ id: project.id, title: brief.project.title, taskCount: picked.length });
+      setCreatedProject({ id: project.id, title: brief.project.title, taskCount: seeded });
     } catch (err: any) {
       console.error(err);
       analytics.newRoomCreationFailed('project_insert');
@@ -877,6 +935,8 @@ export const VoiceFirstCreateModal = ({
 
   const fmtSec = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  const fmtSuggestedDate = (day: string) =>
+    new Date(`${day.slice(0, 10)}T00:00:00Z`).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
 
   // Review-step Kreto state: a real creation failure always takes priority
   // (it's the most urgent thing to surface), otherwise caution only when a
@@ -891,6 +951,28 @@ export const VoiceFirstCreateModal = ({
   // -> create. "create" only lights up during the actual creating request
   // (or once the celebration is showing) -- everything else, including a
   // mid-flight extraction error, is still "describe" until a brief exists.
+  // Where each value of the draft comes from. Recomputed on every edit: a value the person types becomes theirs.
+  const origin = brief
+    ? describeDraftOrigin({
+        title: brief.project.title,
+        summary: brief.project.summary,
+        titleIsYours: titleEdited || draftDegraded,
+        summaryIsYours: summaryEdited || draftDegraded,
+        rawText: rawInput,
+        taskCount: Math.min(brief.deliverables?.length ?? 0, 8),
+        roomTypeLabel: WORKSPACE_CONFIGS[workspaceType].label,
+        roomTypeIsYours: workspaceOrigin === "chosen",
+        deadline,
+        deadlineIsSuggested: deadlineInferred,
+        budget,
+        budgetIsSuggested: budgetInferred,
+        paymentsInvolved,
+        paymentsAreSuggested: paymentsInvolvedInferred,
+        hasCover: !!coverUrl,
+      })
+    : null;
+  const isSuggested = (id: string) => !!origin?.kreto.some((r) => r.id === id);
+
   const currentStep = creating || createdProject
     ? "create"
     : mode === "review"
@@ -1053,6 +1135,7 @@ export const VoiceFirstCreateModal = ({
                     type="text"
                     autoFocus
                     value={textInput}
+                    maxLength={PROJECT_BRIEF_MAX}
                     onChange={(e) => setTextInput(e.target.value)}
                     onFocus={() => setComposerFocused(true)}
                     onBlur={() => setComposerFocused(false)}
@@ -1205,8 +1288,21 @@ export const VoiceFirstCreateModal = ({
                 ? "Reconnect and try again — nothing you typed or recorded is lost."
                 : errorInfo?.message || "Your input is still here. Try again or adjust the brief."}
             </p>
+            {errorInfo?.resend && (
+              <Button
+                className="mt-6"
+                onClick={() => {
+                  const { run } = errorInfo.resend!;
+                  setErrorInfo(null);
+                  run();
+                }}
+              >
+                {errorInfo.resend.label}
+              </Button>
+            )}
             <Button
-              className="mt-6"
+              variant={errorInfo?.resend ? "ghost" : "default"}
+              className={errorInfo?.resend ? "mt-2" : "mt-6"}
               onClick={() => {
                 const retryTo = errorInfo?.retryTo ?? "prompt";
                 setErrorInfo(null);
@@ -1247,27 +1343,39 @@ export const VoiceFirstCreateModal = ({
               </div>
             )}
 
+            {origin && <DraftOriginPanel origin={origin} />}
+
+            {leftOut.length > 0 && (
+              <ul role="status" className="rounded-lg border border-border bg-muted/20 p-3 space-y-1 text-xs text-muted-foreground">
+                {leftOut.map((note) => <li key={note}>{note}</li>)}
+              </ul>
+            )}
+
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label htmlFor="draft-project-name" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Project name
               </label>
               <input
+                id="draft-project-name"
                 value={brief.project.title}
-                onChange={(e) =>
-                  setBrief({ ...brief, project: { ...brief.project, title: e.target.value } })
-                }
+                onChange={(e) => {
+                  setTitleEdited(true);
+                  setBrief({ ...brief, project: { ...brief.project, title: e.target.value } });
+                }}
                 className="w-full bg-transparent text-xl font-bold outline-none border-b-2 border-border focus:border-primary pb-1"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <label htmlFor="draft-project-vision" className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 The vision
               </label>
               <Textarea
+                id="draft-project-vision"
                 value={brief.project.summary}
-                onChange={(e) =>
-                  setBrief({ ...brief, project: { ...brief.project, summary: e.target.value } })
-                }
+                onChange={(e) => {
+                  setSummaryEdited(true);
+                  setBrief({ ...brief, project: { ...brief.project, summary: e.target.value } });
+                }}
                 className="min-h-[100px] text-sm"
               />
             </div>
@@ -1298,29 +1406,40 @@ export const VoiceFirstCreateModal = ({
                   {brief.deliverables.slice(0, 8).map((d, i) => {
                     const checked = selected.has(i);
                     return (
-                      <li key={i}>
-                        <label className="flex items-start gap-2 py-1.5 px-1 rounded cursor-pointer hover:bg-primary/10">
+                      <li key={i} className="flex items-start gap-2 py-1.5 px-1 rounded hover:bg-primary/10">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          aria-label={`Include task ${i + 1}`}
+                          onChange={() => {
+                            const next = new Set(selected);
+                            if (checked) next.delete(i);
+                            else next.add(i);
+                            setSelected(next);
+                          }}
+                          className="mt-1 h-4 w-4 accent-primary shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          {/* The wording is the person's to change: Kreto only drafted it. */}
                           <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={() => {
-                              const next = new Set(selected);
-                              if (checked) next.delete(i);
-                              else next.add(i);
-                              setSelected(next);
-                            }}
-                            className="mt-0.5 h-4 w-4 accent-primary shrink-0"
+                            value={d.title}
+                            maxLength={200}
+                            aria-label={`Task ${i + 1}`}
+                            onChange={(e) =>
+                              setBrief({ ...brief, deliverables: brief.deliverables!.map((t, j) => (j === i ? { ...t, title: e.target.value } : t)) })
+                            }
+                            className={cn("w-full bg-transparent text-sm leading-snug outline-none border-b border-transparent focus:border-primary", !checked && "text-muted-foreground line-through")}
                           />
-                          <span className={cn("text-sm leading-snug", !checked && "text-muted-foreground line-through")}>
-                            {d.title}
-                          </span>
-                        </label>
+                          {d.due_date && (
+                            <p className="text-[11px] text-muted-foreground">Suggested due date: {fmtSuggestedDate(d.due_date)}</p>
+                          )}
+                        </div>
                       </li>
                     );
                   })}
                 </ul>
                 <p className="text-[11px] text-muted-foreground mt-2">
-                  Pick what to seed — you can always add more inside the room.
+                  Kreto drafted these. Reword or untick what doesn't fit, and any due date saved is the one shown. You can always add more inside the room.
                 </p>
               </div>
             ) : (
@@ -1407,7 +1526,7 @@ export const VoiceFirstCreateModal = ({
                       <button
                         key={t}
                         type="button"
-                        onClick={() => setWorkspaceType(t)}
+                        onClick={() => { setWorkspaceType(t); setWorkspaceOrigin("chosen"); }}
                         className={cn(
                           "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border-2 transition-colors",
                           active
@@ -1465,7 +1584,9 @@ export const VoiceFirstCreateModal = ({
                 {paymentsInvolvedInferred && paymentsInvolved !== null && (
                   <p className="text-[11px] flex items-center gap-1" style={{ color: "hsl(var(--energy))" }}>
                     <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
-                    Kreto's guess from what you said — tap the other option to change it.
+                    {isSuggested("payments")
+                      ? "Kreto's guess from what you said — tap the other option to change it."
+                      : "Read from what you typed — tap the other option to change it."}
                   </p>
                 )}
               </div>
@@ -1532,7 +1653,7 @@ export const VoiceFirstCreateModal = ({
                   {budgetInferred && budget && (
                     <p className="text-[11px] flex items-center gap-1" style={{ color: "hsl(var(--energy))" }}>
                       <Sparkles className="h-3 w-3 shrink-0" aria-hidden />
-                      Kreto's guess from what you said.
+                      {isSuggested("budget") ? "Kreto's guess from what you said." : "Taken from what you typed."}
                     </p>
                   )}
                 </div>
@@ -1544,10 +1665,11 @@ export const VoiceFirstCreateModal = ({
 
       {/* Footer */}
       {mode === "review" && brief && (
-        <div className="shrink-0 border-t border-border/40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center justify-between gap-2 bg-background">
+        <div className="shrink-0 border-t border-border/40 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex flex-wrap items-center justify-between gap-2 bg-background">
           <Button
             variant="ghost"
             size="sm"
+            className="mr-auto sm:mr-0"
             onClick={() => {
               analytics.newRoomDraftCancelled();
               setBrief(null);
@@ -1558,6 +1680,9 @@ export const VoiceFirstCreateModal = ({
               setDeadlineInferred(false);
               setBudget("");
               setBudgetInferred(false);
+              setTitleEdited(false);
+              setSummaryEdited(false);
+              setLeftOut([]);
               setMode("prompt");
               clearDraft();
             }}
@@ -1565,7 +1690,7 @@ export const VoiceFirstCreateModal = ({
           >
             Start over
           </Button>
-          <div className="flex items-center gap-2">
+          <div className="contents sm:flex sm:items-center sm:gap-2">
             {brief.deliverables && brief.deliverables.length > 0 && (
               <Button
                 variant="outline"
@@ -1588,7 +1713,7 @@ export const VoiceFirstCreateModal = ({
             <CtaButton
               onClick={() => createProject(brief.deliverables?.length ? "all" : "none")}
               disabled={creating || uploadingCover || !coverUrl || !brief.project.title.trim() || paymentsInvolved === null}
-              className="w-auto gap-1.5 px-6"
+              className="w-full gap-1.5 px-6 sm:w-auto"
             >
               {creating ? <KretopiaSpinner className="h-4 w-4" /> : <ArrowRight className="h-4 w-4" />}
               {brief.deliverables?.length ? "Create All & Open" : "Open the Room"}

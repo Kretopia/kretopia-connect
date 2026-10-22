@@ -14,7 +14,8 @@
  *  existed. */
 export function inferBudgetFromText(text: string): string | null {
   const match = (text || "").match(/\$\s?[\d,]+(?:\.\d+)?\s?[kK]?/);
-  return match ? match[0].replace(/\s+/g, "") : null;
+  // `[\d,]+` also swallows the comma that ends a clause ("budget $3,000, due Friday").
+  return match ? match[0].replace(/\s+/g, "").replace(/,+$/, "") : null;
 }
 
 export default inferBudgetFromText;

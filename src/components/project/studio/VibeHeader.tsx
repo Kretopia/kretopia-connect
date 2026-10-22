@@ -105,9 +105,11 @@ export const VibeHeader = ({
       <div className="px-4 pt-3 relative z-10 space-y-3">
         {/* Eyebrow + Status row */}
         <div className="flex items-center justify-between gap-2">
-          <p className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
+          <p className="inline-flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-foreground uppercase">
             <KretoMark variant="compact" size="xs" />
-            Kretopia · Studio Room
+            Kretopia
+            <span aria-hidden className="h-3 w-px bg-border" />
+            <span className="font-semibold text-muted-foreground">Studio Room</span>
           </p>
           <span
             className={cn(
@@ -161,11 +163,8 @@ export const VibeHeader = ({
           </button>
         )}
 
-        {/* Mood vibe chip + meta row */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-card/80 border border-border px-2 py-1 backdrop-blur-sm">
-            <MoodPicker value={project.mood ?? null} onChange={handleMood} size="sm" />
-          </div>
+        {/* Meta row: client and date first, the room's own mood and timer to the right */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
           {isOwner ? (
             <ProjectClientChip
               projectId={project.id}
@@ -186,7 +185,10 @@ export const VibeHeader = ({
               {format(due, "MMM d, yyyy")}
             </span>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-card/80 border border-border px-2 py-1 backdrop-blur-sm">
+              <MoodPicker value={project.mood ?? null} onChange={handleMood} size="sm" />
+            </div>
             <StudioTimer
               projectId={project.id}
               userId={currentUserId}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { toast } from "sonner";
 import { CreativeLoader } from "@/components/ui/creative-loader";
 import { useParams, useSearchParams } from "react-router-dom";
@@ -36,6 +36,14 @@ import { Button } from "@/components/ui/button";
 
 const ThriveDesk = () => {
   const { projectId } = useParams();
+
+  // The app scrolls inside its own container (see AppContent), which keeps its offset from the page the person came
+  // from. Without this the Studio opened already scrolled and its header (switcher, call, invite) was out of view.
+  useLayoutEffect(() => {
+    const scroller = document.getElementById("main-content")?.parentElement;
+    scroller?.scrollTo({ top: 0, left: 0 });
+    window.scrollTo({ top: 0, left: 0 });
+  }, [projectId]);
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     loading, project, collaborators, files, messages, tasks, milestones,

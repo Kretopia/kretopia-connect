@@ -14,7 +14,19 @@ export interface DeckCard {
 
 interface TodayDeckProps {
   cards: DeckCard[];
+  /**
+   * A bar that belongs to the deck, shown above it and exactly as wide as the cards: the page width in the flat and
+   * swipe modes, and the roulette's own width (left edge of the left card to right edge of the right card) in the roulette.
+   */
+  lead?: ReactNode;
 }
+
+/**
+ * The roulette's visible width, left edge of the left card to right edge of the right card: 883px, measured in a browser
+ * (the front card is a fixed 26rem and the side cards stand 62% of it to each side, scaled and turned). It does not
+ * depend on the page width, so the bar can be this wide, centred.
+ */
+const ROULETTE_EXTENT = "mx-auto w-full max-w-[55.2rem]";
 
 /** Pointer travel before a drag counts as a drag, and before it turns the deck by one card. */
 const DRAG_SLOP_PX = 6;
@@ -32,14 +44,20 @@ const INTERACTIVE = "a,button,input,textarea,select,summary,[role='button'],[dat
  * It never turns by itself. Every mode keeps every card's information and
  * every CTA reachable, and none of them captures vertical scrolling.
  */
-export function TodayDeck({ cards }: TodayDeckProps) {
+export function TodayDeck({ cards, lead }: TodayDeckProps) {
   const reduced = useReducedMotion();
   const wide = useMediaQuery("(min-width: 1024px)");
   const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
 
-  if (reduced) return <FlatDeck cards={cards} />;
-  if (wide && finePointer) return <RouletteDeck cards={cards} />;
-  return <SwipeDeck cards={cards} />;
+  const roulette = !reduced && wide && finePointer;
+  const deck = reduced ? <FlatDeck cards={cards} /> : roulette ? <RouletteDeck cards={cards} /> : <SwipeDeck cards={cards} />;
+  if (!lead) return deck;
+  return (
+    <div className="space-y-5">
+      <div className={cn(roulette && ROULETTE_EXTENT)}>{lead}</div>
+      {deck}
+    </div>
+  );
 }
 
 /* ───────────────────────── reduced motion: flat ───────────────────────── */

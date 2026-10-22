@@ -137,6 +137,27 @@ export function TodayCommandCenter({
     setBannerPromptDismissed(true);
   };
 
+  // Shown above the cards, and as wide as they are: TodayDeck places it (see its `lead`).
+  const passportBanner =
+    profile && !profile.cover_image_url && !bannerPromptDismissed ? (
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Make your Passport yours</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Add a banner to personalise your profile.</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-3">
+          <GlassCta to="/profile" className="h-10">Add banner</GlassCta>
+          <button
+            type="button"
+            onClick={dismissBannerPrompt}
+            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Not now
+          </button>
+        </div>
+      </div>
+    ) : undefined;
+
   return (
     <div className="space-y-5">
       <FeaturePageHeader
@@ -173,6 +194,7 @@ export function TodayCommandCenter({
 
 
       <TodayDeck
+        lead={passportBanner}
         cards={[
           {
             id: "passport",
