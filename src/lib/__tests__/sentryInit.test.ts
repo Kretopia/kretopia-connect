@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as Sentry from "@sentry/react";
 import { initSentry, SENTRY_REPLAY_OPTIONS } from "@/lib/sentryInit";
 
@@ -22,10 +24,18 @@ function installedReplay(): ReplayInternals {
   return replay as unknown as ReplayInternals;
 }
 
+const DSN = "https://public@o0.ingest.sentry.io/1";
+
 describe("Sentry Replay privacy", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    vi.stubEnv("VITE_SENTRY_DSN", DSN);
+    vi.stubEnv("PROD", true);
     vi.mocked(Sentry.init).mockClear();
-    initSentry();
+    await initSentry();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
   });
 
   it("masks all text and all inputs in what the SDK records", () => {
@@ -55,5 +65,36 @@ describe("Sentry Replay privacy", () => {
     expect(config.replaysSessionSampleRate).toBe(0.1);
     expect(config.replaysOnErrorSampleRate).toBe(1.0);
     expect(SENTRY_REPLAY_OPTIONS).toEqual({ maskAllText: true, maskAllInputs: true, blockAllMedia: true, networkCaptureBodies: false });
+    expect(config.dsn).toBe(DSN);
+  });
+});
+
+describe("Sentry loading", () => {
+  beforeEach(() => {
+    vi.mocked(Sentry.init).mockClear();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("starts nothing without a DSN", async () => {
+    vi.stubEnv("VITE_SENTRY_DSN", "");
+    vi.stubEnv("PROD", true);
+    await initSentry();
+    expect(Sentry.init).not.toHaveBeenCalled();
+  });
+
+  it("starts nothing outside production", async () => {
+    vi.stubEnv("VITE_SENTRY_DSN", DSN);
+    vi.stubEnv("PROD", false);
+    await initSentry();
+    expect(Sentry.init).not.toHaveBeenCalled();
+  });
+
+  it("keeps the SDK out of the entry chunk: it is only ever imported dynamically", () => {
+    const source = readFileSync(resolve(__dirname, "../sentryInit.ts"), "utf8");
+    expect(source).not.toMatch(/^import (?!type)[^;]*from\s+["']@sentry/m);
+    expect(source).toMatch(/await import\("@sentry\/react"\)/);
   });
 });

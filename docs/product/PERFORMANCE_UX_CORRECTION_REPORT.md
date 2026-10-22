@@ -81,3 +81,24 @@ One commit; `git revert` restores everything. Per area: `HoloCard.tsx`, `Chapter
 
 ## Publish-readiness decision required
 Nothing is published. To ship: merge, then publish the frontend; no function paste or database step. Decide first on (a) first-chapter video waiting on phones (a deliberate trade against the `AGENTS.md` "prioritize the first chapter" rule), (b) the shared `WrappedShell` `overflow-clip` change, (c) restoring the Holo tilt that `main` had removed, (d) the EPK palette until it is compared with the PDF, and (e) a signed-in check of items 2, 4 and 6.
+
+## Bundle audit (2026-10-22, production build of main at 7ae1bba68)
+
+Measured with a throwaway config (not committed) that reads each chunk's modules; sizes are minified, gzip from `zlib`. "Composition" numbers are pre-minification, so read them as proportions.
+
+| Chunk | Raw | Gzip | Notes |
+|---|---|---|---|
+| Entry `index-*.js` (every first load) | 1,329 KB | 409 KB | no static imports besides itself; no modulepreload |
+| `Discover` | 1,611 KB | 446 KB | almost all `mapbox-gl` (route chunk, only on /discover) |
+| `ThriveDesk` (Studio) | 804 KB | 198 KB | `src/components/project` plus `tus-js-client` (97 KB) |
+| `index-A2G5l93D` | 366 KB | 107 KB | `html5-qrcode`, lazy |
+| `pdf`, `jspdf`, `html2canvas`, `daily-esm` | 448 / 379 / 198 / 243 KB | 132 / 123 / 47 / 67 KB | all lazy |
+
+Entry composition: `framer-motion` 331 KB, **Sentry (replay 294, core 289, browser-utils 114, browser 92)**, `@supabase/auth-js` 162, `react-dom` 131, `i18next` 80, `realtime-js` 75, `tailwind-merge` 70.
+
+**Done (branch `perf/bundle-audit`, not pushed):** the Sentry SDK was a static import of `main.tsx`, but production has no `VITE_SENTRY_DSN`, so it initialised nothing. `initSentry()` now returns before importing it unless there is a DSN and the build is production, and imports it dynamically otherwise. Entry: **1,329 to 1,079 KB raw (-250 KB), 409 to 327 KB gzip (-82 KB, -20%)**. Behaviour with no DSN is identical (no events were sent before either). With a DSN, the SDK starts after one chunk fetch instead of synchronously, so errors thrown in the first few hundred milliseconds are not captured; the Replay masking options and sample rates are unchanged and still tested. Guard test fails if a static `@sentry` import comes back.
+
+**Not done, by judgment (each is a refactor or a behaviour decision, outside "surgical"):**
+1. `framer-motion` is 331 KB of the entry. `LazyMotion` with `domAnimation` and `m.*` would cut most of it but touches every file that animates. Worth its own pass with a visual check.
+2. `mapbox-gl` (about 1.6 MB) loads with the Discover route. Loading it only when the map is shown would help that route; it needs a signed-in look to confirm the map is not the first thing people see.
+3. The service worker precaches 424 entries (10.7 MB). Workbox owns that policy (AGENTS.md); not touched.
