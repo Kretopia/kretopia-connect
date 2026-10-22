@@ -221,7 +221,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // media edge crosses the artwork, so the hands never move relative to the edge.
         const mirror = activeLock.side === "left" ? -1 : 1;
         const k = activeLock.scale ?? 1;
-        const originX = (mirror === 1 ? SIDE.cut : 1 - SIDE.cut) * 100;
+        const originX = SIDE.cut * 100;
         for (const image of [imgs.current.peekSide, gripImgs.current.peekSide]) {
           if (!image) continue;
           image.style.transformOrigin = `${originX}% ${SIDE.handsY * 100}%`;
@@ -315,11 +315,11 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const sideScale = Math.min(1, (room - 2 + 0.15 * sideW) / sideW);
         const sideMode = !attach && sideScale >= SIDE.minScale;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
-        const sideX = sideOf === "right" ? rectRight - SIDE.cut * size : left - (1 - SIDE.cut) * size;
+        const sideX = (sideOf === "right" ? rectRight : left) - SIDE.cut * size;
         // Fully behind the edge: nothing of him is past it.
         const sideHiddenX = sideOf === "right"
           ? rectRight - SIDE.cut * size - sideW * sideScale - 2
-          : left - (1 - SIDE.cut) * size + sideW * sideScale + 2;
+          : left - SIDE.cut * size + sideW * sideScale + 2;
         // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
         const x = sideMode
           ? sideX
