@@ -103,7 +103,7 @@ export function StageCard({ stage, onAction, className }: StageCardProps) {
       <div
         className={cn(
           "px-3.5 py-2.5 text-center text-xs font-black uppercase tracking-[0.15em] transition-colors",
-          isLive ? "bg-[hsl(var(--energy))] text-white" : "bg-muted text-foreground group-hover:bg-[hsl(var(--energy))]/15",
+          isLive ? "bg-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))]" : "bg-muted text-foreground group-hover:bg-[hsl(var(--energy))]/15",
         )}
       >
         {actionLabel}

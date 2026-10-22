@@ -256,7 +256,7 @@ const ManageOpportunities = ({ company: companyOverride }: { company?: boolean }
       className={cn(
         "shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all whitespace-nowrap",
         statusFilter === value
-          ? "bg-[hsl(var(--energy))] text-white border-transparent shadow-sm"
+          ? "bg-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))] border-transparent shadow-sm"
           : "bg-foreground/[0.03] text-muted-foreground border-border hover:border-[hsl(var(--energy)/0.4)] hover:text-foreground"
       )}
     >
