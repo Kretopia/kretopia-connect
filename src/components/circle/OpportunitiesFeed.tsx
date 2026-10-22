@@ -20,7 +20,7 @@ import {
   Search, MapPin, SlidersHorizontal, DollarSign, Calendar,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { DiscoveryGate, DiscoveryUpsell } from "@/components/DiscoveryGate";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useAccountTone } from "@/hooks/useAccountTone";
@@ -69,7 +69,7 @@ const SKILLS_OPTIONS = [
 
 // TYPE_CONFIG moved to shared GigCard component
 
-export const OpportunitiesFeed = () => {
+export const OpportunitiesFeed = ({ onOpenForYou }: { onOpenForYou?: () => void } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pick: pickTone } = useAccountTone();
@@ -453,6 +453,7 @@ export const OpportunitiesFeed = () => {
         const hasFilters = activeFilter !== "all" || !!searchQuery || selectedSkill !== "all" || locationFilter !== "all" || compensationFilter !== "all" || datePostedFilter !== "all";
         const clearAll = () => { setActiveFilter("all"); setSearchQuery(""); setSelectedSkill("all"); setLocationFilter("all"); setCompensationFilter("all"); setDatePostedFilter("all"); };
         return (
+          <>
           <EmptyState
             icon={hasFilters ? Search : Briefcase}
             eyebrow={hasFilters
@@ -481,8 +482,22 @@ export const OpportunitiesFeed = () => {
               ? { label: pickVoice("Clear filters", "Clear de filters"), icon: X, onClick: clearAll }
               : { label: pickTone(pickVoice("Post a Gig", "Post a wuk"), "Post a brief"), icon: Plus, onClick: () => setPostDialogOpen(true) }}
           />
+          {!hasFilters && onOpenForYou && (
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Looking for work? <button type="button" onClick={onOpenForYou} className="font-semibold text-foreground underline underline-offset-2">For You</button> lists gigs found on public job boards that fit your Passport.
+            </p>
+          )}
+          </>
         );
       })()}
+
+      {/* Open gigs are listed best fit first once the Passport has a role or skills. Without them nothing can be ordered by fit,
+          so say so instead of leaving the order unexplained. */}
+      {!loading && opportunities.length > 0 && user && viewerProfile && viewerProfile.skills.length === 0 && !viewerProfile.role.trim() && (
+        <p className="text-xs text-muted-foreground">
+          Gigs are in the order they were posted. <Link to="/profile" className="font-semibold text-foreground underline underline-offset-2">Add your role and skills</Link> to your Passport and the ones that fit you come first.
+        </p>
+      )}
 
       {/* Cards — responsive grid: 1 col mobile, 2 cols tablet, 3 cols desktop */}
       {!loading && opportunities.length > 0 && (

@@ -30,14 +30,17 @@
 .k-call-mini-header[hidden] { display: none; }
 .k-call-surface .k-call-mini-header .k-call-icon { width: 36px; height: 36px; }
 .k-call-mini-dot { display: none; }
-.k-call-mini .k-call-persistent-content { height: 160px; flex: none; }
+/* The miniature follows the shape of what is shown in it: a 16:9 screen share fits without being cropped or letterboxed,
+   instead of a fixed 160px strip. It is capped so it can never grow past the page. */
+.k-call-mini { width: min(360px, calc(100vw - 24px)); }
+.k-call-mini .k-call-persistent-content { height: auto; aspect-ratio: 16 / 9; max-height: calc(100dvh - 240px); flex: none; }
 .k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
 /* Phones: the miniature is a small card on the LEFT above the bottom navigation, so it never sits in the bottom-right corner
    where the Kreto launcher and Studio dock live. Kretopia mark, status, the video thumbnail and three controls: mute, the one
    arrow back to the full call, and leave. */
 @media (max-width: 767px) {
   .k-call-mini { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; width: min(calc(100vw - 84px), 240px); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
-  .k-call-mini .k-call-persistent-content { height: 108px; }
+  .k-call-mini .k-call-persistent-content { aspect-ratio: 4 / 3; max-height: calc(100dvh - 300px); }
   .k-call-mini-header { padding: 6px 6px 6px 10px; }
   .k-call-mini-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .k-call-mini-info > p { margin-top: 0; }
@@ -1389,13 +1392,14 @@ svg.k-gradient-icon {
   .k-search-hero::after { transition: none; }
 }
 
-/* Top-navbar search: transparent glass sheet, discreet brand hairline. */
+/* Top-navbar search: a light glass panel under the navbar. The page behind it is blurred hard (the sheet's overlay) and
+   the panel adds its own blur, so neither the navbar nor the page shows through as clutter. */
 .k-nav-search-sheet {
-  background: hsl(var(--background) / 0.55);
-  backdrop-filter: blur(24px) saturate(140%);
-  -webkit-backdrop-filter: blur(24px) saturate(140%);
-  border-bottom: 1px solid hsl(var(--border) / 0.4);
-  box-shadow: 0 18px 40px -28px hsl(var(--foreground) / 0.35);
+  background: hsl(var(--background) / 0.6);
+  backdrop-filter: blur(40px) saturate(170%);
+  -webkit-backdrop-filter: blur(40px) saturate(170%);
+  border: 1px solid hsl(var(--border) / 0.55);
+  box-shadow: 0 24px 60px -32px hsl(var(--foreground) / 0.45), inset 0 1px 0 hsl(var(--foreground) / 0.06);
 }
 .k-nav-search .k-search-hero input {
   background: transparent;

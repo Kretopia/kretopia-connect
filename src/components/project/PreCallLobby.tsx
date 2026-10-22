@@ -163,20 +163,26 @@ export const PreCallLobby = ({
         </div>
 
         {/* Native button on purpose: the shared Button's glass variant forces
-            its own text color with !important, which washed the label out. */}
+            its own text color with !important, which washed the label out.
+            The Kretopia primary: a glass fill with the logo-gradient ring (k-cta-future), the same
+            treatment as the Landing's primary CTA, sized to its label instead of a full-width bar. */}
         <button
           type="button"
+          data-cta="primary"
           onClick={() => onJoin({ mic, cam })}
           disabled={joining}
-          className="w-full h-12 inline-flex items-center justify-center rounded-full text-base font-semibold bg-foreground text-background hover:opacity-90 disabled:cursor-wait transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="k-cta-future mx-auto flex h-12 w-fit min-w-[11rem] items-center justify-center gap-2 rounded-full bg-foreground/[0.08] px-8 text-base font-semibold text-foreground backdrop-blur-md hover:bg-foreground/[0.14] disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {joining ? (
             <>
-              <KretopiaSpinner className="h-4 w-4 mr-2" />
+              <KretopiaSpinner className="h-4 w-4" />
               Starting…
             </>
           ) : (
-            ctaLabel
+            <>
+              <Video className="h-4 w-4" aria-hidden />
+              {ctaLabel}
+            </>
           )}
         </button>
       </div>

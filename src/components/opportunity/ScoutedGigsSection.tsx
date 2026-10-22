@@ -24,7 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext, type CarouselApi } from "@/components/ui/carousel";
 import { CarouselPositionDots } from "@/components/ui/glass/CarouselPositionDots";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -164,7 +164,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
     setBrokenImageIds((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
   const {
     gigs, loading, listError, queryKey, actions, progress, lastRunAt, scanning, liveRefreshing,
-    scanElapsed, scanUnavailable, scanNote, scanNow,
+    scanElapsed, scanUnavailable, scanNote, scanNow, profile,
   } = useScoutScan();
   const gigStates = useMemo(() => gigStatesById(actions), [actions]);
   const savedIds = useMemo(() => new Set(actions.filter((a) => a.action === "saved").map((a) => a.scouted_gig_id)), [actions]);
@@ -548,6 +548,14 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
             ) : (
               <>
                 No scouted gigs yet. Tap <span className="font-semibold text-foreground">Scan now</span> to check the job boards for roles that match your skills.
+                <span className="mt-2 block text-xs">
+                  Scout only lists gigs that fit your Passport, so nothing is added to fill the list.{" "}
+                  {profile && !profile.role?.trim() && (
+                    <>
+                      <Link to="/profile" className="font-semibold text-foreground underline underline-offset-2">Add your role</Link> to your Passport so it knows what to look for.
+                    </>
+                  )}
+                </span>
               </>
             )}
           </Card>

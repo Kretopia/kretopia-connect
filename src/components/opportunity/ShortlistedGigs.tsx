@@ -37,7 +37,7 @@ interface ScoutedGig {
  * Saved gigs (shortlist). Pulls scouted_gig_actions where action='saved'
  * and joins the underlying scouted_gigs row.
  */
-export function ShortlistedGigs() {
+export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -106,6 +106,11 @@ export function ShortlistedGigs() {
         <p className="text-xs text-muted-foreground max-w-sm mx-auto">
           Tap the bookmark on any scouted gig to save it here. Great for stacking applications to do later.
         </p>
+        {onOpenForYou && (
+          <Button type="button" size="sm" variant="outline" className="mt-4" onClick={onOpenForYou}>
+            See gigs for you
+          </Button>
+        )}
       </Card>
     );
   }

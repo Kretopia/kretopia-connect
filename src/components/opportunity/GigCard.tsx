@@ -9,8 +9,16 @@ import {
   Globe, Lock, Camera,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { format, formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
 import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
+
+/** "Closes Nov 12" for a deadline that has not passed; nothing for a missing, invalid or past one. */
+export function closingLabel(deadline: string | null | undefined, now: Date = new Date()): string | null {
+  if (!deadline) return null;
+  const date = parseISO(deadline);
+  if (Number.isNaN(date.getTime()) || date.getTime() < now.getTime()) return null;
+  return `Closes ${format(date, "MMM d")}`;
+}
 
 export interface GigOpportunity {
   id: string;
@@ -30,6 +38,7 @@ export interface GigOpportunity {
   barter_requesting?: string | null;
   platform_requirements?: string[] | null;
   min_followers?: number | null;
+  application_deadline?: string | null;
   is_priority?: boolean;
   priority_expires_at?: string | null;
   scouted_by?: string | null;
@@ -227,6 +236,9 @@ const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null
                   {formatDistanceToNow(new Date(opp.created_at), { addSuffix: true })}
                 </span>
               )}
+              {closingLabel(opp.application_deadline) && (
+                <span className="shrink-0 font-medium text-foreground">{closingLabel(opp.application_deadline)}</span>
+              )}
             </div>
           </div>
           <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -387,6 +399,9 @@ const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null
                 <Clock className="h-3 w-3" />
                 {formatDistanceToNow(new Date(opp.created_at), { addSuffix: true })}
               </span>
+            )}
+            {closingLabel(opp.application_deadline) && (
+              <span className="shrink-0 font-medium text-foreground">{closingLabel(opp.application_deadline)}</span>
             )}
           </div>
         </div>

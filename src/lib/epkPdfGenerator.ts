@@ -6,9 +6,9 @@
  * plus the real Kretopia K-mark/wordmark logo assets — bordered cards, a
  * small K-icon eyebrow on every section, colored top-accent bars, badge
  * pills, and a closing contact card. Gated to Creator / Creator+
- * subscribers. The accent is the Kretopia pink (#F6288D, a deeper #C41362 on the
- * light template so small text keeps its contrast on white), not the logo
- * gradient's violet stop (#A516C5), which read as aggressive on a press kit.
+ * subscribers. The accent is the app's own: a quiet white on the dark canvases and ink on the light one (the same
+ * "energy" the app's UI uses), with no pink and not the logo gradient's violet stop (#A516C5): a press kit is read to
+ * judge a person, so its colour must not compete with the work. Every accent keeps WCAG AA on its own canvas.
  */
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
@@ -115,23 +115,23 @@ export interface EPKTemplate {
 }
 
 /** The default accent of a press kit (hex), shared with the editor so its swatch and the templates agree. */
-export const EPK_DEFAULT_ACCENT_HEX = "#F6288D";
+export const EPK_DEFAULT_ACCENT_HEX = "#E8EBF2";
 
 export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'cinematic-dark',
     name: 'Kretopia Editorial',
-    description: 'The real Kretopia dark canvas — Kretopia pink accent, bordered cards, editorial type',
+    description: 'The real Kretopia dark canvas — quiet white accent, bordered cards, editorial type',
     previewBg: 'bg-[#05070D]',
-    previewAccent: 'bg-[#F6288D]',
+    previewAccent: 'bg-[#E8EBF2]',
     previewText: 'text-white',
     palette: {
       bg: [5, 7, 13],            // #05070D — app's real --background (dark)
       surface: [13, 16, 22],
       card: [17, 20, 27],        // #11141B — app's real --card (dark)
       cardBorder: [30, 34, 44],
-      primary: [246, 40, 141],   // #F6288D — Kretopia pink
-      accent: [255, 120, 184],   // lighter tint of the pink
+      primary: [232, 235, 242],  // #E8EBF2 — the app's own light accent on its dark canvas
+      accent: [201, 207, 219],   // #C9CFDB — a step quieter
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [168, 176, 192],    // #A8B0C0 — app's real --muted-foreground (dark)
@@ -142,17 +142,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'clean-light',
     name: 'Editorial Light',
-    description: 'Warm white canvas, deeper pink accent — for print-first EPKs',
+    description: 'Warm white canvas, ink accent — for print-first EPKs',
     previewBg: 'bg-[#FAFAF8]',
-    previewAccent: 'bg-[#C41362]',
+    previewAccent: 'bg-[#14171F]',
     previewText: 'text-[#1a1a1a]',
     palette: {
       bg: [250, 250, 248],
       surface: [244, 244, 241],
       card: [255, 255, 255],
       cardBorder: [228, 226, 220],
-      primary: [196, 19, 98],    // #C41362 — pink deep enough for small text on white
-      accent: [196, 19, 98],
+      primary: [20, 23, 31],     // #14171F — ink, the app's own accent on its light canvas
+      accent: [60, 66, 80],      // #3C4250
       gold: [190, 140, 20],
       white: [26, 26, 26],       // inverted: text is dark
       muted: [110, 110, 115],
@@ -163,17 +163,17 @@ export const EPK_TEMPLATES: EPKTemplate[] = [
   {
     id: 'bold-minimal',
     name: 'Pure Black',
-    description: 'Pure black canvas, Kretopia pink accent — striking & modern',
+    description: 'Pure black canvas, white accent — striking & modern',
     previewBg: 'bg-black',
-    previewAccent: 'bg-[#F6288D]',
+    previewAccent: 'bg-[#FFFFFF]',
     previewText: 'text-white',
     palette: {
       bg: [0, 0, 0],
       surface: [13, 13, 13],
       card: [20, 20, 20],
       cardBorder: [40, 40, 40],
-      primary: [246, 40, 141],
-      accent: [246, 40, 141],
+      primary: [255, 255, 255],
+      accent: [232, 235, 242],
       gold: [255, 196, 64],
       white: [255, 255, 255],
       muted: [140, 140, 140],
@@ -408,7 +408,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     }
   };
 
-  /** Mini K-icon + pink uppercase tracked-out label -- the section eyebrow
+  /** Mini K-icon + accent-coloured uppercase tracked-out label -- the section eyebrow
    *  every page in the reference deck opens with. Returns the y just below
    *  the eyebrow's underline, ready for a headline. */
   const drawEyebrow = (label: string, x: number, y: number): number => {
@@ -450,7 +450,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   fillPage();
 
   // Soft ambient glow, top-right -- the reference deck's own corner-glow
-  // treatment, approximated with a few large low-opacity pink circles
+  // treatment, approximated with a few large low-opacity accent circles
   // rather than a true radial gradient (jsPDF has no gradient fill API).
   doc.setGState(new doc.GState({ opacity: 0.10 }));
   doc.setFillColor(...C.primary);
@@ -925,8 +925,8 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       width: 360, height: 360, data: epkUrl, margin: 12,
       qrOptions: { errorCorrectionLevel: "H" },
       dotsOptions: { type: "extra-rounded", gradient: { type: "linear", rotation: Math.PI / 4, colorStops: [
-        { offset: 0, color: "#05070D" }, { offset: 1, color: "#F6288D" }] } },
-      cornersSquareOptions: { type: "extra-rounded", color: "#F6288D" },
+        { offset: 0, color: "#05070D" }, { offset: 1, color: "#2A3042" }] } },
+      cornersSquareOptions: { type: "extra-rounded", color: "#05070D" },
       cornersDotOptions: { type: "dot", color: "#05070D" },
       backgroundOptions: { color: "#FFFFFF" },
       image: kMarkAsset.url,

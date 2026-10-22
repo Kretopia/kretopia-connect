@@ -1,11 +1,19 @@
 // Client-side text extraction for uploaded brief documents.
 // Supports PDF (via pdfjs-dist), plain text/markdown, and a best-effort fallback.
 
-import * as pdfjsLib from "pdfjs-dist";
-// Vite serves the worker as a URL — required for pdfjs-dist v3+.
-import workerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+// pdfjs-dist is a large library that only a PDF upload needs, so it is loaded the first time one is read instead of
+// being bundled into every screen that resizes an image (New Room, Studio).
+let pdfjs: Promise<typeof import("pdfjs-dist")> | null = null;
+function loadPdfjs() {
+  pdfjs ??= (async () => {
+    const lib = await import("pdfjs-dist");
+    // Vite serves the worker as a URL — required for pdfjs-dist v3+.
+    const { default: workerUrl } = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+    lib.GlobalWorkerOptions.workerSrc = workerUrl;
+    return lib;
+  })();
+  return pdfjs;
+}
 
 const MAX_CHARS = 60_000; // ~15k tokens — well under Gemini context
 
@@ -35,7 +43,7 @@ export async function extractTextFromFile(file: File): Promise<ExtractedDoc> {
   // PDF
   if (type === "application/pdf" || name.endsWith(".pdf")) {
     const buf = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const pdf = await (await loadPdfjs()).getDocument({ data: buf }).promise;
     let out = "";
     let truncated = false;
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -68,7 +76,7 @@ export async function renderPdfFirstPageToImage(
   maxWidth = 1400,
 ): Promise<{ base64: string; mime: string }> {
   const buf = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const pdf = await (await loadPdfjs()).getDocument({ data: buf }).promise;
   const page = await pdf.getPage(1);
   const viewport = page.getViewport({ scale: 1 });
   const scale = Math.min(maxWidth / viewport.width, 2);

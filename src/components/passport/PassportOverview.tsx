@@ -70,7 +70,8 @@ export function PassportOverview({ userId, credits, verified, cosigns, standing,
             <Link to={standing.nextActions[0].deeplink}><span>{standing.nextActions[0].label}</span><ArrowRight className="h-4 w-4 shrink-0" /></Link>
           </Button>
         )}
-        <div className="space-y-3 border-t border-border pt-3">
+        {/* One continuous surface: the blocks below are spaced, not ruled off from each other. */}
+        <div className="space-y-4">
           <PassportMomentum userId={userId} compact />
           <RecentlyWorkedWith userId={userId} compact />
           <ThriveRemembersChip />

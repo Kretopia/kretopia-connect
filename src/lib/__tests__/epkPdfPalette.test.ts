@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { EPK_CATEGORY_ACCENTS, EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES } from "../epkPdfGenerator";
 
-// The press kit used the logo gradient's violet stop (#A516C5) as its accent, which read as aggressive. The accent is
-// now the Kretopia pink, and it must stay readable on each template's own canvas.
+// The press kit used the logo gradient's violet stop (#A516C5) as its accent, then a bright pink; both read as loud on a
+// page that is read to judge a person. The accent is now the app's own quiet white / ink, and it must stay readable on
+// each template's own canvas.
 type Rgb = readonly [number, number, number];
 
 const hue = ([r, g, b]: Rgb): number | null => {
@@ -20,13 +21,18 @@ const luminance = (rgb: Rgb) => {
 const contrast = (a: Rgb, b: Rgb) => { const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
 const fromHex = (hex: string): Rgb => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16)) as unknown as Rgb;
 const isViolet = (rgb: Rgb) => { const h = hue(rgb); return h !== null && h >= 250 && h <= 300; };
+const saturation = ([r, g, b]: Rgb) => { const max = Math.max(r, g, b) / 255; const min = Math.min(r, g, b) / 255; return max === 0 ? 0 : (max - min) / max; };
+/** Magenta to hot pink and strong enough to read as colour: the bright pink this press kit used to carry. */
+const isFlashyPink = (rgb: Rgb) => { const h = hue(rgb); return h !== null && h >= 315 && h <= 350 && saturation(rgb) > 0.4; };
 
 describe("press kit palettes", () => {
   for (const template of EPK_TEMPLATES) {
     describe(template.name, () => {
-      it("has no violet in its accent colours", () => {
-        expect(isViolet(template.palette.primary as Rgb)).toBe(false);
-        expect(isViolet(template.palette.accent as Rgb)).toBe(false);
+      it("has no violet and no flashy pink in its accent colours", () => {
+        for (const accent of [template.palette.primary, template.palette.accent] as Rgb[]) {
+          expect(isViolet(accent)).toBe(false);
+          expect(isFlashyPink(accent)).toBe(false);
+        }
       });
 
       it("keeps its accent readable on its own canvas (WCAG AA, 4.5:1)", () => {
@@ -41,9 +47,10 @@ describe("press kit palettes", () => {
     });
   }
 
-  it("starts the editor on the same pink, not violet", () => {
-    expect(EPK_DEFAULT_ACCENT_HEX).toBe("#F6288D");
+  it("starts the editor on the first template's own accent, which is neither pink nor violet", () => {
+    expect(EPK_DEFAULT_ACCENT_HEX).toBe("#E8EBF2");
     expect(isViolet(fromHex(EPK_DEFAULT_ACCENT_HEX))).toBe(false);
+    expect(isFlashyPink(fromHex(EPK_DEFAULT_ACCENT_HEX))).toBe(false);
     expect(fromHex(EPK_DEFAULT_ACCENT_HEX)).toEqual(EPK_TEMPLATES[0].palette.primary);
   });
 
@@ -54,8 +61,10 @@ describe("press kit palettes", () => {
     expect(new Set(entries.map(([, rgb]) => rgb.join(","))).size).toBe(entries.length);
   });
 
-  it("the check itself recognises the old violet", () => {
+  it("the checks themselves recognise the old violet and the old pink", () => {
     expect(isViolet([165, 22, 197])).toBe(true);
+    expect(isFlashyPink([246, 40, 141])).toBe(true);
+    expect(isFlashyPink([232, 235, 242])).toBe(false);
     expect(contrast([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 0);
   });
 });
