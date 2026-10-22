@@ -56,3 +56,5 @@ Nothing has been published. To publish this branch: merge it, then publish the f
 
 ## Post-merge note (2026-10-22)
 After this PR, `main`'s `HoloCard` was changed again so that it never tilts ("No pointer transforms: the card and its hit target never rotate"); `maxTilt` is kept only for old callers. That removes the corner tremble by removing the movement, so the wrapper-tracking fix described above no longer exists in the code. `HoloCard.test.tsx` was rewritten for the new contract (no part of the card gets a transform from the pointer; no perspective, 3D or transform-transition classes; the foil stays visible).
+
+**Superseded by PR #260 (2026-10-22):** the tilt is back, with the wrapper-tracking fix described above (pointer handlers on the stable perspective wrapper, `maxTilt` 5, foil follows the pointer). Checked with a real pointer on the live EPK page: the top-left corner no longer trembles. The "never tilts" paragraph above describes the intermediate state only.
