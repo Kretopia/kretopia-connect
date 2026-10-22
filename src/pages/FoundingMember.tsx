@@ -201,7 +201,7 @@ export default function FoundingMember() {
                     className={cn(
                       "h-9 w-9 rounded-full flex items-center justify-center shrink-0 text-sm font-bold border-2",
                       p.completed
-                        ? "bg-[hsl(var(--energy))] border-[hsl(var(--energy))] text-white shadow-glow"
+                        ? "bg-[hsl(var(--energy))] border-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))] shadow-glow"
                         : "bg-muted border-border text-muted-foreground",
                     )}
                   >

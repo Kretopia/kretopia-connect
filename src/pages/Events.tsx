@@ -464,7 +464,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                 onClick={() => setCategoryFilter(f.value)}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                   categoryFilter === f.value
-                    ? "bg-[hsl(var(--energy))] text-white"
+                    ? "bg-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))]"
                     : "bg-muted/60 text-muted-foreground hover:text-foreground"
                 }`}
               >

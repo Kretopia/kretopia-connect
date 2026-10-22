@@ -152,7 +152,7 @@ export default function Discover() {
                     setPeopleMode(m.id as PeopleMode);
                   }}
                   className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold rounded-full transition-colors inline-flex items-center justify-center gap-1 ${
-                    active ? "bg-[hsl(var(--energy))] text-white" : "text-muted-foreground"
+                    active ? "bg-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))]" : "text-muted-foreground"
                   }`}
                 >
                   <Icon className="h-3 w-3" /> {m.label}
