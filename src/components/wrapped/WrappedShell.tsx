@@ -54,7 +54,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
       ref={sectionRef}
       aria-labelledby={titleId}
       className={cn(
-        "relative isolate overflow-hidden rounded-3xl border border-[hsl(var(--energy)/0.22)] bg-card p-4 sm:p-6",
+        "relative isolate overflow-clip rounded-3xl border border-[hsl(var(--energy)/0.22)] bg-card p-4 sm:p-6",
         className,
       )}
     >

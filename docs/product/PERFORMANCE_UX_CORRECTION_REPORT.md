@@ -1,0 +1,75 @@
+# Performance and UX correction pass: report (2026-10-22)
+
+Branch `fix/performance-ux-correction-pass`, committed locally, **not pushed, not deployed, not published**. No migration, no database or Edge Function change, no backend logic, no new dependency, no route, API, permission or data-model change. `extract-brief` and the duplicate-project work were left alone (that work is paused; its patch is kept outside the repo).
+
+## Status by item
+
+| # | Item | Status | Result |
+|---|------|--------|--------|
+| 1 | Performance | **done where measurable** | Landing, first load on a phone, production build: **3,405 KB to 547 KB** (the 2.86 MB first-chapter video no longer downloads at load); layout shift 0. New Room's JavaScript chunk: **517 KB (155 KB gzip) to 60 KB (19 KB gzip)**. |
+| 2 | Scout | **partial** | Closing date on gig cards (only when the data has one that has not passed), empty states that say why and what to do, a note on why Open Gigs is in the order it is. No new opportunities, no new source. |
+| 3 | EPK branding | **done, palette to confirm** | No pink on the EPK page or in the press kit PDF. The PDF palette named in the brief is not in the repo, so the app's own tokens were used (see TODO). |
+| 4 | Passport divider and unity | **partial** | The divider below "Last 30 days" and the rule above it are gone. The Holo hero and the overview are still two components. |
+| 5 | Holo cards | **done, verified with a real pointer** | Original tilt and following sheen restored at lower depth; corner jitter checked on two corners with a real mouse. |
+| 6 | VideoCall | **done in CSS and markup, not seen in a live call** | Branded Start call in the lobby; miniature sized by aspect ratio. |
+| 7 | Settings sidebar | **done, verified** | Sidebar is sticky; the Wrapped frame no longer traps it. |
+| 8 | Search modal | **done, verified** | Light glass panel under the navbar on a strongly blurred page. |
+
+## 1. Performance
+Measured on a production build (`vite build` + `vite preview`), the real `/landing` at 375px, page at the top.
+- **First-chapter video.** It had `preload="auto"` and `autoplay`, so 2.86 MB started downloading at 138 ms although that chapter sits almost two screens down. On a phone (`max-width: 767px`) or with data saver on, it now waits like the other chapters: metadata only, full download one screen before it is reached, starts when it comes into view. On a wide screen nothing changes (the repo rule of fetching the first chapter without waiting is kept there). First load: 3,405 KB to 547 KB.
+- **`pdfjs-dist`** was imported at module scope by `extractBriefDocument.ts`, so New Room (and the Studio code that shares it) carried a 458 KB PDF library to resize an image. It now loads on first PDF read. New Room chunk 517 KB to 60 KB; the library is its own chunk.
+- **Posters:** not added. `AGENTS.md` says chapter videos are served without posters (a still flashes and delays playback), and the hero has no video. **No video was re-encoded**, no CDN, provider or analytics added.
+- Already in place and unchanged: lazy routes, one autoplaying chapter at a time (earlier PR), near-viewport promotion, explicit media boxes (layout shift 0).
+- **Not done:** the main entry is 1.38 MB (428 KB gzip) and the Studio chunk 824 KB (203 KB gzip); both need a bundle analysis, not a guess. Passport, Scout, Studio and VideoCall load times were not measured (they need a signed-in session).
+
+## 2. Scout
+- Gig cards show "Closes Nov 12" when `application_deadline` is real and in the future (`closingLabel`, 6 tests); nothing is shown otherwise. Skills (up to four), compensation, location and the Apply action were already on the card. **Timezone is not stored**, so it is not shown.
+- Empty states: For You says Scout lists only gigs that fit the Passport and links to "Add your role" when it is missing; Shortlist offers "See gigs for you"; an empty Open Gigs points to For You; a note explains that Open Gigs is in posting order until the Passport has a role or skills.
+- "Increase the number of opportunities shown" was **not** done: no extra real data exists to show, and the brief forbids inventing or adding sources.
+- Scan now stays the first action; the free-tier sentence is not in the code. For You is profile-matched, Open Gigs is ordered by the existing fit (earlier pass), Shortlist is the person's own saved gigs.
+
+## 3. EPK
+- Public page: the title accent is the page's foreground colour (no pink, no gradient).
+- Press kit PDF: Editorial and Pure Black use a quiet white accent (`#E8EBF2` / `#FFFFFF`), Editorial Light uses ink (`#14171F`); the editor starts on `#E8EBF2`; the QR no longer ends in pink. Every accent keeps WCAG AA on its own canvas. Tests assert no violet and no flashy pink among the palettes and among every colour the generator paints.
+- **Not verified:** the generated PDF was not opened in a viewer (colours were checked by recording what the generator sets).
+
+## 4. Passport
+Removed the rule below "Last 30 days" (the `border-t` on "Recently worked with") and the rule above the momentum block; blocks are spaced. The hero (Holo card) and "Passport intelligence" remain two components with one gap and the same radius.
+
+## 5. Holo card audit
+- 22 files import the shared `HoloCard`; no second implementation. Callers keep their own `maxTilt` (3 to 5) and `glow`.
+- Restored: pointer tilt (5° default, was 8°), a sheen that follows the pointer, theme-aware foil colours (kept from `main`), glow layer 24px behind (was 40px), softer shadow. Transform and opacity only; touch and reduced motion stay flat.
+- Corner jitter: the pointer is tracked on the stable wrapper, not on the tilted card, which removes the feedback loop. **Checked with a real mouse** resting on the top-left and bottom-right corners of a real card: one distinct transform over the last second, zero flip-flops, wrapper never moved, leaving resets the card flat. A mutation putting the handlers back on the tilted element fails 2 of 9 tests.
+- Note: `main`'s `HoloCard` had been changed to never tilt. This pass reverses that on purpose, as asked; confirm it is wanted.
+
+## 6. VideoCall
+- Lobby "Start call": a concise glass pill with the logo-gradient ring (`k-cta-future`, the Landing's primary CTA treatment) and a camera icon, instead of a full-width black-and-white bar. Call logic, permissions and the header's own "Start call" button are untouched.
+- Miniature: sized by shape, 16:9 on desktop (360 x 203, was 320 x 160) and 4:3 on phones (240 x 180, was 108px tall), capped to the page. Measured in a harness. **Not seen with a live Daily call**: how Daily fits a screen share inside the box is unverified.
+
+## 7. Settings
+At 1100 x 700 the sidebar started at 583px and ended at 819px (three of six sections visible) and, not being sticky, scrolled away from a 1,136px content pane. It is now `sticky` (`top-20`, below the navbar). `WrappedShell` used `overflow-hidden`, which makes `sticky` bind to itself; it now uses `overflow-clip` (same clipping and radius, verified). On arrival at 700px high, three of six show until the first scroll; after any scroll all six stay visible. Checked at 1100, 780 and 375px, no horizontal scroll.
+
+## 8. Search
+The navbar search is a top `Sheet` over a `bg-black/80` scrim with no blur. `SheetContent` now takes an optional `overlayClassName`; the search uses `bg-background/20 backdrop-blur-2xl` (40px), and the panel is a 44rem glass card under the navbar (`top: 4.25rem`) with a 40px blur of its own. Verified on the real Landing: panel 704 x 121 at desktop, 351 x 113 on a phone, input focused, Escape closes it, no horizontal scroll. Results rendering was not changed and was not exercised (it queries live data).
+
+## Files
+Created: `docs/product/PERFORMANCE_UX_CORRECTION_REPORT.md`, `src/components/opportunity/__tests__/closingLabel.test.ts`.
+Modified: `src/components/Navbar.tsx`, `ui/sheet.tsx`, `wrapped/WrappedShell.tsx`, `settings/SettingsNav.tsx`, `passport/HoloCard.tsx`, `PassportOverview.tsx`, `RecentlyWorkedWith.tsx`, `profile/PublicProfileWrapped.tsx`, `epk/EPKPdfEditor.tsx`, `project/PreCallLobby.tsx`, `opportunity/GigCard.tsx`, `ScoutedGigsSection.tsx`, `ShortlistedGigs.tsx`, `circle/OpportunitiesFeed.tsx`, `landing/kretopia/ChapterSection.tsx`, `src/pages/Scout.tsx`, `src/lib/epkPdfGenerator.ts`, `extractBriefDocument.ts`, `src/index.css`; tests: `HoloCard`, `ChapterVideo`, `PublicProfileWrapped`, `epkPdfPalette`, `epkPdfColours`.
+
+## QA checklist
+Run: `tsc -p tsconfig.app.json` exit 0; full suite on this branch with Node's experimental web storage off: 2,435 passed, 1 failed (`VoiceFirstCreateModal` "How this works", already failing on `main`); ESLint error counts equal to `HEAD` on every touched file; production build exit 0. Browser: Landing first-load weight and layout shift (375px); search panel (1300 and 375px, dark, Escape); Settings sidebar (1100, 780, 375px); Holo corners with a real pointer; lobby button and miniature sizing (1300 and 375px, harness); Today and chapter videos earlier. All in the dark theme.
+Not run: Passport EPK and unified layout, Scout tabs and cards, Studio, New Room and a live VideoCall in a signed-in session; light theme; tablet captures other than Settings; console errors on the affected routes; opening the generated PDF; Passport, Scout, Studio and VideoCall load times.
+
+## TODOs
+1. The brand palette PDF is not in the repo: compare `EPK_TEMPLATES` with it and adjust the three palettes if it differs.
+2. Analyse the 1.38 MB main entry and the 824 KB Studio chunk.
+3. Signed-in pass: Scout cards and empty states, Passport, Studio, New Room, a real call (lobby, miniature, screen share).
+4. `VoiceFirstCreateModal`'s "How this works" trigger was removed upstream and its test still expects it; decide which is right.
+5. Tests failing only on a Mac running Node 26 pass with `NODE_OPTIONS=--no-experimental-webstorage`.
+
+## Rollback
+One commit; `git revert` restores everything. Per area: `HoloCard.tsx`, `ChapterSection.tsx` (`eager`), `extractBriefDocument.ts` (`loadPdfjs`), `SettingsNav.tsx` + `WrappedShell.tsx` (`overflow-clip`; revert both together), `sheet.tsx` + `Navbar.tsx` + `index.css` (search), `PreCallLobby.tsx` + `index.css` (call), `epkPdfGenerator.ts` + `PublicProfileWrapped.tsx` (EPK), the Scout files.
+
+## Publish-readiness decision required
+Nothing is published. To ship: merge, then publish the frontend; no function paste or database step. Decide first on (a) first-chapter video waiting on phones (a deliberate trade against the `AGENTS.md` "prioritize the first chapter" rule), (b) the shared `WrappedShell` `overflow-clip` change, (c) restoring the Holo tilt that `main` had removed, (d) the EPK palette until it is compared with the PDF, and (e) a signed-in check of items 2, 4 and 6.

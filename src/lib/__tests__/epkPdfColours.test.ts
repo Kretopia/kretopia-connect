@@ -51,12 +51,14 @@ beforeEach(() => { painted.length = 0; });
 
 describe("what the press kit paints", () => {
   for (const template of EPK_TEMPLATES) {
-    it(`${template.name}: uses its pink accent and paints no violet anywhere, film credits included`, async () => {
+    it(`${template.name}: uses its own accent and paints no violet and no flashy pink anywhere, film credits included`, async () => {
       await generateEPKPdf(input() as never, { templateId: template.id } as never);
       expect(painted.length).toBeGreaterThan(20);
       expect(painted.some((c) => c.join(",") === (template.palette.primary as number[]).join(","))).toBe(true);
       const violet = painted.filter((c) => { const h = hue(c); return h !== null && h >= 250 && h <= 300; });
       expect(violet).toEqual([]);
+      const flashyPink = painted.filter((c) => { const h = hue(c); const max = Math.max(...c) / 255; const sat = max === 0 ? 0 : (max - Math.min(...c) / 255) / max; return h !== null && h >= 315 && h <= 350 && sat > 0.4; });
+      expect(flashyPink).toEqual([]);
     });
   }
 });

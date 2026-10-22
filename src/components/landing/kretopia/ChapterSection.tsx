@@ -66,6 +66,12 @@ export interface ChapterProps {
   kretoVariant?: KretoCharacterVariant;
 }
 
+/** A phone or a data-saver setting: nothing heavy should download before the person is near it. */
+const isConstrainedConnection = () =>
+  typeof window !== "undefined" &&
+  (window.matchMedia?.("(max-width: 767px)").matches === true ||
+    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true);
+
 export const ChapterSection = ({
   index, kicker, title, body, caption, image, video, mediaPosition, accent, href, reverse, id, tutorialSteps, tutorialVisual,
   ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
@@ -73,6 +79,9 @@ export const ChapterSection = ({
   const reducedMotion = useReducedMotion();
   const sectionId = (id ?? kicker.toLowerCase()) as LandingSectionId;
   const videoRef = useRef<HTMLVideoElement>(null);
+  // The first chapter is the one video that is fetched and started without waiting, so it is ready when reached. On a phone
+  // (or with data saver on) it waits like the rest: its download starts one screen before it comes into view.
+  const [eager] = useState(() => index === "II" && !isConstrainedConnection());
   const [blocked, setBlocked] = useState(false);
 
   // Autoplay needs two real fixes beyond the `autoplay` attribute alone:
@@ -176,11 +185,11 @@ export const ChapterSection = ({
                   // `preload`, and on every chapter it had all five large files buffering at once on a phone, below the
                   // fold included. The others are started by the effect above when they come into view, and their
                   // download is promoted from metadata to full one screen before they are reached.
-                  autoPlay={index === "II"}
+                  autoPlay={eager}
                   muted
                   loop
                   playsInline
-                  preload={index === "II" ? "auto" : "metadata"}
+                  preload={eager ? "auto" : "metadata"}
                   aria-label={caption}
                   style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"

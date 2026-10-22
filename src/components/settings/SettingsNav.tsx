@@ -18,12 +18,14 @@ interface SettingsNavProps {
  * categorized, with an active state -- desktop renders it as a sidebar
  * column, mobile as a wrapping row of the same buttons, so every section stays visible
  * without a hidden horizontal scroll (no separate mobile component to keep in sync).
+ * The desktop column is sticky: the content pane beside it is much taller, and the sidebar used to scroll away with
+ * the page, leaving only some of the sections in view and none once the person had scrolled.
  */
 export function SettingsNav({ domains, active, onSelect }: SettingsNavProps) {
   return (
     <nav
       aria-label="Settings sections"
-      className="flex flex-wrap gap-1 pb-2 md:w-48 md:shrink-0 md:flex-col md:flex-nowrap md:pb-0"
+      className="flex flex-wrap gap-1 pb-2 md:sticky md:top-20 md:w-48 md:shrink-0 md:flex-col md:flex-nowrap md:self-start md:pb-0"
     >
       {domains.map((d) => {
         const Icon = d.icon;

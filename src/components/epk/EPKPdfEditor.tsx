@@ -91,7 +91,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const [tagline, setTagline] = useState("");
   const [sections, setSections] = useState<EPKSection[]>(DEFAULT_SECTIONS);
   const [branding, setBranding] = useState<EPKBranding>({
-    // Default before the creator customizes it: the Kretopia pink, shared with the templates.
+    // Default before the creator customizes it: the first template's own accent, shared with it.
     primaryColor: EPK_DEFAULT_ACCENT_HEX,
     accentColor: EPK_DEFAULT_ACCENT_HEX,
     darkColor: "#05070D",

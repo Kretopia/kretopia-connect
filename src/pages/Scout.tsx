@@ -134,8 +134,8 @@ const Scout = () => {
           </div>
         )}
         {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
-        {tab === "shortlist" && <ShortlistedGigs />}
-        {tab === "marketplace" && <OpportunitiesFeed />}
+        {tab === "shortlist" && <ShortlistedGigs onOpenForYou={() => switchTab("scouted")} />}
+        {tab === "marketplace" && <OpportunitiesFeed onOpenForYou={() => switchTab("scouted")} />}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
         </ScoutResultsWrapped>
       </StudioFeatureShell>

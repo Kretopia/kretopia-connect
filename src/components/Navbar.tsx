@@ -331,7 +331,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="k-nav-search-sheet w-full">
+            {/* A light glass panel under the navbar, not a slab over it, on a strongly blurred page. */}
+            <SheetContent
+              side="top"
+              overlayClassName="bg-background/20 backdrop-blur-2xl"
+              className="k-nav-search-sheet top-[calc(4.25rem+env(safe-area-inset-top,0px))] mx-auto w-[min(44rem,calc(100vw-1.5rem))] rounded-2xl border p-4 sm:p-5"
+            >
               <SheetHeader className="mx-auto w-full max-w-2xl">
                 <SheetTitle className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
                   Search <span className="k-gradient-text">Kretopia</span>

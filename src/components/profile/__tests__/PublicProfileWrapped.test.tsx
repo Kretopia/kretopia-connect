@@ -58,14 +58,15 @@ describe("PublicProfileWrapped", () => {
     expect(Boolean(passport.compareDocumentPosition(record) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   });
 
-  // The title used the logo's blue-violet-pink-orange gradient; on this page one measured brand accent is used instead.
-  it("colours only 'Creative Passport' in the title, with the brand pink and no gradient", () => {
+  // The title used the logo's blue-violet-pink-orange gradient, then a pink; it is now the page's own foreground colour.
+  it("sets 'Creative Passport' in the page's foreground colour: no pink, no gradient", () => {
     renderIt();
     const title = document.getElementById("public-passport-title") as HTMLElement;
     expect(title).toHaveTextContent("Maya's Creative Passport");
     const accent = title.querySelector("[data-epk-accent]") as HTMLElement;
     expect(accent).toHaveTextContent("Creative Passport");
-    expect(accent.className).toContain("--k-pink");
+    expect(accent.className).toContain("text-foreground");
+    expect(accent.className).not.toMatch(/pink|magenta|--k-/);
     expect(title.querySelector(".k-gradient-text")).toBeNull();
     expect(document.querySelector(".k-gradient-text, .k-gradient-title")).toBeNull();
   });

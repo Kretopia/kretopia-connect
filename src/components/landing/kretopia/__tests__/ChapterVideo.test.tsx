@@ -61,6 +61,46 @@ describe("Landing chapter videos", () => {
     }
   });
 
+  describe("the first chapter on a phone or with data saver on", () => {
+    const phone = () => vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("max-width: 767px"), media: q, addEventListener() {}, removeEventListener() {} }));
+
+    it("does not fetch or start on its own on a phone: it waits like the other chapters", () => {
+      phone();
+      const video = chapter("II");
+      expect(video.hasAttribute("autoplay")).toBe(false);
+      expect(video.preload).toBe("metadata");
+      expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+    });
+
+    it("still starts, and promotes its download a screen ahead, once the person is near it", () => {
+      phone();
+      const video = chapter("II");
+      enter(observers.find((o) => o.options?.rootMargin === "100% 0px")!, true);
+      expect(video.preload).toBe("auto");
+      enter(observers.find((o) => o.options?.threshold === 0.25)!, true);
+      expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
+    });
+
+    it("waits with data saver on, whatever the screen", () => {
+      vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+      Object.defineProperty(navigator, "connection", { value: { saveData: true }, configurable: true });
+      try {
+        const video = chapter("II");
+        expect(video.hasAttribute("autoplay")).toBe(false);
+        expect(video.preload).toBe("metadata");
+      } finally {
+        Reflect.deleteProperty(navigator, "connection");
+      }
+    });
+
+    it("is unchanged on a wide screen with no data saver: the first chapter is fetched and started right away", () => {
+      vi.stubGlobal("matchMedia", (q: string) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {} }));
+      const video = chapter("II");
+      expect(video.hasAttribute("autoplay")).toBe(true);
+      expect(video.preload).toBe("auto");
+    });
+  });
+
   it("keeps every chapter silent, inline and looping, with no still poster", () => {
     const video = chapter("III");
     expect(video.muted).toBe(true);
