@@ -26,7 +26,7 @@
 - Render Company Studio through the existing project workspace with additive hiring actions, because projects, invitations, permissions and the single-row carousel must remain identical across modes.
 - Gate Creator finance overview surfaces with the shared account mode in KrePay while reusing its payment workflows and scene header, because Company presentation must not duplicate Creator summaries or fork payment logic.
 - Serve native fast-start chapter videos without posters; prioritize the first chapter and warm later videos near entry without restarting resource selection, because still flashes and duplicate loads delay playback. Preserve each chapter's crop.
-- Keep Landing flight imperative with one predecoded exclusive pose beneath opaque media; contiguous eased peek slides share Flying endpoints, outer-only hysteresis and full-box heading corridors without near-media rotation, because only media may hide Kreto and transitions must follow scroll direction.
+- Keep Landing flight imperative and exclusive above text/below media; measure hanging size by helmet width, isolate glove contours, and use eased scroll locks and destination headings, because media alone hides Kreto without pose jumps.
 
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit back rows; keep step navigation, reader close and sidebar dismissal.

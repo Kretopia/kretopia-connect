@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
 import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
@@ -6,24 +6,25 @@ import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
 import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
+import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, ledgeSlideSpan } from "./kretoPoseGeometry";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peekSide } as const;
 type Layer = keyof typeof layers;
 const layerKeys = Object.keys(layers) as Layer[];
 /** Where the ledge line sits inside each hiding artwork (fraction of its rendered size). */
-const LEDGE = { peekTop: 0.81, peekBottom: 0.4826 };
+const LEDGE = { peekTop: 0.81, peekBottom: BOTTOM_LEDGE };
 /** Rendered silhouette heights (origin-top scale) used to hide a pose fully behind media. */
-const HEIGHT = { peekTop: 1.446, peekBottom: 1.287 };
-// Alpha-bounds normalization: all silhouettes match Flying's 875px height.
+const HEIGHT = { peekTop: 1.446, peekBottom: BOTTOM_HEIGHT };
+// Hanging pose matches Flying's helmet, not the much taller arms-up silhouette.
 const poseClasses: Record<Layer, string> = {
-  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top scale-[1.287]", peekSide: "",
+  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top", peekSide: "",
 };
 /**
  * The side hide artwork (1024 square, body cut by a straight vertical line): the media edge crosses
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
+const SIDE = { cut: 0.57, handsY: 0.33, minScale: 0.5, extent: 0.31 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -32,7 +33,7 @@ const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 /** After the scroll settles, the media's real positions are checked once and the flight re-measured if they moved. */
 const REMEASURE_IDLE_MS = 180;
 /** The head clip of the side artwork (art coordinates): only the helmet and ears come out, never fingers or body. */
-const SIDE_HEAD_CLIP = "ellipse(30% 27% at 63% 33.5%)";
+const SIDE_HEAD_CLIP = "ellipse(26% 23% at 64% 33.5%)";
 /** Reversing the scroll turns him with one backflip (in the picture plane, so the volume is never flattened). */
 const TURN_MS = 520;
 /**
@@ -52,6 +53,7 @@ const GRIP_CLIP = {
  * a pose can never appear at the wrong place (no flicker, no double figure).
  */
 export function KretoLandingFlight({ ready }: { ready: boolean }) {
+  const topGripId = `kreto-top-gloves-${useId().replace(/:/g, "")}`;
   const ref = useRef<HTMLDivElement>(null);
   const imgs = useRef<Partial<Record<Layer, HTMLImageElement | null>>>({});
   const gripRef = useRef<HTMLDivElement>(null);
@@ -161,7 +163,8 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // His body faces the way he is actually flying: the path's x direction as the page goes down, and
       // the reverse as it goes up (he retraces it). Where he hovers or climbs straight, he keeps his
       // heading. A change of heading is one backflip, the artwork swapped at the top of the roll.
-      const travel = headingAt(stops, scroll, 40, 3);
+      const destinationDx = corridor ? (corridor.endX - corridor.startX) * direction : 0;
+      const travel = Math.abs(destinationDx) > 3 ? Math.sign(destinationDx) * direction : headingAt(stops, scroll, 40, 3);
       if (travel !== 0) {
         const wantHeading: 1 | -1 = travel * direction > 0 ? 1 : -1;
         if (!first && wantHeading !== heading) { turnStart = now; turnFrom = heading; }
@@ -194,7 +197,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       let art: FlightPose = pose;
       if (activeLock?.phase) {
         const t = (scroll - activeLock.from) / Math.max(1, activeLock.to - activeLock.from);
-        art = activeLock.phase === "arrive" ? (t >= 0.9 ? pose : "fly") : t >= 0.1 ? "fly" : pose;
+        art = activeLock.phase === "arrive" ? (t >= 0.5 ? pose : "fly") : t >= 0.5 ? "fly" : pose;
       }
       const faceNow = turning && turnT < 0.5 ? turnFrom : heading;
       const layer: Layer = art === "peekTop" || art === "peekBottom" || art === "peekSide" ? art : faceNow === 1 ? "right" : "left";
@@ -336,7 +339,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const afterTop = top + origin + size * 0.15 + 90;
         const beforeBottom = bottom + origin - vh - 90;
         const middle = afterTop <= beforeBottom ? Math.min(Math.max(mid, afterTop), beforeBottom) : mid;
-        const slide = Math.min(90, (middle - topAt) / 3);
+        const slide = ledgeSlideSpan(topAt, middle, release);
         const arriveY = top - size * FLY_ALPHA.bottom;
         const departY = bottom - size * FLY_ALPHA.top;
         // Contiguous locks: Kreto never leaves a hideaway pose while the media is in play.
@@ -432,6 +435,15 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
   const sizeClass = "pointer-events-none absolute left-0 top-0 h-[104px] w-[104px] select-none will-change-transform lg:h-[180px] lg:w-[180px] min-[1440px]:h-[300px] min-[1440px]:w-[300px]";
   return (
     <>
+    <svg width="0" height="0" aria-hidden="true" className="absolute pointer-events-none">
+      <defs>
+        <clipPath id={topGripId} clipPathUnits="objectBoundingBox">
+          {/* Two independent contours: no rectangular torso bridge between the hands. */}
+          <path d="M .253 .558 Q .29 .531 .346 .553 Q .38 .558 .399 .606 L .396 .636 L .38 .64 L .371 .68 Q .352 .695 .337 .676 Q .319 .7 .303 .68 Q .281 .695 .268 .674 L .258 .631 Q .239 .6 .253 .558 Z" />
+          <path d="M .609 .605 Q .62 .554 .679 .552 Q .739 .536 .757 .591 L .75 .638 L .737 .676 Q .724 .699 .704 .679 Q .685 .696 .671 .679 Q .65 .698 .637 .675 L .626 .639 L .604 .631 Z" />
+        </clipPath>
+      </defs>
+    </svg>
     <div ref={ref} aria-hidden="true" data-kreto-flight data-pose="fly" data-facing="left"
       className="pointer-events-none absolute left-0 top-0 z-[2] h-[104px] w-[104px] select-none will-change-transform lg:h-[180px] lg:w-[180px] min-[1440px]:h-[300px] min-[1440px]:w-[300px]"
       style={{ opacity: 0 }}>
@@ -440,7 +452,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { imgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: key === "left" ? "visible" : "hidden", clipPath: key === "peekSide" ? SIDE_HEAD_CLIP : undefined }} />
+            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined, clipPath: key === "peekSide" ? SIDE_HEAD_CLIP : undefined }} />
         ))}
       </div>
     </div>
@@ -451,7 +463,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { gripImgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: "hidden", clipPath: GRIP_CLIP[key] }} />
+            style={{ visibility: "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined, clipPath: key === "peekTop" ? `url(#${topGripId})` : GRIP_CLIP[key] }} />
         ))}
       </div>
     </div>
