@@ -200,11 +200,7 @@ export const BriefSection = ({
             <Button
               type="button"
               size="sm"
-              className={cn(
-                "h-9 gap-1.5 text-xs rounded-full font-semibold",
-                "bg-[hsl(var(--energy))] text-[hsl(var(--energy-foreground))]",
-                "hover:bg-[hsl(var(--energy))]/90 shadow-[0_0_18px_hsl(var(--energy)/0.35)]",
-              )}
+              className="h-9 gap-1.5 rounded-full text-xs font-semibold"
               onClick={breakIntoTasks}
               disabled={breakingDown}
             >

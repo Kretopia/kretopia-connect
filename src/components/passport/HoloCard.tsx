@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface HoloCardProps {
   children: ReactNode;
   className?: string;
-  /** Max tilt in degrees. */
+  /** Max tilt in degrees. Subtle by default: every Holo card shares one amplitude. */
   maxTilt?: number;
   /** The blurred coloured halo behind the card. On by default; off leaves the card on the page's own background. */
   glow?: boolean;
@@ -16,7 +16,10 @@ interface HoloCardProps {
  * Pure CSS/transform: no dependencies, GPU-composited, disabled for touch
  * devices and for users who prefer reduced motion.
  */
-export function HoloCard({ children, className, maxTilt = 8, glow = true }: HoloCardProps) {
+export function HoloCard({ children, className, maxTilt = 5, glow = true }: HoloCardProps) {
+  // The pointer is tracked on this outer wrapper, which never moves. Tracking it on the tilted card itself made the
+  // card's own edge slide out from under the pointer near a corner: the tilt reset, the pointer was over the card
+  // again, the tilt came back, and the card trembled. The wrapper's box is stable, so the pointer is either in it or not.
   const ref = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [glare, setGlare] = useState({ x: 50, y: 50, on: false });
@@ -45,8 +48,8 @@ export function HoloCard({ children, className, maxTilt = 8, glow = true }: Holo
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (!interactive() || !ref.current) return;
       const r = ref.current.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
+      const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+      const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
       setTilt({ x: (0.5 - py) * maxTilt * 2, y: (px - 0.5) * maxTilt * 2 });
       setGlare({ x: px * 100, y: py * 100, on: true });
     },
@@ -59,12 +62,9 @@ export function HoloCard({ children, className, maxTilt = 8, glow = true }: Holo
   }, []);
 
   return (
-    <div className={cn("[perspective:1200px]", className)}>
+    <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave} className={cn("[perspective:1200px]", className)}>
       <div
-        ref={ref}
-        onPointerMove={onMove}
-        onPointerLeave={onLeave}
-        className="relative h-full rounded-2xl transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d]"
+        className="relative h-full rounded-2xl transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] motion-reduce:transition-none"
         style={{
           transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateZ(0)`,
         }}
@@ -112,7 +112,7 @@ export function HoloCard({ children, className, maxTilt = 8, glow = true }: Holo
             aria-hidden
             className="pointer-events-none absolute inset-0 mix-blend-soft-light transition-opacity duration-300"
             style={{
-              opacity: glare.on ? 0.85 : 0.28,
+              opacity: glare.on ? 0.6 : 0.26,
               background: `radial-gradient(120% 90% at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 35%, transparent 65%)`,
             }}
           />

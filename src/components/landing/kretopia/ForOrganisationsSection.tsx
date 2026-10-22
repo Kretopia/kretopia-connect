@@ -25,7 +25,7 @@
  */
 import { color, motion } from "framer-motion";
 import { Search, IdCard, Megaphone, Users2, CheckCircle2 } from "lucide-react";
-import { GlassCta } from "@/components/ui/glass-cta";
+import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
@@ -91,10 +91,11 @@ export const ForOrganisationsSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="mt-8 flex flex-wrap items-center gap-3"
+          className="mt-8 grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2"
         >
           <GlassCta
             to="/post-opportunity"
+            className="w-full"
             onClick={() =>
               trackLandingCtaClick({
                 ctaId: "hire_through_kretopia",
@@ -106,8 +107,9 @@ export const ForOrganisationsSection = () => {
           >
             Hire Through Kretopia
           </GlassCta>
-          <GlassCta
+          <OutlineCta
             to="/auth?tab=signup&src=for_organisations"
+            className="w-full"
             onClick={() =>
               trackLandingCtaClick({
                 ctaId: "partner_with_us",
@@ -118,7 +120,7 @@ export const ForOrganisationsSection = () => {
             }
           >
             Partner With Us
-          </GlassCta>
+          </OutlineCta>
         </motion.div>
       </div>
     </section>
