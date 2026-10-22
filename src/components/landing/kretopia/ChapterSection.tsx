@@ -251,7 +251,7 @@ export const ChapterSection = ({
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "160px" }}
             transition={{ duration: 0.2 }}
-            className="relative z-[3] lg:col-span-5"
+            className="relative z-[1] lg:col-span-5"
           >
             {/* Same eyebrow → h2 → body hierarchy as the hero and every
                 other landing-* section (Search, Verified Credits, Kreto) —

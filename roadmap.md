@@ -55,6 +55,7 @@
 - [x] Verify public tutorials, About tabs, Spotlight tabs and Hire Talent disclosures at desktop/375px; 11 shared-surface tests pass, no runtime errors. No publication. Live content fetching and existing logo delivery remain unverified in the sandbox.
 
 ## Kreto Landing flight
+- [x] Match bottom/Flying helmet size exactly, isolate top glove contours, extend eased emergence, put flight above chapter text/below media and tuck side body behind the edge. 22 tests pass; real Landing scroll shows all four exclusive poses, assets loaded, no runtime errors/overflow at 1280/885/375px, reduced motion respected and automatic compilation OK. Sandbox chapter videos remain undecoded; no publication.
 - [ ] Correct top-peek descent and bottom-peek ascent with shared Flying endpoints; remove artificial disappearance and run targeted regressions.
 - [x] Keep each free journey facing its media destination, add reversible progressive peek emergence and crisp exclusive edge handoffs; 18 tests and 506 round-trip opacity/exclusive-pose/media-clearance checks pass; compilation OK, not published.
 - [x] Correct stale internal slide handoffs and unsafe eased Flying departures; exact bidirectional peek transitions, full-box media clearance and rotation disabled near media. 17 tests and 506 bidirectional single-pose/opacity checks pass; automatic compilation OK; not published.
