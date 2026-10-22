@@ -37,3 +37,4 @@
 - Isolate Home/mascots with Suspense; mount chapters after Hero, warm nearby videos and reveal text early to avoid delays.
 - Share KretoTyping in Studio Make/launcher; pause offscreen/reduced motion.
 - Reuse PassportCollaborationCta and pending invite flows; connection is not consent.
+- Keep Discover on FeaturePageHeader, StudioFeatureShell and two Wrapped panels (live signals, then lanes); reuse the Radar fetchers/keys and the shared pill classes, because a second layout or count definition drifts from Scout and Today.

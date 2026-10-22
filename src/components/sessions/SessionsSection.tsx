@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { GlassCtaButton } from "@/components/ui/glass-cta";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Sparkles, MapPin, Calendar } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { cn } from "@/lib/utils";
+import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
+import { PILL_GROUP, PILL_ITEM } from "@/components/discover/DiscoverSwitch";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SessionCard } from "./SessionCard";
 import { CreateSessionDialog } from "./CreateSessionDialog";
+import { SessionsGuestGate } from "./SessionsGuestGate";
 
 interface Session {
   id: string;
@@ -263,43 +266,36 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
     confirmTicket();
   }, [searchParams, user]);
 
+  if (!user) return <SessionsGuestGate />;
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-lg">Events & Sessions</h3>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList aria-label="Events" className={cn(PILL_GROUP, "h-auto text-muted-foreground")}>
+            {[
+              { value: "nearby", label: "Nearby", icon: MapPin },
+              { value: "joined", label: "Joined", icon: Calendar },
+              { value: "hosting", label: "Hosting", icon: Sparkles },
+            ].map(({ value, label, icon: Icon }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className={cn(PILL_ITEM, "data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:ring-1 data-[state=active]:ring-border")}
+              >
+                <Icon className="h-3.5 w-3.5" aria-hidden />
+                {label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          <GlassCtaButton size="sm" className="min-h-11 sm:min-h-0" onClick={() => setShowCreateDialog(true)} icon={<Plus className="h-4 w-4" aria-hidden />}>
+            Host Event
+          </GlassCtaButton>
         </div>
-        <Button 
-          size="sm" 
-          variant="gradient"
-          onClick={() => setShowCreateDialog(true)}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Host Event
-        </Button>
-      </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="nearby" className="flex-1 gap-1">
-            <MapPin className="h-3 w-3" />
-            Nearby
-          </TabsTrigger>
-          <TabsTrigger value="joined" className="flex-1 gap-1">
-            <Calendar className="h-3 w-3" />
-            Joined
-          </TabsTrigger>
-          <TabsTrigger value="hosting" className="flex-1">
-            Hosting
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="nearby" className="mt-4">
+        <TabsContent value="nearby" className="mt-0">
           {loading ? (
-            <div className="flex justify-center py-8">
-              <KretopiaSpinner className="h-6 w-6 text-primary" />
-            </div>
+            <KretopiaLoader label="Loading events" size="sm" />
           ) : nearbySessions.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center">
@@ -308,10 +304,9 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Be the first to host a creative meetup, jam session, or event in your area!
                 </p>
-                <Button variant="gradient" onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                <GlassCtaButton size="sm" onClick={() => setShowCreateDialog(true)} icon={<Plus className="h-4 w-4" aria-hidden />}>
                   Host an Event
-                </Button>
+                </GlassCtaButton>
               </CardContent>
             </Card>
           ) : (
@@ -328,7 +323,7 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
           )}
         </TabsContent>
 
-        <TabsContent value="joined" className="mt-4">
+        <TabsContent value="joined" className="mt-0">
           {joinedSessions.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center">
@@ -353,7 +348,7 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
           )}
         </TabsContent>
 
-        <TabsContent value="hosting" className="mt-4">
+        <TabsContent value="hosting" className="mt-0">
           {mySessions.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center">
@@ -362,10 +357,9 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Create your first event, meetup, or jam session and invite others
                 </p>
-                <Button variant="gradient" onClick={() => setShowCreateDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                <GlassCtaButton size="sm" onClick={() => setShowCreateDialog(true)} icon={<Plus className="h-4 w-4" aria-hidden />}>
                   Host an Event
-                </Button>
+                </GlassCtaButton>
               </CardContent>
             </Card>
           ) : (

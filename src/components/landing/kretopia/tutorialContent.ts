@@ -14,6 +14,7 @@ import {
   DoorOpen, Video, UploadCloud, Share2,
   Lightbulb, ThumbsUp, CheckCircle2,
   Briefcase, UserPlus, LineChart, Wallet, CreditCard, PiggyBank,
+  Radio, CalendarDays,
 } from "lucide-react";
 import type { TutorialStep } from "./FeatureTutorial";
 
@@ -50,6 +51,13 @@ export const MATCH_TUTORIAL: TutorialStep[] = [
   { icon: MessageCircle, title: "See who's suggested", body: "Browse collaborators Match surfaces, each with the shared context that connects you." },
   { icon: HeartHandshake, title: "Start a real conversation", body: "No cold DMs — reach out with the shared project or connection already in view." },
   { icon: Handshake, title: "Turn it into work", body: "When it's a fit, bring them into a Studio project together." },
+];
+
+export const DISCOVER_TUTORIAL: TutorialStep[] = [
+  { icon: Users, title: "Meet people worth meeting", body: "Swipe a deck ranked around your Passport, browse every creative on Kretopia, or see who is working near you." },
+  { icon: Briefcase, title: "Find gigs that fit", body: "Kreto scouts real gigs from job boards for you, and Open lists what the community posts." },
+  { icon: Radio, title: "Drop into a live Stage", body: "See which Stages are on air right now and join the room." },
+  { icon: CalendarDays, title: "Catch what's on", body: "Workshops, meetups and shows coming up on Kretopia. Join one, or host your own." },
 ];
 
 export const STUDIO_TUTORIAL: TutorialStep[] = [
