@@ -24,7 +24,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.57, handsY: 0.33, minScale: 0.5, extent: 0.31 };
+const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -32,8 +32,7 @@ const FLY_ALPHA = { top: 0, bottom: 1 };
 const sizeFor = (w: number) => (w >= 1440 ? 300 : w >= 1024 ? 180 : 104);
 /** After the scroll settles, the media's real positions are checked once and the flight re-measured if they moved. */
 const REMEASURE_IDLE_MS = 180;
-/** The head clip of the side artwork (art coordinates): only the helmet and ears come out, never fingers or body. */
-const SIDE_HEAD_CLIP = "ellipse(26% 23% at 64% 33.5%)";
+// Preserve the original full silhouette: only the real media edge hides the body.
 /** Reversing the scroll turns him with one backflip (in the picture plane, so the volume is never flattened). */
 const TURN_MS = 520;
 /**
@@ -222,7 +221,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // media edge crosses the artwork, so the hands never move relative to the edge.
         const mirror = activeLock.side === "left" ? -1 : 1;
         const k = activeLock.scale ?? 1;
-        const originX = (mirror === 1 ? SIDE.cut : 1 - SIDE.cut) * 100;
+        const originX = SIDE.cut * 100;
         for (const image of [imgs.current.peekSide, gripImgs.current.peekSide]) {
           if (!image) continue;
           image.style.transformOrigin = `${originX}% ${SIDE.handsY * 100}%`;
@@ -302,19 +301,25 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const attach = index % 2 === 0;
         // The others he hides beside: on the side with the most room, as much of him as fits in the margin.
         const rectRight = left + rect.width;
-        const room = Math.max(left, vw - rectRight);
+        const textRect = media.closest("section")?.querySelector<HTMLElement>("[data-kreto-flight-content]")?.getBoundingClientRect();
+        const outerRoom = Math.max(left, vw - rectRight);
+        const textBeside = textRect && textRect.top < rect.bottom && textRect.bottom > rect.top;
+        const textGap = textBeside && textRect
+          ? textRect.left >= rect.right ? textRect.left - rect.right : rect.left - textRect.right
+          : outerRoom;
+        const room = Math.min(outerRoom, Math.max(0, textGap - 8));
         // A quarter of the part that sticks out may go past the viewport edge: he keeps a believable
         // size instead of shrinking to fit a narrow margin.
-        // Only the head comes out: its width is what has to fit, with a sliver allowed past the viewport edge.
+        // Fit the original head-and-body silhouette into the gutter without covering chapter text.
         const sideW = SIDE.extent * size;
         const sideScale = Math.min(1, (room - 2 + 0.15 * sideW) / sideW);
         const sideMode = !attach && sideScale >= SIDE.minScale;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
-        const sideX = sideOf === "right" ? rectRight - SIDE.cut * size : left - (1 - SIDE.cut) * size;
+        const sideX = (sideOf === "right" ? rectRight : left) - SIDE.cut * size;
         // Fully behind the edge: nothing of him is past it.
         const sideHiddenX = sideOf === "right"
           ? rectRight - SIDE.cut * size - sideW * sideScale - 2
-          : left - (1 - SIDE.cut) * size + sideW * sideScale + 2;
+          : left - SIDE.cut * size + sideW * sideScale + 2;
         // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
         const x = sideMode
           ? sideX
@@ -452,7 +457,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { imgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined, clipPath: key === "peekSide" ? SIDE_HEAD_CLIP : undefined }} />
+            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined }} />
         ))}
       </div>
     </div>
