@@ -100,5 +100,5 @@ Entry composition: `framer-motion` 331 KB, **Sentry (replay 294, core 289, brows
 
 **Not done, by judgment (each is a refactor or a behaviour decision, outside "surgical"):**
 1. `framer-motion` is 331 KB of the entry. `LazyMotion` with `domAnimation` and `m.*` would cut most of it but touches every file that animates. Worth its own pass with a visual check.
-2. `mapbox-gl` (about 1.6 MB) loads with the Discover route. Loading it only when the map is shown would help that route; it needs a signed-in look to confirm the map is not the first thing people see.
+2. ~~`mapbox-gl` (about 1.6 MB) loads with the Discover route.~~ **Done (2026-10-22, `perf/lazy-mapbox`):** `NearbyInline` imports the map dynamically and starts the download when someone taps "Use my location". The `Discover` chunk goes from 1,611 KB (446 KB gzip) to 20 KB (7 KB gzip); the map is its own 1,591 KB (439 KB gzip) chunk plus a 5 KB CSS file. People opens on Swipe, so the map is not on the first view; checked in the browser on a production build (no map request on first load or on opening Nearby; the request starts on "Use my location"; the map then renders with its legend, count and atlas link).
 3. The service worker precaches 424 entries (10.7 MB). Workbox owns that policy (AGENTS.md); not touched.

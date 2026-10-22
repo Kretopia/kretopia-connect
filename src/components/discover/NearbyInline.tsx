@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Navigation } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { NearbyCreatorsMap } from "@/components/nearby/NearbyCreatorsMap";
+
+// The map engine is about 1.6 MB, and People opens on Swipe, so it is fetched only once a location is known.
+// Keep it out of static imports: one of them puts it back in the Discover chunk.
+const loadNearbyMap = () => import("@/components/nearby/NearbyCreatorsMap");
+const NearbyCreatorsMap = lazy(() => loadNearbyMap().then((module) => ({ default: module.NearbyCreatorsMap })));
 
 interface NearbyCreator {
   user_id: string;
@@ -77,6 +81,7 @@ export const NearbyInline = () => {
 
   const detect = useCallback(async () => {
     setLocating(true);
+    loadNearbyMap().catch(() => {}); // downloads while the browser asks for permission; the lazy render reports a real failure
     try {
       if (!navigator.geolocation) throw new Error("Geolocation not supported");
       const pos = await new Promise<GeolocationPosition>((res, rej) =>
@@ -126,13 +131,23 @@ export const NearbyInline = () => {
 
   return (
     <div className="space-y-3">
-      <NearbyCreatorsMap
-        creators={creators as any}
-        userLocation={loc}
-        selectedCreator={selected as any}
-        onSelectCreator={(c) => setSelected(c as any)}
-        loading={loading}
-      />
+      <Suspense
+        fallback={
+          <Card className="overflow-hidden">
+            <div className="flex h-[500px] items-center justify-center lg:h-[600px]">
+              <KretopiaLoader label="Loading map" size="sm" />
+            </div>
+          </Card>
+        }
+      >
+        <NearbyCreatorsMap
+          creators={creators as any}
+          userLocation={loc}
+          selectedCreator={selected as any}
+          onSelectCreator={(c) => setSelected(c as any)}
+          loading={loading}
+        />
+      </Suspense>
 
       <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
         <span>{creators.length} within 50km</span>
