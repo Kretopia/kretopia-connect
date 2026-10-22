@@ -31,7 +31,8 @@ Measured on a production build (`vite build` + `vite preview`), the real `/landi
 
 ## 3. EPK
 - Public page: the title accent is the page's foreground colour (no pink, no gradient).
-- Press kit PDF: Editorial and Pure Black use a quiet white accent (`#E8EBF2` / `#FFFFFF`), Editorial Light uses ink (`#14171F`); the editor starts on `#E8EBF2`; the QR no longer ends in pink. Every accent keeps WCAG AA on its own canvas. Tests assert no violet and no flashy pink among the palettes and among every colour the generator paints.
+- Press kit PDF: Editorial and Pure Black use the brand's Signal Teal (`#17D9D4`), Editorial Light uses the same teal deepened to `#0A7673` for contrast on white; the editor starts on `#17D9D4`; the QR no longer ends in pink. Every accent keeps WCAG AA on its own canvas. Tests assert the teal family, no violet and no flashy pink among the palettes and among every colour the generator paints.
+- **Correction (2026-10-22, follow-up):** the first version of this pass used white and ink because the brand PDF was not in the repo. It is `~/Desktop/KRETOPIA/Kretopia_Feature_Bible_v1.pdf`, section "the brand in one page": Signal Triad Magenta `#FF0A78`, Yellow `#FFC72C`, Teal `#17D9D4` ("accent only, never structural"), surfaces Midnight `#05070D`, Card `#11141B`, Elevated `#1A1E28`, Muted `#A8B0C0`, and **one dominant accent per surface: Passport and Credits are Teal**, Scout and Kreto Yellow, Match and Messages Magenta. The EPK is the Passport's external face, so teal is the accent; the public title uses a new `--passport-accent` token (teal on dark, deeper teal on light, falling back to the foreground colour). The "Palette Aligned" deck and the business cards were also read: midnight, white, grey and the logo gradient as the only highlight, consistent with this.
 - **Not verified:** the generated PDF was not opened in a viewer (colours were checked by recording what the generator sets).
 
 ## 4. Passport
@@ -62,7 +63,7 @@ Run: `tsc -p tsconfig.app.json` exit 0; full suite on this branch with Node's ex
 Not run: Passport EPK and unified layout, Scout tabs and cards, Studio, New Room and a live VideoCall in a signed-in session; light theme; tablet captures other than Settings; console errors on the affected routes; opening the generated PDF; Passport, Scout, Studio and VideoCall load times.
 
 ## TODOs
-1. The brand palette PDF is not in the repo: compare `EPK_TEMPLATES` with it and adjust the three palettes if it differs.
+1. ~~Brand palette PDF~~ found and applied (see item 3). Open question for the owner: the app's tokens turned `--signal-teal` into the white accent ("mainly white" rollback) while the brand guide still assigns teal to Passport; the guide is followed here for the EPK only.
 2. Analyse the 1.38 MB main entry and the 824 KB Studio chunk.
 3. Signed-in pass: Scout cards and empty states, Passport, Studio, New Room, a real call (lobby, miniature, screen share).
 4. `VoiceFirstCreateModal`'s "How this works" trigger was removed upstream and its test still expects it; decide which is right.
@@ -70,6 +71,13 @@ Not run: Passport EPK and unified layout, Scout tabs and cards, Studio, New Room
 
 ## Rollback
 One commit; `git revert` restores everything. Per area: `HoloCard.tsx`, `ChapterSection.tsx` (`eager`), `extractBriefDocument.ts` (`loadPdfjs`), `SettingsNav.tsx` + `WrappedShell.tsx` (`overflow-clip`; revert both together), `sheet.tsx` + `Navbar.tsx` + `index.css` (search), `PreCallLobby.tsx` + `index.css` (call), `epkPdfGenerator.ts` + `PublicProfileWrapped.tsx` (EPK), the Scout files.
+
+## Decisions taken (2026-10-22, by judgment, as delegated)
+- **First chapter video waits on phones and with data saver: kept.** It saves 2.86 MB on a phone's first load, the chapter sits about a screen and a half down, its download starts one screen before it is reached, and desktop keeps the repo's "first chapter without waiting" behaviour. Confirmed live: no video downloads on a phone's first load.
+- **Holo tilt restored: kept.** It was asked for explicitly, and it was checked with a real pointer on two corners locally and on a large live card (4.96, -4.92 degrees, one distinct value over a second, no flip-flops, card never moves).
+- **`WrappedShell` `overflow-clip`: kept, with a fallback.** Same clipping and radius; browsers without `overflow: clip` (Safari before 16) now get `overflow: hidden` through an `@supports` rule, so nothing regresses there; only the sticky Settings sidebar needs the new behaviour.
+- **EPK palette: changed to the brand's Signal Teal** (see item 3).
+- **Not possible for me:** a signed-in look at Scout, Passport, Settings and a live call. The browser pane is signed out, Scout shows a blurred sign-up gate to guests, and I do not enter credentials. The public EPK page was checked live instead (title colour, no pink, Holo corners).
 
 ## Publish-readiness decision required
 Nothing is published. To ship: merge, then publish the frontend; no function paste or database step. Decide first on (a) first-chapter video waiting on phones (a deliberate trade against the `AGENTS.md` "prioritize the first chapter" rule), (b) the shared `WrappedShell` `overflow-clip` change, (c) restoring the Holo tilt that `main` had removed, (d) the EPK palette until it is compared with the PDF, and (e) a signed-in check of items 2, 4 and 6.

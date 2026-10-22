@@ -127,6 +127,10 @@ All colors MUST be HSL.
     --energy: 240 11% 8%;
     --energy-foreground: 36 27% 97%;
 
+    /* The Passport surface's one dominant accent: the brand's Signal Teal (#17D9D4, Feature Bible, "the brand in one page"),
+       deepened on a light canvas (#0A7673, 5.2:1 on white) so small text keeps its contrast. Used by the public EPK. */
+    --passport-accent: 178 84% 25%;
+
     /* Fixed print-safe QR palette: the light quiet zone keeps the code scannable in either theme. The accent is the ink,
        not --energy: --energy is white in the dark themes, which faded the end of the code into its own white paper. */
     --qr-paper: 0 0% 100%;
@@ -307,6 +311,8 @@ All colors MUST be HSL.
        being everywhere and looking ugly). */
     --energy: 0 0% 100%;
     --energy-foreground: 225 44% 4%;
+
+    --passport-accent: 178 81% 47%;
 
     --destructive: 0 75% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -1390,6 +1396,12 @@ svg.k-gradient-icon {
 @media (prefers-reduced-motion: reduce) {
   .k-search-hero::before,
   .k-search-hero::after { transition: none; }
+}
+
+/* `overflow-clip` clips like `hidden` but does not make the element a scroll container, so `position: sticky` works inside it
+   (WrappedShell, Settings). A browser that does not know `overflow: clip` (Safari before 16) gets `hidden`, as before. */
+@supports not (overflow: clip) {
+  .overflow-clip { overflow: hidden; }
 }
 
 /* Top-navbar search: a light glass panel under the navbar. The page behind it is blurred hard (the sheet's overlay) and

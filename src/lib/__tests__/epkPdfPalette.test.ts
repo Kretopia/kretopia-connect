@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { EPK_CATEGORY_ACCENTS, EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES } from "../epkPdfGenerator";
 
 // The press kit used the logo gradient's violet stop (#A516C5) as its accent, then a bright pink; both read as loud on a
-// page that is read to judge a person. The accent is now the app's own quiet white / ink, and it must stay readable on
-// each template's own canvas.
+// page that is read to judge a person. The accent is now the brand's Signal Teal (#17D9D4, the Passport surface's dominant
+// accent in the brand guide), deepened on the light canvas, and it must stay readable on each template's own canvas.
 type Rgb = readonly [number, number, number];
 
 const hue = ([r, g, b]: Rgb): number | null => {
@@ -24,6 +24,8 @@ const isViolet = (rgb: Rgb) => { const h = hue(rgb); return h !== null && h >= 2
 const saturation = ([r, g, b]: Rgb) => { const max = Math.max(r, g, b) / 255; const min = Math.min(r, g, b) / 255; return max === 0 ? 0 : (max - min) / max; };
 /** Magenta to hot pink and strong enough to read as colour: the bright pink this press kit used to carry. */
 const isFlashyPink = (rgb: Rgb) => { const h = hue(rgb); return h !== null && h >= 315 && h <= 350 && saturation(rgb) > 0.4; };
+/** The brand's Signal Teal family: cyan-green, clearly saturated. */
+const isTeal = (rgb: Rgb) => { const h = hue(rgb); return h !== null && h >= 170 && h <= 190 && saturation(rgb) > 0.5; };
 
 describe("press kit palettes", () => {
   for (const template of EPK_TEMPLATES) {
@@ -33,6 +35,10 @@ describe("press kit palettes", () => {
           expect(isViolet(accent)).toBe(false);
           expect(isFlashyPink(accent)).toBe(false);
         }
+      });
+
+      it("uses the brand's Signal Teal as its accent, the Passport surface's colour", () => {
+        expect(isTeal(template.palette.primary as Rgb)).toBe(true);
       });
 
       it("keeps its accent readable on its own canvas (WCAG AA, 4.5:1)", () => {
@@ -48,7 +54,8 @@ describe("press kit palettes", () => {
   }
 
   it("starts the editor on the first template's own accent, which is neither pink nor violet", () => {
-    expect(EPK_DEFAULT_ACCENT_HEX).toBe("#E8EBF2");
+    expect(EPK_DEFAULT_ACCENT_HEX).toBe("#17D9D4");
+    expect(isTeal(fromHex(EPK_DEFAULT_ACCENT_HEX))).toBe(true);
     expect(isViolet(fromHex(EPK_DEFAULT_ACCENT_HEX))).toBe(false);
     expect(isFlashyPink(fromHex(EPK_DEFAULT_ACCENT_HEX))).toBe(false);
     expect(fromHex(EPK_DEFAULT_ACCENT_HEX)).toEqual(EPK_TEMPLATES[0].palette.primary);
@@ -64,7 +71,9 @@ describe("press kit palettes", () => {
   it("the checks themselves recognise the old violet and the old pink", () => {
     expect(isViolet([165, 22, 197])).toBe(true);
     expect(isFlashyPink([246, 40, 141])).toBe(true);
-    expect(isFlashyPink([232, 235, 242])).toBe(false);
+    expect(isFlashyPink([23, 217, 212])).toBe(false);
+    expect(isTeal([23, 217, 212])).toBe(true);
+    expect(isTeal([246, 40, 141])).toBe(false);
     expect(contrast([0, 0, 0], [255, 255, 255])).toBeCloseTo(21, 0);
   });
 });
