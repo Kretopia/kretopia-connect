@@ -27,8 +27,13 @@ describe("Landing chapter marks", () => {
     });
     const button = screen.getByRole("button", { name: "Jump to Match chapter" });
     expect(button).toHaveAttribute("aria-current", "true");
-    expect(button.querySelector('[aria-hidden]')).toHaveClass("h-8", "bg-foreground");
+    expect(button.querySelector('[aria-hidden]')).toHaveClass("h-6", "bg-foreground");
     expect(container.querySelectorAll('button[aria-current="true"]')).toHaveLength(1);
+    // only the active mark is long: every other mark is the short dot
+    const marks = Array.from(container.querySelectorAll<HTMLElement>('button[aria-label^="Jump to"] [aria-hidden]'));
+    const long = marks.filter((m) => m.classList.contains("h-6"));
+    expect(long).toHaveLength(1);
+    expect(marks.filter((m) => m.classList.contains("h-1.5")).length).toBe(marks.length - 1);
     const scroll = vi.fn();
     match.scrollIntoView = scroll;
     fireEvent.click(button);
