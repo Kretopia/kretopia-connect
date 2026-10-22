@@ -53,3 +53,6 @@ Everything is one commit on `feat/ui-ux-corrective-overhaul`; `git revert` of it
 
 ## Publish-readiness decision required
 Nothing has been published. To publish this branch: merge it, then publish the frontend; no Edge Function paste and no database step is involved. Decide first on (a) the Open Gigs order, (b) Partner With Us becoming the outline style, (c) whether partial items 1, 5, 7 and 8 are acceptable as they are or need the New Room board decision, and (d) a signed-in look at items 3, 4 and 6.
+
+## Post-merge note (2026-10-22)
+After this PR, `main`'s `HoloCard` was changed again so that it never tilts ("No pointer transforms: the card and its hit target never rotate"); `maxTilt` is kept only for old callers. That removes the corner tremble by removing the movement, so the wrapper-tracking fix described above no longer exists in the code. `HoloCard.test.tsx` was rewritten for the new contract (no part of the card gets a transform from the pointer; no perspective, 3D or transform-transition classes; the foil stays visible).

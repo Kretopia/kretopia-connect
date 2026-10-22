@@ -5,31 +5,17 @@ import { HoloCard } from "../HoloCard";
 // jsdom has no PointerEvent, and without it clientX/clientY are dropped from the events below.
 class TestPointerEvent extends MouseEvent {}
 
-const media = (reduced: boolean, fine = true) =>
-  vi.fn().mockImplementation((query: string) => ({
-    matches: query.includes("reduce") ? reduced : fine,
-    media: query,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  }));
-
 function setup(props: Partial<React.ComponentProps<typeof HoloCard>> = {}) {
   const view = render(<HoloCard {...props}><p>card body</p></HoloCard>);
   const wrapper = view.container.firstElementChild as HTMLElement;
-  const tilted = wrapper.firstElementChild as HTMLElement;
-  // The wrapper is a 200 x 100 box at the origin, as a real laid-out card would be.
-  wrapper.getBoundingClientRect = () => ({ left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, x: 0, y: 0, toJSON: () => ({}) });
-  return { wrapper, tilted };
+  const card = wrapper.firstElementChild as HTMLElement;
+  return { view, wrapper, card };
 }
-const angles = (el: HTMLElement) => {
-  const m = el.style.transform.match(/rotateX\((-?[\d.]+)deg\) rotateY\((-?[\d.]+)deg\)/);
-  return m ? { x: Number(m[1]), y: Number(m[2]) } : null;
-};
-const move = (el: HTMLElement, clientX: number, clientY: number) => fireEvent.pointerMove(el, { clientX, clientY });
+const everyElement = (root: HTMLElement) => [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))];
 
 describe("HoloCard", () => {
   beforeEach(() => {
-    window.matchMedia = media(false);
+    window.matchMedia = vi.fn().mockImplementation(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })) as never;
     vi.stubGlobal("PointerEvent", TestPointerEvent);
   });
   afterEach(() => {
@@ -37,73 +23,48 @@ describe("HoloCard", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the card's content and shows the foil even before anything touches it", () => {
-    const { tilted } = setup();
+  it("keeps the card's content and shows the foil on every card, without anything touching it", () => {
+    const { card } = setup();
     expect(screen.getByText("card body")).toBeTruthy();
-    const foil = tilted.querySelector<HTMLElement>(".mix-blend-soft-light");
+    const foil = card.querySelector<HTMLElement>(".mix-blend-soft-light");
     expect(foil).not.toBeNull();
     expect(Number(foil!.style.opacity)).toBeGreaterThan(0.2);
-    expect(angles(tilted)).toEqual({ x: 0, y: 0 });
   });
 
-  it("tilts towards the pointer by at most the default amplitude, which is gentle", () => {
-    const { wrapper, tilted } = setup();
-    move(wrapper, 0, 0);
-    expect(angles(tilted)).toEqual({ x: 5, y: -5 });
-    move(wrapper, 200, 100);
-    expect(angles(tilted)).toEqual({ x: -5, y: 5 });
-  });
+  // The trembling near a corner came from a tilt that moved the card's own edge from under the pointer. Nothing tilts
+  // now, so there is nothing to move: no element gets a transform from the pointer, however it moves.
+  it("never gives any part of the card a transform from the pointer, at a corner or anywhere else", () => {
+    const { wrapper, card } = setup();
+    const before = everyElement(wrapper).map((el) => el.getAttribute("style"));
 
-  it("never tilts further than the amplitude, whatever the pointer reports outside the card", () => {
-    const { wrapper, tilted } = setup({ maxTilt: 4 });
-    move(wrapper, -500, 900);
-    expect(Math.abs(angles(tilted)!.x)).toBeLessThanOrEqual(4);
-    expect(Math.abs(angles(tilted)!.y)).toBeLessThanOrEqual(4);
-  });
-
-  // The trembling near a corner: the pointer used to be tracked on the tilted card itself, so the tilt moved the card's
-  // edge from under the pointer, which reset the tilt, which put the pointer back over the card, and so on.
-  it("does not reset when the tilted card's own edge leaves the pointer: only leaving the stable wrapper does", () => {
-    const { wrapper, tilted } = setup();
-    move(wrapper, 2, 2);
-    const held = angles(tilted);
-    expect(held).not.toEqual({ x: 0, y: 0 });
-
-    // The pointer moves from the tilted card to its stable wrapper: it has not left the card's area.
-    fireEvent.pointerOut(tilted, { relatedTarget: wrapper });
-    expect(angles(tilted)).toEqual(held);
-
-    // Only leaving the wrapper itself puts the card flat again.
-    fireEvent.pointerOut(wrapper, { relatedTarget: document.body });
-    expect(angles(tilted)).toEqual({ x: 0, y: 0 });
-  });
-
-  it("is the same tilt for the same pointer position, however many events arrive (no oscillation)", () => {
-    const { wrapper, tilted } = setup();
-    const seen = new Set<string>();
-    for (let i = 0; i < 20; i++) { move(wrapper, 3, 4); seen.add(tilted.style.transform); }
-    expect(seen.size).toBe(1);
-  });
-
-  it("stays flat for people who prefer reduced motion, and on touch screens", () => {
-    window.matchMedia = media(true);
-    const reduced = setup();
-    move(reduced.wrapper, 0, 0);
-    expect(angles(reduced.tilted)).toEqual({ x: 0, y: 0 });
-    cleanup();
-
-    window.matchMedia = media(false, false);
-    const touch = setup();
-    move(touch.wrapper, 0, 0);
-    expect(angles(touch.tilted)).toEqual({ x: 0, y: 0 });
-  });
-
-  it("only transforms the card: the tilt is not applied to any size, position or margin", () => {
-    const { wrapper, tilted } = setup();
-    move(wrapper, 20, 30);
-    for (const prop of ["width", "height", "top", "left", "margin", "padding"]) {
-      expect(tilted.style.getPropertyValue(prop)).toBe("");
+    for (const [x, y] of [[0, 0], [1, 1], [199, 1], [1, 99], [199, 99], [100, 50], [-300, 900]]) {
+      fireEvent.pointerMove(card, { clientX: x, clientY: y });
+      fireEvent.pointerMove(wrapper, { clientX: x, clientY: y });
+      fireEvent.pointerOut(card, { relatedTarget: wrapper });
+      fireEvent.pointerOut(wrapper, { relatedTarget: document.body });
     }
-    expect(tilted.getAttribute("style")).toMatch(/^transform:/);
+
+    expect(everyElement(wrapper).map((el) => el.getAttribute("style"))).toEqual(before);
+    expect(card.getAttribute("style")).toBeNull();
+  });
+
+  it("has no rotating hit target: no perspective, 3D transform style or transform transition on the wrapper or the card", () => {
+    const { wrapper, card } = setup();
+    for (const el of [wrapper, card]) {
+      expect(el.className).not.toMatch(/perspective|preserve-3d|transition-transform|will-change-transform/);
+    }
+  });
+
+  it("accepts a tilt amplitude only for old callers and ignores it", () => {
+    const { wrapper, card } = setup({ maxTilt: 12 });
+    fireEvent.pointerMove(card, { clientX: 3, clientY: 4 });
+    expect(everyElement(wrapper).some((el) => /rotate|translate|scale/.test(el.getAttribute("style") ?? ""))).toBe(false);
+  });
+
+  it("is the same card with the glow off, and keeps the caller's own className on the wrapper", () => {
+    const { wrapper } = setup({ glow: false, className: "h-full w-44" });
+    expect(wrapper.className).toBe("h-full w-44");
+    expect(wrapper.querySelector(".ai-ambient-breathe")).toBeNull();
+    expect(screen.getByText("card body")).toBeTruthy();
   });
 });
