@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { GlassCtaButton } from "@/components/ui/glass-cta";
 import { MapPin, Navigation } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,23 +110,24 @@ export const NearbyInline = () => {
 
   if (!loc) {
     return (
-      <Card>
-        <CardContent className="py-10 text-center space-y-4">
-          <div className="mx-auto h-12 w-12 rounded-full bg-[hsl(var(--energy))]/10 flex items-center justify-center">
-            <MapPin className="h-6 w-6 text-[hsl(var(--energy))]" />
-          </div>
-          <div className="space-y-1">
-            <p className="font-semibold text-sm">See who's working near you</p>
-            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-              Drop a pin and we'll pull up the creators in your scene.
-            </p>
-          </div>
-          <Button onClick={detect} disabled={locating} size="sm" className="gap-1.5">
-            {locating ? <KretopiaSpinner className="h-3.5 w-3.5" /> : <Navigation className="h-3.5 w-3.5" />}
-            Use my location
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-12 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border bg-muted/50 text-foreground">
+          <MapPin className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-foreground">See who's working near you</p>
+          <p className="mx-auto max-w-xs text-xs text-muted-foreground">Drop a pin and we'll pull up the creators in your scene.</p>
+        </div>
+        <GlassCtaButton
+          size="sm"
+          className="min-h-11 sm:min-h-0"
+          onClick={detect}
+          disabled={locating}
+          icon={locating ? <KretopiaSpinner className="h-4 w-4" /> : <Navigation className="h-4 w-4" aria-hidden />}
+        >
+          Use my location
+        </GlassCtaButton>
+      </div>
     );
   }
 
