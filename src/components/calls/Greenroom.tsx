@@ -166,8 +166,10 @@ export const Greenroom = ({
               <p className="text-xs">{permError ?? "Camera off"}</p>
             </div>
           )}
-          <div className="absolute inset-x-0 bottom-0 px-3 py-2 bg-background/90 flex items-center justify-between">
-            <p className="text-xs font-medium">
+          {/* Floating name chip -- same frosted pill as the project lobby,
+              so the camera preview stays visible behind it */}
+          <div className="absolute bottom-2 left-2 inline-flex items-center gap-1.5 rounded-full bg-background/80 backdrop-blur-sm ring-1 ring-border px-2.5 py-1 shadow-sm">
+            <p className="text-xs font-medium text-foreground">
               {needsName ? guestName || "You" : "You"}
             </p>
             {mic && (
@@ -233,7 +235,7 @@ export const Greenroom = ({
           </div>
         )}
 
-        <Button
+        <button
           type="button"
           onClick={() =>
             onJoin({
@@ -245,7 +247,7 @@ export const Greenroom = ({
             })
           }
           disabled={!canJoin}
-          className="w-full h-12 rounded-full text-base font-semibold bg-primary hover:bg-primary/90 text-primary-foreground"
+          className="w-full h-12 inline-flex items-center justify-center rounded-full text-base font-semibold bg-foreground text-background hover:opacity-90 disabled:opacity-60 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {joining ? (
             <>
@@ -255,7 +257,7 @@ export const Greenroom = ({
           ) : (
             ctaLabel
           )}
-        </Button>
+        </button>
 
         {secondary}
       </div>

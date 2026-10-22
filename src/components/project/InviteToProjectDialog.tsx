@@ -143,7 +143,7 @@ export const InviteToProjectDialog = ({
 
       toast({
         title: "Invite sent!",
-        description: `${recipientName} was invited to "${project?.title || "your project"}" as ${selectedRole}.`,
+        description: `Invitation to "${project?.title || "your project"}" sent. ${recipientName} must accept before joining as ${selectedRole}.`,
       });
       onOpenChange(false);
       setSelectedProjectId(null);
@@ -163,9 +163,9 @@ export const InviteToProjectDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Add {recipientName} to a project</DialogTitle>
+          <DialogTitle>Invite {recipientName} to a project</DialogTitle>
           <DialogDescription>
-            Pick one of your projects and the role they'll play.
+            Propose a project and a role. The person or company must accept before joining; nothing is assigned automatically.
           </DialogDescription>
         </DialogHeader>
 

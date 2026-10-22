@@ -9,6 +9,7 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
+import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
@@ -550,63 +551,23 @@ const CreatorEPK = () => {
             showActions={false}
           >
         {/* Collaboration uses the same existing gated actions. */}
-        {!isOwner && (
-          <div className="border-b border-border pb-5">
-            <h2 className="text-sm font-semibold text-energy uppercase mb-1">
-              Work with {firstName}
-            </h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {connectionStatus === 'connected'
-                ? `You're connected with ${firstName} — message them, start a project, or bring them onto one you're already running.`
-                : connectionStatus === 'pending'
-                ? 'Connection request sent — Message and Start a Project unlock once it\'s accepted.'
-                : `Bring ${firstName} into your next project. Connect first to message, propose a project, or invite them onto one.`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {connectionStatus === 'connected' ? (
-                <>
-                  <Button onClick={() => setMessageOpen(true)} className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    Message
-                  </Button>
-                  <Button variant="outline" onClick={() => setCollaborateOpen(true)} className="gap-2">
-                    <Sparkles className="h-4 w-4" />
-                    Start a Project
-                  </Button>
-                  <Button variant="outline" onClick={() => setInviteOpen(true)} className="gap-2">
-                    <UserPlus2 className="h-4 w-4" />
-                    Invite to Project
-                  </Button>
-                </>
-              ) : (
-                <CtaButton
-                  onClick={handleConnect}
-                  disabled={isConnecting || connectionStatus === 'pending'}
-                  className="w-full gap-2"
-                >
-                  <UserPlus2 className="h-4 w-4" />
-                  {connectionStatus === 'pending' ? 'Request Sent' : isConnecting ? 'Sending…' : `Connect with ${firstName}`}
-                </CtaButton>
-              )}
-            </div>
-            {!currentUserId && (
-              <Button
-                type="button"
-                variant="link"
-                onClick={() => navigate('/auth?type=brand')}
-                className="mt-2 h-auto p-0 text-xs text-muted-foreground"
-              >
-                I'm a brand — find creators like {firstName}
-              </Button>
-            )}
-          </div>
-        )}
+        <PassportCollaborationCta
+          firstName={firstName}
+          isOwner={isOwner}
+          connectionStatus={connectionStatus}
+          isConnecting={isConnecting}
+          onConnect={handleConnect}
+          onMessage={() => setMessageOpen(true)}
+          onPropose={() => setCollaborateOpen(true)}
+          onInvite={() => setInviteOpen(true)}
+          onPreview={() => navigate(`/epk/${profile.user_id}`)}
+        />
 
         {/* Positioning uses a full, themed surface rather than a light side stripe. */}
         {profile.headline || profile.bio ? (() => {
           const longBio = profile.bio && profile.bio.length > 280;
           const body = profile.headline
-            || (longBio && !bioExpanded ? `${profile.bio!.slice(0, 277)}…` : profile.bio);
+            || (longBio && !bioExpanded ? `${profile.bio?.slice(0, 277)}…` : profile.bio);
           return (
             <div className="rounded-md border border-border bg-secondary p-5">
               <h3 className="text-sm font-semibold text-energy uppercase mb-2">
@@ -913,7 +874,7 @@ const CreatorEPK = () => {
             </h3>
             <div className="flex flex-wrap gap-2">
               {profile.achievement_badges.slice(0, 6).map((badge: string, index: number) => (
-                <Badge key={index} variant="outline" className="px-3 py-1 bg-amber-500/10 border-amber-500/60 text-amber-700 dark:text-amber-300 font-semibold">
+                <Badge key={index} variant="outline" className="px-3 py-1 bg-energy/10 border-energy/60 text-energy font-semibold">
                   <Award className="h-3 w-3 mr-1" />
                   {badge}
                 </Badge>
@@ -1019,6 +980,16 @@ const CreatorEPK = () => {
         )}
         </PublicProfileWrapped>
       </div>
+
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-8 text-center">
+          <div className="h-px w-24 bg-gradient-to-r from-primary via-energy to-accent" aria-hidden="true" />
+          <a href={APP_URL} className="k-gradient-text text-lg font-bold tracking-tight">kretopia</a>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            The Operating System for Creative Careers
+          </p>
+        </div>
+      </footer>
 
       {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
       {profile && connectionStatus === 'connected' && (

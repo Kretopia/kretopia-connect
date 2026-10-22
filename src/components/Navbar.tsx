@@ -331,12 +331,14 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="top" className="w-full">
+            <SheetContent side="top" className="k-nav-search-sheet w-full">
               <SheetHeader className="mx-auto w-full max-w-2xl">
-                <SheetTitle>Search</SheetTitle>
+                <SheetTitle className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
+                  Search <span className="k-gradient-text">Kretopia</span>
+                </SheetTitle>
               </SheetHeader>
-              <div className="mx-auto mt-4 w-full max-w-2xl">
-                <UnifiedSearchDropdown variant="hero" placeholder="Search Kretopia" autoFocus />
+              <div className="k-nav-search mx-auto mt-3 w-full max-w-2xl">
+                <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" autoFocus />
               </div>
             </SheetContent>
           </Sheet>
@@ -396,9 +398,9 @@ const Navbar = memo(({ user }: NavbarProps) => {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-[85vw] sm:w-[400px] bg-background text-foreground border-l border-border"
+                className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
-                <SheetHeader className="pr-8 text-left">
+                <SheetHeader className="shrink-0 pr-8 text-left">
                   <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
                   {isCompany && <CompanyModeBadge className="w-fit" />}
@@ -417,10 +419,51 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     shrink prevention collapsed Subscription to 26px and
                     Switch-to-Company to 18px, both with the second line
                     rendered but invisible underneath the first. */}
-                <div className="flex flex-col gap-1 mt-6 overflow-y-auto max-h-[calc(100vh-8rem)] [&>*]:shrink-0">
+                <div className="flex flex-col gap-1 mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] -mx-1 px-1 [&>*]:shrink-0">
                   {isCompany ? (
                     /* Company workspace and the same shared feature access as Creator. */
                     <>
+                      {/* ACCOUNT — pinned to the top in Company mode too,
+                          exactly mirroring the Personal Creator menu order. */}
+                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Account
+                      </p>
+                      <Button
+                        variant="ghost"
+                        className="justify-start gap-3 h-auto w-full py-3"
+                        onClick={() => handleNavigation("/subscription")}
+                      >
+                        {isPro ? (
+                          <Crown className="h-5 w-5 text-accent" />
+                        ) : (
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        )}
+                        <div className="flex flex-col items-start gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Subscription</span>
+                            <Badge
+                              variant="secondary"
+                              className={cn(
+                                "text-[10px] uppercase tracking-wider",
+                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
+                              )}
+                            >
+                              {tierName}
+                            </Badge>
+                          </div>
+                          {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
+                        </div>
+                      </Button>
+                      <div className="px-1 py-1">
+                        <StorageMeter variant="compact" />
+                      </div>
+                      <AccountSwitcher
+                        currentAccountType={accountType}
+                        onSwitch={() => setIsOpen(false)}
+                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
+                      />
+                      <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
+                      <Separator className="my-3" />
                       <MenuGrid>
                         <MenuGridTile
                           icon={Inbox}
@@ -472,42 +515,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
                            { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
                          ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
                        </MenuGrid>
-                      <Separator className="my-3" />
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Account
-                      </p>
-                      <Button
-                        variant="ghost"
-                        className="justify-start gap-3 h-auto w-full py-3"
-                        onClick={() => handleNavigation("/subscription")}
-                      >
-                        {isPro ? (
-                          <Crown className="h-5 w-5 text-accent" />
-                        ) : (
-                          <Sparkles className="h-5 w-5 text-primary" />
-                        )}
-                        <div className="flex flex-col items-start gap-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Subscription</span>
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-[10px] uppercase tracking-wider",
-                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {tierName}
-                            </Badge>
-                          </div>
-                          {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
-                        </div>
-                      </Button>
-                      <AccountSwitcher
-                        currentAccountType={accountType}
-                        onSwitch={() => setIsOpen(false)}
-                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
-                      />
-                      <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                     </>
                   ) : (
                     /* ====== DAILY DRIVER MENU — System + Account only ====== */
@@ -844,12 +851,12 @@ function MenuGridTile({
       aria-current={isActive ? "page" : undefined}
       aria-label={label}
       className={cn(
-        "relative flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-foreground/[0.03] px-2 py-3.5 min-h-[76px] text-center transition-colors hover:bg-foreground/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy",
-        isActive && "border-energy/30 bg-energy/10 text-energy",
+        "k-menu-tile relative flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl px-1.5 py-3.5 min-h-[76px] text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy",
+        isActive && "is-active text-energy",
       )}
     >
-      <Icon className="h-5 w-5 shrink-0" />
-      <span className="text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
+      <Icon className="k-menu-tile-icon h-5 w-5 shrink-0" />
+      <span className="w-full break-words text-[11px] font-medium leading-tight line-clamp-2">{label}</span>
       {badge && (
         <Badge className="absolute top-1.5 right-1.5 bg-primary/15 text-primary text-[9px] px-1.5 h-4">{badge}</Badge>
       )}
@@ -858,7 +865,7 @@ function MenuGridTile({
 }
 
 function MenuGrid({ children }: { children: ReactNode }) {
-  return <div className="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2">{children}</div>;
+  return <div className="grid grid-cols-3 gap-2">{children}</div>;
 }
 
 /* Reusable menu button */

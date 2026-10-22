@@ -32,6 +32,8 @@ beforeEach(() => {
 
 afterEach(() => {
   delete (HTMLElement.prototype as any).animate;
+  vi.useRealTimers();
+  vi.restoreAllMocks();
 });
 
 const root = (c: HTMLElement) => c.firstElementChild as HTMLElement;
@@ -83,5 +85,35 @@ describe("KretoTyping", () => {
     fireEvent.pointerEnter(root(container));
     expect(animate).not.toHaveBeenCalled();
     expect(root(container).firstElementChild).toHaveClass("opacity-0");
+  });
+
+  it("automatically types in visible bursts and cancels on unmount", () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ top: 10, bottom: 106 } as DOMRect);
+    const { unmount } = render(<KretoTyping autoPlay />);
+    expect(animate).toHaveBeenCalledTimes(9);
+    act(() => finishers[0]());
+    act(() => vi.advanceTimersByTime(6000));
+    expect(animate).toHaveBeenCalledTimes(18);
+    const lastAnimation = animate.mock.results[9].value;
+    unmount();
+    expect(lastAnimation.cancel).toHaveBeenCalled();
+    act(() => vi.advanceTimersByTime(6000));
+    expect(animate).toHaveBeenCalledTimes(18);
+  });
+
+  it("does not automatically type offscreen or with reduced motion", () => {
+    vi.useFakeTimers();
+    vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
+    vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({ top: -106, bottom: -10 } as DOMRect);
+    const { unmount } = render(<KretoTyping autoPlay />);
+    act(() => vi.advanceTimersByTime(6000));
+    expect(animate).not.toHaveBeenCalled();
+    unmount();
+    mockMatchMedia(true);
+    render(<KretoTyping autoPlay />);
+    act(() => vi.advanceTimersByTime(6000));
+    expect(animate).not.toHaveBeenCalled();
   });
 });

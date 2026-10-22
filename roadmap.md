@@ -1,5 +1,15 @@
 # Roadmap
 
+## Passport collaboration and stable Holo cards
+- [x] Make project/role proposals explicitly subject to the recipient's acceptance through existing invitation workflows.
+- [x] Replace the Passport social-sharing card with a branded collaboration CTA on owner/public views.
+- [x] Remove pointer-driven Holo inclination globally; 47 focused tests pass and compilation is OK. Isolated light/dark browser checks confirm stable bounds and working proposal/invite callbacks; official logo asset delivery is not verified in sandbox.
+- [ ] Verify the connected-account flow on populated Passports — blocked: no automatable legacy session.
+
+## Kreto Computer consistency
+- [x] Studio Make uses the same round black feet as the launcher; launcher shares keyboard typing/glow with automatic decorative bursts and unchanged opening action.
+- [x] 22 focused tests pass; actual components inspected in isolated light/dark browser view, artwork loaded and reduced motion has zero running animations; automatic compilation OK. Connected Studio account not available for full-page verification. No publication.
+
 ## Studio Calls Slice 5
 - [x] Persist the existing Studio call surface across navigation; miniature status, timer, recording, participant initials/live iframe, mute, return, minimize and confirmed leave. Desktop drag; mobile safe-area placement; refresh starts idle.
 - [x] 49 focused tests pass, including actual Studio controller with simulated Daily: one creation/join across routes and minimize, cleanup after confirmed end. Automatic preview compilation OK. Isolated desktop/320/360/375/414px checks pass with one stable iframe and 44px controls.
@@ -45,6 +55,7 @@
 - [x] Verify public tutorials, About tabs, Spotlight tabs and Hire Talent disclosures at desktop/375px; 11 shared-surface tests pass, no runtime errors. No publication. Live content fetching and existing logo delivery remain unverified in the sandbox.
 
 ## Kreto Landing flight
+- [x] Match bottom/Flying helmet size exactly, isolate top glove contours, extend eased emergence, put flight above chapter text/below media and tuck side body behind the edge. 22 tests pass; real Landing scroll shows all four exclusive poses, assets loaded, no runtime errors/overflow at 1280/885/375px, reduced motion respected and automatic compilation OK. Sandbox chapter videos remain undecoded; no publication.
 - [ ] Correct top-peek descent and bottom-peek ascent with shared Flying endpoints; remove artificial disappearance and run targeted regressions.
 - [x] Keep each free journey facing its media destination, add reversible progressive peek emergence and crisp exclusive edge handoffs; 18 tests and 506 round-trip opacity/exclusive-pose/media-clearance checks pass; compilation OK, not published.
 - [x] Correct stale internal slide handoffs and unsafe eased Flying departures; exact bidirectional peek transitions, full-box media clearance and rotation disabled near media. 17 tests and 506 bidirectional single-pose/opacity checks pass; automatic compilation OK; not published.
@@ -85,3 +96,6 @@
 - [ ] Integrate Kreto Robot guidance and Kreto Computer floating image
 - [ ] Apply explicit CPO document principles without inventing requirements
 - [ ] Validate tests and responsive presentation
+
+## Slice K — project creation from brief (guided E2E)
+- [x] Guided end-to-end run by Noé on his connected account (noe@kretopia.com): brief text → extraction review (title, 3 deliverables with dates, €4,500 budget, missing moodboard flagged, draft origin) → project created with deliverables/dates/budget intact. Reported "tout s'affiche nickel". No code or backend changes; no automated session available, verification was user-guided.

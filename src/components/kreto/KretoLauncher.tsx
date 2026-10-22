@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
+import { KretoTyping } from "@/components/brand/KretoTyping";
+import { Button } from "@/components/ui/button";
 
 /**
  * KretoLauncher — the single, subtle "open Kreto" affordance on desktop.
@@ -48,13 +49,14 @@ export function KretoLauncher({ showOnMobile = false }: { showOnMobile?: boolean
   if (dialogOpen) return null;
 
   return (
-    <button
+    <Button
+      variant="link"
       type="button"
       onClick={() => window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: {} }))}
       aria-label="Open Kreto"
       title="Open Kreto"
       className={cn(
-        "group fixed z-40 items-end justify-center h-20 w-20 lg:h-24 lg:w-24",
+        "group fixed z-40 items-end justify-center h-20 w-20 lg:h-24 lg:w-24 p-0 hover:no-underline",
         showOnMobile ? "flex" : "hidden lg:flex",
         // Phone: above the bottom nav (and its safe area), at the right edge.
         // Desktop: the bottom-right corner, as before.
@@ -66,9 +68,9 @@ export function KretoLauncher({ showOnMobile = false }: { showOnMobile?: boolean
       )}
     >
       <span className="absolute inset-x-2 bottom-0 h-5 rounded-full bg-primary/20 blur-lg transition-opacity group-hover:opacity-100" aria-hidden />
-      <img src={kretoProducer} alt="" className="relative h-20 w-20 lg:h-24 lg:w-24 object-contain drop-shadow-2xl" />
+      <KretoTyping autoPlay className="h-20 lg:h-24 drop-shadow-2xl" />
       <span className="sr-only">Open Kreto</span>
-    </button>
+    </Button>
   );
 }
 

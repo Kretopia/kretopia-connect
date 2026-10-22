@@ -71,8 +71,8 @@ export function FunnelStepper({ current, steps = ONBOARDING_STEPS, className, au
                 className={cn(
                   "h-8 w-8 flex items-center justify-center text-[12px] font-bold transition-all",
                   authStyle ? "rounded-md border" : "rounded-full",
-                  done && (authStyle ? "bg-energy/10 border-energy text-energy" : "bg-[hsl(var(--signal-teal))] text-white"),
-                  active && (authStyle ? "bg-card border-energy text-foreground ring-2 ring-energy/20 shadow-sm" : "bg-[hsl(var(--signal-teal))] text-white ring-4 ring-[hsl(var(--signal-teal))]/20 scale-110 shadow-[0_0_0_1px_hsl(var(--signal-teal))]"),
+                  done && (authStyle ? "bg-energy/10 border-energy text-energy" : "bg-[hsl(var(--signal-teal))] text-energy-foreground"),
+                  active && (authStyle ? "bg-card border-energy text-foreground ring-2 ring-energy/20 shadow-sm" : "bg-[hsl(var(--signal-teal))] text-energy-foreground ring-4 ring-[hsl(var(--signal-teal))]/20 scale-110 shadow-[0_0_0_1px_hsl(var(--signal-teal))]"),
                   !done && !active && (authStyle ? "bg-card border-border text-muted-foreground" : "bg-muted text-muted-foreground border border-border"),
                 )}
                 aria-current={active ? "step" : undefined}

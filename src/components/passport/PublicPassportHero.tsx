@@ -7,6 +7,7 @@ import { HoloCard } from "./HoloCard";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   CalendarDays,
   CheckCircle2,
@@ -105,7 +106,7 @@ export function PublicPassportHero({
           {profile.cover_image_url && <img src={profile.cover_image_url} alt="" className="h-full w-full object-cover" />}
           <div className="absolute inset-0 bg-gradient-to-t from-card via-card/10 to-transparent" />
           <div className="absolute left-2 top-2 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
-            Creative Passport
+            Kretopia · Creative Passport
           </div>
           <Button onClick={onShare} size="icon" variant="secondary" className="!absolute right-2 top-2 h-9 w-9 rounded-full" aria-label="Share Passport">
             <Share2 className="h-4 w-4" />
@@ -149,6 +150,7 @@ export function PublicPassportHero({
 
            {showBio && profile.bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{profile.bio}</p>}
 
+          <BrandLogo size="sm" />
           <TrustSignals emailVerified={profile.email_verified} phoneVerified={profile.phone_verified} idVerified={profile.id_verified} paymentVerified={profile.payment_verified} isOwnProfile={false} compact />
 
           {/* Experience + proof, with the basis for each "verified" spelled out. */}
@@ -176,13 +178,14 @@ export function PublicPassportHero({
                 <>
                   <Button onClick={onMessage} className="gap-2"><MessageCircle className="h-4 w-4" />Message</Button>
                   <Button onClick={onCollaborate} variant="outline" className="gap-2"><Handshake className="h-4 w-4" />Collaborate</Button>
-                  <Button onClick={onAddToProject} variant="outline" className="col-span-2 gap-2"><FolderPlus className="h-4 w-4" />Add to a project</Button>
+                  <Button onClick={onAddToProject} variant="outline" className="col-span-2 gap-2"><FolderPlus className="h-4 w-4" />Invite to a project</Button>
                 </>
               ) : (
                 <Button onClick={onConnect} disabled={connectionStatus === "pending" || isConnecting} className="col-span-2 gap-2">
                   <UserPlus className="h-4 w-4" />{connectionStatus === "pending" ? "Request pending" : isConnecting ? "Sending…" : "Connect"}
                 </Button>
               )}
+              <p className="col-span-2 text-xs text-muted-foreground">Project invitations require acceptance by the person or company concerned.</p>
             </div>
           )}
 

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface HoloCardProps {
   children: ReactNode;
   className?: string;
-  /** Max tilt in degrees. Subtle by default: every Holo card shares one amplitude. */
+  /** Compatibility only: Holo cards never tilt. */
   maxTilt?: number;
   /** The blurred coloured halo behind the card. On by default; off leaves the card on the page's own background. */
   glow?: boolean;
@@ -12,17 +11,11 @@ interface HoloCardProps {
 
 /**
  * HoloCard — premium collectible-card shell (Pokémon TCG feel).
- * Pointer-tracked 3D tilt, holographic sheen, layered depth and edge highlight.
- * Pure CSS/transform: no dependencies, GPU-composited, disabled for touch
- * devices and for users who prefer reduced motion.
+ * Stable holographic sheen, layered depth and edge highlight.
+ * No pointer transforms: the card and its hit target never rotate.
  */
-export function HoloCard({ children, className, maxTilt = 5, glow = true }: HoloCardProps) {
-  // The pointer is tracked on this outer wrapper, which never moves. Tracking it on the tilted card itself made the
-  // card's own edge slide out from under the pointer near a corner: the tilt reset, the pointer was over the card
-  // again, the tilt came back, and the card trembled. The wrapper's box is stable, so the pointer is either in it or not.
+export function HoloCard({ children, className, glow = true }: HoloCardProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [glare, setGlare] = useState({ x: 50, y: 50, on: false });
   const [inView, setInView] = useState(true);
 
   // The ambient glow and scan-line are continuous decorative animations —
@@ -38,36 +31,11 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
     return () => observer.disconnect();
   }, []);
 
-  const interactive = useCallback(() => {
-    if (typeof window === "undefined") return false;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
-    return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  }, []);
-
-  const onMove = useCallback(
-    (e: React.PointerEvent<HTMLDivElement>) => {
-      if (!interactive() || !ref.current) return;
-      const r = ref.current.getBoundingClientRect();
-      const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
-      const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
-      setTilt({ x: (0.5 - py) * maxTilt * 2, y: (px - 0.5) * maxTilt * 2 });
-      setGlare({ x: px * 100, y: py * 100, on: true });
-    },
-    [interactive, maxTilt]
-  );
-
-  const onLeave = useCallback(() => {
-    setTilt({ x: 0, y: 0 });
-    setGlare((g) => ({ ...g, on: false }));
-  }, []);
-
   return (
-    <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave} className={cn("[perspective:1200px]", className)}>
+    <div className={className}>
       <div
-        className="relative h-full rounded-2xl transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] motion-reduce:transition-none"
-        style={{
-          transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateZ(0)`,
-        }}
+        ref={ref}
+        className="relative h-full rounded-2xl"
       >
         {/* Depth glow behind the card — slow ambient breathe reads as "AI-aware" presence */}
         {glow && (
@@ -77,7 +45,6 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
             style={{
               background:
                 "linear-gradient(135deg, hsl(var(--signal-teal)/0.35), transparent 45%, hsl(var(--signal-pink,320 100% 60%)/0.14))",
-              transform: "translateZ(-40px)",
               animationPlayState: inView ? "running" : "paused",
             }}
           />
@@ -112,8 +79,8 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
             aria-hidden
             className="pointer-events-none absolute inset-0 mix-blend-soft-light transition-opacity duration-300"
             style={{
-              opacity: glare.on ? 0.6 : 0.26,
-              background: `radial-gradient(120% 90% at ${glare.x}% ${glare.y}%, rgba(255,255,255,0.55), rgba(255,255,255,0.08) 35%, transparent 65%)`,
+              opacity: 0.28,
+              background: "radial-gradient(120% 90% at 50% 50%, hsl(var(--foreground)/0.55), hsl(var(--foreground)/0.08) 35%, transparent 65%)",
             }}
           />
           {/* Prismatic edge */}
