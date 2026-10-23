@@ -7,7 +7,6 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PersonAvatar } from "@/components/media/PersonAvatar";
 import { GlassCta, GlassCtaButton, OutlineCta, OutlineCtaButton } from "@/components/ui/glass-cta";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { useToast } from "@/hooks/use-toast";
 
@@ -111,15 +110,6 @@ export function TodayCommandCenter({
   onSignalsChanged,
 }: TodayCommandCenterProps) {
   const reducedMotion = useReducedMotion();
-  // Match the banner prompt's width to the deck cards below (TodayDeck):
-  // the full carousel row on touch/narrow swipe (every card, right edge to
-  // left edge) and on the flat reduced-motion grid, the front card's 26rem
-  // centered span on the 3D roulette.
-  const wide = useMediaQuery("(min-width: 1024px)");
-  const finePointer = useMediaQuery("(hover: hover) and (pointer: fine)");
-  const bannerWidthClass = wide && finePointer && !reducedMotion
-    ? "mx-auto w-[min(100%,40rem)]"
-    : "w-full";
   // Session-only dismissal: no database column for this prompt.
   const [bannerPromptDismissed, setBannerPromptDismissed] = useState(() => {
     try {
@@ -172,26 +162,6 @@ export function TodayCommandCenter({
         }}
         compact
       />
-
-      {profile && !profile.cover_image_url && !bannerPromptDismissed && (
-        <div className={`flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between ${bannerWidthClass}`}>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">Make your Passport yours</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Add a banner to personalise your profile.</p>
-          </div>
-          <div className="flex shrink-0 items-center gap-3">
-            <GlassCta to="/profile" className="h-10">Add banner</GlassCta>
-            <button
-              type="button"
-              onClick={dismissBannerPrompt}
-              className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-            >
-              Not now
-            </button>
-          </div>
-        </div>
-      )}
-
 
       <TodayDeck
         lead={passportBanner}
