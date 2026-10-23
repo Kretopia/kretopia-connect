@@ -1,5 +1,11 @@
 # Roadmap
 
+## Today banner prompt deduplication
+- [x] Remove the duplicate top "Make your Passport yours" prompt; only the deck-placed banner (aligned with the carousel) remains, plus its Add banner / Not now actions.
+- [x] 45 focused Today tests pass, including a new check that the prompt renders exactly once; automatic preview compilation OK. Connected Today page not visually verified — blocked: no automatable legacy session.
+
+
+
 ## Passport collaboration and stable Holo cards
 - [x] Make project/role proposals explicitly subject to the recipient's acceptance through existing invitation workflows.
 - [x] Replace the Passport social-sharing card with a branded collaboration CTA on owner/public views.

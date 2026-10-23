@@ -64,6 +64,14 @@ function renderCommandCenter(signals: TodaySignals, profile?: ProfileRow) {
 }
 
 describe("TodayCommandCenter", () => {
+  it("asks for a banner exactly once on the page, never twice", () => {
+    renderCommandCenter(baseSignals(), { cover_image_url: null } as unknown as ProfileRow);
+    expect(screen.getAllByText("Make your Passport yours")).toHaveLength(1);
+    expect(screen.getAllByText("Add a banner to personalise your profile.")).toHaveLength(1);
+    expect(screen.getAllByText("Add banner")).toHaveLength(1);
+  });
+
+
   it("new user with no Passport progress sees Build my Passport, not fabricated activity", () => {
     const signals = baseSignals({
       passport: { percentage: 0, missingFields: ["Full Name", "Bio"], isComplete: false },
