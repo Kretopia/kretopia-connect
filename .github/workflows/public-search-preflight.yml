@@ -38,16 +38,21 @@ jobs:
           if not match or target != match.group(1):
               stop('Deployment target does not match the existing application backend. Nothing changed.')
           def api(path, body=None):
+              label = {'': 'project visibility', '/secrets': 'function-secret metadata', '/database/query': 'read-only database check'}.get(path, 'prerequisite check')
               request = urllib.request.Request('https://api.supabase.com/v1/projects/' + target + path,
                   data=json.dumps(body).encode() if body is not None else None,
                   headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
               try:
                   with urllib.request.urlopen(request, timeout=30) as response:
-                      return json.load(response)
+                      result = json.load(response)
+                      print('Access verified: ' + label)
+                      return result
               except urllib.error.HTTPError as error:
-                  stop('Deployment prerequisite request refused (HTTP ' + str(error.code) + '). Nothing changed.')
+                  stop('Access refused for ' + label + ' (HTTP ' + str(error.code) + '). No response body or credentials logged. Nothing changed.')
               except Exception:
                   stop('Deployment prerequisite could not be verified. Nothing changed.')
+          project = api('')
+          del project
           configured = api('/secrets')
           names = {entry.get('name') for entry in configured if isinstance(entry, dict)}
           del configured
