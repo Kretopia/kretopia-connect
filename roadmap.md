@@ -121,3 +121,8 @@
 
 ## Slice K — project creation from brief (guided E2E)
 - [x] Guided end-to-end run by Noé on his connected account (noe@kretopia.com): brief text → extraction review (title, 3 deliverables with dates, €4,500 budget, missing moodboard flagged, draft origin) → project created with deliverables/dates/budget intact. Reported "tout s'affiche nickel". No code or backend changes; no automated session available, verification was user-guided.
+
+## Public web search activation (2026-10-26)
+- [x] GitHub org restriction removed; connection can read production environment and dispatch workflows.
+- [x] Preflight fixed to read project ID from environment variables; target matches the existing app backend.
+- [ ] Preflight refused with HTTP 401 — production access token invalid or not authorized for the existing backend. Blocked on Noé replacing SUPABASE_ACCESS_TOKEN.
