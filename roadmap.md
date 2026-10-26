@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Public discovery, Claim and shared calls
+- [ ] Verify Kretopia/kretopia-connect on GitHub and activate approved Web + AI safely on the existing production backend; do not change domains or bypass durable abuse protection.
 - [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
 - [x] Separate source groups and honest unavailable Web state; prepare fail-closed quota policy without activation.
 - [x] Change public topbar only to Sign In / Join Kretopia.
