@@ -83,10 +83,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const shouldSyncStripe = forceSync || (now - lastSyncRef.current) > CACHE_DURATION;
       if (shouldSyncStripe) {
         lastSyncRef.current = now;
-        supabase.functions.invoke('check-subscription').catch(err => {
-          // Log but don't disrupt user experience
-          console.warn('[AuthContext] Background Stripe sync failed (non-critical):', err);
-        });
+        // Only sync with a live session token; without one the function
+        // receives the public key and rejects with "Auth session missing".
+        void (async () => {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) return;
+            const { error } = await supabase.functions.invoke('check-subscription', {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (error) console.warn('[AuthContext] Background Stripe sync failed (non-critical):', error);
+          } catch (err) {
+            console.warn('[AuthContext] Background Stripe sync failed (non-critical):', err);
+          }
+        })();
       }
     } catch (error) {
       console.error('[AuthContext] Error checking subscription:', error);
