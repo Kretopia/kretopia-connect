@@ -661,10 +661,10 @@ const Auth = () => {
                   </span>
                   <div className="min-w-0">
                     <p className="text-foreground font-semibold text-sm">Start with Kreto</p>
-                    <p className="text-foreground/50 text-xs">Search your name — we'll pull the credits and build your Passport.</p>
+                    <p className="text-foreground/50 text-xs">Discover your public sources before joining Kretopia.</p>
                   </div>
                 </div>
-                <FunnelStepper current="signup" authStyle />
+                {signupMode === "classic" && <FunnelStepper current="signup" authStyle />}
               </div>
             )}
 
