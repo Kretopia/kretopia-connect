@@ -7,7 +7,7 @@
 - [x] Audit Messages/Studio: already share VideoCallSheet, PersistentStudioCall, provider/host/lobby/controls; preserve implementation and recording.
 - [x] Enlarge Side Hidden by apparent helmet scale and locally crop above hips without changing artwork proportions.
 - [x] 45 focused tests and focused lint pass; automatic preview build OK. Real public search → selection → preview → signup checked at 1280/885/375px, no overflow/page errors; no publication.
-- [ ] Activate public Web endpoint/cache with durable quotas — blocked: user approved preparation only, no production/usage activation.
+- [ ] Activate Web + AI in the original searchbar with sourced results and durable abuse protection — activation and credit consumption approved; blocked: runtime uses the legacy backend, deployment tools target Cloud only, no external deployment token is available, and no durable public-search quota store exists. Do not switch backend or enable the unrestricted legacy crawl.
 - [ ] Persist selected-source intent and ownership verification after signup — blocked: needs explicitly approved account/backend handoff; current local intent never verifies ownership.
 - [ ] Verify Side Hidden at real chapter edges and live authenticated media — blocked: sandbox scroll did not reach side pose; real calls prohibited in automated tests.
 
