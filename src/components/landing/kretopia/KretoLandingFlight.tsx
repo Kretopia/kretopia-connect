@@ -24,7 +24,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.8, extent: 0.48 };
+const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -310,7 +310,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const room = Math.min(outerRoom, Math.max(0, textGap - 8));
         // Preserve apparent helmet size; skip the side hold when the gutter cannot fit it.
         const sideW = SIDE.extent * size * SIDE_SCALE;
-        const sideScale = Math.min(1, Math.max(0, (room - 2) / sideW));
+        const sideScale = Math.min(1, Math.max(0, (room - 2 + (textBeside ? 0 : sideW * 0.25)) / sideW));
         const sideMode = !attach && sideScale >= SIDE.minScale;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
         const sideX = (sideOf === "right" ? rectRight : left) - SIDE.cut * size;
