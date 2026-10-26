@@ -53,6 +53,7 @@ import {
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
+import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
@@ -343,7 +344,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 </SheetTitle>
               </SheetHeader>
               <div className="k-nav-search mx-auto mt-3 w-full max-w-2xl">
-                <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" autoFocus />
+                {!user ? <PublicPresenceSearch /> : (<UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" autoFocus />)}
               </div>
             </SheetContent>
           </Sheet>
@@ -774,11 +775,11 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       className="justify-start h-12 gap-2 text-sm font-medium"
                       onClick={() => {
                         setGuestMenuOpen(false);
-                        navigate("/post-opportunity");
+                        navigate("/auth?tab=signin");
                       }}
                     >
                       <Briefcase className="h-4 w-4" aria-hidden />
-                      Hire Talent
+                      Sign In
                     </Button>
                     <Button
                       variant="default"
@@ -789,13 +790,13 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       }}
                     >
                       <Sparkles className="h-4 w-4" aria-hidden />
-                      Create Passport
+                      Join Kretopia
                     </Button>
                   </div>
                 </SheetContent>
               </Sheet>
 
-              <Link to="/post-opportunity" className="hidden sm:inline-flex">
+              <Link to="/auth?tab=signin" className="hidden sm:inline-flex">
                 <Button
                   variant="outline"
                   size="sm"
@@ -805,7 +806,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                   )}
                 >
                   <Briefcase className="h-4 w-4" aria-hidden />
-                  Hire Talent
+                  Sign In
                 </Button>
               </Link>
               <Link to="/auth?tab=signup">
@@ -818,7 +819,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       the screen and pushed the button against the right edge: the decorative sparkle is
                       the one thing that gives (the label, the link and the other controls are unchanged). */}
                   <Sparkles className="h-4 w-4 max-[399px]:hidden" aria-hidden />
-                  Create Passport
+                  Join Kretopia
                 </Button>
               </Link>
             </>

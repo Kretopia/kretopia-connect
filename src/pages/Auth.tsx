@@ -18,7 +18,7 @@ import {
 import { AuthBrandingPanel } from "@/components/auth/AuthBrandingPanel";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpWizard } from "@/components/auth/SignUpWizard";
-import { UniversalClaimFlow } from "@/components/onboarding/claim-flow/UniversalClaimFlow";
+import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
 import { getAuthOrigin, getPostSignupUrl } from "@/lib/authRedirect";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
@@ -105,9 +105,8 @@ const OAuthButton = ({
 const Auth = () => {
   const reducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<string>("signin");
-  // Default to "classic" (email + password) so the sign-up form is visible
-  // immediately; the claim/search flow stays one click away.
-  const [signupMode, setSignupMode] = useState<"claim" | "classic">("classic");
+  // Discovery precedes account creation; explicit classic entry remains available.
+  const [signupMode, setSignupMode] = useState<"claim" | "classic">(new URLSearchParams(window.location.search).get("mode") === "classic" ? "classic" : "claim");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -766,83 +765,9 @@ const Auth = () => {
               <TabsContent value="signup">
                 {signupMode === "claim" ? (
                   <>
-                    {/* Creator vs Brand toggle -- same modern icon-card
-                        treatment as SignUpWizard's own toggle (below, once
-                        signupMode flips to "classic"), not the old emoji
-                        pill: switching between them mid-flow read as two
-                        different UIs for the same choice. */}
-                    <div className="mb-4 grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted/50 border">
-                      <button
-                        type="button"
-                        onClick={() => setAccountType("individual")}
-                        className={`flex flex-col items-center gap-1 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
-                          accountType === "individual"
-                            ? "bg-background shadow-sm text-foreground"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                        aria-pressed={accountType === "individual"}
-                      >
-                        <User className="h-4 w-4" />
-                        I'm a Creator
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAccountType("company");
-                          setSignupMode("classic");
-                        }}
-                        className={`flex flex-col items-center gap-1 py-2.5 rounded-lg text-xs font-semibold transition-colors ${
-                          accountType === "company"
-                            ? "bg-background shadow-sm text-foreground"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                        aria-pressed={accountType === "company"}
-                      >
-                        <Briefcase className="h-4 w-4" />
-                        I'm a Brand
-                      </button>
-                    </div>
-
-                    {/* Google leads now, not the search -- sign-in attempts
-                        massively outnumber people who complete a multi-step
-                        name search, so the fastest path into the app goes
-                        first. Search stays one scroll away for anyone who
-                        wants Kreto to pull in their existing credits instead
-                        of starting blank. */}
-                    {!OAUTH_TEMPORARILY_DISABLED && (
-                      <>
-                        <p className="text-center text-sm font-semibold text-foreground mb-0.5">
-                          Get in fast with Google
-                        </p>
-                        <p className="text-center text-xs text-muted-foreground mb-4">
-                          Create your Kretopia Passport in seconds.
-                        </p>
-                        <OAuthQuickButtons
-                          onGoogle={() => handleOAuthSignIn("google")}
-                          googleLoading={googleLoading}
-                          label=""
-                        />
-                        <div className="mt-2 grid grid-cols-2 gap-2">
-                          <OAuthButton provider="apple" label="Apple" onClick={() => handleOAuthSignIn("apple")} loading={oauthLoading === "apple"} />
-                        </div>
-                        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
-                          <ShieldCheck className="h-3.5 w-3.5" />
-                          Secure OAuth — your provider password never reaches Kretopia.
-                        </div>
-                      </>
-                    )}
-                    <div className="my-5 flex items-center gap-2">
-                      <div className="flex-1 h-px bg-border" />
-                      <span className="text-[10px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
-                        {OAUTH_TEMPORARILY_DISABLED ? "Search for yourself" : "Or search for yourself"}
-                      </span>
-                      <div className="flex-1 h-px bg-border" />
-                    </div>
-                    <UniversalClaimFlow
-                      source={eventId ? "event" : "auth"}
-                      contextId={eventId || undefined}
-                      redirectAfter={eventId ? `/event/${eventId}` : undefined}
+                    <PublicPresenceSearch
                       initialQuery={searchParams.get("q") || undefined}
+                      onContinue={() => setSignupMode("classic")}
                     />
                     <div className="mt-4 text-center">
                       <button
