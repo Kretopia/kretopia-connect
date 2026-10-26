@@ -2,14 +2,15 @@
 
 ## Public discovery, Claim and shared calls
 - [x] Verify Kretopia/kretopia-connect on GitHub through Noé's connection: main ec7924783202aa37a91b632784c7b93856edcba7; manual Deploy Edge Functions workflow exists and has no prior runs. It deploys functions only, not migrations.
-- [ ] Activate approved Web + AI safely on the existing production backend — blocked: public-digital-presence/index.ts is absent on GitHub main (404), durable quota is not wired, and workflow destination is an unreadable production secret (secrets listing returned 403). No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
+- [ ] Activate approved Web + AI safely on the existing production backend — protected public-digital-presence handler implemented with server-only activation switch, mandatory atomic quota RPC and source-only AI ranking; blocked: no migration tool targets legacy production, quota RPC not installed, production deployment target unconfirmed. No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
 - [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
 - [x] Separate source groups and honest unavailable Web state; prepare fail-closed quota policy without activation.
 - [x] Change public topbar only to Sign In / Join Kretopia.
 - [x] Audit Messages/Studio: already share VideoCallSheet, PersistentStudioCall, provider/host/lobby/controls; preserve implementation and recording.
 - [x] Enlarge Side Hidden by apparent helmet scale and locally crop above hips without changing artwork proportions.
 - [x] 45 focused tests and focused lint pass; automatic preview build OK. Real public search → selection → preview → signup checked at 1280/885/375px, no overflow/page errors; no publication.
-- [ ] Activate Web + AI in the original searchbar with sourced results and durable abuse protection — activation and credit consumption approved; blocked: runtime uses the legacy backend, deployment tools target Cloud only, no external deployment token is available, and no durable public-search quota store exists. Do not switch backend or enable the unrestricted legacy crawl.
+- [x] Prepare source-only Web + AI handler and original-dropdown source rows without activation: 17 focused tests pass, automatic compilation OK; browser confirms one original field and no extra refinement field. Server switch and frontend flag remain disabled.
+- [ ] Activate Web + AI in the original searchbar with durable abuse protection — blocked: runtime uses the legacy backend, migration/deployment tools target Cloud only, no external deployment credential is available, and atomic quota RPC is not installed. Do not switch backend or enable the unrestricted legacy crawl.
 - [ ] Persist selected-source intent and ownership verification after signup — blocked: needs explicitly approved account/backend handoff; current local intent never verifies ownership.
 - [ ] Verify Side Hidden at real chapter edges and live authenticated media — blocked: sandbox scroll did not reach side pose; real calls prohibited in automated tests.
 

@@ -9,7 +9,7 @@ export interface PresenceResult {
   description?: string;
   kind: string;
 }
-// Preparation only: no deployment or public provider consumption authorized.
+// Activation approved; keep off until the protected endpoint and atomic quota are live on production.
 export const PUBLIC_WEB_SEARCH_ENABLED = false;
 export function publicSourceUrl(value: string): string | null {
   try {

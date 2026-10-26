@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { VoiceWaveform } from "@/components/search/VoiceWaveform";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
+import { PublicWebSearchResults } from "./PublicWebSearchResults";
 
 interface SearchResult {
   type: "creator" | "credit" | "gig";
@@ -873,6 +874,8 @@ export function UnifiedSearchDropdown({
                 </div>
               );
             })}
+
+            <PublicWebSearchResults query={query} />
 
             {/* Error state — distinct from "no results" so a failed search
                 isn't mistaken for a genuinely empty result set. */}
