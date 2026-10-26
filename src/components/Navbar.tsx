@@ -53,7 +53,6 @@ import {
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
-import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
@@ -344,7 +343,16 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 </SheetTitle>
               </SheetHeader>
               <div className="k-nav-search mx-auto mt-3 w-full max-w-2xl">
-                {!user ? <PublicPresenceSearch /> : (<UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" autoFocus />)}
+                <UnifiedSearchDropdown
+                  variant="hero"
+                  placeholder="People, projects, opportunities…"
+                  autoFocus
+                  onSelect={!user ? (result) => navigate(
+                    result.type === "creator" ? `/profile/${result.id}`
+                      : result.type === "gig" ? `/opportunity/${result.id}`
+                      : `/production?name=${encodeURIComponent(result.title)}`,
+                  ) : undefined}
+                />
               </div>
             </SheetContent>
           </Sheet>
