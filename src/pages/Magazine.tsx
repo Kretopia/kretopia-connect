@@ -47,6 +47,7 @@ const Magazine = () => {
 
       <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-24">
+          <h1 className="sr-only">Creative Industry Magazine — Kretopia</h1>
           <MagazineWall />
         </div>
       </div>

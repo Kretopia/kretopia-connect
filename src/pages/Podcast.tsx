@@ -48,6 +48,7 @@ const Podcast = () => {
 
       <div className="min-h-screen bg-background">
         <div className="max-w-2xl mx-auto px-4 pt-4 pb-24">
+          <h1 className="sr-only">Discover A Thriver — the Kretopia podcast</h1>
           <PodcastPlayer />
         </div>
       </div>
