@@ -1,12 +1,15 @@
 # Roadmap
 
 ## Public discovery, Claim and shared calls
-- [ ] Restore public digital-presence discovery before signup and share results across Auth, Hero and public topbar.
-- [ ] Keep sourced web results separate, selected links unverified, and honest partial/error states; preserve existing backend and no paid activation.
-- [ ] Change public topbar only to Sign In / Join Kretopia.
-- [ ] Unify Messages/Studio call presentation without losing Studio persistence or recording workflows.
-- [ ] Enlarge Side Hidden and crop to original head/upper torso, without legs or content overlap.
-- [ ] Run focused tests and desktop/tablet/mobile browser checks; no publication.
+- [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
+- [x] Separate source groups and honest unavailable Web state; prepare fail-closed quota policy without activation.
+- [x] Change public topbar only to Sign In / Join Kretopia.
+- [x] Audit Messages/Studio: already share VideoCallSheet, PersistentStudioCall, provider/host/lobby/controls; preserve implementation and recording.
+- [x] Enlarge Side Hidden by apparent helmet scale and locally crop above hips without changing artwork proportions.
+- [x] 45 focused tests and focused lint pass; automatic preview build OK. Real public search → selection → preview → signup checked at 1280/885/375px, no overflow/page errors; no publication.
+- [ ] Activate public Web endpoint/cache with durable quotas — blocked: user approved preparation only, no production/usage activation.
+- [ ] Persist selected-source intent and ownership verification after signup — blocked: needs explicitly approved account/backend handoff; current local intent never verifies ownership.
+- [ ] Verify Side Hidden at real chapter edges and live authenticated media — blocked: sandbox scroll did not reach side pose; real calls prohibited in automated tests.
 
 ## Today banner prompt deduplication
 - [x] Remove the duplicate top "Make your Passport yours" prompt; only the deck-placed banner (aligned with the carousel) remains, plus its Add banner / Not now actions.

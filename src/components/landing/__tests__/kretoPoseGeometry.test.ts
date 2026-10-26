@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { BOTTOM_HELMET_WIDTH, BOTTOM_LEDGE, BOTTOM_SCALE, FLYING_HELMET_WIDTH, ledgeSlideSpan } from "../kretopia/kretoPoseGeometry";
+import { BOTTOM_HELMET_WIDTH, BOTTOM_LEDGE, BOTTOM_SCALE, FLYING_HELMET_WIDTH, SIDE_HELMET_WIDTH, SIDE_SCALE, ledgeSlideSpan } from "../kretopia/kretoPoseGeometry";
 
 describe("Kreto pose sizing and emergence", () => {
+  it('matches Side Hidden helmet to Flying instead of shrinking the entire mascot', () => {
+    expect(SIDE_SCALE).toBeGreaterThan(1);
+    expect(SIDE_HELMET_WIDTH * SIDE_SCALE).toBeCloseTo(693, 8);
+  });
   it("matches the hanging helmet exactly to Flying at every rendered size", () => {
     for (const box of [104, 180, 300]) {
       expect(BOTTOM_HELMET_WIDTH * BOTTOM_SCALE * box / 1024).toBeCloseTo(693 * box / 1024, 8);
