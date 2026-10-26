@@ -5,6 +5,11 @@ export const BOTTOM_SCALE = FLYING_HELMET_WIDTH / BOTTOM_HELMET_WIDTH;
 /** The hands' contact line in original artwork coordinates. */
 export const BOTTOM_LEDGE = (350 / 1024) * BOTTOM_SCALE;
 export const BOTTOM_HEIGHT = BOTTOM_SCALE;
+/** Side artwork helmet is 515px wide; match apparent Flying scale without stretching. */
+export const SIDE_HELMET_WIDTH = 515;
+export const SIDE_SCALE = FLYING_HELMET_WIDTH / SIDE_HELMET_WIDTH;
+/** Crop above the hips; leaves the original dome, chest and gloves intact. */
+export const SIDE_UPPER_BODY_CLIP = 'inset(0 0 31% 0)';
 
 /** Longer eased emergence, leaving a genuine resting interval on each ledge. */
 export const ledgeSlideSpan = (topAt: number, middle: number, release: number) =>

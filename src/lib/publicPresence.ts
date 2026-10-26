@@ -9,6 +9,8 @@ export interface PresenceResult {
   description?: string;
   kind: string;
 }
+// Preparation only: no deployment or public provider consumption authorized.
+export const PUBLIC_WEB_SEARCH_ENABLED = false;
 export function publicSourceUrl(value: string): string | null {
   try {
     const url = new URL(value);
@@ -43,7 +45,9 @@ export async function searchPresence(query: string, signal: AbortSignal) {
       .limit(20).abortSignal(signal),
     // A dedicated public endpoint, never the old unrestricted paid crawl.
     // Until its protected adapter is activated, failure is an honest partial result.
-    supabase.functions.invoke('public-digital-presence', { body: { query: q }, signal }),
+    PUBLIC_WEB_SEARCH_ENABLED
+      ? supabase.functions.invoke('public-digital-presence', { body: { query: q }, signal })
+      : Promise.resolve({ data: { available: false, results: [] }, error: null }),
   ]);
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
   const localOk = local.status === 'fulfilled' && !local.value.error;

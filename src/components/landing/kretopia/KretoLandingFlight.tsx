@@ -6,7 +6,7 @@ import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
 import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
-import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, ledgeSlideSpan } from "./kretoPoseGeometry";
+import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, SIDE_SCALE, SIDE_UPPER_BODY_CLIP, ledgeSlideSpan } from "./kretoPoseGeometry";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peekSide } as const;
 type Layer = keyof typeof layers;
@@ -24,7 +24,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
+const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.8, extent: 0.48 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -220,7 +220,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // The same mirror and fit on the sprite and on its hands overlay, about the point where the
         // media edge crosses the artwork, so the hands never move relative to the edge.
         const mirror = activeLock.side === "left" ? -1 : 1;
-        const k = activeLock.scale ?? 1;
+        const k = (activeLock.scale ?? 1) * SIDE_SCALE;
         const originX = SIDE.cut * 100;
         for (const image of [imgs.current.peekSide, gripImgs.current.peekSide]) {
           if (!image) continue;
@@ -308,11 +308,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           ? textRect.left >= rect.right ? textRect.left - rect.right : rect.left - textRect.right
           : outerRoom;
         const room = Math.min(outerRoom, Math.max(0, textGap - 8));
-        // A quarter of the part that sticks out may go past the viewport edge: he keeps a believable
-        // size instead of shrinking to fit a narrow margin.
-        // Fit the original head-and-body silhouette into the gutter without covering chapter text.
-        const sideW = SIDE.extent * size;
-        const sideScale = Math.min(1, (room - 2 + 0.15 * sideW) / sideW);
+        // Preserve apparent helmet size; skip the side hold when the gutter cannot fit it.
+        const sideW = SIDE.extent * size * SIDE_SCALE;
+        const sideScale = Math.min(1, Math.max(0, (room - 2) / sideW));
         const sideMode = !attach && sideScale >= SIDE.minScale;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
         const sideX = (sideOf === "right" ? rectRight : left) - SIDE.cut * size;
@@ -457,7 +455,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { imgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined }} />
+            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined, clipPath: key === "peekSide" ? SIDE_UPPER_BODY_CLIP : undefined }} />
         ))}
       </div>
     </div>

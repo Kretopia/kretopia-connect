@@ -38,3 +38,5 @@
 - Share KretoTyping in Studio Make/launcher; pause offscreen/reduced motion.
 - Reuse PassportCollaborationCta and pending invite flows; connection is not consent.
 - Keep Discover on FeaturePageHeader, StudioFeatureShell and two Wrapped panels (live signals, then lanes); reuse the Radar fetchers/keys and the shared pill classes, because a second layout or count definition drifts from Scout and Today.
+- Use PublicPresenceSearch and its public-safe provider for pre-account discovery on Auth, Hero and guest topbar; stage selected sources as unverified intent without creating credits, because discovery is not proof of ownership.
+- Keep the public web adapter dormant until deployment and durable quota storage are approved; never fall back to the unrestricted legacy crawl, because a new anonymous surface must not silently spend provider credits.
