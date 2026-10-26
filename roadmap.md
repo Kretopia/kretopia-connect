@@ -1,5 +1,13 @@
 # Roadmap
 
+## Public discovery, Claim and shared calls
+- [ ] Restore public digital-presence discovery before signup and share results across Auth, Hero and public topbar.
+- [ ] Keep sourced web results separate, selected links unverified, and honest partial/error states; preserve existing backend and no paid activation.
+- [ ] Change public topbar only to Sign In / Join Kretopia.
+- [ ] Unify Messages/Studio call presentation without losing Studio persistence or recording workflows.
+- [ ] Enlarge Side Hidden and crop to original head/upper torso, without legs or content overlap.
+- [ ] Run focused tests and desktop/tablet/mobile browser checks; no publication.
+
 ## Today banner prompt deduplication
 - [x] Remove the duplicate top "Make your Passport yours" prompt; only the deck-placed banner (aligned with the carousel) remains, plus its Add banner / Not now actions.
 - [x] 45 focused Today tests pass, including a new check that the prompt renders exactly once; automatic preview compilation OK. Connected Today page not visually verified — blocked: no automatable legacy session.
