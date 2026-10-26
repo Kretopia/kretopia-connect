@@ -55,7 +55,7 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
-import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
+import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
@@ -464,7 +464,7 @@ export const KretopiaHero = () => {
           transition={{ duration: 0.2 }}
           className="relative mt-9 sm:mt-10 w-full max-w-[34rem] mx-auto"
         >
-          <PublicPresenceSearch />
+          <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" />
         </motion.div>
 
         {/* Neutral secondary action follows the active theme; the title
