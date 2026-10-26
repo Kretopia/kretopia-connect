@@ -15,7 +15,7 @@ const Terms = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl">Terms of Service</CardTitle>
+          <h1 className="text-3xl font-semibold leading-none tracking-tight">Terms of Service</h1>
           <p className="text-muted-foreground">Last Updated: {new Date().toLocaleDateString()}</p>
         </CardHeader>
         <CardContent className="prose dark:prose-invert max-w-none space-y-6">
