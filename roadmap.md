@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Public discovery, Claim and shared calls
-- [ ] Verify Kretopia/kretopia-connect on GitHub and activate approved Web + AI safely on the existing production backend; do not change domains or bypass durable abuse protection.
+- [x] Verify Kretopia/kretopia-connect on GitHub through Noé's connection: main ec7924783202aa37a91b632784c7b93856edcba7; manual Deploy Edge Functions workflow exists and has no prior runs. It deploys functions only, not migrations.
+- [ ] Activate approved Web + AI safely on the existing production backend — blocked: public-digital-presence/index.ts is absent on GitHub main (404), durable quota is not wired, and workflow destination is an unreadable production secret (secrets listing returned 403). No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
 - [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
 - [x] Separate source groups and honest unavailable Web state; prepare fail-closed quota policy without activation.
 - [x] Change public topbar only to Sign In / Join Kretopia.
