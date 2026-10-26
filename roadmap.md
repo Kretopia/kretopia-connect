@@ -2,7 +2,7 @@
 
 ## Public discovery, Claim and shared calls
 - [x] Verify Kretopia/kretopia-connect on GitHub through Noé's connection: main ec7924783202aa37a91b632784c7b93856edcba7; manual Deploy Edge Functions workflow exists and has no prior runs. It deploys functions only, not migrations.
-- [ ] Activate approved Web + AI safely on the existing production backend — blocked: public-digital-presence/index.ts is absent on GitHub main (404), durable quota is not wired, and workflow destination is an unreadable production secret (secrets listing returned 403). No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
+- [ ] Activate approved Web + AI safely on the existing production backend — protected public-digital-presence handler implemented with server-only activation switch, mandatory atomic quota RPC and source-only AI ranking; blocked: no migration tool targets legacy production, quota RPC not installed, production deployment target unconfirmed. No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
 - [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
 - [x] Separate source groups and honest unavailable Web state; prepare fail-closed quota policy without activation.
 - [x] Change public topbar only to Sign In / Join Kretopia.
