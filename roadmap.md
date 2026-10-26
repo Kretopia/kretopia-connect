@@ -1,6 +1,7 @@
 # Roadmap
 
 ## Public discovery, Claim and shared calls
+- [ ] Complete activation requested again on 2026-10-26: GitHub main now contains public-digital-presence, but reading deployment settings still returns HTTP 403 after reconnecting Noé's GitHub API. Production target, quota installation and server activation remain unverified; do not dispatch an unverified deployment or enable the frontend flag.
 - [x] Verify Kretopia/kretopia-connect on GitHub through Noé's connection: main ec7924783202aa37a91b632784c7b93856edcba7; manual Deploy Edge Functions workflow exists and has no prior runs. It deploys functions only, not migrations.
 - [ ] Activate approved Web + AI safely on the existing production backend — protected public-digital-presence handler implemented with server-only activation switch, mandatory atomic quota RPC and source-only AI ranking; blocked: no migration tool targets legacy production, quota RPC not installed, production deployment target unconfirmed. No workflow dispatched, no frontend flag enabled, no production/domain/backend switch.
 - [x] Share public-safe Kretopia discovery, selection and unverified preview before signup across Auth, Hero, guest topbar and legacy Claim entry.
