@@ -1,0 +1,59 @@
+name: Public search safety preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-search-preflight
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 5
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check deployment prerequisites without changes
+        shell: python
+        run: |
+          import json, os, re, urllib.request, urllib.error
+          from pathlib import Path
+          def stop(message):
+              print('::error::' + message)
+              raise SystemExit(1)
+          token = os.environ.get('SUPABASE_ACCESS_TOKEN')
+          target = os.environ.get('SUPABASE_PROJECT_ID')
+          if not token or not target:
+              stop('Required deployment secrets are not available in the production environment.')
+          source = Path('vite.config.ts').read_text()
+          match = re.search(r'projectId:\s*"([a-z0-9]+)"', source)
+          if not match or target != match.group(1):
+              stop('Deployment target does not match the existing application backend. Nothing changed.')
+          def api(path, body=None):
+              request = urllib.request.Request('https://api.supabase.com/v1/projects/' + target + path,
+                  data=json.dumps(body).encode() if body is not None else None,
+                  headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+              try:
+                  with urllib.request.urlopen(request, timeout=30) as response:
+                      return json.load(response)
+              except urllib.error.HTTPError as error:
+                  stop('Deployment prerequisite request refused (HTTP ' + str(error.code) + '). Nothing changed.')
+              except Exception:
+                  stop('Deployment prerequisite could not be verified. Nothing changed.')
+          configured = api('/secrets')
+          names = {entry.get('name') for entry in configured if isinstance(entry, dict)}
+          del configured
+          if not {'FIRECRAWL_API_KEY', 'LOVABLE_API_KEY'}.issubset(names):
+              stop('Search provider credentials are not configured on the existing backend.')
+          result = api('/database/query', {'query': "SELECT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'consume_public_presence_search' AND p.pronargs = 0) AS quota_present"})
+          if not result or result[0].get('quota_present') is not True:
+              stop('Required public search quota is absent. Search remains disabled; no schema or function was changed.')
+          print('Prerequisite presence verified. Atomic quota behaviour still requires validation before activation. No changes made.')
