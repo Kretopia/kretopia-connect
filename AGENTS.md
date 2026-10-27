@@ -47,3 +47,4 @@
 - Keep vendor splitting through plugins/vendor-chunks.ts (react-vendor, supabase-vendor, motion-vendor, i18n-vendor, sentry-vendor), with CommonJS helpers in react-vendor, because assigning React's interop helper to a consuming chunk creates a startup cycle and leaves the boot loader stuck.
 - Add new lazy routes to src/lib/routePrefetch.ts when adding them to App.tsx, because hover/focus prefetch is what makes navigation feel instant.
 - Load webfonts with preload+onload swap (never render-blocking stylesheet links), because font CSS delayed first paint on every cold visit.
+- Keep the guest email-list popup unmounted from the app shell, because it read as the sign-up path and interrupted the flow; email capture stays inline in Landing forms.
