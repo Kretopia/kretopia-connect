@@ -129,3 +129,12 @@
 
 ## Slice K — project creation from brief (guided E2E)
 - [x] Guided end-to-end run by Noé on his connected account (noe@kretopia.com): brief text → extraction review (title, 3 deliverables with dates, €4,500 budget, missing moodboard flagged, draft origin) → project created with deliverables/dates/budget intact. Reported "tout s'affiche nickel". No code or backend changes; no automated session available, verification was user-guided.
+
+## Global performance pass (instant loading)
+- [x] Split the 1.2MB entry bundle into cached vendor chunks (react 160K, supabase 220K, motion 114K, i18n 48K; entry now 640K) via manualChunks.
+- [x] Non-blocking font loading (Satoshi/Inter preload+swap) and fontshare preconnect in index.html.
+- [x] Route prefetch on hover/focus/touch of internal links (src/lib/routePrefetch.ts) for instant navigation.
+- [x] Deferred global widgets (NewsletterPopup, PWAInstallPrompt, FeedbackWidget, InteractiveOnboarding) out of the entry chunk.
+- [x] Converted the 10 large Kreto PNGs to lossless WebP (4.2MB → 2.9MB, pixel-identical); imports updated in KretoCharacter.tsx and KretoTip.tsx.
+- [x] Verified: production build OK, 69 targeted tests pass, browser smoke test (home + /auth) renders correctly, build-errors.log clean.
+- [ ] Publish to www.kretopia.com — waiting on Noé's explicit go.
