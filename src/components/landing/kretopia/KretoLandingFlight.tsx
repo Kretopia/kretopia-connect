@@ -20,11 +20,12 @@ const poseClasses: Record<Layer, string> = {
   right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top", peekSide: "",
 };
 /**
- * The side hide artwork (1024 square, body cut by a straight vertical line): the media edge crosses
- * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
+ * The side hide artwork (1024 square, body cut by a straight vertical line at ~0.313): the media edge
+ * crosses it at `cut`, just past that line so the straight cut stays hidden while the whole dome, both
+ * ear lenses and the chest come out. `extent` is the opaque width beyond the cut (artwork right ~0.879).
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
+const SIDE = { cut: 0.33, handsY: 0.33, minScale: 0.5, extent: 0.55 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
