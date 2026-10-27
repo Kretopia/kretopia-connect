@@ -258,24 +258,6 @@ const Meetup = () => {
               </div>
             </form>
 
-            <div role="group" aria-label="Filter events by category" className="grid w-full grid-cols-3 gap-2 sm:grid-cols-6">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCategory(c)}
-                  aria-pressed={category === c}
-                  className={cn(
-                    "h-9 min-w-0 truncate rounded-full border px-2 text-[10px] font-bold uppercase tracking-[0.1em] transition-all",
-                    category === c
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card/40 text-muted-foreground border-border/50 hover:border-primary/40 hover:text-foreground"
-                  )}
-                >
-                  {chipLabel(c)}
-                </button>
-              ))}
-            </div>
           </div>
         }
       />
