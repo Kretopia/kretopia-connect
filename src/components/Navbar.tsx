@@ -474,19 +474,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                       <Separator className="my-3" />
                       <MenuGrid>
-                        <MenuGridTile
-                          icon={Inbox}
-                          label="Inbox"
-                          onClick={() => handleNavigation("/inbox")}
-                          path="/inbox"
-                          badge={inboxBadge}
-                        />
                         {[
+                          { icon: MessageSquare, label: "Messages", path: "/messages" },
                           { icon: LayoutGrid, label: "Studios", path: "/desk" },
                           { icon: Briefcase, label: "Gigs", path: "/opportunities" },
                           { icon: Search, label: "Talent", path: "/talent-finder" },
                           { icon: Wallet, label: "Pay", path: "/thrivepay" },
-                          { icon: Users, label: "Applicants", path: "/opportunity-dashboard" },
                           { icon: Plus, label: "Post a Gig", path: "/post-opportunity" },
                           { icon: Building2, label: "Clients", path: "/clients" },
                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
@@ -521,7 +514,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
                            { icon: Database, label: "Credits", path: "/credits" },
                            { icon: Crown, label: "Founding Circle", path: "/founding-member" },
                            { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
-                           { icon: FolderKanban, label: "Brand Vault", path: "/brand-vault" },
                          ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
                        </MenuGrid>
                     </>
