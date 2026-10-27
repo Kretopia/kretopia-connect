@@ -35,6 +35,7 @@ import {
   UserCircle2,
   Building2,
   Inbox,
+  MessageSquare,
   Sun,
   LayoutGrid,
   Compass,
