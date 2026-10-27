@@ -4,7 +4,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
 
 /** Thin L-shaped corner marks: the HUD feel, drawn with borders only (no filters, no images). */
-function HudCorners() {
+export function HudCorners() {
   const base = "pointer-events-none absolute h-3.5 w-3.5 border-[hsl(var(--energy)/0.55)]";
   return (
     <>

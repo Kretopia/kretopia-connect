@@ -1,116 +1,140 @@
-import { Sparkles, Compass, ShieldCheck, Zap } from "lucide-react";
+import { Compass, ShieldCheck, Sparkles, Zap } from "lucide-react";
+
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoMark } from "@/components/brand/KretoMark";
-import { TutorialStepper } from "@/components/landing/kretopia/TutorialStepper";
-import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { HudCorners } from "@/components/wrapped/WrappedShell";
 import { kGlow } from "@/lib/kGradient";
 
-// Mirrors FunnelStepper's three funnel stages (Sign up / First Stamp / Launch
-// Passport) one level deeper — narrating *why* each stage is worth the click,
-// not just naming it. This replaces the old static "what Kretopia has"
-// feature list with a live, auto-advancing "what happens when you sign up"
-// walkthrough: the same TutorialStepper component already used for every
-// other AI-guided tour in the product (How Scout/Studio/Match work), so this
-// is the same interactive surface a returning user already recognizes, not a
-// bespoke one-off.
-const SIGNUP_TUTORIAL: TutorialStep[] = [
-  {
-    icon: Sparkles,
-    title: "Sign up in 30 seconds",
-    body: "No forms to fill in by hand — just your name. Kreto takes it from there.",
-  },
-  {
-    icon: Compass,
-    title: "We find your work",
-    body: "Kreto scans the web for credits under your name — film credits, bylines, releases — so nothing gets left off your record.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Claim your first Stamp",
-    body: "One click confirms it's really you. That's a verified Stamp on your Passport — not a claim, a fact people can trust.",
-  },
-  {
-    icon: Zap,
-    title: "Get discovered",
-    body: "Your Passport goes live. Scouts, studios and brands find you — matched to real, verified work, not keywords.",
-  },
-];
+/**
+ * What happens when you sign up, in the funnel's own three stages plus the outcome. Static on purpose: this panel
+ * never scrolls and never moves under the form, so each step is one line the eye can take in at once.
+ */
+const STEPS = [
+  { icon: Sparkles, title: "Sign up in 30 seconds", body: "Just your name. Kreto takes it from there." },
+  { icon: Compass, title: "We find your work", body: "Credits, bylines and releases under your name, found for you." },
+  { icon: ShieldCheck, title: "Claim your first Stamp", body: "One click makes it a verified fact people can trust." },
+  { icon: Zap, title: "Get discovered", body: "Scouts, studios and brands find you through real work." },
+] as const;
 
+/*
+ * Height tiers, measured on the real panel (the content needs about 270 px, plus 90 for the paragraph, 75 for the
+ * step descriptions and 140 for the banner, against what the frame leaves). It is exactly one screen tall and never
+ * scrolls, so what does not fit goes, in this order: the Kreto banner (under 900 px), the step descriptions (under
+ * 720), the paragraph (under 680), the steps themselves (under 600). The lockup, the headline and the promise stay
+ * at any height.
+ */
+const BELOW_900 = "[@media(max-height:899px)]:hidden";
+const BELOW_720 = "[@media(max-height:719px)]:hidden";
+const BELOW_680 = "[@media(max-height:679px)]:hidden";
+const BELOW_600 = "[@media(max-height:599px)]:hidden";
+
+/**
+ * The left half of the sign-in and sign-up page: the Kretopia frame (the Wrapped panel's surface, grid, light and HUD
+ * corners) around the lockup, the promise, Kreto, and the four steps from a name to a Passport that gets found.
+ */
 export const AuthBrandingPanel = () => {
-  const reducedMotion = useReducedMotion();
-
   return (
-    <div className="auth-branding-panel hidden lg:flex lg:w-1/2 relative overflow-x-hidden overflow-y-auto bg-background text-foreground">
-      {/* Sunset wash behind */}
+    <aside
+      aria-label="Welcome to Kretopia"
+      className="auth-branding-panel relative hidden overflow-clip bg-background text-foreground lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-1/2"
+    >
+      {/* the sunset light behind the frame, as on the landing */}
       <div
-        className="pointer-events-none absolute -top-32 -left-32 h-[560px] w-[560px] rounded-full opacity-50 blur-[140px]"
+        aria-hidden
+        className="pointer-events-none absolute -left-32 -top-32 h-[560px] w-[560px] rounded-full opacity-40 blur-[140px]"
         style={{ background: "var(--k-text-gradient)" }}
       />
-      <div className="pointer-events-none absolute -bottom-40 -right-20 h-[420px] w-[420px] rounded-full opacity-30 blur-[120px]"
-           style={{ background: "hsl(var(--k-purple) / 0.15)" }} />
-      <div className="absolute inset-y-0 right-0 w-px bg-border" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-40 -right-20 h-[420px] w-[420px] rounded-full opacity-30 blur-[120px]"
+        style={{ background: "hsl(var(--k-purple) / 0.15)" }}
+      />
+      <div aria-hidden className="absolute inset-y-0 right-0 w-px bg-border" />
 
-      {/* pt-8 sm:pt-12 matches the right column's own py-8 sm:py-12 exactly —
-          both columns are top-aligned (not vertically centered) so the logo
-          here and "Welcome to Kretopia" there sit at the same distance from
-          the top regardless of how much content either column holds. */}
-      <div className="relative z-10 flex flex-col px-12 xl:px-16 pt-8 sm:pt-12 pb-10 w-full">
-        <div className="mb-9 w-fit rounded-lg transition-opacity hover:opacity-80">
-          <BrandLogo size="lg" showBeta linkToHome />
-        </div>
+      <div className="relative z-10 m-4 flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-[hsl(var(--energy)/0.22)] bg-card/70 p-7 backdrop-blur-sm xl:m-6 xl:p-10">
+        <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille opacity-40" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(60% 45% at 0% 0%, hsl(var(--energy) / 0.10), transparent 70%)" }}
+        />
+        <HudCorners />
 
-      <p
-        className="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full border w-fit"
-        style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
-      >
-        <span className="h-1.5 w-1.5 rounded-full ai-ambient-breathe" style={{ backgroundColor: "hsl(var(--energy))" }} />
-        {/* No inline color here: .landing-eyebrow's own neutral default
-            (index.css) would otherwise be overridden -- same override bug
-            already fixed on the other eyebrow call sites. */}
-        <span className="landing-eyebrow">The Creative Economy OS</span>
-      </p>
-
-      <h2 className="landing-h2 landing-glow mb-5">
-        Where creativity<br />
-        <span className="landing-accent">lives.</span>
-      </h2>
-        <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
-          One Passport. Every credit. Every opportunity. Kretopia is the professional
-          home for creators — and Kreto, your Executive Producer, runs point.
-        </p>
-
-        <div className="mb-7 flex items-center gap-3 rounded-lg border border-border bg-card/60 backdrop-blur-sm p-3.5 max-w-md">
-          <KretoMark size="md" />
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[hsl(var(--energy))] mb-0.5">Kreto</p>
-            <p className="text-sm text-foreground leading-snug">
-              "I'll line up your first three opportunities the moment you sign in."
-            </p>
+        {/* the lockup */}
+        <div className="relative shrink-0">
+          <div className="w-fit rounded-lg transition-opacity hover:opacity-80">
+            <BrandLogo size="lg" showBeta linkToHome />
           </div>
         </div>
 
-        <p className="landing-eyebrow mb-3">
-          What happens when you sign up
-        </p>
-        <div className="max-w-md">
-          <TutorialStepper
-            steps={SIGNUP_TUTORIAL}
-            label="What happens when you sign up"
-            autoPlay={!reducedMotion}
-          />
+        {/* the promise */}
+        <div className="relative flex min-h-0 flex-1 flex-col justify-center gap-[clamp(0.75rem,2.2vh,1.5rem)] py-4">
+          <p
+            className="inline-flex w-fit items-center gap-2 rounded-full border px-3 py-1"
+            style={{ borderColor: kGlow(30), backgroundColor: kGlow(6) }}
+          >
+            <span className="ai-ambient-breathe h-1.5 w-1.5 rounded-full" style={{ backgroundColor: "hsl(var(--energy))" }} />
+            <span className="landing-eyebrow">The Creative Economy OS</span>
+          </p>
+
+          <h2
+            className="font-semibold leading-[1.08] tracking-[-0.025em] text-foreground"
+            style={{ fontFamily: "var(--font-family-brand)", fontSize: "clamp(1.875rem, 2.4vw + 1.2vh, 3rem)" }}
+          >
+            Where creativity{" "}
+            <br />
+            <span className="k-gradient-text italic">lives.</span>
+          </h2>
+
+          <p className={`max-w-md text-[15px] leading-relaxed text-muted-foreground ${BELOW_680}`}>
+            One Passport. Every credit. Every opportunity. Kretopia is the professional home for creators, and Kreto, your
+            Executive Producer, runs point.
+          </p>
+
+          {/* Kreto, with his promise: one banner instead of a picture and a quote card */}
+          <figure className={`relative h-[clamp(104px,13.5vh,140px)] max-w-lg shrink-0 overflow-hidden rounded-2xl border border-border ${BELOW_900}`}>
+            <KretoScene scene="passport" lazy={false} className="h-full w-full" />
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+            <figcaption className="absolute inset-x-0 bottom-0 flex items-center gap-3 p-3.5">
+              <KretoMark size="md" />
+              <div className="min-w-0">
+                <p className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-foreground/70">Kreto</p>
+                <p className="text-sm font-medium leading-snug text-foreground">
+                  “I’ll line up your first three opportunities the moment you sign in.”
+                </p>
+              </div>
+            </figcaption>
+          </figure>
+
+          <div className={`max-w-lg ${BELOW_600}`}>
+            <p className="landing-eyebrow mb-3 text-muted-foreground">What happens when you sign up</p>
+            <ol className="space-y-2.5">
+              {STEPS.map(({ icon: Icon, title, body }, i) => (
+                <li key={title} className="flex items-start gap-3">
+                  <span className="relative mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40">
+                    <Icon className="h-4 w-4 text-foreground" aria-hidden />
+                    <span className="sr-only">Step {i + 1}: </span>
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold leading-tight text-foreground">{title}</p>
+                    <p className={`mt-0.5 text-xs leading-snug text-muted-foreground ${BELOW_720}`}>{body}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
 
-        <div className="mt-7">
+        {/* the promise to keep */}
+        <div className="relative shrink-0 border-t border-border/60 pt-4">
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Zap className="h-3 w-3 text-[hsl(var(--energy))]" />
+            <Zap className="h-3 w-3 text-[hsl(var(--energy))]" aria-hidden />
             60-second setup · No credit card · Free forever to start
           </p>
-          <p className="mt-2 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">
-            Kretopia · by Thrive Collective
-          </p>
+          <p className="mt-1.5 text-[10px] uppercase tracking-[0.25em] text-muted-foreground">Kretopia · by Thrive Collective</p>
         </div>
       </div>
-    </div>
+    </aside>
   );
 };
