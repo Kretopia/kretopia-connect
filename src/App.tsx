@@ -20,18 +20,15 @@ import { BrandLoader } from "./components/brand/BrandDots";
 import { ModeThemeSync } from "./components/ModeThemeSync";
 import { VibeThemeSync } from "./components/VibeThemeSync";
 import { GlobalErrorBoundary } from "./components/GlobalErrorBoundary";
-import { InteractiveOnboarding } from "./components/onboarding/InteractiveOnboarding";
 import { SkipLink } from "./components/ui/skip-link";
-import { FeedbackWidget } from "./components/FeedbackWidget";
 import { analytics } from "@/lib/analytics";
 import { trackPlatformPageview, attachPlatformAnalyticsListeners } from "@/lib/platformAnalytics";
 import { NetworkStatus } from "./components/NetworkStatus";
 import { useNativeCapacitor } from "./hooks/useNativeCapacitor";
 import { useActivityPing } from "./hooks/useActivityPing";
 import { AuthGate } from "./components/AuthGate";
+import { RoutePrefetcher } from "./lib/routePrefetch";
 // OnboardingTour removed — real /onboarding page is the single source of truth.
-import { NewsletterPopup } from "./components/NewsletterPopup";
-import { PWAInstallPrompt } from "./components/PWAInstallPrompt";
 const UnifiedHome = lazy(() => import("./components/home/UnifiedHome"));
 import { GlobalIncomingCall } from "./components/calls/GlobalIncomingCall";
 import { GlobalVideoCallHost } from "./components/calls/GlobalVideoCallHost";
@@ -39,6 +36,12 @@ import { VideoCallProvider } from "./contexts/VideoCallContext";
 import { RoomKnockToast } from "./components/calls/RoomKnockToast";
 const ThriveAgentFab = lazy(() => import("./components/desk/ThriveAgentFab").then(m => ({ default: m.ThriveAgentFab })));
 const KretoLauncher = lazy(() => import("./components/kreto/KretoLauncher").then(m => ({ default: m.KretoLauncher })));
+// Below-the-fold global widgets: deferred out of the entry chunk so first
+// paint isn't paying for popups and prompts the user may never see.
+const NewsletterPopup = lazy(() => import("./components/NewsletterPopup").then(m => ({ default: m.NewsletterPopup })));
+const PWAInstallPrompt = lazy(() => import("./components/PWAInstallPrompt").then(m => ({ default: m.PWAInstallPrompt })));
+const FeedbackWidget = lazy(() => import("./components/FeedbackWidget").then(m => ({ default: m.FeedbackWidget })));
+const InteractiveOnboarding = lazy(() => import("./components/onboarding/InteractiveOnboarding").then(m => ({ default: m.InteractiveOnboarding })));
 
 // Lazy load active page components
 const Auth = lazy(() => import("./pages/Auth"));
@@ -290,8 +293,11 @@ const AppContent = () => {
       {user && <GlobalIncomingCall />}
       {user && <RoomKnockToast />}
       <GlobalVideoCallHost />
-      {!user && <NewsletterPopup />}
-      <PWAInstallPrompt />
+      <RoutePrefetcher />
+      <Suspense fallback={null}>
+        {!user && <NewsletterPopup />}
+        <PWAInstallPrompt />
+      </Suspense>
       <main
         id="main-content"
         className={cn(shouldAddBottomPadding ? "pb-36 lg:pb-0" : "")}
@@ -566,8 +572,10 @@ const App = () => {
                 <Sonner />
                 
                 <BrowserRouter>
-                  <InteractiveOnboarding />
-                  <FeedbackWidget />
+                  <Suspense fallback={null}>
+                    <InteractiveOnboarding />
+                    <FeedbackWidget />
+                  </Suspense>
                   <VideoCallProvider>
                     <AppContent />
                   </VideoCallProvider>
