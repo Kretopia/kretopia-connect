@@ -49,7 +49,9 @@ Deno.serve(async req => {
     const payload = await response.json();
     const sources = sourcedPublicResults(Array.isArray(payload.data) ? payload.data : payload.data?.web ?? payload.web);
     if (!sources.length) return json({ available: true, results: [], source: 'web' });
-    const ai = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const rank = async () => {
+      try {
+        const ai = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST', signal: AbortSignal.timeout(15000),
       headers: { Authorization: `Bearer ${aiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: GEMINI_3_FLASH, max_tokens: 200,
@@ -58,15 +60,33 @@ Deno.serve(async req => {
           { role: 'user', content: JSON.stringify({ query: search.query, sources: sources.map((r, index) => ({ index, ...r })) }) },
         ], response_format: { type: 'json_object' } }),
     });
-    if (!ai.ok) {
-      const details = await ai.text();
-      console.error(`Public search AI failed [${ai.status}]: ${details}`);
-      return json({ available: true, results: sources, source: 'web', aiAvailable: false, status: ai.status, details });
+        if (!ai.ok) return { available: true, results: sources, source: 'web', aiAvailable: false, phase: 'complete' };
+        const ranked = await ai.json();
+        let indices: unknown;
+        try { indices = JSON.parse(ranked.choices?.[0]?.message?.content ?? '{}').indices; } catch { indices = undefined; }
+        return { available: true, results: rankPublicSources(sources, indices), source: 'web', aiAvailable: true, phase: 'complete' };
+      } catch {
+        // AI failures must never discard real Web sources already received.
+        return { available: true, results: sources, source: 'web', aiAvailable: false, phase: 'complete' };
+      }
+    };
+    if (input.stream === true) {
+      const encoder = new TextEncoder();
+      let cancelled = false;
+      const body = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode(JSON.stringify({ available: true, results: sources, source: 'web', phase: 'web' }) + '\n'));
+          const result = await rank();
+          if (!cancelled) {
+            controller.enqueue(encoder.encode(JSON.stringify(result) + '\n'));
+            controller.close();
+          }
+        },
+        cancel() { cancelled = true; },
+      });
+      return new Response(body, { headers: { ...corsHeaders, 'Content-Type': 'application/x-ndjson', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
     }
-    const ranked = await ai.json();
-    let indices: unknown;
-    try { indices = JSON.parse(ranked.choices?.[0]?.message?.content ?? '{}').indices; } catch { indices = undefined; }
-    return json({ available: true, results: rankPublicSources(sources, indices), source: 'web', aiAvailable: true });
+    return json(await rank());
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Search unavailable';
     const status = message === 'Search limit reached' ? 429 : message === 'Invalid query' || message === 'Invalid request' || error instanceof SyntaxError ? 400 : 503;
