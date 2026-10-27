@@ -62,6 +62,16 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
     expect(primary.className).toMatch(/\bbtn-glass-primary\b/);
   });
 
+  it("the search field stands 1 cm past the CTA pair on each side (34rem + 2cm), where there is room", () => {
+    renderHero();
+    const field = screen.getByRole("combobox").closest(".k-search-hero") as HTMLElement;
+    // field > form > the dropdown's own root > the hero's search column
+    const searchColumn = field.closest("form")!.parentElement!.parentElement as HTMLElement;
+    expect(searchColumn.className).toContain("max-w-[calc(34rem+2cm)]");
+    const ctaColumn = screen.getByRole("link", { name: /create passport/i }).parentElement as HTMLElement;
+    expect(ctaColumn.className).toContain("max-w-[34rem]");
+  });
+
   it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
     renderHero();
     const secondary = screen.getByRole("link", { name: /explore opportunities/i });

@@ -47,28 +47,37 @@ const sheetVariants = cva(
   },
 );
 
+/**
+ * A panel that is just there: it fades in over 100 ms and out over 75 ms, with no slide, no padding, background or
+ * corner button of its own (the content brings its own surface). For a field that floats under the top bar, such as search.
+ */
+const quickSheet =
+  "fixed inset-x-0 top-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[state=open]:duration-100 data-[state=closed]:duration-75";
+
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {
-  /** Replaces the default dark scrim for one sheet (the search sheet blurs the page instead of dimming it). */
+  /** Replaces the default dark scrim for one sheet (the search sheet dims the page lightly instead). */
   overlayClassName?: string;
+  /** The quick, floating panel described at `quickSheet`; only for `side="top"`. */
+  quick?: boolean;
 }
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, overlayClassName, children, ...props }, ref) => (
+  ({ side = "right", className, overlayClassName, quick = false, children, ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay className={overlayClassName} />
       <SheetPrimitive.Content 
         ref={ref} 
-        className={cn(sheetVariants({ side }), className)} 
+        className={cn(quick ? quickSheet : sheetVariants({ side }), className)} 
         aria-describedby={undefined}
         {...props}
       >
         {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+        {!quick && <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
+        </SheetPrimitive.Close>}
       </SheetPrimitive.Content>
     </SheetPortal>
   ),

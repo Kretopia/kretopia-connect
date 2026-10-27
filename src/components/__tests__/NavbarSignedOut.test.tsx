@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
@@ -20,7 +20,7 @@ vi.mock("@/integrations/supabase/client", () => {
   });
   return { supabase: { from: () => chain, rpc: () => chain, channel: () => chain, removeChannel: () => undefined } };
 });
-vi.mock("@/components/search/UnifiedSearchDropdown", () => ({ UnifiedSearchDropdown: () => null }));
+vi.mock("@/components/search/UnifiedSearchDropdown", () => ({ UnifiedSearchDropdown: () => <input role="combobox" aria-label="Search a name, project or opportunity" /> }));
 vi.mock("@/components/NotificationCenter", () => ({ NotificationCenter: () => null }));
 vi.mock("@/components/messages/MessagesDrawer", () => ({ MessagesDrawer: () => null }));
 vi.mock("@/components/SettingsDrawer", () => ({ SettingsDrawer: () => null }));
@@ -96,5 +96,45 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     renderBar();
     expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "theme" })).toBeInTheDocument();
+  });
+
+  it("centres the rubrics on the screen: the middle cell sits between two equal columns", () => {
+    renderBar();
+    const row = (document.querySelector(".k-site-nav") as HTMLElement).parentElement as HTMLElement;
+    expect(row.className).toContain("lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
+  });
+
+  describe("the search", () => {
+    const openSearch = () => {
+      renderBar();
+      fireEvent.click(screen.getByRole("button", { name: "Search" }));
+      return screen.getByRole("dialog");
+    };
+
+    it("is the hero field in a quick floating panel: fades over 100 ms, no slide, no panel chrome, no corner button", () => {
+      const dialog = openSearch();
+      expect(dialog).toHaveClass("data-[state=open]:duration-100", "data-[state=open]:fade-in-0");
+      expect(dialog.className).not.toMatch(/slide-in|duration-500|backdrop-blur|bg-background\b|shadow-lg|p-6/);
+      expect(within(dialog).getByRole("combobox")).toBeInTheDocument();
+      expect(within(dialog).queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
+    });
+
+    it("is as wide as the hero field (34rem plus 1 cm each side) and sits below the taller signed-out bar", () => {
+      const dialog = openSearch();
+      expect(dialog.className).toContain("w-[min(calc(34rem+2cm),calc(100vw-2rem))]");
+      expect(dialog.className).toContain("top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
+    });
+
+    it("dims the page lightly, without blurring it", () => {
+      openSearch();
+      const overlay = document.querySelector('[data-state="open"].fixed.inset-0') as HTMLElement;
+      expect(overlay.className).toContain("bg-background/40");
+      expect(overlay.className).not.toMatch(/backdrop-blur/);
+    });
+
+    it("is still named for screen readers", () => {
+      const dialog = openSearch();
+      expect(within(dialog).getByRole("heading", { name: "Search Kretopia" })).toHaveClass("sr-only");
+    });
   });
 });

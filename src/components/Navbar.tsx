@@ -239,7 +239,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
         className={cn(
           "mx-auto flex items-center justify-between gap-1",
           guestBar
-            ? "min-h-20 w-full max-w-[1440px] px-4 py-2 sm:px-[clamp(20px,4vw,64px)] lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-[clamp(30px,4vw,64px)]"
+            ? "min-h-20 w-full max-w-[1440px] px-4 py-2 sm:px-[clamp(20px,4vw,64px)] lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-[clamp(30px,4vw,64px)]"
             : "container px-2 sm:px-4 py-2.5",
         )}
       >
@@ -332,29 +332,27 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
               </Button>
             </SheetTrigger>
-            {/* A light glass panel under the navbar, not a slab over it, on a strongly blurred page. */}
+            {/* The search is the hero's field, floating under the bar on a light dim: no slide, no blur of the page, no panel,
+                so it is there as soon as the button is pressed. */}
             <SheetContent
               side="top"
-              overlayClassName="bg-background/20 backdrop-blur-2xl"
-              className={cn("k-nav-search-sheet mx-auto w-[min(44rem,calc(100vw-1.5rem))] rounded-2xl border p-4 sm:p-5", guestBar ? "top-[calc(5.25rem+env(safe-area-inset-top,0px))]" : "top-[calc(4.25rem+env(safe-area-inset-top,0px))]")}
+              quick
+              overlayClassName="bg-background/40"
+              className={cn("mx-auto w-[min(calc(34rem+2cm),calc(100vw-2rem))]", guestBar ? "top-[calc(5.25rem+env(safe-area-inset-top,0px))]" : "top-[calc(4.25rem+env(safe-area-inset-top,0px))]")}
             >
-              <SheetHeader className="mx-auto w-full max-w-2xl">
-                <SheetTitle className="text-[10px] font-semibold uppercase tracking-[0.28em] text-muted-foreground">
-                  Search <span className="k-gradient-text">Kretopia</span>
-                </SheetTitle>
+              <SheetHeader>
+                <SheetTitle className="sr-only">Search Kretopia</SheetTitle>
               </SheetHeader>
-              <div className="k-nav-search mx-auto mt-3 w-full max-w-2xl">
-                <UnifiedSearchDropdown
-                  variant="hero"
-                  placeholder="People, projects, opportunities…"
-                  autoFocus
-                  onSelect={!user ? (result) => navigate(
-                    result.type === "creator" ? `/profile/${result.id}`
-                      : result.type === "gig" ? `/opportunity/${result.id}`
-                      : `/production?name=${encodeURIComponent(result.title)}`,
-                  ) : undefined}
-                />
-              </div>
+              <UnifiedSearchDropdown
+                variant="hero"
+                placeholder="People, projects, opportunities…"
+                autoFocus
+                onSelect={!user ? (result) => navigate(
+                  result.type === "creator" ? `/profile/${result.id}`
+                    : result.type === "gig" ? `/opportunity/${result.id}`
+                    : `/production?name=${encodeURIComponent(result.title)}`,
+                ) : undefined}
+              />
             </SheetContent>
           </Sheet>
           {!isLandingPage && user && (

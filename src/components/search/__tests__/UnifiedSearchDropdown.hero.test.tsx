@@ -59,6 +59,28 @@ function renderHeroSearch(props: Partial<React.ComponentProps<typeof UnifiedSear
   );
 }
 
+describe("UnifiedSearchDropdown (hero variant) — squarer corners", () => {
+  it("has a 12 px field and 8 px inner buttons, not a pill", () => {
+    renderHeroSearch();
+    const input = screen.getByRole("combobox");
+    expect(input.className).toMatch(/\brounded-xl\b/);
+    expect(input.className).not.toMatch(/\brounded-full\b/);
+    const submit = screen.getByRole("button", { name: "Search" });
+    expect(submit.className).toMatch(/rounded-\[8px\]/);
+    expect(submit.className).not.toMatch(/\brounded-full\b/);
+  });
+
+  it("keeps the compact variants as they were", () => {
+    render(
+      <MemoryRouter>
+        <UnifiedSearchDropdown variant="navbar" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("combobox").className).toMatch(/\brounded-xl\b/);
+    expect(screen.getByRole("button", { name: "Search" }).className).toMatch(/\brounded-lg\b/);
+  });
+});
+
 describe("UnifiedSearchDropdown (hero variant) — landing searchbar layout contract", () => {
   beforeEach(() => {
     vi.useRealTimers();
