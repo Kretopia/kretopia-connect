@@ -84,7 +84,6 @@ const Navbar = memo(({ user }: NavbarProps) => {
   const { subscriptionInfo } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [guestMenuOpen, setGuestMenuOpen] = useState(false);
   const { isBusiness: isCompany } = useAccountTone();
   const accountType = isCompany ? "company" : "individual";
   const [isManagerMode, setIsManagerMode] = useState(false);
@@ -116,7 +115,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
   const { hiddenByScroll, idle, idleOpacity, forceVisible } = useAutoHideNavbar();
   const [navHovered, setNavHovered] = useState(false);
   const [navFocused, setNavFocused] = useState(false);
-  const navKeepVisible = navHovered || navFocused || forceVisible || isOpen || guestMenuOpen || mobileSearchOpen;
+  const navKeepVisible = navHovered || navFocused || forceVisible || isOpen || mobileSearchOpen;
   const navHidden = hiddenByScroll && !navKeepVisible && !!user;
   const navOpacity = !navKeepVisible && idle && !!user ? idleOpacity : 1;
 
@@ -209,6 +208,47 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // The signed-out bar is the designer's: always visible and never dimmed, unlike the signed-in bar below.
   const guestBar = !user;
 
+  // The search: the hero's field in a quick floating panel, shared by both bars.
+  const searchSheet = (
+    <Sheet open={mobileSearchOpen} onOpenChange={setMobileSearchOpen}>
+      <SheetTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "relative h-8 w-8 sm:h-10 sm:w-10",
+            isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
+          )}
+          aria-label="Search"
+        >
+          <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+        </Button>
+      </SheetTrigger>
+      {/* The search is the hero's field, floating under the bar on a light dim: no slide, no blur of the page, no panel,
+          so it is there as soon as the button is pressed. */}
+      <SheetContent
+        side="top"
+        quick
+        overlayClassName="bg-background/40"
+        className={cn("mx-auto w-[min(calc(34rem+2cm),calc(100vw-2rem))]", guestBar ? "top-[calc(6.75rem+env(safe-area-inset-top,0px))] lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]" : "top-[calc(4.25rem+env(safe-area-inset-top,0px))]")}
+      >
+        <SheetHeader>
+          <SheetTitle className="sr-only">Search Kretopia</SheetTitle>
+        </SheetHeader>
+        <UnifiedSearchDropdown
+          variant="hero"
+          placeholder="People, projects, opportunities…"
+          autoFocus
+          onSelect={!user ? (result) => navigate(
+            result.type === "creator" ? `/profile/${result.id}`
+              : result.type === "gig" ? `/opportunity/${result.id}`
+              : `/production?name=${encodeURIComponent(result.title)}`,
+          ) : undefined}
+        />
+      </SheetContent>
+    </Sheet>
+  );
+
   return (
     <nav
       data-nav-chrome
@@ -217,9 +257,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
         "sticky top-0 z-50 transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none",
         isDarkChromeRoute
           ? "dark-surface border-b border-white/10 bg-[#05070D] text-white"
-          : user
-            ? "border-b border-border/60 glass-surface-elevated rounded-none border-x-0 border-t-0"
-            : "k-guest-nav",
+          : "k-top-bar",
       )}
       style={{
         transform: navHidden ? "translateY(-100%)" : "translateY(0)",
@@ -235,48 +273,55 @@ const Navbar = memo(({ user }: NavbarProps) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setNavFocused(false);
       }}
     >
-      <div
-        className={cn(
-          "mx-auto flex items-center justify-between gap-1",
-          guestBar
-            ? "min-h-20 w-full max-w-[1440px] px-4 py-2 sm:px-[clamp(20px,4vw,64px)] lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-[clamp(30px,4vw,64px)]"
-            : "container px-2 sm:px-4 py-2.5",
-        )}
-      >
-        <div className="shrink-0">
-          {guestBar ? (
-            // The designer's lockup is wider than the signed-in bar's: 166 px from `sm`, the smaller mark on a phone.
-            <>
-              <span className="sm:hidden"><BrandLogo size="md" showBeta linkToHome="/landing" /></span>
-              <span className="hidden sm:block"><BrandLogo size="lg" showBeta linkToHome="/landing" /></span>
-            </>
-          ) : (
-            <BrandLogo size="md" showBeta linkToHome="/landing" onDark={isDarkChromeRoute} />
-          )}
+      {guestBar ? (
+      <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_5.5rem] px-4 py-2 sm:px-[clamp(20px,4vw,64px)] lg:min-h-20 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-[clamp(30px,4vw,64px)] lg:gap-y-0">
+        {/* Row 1 on a phone: the lockup. The designer's is 166 px wide from the sm breakpoint, the smaller mark below it. */}
+        <div className="col-start-1 row-start-1 shrink-0">
+          <span className="sm:hidden"><BrandLogo size="md" showBeta linkToHome="/landing" /></span>
+          <span className="hidden sm:block"><BrandLogo size="lg" showBeta linkToHome="/landing" /></span>
         </div>
 
-        {/* ═══ GUEST INLINE NAV (desktop) ═══
-            lg:, matching the authenticated desktop nav's own breakpoint below —
-            at md: (768px) this plus the search icon, Hire Talent and Get
-            Started together overflow the viewport and clip the CTA button
-            off-screen. Tablets get the hamburger menu instead, same as the
-            authenticated experience already does. */}
-        {!user && (
-          <div className="k-site-nav hidden lg:flex">
-            {guestNavItems.map(({ path, label }) => (
-              <Link key={path} to={path} aria-current={location.pathname === path ? "page" : undefined}>
-                {label}
-              </Link>
-            ))}
+        {/* The rubrics: row 2 on a phone and tablet (a row that scrolls sideways if it ever outgrows the screen, as the
+            designer's does), the middle of the bar from lg, centred on the screen. */}
+        <div className="k-site-nav col-start-1 row-start-2 flex lg:col-start-2 lg:row-start-1">
+          {guestNavItems.map(({ path, label }) => (
+            <Link key={path} to={path} aria-current={location.pathname === path ? "page" : undefined}>
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        {/* Below lg this wrapper is display: contents, so search and the theme sit at the end of the rubrics' row (row 2) and
+            Sign in and Join at the end of the lockup's row (row 1), spanning both columns (the second is a fixed 4.5 or 5.5rem, just
+            wide enough for the two icons, so the actions cannot squeeze the rubrics);
+            from lg they are one group on the right. */}
+        <div className="contents lg:col-start-3 lg:row-start-1 lg:flex lg:items-center lg:justify-end lg:gap-2.5">
+          <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-0.5 sm:gap-1 lg:col-auto lg:row-auto lg:justify-self-auto">
+            {searchSheet}
+            <ThemeToggle />
           </div>
-        )}
+          <div className="col-span-2 col-start-1 row-start-1 flex items-center gap-2 justify-self-end lg:col-auto lg:row-auto lg:justify-self-auto">
+            <Link to="/auth?tab=signin" className="k-nav-signin inline-flex items-center justify-center">
+              Sign in
+            </Link>
+            <Link to="/auth?tab=signup" className="k-nav-join inline-flex items-center justify-center">
+              Join Kretopia
+            </Link>
+          </div>
+        </div>
+      </div>
+      ) : (
+      <div className="container mx-auto flex items-center justify-between gap-1 px-2 py-2.5 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-[clamp(24px,3vw,48px)]">
+        <div className="shrink-0">
+          <BrandLogo size="md" showBeta linkToHome="/landing" onDark={isDarkChromeRoute} />
+        </div>
 
         {/* Desktop Navigation - Authenticated users: visible on every route, including /landing */}
         {user && (
-          <div className="hidden lg:flex items-center gap-2 mx-6 pl-6 border-l border-border/50">
+          <div className="k-site-nav hidden lg:flex">
             {/* Mode toggle removed — single unified nav */}
 
-            {desktopNavItems.map(({ path, icon: Icon, label }) => {
+            {desktopNavItems.map(({ path, label }) => {
               const isActive =
                 location.pathname === path ||
                 (path === "/desk" && location.pathname.startsWith("/desk")) ||
@@ -295,20 +340,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     location.pathname.startsWith("/accounting") ||
                     location.pathname.startsWith("/credits")));
               return (
-                <Link
-                  key={path}
-                  to={path}
-                  aria-current={isActive ? "page" : undefined}
-                  aria-label={label}
-                  className={cn(
-                    "relative flex items-center gap-2 h-10 px-3.5 rounded-lg transition-smooth text-sm font-medium whitespace-nowrap border",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    isActive
-                      ? "text-foreground border-white/15 bg-white/[0.04]"
-                      : "text-muted-foreground border-transparent hover:text-foreground hover:border-white/10 hover:bg-white/[0.02]",
-                  )}
-                >
-                  <Icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
+                <Link key={path} to={path} aria-current={isActive ? "page" : undefined}>
                   {label}
                 </Link>
               );
@@ -316,45 +348,9 @@ const Navbar = memo(({ user }: NavbarProps) => {
           </div>
         )}
 
-        <div className={cn("flex items-center gap-0.5 ml-auto shrink-0", guestBar ? "sm:gap-2.5" : "sm:gap-2")}>
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-2 lg:justify-self-end">
           {/* Top nav: Logo · · · ✉ 🔔 ☰ */}
-          <Sheet open={mobileSearchOpen} onOpenChange={setMobileSearchOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "relative h-8 w-8 sm:h-10 sm:w-10",
-                  isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
-                )}
-                aria-label="Search"
-              >
-                <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
-              </Button>
-            </SheetTrigger>
-            {/* The search is the hero's field, floating under the bar on a light dim: no slide, no blur of the page, no panel,
-                so it is there as soon as the button is pressed. */}
-            <SheetContent
-              side="top"
-              quick
-              overlayClassName="bg-background/40"
-              className={cn("mx-auto w-[min(calc(34rem+2cm),calc(100vw-2rem))]", guestBar ? "top-[calc(5.25rem+env(safe-area-inset-top,0px))]" : "top-[calc(4.25rem+env(safe-area-inset-top,0px))]")}
-            >
-              <SheetHeader>
-                <SheetTitle className="sr-only">Search Kretopia</SheetTitle>
-              </SheetHeader>
-              <UnifiedSearchDropdown
-                variant="hero"
-                placeholder="People, projects, opportunities…"
-                autoFocus
-                onSelect={!user ? (result) => navigate(
-                  result.type === "creator" ? `/profile/${result.id}`
-                    : result.type === "gig" ? `/opportunity/${result.id}`
-                    : `/production?name=${encodeURIComponent(result.title)}`,
-                ) : undefined}
-              />
-            </SheetContent>
-          </Sheet>
+          {searchSheet}
           {!isLandingPage && user && (
             <MessagesDrawer
               triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
@@ -721,94 +717,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 </div>
               </SheetContent>
             </Sheet>
-          ) : !user ? (
-            <>
-              {/* Hamburger for guests below lg: — matches the inline nav's
-                  own breakpoint above so tablets always have one working
-                  way to reach these links, never neither. */}
-              <Sheet open={guestMenuOpen} onOpenChange={setGuestMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open menu"
-                    className={cn(
-                      "h-9 w-9 lg:hidden",
-                      isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
-                    )}
-                  >
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-[80vw] sm:w-[320px]">
-                  <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
-                  </SheetHeader>
-                  <div className="flex flex-col gap-1 mt-6">
-                    <Button
-                      variant="ghost"
-                      className={cn(
-                        "justify-start h-12 gap-2 text-sm font-medium",
-                        location.pathname === "/" && "bg-accent/30",
-                      )}
-                      onClick={() => {
-                        setGuestMenuOpen(false);
-                        navigate("/");
-                      }}
-                    >
-                      Home
-                    </Button>
-                    {guestNavItems.map(({ path, label }) => (
-                      <Button
-                        key={path}
-                        variant="ghost"
-                        className={cn(
-                          "justify-start h-12 gap-2 text-sm font-medium",
-                          location.pathname === path && "bg-accent/30",
-                        )}
-                        onClick={() => {
-                          setGuestMenuOpen(false);
-                          navigate(path);
-                        }}
-                      >
-                        {label}
-                      </Button>
-                    ))}
-                    <Separator className="my-3" />
-                    <Button
-                      variant="ghost"
-                      className="justify-start h-12 gap-2 text-sm font-medium"
-                      onClick={() => {
-                        setGuestMenuOpen(false);
-                        navigate("/auth?tab=signin");
-                      }}
-                    >
-                      Sign in
-                    </Button>
-                    <Button
-                      variant="default"
-                      className="nav-btn-plain bg-primary text-primary-foreground hover:bg-primary/90 justify-start h-12 gap-2 text-sm font-semibold"
-                      onClick={() => {
-                        setGuestMenuOpen(false);
-                        navigate("/auth?tab=signup");
-                      }}
-                    >
-                      Join Kretopia
-                    </Button>
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <Link to="/auth?tab=signin" className="k-nav-signin hidden items-center justify-center sm:inline-flex">
-                Sign in
-              </Link>
-              <Link to="/auth?tab=signup" className="k-nav-join inline-flex items-center justify-center">
-                Join Kretopia
-              </Link>
-            </>
           ) : null}
         </div>
       </div>
+      )}
     </nav>
   );
 });

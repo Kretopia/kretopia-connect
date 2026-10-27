@@ -71,25 +71,24 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     expect(join).toHaveClass("k-nav-join");
     expect(signIn.querySelector("svg")).toBeNull();
     expect(join.querySelector("svg")).toBeNull();
-    // Sign in leaves the bar on a phone: it is in the menu there.
-    expect(signIn).toHaveClass("hidden", "sm:inline-flex");
+    // Sign in stays in the bar on a phone: the designer's mobile header has no hamburger.
+    expect(signIn).not.toHaveClass("hidden");
   });
 
   it("is the blurred translucent bar, and it never hides or dims on scroll", () => {
     renderBar();
     const bar = document.querySelector("[data-nav-chrome]") as HTMLElement;
-    expect(bar).toHaveClass("k-guest-nav");
+    expect(bar).toHaveClass("k-top-bar");
     expect(bar.style.transform).toBe("translateY(0)");
     expect(bar.style.opacity).toBe("1");
   });
 
-  it("leaves the signed-in bar as it was: it still hides and dims", () => {
+  it("keeps the signed-in bar's behaviour: it still hides on scroll and shows no sign-in buttons", () => {
     renderBar("/", { id: "u1" });
     const bar = document.querySelector("[data-nav-chrome]") as HTMLElement;
-    expect(bar).not.toHaveClass("k-guest-nav");
     expect(bar.style.transform).toBe("translateY(-100%)");
-    expect(document.querySelector(".k-site-nav")).toBeNull();
     expect(screen.queryByRole("link", { name: "Join Kretopia" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   });
 
   it("keeps search and the theme toggle in the bar", () => {
@@ -102,6 +101,64 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     renderBar();
     const row = (document.querySelector(".k-site-nav") as HTMLElement).parentElement as HTMLElement;
     expect(row.className).toContain("lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
+  });
+
+  describe("on a phone and a tablet: the designer's two rows", () => {
+    it("has no hamburger: the rubrics are a row of their own under the lockup", () => {
+      renderBar();
+      expect(screen.queryByRole("button", { name: "Open menu" })).not.toBeInTheDocument();
+      const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
+      expect(rubrics).not.toHaveClass("hidden");
+      expect(rubrics.className).toContain("row-start-2");
+      expect(rubrics.className).toContain("lg:row-start-1");
+      expect(rubrics.className).toContain("lg:col-start-2");
+    });
+
+    it("puts the lockup and Sign in / Join on row 1, and search and the theme at the end of row 2", () => {
+      renderBar();
+      const signIn = screen.getByRole("link", { name: "Sign in" }).parentElement as HTMLElement;
+      expect(signIn.className).toContain("row-start-1");
+      expect(signIn.className).toContain("col-span-2");
+      const tools = screen.getByRole("button", { name: "Search" }).parentElement as HTMLElement;
+      expect(tools.className).toContain("row-start-2");
+      expect(tools.className).toContain("col-start-2");
+      expect(tools).toContainElement(screen.getByRole("button", { name: "theme" }));
+    });
+
+    it("keeps the second column a fixed icon width, so the actions cannot squeeze the rubrics", () => {
+      renderBar();
+      const grid = (document.querySelector(".k-site-nav") as HTMLElement).parentElement as HTMLElement;
+      expect(grid.className).toContain("grid-cols-[minmax(0,1fr)_4.5rem]");
+      expect(grid.className).toContain("sm:grid-cols-[minmax(0,1fr)_5.5rem]");
+    });
+
+    it("drops the search panel below the taller two-row bar, and below the one-row bar from lg", () => {
+      renderBar();
+      fireEvent.click(screen.getByRole("button", { name: "Search" }));
+      const dialog = screen.getByRole("dialog");
+      expect(dialog.className).toContain("top-[calc(6.75rem+env(safe-area-inset-top,0px))]");
+      expect(dialog.className).toContain("lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
+    });
+  });
+
+  describe("the signed-in bar wears the same look", () => {
+    it("has the same blurred bar and the same rubrics, as words only, centred like the visitor's", () => {
+      renderBar("/desk", { id: "u1" });
+      const bar = document.querySelector("[data-nav-chrome]") as HTMLElement;
+      expect(bar).toHaveClass("k-top-bar");
+      const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
+      expect(within(rubrics).getAllByRole("link").map((l) => l.textContent)).toEqual(["Today", "Studio", "Scout", "Passport"]);
+      expect(rubrics.querySelector("svg")).toBeNull();
+      expect(within(rubrics).getByRole("link", { name: "Studio" })).toHaveAttribute("aria-current", "page");
+      const row = rubrics.parentElement as HTMLElement;
+      expect(row.className).toContain("lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]");
+    });
+
+    it("keeps its account controls", () => {
+      renderBar("/desk", { id: "u1" });
+      expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
+    });
   });
 
   describe("the search", () => {
@@ -122,7 +179,7 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     it("is as wide as the hero field (34rem plus 1 cm each side) and sits below the taller signed-out bar", () => {
       const dialog = openSearch();
       expect(dialog.className).toContain("w-[min(calc(34rem+2cm),calc(100vw-2rem))]");
-      expect(dialog.className).toContain("top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
+      expect(dialog.className).toContain("lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
     });
 
     it("dims the page lightly, without blurring it", () => {
