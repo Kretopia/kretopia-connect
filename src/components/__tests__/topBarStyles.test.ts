@@ -30,9 +30,10 @@ describe("top bar and search styles", () => {
     expect(rule(".k-mic-button.is-active")).toMatch(/linear-gradient/);
   });
 
-  it("keeps the hero search a 0.75rem rectangle, not a pill", () => {
-    expect(rule(".k-search-hero")).toMatch(/border-radius:\s*0\.75rem/);
+  it("keeps the hero search on the shared 0.875rem corner, not a pill", () => {
+    expect(rule(".k-search-hero")).toMatch(/border-radius:\s*var\(--k-hero-radius\)/);
     expect(rule(".k-search-hero")).not.toMatch(/9999px/);
+    expect(css).toMatch(/--k-hero-radius:\s*0\.875rem/);
   });
 
   it("gives the top-bar search no look of its own: it is the hero field", () => {

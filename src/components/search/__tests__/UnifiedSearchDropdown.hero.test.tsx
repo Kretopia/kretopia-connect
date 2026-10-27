@@ -60,10 +60,10 @@ function renderHeroSearch(props: Partial<React.ComponentProps<typeof UnifiedSear
 }
 
 describe("UnifiedSearchDropdown (hero variant) — squarer corners", () => {
-  it("has a 12 px field and 8 px inner buttons, not a pill", () => {
+  it("has the shared hero corner on the field and 8 px inner buttons, not a pill", () => {
     renderHeroSearch();
     const input = screen.getByRole("combobox");
-    expect(input.className).toMatch(/\brounded-xl\b/);
+    expect(input.className).toContain("rounded-[var(--k-hero-radius)]");
     expect(input.className).not.toMatch(/\brounded-full\b/);
     const submit = screen.getByRole("button", { name: "Search" });
     expect(submit.className).toMatch(/rounded-\[8px\]/);
