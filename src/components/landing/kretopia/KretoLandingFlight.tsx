@@ -6,7 +6,7 @@ import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
 import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
-import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, SIDE_SCALE, SIDE_UPPER_BODY_CLIP, ledgeSlideSpan } from "./kretoPoseGeometry";
+import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, SIDE_SCALE, SIDE_UPPER_BODY_CLIP, ledgeSlideSpan, sideEmergence } from "./kretoPoseGeometry";
 
 const layers = { right: flyingRight, left: flyingLeft, peekTop, peekBottom, peekSide } as const;
 type Layer = keyof typeof layers;
@@ -24,7 +24,7 @@ const poseClasses: Record<Layer, string> = {
  * it at `cut`, the hands sit at `handsY` just inside the cut so they read as gripping the picture.
  * `minScale` is the smallest fit worth showing; below it the media is passed by instead.
  */
-const SIDE = { cut: 0.4, handsY: 0.33, minScale: 0.5, extent: 0.48 };
+const SIDE = { cut: 0.4, handsY: 0.33 };
 
 /** Flying silhouette's opaque vertical bounds (fraction of its box), with a small bank margin. */
 const FLY_ALPHA = { top: 0, bottom: 1 };
@@ -232,7 +232,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const inFlight = scroll >= 65 || getComputedStyle(hero).display === "none";
       el.style.opacity = inFlight ? "1" : "0";
       // The hands are drawn over the media for as long as he holds the edge.
-      // No hands on the side hide: only the head comes out.
+      // Side hide stays behind the media: the original head and bust emerge together.
       const gripping = activeLock?.pose !== "peekSide" && activeLock?.hidden !== undefined && isPeek;
       grip.style.opacity = inFlight && gripping ? "1" : "0";
       hero.style.opacity = inFlight ? "0" : "1";
@@ -304,20 +304,25 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const textRect = media.closest("section")?.querySelector<HTMLElement>("[data-kreto-flight-content]")?.getBoundingClientRect();
         const outerRoom = Math.max(left, vw - rectRight);
         const textBeside = textRect && textRect.top < rect.bottom && textRect.bottom > rect.top;
+        const bustHeight = size * SIDE_SCALE * 0.66;
+        // Where the heading starts lower down, emerge above it: enough room for the bust,
+        // without pushing the head into a narrow text gutter or covering the copy.
+        const upperClear = !!textRect && textRect.top - rect.top > bustHeight + 32;
         const textGap = textBeside && textRect
           ? textRect.left >= rect.right ? textRect.left - rect.right : rect.left - textRect.right
           : outerRoom;
-        const room = Math.min(outerRoom, Math.max(0, textGap - 8));
-        // Preserve apparent helmet size; skip the side hold when the gutter cannot fit it.
-        const sideW = SIDE.extent * size * SIDE_SCALE;
-        const sideScale = Math.min(1, Math.max(0, (room - 2 + (textBeside ? 0 : sideW * 0.25)) / sideW));
-        const sideMode = !attach && sideScale >= SIDE.minScale;
+        const room = upperClear ? outerRoom : Math.min(outerRoom, Math.max(0, textGap - 8));
+        // Narrow gutters change how far he emerges, never the Flying-matched helmet size.
+        const emergence = sideEmergence(room, size);
+        const sideW = emergence.extent;
+        const sideMode = !attach && emergence.enabled;
         const sideOf: "left" | "right" = vw - rectRight >= left ? "right" : "left";
-        const sideX = (sideOf === "right" ? rectRight : left) - SIDE.cut * size;
+        const tuck = sideW - emergence.reveal;
+        const sideX = (sideOf === "right" ? rectRight - tuck : left + tuck) - SIDE.cut * size;
         // Fully behind the edge: nothing of him is past it.
         const sideHiddenX = sideOf === "right"
-          ? rectRight - SIDE.cut * size - sideW * sideScale - 2
-          : left - SIDE.cut * size + sideW * sideScale + 2;
+          ? rectRight - SIDE.cut * size - sideW - 2
+          : left - SIDE.cut * size + sideW + 2;
         // The far left or far right of the media, whichever is nearer where he comes from: a straighter flight.
         const x = sideMode
           ? sideX
@@ -358,11 +363,13 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
             const h = bottom - top;
             const span = release - topAt;
             const sideSlide = Math.min(140, span * 0.18);
+            const upperY = top + 16 + SIDE.handsY * size * (SIDE_SCALE - 1);
             const made = mediaSideLocks({
               topAt, release, slide: sideSlide, reveal: Math.min(260, (span - 2 * sideSlide) * 0.3),
               flyX: x, hiddenX: sideHiddenX, arriveY,
-              sideY1: top + h * 0.28 - SIDE.handsY * size, sideY2: top + h * 0.62 - SIDE.handsY * size,
-              departY, side: sideOf, scale: sideScale,
+              sideY1: upperClear ? upperY : top + h * 0.28 - SIDE.handsY * size,
+              sideY2: upperClear ? upperY + Math.min(24, Math.max(0, (textRect?.top ?? rect.top) - rect.top - bustHeight - 32)) : top + h * 0.62 - SIDE.handsY * size,
+              departY, side: sideOf, scale: 1,
             });
             made.forEach(lock => { lock.media = index; });
             ledgeLocks.push(...made);

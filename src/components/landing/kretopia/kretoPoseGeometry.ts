@@ -9,7 +9,14 @@ export const BOTTOM_HEIGHT = BOTTOM_SCALE;
 export const SIDE_HELMET_WIDTH = 515;
 export const SIDE_SCALE = FLYING_HELMET_WIDTH / SIDE_HELMET_WIDTH;
 /** Crop above the hips; leaves the original dome, chest and gloves intact. */
-export const SIDE_UPPER_BODY_CLIP = 'inset(0 0 31% 0)';
+export const SIDE_UPPER_BODY_CLIP = 'inset(0 0 34% 0)';
+
+/** Fit the emergence, never the character: a narrow gutter reveals less of the same-sized bust. */
+export function sideEmergence(room: number, box: number) {
+  const extent = 0.48 * box * SIDE_SCALE;
+  const reveal = Math.min(extent, Math.max(0, room - 10));
+  return { extent, reveal, enabled: reveal >= box * 0.12 };
+}
 
 /** Longer eased emergence, leaving a genuine resting interval on each ledge. */
 export const ledgeSlideSpan = (topAt: number, middle: number, release: number) =>
