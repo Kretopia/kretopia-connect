@@ -23,7 +23,7 @@ interface FeatureWrappedProps {
 export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWrappedProps) {
   const id = useId();
   useRegisterFeaturePanel();
-  const { scene } = useFeatureSceneState();
+  const { scene, head } = useFeatureSceneState();
   return (
     <WrappedShell
       titleId={`feature-wrapped-${id}`}
@@ -36,11 +36,34 @@ export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWra
       hideTitle={hideTitle}
       status={status}
       banner={
-        scene ? (
-          // Transparent so the panel grid runs through; whole image, no divider, no repeated name.
-          <div className="grid items-center sm:grid-cols-2">
-            <div className="hidden p-6 sm:block"><BrandLogo lockup size="md" /></div>
-            <KretoScene scene={scene} lazy={false} className="h-auto w-full object-contain" />
+        scene && head ? (
+          // Studio New Room head: lockup + feature pill, then title/subtitle beside its Kreto.
+          <div>
+            <div className="flex items-center justify-between gap-3">
+              <BrandLogo lockup size="md" />
+              <span
+                className="inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em]"
+                style={{ borderColor: "hsl(var(--energy) / 0.35)", color: "hsl(var(--energy))" }}
+              >
+                {name}
+              </span>
+            </div>
+            <div className="mt-6 grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
+              <div className="min-w-0">
+                <h2 id={`feature-wrapped-${id}`} className="text-3xl font-black leading-[1.05] tracking-[-0.03em] text-foreground sm:text-4xl">
+                  {head.title}
+                  {head.accentTitle && (
+                    <>
+                      <br />
+                      <span style={{ color: "hsl(var(--energy))" }}>{head.accentTitle}</span>
+                    </>
+                  )}
+                </h2>
+                <p className="mt-3 max-w-xl text-sm text-foreground/55 sm:text-base">{head.subtitle}</p>
+                {status && <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{status}</p>}
+              </div>
+              <KretoScene scene={scene} size="thumb" lazy={false} className="hidden h-32 w-64 shrink-0 rounded-2xl border border-border sm:block" />
+            </div>
           </div>
         ) : undefined
       }

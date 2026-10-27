@@ -81,7 +81,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
             {status && <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{status}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2">{aside}</div>
-        </header>
+        </header>}
         {children}
         {brandFooter && (
           <footer className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
