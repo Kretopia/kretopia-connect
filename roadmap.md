@@ -138,3 +138,9 @@
 - [x] Converted the 10 large Kreto PNGs to lossless WebP (4.2MB → 2.9MB, pixel-identical); imports updated in KretoCharacter.tsx and KretoTip.tsx.
 - [x] Verified: production build OK, 69 targeted tests pass, browser smoke test (home + /auth) renders correctly, build-errors.log clean.
 - [ ] Publish to www.kretopia.com — waiting on Noé's explicit go.
+
+## Guest email-list popup removed
+- [x] Deactivate the interruptive "Stay in the Creative Loop" email popup: removed its lazy import and its `{!user && <NewsletterPopup />}` mount from src/App.tsx, because guests mistook it for the sign-up path and it blocked the flow.
+- [x] Guard with src/lib/__tests__/noGuestEmailPopup.test.ts (2 tests) — appChrome suite still green (11 total).
+- [x] Verified in the live preview as a guest: no dialog and no email field 37 seconds in (past the old 30s timer). Component file kept, unmounted, so it can be revived deliberately.
+- [ ] Publish to www.kretopia.com — waiting on Noé's explicit go.
