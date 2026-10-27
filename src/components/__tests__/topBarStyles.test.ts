@@ -24,6 +24,15 @@ describe("top bar and search styles", () => {
     expect(rule(".k-site-nav a")).toMatch(/border:\s*1px solid transparent/);
   });
 
+  it("lays the rubrics out as a left-aligned row that scrolls without a scrollbar, centred from lg", () => {
+    const base = rule(".k-site-nav");
+    expect(base).toMatch(/justify-content:\s*flex-start/);
+    expect(base).toMatch(/overflow-x:\s*auto/);
+    expect(base).toMatch(/scrollbar-width:\s*none/);
+    expect(base).not.toMatch(/display:/);
+    expect(css).toMatch(/@media \(min-width: 1024px\) \{\s*\.k-site-nav \{\s*justify-content: center;/);
+  });
+
   it("has no multicolour hover on the microphone: only the recording state wears the gradient", () => {
     expect(css).not.toMatch(/\.k-mic-button:hover/);
     expect(rule(".k-mic-button")).toMatch(/color:\s*hsl\(var\(--foreground\)\)/);

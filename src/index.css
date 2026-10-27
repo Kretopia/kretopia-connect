@@ -1843,16 +1843,34 @@ svg.k-gradient-icon {
    a blurred, translucent bar that never hides; the rubrics centred on the screen in muted type, each in a
    transparent frame on hover, focus, click and for the current page; a ghost "Sign in" and a "Join Kretopia"
    with a gradient hairline. Only the signed-out bar wears it. */
-.k-guest-nav {
+.k-top-bar {
   background: hsl(var(--background) / 0.58);
   -webkit-backdrop-filter: blur(16px) saturate(115%);
   backdrop-filter: blur(16px) saturate(115%);
   border-bottom: 1px solid hsl(var(--foreground) / 0.06);
 }
+/* The rubrics. Below lg they are a row of their own under the lockup, left-aligned, and scroll sideways without a
+   scrollbar if they outgrow the screen (the designer's mobile header); from lg they are the middle of the bar, centred.
+   Display comes from the utility classes on the element, so `hidden lg:flex` still works on the signed-in bar. */
 .k-site-nav {
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 0.25rem;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* room for the focus ring, which the scroller would otherwise clip */
+  padding-block: 4px;
+  margin-block: -4px;
+}
+.k-site-nav::-webkit-scrollbar {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .k-site-nav {
+    justify-content: center;
+    overflow: visible;
+  }
 }
 /* A transparent frame on hover and on click, as the rubrics always had: no underline, no gradient. */
 .k-site-nav a {
@@ -1928,6 +1946,10 @@ svg.k-gradient-icon {
     min-height: 36px;
     padding-inline: 11px;
     font-size: 11px;
+  }
+  .k-site-nav a {
+    font-size: 11px;
+    padding-inline: 0.625rem;
   }
 }
 @media (prefers-reduced-motion: reduce) {
