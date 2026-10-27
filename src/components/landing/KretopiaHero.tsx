@@ -462,7 +462,8 @@ export const KretopiaHero = () => {
           initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="relative mt-9 sm:mt-10 w-full max-w-[34rem] mx-auto"
+          // The CTA pair below is 34rem wide: the field stands 1 cm (37.8 px) past it on each side, where there is room.
+          className="relative mt-9 sm:mt-10 w-full max-w-[calc(34rem+2cm)] mx-auto"
         >
           <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" />
         </motion.div>

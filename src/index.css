@@ -1321,17 +1321,12 @@ svg.k-gradient-icon {
   }
 }
 
-/* Search-bar mic button — plain white, no flat hover tint (unlike most
-   icon buttons in this app, which just recolor on hover). Hovering, or
-   being the active "stop recording" button, swaps in the same Kretopia
-   logo gradient as .k-gradient-title (plain background here, not
-   clipped to text) — the mic becomes the one moment this gradient shows
-   up outside the landing page, precisely because it's the one live/
-   active-AI interaction happening in the search bar itself. */
+/* Search-bar mic button: plain in the theme's own foreground (white in Midnight, dark in Daylight), no hover
+   effect. Only the active "stop recording" button wears the Kretopia gradient: it is the one live moment in
+   the search bar. */
 .k-mic-button {
-  color: #ffffff;
+  color: hsl(var(--foreground));
 }
-.k-mic-button:hover:not(:disabled),
 .k-mic-button.is-active {
   background: linear-gradient(
     160deg,
@@ -1356,7 +1351,7 @@ svg.k-gradient-icon {
    contract the hero search tests guard. */
 .k-search-hero {
   isolation: isolate;
-  border-radius: 9999px;
+  border-radius: 0.75rem;
 }
 .k-search-hero::before,
 .k-search-hero::after {
@@ -1403,32 +1398,6 @@ svg.k-gradient-icon {
 @supports not (overflow: clip) {
   .overflow-clip { overflow: hidden; }
 }
-
-/* Top-navbar search: a light glass panel under the navbar. The page behind it is blurred hard (the sheet's overlay) and
-   the panel adds its own blur, so neither the navbar nor the page shows through as clutter. */
-.k-nav-search-sheet {
-  background: hsl(var(--background) / 0.6);
-  backdrop-filter: blur(40px) saturate(170%);
-  -webkit-backdrop-filter: blur(40px) saturate(170%);
-  border: 1px solid hsl(var(--border) / 0.55);
-  box-shadow: 0 24px 60px -32px hsl(var(--foreground) / 0.45), inset 0 1px 0 hsl(var(--foreground) / 0.06);
-}
-.k-nav-search .k-search-hero input {
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  height: 3.25rem;
-}
-.k-nav-search .k-search-hero::before {
-  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--color-accent, var(--accent))));
-  opacity: 0.28;
-}
-.k-nav-search .k-search-hero:hover::before { opacity: 0.45; }
-.k-nav-search .k-search-hero:focus-within::before { opacity: 0.8; }
-.k-nav-search .k-search-hero::after {
-  background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--color-accent, var(--accent))));
-}
-.k-nav-search .k-search-hero:focus-within::after { opacity: 0.14; }
 
 /* ── FUTURISTIC CTA ─────────────────────────────────────────────────
    Opt-in finish for a primary / secondary call to action (class
@@ -1871,9 +1840,9 @@ svg.k-gradient-icon {
 
 /* ── SIGNED-OUT TOP BAR ─────────────────────────────────────────────
    The UX designer's KretopiaHero header, ported with theme tokens so Daylight and Midnight both follow it:
-   a blurred, translucent bar that never hides; the rubrics centred in muted type with a brand-gradient underline
-   that draws in on hover, focus and for the current page; a ghost "Sign in" and a "Join Kretopia" with a
-   gradient hairline. Only the signed-out bar wears it. */
+   a blurred, translucent bar that never hides; the rubrics centred on the screen in muted type, each in a
+   transparent frame on hover, focus, click and for the current page; a ghost "Sign in" and a "Join Kretopia"
+   with a gradient hairline. Only the signed-out bar wears it. */
 .k-guest-nav {
   background: hsl(var(--background) / 0.58);
   -webkit-backdrop-filter: blur(16px) saturate(115%);
@@ -1883,41 +1852,30 @@ svg.k-gradient-icon {
 .k-site-nav {
   align-items: center;
   justify-content: center;
-  gap: clamp(24px, 2.5vw, 42px);
+  gap: 0.25rem;
 }
+/* A transparent frame on hover and on click, as the rubrics always had: no underline, no gradient. */
 .k-site-nav a {
-  position: relative;
-  padding: 20px 0;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
   color: hsl(var(--foreground) / 0.58);
-  transition: color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.k-site-nav a::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  height: 2px;
-  background: linear-gradient(90deg, #2a0fd9 0%, #4812f5 20%, #9413d2 42%, #e0179c 64%, #ff3d7a 82%, #fea61a 100%);
-  opacity: 0;
-  transform: scaleX(0);
-  transform-origin: 0 center;
-  transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .k-site-nav a:hover,
 .k-site-nav a:focus-visible,
 .k-site-nav a[aria-current="page"] {
   color: hsl(var(--foreground));
+  background-color: hsl(var(--foreground) / 0.04);
+  border-color: hsl(var(--foreground) / 0.12);
 }
-.k-site-nav a:hover::after,
-.k-site-nav a:focus-visible::after,
-.k-site-nav a[aria-current="page"]::after {
-  opacity: 1;
-  transform: scaleX(1);
+.k-site-nav a:active {
+  background-color: hsl(var(--foreground) / 0.08);
+  border-color: hsl(var(--foreground) / 0.2);
 }
 /* Display and centring come from the utility classes on the links, so `hidden sm:inline-flex` can still hide Sign in on a phone. */
 .k-nav-signin,
@@ -1974,7 +1932,6 @@ svg.k-gradient-icon {
 }
 @media (prefers-reduced-motion: reduce) {
   .k-site-nav a,
-  .k-site-nav a::after,
   .k-nav-signin,
   .k-nav-join {
     transition: none;

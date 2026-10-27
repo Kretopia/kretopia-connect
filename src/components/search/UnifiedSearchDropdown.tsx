@@ -462,7 +462,7 @@ export function UnifiedSearchDropdown({
               isHero
                 // The gradient hairline and glow come from .k-search-hero (index.css), so the
                 // field's own border stays invisible and its box never changes on focus.
-                ? "h-14 sm:h-16 rounded-full border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
+                ? "h-14 sm:h-16 rounded-xl border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
                 : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
@@ -471,7 +471,8 @@ export function UnifiedSearchDropdown({
           {(voice.status === "recording" || voice.status === "processing") ? (
             <div
               className={cn(
-                "absolute top-1/2 -translate-y-1/2 right-1.5 flex items-center gap-1.5 rounded-full glass-surface pl-2.5 pr-1 py-1",
+                "absolute top-1/2 -translate-y-1/2 right-1.5 flex items-center gap-1.5 glass-surface pl-2.5 pr-1 py-1",
+                isHero ? "rounded-[8px]" : "rounded-full",
               )}
             >
               {voice.status === "recording" ? (
@@ -482,7 +483,7 @@ export function UnifiedSearchDropdown({
                     onClick={voice.stop}
                     aria-label="Stop and use this recording"
                     title="Stop"
-                    className="k-mic-button is-active h-6 w-6 shrink-0 rounded-full flex items-center justify-center hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
+                    className={cn("k-mic-button is-active h-6 w-6 shrink-0 flex items-center justify-center hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]", isHero ? "rounded-[6px]" : "rounded-full")}
                   >
                     <Square className="h-2.5 w-2.5 fill-current" />
                   </button>
@@ -491,7 +492,7 @@ export function UnifiedSearchDropdown({
                     onClick={voice.cancel}
                     aria-label="Cancel recording"
                     title="Cancel"
-                    className="h-6 w-6 shrink-0 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/10 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]"
+                    className={cn("h-6 w-6 shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/10 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-accent))]", isHero ? "rounded-[6px]" : "rounded-full")}
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -525,8 +526,8 @@ export function UnifiedSearchDropdown({
                   aria-label="Search by voice"
                   title="Search by voice"
                   className={cn(
-                    "k-mic-button absolute top-1/2 -translate-y-1/2 h-7 w-7 rounded-full flex items-center justify-center transition-all disabled:opacity-50 before:absolute before:-inset-1.5 before:content-['']",
-                    isHero ? "right-[3.75rem] sm:right-[4.25rem]" : "right-6"
+                    "k-mic-button absolute top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center transition-all disabled:opacity-50 before:absolute before:-inset-1.5 before:content-['']",
+                    isHero ? "right-[3.75rem] sm:right-[4.25rem] rounded-[8px]" : "right-6 rounded-full"
                   )}
                 >
                   {voice.status === "requesting" ? (
@@ -542,7 +543,7 @@ export function UnifiedSearchDropdown({
                 className={cn(
                   "absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors",
                   isHero
-                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     : "right-1.5 h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/80"
                 )}
               >
