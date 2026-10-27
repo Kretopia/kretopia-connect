@@ -304,10 +304,14 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         const textRect = media.closest("section")?.querySelector<HTMLElement>("[data-kreto-flight-content]")?.getBoundingClientRect();
         const outerRoom = Math.max(left, vw - rectRight);
         const textBeside = textRect && textRect.top < rect.bottom && textRect.bottom > rect.top;
+        const bustHeight = size * SIDE_SCALE * 0.66;
+        // Where the heading starts lower down, emerge above it: enough room for the bust,
+        // without pushing the head into a narrow text gutter or covering the copy.
+        const upperClear = !!textRect && textRect.top - rect.top > bustHeight + 32;
         const textGap = textBeside && textRect
           ? textRect.left >= rect.right ? textRect.left - rect.right : rect.left - textRect.right
           : outerRoom;
-        const room = Math.min(outerRoom, Math.max(0, textGap - 8));
+        const room = upperClear ? outerRoom : Math.min(outerRoom, Math.max(0, textGap - 8));
         // Narrow gutters change how far he emerges, never the Flying-matched helmet size.
         const emergence = sideEmergence(room, size);
         const sideW = emergence.extent;
@@ -359,10 +363,12 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
             const h = bottom - top;
             const span = release - topAt;
             const sideSlide = Math.min(140, span * 0.18);
+            const upperY = top + 16 + SIDE.handsY * size * (SIDE_SCALE - 1);
             const made = mediaSideLocks({
               topAt, release, slide: sideSlide, reveal: Math.min(260, (span - 2 * sideSlide) * 0.3),
               flyX: x, hiddenX: sideHiddenX, arriveY,
-              sideY1: top + h * 0.28 - SIDE.handsY * size, sideY2: top + h * 0.62 - SIDE.handsY * size,
+              sideY1: upperClear ? upperY : top + h * 0.28 - SIDE.handsY * size,
+              sideY2: upperClear ? upperY + Math.min(24, Math.max(0, (textRect?.top ?? rect.top) - rect.top - bustHeight - 32)) : top + h * 0.62 - SIDE.handsY * size,
               departY, side: sideOf, scale: 1,
             });
             made.forEach(lock => { lock.media = index; });
