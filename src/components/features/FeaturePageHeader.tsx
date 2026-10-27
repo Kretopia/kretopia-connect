@@ -48,11 +48,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
   const { panels } = useFeatureSceneState();
   // The page's main Wrapped panel draws the banner as its head: never twice.
   const drawBanner = scene && panels === 0;
-  if (scene && panels > 0) {
-    // Fused: title, subtitle and Kreto live in the panel head (Studio New Room layout);
-    // only the tutorial trigger and tabs stay up here.
-    if (!tutorial && !tabs) return null;
-    return (
+  return (
       <div className={`relative mx-auto w-full max-w-6xl px-4 pt-[calc(env(safe-area-inset-top)+1rem)] ${allowOverflow ? "z-[100]" : ""}`}>
         {tutorial && (
           <div className="flex justify-center">
