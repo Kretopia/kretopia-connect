@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { rollup } from "rollup";
 import { vendorChunk } from "../../../plugins/vendor-chunks";
