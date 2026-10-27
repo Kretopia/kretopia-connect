@@ -64,8 +64,8 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: "About", to: "/about" },
       { label: "Contact", to: "mailto:support@kretopia.com", external: true },
-      { label: "Legal", to: "/terms" },
-      { label: "Privacy", to: "/privacy" },
+      { label: "Terms of Service", to: "/terms" },
+      { label: "Privacy Policy", to: "/privacy" },
     ],
   },
 ];
