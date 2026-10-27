@@ -29,7 +29,8 @@ export function usePublishFeatureScene(scene: KretoSceneId | undefined, label: s
   useEffect(() => {
     if (!scene) return;
     // Only publish real changes: a set on every render would loop with subscribers.
-    if (state.scene === scene && state.label === label && state.head?.subtitle === head.subtitle && state.head?.accentTitle === head.accentTitle && (typeof head.title !== "string" || state.head?.title === head.title)) return;
+    // Notify only when the feature changes; otherwise refresh the head quietly (no render loop).
+    if (state.scene === scene && state.label === label) { state.head = head; return; }
     set({ scene, label, head });
   });
   useEffect(() => {
