@@ -49,17 +49,6 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
   // The page's main Wrapped panel draws the banner as its head: never twice.
   const drawBanner = scene && panels === 0;
   return (
-      <div className={`relative mx-auto w-full max-w-6xl px-4 pt-[calc(env(safe-area-inset-top)+1rem)] ${allowOverflow ? "z-[100]" : ""}`}>
-        {tutorial && (
-          <div className="flex justify-center">
-            <FeatureAITutorial featureKey={tutorial.featureKey} label={tutorial.label} steps={tutorial.steps} className="mt-0 relative z-10" />
-          </div>
-        )}
-        {tabs && <div className="mt-4 flex justify-center">{tabs}</div>}
-      </div>
-    );
-  }
-  return (
     <div
       className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
       style={{ backgroundColor: "hsl(var(--background))" }}
