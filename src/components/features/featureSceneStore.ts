@@ -28,6 +28,8 @@ export function useFeatureSceneState() {
 export function usePublishFeatureScene(scene: KretoSceneId | undefined, label: string, head: FeatureHead) {
   useEffect(() => {
     if (!scene) return;
+    // Only publish real changes: a set on every render would loop with subscribers.
+    if (state.scene === scene && state.label === label && state.head?.subtitle === head.subtitle && state.head?.accentTitle === head.accentTitle && (typeof head.title !== "string" || state.head?.title === head.title)) return;
     set({ scene, label, head });
   });
   useEffect(() => {
