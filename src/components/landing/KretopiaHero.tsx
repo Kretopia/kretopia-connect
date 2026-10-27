@@ -465,6 +465,13 @@ export const KretopiaHero = () => {
           // The CTA pair below is 34rem wide: the field stands 1 cm (37.8 px) past it on each side, where there is room.
           className="relative mt-9 sm:mt-10 w-full max-w-[calc(34rem+2cm)] mx-auto"
         >
+          {/* The designer's label over the field: 11px, bold, uppercase, 0.32em apart, muted. */}
+          <p
+            className="mb-4 text-center text-[11px] font-bold uppercase leading-[1.5] tracking-[0.32em] text-foreground/60"
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          >
+            Find work on Kretopia
+          </p>
           <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" />
         </motion.div>
 
@@ -481,7 +488,7 @@ export const KretopiaHero = () => {
           <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
             <GlassCta
               to="/passport"
-              size="lg"
+              size="md"
               data-cta="primary"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
@@ -489,14 +496,14 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className="hero-passport-cta k-cta-future w-full"
+              className="hero-passport-cta k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
               Create Passport
             </GlassCta>
 
             <OutlineCta
               to="/auth?next=/scout&src=hero_explore"
-              size="lg"
+              size="md"
               data-cta="secondary"
               onClick={() =>
                 trackLandingCta("hero_explore_opportunities", "hero", {
@@ -504,7 +511,7 @@ export const KretopiaHero = () => {
                   variant: "signal_field",
                 })
               }
-              className="k-cta-future w-full"
+              className="k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
               Explore Opportunities
             </OutlineCta>

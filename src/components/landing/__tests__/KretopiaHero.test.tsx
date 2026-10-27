@@ -72,6 +72,31 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
     expect(ctaColumn.className).toContain("max-w-[34rem]");
   });
 
+  it("puts the designer's \"Find work on Kretopia\" label right above the search field", () => {
+    renderHero();
+    const label = screen.getByText("Find work on Kretopia");
+    expect(label.tagName).toBe("P");
+    expect(label.className).toMatch(/uppercase/);
+    expect(label.className).toContain("tracking-[0.32em]");
+    const field = screen.getByRole("combobox");
+    // The label precedes the field in the document, in the same search column.
+    expect(label.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(label.parentElement).toBe(field.closest("form")!.parentElement!.parentElement);
+  });
+
+  it("gives the search field and both CTAs the same corner, and the CTAs a medium size", () => {
+    renderHero();
+    const ctas = [screen.getByRole("link", { name: /create passport/i }), screen.getByRole("link", { name: /explore opportunities/i })];
+    for (const cta of ctas) {
+      expect(cta.className).toContain("rounded-[var(--k-hero-radius)]");
+      expect(cta.className).not.toMatch(/\brounded-full\b/);
+      // "md" (px-6 py-3), not the previous "lg" (px-7 py-3.5).
+      expect(cta.className).toMatch(/\bpy-3\b/);
+      expect(cta.className).not.toMatch(/py-3\.5/);
+    }
+    expect(screen.getByRole("combobox").className).toContain("rounded-[var(--k-hero-radius)]");
+  });
+
   it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
     renderHero();
     const secondary = screen.getByRole("link", { name: /explore opportunities/i });

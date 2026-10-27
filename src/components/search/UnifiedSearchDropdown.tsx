@@ -462,7 +462,7 @@ export function UnifiedSearchDropdown({
               isHero
                 // The gradient hairline and glow come from .k-search-hero (index.css), so the
                 // field's own border stays invisible and its box never changes on focus.
-                ? "h-14 sm:h-16 rounded-xl border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
+                ? "h-14 sm:h-16 rounded-[var(--k-hero-radius)] border-transparent bg-card/90 backdrop-blur-sm pl-14 pr-24 text-base shadow-lg placeholder:text-muted-foreground/70 focus:border-transparent"
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
                 : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"

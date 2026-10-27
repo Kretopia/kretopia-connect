@@ -64,6 +64,8 @@ All colors MUST be HSL.
      Inspired by Read.cv / Cargo / Are.na. The user's WORK is the color.
      ============================================================ */
   :root {
+    /* One corner for the Landing hero's search field and its two calls to action: firm, not square, not a pill. */
+    --k-hero-radius: 0.875rem;
     /* Kretopia v1 — Satoshi is the ONE typeface for the entire product
        (headings, body, labels, buttons, forms — everything). Inter is a
        technical fallback only, used if Satoshi fails to load, never an
@@ -1351,7 +1353,7 @@ svg.k-gradient-icon {
    contract the hero search tests guard. */
 .k-search-hero {
   isolation: isolate;
-  border-radius: 0.75rem;
+  border-radius: var(--k-hero-radius);
 }
 .k-search-hero::before,
 .k-search-hero::after {
