@@ -285,9 +285,6 @@ const ManageOpportunities = ({ company: companyOverride }: { company?: boolean }
           tutorial={{ featureKey: "manage-opportunities", label: "How this works", steps: MANAGE_TUTORIAL }}
           tabs={
             <div className="flex flex-col items-center gap-4">
-              <Button onClick={() => navigate("/post-opportunity")} className="gap-1.5 rounded-full px-5">
-                <Plus className="h-3.5 w-3.5" /> Post a new gig
-              </Button>
               <TabsList className="h-auto gap-1 rounded-full border border-foreground/[0.08] bg-foreground/[0.05] p-1 backdrop-blur-sm">
                 <TabsTrigger
                   value="listings"
@@ -307,7 +304,7 @@ const ManageOpportunities = ({ company: companyOverride }: { company?: boolean }
         />
         </div>
 
-        <StudioFeatureShell wrapped={{ name: "Gigs", status: headerSubtitle }}>
+        <StudioFeatureShell className="pt-0" wrapped={{ name: "Gigs", status: headerSubtitle }}>
           {/* ── MY LISTINGS ── */}
           <TabsContent value="listings" className="mt-0 space-y-4">
             {postedGigs.length === 0 ? (

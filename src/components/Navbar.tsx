@@ -184,7 +184,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
         { path: "/desk", icon: LayoutDashboard, label: "Studios" },
         { path: "/opportunities", icon: Briefcase, label: "Gigs" },
         { path: "/talent-finder", icon: Search, label: "Talent" },
-        { path: "/thrivepay", icon: Wallet, label: "Pay" },
+        { path: "/thrivepay", icon: Wallet, label: "KrePay" },
       ]
     : [
         // Prioritized set — Today/Studio/Scout/Passport stay in the primary
@@ -480,7 +480,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           { icon: LayoutGrid, label: "Studios", path: "/desk" },
                           { icon: Briefcase, label: "Gigs", path: "/opportunities" },
                           { icon: Search, label: "Talent", path: "/talent-finder" },
-                          { icon: Wallet, label: "Pay", path: "/thrivepay" },
+                          { icon: Wallet, label: "KrePay", path: "/thrivepay" },
                           { icon: Plus, label: "Post a Gig", path: "/post-opportunity" },
                           { icon: Building2, label: "Clients", path: "/clients" },
                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}

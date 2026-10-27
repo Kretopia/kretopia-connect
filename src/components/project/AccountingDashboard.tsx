@@ -316,47 +316,47 @@ export function AccountingDashboard({ projectId }: AccountingDashboardProps) {
 
       {/* Primary KPI Row — 4 key metrics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-l-4 border-l-primary">
+        <Card className="border border-[hsl(var(--energy)/0.22)] bg-card">
           <CardHeader className="pb-1 pt-3 px-3 sm:px-4">
             <CardDescription className="text-[10px] uppercase tracking-wider flex items-center gap-1">
-              <TrendingUp className="h-3 w-3 text-primary" /> Total Earned
+              <TrendingUp className="h-3 w-3 text-[hsl(var(--energy))]" /> Total Earned
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-4 pb-3">
-            <p className="text-xl sm:text-2xl font-bold truncate">{sym}{stats.totalIncome.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-bold truncate k-gradient-text">{sym}{stats.totalIncome.toFixed(2)}</p>
             <p className="text-[10px] text-muted-foreground">Invoices + marketplace + circles ({preferredCurrency})</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-amber-500">
+        <Card className="border border-[hsl(var(--energy)/0.22)] bg-card">
           <CardHeader className="pb-1 pt-3 px-3 sm:px-4">
             <CardDescription className="text-[10px] uppercase tracking-wider flex items-center gap-1">
-              <Clock className="h-3 w-3 text-amber-500" /> Pending
+              <Clock className="h-3 w-3 text-[hsl(var(--energy))]" /> Pending
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-4 pb-3">
-            <p className="text-xl sm:text-2xl font-bold text-amber-600 truncate">{sym}{stats.pendingAmount.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-bold truncate k-gradient-text">{sym}{stats.pendingAmount.toFixed(2)}</p>
             <p className="text-[10px] text-muted-foreground">{stats.pendingCount} awaiting payment</p>
           </CardContent>
         </Card>
-        <Card className="border-l-4 border-l-destructive">
+        <Card className="border border-[hsl(var(--energy)/0.22)] bg-card">
           <CardHeader className="pb-1 pt-3 px-3 sm:px-4">
             <CardDescription className="text-[10px] uppercase tracking-wider flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 text-destructive" /> Outstanding
+              <AlertCircle className="h-3 w-3 text-[hsl(var(--energy))]" /> Outstanding
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-4 pb-3">
-            <p className="text-xl sm:text-2xl font-bold text-destructive truncate">{sym}{stats.overdueAmount.toFixed(2)}</p>
+            <p className="text-xl sm:text-2xl font-bold truncate k-gradient-text">{sym}{stats.overdueAmount.toFixed(2)}</p>
             <p className="text-[10px] text-muted-foreground">{stats.overdueCount} overdue</p>
           </CardContent>
         </Card>
-        <Card className={`border-l-4 ${(stats.totalIncome - stats.totalSpend) >= 0 ? 'border-l-green-500' : 'border-l-destructive'}`}>
+        <Card className="border border-[hsl(var(--energy)/0.22)] bg-card">
           <CardHeader className="pb-1 pt-3 px-3 sm:px-4">
             <CardDescription className="text-[10px] uppercase tracking-wider flex items-center gap-1">
-              <DollarSign className="h-3 w-3" /> Net Profit
+              <DollarSign className="h-3 w-3 text-[hsl(var(--energy))]" /> Net Profit
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 sm:px-4 pb-3">
-            <p className={`text-xl sm:text-2xl font-bold truncate ${(stats.totalIncome - stats.totalSpend) >= 0 ? "text-green-600" : "text-destructive"}`}>
+            <p className={`text-xl sm:text-2xl font-bold truncate k-gradient-text ${(stats.totalIncome - stats.totalSpend) >= 0 ? "text-green-600" : "text-destructive"}`}>
               {sym}{(stats.totalIncome - stats.totalSpend).toFixed(2)}
             </p>
             <p className="text-[10px] text-muted-foreground">Income − expenses</p>
