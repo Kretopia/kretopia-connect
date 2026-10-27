@@ -69,12 +69,9 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
       />
       <HudCorners />
 
-      {banner && (
-        <div className="-mx-4 -mt-4 mb-2 sm:-mx-6 sm:-mt-6">{banner}</div>
-      )}
-
       <div className="space-y-5 sm:space-y-6">
-        <header className="flex items-start justify-between gap-3">
+        {banner}
+        {!banner && <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
             <h2 id={titleId} className={cn("mt-1.5 text-xl font-bold leading-tight text-foreground sm:text-2xl", hideTitle && "sr-only")}>
@@ -84,7 +81,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
             {status && <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{status}</p>}
           </div>
           <div className="flex shrink-0 items-center gap-2">{aside}</div>
-        </header>
+        </header>}
         {children}
         {brandFooter && (
           <footer className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
