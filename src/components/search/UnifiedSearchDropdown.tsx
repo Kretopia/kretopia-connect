@@ -900,7 +900,7 @@ export function UnifiedSearchDropdown({
             {showEmptyState && !loading && !error && results.length === 0 && catalogMatches.length === 0 && query.trim().length >= 2 && (
               <div className="order-5 px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
-                <p className="text-sm text-muted-foreground">No results found</p>
+                <p className="text-sm text-muted-foreground">No Kretopia results found</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
                   Try a different name or project
                 </p>

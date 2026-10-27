@@ -58,7 +58,7 @@ export function PublicWebSearchResults({ query }: { query: string }) {
     {!waiting && !unavailable && <p role="status" className="flex items-center gap-2 px-4 pb-2 text-xs text-muted-foreground"><Check className="h-3 w-3" />{visibleRows.length ? `${visibleRows.length} public sources` : 'No public sources found'}</p>}
     {visibleRows.map(row => <Button key={row.id} variant="ghost" asChild className="h-auto w-full justify-start gap-3 rounded-none px-4 py-2 text-left">
       <a href={row.url} target="_blank" rel="noopener noreferrer" data-search-result>
-        <Globe className="h-4 w-4 shrink-0 text-accent" />
+        <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{row.title}</span><span className="block truncate text-xs text-muted-foreground">{new URL(row.url).hostname}</span>{row.description && <span className="block whitespace-normal text-xs text-muted-foreground line-clamp-2">{row.description}</span>}</span>
         <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
       </a>
