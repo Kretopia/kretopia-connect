@@ -44,6 +44,6 @@
 - Stream sourced Web results before AI ranking through the shared search endpoint, with bounded public-only memory caching and request coalescing, because ranking must not block usable sources or duplicate paid requests across search surfaces.
 - Run the read-only public-search GitHub preflight against the existing app target before deployment; never print provider secrets or apply unrelated migrations, because GitHub secrets may target a different backend.
 - Ship the large Kreto cutouts as lossless WebP (PNGs stay in src/assets/brand/kreto as source of truth), because the PNG set cost 4.2MB per fresh load and the WebP copies are pixel-identical.
-- Keep vendor splitting in vite.config.ts manualChunks (react-vendor, supabase-vendor, motion-vendor, i18n-vendor, sentry-vendor), because one 1.2MB entry chunk blocked first paint and could not be cached across deploys.
+- Keep vendor splitting through plugins/vendor-chunks.ts (react-vendor, supabase-vendor, motion-vendor, i18n-vendor, sentry-vendor), with CommonJS helpers in react-vendor, because assigning React's interop helper to a consuming chunk creates a startup cycle and leaves the boot loader stuck.
 - Add new lazy routes to src/lib/routePrefetch.ts when adding them to App.tsx, because hover/focus prefetch is what makes navigation feel instant.
 - Load webfonts with preload+onload swap (never render-blocking stylesheet links), because font CSS delayed first paint on every cold visit.
