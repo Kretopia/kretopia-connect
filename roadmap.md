@@ -4,7 +4,7 @@
 - [x] Diagnose actual capabilities independently: GitHub diagnostic run 40439480989 confirms HTTP 403 on project metadata, functions, secrets and read-only database inspection. No secret values logged or production changes performed.
 - [ ] Activate Internet + AI: blocked by confirmed provider refusals for all required endpoints; atomic quota and provider credentials cannot be inspected or installed safely with the current production token. Kretopia search stays unchanged.
 - [x] Restore side emergence with original head/bust only and exact Flying helmet size, without shrinking the mascot to fit gutters; prefer the clear space above adjacent copy.
-- [ ] Run focused tests and real Landing scroll/search checks; no site publication or backend switch.
+- [x] 24 geometry/path tests pass; real Landing scroll shows exclusive side pose with loaded artwork, full Flying-matched scale and cropped head/bust above adjacent text, no page errors; automatic compilation OK. Internet/AI end-to-end remains blocked by four confirmed provider 403 responses. No site publication or backend switch.
 
 ## Public discovery, Claim and shared calls
 - [ ] Activation rechecked after Noé confirmed production-environment secret placement at 17:49 UTC: GitHub run 40372225008 still returns HTTP 403 at project visibility, before secret metadata or quota checks. Secret placement is user-confirmed; do not repeat placement advice or infer which permission is missing. Blocker: resolve provider-side access to the exact existing application project; no activation, deployment or data change performed.
