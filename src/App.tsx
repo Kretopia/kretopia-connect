@@ -38,7 +38,6 @@ const ThriveAgentFab = lazy(() => import("./components/desk/ThriveAgentFab").the
 const KretoLauncher = lazy(() => import("./components/kreto/KretoLauncher").then(m => ({ default: m.KretoLauncher })));
 // Below-the-fold global widgets: deferred out of the entry chunk so first
 // paint isn't paying for popups and prompts the user may never see.
-const NewsletterPopup = lazy(() => import("./components/NewsletterPopup").then(m => ({ default: m.NewsletterPopup })));
 const PWAInstallPrompt = lazy(() => import("./components/PWAInstallPrompt").then(m => ({ default: m.PWAInstallPrompt })));
 const FeedbackWidget = lazy(() => import("./components/FeedbackWidget").then(m => ({ default: m.FeedbackWidget })));
 const InteractiveOnboarding = lazy(() => import("./components/onboarding/InteractiveOnboarding").then(m => ({ default: m.InteractiveOnboarding })));
@@ -295,7 +294,6 @@ const AppContent = () => {
       <GlobalVideoCallHost />
       <RoutePrefetcher />
       <Suspense fallback={null}>
-        {!user && <NewsletterPopup />}
         <PWAInstallPrompt />
       </Suspense>
       <main
