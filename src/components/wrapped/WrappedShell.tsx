@@ -36,6 +36,8 @@ export interface WrappedShellProps {
   /** The Kretopia lockup at the foot of the panel. On by default; a page that stacks two panels keeps it on the last one. */
   brandFooter?: boolean;
   className?: string;
+  /** Full-bleed head of the panel: the feature's Kretopia scene banner, fused into the frame. */
+  banner?: ReactNode;
   children: ReactNode;
 }
 
@@ -48,7 +50,7 @@ export interface WrappedShellProps {
  * drift apart. It owns the look only: what goes inside, and where its numbers
  * come from, belongs to each surface.
  */
-export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subtitle, status, aside, sectionRef, brandFooter = true, className, children }: WrappedShellProps) {
+export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subtitle, status, aside, sectionRef, brandFooter = true, className, banner, children }: WrappedShellProps) {
   return (
     <section
       ref={sectionRef}
@@ -66,6 +68,10 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
         style={{ background: "radial-gradient(60% 45% at 0% 0%, hsl(var(--energy) / 0.10), transparent 70%)" }}
       />
       <HudCorners />
+
+      {banner && (
+        <div className="-mx-4 -mt-4 mb-5 border-b border-[hsl(var(--energy)/0.22)] sm:-mx-6 sm:-mt-6 sm:mb-6">{banner}</div>
+      )}
 
       <div className="space-y-5 sm:space-y-6">
         <header className="flex items-start justify-between gap-3">

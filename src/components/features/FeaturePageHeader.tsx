@@ -5,6 +5,7 @@ import { CinematicHeaderPlate } from "./CinematicHeaderPlate";
 import { KGradientDefs } from "@/components/brand/KGradientDefs";
 import { SceneBanner } from "@/components/brand/SceneBanner";
 import type { KretoSceneId } from "@/components/brand/kretoScenes";
+import { useFeatureSceneState, usePublishFeatureScene } from "./featureSceneStore";
 
 interface FeaturePageHeaderProps {
   /** e.g. "Live gigs" — short, uppercase, pill-badged */
@@ -43,6 +44,10 @@ interface FeaturePageHeaderProps {
  * so it follows Dark/Light like everything else.
  */
 export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene }: FeaturePageHeaderProps) {
+  usePublishFeatureScene(scene, eyebrow);
+  const { panels } = useFeatureSceneState();
+  // The page's main Wrapped panel draws the banner as its head: never twice.
+  const drawBanner = scene && panels === 0;
   return (
     <div
       className={`feature-reference-header relative pt-[env(safe-area-inset-top)] ${allowOverflow ? "overflow-visible z-[100]" : "overflow-hidden"}`}
@@ -97,7 +102,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         footer={tabs && <div className="mt-6">{tabs}</div>}
       />
       {/* As wide as the page's own content (StudioFeatureShell: max-w-6xl, px-4), not as wide as the title block. */}
-      {scene && (
+      {drawBanner && (
         <div className="relative mx-auto -mt-2 w-full max-w-6xl px-4 pb-6">
           <SceneBanner scene={scene} label={eyebrow} layout="split" lazy={false} className="rounded-3xl border border-border" />
         </div>

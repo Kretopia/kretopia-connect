@@ -48,3 +48,4 @@
 - Add new lazy routes to src/lib/routePrefetch.ts when adding them to App.tsx, because hover/focus prefetch is what makes navigation feel instant.
 - Load webfonts with preload+onload swap (never render-blocking stylesheet links), because font CSS delayed first paint on every cold visit.
 - Keep the guest email-list popup unmounted from the app shell, because it read as the sign-up path and interrupted the flow; email capture stays inline in Landing forms.
+- Fuse a feature header's Kreto scene banner into its FeatureWrapped panel head via featureSceneStore (header draws it only when no panel is mounted), and wrap feature bodies identically in Creator and Company mode, because separate banners duplicated the Kretopia mark and mode-specific layouts drifted from Studio.
