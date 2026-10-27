@@ -3,6 +3,9 @@ import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { UnifiedSearchDropdown } from "../UnifiedSearchDropdown";
 
+// This contract covers the local-search loader, independently of the parallel Web source lane.
+vi.mock('../PublicWebSearchResults', () => ({ PublicWebSearchResults: () => null }));
+
 /**
  * The search results panel shows ONE wait indicator while a query is in
  * flight: the Kretopia K-mark loader. It used to stack a CSS border ring

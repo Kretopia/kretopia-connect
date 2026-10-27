@@ -1,5 +1,9 @@
 # Roadmap
 
+## Faster public Web search
+- [x] Reduce debounce from 900 to 250 ms, show immediate branded progress and source skeletons, share recent public results and in-flight requests, and stream real Web sources before AI ranking finishes; quota, original searchbar and legacy backend preserved.
+- [x] 23 focused tests pass; automatic compilation OK and real Landing search verified: feedback 142 ms, first 20 sources 2.292 s, AI completion 3.049 s, repeat search 65 ms with zero additional requests and no page errors. Only the existing Cloud search function deployed; website not published. First-time external searches cannot be guaranteed instantaneous.
+
 ## Public discovery, Claim and shared calls
 - [x] Web + AI unblocked another way (2026-10-27): public-digital-presence runs on the separate Lovable Cloud backend with server-only switch and service-role-only global quota (30/min, 1500/day); original searchbar shows Kretopia data plus ranked Public web sources. Legacy backend, domain and publication untouched.
 - [x] Side Hidden shows more head: media edge moved just past the artwork's straight cut so the full dome and both ear lenses appear.
