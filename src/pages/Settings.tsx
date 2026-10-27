@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Smartphone, ExternalLink, Info, X, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
+import { Lock, Mail, Bell, Trash2, Download, Eye, EyeOff, Smartphone, ExternalLink, Info, RotateCcw, Share, Plus, CheckCircle2, ArrowRightLeft, CreditCard, Globe, Brain, ChevronRight, Plug, User } from "lucide-react";
 import { SettingsShell } from "@/components/settings/SettingsShell";
 import type { SettingsDomain } from "@/components/settings/SettingsNav";
 import { CreatorSiteSettings } from "@/components/settings/CreatorSiteSettings";
@@ -30,6 +30,10 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { WrappedShell } from "@/components/wrapped/WrappedShell";
+import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { getTierDisplayName, type SubscriptionTier } from "@/lib/subscriptionConfig";
 
 interface NotificationPreferences {
   email_matches: boolean;
@@ -88,6 +92,16 @@ interface BeforeInstallPromptEvent extends Event {
    domains" -- these replace the prior single scrolling column of 11
    unrelated Cards. Each card below is unchanged internally, just tagged
    with the domain it now renders under. */
+/** The panel's title for each section: one gradient word, as on Discover's lanes. */
+const DOMAIN_TITLES: Record<string, ReactNode> = {
+  account: <>Your <span className="k-gradient-text">account</span></>,
+  preferences: <>Your <span className="k-gradient-text">preferences</span></>,
+  connections: <>Your <span className="k-gradient-text">connections</span></>,
+  billing: <>Your <span className="k-gradient-text">plan</span></>,
+  data: <>Your <span className="k-gradient-text">data</span> and apps</>,
+  about: <>About <span className="k-gradient-text">Kretopia</span></>,
+};
+
 const SETTINGS_DOMAINS: SettingsDomain[] = [
   { id: "account", label: "Account", icon: User },
   { id: "preferences", label: "Preferences", icon: Palette },
@@ -108,7 +122,7 @@ interface SettingsProps {
 const Settings = ({ embedded = false }: SettingsProps = {}) => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, subscriptionInfo } = useAuth();
   const [loading, setLoading] = useState(false);
   const [accountType, setAccountType] = useState<"individual" | "company">("individual");
   const [showPassword, setShowPassword] = useState(false);
@@ -1056,25 +1070,28 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   return (
     <div className="min-h-screen">
       <FeaturePageHeader
-        eyebrow="Account"
-        scene="workspace"
-        title="Settings"
-        subtitle="Manage your account preferences and security"
+        eyebrow="Settings"
+        title="Settings."
+        accentTitle="Make Kretopia yours."
+        subtitle="Your account, preferences, connections, plan and data, all in one place."
         compact
       />
-      <StudioFeatureShell wrapped={{ name: "Settings" }}>
-        <div className="flex items-center justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/circle")}
-            className="shrink-0"
-            aria-label="Close settings"
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-        {sections}
+      <StudioFeatureShell>
+        <WrappedShell
+          titleId="settings-title"
+          eyebrow="Kretopia · Settings"
+          title={DOMAIN_TITLES[activeDomain]}
+          status={
+            <WrappedStatus
+              active={subscriptionInfo.subscribed}
+              label={`${accountType === "company" ? "Company" : "Personal Creator"} · ${getTierDisplayName(subscriptionInfo.tier as SubscriptionTier)} plan`}
+              detail={user?.email ? <>· {user.email}</> : null}
+            />
+          }
+          aside={<KretoScene scene="workspace" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
+        >
+          {sections}
+        </WrappedShell>
       </StudioFeatureShell>
     </div>
   );

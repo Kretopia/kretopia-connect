@@ -1,5 +1,13 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 import { SettingsNav, type SettingsDomain } from "./SettingsNav";
+
+/**
+ * Every settings card sits on the same hairline surface (the one Discover's cards wear), inset in the panel, with a
+ * title one step quieter than the shadcn default so six sections read as one page and not as a stack of boxes.
+ */
+const CARDS =
+  "min-w-0 flex-1 space-y-4 [&>*]:rounded-2xl [&>*]:border-border [&>*]:bg-background/40 [&>*]:shadow-none [&_h3]:text-lg max-sm:[&_.p-6]:px-4";
 
 interface SettingsShellProps {
   domains: SettingsDomain[];
@@ -24,11 +32,11 @@ interface SettingsShellProps {
  * column, full width.
  */
 export function SettingsShell({ domains, active, onSelect, embedded = false, children }: SettingsShellProps) {
-  if (embedded) return <div className="min-w-0 space-y-6">{children}</div>;
+  if (embedded) return <div className={cn("min-w-0", CARDS)}>{children}</div>;
   return (
     <div className="flex flex-col gap-6 md:flex-row md:items-start">
       <SettingsNav domains={domains} active={active} onSelect={onSelect} />
-      <div className="min-w-0 flex-1 space-y-6">{children}</div>
+      <div className={CARDS}>{children}</div>
     </div>
   );
 }

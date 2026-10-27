@@ -114,12 +114,12 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
   if (variant === "settings") {
     return (
       <>
-        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             {isCompany ? (
-              <Building2 className="h-5 w-5 text-primary" />
+              <Building2 className="h-5 w-5 shrink-0 text-primary" />
             ) : (
-              <User className="h-5 w-5 text-primary" />
+              <User className="h-5 w-5 shrink-0 text-primary" />
             )}
             <div>
               <p className="font-medium text-sm">
@@ -135,7 +135,7 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
             size="sm"
             onClick={() => setShowConfirm(true)}
             disabled={switching}
-            className="gap-2"
+            className="shrink-0 gap-2"
           >
             <ArrowRightLeft className="h-4 w-4" />
             Switch
@@ -143,9 +143,9 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
         </div>
 
         {/* Talent Manager Mode Toggle */}
-        <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-card">
-          <div className="flex items-center gap-3">
-            <Users className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <Users className="h-5 w-5 shrink-0 text-primary" />
             <div>
               <p className="font-medium text-sm">
                 {isManagerMode ? "Manager Mode Active" : "Activate Manager Mode"}
@@ -159,6 +159,7 @@ export const AccountSwitcher = ({ currentAccountType, onSwitch, onManagerModeCha
             checked={isManagerMode}
             onCheckedChange={toggleManagerMode}
             disabled={managerToggling}
+            className="shrink-0"
           />
         </div>
 
