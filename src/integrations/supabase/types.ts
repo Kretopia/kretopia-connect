@@ -14,13 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      public_presence_search_quota: {
+        Row: {
+          bucket: string
+          updated_at: string
+          used: number
+        }
+        Insert: {
+          bucket: string
+          updated_at?: string
+          used?: number
+        }
+        Update: {
+          bucket?: string
+          updated_at?: string
+          used?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      consume_public_presence_search: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
