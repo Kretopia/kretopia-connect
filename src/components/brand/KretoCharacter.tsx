@@ -39,14 +39,16 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
-import kretoMain from "@/assets/brand/kreto/kreto-main-cutout.png";
-import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.png";
-import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.png";
-import kretoProducer from "@/assets/brand/kreto/kreto-producer-cutout.png";
-import kretoPublicist from "@/assets/brand/kreto/kreto-publicist-cutout.png";
-import kretoDirector from "@/assets/brand/kreto/kreto-director-mic.png";
-import kretoDetective from "@/assets/brand/kreto/kreto-detective-scout.png";
-import kretoHeroWave from "@/assets/brand/kreto/kreto-mascot-hero-wave.png";
+// Lossless WebP copies of the PNG cutouts (pixel-identical, ~30-40% lighter) —
+// the PNGs stay on disk as the source of truth, the app ships the WebP.
+import kretoMain from "@/assets/brand/kreto/kreto-main-cutout.webp";
+import kretoScout from "@/assets/brand/kreto/kreto-scout-cutout.webp";
+import kretoConnector from "@/assets/brand/kreto/kreto-connector-cutout.webp";
+import kretoProducer from "@/assets/brand/kreto/kreto-producer-cutout.webp";
+import kretoPublicist from "@/assets/brand/kreto/kreto-publicist-cutout.webp";
+import kretoDirector from "@/assets/brand/kreto/kreto-director-mic.webp";
+import kretoDetective from "@/assets/brand/kreto/kreto-detective-scout.webp";
+import kretoHeroWave from "@/assets/brand/kreto/kreto-mascot-hero-wave.webp";
 // 256px WebP copies of the same cutouts (about 5% of the PNG weight, same look): used when the
 // character is shown at 160px or less, which is every small surface. The PNGs stay for big ones.
 import smallMain from "@/assets/brand/kreto/small/kreto-main.webp";

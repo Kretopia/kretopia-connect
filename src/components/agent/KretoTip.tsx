@@ -14,7 +14,7 @@ import { ArrowRight, MessageCircle, X } from "lucide-react";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { KretoPresence } from "@/components/brand/KretoPresence";
 import { KretoLabel } from "@/components/brand/KretoLabel";
-import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.png";
+import kretoProducer from "@/assets/brand/kreto/kreto-producer-hd.webp";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
