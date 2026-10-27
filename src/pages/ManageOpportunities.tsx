@@ -307,7 +307,7 @@ const ManageOpportunities = ({ company: companyOverride }: { company?: boolean }
         />
         </div>
 
-        <StudioFeatureShell wrapped={company ? { name: "Gigs", status: headerSubtitle } : undefined}>
+        <StudioFeatureShell wrapped={{ name: "Gigs", status: headerSubtitle }}>
           {/* ── MY LISTINGS ── */}
           <TabsContent value="listings" className="mt-0 space-y-4">
             {postedGigs.length === 0 ? (
