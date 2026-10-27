@@ -1,4 +1,4 @@
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import type { KretoSceneId } from "@/components/brand/kretoScenes";
 
 /**
@@ -7,8 +7,9 @@ import type { KretoSceneId } from "@/components/brand/kretoScenes";
  * mounted, the panel draws the scene banner as its own head and the header
  * stops drawing it, so the Kretopia x feature banner is fused, never doubled.
  */
-type State = { scene: KretoSceneId | null; label: string; panels: number };
-let state: State = { scene: null, label: "", panels: 0 };
+export type FeatureHead = { title: ReactNode; accentTitle?: ReactNode; subtitle: string };
+type State = { scene: KretoSceneId | null; label: string; head: FeatureHead | null; panels: number };
+let state: State = { scene: null, label: "", head: null, panels: 0 };
 const listeners = new Set<() => void>();
 const set = (next: Partial<State>) => {
   state = { ...state, ...next };
@@ -24,14 +25,17 @@ export function useFeatureSceneState() {
   return useSyncExternalStore(subscribe, get, get);
 }
 
-export function usePublishFeatureScene(scene: KretoSceneId | undefined, label: string) {
+export function usePublishFeatureScene(scene: KretoSceneId | undefined, label: string, head: FeatureHead) {
   useEffect(() => {
     if (!scene) return;
-    set({ scene, label });
+    set({ scene, label, head });
+  });
+  useEffect(() => {
+    if (!scene) return;
     return () => {
-      if (state.scene === scene) set({ scene: null, label: "" });
+      if (state.scene === scene) set({ scene: null, label: "", head: null });
     };
-  }, [scene, label]);
+  }, [scene]);
 }
 
 export function useRegisterFeaturePanel() {
