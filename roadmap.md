@@ -1,5 +1,9 @@
 # Roadmap
 
+## Faster public Web search
+- [ ] Remove unnecessary wait, show immediate branded progress, share recent results and in-flight requests, and show real Web sources before AI ranking finishes; preserve quota, original searchbar and legacy backend.
+- [ ] Run focused tests and verify real search timing and repeat-search behavior without publication.
+
 ## Public discovery, Claim and shared calls
 - [x] Web + AI unblocked another way (2026-10-27): public-digital-presence runs on the separate Lovable Cloud backend with server-only switch and service-role-only global quota (30/min, 1500/day); original searchbar shows Kretopia data plus ranked Public web sources. Legacy backend, domain and publication untouched.
 - [x] Side Hidden shows more head: media edge moved just past the artwork's straight cut so the full dome and both ear lenses appear.
