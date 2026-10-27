@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Hero Internet + AI and Side Hidden — 2026-10-27
-- [ ] Diagnose the actual deployment capabilities instead of inferring all access from project metadata; activate only with verified existing target and atomic spend protection.
-- [ ] Restore side emergence with original head/bust only and exact Flying helmet size, without shrinking the mascot to fit gutters.
+- [x] Diagnose actual capabilities independently: GitHub diagnostic run 40439480989 confirms HTTP 403 on project metadata, functions, secrets and read-only database inspection. No secret values logged or production changes performed.
+- [ ] Activate Internet + AI: blocked by confirmed provider refusals for all required endpoints; atomic quota and provider credentials cannot be inspected or installed safely with the current production token. Kretopia search stays unchanged.
+- [x] Restore side emergence with original head/bust only and exact Flying helmet size, without shrinking the mascot to fit gutters; prefer the clear space above adjacent copy.
 - [ ] Run focused tests and real Landing scroll/search checks; no site publication or backend switch.
 
 ## Public discovery, Claim and shared calls
