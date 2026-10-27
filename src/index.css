@@ -1869,6 +1869,118 @@ svg.k-gradient-icon {
   .landing-section { padding-left: 3rem; padding-right: 3rem; }
 }
 
+/* ── SIGNED-OUT TOP BAR ─────────────────────────────────────────────
+   The UX designer's KretopiaHero header, ported with theme tokens so Daylight and Midnight both follow it:
+   a blurred, translucent bar that never hides; the rubrics centred in muted type with a brand-gradient underline
+   that draws in on hover, focus and for the current page; a ghost "Sign in" and a "Join Kretopia" with a
+   gradient hairline. Only the signed-out bar wears it. */
+.k-guest-nav {
+  background: hsl(var(--background) / 0.58);
+  -webkit-backdrop-filter: blur(16px) saturate(115%);
+  backdrop-filter: blur(16px) saturate(115%);
+  border-bottom: 1px solid hsl(var(--foreground) / 0.06);
+}
+.k-site-nav {
+  align-items: center;
+  justify-content: center;
+  gap: clamp(24px, 2.5vw, 42px);
+}
+.k-site-nav a {
+  position: relative;
+  padding: 20px 0;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  color: hsl(var(--foreground) / 0.58);
+  transition: color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.k-site-nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  height: 2px;
+  background: linear-gradient(90deg, #2a0fd9 0%, #4812f5 20%, #9413d2 42%, #e0179c 64%, #ff3d7a 82%, #fea61a 100%);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: 0 center;
+  transition: transform 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.k-site-nav a:hover,
+.k-site-nav a:focus-visible,
+.k-site-nav a[aria-current="page"] {
+  color: hsl(var(--foreground));
+}
+.k-site-nav a:hover::after,
+.k-site-nav a:focus-visible::after,
+.k-site-nav a[aria-current="page"]::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+/* Display and centring come from the utility classes on the links, so `hidden sm:inline-flex` can still hide Sign in on a phone. */
+.k-nav-signin,
+.k-nav-join {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.k-nav-signin {
+  padding: 0 14px;
+  font-weight: 500;
+  color: hsl(var(--foreground) / 0.68);
+  background: hsl(var(--foreground) / 0.024);
+  border: 1px solid hsl(var(--foreground) / 0.1);
+  transition: background 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.k-nav-signin:hover,
+.k-nav-signin:focus-visible {
+  color: hsl(var(--foreground));
+  background: hsl(var(--foreground) / 0.06);
+  border-color: hsl(var(--foreground) / 0.18);
+}
+.k-nav-join {
+  padding: 0 17px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  border: 1px solid transparent;
+  background:
+    linear-gradient(hsl(var(--background) / 0.94), hsl(var(--background) / 0.94)) padding-box,
+    linear-gradient(110deg, #2a0fd9 0%, #4812f5 19%, #9413d2 40%, #e0179c 63%, #ff3d7a 82%, #fea61a 100%) border-box;
+  transition: background 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.k-nav-join:hover,
+.k-nav-join:focus-visible {
+  background:
+    linear-gradient(hsl(var(--card) / 0.98), hsl(var(--card) / 0.98)) padding-box,
+    linear-gradient(110deg, #2a0fd9 0%, #4812f5 19%, #9413d2 40%, #e0179c 63%, #ff3d7a 82%, #fea61a 100%) border-box;
+}
+.k-site-nav a:focus-visible,
+.k-nav-signin:focus-visible,
+.k-nav-join:focus-visible {
+  outline: 2px solid #ff3d7a;
+  outline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .k-nav-signin,
+  .k-nav-join {
+    min-height: 36px;
+    padding-inline: 11px;
+    font-size: 11px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-site-nav a,
+  .k-site-nav a::after,
+  .k-nav-signin,
+  .k-nav-join {
+    transition: none;
+  }
+}
+
 /* ── NAVBAR ROLLBACK ────────────────────────────────────────────────
    The glass-card + pink shimmer-border CTA system (f66b8e3) was meant
    for CTA buttons, not navbar chrome. Buttons rendered inside the top
