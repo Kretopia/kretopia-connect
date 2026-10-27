@@ -36,7 +36,7 @@ export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWra
       hideTitle={hideTitle}
       status={status}
       banner={
-        scene && head ? (
+        scene ? (
           // Studio New Room head: lockup + feature pill, then title/subtitle beside its Kreto.
           <div>
             <div className="flex items-center justify-between gap-3">
@@ -50,16 +50,9 @@ export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWra
             </div>
             <div className="mt-6 grid items-center gap-5 sm:grid-cols-[minmax(0,1fr)_auto]">
               <div className="min-w-0">
-                <h2 id={`feature-wrapped-${id}`} className="text-3xl font-black leading-[1.05] tracking-[-0.03em] text-foreground sm:text-4xl">
-                  {head.title}
-                  {head.accentTitle && (
-                    <>
-                      <br />
-                      <span style={{ color: "hsl(var(--energy))" }}>{head.accentTitle}</span>
-                    </>
-                  )}
+                <h2 id={`feature-wrapped-${id}`} className="text-2xl font-black leading-[1.05] tracking-[-0.03em] text-foreground sm:text-3xl">
+                  Everything in <span className="k-gradient-text">{name}</span>
                 </h2>
-                <p className="mt-3 max-w-xl text-sm text-foreground/55 sm:text-base">{head.subtitle}</p>
                 {status && <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">{status}</p>}
               </div>
               <KretoScene scene={scene} size="thumb" lazy={false} className="hidden h-32 w-64 shrink-0 rounded-2xl border border-border sm:block" />
