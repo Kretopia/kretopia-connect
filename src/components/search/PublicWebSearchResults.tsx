@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
-import { supabase } from '@/integrations/supabase/client';
+import { invokePublicWebSearch } from '@/lib/publicWebSearchEndpoint';
 import { normalizePresenceResults, PUBLIC_WEB_SEARCH_ENABLED, type PresenceResult } from '@/lib/publicPresence';
 
 /** Adds sources inside the existing dropdown; never replaces its field or local results. */
@@ -19,11 +19,9 @@ export function PublicWebSearchResults({ query }: { query: string }) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.functions.invoke('public-digital-presence', {
-          body: { query: query.trim() }, signal: controller.signal,
-        });
+        const data = await invokePublicWebSearch(query.trim(), controller.signal);
         if (controller.signal.aborted) return;
-        if (error || data?.available !== true) setUnavailable(true);
+        if (data?.available !== true) setUnavailable(true);
         else setRows(normalizePresenceResults(data.results ?? []));
       } catch {
         if (!controller.signal.aborted) setUnavailable(true);

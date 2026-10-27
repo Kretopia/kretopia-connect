@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
+import { invokePublicWebSearch } from "@/lib/publicWebSearchEndpoint";
 
 export interface PresenceResult {
   id: string;
@@ -9,8 +10,8 @@ export interface PresenceResult {
   description?: string;
   kind: string;
 }
-// Activation approved; keep off until the protected endpoint and atomic quota are live on production.
-export const PUBLIC_WEB_SEARCH_ENABLED = false;
+// Activated: the protected endpoint and atomic quota live on the separate search backend.
+export const PUBLIC_WEB_SEARCH_ENABLED = true;
 export function publicSourceUrl(value: string): string | null {
   try {
     const url = new URL(value);
@@ -44,9 +45,9 @@ export async function searchPresence(query: string, signal: AbortSignal) {
       .or(`full_name.ilike.${escapePostgrestValue(`%${q}%`)},role.ilike.${escapePostgrestValue(`%${q}%`)}`)
       .limit(20).abortSignal(signal),
     // A dedicated public endpoint, never the old unrestricted paid crawl.
-    // Until its protected adapter is activated, failure is an honest partial result.
+    // Failure is an honest partial result.
     PUBLIC_WEB_SEARCH_ENABLED
-      ? supabase.functions.invoke('public-digital-presence', { body: { query: q }, signal })
+      ? invokePublicWebSearch(q, signal).then(data => ({ data, error: null }))
       : Promise.resolve({ data: { available: false, results: [] }, error: null }),
   ]);
   if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
