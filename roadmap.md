@@ -1,5 +1,10 @@
 # Roadmap
 
+## Hero Internet + AI and Side Hidden — 2026-10-27
+- [ ] Diagnose the actual deployment capabilities instead of inferring all access from project metadata; activate only with verified existing target and atomic spend protection.
+- [ ] Restore side emergence with original head/bust only and exact Flying helmet size, without shrinking the mascot to fit gutters.
+- [ ] Run focused tests and real Landing scroll/search checks; no site publication or backend switch.
+
 ## Public discovery, Claim and shared calls
 - [ ] Activation rechecked after Noé confirmed production-environment secret placement at 17:49 UTC: GitHub run 40372225008 still returns HTTP 403 at project visibility, before secret metadata or quota checks. Secret placement is user-confirmed; do not repeat placement advice or infer which permission is missing. Blocker: resolve provider-side access to the exact existing application project; no activation, deployment or data change performed.
 - [ ] Resume activation after Noé confirmed replacement of the production access token on 2026-10-26 at 17:39 UTC. Read-only GitHub preflight run 40370749780 completed with a provider HTTP 403 (previous run returned 401); token permissions or access to the existing backend remain unverified. No secret readout, quota installation, activation, deployment or backend/domain switch performed. Blocker: existing backend must grant the stored token access before protected activation can proceed.
