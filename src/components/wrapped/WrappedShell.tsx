@@ -70,7 +70,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
       <HudCorners />
 
       {banner && (
-        <div className="-mx-4 -mt-4 mb-5 border-b border-[hsl(var(--energy)/0.22)] sm:-mx-6 sm:-mt-6 sm:mb-6">{banner}</div>
+        <div className="-mx-4 -mt-4 mb-2 sm:-mx-6 sm:-mt-6">{banner}</div>
       )}
 
       <div className="space-y-5 sm:space-y-6">

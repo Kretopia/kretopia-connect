@@ -1,7 +1,8 @@
 import { useId, type ReactNode } from "react";
 
 import { WrappedShell } from "./WrappedShell";
-import { SceneBanner } from "@/components/brand/SceneBanner";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useFeatureSceneState, useRegisterFeaturePanel } from "@/components/features/featureSceneStore";
 
 interface FeatureWrappedProps {
@@ -34,7 +35,15 @@ export function FeatureWrapped({ name, status, hideTitle, children }: FeatureWra
       }
       hideTitle={hideTitle}
       status={status}
-      banner={scene ? <SceneBanner scene={scene} label={name} layout="split" lazy={false} /> : undefined}
+      banner={
+        scene ? (
+          // Transparent so the panel grid runs through; whole image, no divider, no repeated name.
+          <div className="grid items-center sm:grid-cols-2">
+            <div className="hidden p-6 sm:block"><BrandLogo lockup size="md" /></div>
+            <KretoScene scene={scene} lazy={false} className="h-auto w-full object-contain" />
+          </div>
+        ) : undefined
+      }
     >
       {children}
     </WrappedShell>

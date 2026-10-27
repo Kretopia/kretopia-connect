@@ -37,7 +37,7 @@ export function usePendingAgentActions() {
     fetchPending();
     if (!user) return;
     const channel = supabase
-      .channel(`orch_actions_${user.id}`)
+      .channel(`orch_actions_${user.id}_${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orch_actions", filter: `user_id=eq.${user.id}` },
