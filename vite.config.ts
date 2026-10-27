@@ -228,6 +228,24 @@ export default defineConfig(({ mode }) => {
         brotliSize: true,
       }),
     ].filter(Boolean),
+    build: {
+      target: "es2020",
+      rollupOptions: {
+        output: {
+          // Split the 1.2MB entry into long-lived vendor chunks: the browser
+          // downloads them in parallel and keeps them cached across deploys,
+          // so repeat visits and route changes feel instant.
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) return "react-vendor";
+            if (id.includes("@supabase")) return "supabase-vendor";
+            if (id.includes("framer-motion")) return "motion-vendor";
+            if (id.includes("@sentry")) return "sentry-vendor";
+            if (/node_modules\/(i18next|react-i18next|html-parse-stringify)\//.test(id)) return "i18n-vendor";
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         "@/integrations/supabase/client": path.resolve(__dirname, "./src/integrations/supabase/legacyClient.ts"),
