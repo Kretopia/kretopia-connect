@@ -573,7 +573,7 @@ export function UnifiedSearchDropdown({
       </form>
 
       {/* ═══ DROPDOWN ═══ */}
-      {open && query.trim().length >= minChars && (catalogMatches.length > 0 || showEmptyState || loading || error || !!highlightedCreator || results.length > 0) && (
+      {open && query.trim().length >= minChars && (
         <div
           id={listboxId}
           role="region"

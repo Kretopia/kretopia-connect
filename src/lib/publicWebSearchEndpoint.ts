@@ -27,9 +27,12 @@ export function getCachedPublicWebSearch(query: string): PublicWebSearchResponse
 }
 
 async function fetchSearch(query: string, publish: Listener): Promise<PublicWebSearchResponse> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  try {
   const response = await fetch(`${SEARCH_BACKEND_URL}/functions/v1/public-digital-presence`, {
     method: "POST",
-    signal: AbortSignal.timeout(25000),
+    signal: controller.signal,
     headers: { "Content-Type": "application/json", apikey: SEARCH_BACKEND_PUBLISHABLE_KEY },
     body: JSON.stringify({ query, stream: true }),
   });
@@ -67,6 +70,9 @@ async function fetchSearch(query: string, publish: Listener): Promise<PublicWebS
   const data = await response.json().catch(() => null);
   if (!response.ok || !data || typeof data !== "object") return { available: false, results: [] };
   return data as PublicWebSearchResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 /** Share public-only requests across Hero/navbar; consumer cancellation never cancels another subscriber. */
