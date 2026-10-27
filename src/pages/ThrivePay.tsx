@@ -306,10 +306,6 @@ export default function ThrivePay() {
             ? { featureKey: "krepay-brand", label: "How KrePay works for Brands", steps: KREPAY_BRAND_TUTORIAL }
             : { featureKey: "krepay", label: "How KrePay works", steps: KREPAY_TUTORIAL }
         }
-        tabs={
-          <div className="flex flex-wrap justify-center items-center gap-2">
-          </div>
-        }
       />
       </div>
 

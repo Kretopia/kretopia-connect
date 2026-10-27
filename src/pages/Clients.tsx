@@ -43,7 +43,6 @@ const Clients = () => {
       </div>
 
       <StudioFeatureShell wrapped={{ name: "Clients" }}>
-        <KretoTip compact className="mb-4" />
         <AIAddClientCard
           onDraft={(d) => {
             setDraft(d);
