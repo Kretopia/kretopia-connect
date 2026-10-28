@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isSitemapEligible, type ListingSeoInput } from "../_shared/discovery/seo.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,6 +82,29 @@ serve(async (req) => {
     <priority>0.7</priority>
   </url>
 `;
+    }
+
+    // Sourced listings: only published or claimed ones with enough permitted content, a real publisher and a destination,
+    // and never an expired one (same rule as the page's robots tag). Skipped quietly before the migration exists.
+    try {
+      const { data: listings } = await supabase
+        .from('public_external_listings')
+        .select('id, kind, status, title, original_publisher, excerpt, description_full, apply_url, deadline_at, starts_at, last_checked_at')
+        .limit(5000);
+      for (const l of listings || []) {
+        const input = { ...l, visibility: 'public', flagged_instructions: false, source_published_at: null, location: null, remote_scope: null, budget: null, applications_enabled: false, url: '' } as ListingSeoInput;
+        if (!isSitemapEligible(input, new Date())) continue;
+        const lastmod = l.last_checked_at ? new Date(l.last_checked_at).toISOString().split('T')[0] : today;
+        sitemap += `  <url>
+    <loc>${baseUrl}/listing/${l.id}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+`;
+      }
+    } catch (e) {
+      console.warn('Sitemap: sourced listings skipped', e);
     }
 
     sitemap += `</urlset>`;

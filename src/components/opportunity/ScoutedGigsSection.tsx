@@ -73,6 +73,9 @@ function SourceLine({ gig, className }: { gig: ScoutedGig; className?: string })
       <Icon className="h-3 w-3 shrink-0" />
       <span className="truncate">via {gig.source_name || gig.source}</span>
       <span>·</span>
+      {/* Found outside Kretopia: not registered, partnered or verified, and nobody has claimed it. */}
+      <span className="shrink-0 rounded border border-border px-1 py-px text-[9px] font-medium uppercase tracking-wide">External · Unclaimed</span>
+      <span>·</span>
       <span className="shrink-0">
         {gig.posted_at ? "posted" : "found"} {formatDistanceToNow(new Date(gig.posted_at || gig.scouted_at), { addSuffix: true }).replace("about ", "")}
       </span>

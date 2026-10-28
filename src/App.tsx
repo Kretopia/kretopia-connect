@@ -110,6 +110,9 @@ const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const About = lazy(() => import("./pages/About"));
 const ClaimProfile = lazy(() => import("./pages/ClaimProfile"));
 const Claim = lazy(() => import("./pages/Claim"));
+const ExternalListing = lazy(() => import("./pages/ExternalListing"));
+const ClaimListing = lazy(() => import("./pages/ClaimListing"));
+const AdminExternal = lazy(() => import("./pages/AdminExternal"));
 
 const NearbyCreators = lazy(() => import("./pages/NearbyCreators"));
 const NotificationsPage = lazy(() => import("./pages/Notifications"));
@@ -453,6 +456,7 @@ const AppContent = () => {
             {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin/weekly-note" element={<ProtectedRoute><AdminWeeklyNote /></ProtectedRoute>} />
+            <Route path="/admin/external" element={<ProtectedRoute><AdminExternal /></ProtectedRoute>} />
             <Route path="/admin/disputes" element={<ProtectedRoute><AdminDisputes /></ProtectedRoute>} />
             <Route path="/analytics" element={<Navigate to="/admin" replace />} />
             <Route path="/admin-broadcast" element={<Navigate to="/admin" replace />} />
@@ -523,6 +527,8 @@ const AppContent = () => {
             <Route path="/endorse" element={<EndorseSkill />} />
             <Route path="/submit-review" element={<SubmitReview />} />
             <Route path="/claim/:claimToken" element={<ClaimProfile />} />
+            <Route path="/listing/:id" element={<ExternalListing />} />
+            <Route path="/claim-listing/:id/:token" element={<ProtectedRoute><ClaimListing /></ProtectedRoute>} />
             <Route path="/post-opportunity" element={<PostOpportunity />} />
             <Route path="/claim-gig/:token" element={<ClaimGig />} />
             <Route path="/claim-event/:token" element={<ClaimEvent />} />
