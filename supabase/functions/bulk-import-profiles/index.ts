@@ -266,7 +266,7 @@ Be thorough - extract skills from their work history and credits.${PROMPT_INJECT
                                     project_name: credit.project_name,
                                     role: credit.role || profile.role,
                                     year: credit.year || null,
-                                    verification_status: 'imported'
+                                    verification_status: 'auto_discovered'
                                   });
                                 }
                               }

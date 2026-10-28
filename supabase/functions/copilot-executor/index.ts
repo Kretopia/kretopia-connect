@@ -60,22 +60,8 @@ async function createProjectForPlan(
 
   if (error || !project) return { ok: false, error: error?.message ?? "Project create failed" };
 
-  const { data: existingOwner } = await admin
-    .from("project_collaborators")
-    .select("id")
-    .eq("project_id", project.id)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (!existingOwner) {
-    await admin.from("project_collaborators").insert({
-      project_id: project.id,
-      user_id: userId,
-      role: "owner",
-      status: "accepted",
-      invited_by: userId,
-      accepted_at: new Date().toISOString(),
-    });
-  }
+  // The creator is the owner through projects.created_by: 'owner' is not a role project_collaborators stores
+  // (project_collaborators_role_check allows member, client, creative, guest), so a row for it was always rejected.
 
   return {
     ok: true,

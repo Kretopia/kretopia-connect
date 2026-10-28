@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef, ReactNod
 import { supabase } from "@/integrations/supabase/client";
 import { processPendingPost } from "@/lib/pendingPost";
 import { User, Session } from "@supabase/supabase-js";
+import { attachPendingCreditClaim } from "@/lib/pendingCreditClaim";
 
 interface SubscriptionInfo {
   tier: string;
@@ -130,20 +131,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
 
-      const raw = sessionStorage.getItem("thrivein_pending_claim");
-      if (!raw) return;
-      sessionStorage.removeItem("thrivein_pending_claim");
-      const { project_name, role } = JSON.parse(raw);
-      if (!project_name) return;
-      
-      // Insert the credit claim
-      await supabase.from("credits").insert({
-        user_id: userId,
-        project_name,
-        role: role || "Contributor",
-        verification_status: "manual",
-      });
-      console.log("[AuthContext] Auto-attached pending credit claim:", project_name);
+      const claim = await attachPendingCreditClaim(supabase, userId, sessionStorage);
+      if (claim === "attached") console.log("[AuthContext] Auto-attached pending credit claim");
     } catch (e) {
       console.warn("[AuthContext] Failed to process pending claim:", e);
     }

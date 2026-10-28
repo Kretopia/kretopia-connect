@@ -35,6 +35,29 @@ Stripe LIVE mode was not enabled. No payment object of any kind was created.
 
 **Noted, not changed.** Founder cap (1,000) counts completed rows only, so concurrent pending sessions can oversell. Eleven other functions return 500 instead of 401 when called without an Authorization header (`get("Authorization")!`; fail-closed). The $29 Stripe product is still named "Creator Pro" while the app calls the tier "Pro".
 
+## Update 2026-10-28 (second pass): engineering gaps A to F, Stripe set aside
+
+Branch `fix/engineering-gaps-a-f` from `main` `e9880cd8e`. Production changes made: NONE. Nothing is deployed, no migration is applied.
+
+| Item | Confirmed gap and evidence | Change |
+|---|---|---|
+| E. AI quotas | `consume_copilot_message`, `consume_studio_ai_generation`, `consume_ai_feature_call` read the count, then incremented. On a throwaway Postgres 16, 40 parallel calls at a cap of 5 let through 17, 40 and 7. | Migration `20261028120000_atomic_ai_quota_consume.sql`: one conditional upsert; exactly 5 on all three. A NULL cap now denies (it passed as unlimited). |
+| D. Credit provenance | `guard_credit_verification_escalation` blocked INSERT of `verified` / `auto_discovered` only: a signed-in user could insert credits already `peer` with an endorsement count and a verifier name. Throwaway Postgres: allowed before, refused after. | Migration `20261028130000_guard_credit_trust_fields_on_insert.sql`; `verification_url` / `ai_confidence` untouched (importers write them). |
+| C. Hidden write failures | Writes rejected by CHECK constraints and ignored: `manual` (sign-up credit claim, dropped from sessionStorage first, logged "Auto-attached"), `imported` (4 import functions, credits), `ai_imported` (onboarding AI discovery and portfolio import). | `pendingCreditClaim.ts` (allowed status, error read, claim kept on failure, no duplicate), statuses `auto_discovered` / `pending_review` / `imported` (awards); `creditStatusWrites.test.ts` reads the latest constraint of credits, awards and press_links. |
+| A. Access | `redeem-project-guest-link`: use limit and revocation checked on a read, counter written from it. Real handler: single-use link + 5 at once admitted 5; cap 3 + 10 admitted 10; unlimited + 8 counted 1; revoked in flight admitted. `accept-project-invitation` overwrote a row the owner had just removed back to accepted. | Use reserved by a compare-and-swap before access is granted (bounded retry); acceptance requires `status = pending` (404 `no_invitation` on a lost race). |
+| F. Hiring to Studio | `SimpleProjectChat` invited @mentions with role `collaborator`, which `project_collaborators_role_check` rejects: the invite never worked. `copilot-executor` and `desk-agent` inserted an `owner` row (also rejected, error ignored). | Role `member`; the dead `owner` writes removed (owner is derived from `projects.created_by`); `collaboratorRoleWrites.test.ts`. The match and template hire dialogs check every write. |
+| B. Recordings | Webhook already checks freshness, validates the room name before any filter, claims one row per recording id and requires explicit `true` consent; their tests pass. | No change. |
+
+**Evidence.** Typecheck, build and lint (3,730 problems) identical to the baseline; 2,631 tests pass (45 new) plus the one existing `VoiceFirstCreateModal` failure. Each new test was mutation-checked against the old behavior.
+
+**To deploy (all manual, none done).**
+1. Frontend publish: `AuthContext`, `SimpleProjectChat`, the two onboarding steps. No migration needed first.
+2. Edge functions by paste (none imports a new shared file, any order): `redeem-project-guest-link`, `accept-project-invitation`, `import-profile-from-url`, `bulk-import-profiles`, `import-odos-members`, `auto-discover-creatives`, `copilot-executor`, `desk-agent`.
+3. Two migrations, each needing your exact-scope approval, then the read-only check: `security/verify-atomic-ai-quota-2026-10-28.sql`, `security/verify-credit-trust-guard-2026-10-28.sql`. Rollback is in each migration header.
+
+**Product notes, not decided here.** Credits imported from an AI-discovered profile in onboarding are filed `pending_review` (a user JWT cannot write `auto_discovered`); say so if you want another rung. Real AI caps stay a product decision (call sites still pass -1 except Copilot).
+**Noted, not changed.** `findCallByRoom` interpolates the room name into an `ilike` where `_` is a wildcard (names are `[A-Za-z0-9_-]`, generated names contain none). `payment_links.use_count` in the marketplace webhook is a read-then-write (payments set aside). `createEventStudio` does not check for an existing Studio of the event (single caller).
+
 ## Gate matrix
 
 | Gate condition | Status |

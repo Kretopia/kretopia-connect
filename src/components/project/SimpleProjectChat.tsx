@@ -224,7 +224,7 @@ export const SimpleProjectChat = ({ projectId, messages, currentUserId, onMessag
         project_id: projectId,
         user_id: collab.id,
         invited_by: currentUserId,
-        role: "collaborator",
+        role: "member",
         status: "pending",
       });
       if (error && !/duplicate|unique/i.test(error.message)) throw error;
@@ -277,7 +277,7 @@ export const SimpleProjectChat = ({ projectId, messages, currentUserId, onMessag
         project_id: projectId,
         email,
         invited_by: currentUserId,
-        role: "collaborator",
+        role: "member",
         status: "pending",
       }).then(() => {}, () => {});
 

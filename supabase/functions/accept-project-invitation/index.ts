@@ -111,9 +111,12 @@ serve(async (req) => {
       .from("project_collaborators")
       .update({ status: "accepted", user_id: user.id, accepted_at: new Date().toISOString() })
       .eq("id", chosen.id)
+      // Compare-and-swap on the state that was read: an owner who removes or rejects the collaborator while the
+      // invitee is accepting must win, not be overwritten back to "accepted".
+      .eq("status", "pending")
       .select("id");
     if (updErr) throw updErr;
-    if (!updated || updated.length === 0) return json({ error: "Could not accept the invitation.", code: "update_failed" }, 500);
+    if (!updated || updated.length === 0) return json({ error: "This invitation is no longer valid.", code: "no_invitation" }, 404);
 
     if (extras.length > 0) {
       await admin
