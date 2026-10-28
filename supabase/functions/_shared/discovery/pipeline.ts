@@ -12,6 +12,7 @@
 //   * a discovery run reserves its budget BEFORE any external call, takes a per-source lock, never auto-publishes, and a
 //     source that keeps failing switches itself off.
 
+import { GEMINI_FLASH } from "../aiModels.ts";
 import { FetchPolicyError, safeFetchBounded, type BoundedResult, type FetchPolicy } from "../ssrf.ts";
 import { parseOpportunityFeed } from "./feeds.ts";
 import { candidateToRaw } from "./candidate.ts";
@@ -122,7 +123,7 @@ async function modelExtract(d: PipelineDeps, actor: string, text: string, kind: 
   if (reserved.error || !reserved.data?.ok) return fail(429, "ai_budget_unavailable", "The automatic reading allowance is used up for now. Fill in the details yourself.");
   let answer: string | null = null;
   try {
-    answer = await d.callModel(buildExtractionRequest(text, "extraction", kind));
+    answer = await d.callModel(buildExtractionRequest(text, GEMINI_FLASH, kind));
   } catch {
     answer = null;
   }
