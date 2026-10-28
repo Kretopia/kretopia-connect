@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -24,13 +24,21 @@ class FakeObserver {
 const enter = (which: Observed, isIntersecting: boolean) =>
   act(() => which.callback([{ isIntersecting } as IntersectionObserverEntry], {} as IntersectionObserver));
 
-function chapter(index: string) {
+function chapter(index: string, videoWebm?: string) {
   const view = render(
     <MemoryRouter>
-      <ChapterSection index={index} kicker="Kicker" title="Title" body="Body" caption="Caption" image="/x.jpg" video="/videos/x.mp4" accent="red" href="/x" />
+      <ChapterSection index={index} kicker="Kicker" title="Title" body="Body" caption="Caption" image="/x.jpg" video="/videos/x.mp4" videoWebm={videoWebm} accent="red" href="/x" />
     </MemoryRouter>,
   );
-  return view.container.querySelector("video") as HTMLVideoElement;
+  const video = view.container.querySelector("video");
+  if (!video) throw new Error("Chapter video missing");
+  return video;
+}
+
+function observer(predicate: (o: Observed) => boolean) {
+  const found = observers.find(predicate);
+  if (!found) throw new Error("Observer missing");
+  return found;
 }
 
 describe("Landing chapter videos", () => {
@@ -56,7 +64,7 @@ describe("Landing chapter videos", () => {
     for (const later of ["III", "IV", "V", "VI"]) {
       const video = chapter(later);
       expect(video.hasAttribute("autoplay")).toBe(false);
-      expect(video.preload).toBe("metadata");
+      expect(video.preload).toBe("none");
       cleanup();
     }
   });
@@ -64,20 +72,20 @@ describe("Landing chapter videos", () => {
   describe("the first chapter on a phone or with data saver on", () => {
     const phone = () => vi.stubGlobal("matchMedia", (q: string) => ({ matches: q.includes("max-width: 767px"), media: q, addEventListener() {}, removeEventListener() {} }));
 
-    it("does not fetch or start on its own on a phone: it waits like the other chapters", () => {
+    it("warms the first chapter immediately on a phone without data saver", () => {
       phone();
       const video = chapter("II");
-      expect(video.hasAttribute("autoplay")).toBe(false);
-      expect(video.preload).toBe("metadata");
+      expect(video.hasAttribute("autoplay")).toBe(true);
+      expect(video.preload).toBe("auto");
       expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
     });
 
-    it("still starts, and promotes its download a screen ahead, once the person is near it", () => {
+    it("still starts, and promotes its download a screen ahead, once the person reaches it", () => {
       phone();
       const video = chapter("II");
-      enter(observers.find((o) => o.options?.rootMargin === "100% 0px")!, true);
+      enter(observer((o) => o.options?.rootMargin === "200% 0px"), true);
       expect(video.preload).toBe("auto");
-      enter(observers.find((o) => o.options?.threshold === 0.25)!, true);
+      enter(observer((o) => o.options?.threshold === 0.25), true);
       expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(1);
     });
 
@@ -87,7 +95,7 @@ describe("Landing chapter videos", () => {
       try {
         const video = chapter("II");
         expect(video.hasAttribute("autoplay")).toBe(false);
-        expect(video.preload).toBe("metadata");
+        expect(video.preload).toBe("none");
       } finally {
         Reflect.deleteProperty(navigator, "connection");
       }
@@ -114,19 +122,19 @@ describe("Landing chapter videos", () => {
     expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
   });
 
-  it("promotes the download from metadata to full one screen before the chapter is reached", () => {
+  it("promotes the download from none to full two screens before the chapter is reached", () => {
     const video = chapter("III");
-    const near = observers.find((o) => o.options?.rootMargin === "100% 0px")!;
+    const near = observer((o) => o.options?.rootMargin === "200% 0px");
     expect(near).toBeTruthy();
     enter(near, false);
-    expect(video.preload).toBe("metadata");
+    expect(video.preload).toBe("none");
     enter(near, true);
     expect(video.preload).toBe("auto");
   });
 
   it("starts a lower chapter when it comes into view, and pauses it when it leaves", () => {
     chapter("III");
-    const watch = observers.find((o) => o.options?.threshold === 0.25)!;
+    const watch = observer((o) => o.options?.threshold === 0.25);
     expect(watch).toBeTruthy();
 
     enter(watch, true);
@@ -140,11 +148,47 @@ describe("Landing chapter videos", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() => Promise.reject(new DOMException("blocked", "NotAllowedError")));
     const view = render(
       <MemoryRouter>
-        <ChapterSection index="III" kicker="K" title="T" body="B" caption="Scout" image="/x.jpg" video="/videos/x.mp4" accent="red" href="/x" />
+        <ChapterSection index="III" kicker="K" title="T" body="B" caption="Scout" image="/x.jpg" video="/videos/x.mp4" videoWebm={videoWebm} accent="red" href="/x" />
       </MemoryRouter>,
     );
-    const watch = observers.find((o) => o.options?.threshold === 0.25)!;
+    const watch = observer((o) => o.options?.threshold === 0.25);
     await act(async () => { enter(watch, true); });
     expect(view.getByRole("button", { name: "Play the Scout video" })).toBeTruthy();
   });
+  it("does not restart resource selection when warming or returning to a chapter", () => {
+    const load = vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
+    chapter("III");
+    enter(observer((o) => o.options?.rootMargin === "200% 0px"), true);
+    const watch = observer((o) => o.options?.threshold === 0.25);
+    enter(watch, true);
+    enter(watch, false);
+    enter(watch, true);
+    expect(load).not.toHaveBeenCalled();
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers both native formats without fetching a third src", () => {
+    const video = chapter("II", "/videos/x.webm");
+    expect(video.hasAttribute("src")).toBe(false);
+    const sources = [...video.querySelectorAll("source")];
+    expect(sources.map((s) => s.type)).toEqual(["video/webm", "video/mp4"]);
+    expect(sources.map((s) => s.getAttribute("src"))).toEqual(["/videos/x.webm", "/videos/x.mp4"]);
+  });
+
+  it("does not confuse a scroll-cancelled play with an autoplay refusal", async () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockRejectedValue(new DOMException("interrupted", "AbortError"));
+    const video = chapter("III");
+    await act(async () => enter(observer((o) => o.options?.threshold === 0.25), true));
+    expect(video.parentElement?.querySelector("button")).toBeNull();
+  });
+
+  it("cleans up gesture retries even when IntersectionObserver is unavailable", () => {
+    vi.stubGlobal("IntersectionObserver", undefined);
+    chapter("II");
+    cleanup();
+    vi.mocked(HTMLMediaElement.prototype.play).mockClear();
+    fireEvent.pointerDown(window);
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+  });
+
 });
