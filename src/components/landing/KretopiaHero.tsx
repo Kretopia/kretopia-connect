@@ -377,7 +377,7 @@ export const KretopiaHero = () => {
 
       <div className="relative z-[1] mx-auto flex w-full max-w-[900px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="mb-5"
@@ -386,7 +386,7 @@ export const KretopiaHero = () => {
         </motion.div>
 
         <motion.p
-          initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="landing-eyebrow mb-6"
@@ -459,7 +459,7 @@ export const KretopiaHero = () => {
             untouched internally; its own focus-ring color isn't
             overridden here (see note below on why). */}
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
           // The CTA pair below is 34rem wide: the field stands 1 cm (37.8 px) past it on each side, where there is room.
@@ -478,7 +478,7 @@ export const KretopiaHero = () => {
         {/* Neutral secondary action follows the active theme; the title
             remains the only gradient text in this hero. */}
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 12 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
           className="mt-6 sm:mt-7 flex w-full flex-col items-center gap-4"

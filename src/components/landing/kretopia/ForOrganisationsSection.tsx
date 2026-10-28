@@ -26,7 +26,6 @@
 import { color, motion } from "framer-motion";
 import { Search, IdCard, Megaphone, Users2, CheckCircle2 } from "lucide-react";
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { trackLandingCtaClick } from "@/lib/landingMetrics";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
 
@@ -39,7 +38,6 @@ const CAPABILITIES = [
 ];
 
 export const ForOrganisationsSection = () => {
-  const reducedMotion = useReducedMotion();
 
   return (
     <section
@@ -49,7 +47,7 @@ export const ForOrganisationsSection = () => {
     >
       <div className="relative mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12">
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7 }}
@@ -68,7 +66,7 @@ export const ForOrganisationsSection = () => {
         </motion.div>
 
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -87,7 +85,7 @@ export const ForOrganisationsSection = () => {
         </motion.div>
 
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 10 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, delay: 0.2 }}
