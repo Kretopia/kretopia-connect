@@ -1,5 +1,9 @@
 # Roadmap
 
+## Landing video startup (October 28)
+- [ ] Reduce video transfer sizes and warm the first chapter on phones as well as desktop; preserve original media, crops and no-poster playback.
+- [ ] Remove artificial content reveal delays and verify native playback, chapter navigation and focused regressions without publication.
+
 ## Faster public Web search
 - [x] Reduce debounce from 900 to 250 ms, show immediate branded progress and source skeletons, share recent public results and in-flight requests, and stream real Web sources before AI ranking finishes; quota, original searchbar and legacy backend preserved.
 - [x] 23 focused tests pass; automatic compilation OK and real Landing search verified: feedback 142 ms, first 20 sources 2.292 s, AI completion 3.049 s, repeat search 65 ms with zero additional requests and no page errors. Only the existing Cloud search function deployed; website not published. First-time external searches cannot be guaranteed instantaneous.
