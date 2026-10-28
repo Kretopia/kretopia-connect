@@ -92,7 +92,7 @@ export default function ExternalListing() {
   const robots = robotsFor(input, now);
   const jsonLd = row.kind === "gig" ? externalJobPosting(input, now) : row.kind === "event" ? eventJsonLd(input, now) : null;
   const body = row.description_full ?? row.excerpt;
-  const pay = row.budget ? `${row.budget.currency} ${[row.budget.min, row.budget.max].filter((x) => x !== null).join(" – ")}${row.budget.period ? ` / ${row.budget.period}` : ""}` : null;
+  const pay = row.budget ? `${row.budget.currency} ${[row.budget.min, row.budget.max].filter((x): x is number => x !== null).map((x) => x.toLocaleString("en-US")).join(" – ")}${row.budget.period ? ` / ${row.budget.period}` : ""}` : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -107,10 +107,10 @@ export default function ExternalListing() {
           <ListingLabels claimed={row.claimed} lastCheckedAt={row.last_checked_at} sourceName={row.source_provider} />
           <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
             {row.source_published_at && (<div><dt className="text-xs text-muted-foreground">Posted at the source</dt><dd>{when(row.source_published_at)}</dd></div>)}
-            {row.deadline_at && (<div><dt className="text-xs text-muted-foreground">Deadline</dt><dd>{when(row.deadline_at)}{row.deadline_tz ? ` (${row.deadline_tz})` : ""}</dd></div>)}
+            {row.deadline_at && (<div><dt className="text-xs text-muted-foreground">Listed until</dt><dd>{when(row.deadline_at)}{row.deadline_tz ? ` (${row.deadline_tz})` : ""}</dd></div>)}
             {row.starts_at && (<div><dt className="text-xs text-muted-foreground">Starts</dt><dd>{when(row.starts_at)}</dd></div>)}
             {row.remote_scope && (<div><dt className="text-xs text-muted-foreground">Where</dt><dd className="capitalize">{row.remote_scope}</dd></div>)}
-            {pay && (<div><dt className="text-xs text-muted-foreground">Pay stated by the publisher</dt><dd>{pay}</dd></div>)}
+            {pay && (<div><dt className="text-xs text-muted-foreground">Pay stated at the source</dt><dd>{pay}</dd></div>)}
           </dl>
           {body && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground">{body}</p>}
           {!row.claimed && (

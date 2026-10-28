@@ -147,4 +147,24 @@ describe("ExternalListing", () => {
     fireEvent.click(screen.getByRole("button", { name: /report a problem/i }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-claim", { body: expect.objectContaining({ action: "dispute", listing_id: "l1" }) }));
   });
+
+  it("says 'Listed until', not 'Deadline': the source's validThrough is when the posting stops being valid, not an application deadline", async () => {
+    row = { ...base(), deadline_at: "2027-01-11T00:00:06Z" };
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    expect(screen.getByText("Listed until")).toBeInTheDocument();
+    expect(screen.queryByText(/^deadline$/i)).not.toBeInTheDocument();
+  });
+
+  it("shows a stated salary readably, as stated at the source, and nothing when none was stated", async () => {
+    row = { ...base(), budget: { min: 80000, max: 155000, currency: "USD", period: "year" } };
+    const { unmount } = renderPage();
+    expect(await screen.findByText("USD 80,000 – 155,000 / year")).toBeInTheDocument();
+    expect(screen.getByText("Pay stated at the source")).toBeInTheDocument();
+    unmount();
+    row = base();
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    expect(screen.queryByText(/pay stated/i)).not.toBeInTheDocument();
+  });
 });

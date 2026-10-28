@@ -3,10 +3,11 @@
 // see docs/release/EXTERNAL_DISCOVERY.md): each rpc is one atomic step, so Promise.all interleaves like parallel callers.
 type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ enabled: boolean; ceiling: number; perUser: number }>; sources?: Row[] } = {}) {
+export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ enabled: boolean; ceiling: number; perUser: number }>; sources?: Row[]; scouted?: Row[] } = {}) {
   const admins = new Set(init.admins ?? ["admin-1"]);
   const settings = { enabled: true, ceiling: 100, perUser: 30, ...(init.settings ?? {}) };
   const sources: Row[] = init.sources ?? [{ id: "remoteok", enabled: true, max_fetches_per_run: 1, daily_budget_cents: 50, cost_per_call_cents: 0, lock: false, failures: 0 }];
+  const scouted: Row[] = init.scouted ?? []; // members' Scouted lists (one row per member), read by the duplicate advice
   const listings = new Map<string, Row>();
   const byKey = new Map<string, string>();
   const tokens: Row[] = [];
@@ -161,6 +162,19 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
     external_listing_claims: () => claims,
     discovery_settings: () => [{ enabled: settings.enabled }],
     discovery_sources: () => sources,
+    scouted_gigs: () => scouted,
+  };
+  // SQL ILIKE with the default backslash escape: % = any run, _ = any one character
+  const ilike = (pattern: string) => {
+    let re = "";
+    for (let i = 0; i < pattern.length; i++) {
+      const c = pattern[i];
+      if (c === "\\" && i + 1 < pattern.length) re += pattern[++i].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      else if (c === "%") re += ".*";
+      else if (c === "_") re += ".";
+      else re += c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+    return new RegExp(`^${re}$`, "i");
   };
   const from = (table: string) => {
     let rows = (tables[table]?.() ?? []).slice();
@@ -168,6 +182,8 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
       select: () => q,
       eq: (c: string, v: unknown) => ((rows = rows.filter((r) => r[c] === v)), q),
       in: (c: string, vs: unknown[]) => ((rows = rows.filter((r) => vs.includes(r[c]))), q),
+      ilike: (c: string, pat: string) => ((rows = rows.filter((r) => typeof r[c] === "string" && ilike(pat).test(r[c]))), q),
+      gt: (c: string, v: string) => ((rows = rows.filter((r) => r[c] > v)), q),
       order: () => q,
       limit: (k: number) => ((rows = rows.slice(0, k)), q),
       maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
@@ -176,5 +192,5 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
     return q;
   };
 
-  return { rpc, from, listings, tokens, claims, events, ledger, counters, sources, settings, log, admins, isAdmin };
+  return { rpc, from, scouted, listings, tokens, claims, events, ledger, counters, sources, settings, log, admins, isAdmin };
 }

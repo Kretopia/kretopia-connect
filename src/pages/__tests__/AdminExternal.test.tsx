@@ -33,6 +33,7 @@ beforeEach(() => {
   role.isAdmin = true;
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   replies.list_review = { data: { ok: true, listings: [item()], claims: [] } };
+  replies.list_mine = { data: { ok: true, listings: [] } };
 });
 
 describe("AdminExternal", () => {
@@ -87,5 +88,61 @@ describe("AdminExternal", () => {
     fireEvent.change(await screen.findByLabelText(/address of an approved source/i), { target: { value: "https://remoteok.com/remote-jobs/x-1" } });
     fireEvent.click(screen.getByRole("button", { name: /import address/i }));
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-import", { body: { action: "ingest", input: { type: "url", url: "https://remoteok.com/remote-jobs/x-1" } } }));
+  });
+
+  describe("a fresh import is a private draft, and it is visible", () => {
+    const draft = (over: Record<string, unknown> = {}) => item({ id: "44444444-4444-4444-4444-444444444444", status: "draft", title: "Graphic Designer & Video Editor", original_publisher: "BlueTuskr", ...over });
+
+    it("shows my drafts apart from the queue, with what was left unknown, and sends one to review through the server", async () => {
+      replies.list_review = { data: { ok: true, listings: [], claims: [] } };
+      replies.list_mine = { data: { ok: true, listings: [draft({ extraction_issues: [{ code: "no_currency", message: "An amount needs an ISO 4217 currency code (not a symbol)." }] })] } };
+      renderPage();
+      const section = await screen.findByRole("region", { name: /your drafts/i });
+      expect(section).toHaveTextContent("Graphic Designer & Video Editor");
+      expect(section).toHaveTextContent(/left unknown: an amount needs an iso 4217 currency code/i);
+      expect(screen.getByText(/nothing to review/i)).toBeInTheDocument(); // the queue itself is still empty
+      fireEvent.click(screen.getByRole("button", { name: /send to review/i }));
+      await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-import", { body: { action: "review", listing_id: draft().id, decision: "send_to_review" } }));
+    });
+
+    it("lists only drafts from my own list: a published or in-review listing of mine is not duplicated", async () => {
+      replies.list_mine = { data: { ok: true, listings: [draft({ id: "55555555-5555-5555-5555-555555555555", status: "published", title: "Already live" }), draft({ id: "66666666-6666-6666-6666-666666666666", status: "in_review", title: "In the queue" })] } };
+      renderPage();
+      await screen.findByText("Brand film editor");
+      expect(screen.queryByRole("region", { name: /your drafts/i })).not.toBeInTheDocument();
+      expect(screen.queryByText("Already live")).not.toBeInTheDocument();
+    });
+
+    it("a draft can be published or rejected after reading it, but not given a claim link", async () => {
+      replies.list_mine = { data: { ok: true, listings: [draft()] } };
+      renderPage();
+      const section = await screen.findByRole("region", { name: /your drafts/i });
+      expect(section).toHaveTextContent(/approve and publish/i);
+      expect(section).toHaveTextContent(/reject/i);
+      expect(screen.queryByRole("button", { name: /copy claim link/i })).not.toBeInTheDocument();
+    });
+
+    it("if my drafts cannot be read, the queue still works", async () => {
+      replies.list_mine = { data: { ok: false, code: "unavailable" } };
+      renderPage();
+      expect(await screen.findByText("Brand film editor")).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: /your drafts/i })).not.toBeInTheDocument();
+    });
+
+    it("after an import, the drafts are read again so the new one appears", async () => {
+      renderPage();
+      fireEvent.change(await screen.findByLabelText(/address of an approved source/i), { target: { value: "https://remoteok.com/remote-jobs/x-1" } });
+      const before = invoke.mock.calls.filter((c) => (c[1] as { body: { action: string } }).body.action === "list_mine").length;
+      fireEvent.click(screen.getByRole("button", { name: /import address/i }));
+      await waitFor(() => expect(invoke.mock.calls.filter((c) => (c[1] as { body: { action: string } }).body.action === "list_mine").length).toBe(before + 1));
+    });
+  });
+
+  it("a posting already in Scouted is shown as advice with a member count and no member ids; another external listing stays as before", async () => {
+    replies.list_review = { data: { ok: true, listings: [item({ possible_duplicates: [{ id: "22222222-2222-2222-2222-222222222222", reasons: ["title 90% alike"] }, { id: "scouted", lane: "scouted", count: 2, reasons: ["same address", "shown to 2 members"] }] })], claims: [] } };
+    renderPage();
+    expect(await screen.findByText(/possible duplicate of 22222222/i)).toBeInTheDocument();
+    expect(screen.getByText(/also in scouted: same address; shown to 2 members\. advice only, nothing was hidden or merged/i)).toBeInTheDocument();
+    expect(screen.queryByText(/possible duplicate of .*scouted/i)).not.toBeInTheDocument();
   });
 });

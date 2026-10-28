@@ -5,6 +5,7 @@
 // decide. It never merges, never overwrites a publisher's content, and never treats two different roles at the same
 // employer as one: the role title has to be close, the employer alone is not enough.
 
+import { canonicalizeUrl, identityKey } from "./canonical.ts";
 import type { ExternalDraft } from "./extract.ts";
 
 export interface KnownListing {
@@ -18,6 +19,10 @@ export interface PossibleDuplicate {
   id: string;
   score: number;
   reasons: string[];
+  /** Absent for another external listing. "scouted": members already see this posting in their Scouted list. */
+  lane?: "scouted";
+  /** How many members see it under Scouted. A number only: which members is never stored with a listing. */
+  count?: number;
 }
 
 const STOP = new Set(["the", "a", "an", "and", "or", "of", "for", "to", "in", "at", "we", "are", "is", "remote", "hiring", "job", "role", "position", "wanted"]);
@@ -58,4 +63,49 @@ export function possibleDuplicates(draft: Pick<ExternalDraft, "title" | "origina
     out.push({ id: k.id, score: Math.round(titleSim * 100) / 100, reasons });
   }
   return out.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
+/** What a member's Scouted list stores about a posting (the older scout feeds, one row per member). */
+export interface ScoutedRow {
+  target_user_id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  source_url: string | null;
+  apply_url: string | null;
+}
+
+/**
+ * The same posting already shown under Scouted. Scouted rows are private to each member, so this returns ONE entry with a
+ * member count, never a row or a member id. The same address (provider id or canonical URL) is certain; otherwise the
+ * title has to be close and the publisher alike, exactly as for two external listings. Advice for the curator only: it
+ * never merges, hides or blocks anything.
+ */
+export function scoutedOverlap(draft: Pick<ExternalDraft, "title" | "original_publisher" | "location">, canonical: string | null, rows: ScoutedRow[]): PossibleDuplicate | null {
+  const ours = canonical ? identityKey(canonical) : null;
+  const members = new Set<string>();
+  let byAddress = false;
+  let best = 0;
+  for (const r of rows) {
+    const urls = [r.source_url, r.apply_url].map((u) => canonicalizeUrl(u)).filter((u): u is string => !!u);
+    if (ours && urls.some((u) => identityKey(u) === ours)) {
+      members.add(r.target_user_id);
+      byAddress = true;
+      continue;
+    }
+    const hit = possibleDuplicates(draft, [{ id: r.target_user_id, title: r.title, original_publisher: r.company, location: r.location }])[0];
+    if (hit) {
+      members.add(r.target_user_id);
+      best = Math.max(best, hit.score);
+    }
+  }
+  if (members.size === 0) return null;
+  const n = members.size;
+  return {
+    id: "scouted",
+    lane: "scouted",
+    count: n,
+    score: byAddress ? 1 : best,
+    reasons: [byAddress ? "same address" : "same title and publisher", `shown to ${n} member${n === 1 ? "" : "s"}`],
+  };
 }

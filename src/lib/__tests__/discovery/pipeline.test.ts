@@ -418,3 +418,86 @@ describe("the bounded discovery run: disabled by default, reserve first, never a
     expect(db.listings.size).toBe(0);
   });
 });
+
+describe("ingest: what the first real import showed", () => {
+  const FIRST = "https://remoteok.com/remote-jobs/remote-graphic-designer-video-editor-bluetuskr-1137507";
+  const page = jobPage("Graphic Designer & Video Editor", {
+    hiringOrganization: { name: "BlueTuskr" }, validThrough: "2027-01-11T00:00:06+00:00", jobLocationType: "TELECOMMUTE",
+    jobLocation: [{ "@type": "Place", address: { addressCountry: "Anywhere", addressRegion: "Anywhere", addressLocality: "Anywhere" } }],
+    baseSalary: { "@type": "MonetaryAmount", currency: "USD", value: { minValue: 80000, maxValue: 155000, unitText: "YEAR" } },
+  });
+  const scoutedRow = (over: Record<string, unknown> = {}) => ({
+    target_user_id: "member-secret-uuid", title: "Graphic Designer & Video Editor", company: "BlueTuskr", location: "Remote",
+    source_url: "https://remoteOK.com/remote-jobs/remote-graphic-designer-video-editor-bluetuskr-1137507", apply_url: null, expires_at: "2026-11-20T00:00:00Z", ...over,
+  });
+
+  it("the stated salary and a single 'Anywhere' are stored; the validity end is the listing's end, not an invented deadline", async () => {
+    const db = makeDiscoveryDb();
+    const r = await ingest(deps(db, world({ [FIRST]: { body: page } })), USER, { type: "url", url: FIRST });
+    expect(r.ok).toBe(true);
+    const l = [...db.listings.values()][0];
+    expect(l.budget).toEqual({ min: 80000, max: 155000, currency: "USD", period: "year" });
+    expect(l.location).toBe("Anywhere");
+    expect(l.deadline_at).toBe("2027-01-11T00:00:06.000Z");
+    expect(l.extraction_issues).toEqual([]);
+  });
+
+  it("a posting already shown under Scouted is flagged for the curator as ONE aggregate, with no member id stored", async () => {
+    const db = makeDiscoveryDb({ scouted: [scoutedRow(), scoutedRow({ target_user_id: "member-2" })] });
+    await ingest(deps(db, world({ [FIRST]: { body: page } })), USER, { type: "url", url: FIRST });
+    const l = [...db.listings.values()][0];
+    expect(l.possible_duplicates).toEqual([{ id: "scouted", lane: "scouted", count: 2, score: 1, reasons: ["same address", "shown to 2 members"] }]);
+    expect(JSON.stringify(l)).not.toContain("member-secret-uuid");
+    expect(l.status).toBe("draft"); // advice only: nothing merged, hidden or blocked
+  });
+
+  it("expired Scouted rows and other postings are not matches, and an import without any overlap carries no advice", async () => {
+    const db = makeDiscoveryDb({ scouted: [scoutedRow({ expires_at: "2026-10-01T00:00:00Z" }), scoutedRow({ title: "Brand Designer", company: "Tailscale", source_url: "https://weworkremotely.com/remote-jobs/tailscale-brand-designer" })] });
+    await ingest(deps(db, world({ [FIRST]: { body: page } })), USER, { type: "url", url: FIRST });
+    expect([...db.listings.values()][0].possible_duplicates).toEqual([]);
+  });
+
+  it("the lookup is a filtered read (by title, and by provider id inside the address), never the whole table", async () => {
+    const db = makeDiscoveryDb({ scouted: Array.from({ length: 50 }, (_, i) => scoutedRow({ target_user_id: `m${i}`, title: `Unrelated ${i}`, company: "Nobody", source_url: `https://example.com/${i}` })) });
+    const filtered: string[] = [];
+    const from = (t: string) => {
+      const q = db.from(t);
+      if (t === "scouted_gigs") { const orig = q.ilike as (c: string, p: string) => unknown; q.ilike = (c: string, p: string) => (filtered.push(`${c}:${p}`), orig(c, p)); }
+      return q;
+    };
+    await ingest(deps(db, world({ [FIRST]: { body: page } }), { from }), USER, { type: "url", url: FIRST });
+    expect(filtered.sort()).toEqual(["source_url:%1137507%", "title:Graphic Designer & Video Editor"]);
+    expect([...db.listings.values()][0].possible_duplicates).toEqual([]);
+  });
+
+  it("the title is escaped for the pattern match: % and _ in a title are not wildcards", async () => {
+    const db = makeDiscoveryDb();
+    const filtered: string[] = [];
+    const from = (t: string) => {
+      const q = db.from(t);
+      if (t === "scouted_gigs") { const orig = q.ilike as (c: string, p: string) => unknown; q.ilike = (c: string, p: string) => (filtered.push(`${c}:${p}`), orig(c, p)); }
+      return q;
+    };
+    const url = "https://remoteok.com/remote-jobs/remote-editor-bluetuskr-1137600";
+    await ingest(deps(db, world({ [url]: { body: jobPage("Editor 100% remote_ \\ cut") } }), { from }), USER, { type: "url", url });
+    expect(filtered).toContain("title:Editor 100\\% remote\\_ \\\\ cut");
+  });
+
+  it("both lanes show: another external listing of the same role and the Scouted overlap", async () => {
+    const SECOND = "https://remoteok.com/remote-jobs/remote-graphic-designer-video-editor-bluetuskr-1137508";
+    const db = makeDiscoveryDb({ scouted: [scoutedRow({ source_url: "https://weworkremotely.com/remote-jobs/bluetuskr-designer" })] });
+    const w = world({ [FIRST]: { body: page }, [SECOND]: { body: page } });
+    await ingest(deps(db, w), USER, { type: "url", url: FIRST });
+    await ingest(deps(db, w), USER, { type: "url", url: SECOND });
+    const [first, second] = [...db.listings.values()];
+    expect((second.possible_duplicates as { id: string }[]).map((d) => d.id)).toEqual([first.id, "scouted"]);
+  });
+
+  it("a failing Scouted lookup never blocks an import", async () => {
+    const db = makeDiscoveryDb();
+    const from = (t: string) => { if (t === "scouted_gigs") throw new Error("relation does not exist"); return db.from(t); };
+    const r = await ingest(deps(db, world({ [FIRST]: { body: page } }), { from }), USER, { type: "url", url: FIRST });
+    expect(r.ok).toBe(true);
+    expect([...db.listings.values()][0].possible_duplicates).toEqual([]);
+  });
+});

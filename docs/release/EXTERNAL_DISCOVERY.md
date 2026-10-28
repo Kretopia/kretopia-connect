@@ -153,6 +153,38 @@ Frontend: republish the previous version. Edge functions: paste the previous cop
 changed existing ones; the three new functions can simply be left undeployed). Database: the rollback block in the migration
 drops only what it added. Turning the kill switch off, or disabling a source, stops all automated work immediately.
 
+## First manual use (2026-10-28) and what it fixed
+
+Migration, functions, sitemap and frontend were live; automation stayed off (no source enabled, kill switch off). As the signed-in
+admin I imported one real Remote OK posting, approved it, copied a claim link and followed it. The loop worked end to end:
+public listing and `Sourced` lane labelled External and Unclaimed, canonical = the source, no `JobPosting` markup, anonymous
+reads limited to the public view (base table 401), claim preview exposing only title/publisher/kind/claimed, redeem and edit
+refused without a user, owner controls absent before and after "Start", the token gone from the address bar after "Start",
+reuse of the link refused (410). I used the admin account as claimant (no second account), then rejected that test claim.
+
+Five defects, fixed in the follow-up PR (no migration, no new dependency):
+
+1. **A fresh import was invisible.** `/admin/external` listed only in-review, published and claimed listings, while an import
+   is a private `draft`. The page now also reads the caller's own drafts (`list_mine`), shows them under "Your drafts" with what
+   was left unknown, and offers "Send to review", "Approve and publish" and "Reject".
+2. **"Anywhere, Anywhere, Anywhere".** The source repeats one word in every address field; the extractor now says it once
+   (case-insensitive), real addresses keep every part.
+3. **"Deadline" was the posting's `validThrough`.** schema.org defines it as when the posting stops being valid, not an
+   application deadline. It stays in `deadline_at` (the public view hides a listing after it, and a claimed listing's JSON-LD
+   uses it as `validThrough`), but the page now says "Listed until". No data change.
+4. **A stated salary was dropped silently.** `baseSalary` (min/max/single amount, currency, period) is now read as the structured
+   budget and validated by `parseExtraction`; a salary the page states but not usably is reported under "Left unknown" (no
+   currency, no amount, range backwards), never guessed. The page shows it as "Pay stated at the source" with grouped digits.
+5. **The same posting sat in two lanes.** The duplicate advice also looks at members' Scouted lists (candidates only: the
+   provider id inside the address, or the same title) and records ONE aggregate entry with a member count; no row or member id is
+   stored with the listing. Advice only: nothing is merged, hidden or blocked, and a failed lookup never blocks an import.
+
+Replaying the real saved page through the fixed extractor gives location `Anywhere`, USD 80,000 to 155,000 per year, no issues.
+The one live row was imported before the fix and still reads "Anywhere, Anywhere, Anywhere" with no pay: after the edge files are
+pasted and deployed, "Remove" it in `/admin/external` and import the same address again (a removed listing frees its identity).
+Not changed: the scheduled run's feed imports do not compute duplicate advice; a board posting still offers curator review only
+(no publisher domain to prove).
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local
