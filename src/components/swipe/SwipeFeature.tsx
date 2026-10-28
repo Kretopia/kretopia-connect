@@ -2,6 +2,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSwipeProfiles, SwipeProfile } from '@/hooks/useSwipeProfiles';
 import { useSwipeActions } from '@/hooks/useSwipeActions';
+import { useExternalOffers } from '@/hooks/useExternalOffers';
+import { nextDeckItem } from '@/lib/swipeDeck';
+import type { PublicListing } from '@/components/external/PublishedExternalListings';
+import { ExternalOfferCard } from './ExternalOfferCard';
 import { MatchModal } from './MatchModal';
 import { ProfilePreviewSheet } from './ProfilePreviewSheet';
 import { MatchExplanationDialog } from '@/components/discover/MatchExplanationDialog';
@@ -16,18 +20,28 @@ import { Button } from '@/components/ui/button';
 import { EyeOff, Camera, FileText, Image as ImageIcon, ArrowRight, Heart, RotateCcw } from 'lucide-react';
 import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
 
-interface SwipeFeatureProps {
+export interface SwipeFeatureProps {
   onMatch?: (profile: any) => void;
   filters?: SwipeFiltersState;
   onProfilesCountChange?: (count: number) => void;
+  /**
+   * Also show offers found outside Kretopia (gigs a curator approved against their source) between the people. Off by default:
+   * the deck is people only unless a surface turns it on (see MatchDeck, which does it for creator accounts).
+   */
+  offers?: boolean;
 }
 
-export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfilesCountChange }: SwipeFeatureProps) {
+/** What the member just answered, newest first, so Undo can take either kind back. */
+type Answered = { type: 'profile'; profile: SwipeProfile } | { type: 'offer'; offer: PublicListing; since: number };
+
+export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfilesCountChange, offers = false }: SwipeFeatureProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  
+
   const { profiles, allProfilesCount, loading, error, fetchProfiles, removeProfile } = useSwipeProfiles(user?.id, filters);
   const { recordSwipe } = useSwipeActions(user?.id);
+  const { offers: externalOffers, resolve: resolveOffer, restore: restoreOffer } = useExternalOffers(user?.id, offers);
+  const [profilesSinceOffer, setProfilesSinceOffer] = useState(0);
 
   // Notify parent of profiles count for filters display
   useEffect(() => {
@@ -43,7 +57,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const [explanationProfile, setExplanationProfile] = useState<SwipeProfile | null>(null);
   const [matchedProfile, setMatchedProfile] = useState<any>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
-  const [swipeHistory, setSwipeHistory] = useState<SwipeProfile[]>([]);
+  const [swipeHistory, setSwipeHistory] = useState<Answered[]>([]);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
 
@@ -70,8 +84,9 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     console.log('[SwipeFeature] Liked', profile.full_name, 'context:', context);
     
     // Add to history for undo
-    setSwipeHistory(prev => [profile, ...prev].slice(0, 5));
-    
+    setSwipeHistory(prev => [{ type: 'profile' as const, profile }, ...prev].slice(0, 5));
+    setProfilesSinceOffer(n => n + 1);
+
     // Remove from stack
     removeProfile(profile.user_id);
 
@@ -99,8 +114,9 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const handlePass = useCallback(async (profile: SwipeProfile) => {
     console.log('[SwipeFeature] Passed', profile.full_name);
 
+    setProfilesSinceOffer(n => n + 1);
     setSwipeHistory(prev => {
-      const next = [profile, ...prev].slice(0, 5);
+      const next = [{ type: 'profile' as const, profile }, ...prev].slice(0, 5);
       // After 3 swipes, nudge user toward the For You feed (once per session)
       try {
         const nudged = sessionStorage.getItem('foryou_nudged');
@@ -135,21 +151,49 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     }
   }, [previewProfile, handleLike, handlePass]);
 
+  // An offer found outside Kretopia: "Interested" keeps it in view and sends nothing; the explicit "Open at source" is the only way out.
+  // `since` is kept so Undo can put the counter back and the offer is the very next card again.
+  const handleOfferInterested = useCallback(async (offer: PublicListing) => {
+    setSwipeHistory(prev => [{ type: 'offer' as const, offer, since: profilesSinceOffer }, ...prev].slice(0, 5));
+    setProfilesSinceOffer(0);
+    await resolveOffer(offer, 'right');
+    toast.success('Kept for you', {
+      description: "Nothing was sent to anyone. Open it at the source when you're ready.",
+      duration: 6000,
+      action: offer.apply_url ? { label: 'Open', onClick: () => window.open(offer.apply_url as string, '_blank', 'noopener,noreferrer') } : undefined,
+    });
+  }, [resolveOffer, profilesSinceOffer]);
+
+  const handleOfferPass = useCallback(async (offer: PublicListing) => {
+    setSwipeHistory(prev => [{ type: 'offer' as const, offer, since: profilesSinceOffer }, ...prev].slice(0, 5));
+    setProfilesSinceOffer(0);
+    await resolveOffer(offer, 'left');
+  }, [resolveOffer, profilesSinceOffer]);
+
   const handleUndo = useCallback(async () => {
-    const lastProfile = swipeHistory[0];
-    if (!lastProfile || !user?.id) return;
+    const last = swipeHistory[0];
+    if (!last || !user?.id) return;
+
+    if (last.type === 'offer') {
+      await restoreOffer(last.offer);
+      setProfilesSinceOffer(last.since);
+      setSwipeHistory(prev => prev.slice(1));
+      toast.success('Undo successful!');
+      return;
+    }
 
     await supabase
       .from('swipes')
       .delete()
       .eq('user_id', user.id)
-      .eq('target_id', lastProfile.user_id)
+      .eq('target_id', last.profile.user_id)
       .eq('target_type', 'profile');
 
     setSwipeHistory(prev => prev.slice(1));
+    setProfilesSinceOffer(n => Math.max(0, n - 1));
     fetchProfiles();
     toast.success('Undo successful!');
-  }, [swipeHistory, user?.id, fetchProfiles]);
+  }, [swipeHistory, user?.id, fetchProfiles, restoreOffer]);
 
   // Who is looking is not known yet: wait, instead of flashing the empty "All Caught Up" state at
   // a member whose session is still loading.
@@ -237,7 +281,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     );
   }
 
-  const currentProfile = profiles[0];
+  // People stay the deck; an offer found outside Kretopia comes up between them (see lib/swipeDeck.ts).
+  const current = nextDeckItem(profiles, externalOffers, profilesSinceOffer);
 
   if (loading) {
     return (
@@ -247,7 +292,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     );
   }
 
-  if (!currentProfile) {
+  if (!current) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
          <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
@@ -283,6 +328,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
       <div className="flex items-center justify-between px-2">
         <p className="text-xs text-muted-foreground">
           {profiles.length} creator{profiles.length !== 1 ? 's' : ''} to discover
+          {externalOffers.length > 0 && ` · ${externalOffers.length} offer${externalOffers.length !== 1 ? 's' : ''} found outside Kretopia`}
         </p>
         {swipeHistory.length > 0 && (
           <Button variant="ghost" size="sm" onClick={handleUndo} className="text-xs text-muted-foreground gap-1">
@@ -291,14 +337,23 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
         )}
       </div>
 
-      {/* Hinge-style card — one at a time */}
-      <HingeStyleCard
-        key={currentProfile.user_id}
-        profile={currentProfile}
-        onLike={handleLike}
-        onPass={handlePass}
-        onViewProfile={handleViewProfile}
-      />
+      {/* One card at a time: a person (Hinge-style), or an offer found outside Kretopia */}
+      {current.type === 'offer' ? (
+        <ExternalOfferCard
+          key={current.item.id}
+          offer={current.item}
+          onInterested={handleOfferInterested}
+          onPass={handleOfferPass}
+        />
+      ) : (
+        <HingeStyleCard
+          key={current.item.user_id}
+          profile={current.item}
+          onLike={handleLike}
+          onPass={handlePass}
+          onViewProfile={handleViewProfile}
+        />
+      )}
 
       <MatchModal
         open={showMatchModal}

@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConnectionList } from "@/components/circle/ConnectionList";
-import { SwipeFeature } from "@/components/swipe";
+import { MatchDeck } from "@/components/swipe";
 import { GuestSwipePreview } from "@/components/swipe/GuestSwipePreview";
 import { NetworkVisualization } from "@/components/circle/NetworkVisualization";
 import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
@@ -225,7 +225,7 @@ export default function Circle() {
           />
           {user ? (
             <>
-              <SwipeFeature
+              <MatchDeck
                 onMatch={handleMatch}
                 filters={filters}
                 onProfilesCountChange={setProfilesCount}

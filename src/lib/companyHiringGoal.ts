@@ -72,14 +72,17 @@ export interface CompanyAction {
   path: string;
 }
 
+/** The actions about finding creators: the talent finder, and Discover's Sourced creatives lane. */
+const FINDS_CREATORS = (path: string) => path === "/talent-finder" || path.startsWith("/discover?tab=people");
+
 /**
- * The company workspace's four actions, in the order that suits what the company said it is here to do:
+ * The company workspace's actions, in the order that suits what the company said it is here to do:
  * a company that wants to sponsor or partner starts from finding creators, everyone else (hiring, or no
- * saved intent) keeps the existing order. Same four actions, same targets.
+ * saved intent) keeps the existing order. The same actions and targets either way, only the order moves.
  */
 export function orderCompanyActions<T extends CompanyAction>(actions: readonly T[], intents: unknown): T[] {
   const first = normalizeIntents(intents)[0];
   if (first !== "collaborate") return [...actions];
-  const rank = (a: T) => (a.path === "/talent-finder" ? 0 : 1);
+  const rank = (a: T) => (FINDS_CREATORS(a.path) ? 0 : 1);
   return [...actions].sort((a, b) => rank(a) - rank(b));
 }

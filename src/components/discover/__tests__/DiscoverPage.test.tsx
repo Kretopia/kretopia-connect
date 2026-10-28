@@ -5,8 +5,9 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import Discover from "@/pages/Discover";
 
-const { auth, queries } = vi.hoisted(() => ({
+const { auth, tone, queries } = vi.hoisted(() => ({
   auth: { user: null as null | { id: string } },
+  tone: { business: false, loading: false },
   queries: {
     fetchLiveStages: vi.fn(),
     fetchNearbyEvents: vi.fn(),
@@ -15,6 +16,8 @@ const { auth, queries } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user }) }));
+vi.mock("@/hooks/useAccountTone", () => ({ useAccountTone: () => ({ isBusiness: tone.business, loading: tone.loading }) }));
+vi.mock("@/components/external/PublishedExternalListings", () => ({ PublishedExternalListings: ({ kind }: { kind: string }) => <div>sourced {kind}</div> }));
 vi.mock("@/components/today/radar/radar.queries", () => queries);
 
 // Only the new members count goes through the client directly: a chain that ends in a count.
@@ -37,7 +40,7 @@ vi.mock("@/components/features/FeaturePageHeader", () => ({
     </header>
   ),
 }));
-vi.mock("@/components/swipe", () => ({ SwipeFeature: () => <div>swipe deck</div> }));
+vi.mock("@/components/swipe", () => ({ SwipeFeature: () => <div>swipe deck</div>, MatchDeck: () => <div>swipe deck</div> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div>scouted gigs</div> }));
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div>open gigs</div> }));
 vi.mock("@/components/circle/LiveCallsPanel", () => ({ LiveCallsPanel: () => <div>live panel</div> }));
@@ -55,7 +58,7 @@ const Where = () => {
 
 function renderDiscover(entry = "/discover") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const tree = () => (
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[entry]}>
         <Where />
@@ -64,8 +67,11 @@ function renderDiscover(entry = "/discover") {
           <Route path="/talent-finder" element={<div>talent finder page</div>} />
         </Routes>
       </MemoryRouter>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  const view = render(tree());
+  // the account mode is an outside value in these tests: `again` renders once more after it changed
+  return { ...view, again: () => view.rerender(tree()) };
 }
 
 const lane = (name: string) => screen.getByRole("tab", { name });
@@ -74,6 +80,8 @@ const open = (name: string) => fireEvent.mouseDown(lane(name), { button: 0 });
 describe("Discover page", () => {
   beforeEach(() => {
     auth.user = null;
+    tone.business = false;
+    tone.loading = false;
     queries.fetchLiveStages.mockResolvedValue({ rows: [], count: 2 });
     queries.fetchNearbyEvents.mockResolvedValue({ rows: [], weekCount: 1 });
     queries.fetchGigs.mockResolvedValue({ top: [], newCount: 4 });
@@ -160,5 +168,88 @@ describe("Discover page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Leads" }));
     expect(screen.getByRole("link", { name: "Open Opportunity Intel" })).toHaveAttribute("href", "/intel");
     expect(screen.getByRole("link", { name: "Set sponsor radar" })).toHaveAttribute("href", "/intel?focus=sponsors");
+  });
+
+  describe("Company mode: the Sourced creatives and Sourced events lanes", () => {
+    it("a creator's Discover has no Sourced lane in People or Events, and keeps Gigs > Sourced", () => {
+      renderDiscover();
+      expect(screen.getAllByRole("button").map((b) => b.textContent).filter((t) => t === "Sourced")).toEqual([]);
+      open("Events");
+      expect(screen.getByText("events panel")).toBeInTheDocument();
+      expect(screen.queryByRole("group", { name: "Event lists" })).not.toBeInTheDocument();
+      open("Gigs");
+      fireEvent.click(screen.getByRole("button", { name: "Sourced" }));
+      expect(screen.getByText("sourced gig")).toBeInTheDocument();
+    });
+
+    it("a company gets Sourced in People, before the Talent finder, showing creatives found outside Kretopia", () => {
+      tone.business = true;
+      renderDiscover();
+      const group = screen.getByRole("group", { name: "People modes" });
+      expect(within(group).getAllByRole("button").map((b) => b.textContent?.trim())).toEqual(["Swipe", "Browse", "Nearby", "Sourced", "Talent"]);
+      fireEvent.click(within(group).getByRole("button", { name: "Sourced" }));
+      expect(screen.getByText("sourced talent")).toBeInTheDocument();
+      expect(screen.getByText(/nothing is sent to them from here/i)).toBeInTheDocument();
+      expect(screen.queryByText("swipe deck")).not.toBeInTheDocument();
+    });
+
+    it("a company's Events lane switches between events on Kretopia and events found outside it", () => {
+      tone.business = true;
+      renderDiscover("/discover?tab=events");
+      expect(screen.getByText("events panel")).toBeInTheDocument();
+      const group = screen.getByRole("group", { name: "Event lists" });
+      expect(within(group).getAllByRole("button").map((b) => b.textContent)).toEqual(["On Kretopia", "Sourced"]);
+      fireEvent.click(within(group).getByRole("button", { name: "Sourced" }));
+      expect(screen.getByText("sourced event")).toBeInTheDocument();
+      expect(screen.queryByText("events panel")).not.toBeInTheDocument();
+      fireEvent.click(within(group).getByRole("button", { name: "On Kretopia" }));
+      expect(screen.getByText("events panel")).toBeInTheDocument();
+    });
+
+    it("the Studio's links open the right lane once, for a company, and the parameter is then gone", async () => {
+      tone.business = true;
+      renderDiscover("/discover?tab=events&mode=sourced");
+      expect(await screen.findByText("sourced event")).toBeInTheDocument();
+      expect(screen.getByTestId("where")).toHaveTextContent("/discover?tab=events");
+      expect(screen.getByTestId("where")).not.toHaveTextContent("mode=");
+      // switching lanes afterwards does not drag the Sourced mode along
+      open("People");
+      expect(screen.getByText("swipe deck")).toBeInTheDocument();
+    });
+
+    it("the Studio's people link lands on Sourced creatives, and only People", async () => {
+      tone.business = true;
+      renderDiscover("/discover?tab=people&mode=sourced");
+      expect(await screen.findByText("sourced talent")).toBeInTheDocument();
+      open("Events");
+      expect(screen.getByText("events panel")).toBeInTheDocument();
+    });
+
+    it("waits for the account mode: a link for a company does nothing until the mode is known, then applies", async () => {
+      const view = renderDiscover("/discover?tab=events&mode=sourced");
+      expect(screen.getByText("events panel")).toBeInTheDocument();
+      expect(screen.queryByText("sourced event")).not.toBeInTheDocument();
+      expect(screen.getByTestId("where")).toHaveTextContent("mode=sourced"); // not consumed while the mode is unknown
+      tone.business = true;
+      view.again();
+      expect(await screen.findByText("sourced event")).toBeInTheDocument();
+      expect(screen.getByTestId("where")).not.toHaveTextContent("mode=");
+    });
+
+    it("a Studio link still waiting for the account mode is dropped if the member changes lane first", async () => {
+      const view = renderDiscover("/discover?tab=people&mode=sourced");
+      open("Events");
+      expect(screen.getByTestId("where")).not.toHaveTextContent("mode=");
+      tone.business = true;
+      view.again();
+      expect(await screen.findByText("events panel")).toBeInTheDocument(); // the ordinary Events lane, not Sourced events
+      expect(screen.queryByText("sourced event")).not.toBeInTheDocument();
+    });
+
+    it("a creator who opens a Sourced link is simply shown the ordinary lane", () => {
+      renderDiscover("/discover?tab=people&mode=sourced");
+      expect(screen.getByText("swipe deck")).toBeInTheDocument();
+      expect(screen.queryByText("sourced talent")).not.toBeInTheDocument();
+    });
   });
 });

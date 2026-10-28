@@ -99,7 +99,7 @@ describe("intentColumnsFor: what is written", () => {
   });
 });
 
-describe("orderCompanyActions: same four actions, ordered for what the company is here to do", () => {
+describe("orderCompanyActions: the same actions, ordered for what the company is here to do", () => {
   const actions = [
     { label: "Post a Gig", path: "/post-opportunity" },
     { label: "Review applicants", path: "/opportunity-dashboard" },
@@ -121,6 +121,18 @@ describe("orderCompanyActions: same four actions, ordered for what the company i
       "/opportunity-dashboard",
       "/thrivepay",
     ]);
+  });
+
+  it("moves Discover's Sourced creatives link up with the talent finder, and leaves Sourced events where it is", () => {
+    const withSourced = [
+      { label: "Post a Gig", path: "/post-opportunity" },
+      { label: "Find talent", path: "/talent-finder" },
+      { label: "Sourced creatives", path: "/discover?tab=people&mode=sourced" },
+      { label: "Sourced events", path: "/discover?tab=events&mode=sourced" },
+      { label: "Pay creators", path: "/thrivepay" },
+    ];
+    expect(orderCompanyActions(withSourced, ["collaborate"]).map((a) => a.label)).toEqual(["Find talent", "Sourced creatives", "Post a Gig", "Sourced events", "Pay creators"]);
+    expect(orderCompanyActions(withSourced, ["hire"]).map((a) => a.label)).toEqual(withSourced.map((a) => a.label));
   });
 
   it("never adds, drops or retargets an action, and does not mutate its input", () => {
