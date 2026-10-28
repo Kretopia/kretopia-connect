@@ -171,8 +171,8 @@ describe("Landing chapter videos", () => {
     const video = chapter("II", "/videos/x.webm");
     expect(video.hasAttribute("src")).toBe(false);
     const sources = [...video.querySelectorAll("source")];
-    expect(sources.map((s) => s.type)).toEqual(["video/webm", "video/mp4"]);
-    expect(sources.map((s) => s.getAttribute("src"))).toEqual(["/videos/x.webm", "/videos/x.mp4"]);
+    expect(sources.map((s) => s.type)).toEqual(["video/mp4", "video/webm"]);
+    expect(sources.map((s) => s.getAttribute("src"))).toEqual(["/videos/x.mp4", "/videos/x.webm"]);
   });
 
   it("does not confuse a scroll-cancelled play with an autoplay refusal", async () => {

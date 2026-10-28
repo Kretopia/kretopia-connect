@@ -195,8 +195,8 @@ export const ChapterSection = ({
                   style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"
                 >
-                  {videoWebm && <source src={videoWebm} type="video/webm" />}
                   {videoWebm && <source src={video} type="video/mp4" />}
+                  {videoWebm && <source src={videoWebm} type="video/webm" />}
                 </video>
               ) : (
                 <img
