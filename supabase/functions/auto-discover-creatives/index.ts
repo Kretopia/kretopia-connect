@@ -379,7 +379,7 @@ serve(async (req) => {
               role: credit.role,
               year: credit.year,
               platform: credit.platform,
-              verification_status: 'imported',
+              verification_status: 'auto_discovered',
             });
           }
         }

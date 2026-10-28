@@ -499,7 +499,7 @@ ${wikipediaContent.substring(0, 15000)}
           project_name: projectName,
           role: credit.role || profileData.role || 'Creative',
           year: credit.year || null,
-          verification_status: 'imported'
+          verification_status: 'auto_discovered'
         });
         
         if (creditError) {

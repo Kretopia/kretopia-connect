@@ -150,11 +150,12 @@ export const AIProfileDiscoveryStep = ({
           project_name: c.project,
           role: c.role,
           year: c.year || null,
-          verification_status: "ai_imported"
+          verification_status: "pending_review"
         }));
         
         const { error } = await supabase.from("credits").insert(creditsToInsert);
-        if (!error) creditsImported = creditsToInsert.length;
+        if (error) console.error("Could not import the discovered credits:", error.message);
+        else creditsImported = creditsToInsert.length;
       }
 
       // Import awards if available
@@ -164,7 +165,7 @@ export const AIProfileDiscoveryStep = ({
           title: a.title,
           organization: a.organization,
           year: a.year || null,
-          verification_status: "ai_imported"
+          verification_status: "imported"
         }));
         
         const { error } = await supabase.from("awards").insert(awardsToInsert);

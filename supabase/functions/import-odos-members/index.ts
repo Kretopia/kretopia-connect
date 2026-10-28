@@ -401,7 +401,7 @@ Extract their bio, location, skills, notable works/credits, and awards. Only ext
               project_name: credit.project_name,
               role: credit.role || member.role,
               year: credit.year || null,
-              verification_status: 'imported'
+              verification_status: 'auto_discovered'
             });
           }
         }

@@ -234,11 +234,12 @@ export const AddPortfolioStep = ({ userId, onComplete, onSkip }: AddPortfolioSte
             project_name: c.project,
             role: c.role,
             year: c.year || null,
-            verification_status: "ai_imported"
+            verification_status: "pending_review"
           }));
           
           const { error: credErr } = await supabase.from("credits").insert(creditsToInsert);
-          if (!credErr) imported += creditsToInsert.length;
+          if (credErr) console.error("Could not import the discovered credits:", credErr.message);
+          else imported += creditsToInsert.length;
         }
 
         // Import press links as portfolio items too
