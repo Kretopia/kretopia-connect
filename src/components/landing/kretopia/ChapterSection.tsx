@@ -94,8 +94,7 @@ export const ChapterSection = ({
   // but does NOT resume it automatically when it scrolls back into view
   // -- that resume has to be driven explicitly, same IntersectionObserver
   // pattern HoloCard.tsx already uses for its own ambient animation.
-  // Rejections are swallowed throughout: blocked autoplay just leaves the
-  // poster frame showing, never a broken page.
+  // Autoplay refusal exposes an explicit Play action, without a poster.
   useEffect(() => {
     const el = videoRef.current;
     if (!video || !el) return;
@@ -122,9 +121,7 @@ export const ChapterSection = ({
     };
     const gestures = ["pointerdown", "keydown", "touchend"] as const;
     gestures.forEach((g) => window.addEventListener(g, unlock, { once: true, passive: true }));
-    // Full-quality download starts one screen before the video is reached,
-    // so it is already sharp when it scrolls in (metadata alone left the
-    // poster up until the decoder caught up).
+    // Warm nearby video without resetting its resource selection.
     const near = typeof IntersectionObserver === "undefined" ? undefined : new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
@@ -185,7 +182,7 @@ export const ChapterSection = ({
                   // Only the first chapter asks the browser to play (and so fetch) on its own: `autoplay` overrides
                   // `preload`, and on every chapter it had all five large files buffering at once on a phone, below the
                   // fold included. The others are started by the effect above when they come into view, and their
-                  // download is promoted from metadata to full one screen before they are reached.
+                  // download is promoted from none to auto before they are reached.
                   autoPlay={eager}
                   muted
                   loop

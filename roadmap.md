@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Landing video startup (October 28)
-- [ ] Reduce video transfer sizes and warm the first chapter on phones as well as desktop; preserve original media, crops and no-poster playback.
-- [ ] Remove artificial content reveal delays and verify native playback, chapter navigation and focused regressions without publication.
+- [x] Five CDN video variants reduce H.264 transfers from 31.8 MB to 9.0 MB (71.6%); VP9 fallback, unchanged masters/crops, no posters, first chapter warmed on phones too, later transfers deferred until two screens away (one with data saver).
+- [x] Removed hidden initial content states across Hero, chapters, product loop, Kreto, organisations and FAQ; 25 focused tests and automatic compilation pass. Browser at 731×657 and 1280×1800: all five videos play and resume, no page errors/overflow; chapter entry to playback 54–858 ms with real CDN delivery bridged into localhost (local server does not serve asset URLs). CDN ranged GET verified 206. Not published; cold page startup/network cannot be guaranteed instantaneous.
 
 ## Faster public Web search
 - [x] Reduce debounce from 900 to 250 ms, show immediate branded progress and source skeletons, share recent public results and in-flight requests, and stream real Web sources before AI ranking finishes; quota, original searchbar and legacy backend preserved.

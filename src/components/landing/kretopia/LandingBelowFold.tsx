@@ -41,18 +41,11 @@ import studioWebm from "@/assets/landing/kretovideo1.webm.asset.json";
 import communityMp4 from "@/assets/landing/kretovideo.mp4.asset.json";
 import communityWebm from "@/assets/landing/kretovideo.webm.asset.json";
 
-// HD chapter videos — landing overhaul (24/09/2026). Served from /public
-// (not imported) since Vite would otherwise inline/hash large binaries
-// through the JS module graph; a plain absolute path is the standard way
-// to reference public/ assets. The matching *Img above is kept as each
-// <video>'s poster, so a slow connection still shows something on first
-// paint instead of a blank frame.
+// Lightweight native playback variants on the media CDN; original masters
+// remain untouched in public/videos. No still poster is shown.
 const studioVideo = studioMp4.url;
 const soundstagesVideo = communityMp4.url;
 const scoutVideo = scoutMp4.url;
-// Passport and Match: the native 720×1280 masters, losslessly remuxed with the
-// index up front (no re-encode, no upscale), each with its own first frame as
-// the poster so the still never differs from the video.
 const passportVideo = passportMp4.url;
 const passportPoster = "/videos/kreto-passport-poster.jpg";
 const matchVideo = matchMp4.url;
