@@ -3,7 +3,7 @@ import {
   challengeLine, claimExpiry, domainChallenge, fileProvesChallenge, looksLikeClaimToken, mintClaimToken, sha256Hex, sourceDomainFor, WELL_KNOWN_PATH,
 } from "../../../../supabase/functions/_shared/discovery/claim";
 import {
-  eventJsonLd, externalJobPosting, isExpired, isSitemapEligible, MIN_INDEXABLE_CHARS, nativeGigJobPosting, nativeGigRobots, robotsFor, type ListingSeoInput,
+  canonicalFor, eventJsonLd, externalJobPosting, isExpired, isSitemapEligible, MIN_INDEXABLE_CHARS, nativeGigJobPosting, nativeGigRobots, robotsFor, type ListingSeoInput,
 } from "../../../../supabase/functions/_shared/discovery/seo";
 import { listingLabels, relativeDays } from "../../../../supabase/functions/_shared/discovery/labels";
 import { costCents, jobKey, scopesFor, utcDay } from "../../../../supabase/functions/_shared/discovery/budget";
@@ -147,6 +147,15 @@ describe("SEO: honest public pages", () => {
     expect(eventJsonLd({ ...ev, starts_at: null }, NOW)).toBeNull();
     expect(eventJsonLd({ ...ev, location: null }, NOW)).toBeNull();
     expect(eventJsonLd(listing({ kind: "gig" }), NOW)).toBeNull();
+  });
+});
+
+describe("canonical: original versus republished", () => {
+  it("an unclaimed import points to the original source; only a verified owner's listing is its own canonical", () => {
+    const own = "https://www.kretopia.com/listing/abc";
+    expect(canonicalFor(listing({ status: "published", source_url: "https://remoteok.com/remote-jobs/x-1098765" }))).toBe("https://remoteok.com/remote-jobs/x-1098765");
+    expect(canonicalFor(listing({ status: "published", source_url: null }))).toBe("https://acme-studio.com/jobs/9");
+    expect(canonicalFor(listing({ status: "claimed", source_url: "https://remoteok.com/remote-jobs/x-1098765" }))).toBe(own);
   });
 });
 

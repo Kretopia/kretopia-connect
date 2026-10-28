@@ -1,6 +1,6 @@
 import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Briefcase, Calendar, Handshake, LayoutGrid, Map, Plus, Radar, Radio, Search, Sparkles, Store, UserSearch, Users } from "lucide-react";
+import { Briefcase, Calendar, Globe, Handshake, LayoutGrid, Map, Plus, Radar, Radio, Search, Sparkles, Store, UserSearch, Users } from "lucide-react";
 
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +22,7 @@ import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
 import { SessionsSection } from "@/components/sessions/SessionsSection";
 import { NearbyInline } from "@/components/discover/NearbyInline";
+import { PublishedExternalListings } from "@/components/external/PublishedExternalListings";
 import { DiscoverSwitch, PILL_GROUP, PILL_ITEM } from "@/components/discover/DiscoverSwitch";
 import { DiscoverWrapped } from "@/components/discover/DiscoverWrapped";
 import { buildDiscoverSignals, useDiscoverSignals, type DiscoverLane } from "@/components/discover/discoverSignals";
@@ -40,7 +41,7 @@ const LANES: { id: Tab; label: string; icon: typeof Users; title: ReactNode; sce
 const ALIASES: Record<string, Tab> = { opportunities: "opps" };
 
 type PeopleMode = "swipe" | "browse" | "nearby" | "talent";
-type OppsMode = "scouted" | "open" | "leads";
+type OppsMode = "scouted" | "sourced" | "open" | "leads";
 
 const PEOPLE_MODES = [
   { id: "swipe", label: "Swipe", icon: Sparkles },
@@ -51,6 +52,7 @@ const PEOPLE_MODES = [
 
 const OPPS_MODES = [
   { id: "scouted", label: "Scouted", icon: Radar },
+  { id: "sourced", label: "Sourced", icon: Globe },
   { id: "open", label: "Open", icon: Store },
   { id: "leads", label: "Leads", icon: Handshake },
 ] as const;
@@ -175,11 +177,13 @@ export default function Discover() {
 
               <p className="text-xs text-muted-foreground">
                 {oppsMode === "scouted" && "Real gigs Kreto found for you on job boards."}
+                {oppsMode === "sourced" && "Gigs found outside Kretopia and checked by a curator against their source. Apply at the source."}
                 {oppsMode === "open" && "Collabs, barters and freelance gigs posted by the community."}
                 {oppsMode === "leads" && "Brands, sponsors and clients that fit your work."}
               </p>
 
               {oppsMode === "scouted" && <ScoutedGigsSection />}
+              {oppsMode === "sourced" && <PublishedExternalListings kind="gig" />}
               {oppsMode === "open" && <OpportunitiesFeed />}
               {oppsMode === "leads" && (
                 <div className="grid gap-3 md:grid-cols-2">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { nativeGigJobPosting, nativeGigRobots } from "../../supabase/functions/_shared/discovery/seo";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -389,6 +390,24 @@ const OpportunityDetail = () => {
 
   const isActive = opportunity.status === 'active';
 
+  // Structured data only for a gig posted here by its employer, from facts it really states: never Kretopia as the
+  // employer, never the date WE found a scouted gig, never a salary we cannot structure (see _shared/discovery/seo.ts).
+  const extra = opportunity as Opportunity & { guest_company_name?: string | null; application_deadline?: string | null };
+  const jobPosting = nativeGigJobPosting(
+    {
+      scouted_by: opportunity.scouted_by ?? null,
+      status: opportunity.status,
+      title: opportunity.title,
+      description: opportunity.description,
+      created_at: opportunity.created_at,
+      application_deadline: extra.application_deadline ?? null,
+      organization: extra.guest_company_name ?? null,
+      location: opportunity.location || null,
+      url: `https://www.kretopia.com/opportunity/${opportunity.id}`,
+    },
+    new Date(),
+  );
+
   return (
     <div className="min-h-screen p-4 md:p-6 pt-[calc(env(safe-area-inset-top)+1rem)] pb-32">
       <SEO
@@ -397,29 +416,11 @@ const OpportunityDetail = () => {
         type="article"
         image={opportunity.image_url || undefined}
         url={`https://www.kretopia.com/opportunity/${opportunity.id}`}
+        noindex={nativeGigRobots({ scouted_by: opportunity.scouted_by ?? null, status: opportunity.status, application_deadline: extra.application_deadline ?? null }, opportunity.claim_status ?? null, new Date()) === "noindex, nofollow"}
       />
       <Helmet>
         <link rel="canonical" href={`https://www.kretopia.com/opportunity/${opportunity.id}`} />
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "JobPosting",
-            "title": opportunity.title,
-            "description": opportunity.description || "",
-            "datePosted": opportunity.created_at,
-            "employmentType": opportunity.type === "Paid" ? "CONTRACTOR" : "VOLUNTEER",
-            "hiringOrganization": {
-              "@type": "Organization",
-              "name": "Kretopia",
-              "sameAs": "https://www.kretopia.com"
-            },
-            ...(opportunity.location ? { "jobLocation": { "@type": "Place", "address": opportunity.location } } : {}),
-            ...(opportunity.compensation ? { "baseSalary": { "@type": "MonetaryAmount", "currency": "USD", "value": opportunity.compensation } } : {}),
-            "industry": "Creative Industries",
-            "url": `https://www.kretopia.com/opportunity/${opportunity.id}`,
-            ...(opportunity.image_url ? { "image": opportunity.image_url } : {})
-          })}
-        </script>
+        {jobPosting && <script type="application/ld+json">{JSON.stringify(jobPosting)}</script>}
       </Helmet>
       <div className="mx-auto max-w-4xl">
         {/* Header */}

@@ -23,6 +23,8 @@ export interface ListingSeoInput {
   /** The publisher's own description, supplied by a VERIFIED owner after a claim. */
   description_full: string | null;
   apply_url: string | null;
+  /** The original page the facts came from. */
+  source_url?: string | null;
   source_published_at: string | null;
   deadline_at: string | null;
   starts_at: string | null;
@@ -186,4 +188,14 @@ export function eventJsonLd(l: ListingSeoInput, now: Date): Record<string, unkno
     url: l.url,
     ...(l.original_publisher ? { organizer: { "@type": "Organization", name: l.original_publisher } } : {}),
   };
+}
+
+/**
+ * Which URL is the canonical one. A listing republished from another site (an unclaimed import: a short excerpt and a
+ * link) is NOT the original, so the original source is the canonical. Only a listing its VERIFIED owner published
+ * here is its own canonical.
+ */
+export function canonicalFor(l: Pick<ListingSeoInput, "status" | "source_url" | "apply_url" | "url">): string {
+  if (l.status === "claimed") return l.url;
+  return l.source_url || l.apply_url || l.url;
 }

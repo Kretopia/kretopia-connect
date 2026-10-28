@@ -7,6 +7,8 @@ interface SEOProps {
   type?: string;
   image?: string;
   url?: string;
+  /** Keep this page out of search results (drafts, claim links, unclaimed or expired imports). */
+  noindex?: boolean;
   // For profile pages - JSON-LD Person schema
   profile?: {
     name: string;
@@ -31,6 +33,7 @@ export const SEO = ({
   type = "website",
   image = "https://www.kretopia.com/og-image.png",
   url,
+  noindex = false,
   profile
 }: SEOProps) => {
   // Generate JSON-LD structured data for profiles
@@ -88,8 +91,8 @@ export const SEO = ({
       <meta name="description" content={description} />
       
       {/* Allow indexing for public pages */}
-      <meta name="robots" content="index, follow" />
-      <meta name="googlebot" content="index, follow" />
+      <meta name="robots" content={noindex ? "noindex, nofollow" : "index, follow"} />
+      <meta name="googlebot" content={noindex ? "noindex, nofollow" : "index, follow"} />
 
       {/* Open Graph / Facebook */}
       <meta property="og:type" content={type === 'profile' ? 'profile' : type} />
