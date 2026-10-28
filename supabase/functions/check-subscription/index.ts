@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
+import { FOUNDER_PRODUCT_ID, recoverPendingFounderPurchase } from "../_shared/founderActivation.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -82,11 +83,22 @@ serve(async (req) => {
       logStep("Founder Circle member detected, preserving lifetime access");
       return new Response(JSON.stringify({
         subscribed: true, tier: 'founder',
-        product_id: 'prod_TzMqfksF7u6WBH', subscription_end: null,
+        product_id: FOUNDER_PRODUCT_ID, subscription_end: null,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // Founder Circle is a one-time Checkout, not a subscription, so nothing below sees it. A buyer who paid but
+    // never reached /payment-success still has a pending purchase: finish it from Stripe's own record.
+    if (await recoverPendingFounderPurchase(supabaseClient, stripe, user.id)) {
+      logStep("Founder Circle purchase recovered from Stripe", { userId: user.id });
+      return new Response(JSON.stringify({
+        subscribed: true, tier: 'founder',
+        product_id: FOUNDER_PRODUCT_ID, subscription_end: null,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    }
+
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
     if (customers.data.length === 0) {
