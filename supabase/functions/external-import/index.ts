@@ -6,9 +6,9 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 import { requireUser } from "../_shared/require-user.ts";
 import { corsHeaders, isUuid, json, readJson, respond } from "../_shared/discovery/http.ts";
-import { createClaimLink, decideClaim, ingest, reviewListing, setApplications, type IngestInput, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
+import { createClaimLink, decideClaim, ingest, listFeedDrafts, reviewListing, setApplications, type IngestInput, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
 
-const ADMIN_ACTIONS = new Set(["review", "claim_link", "decide_claim", "set_applications", "list_review"]);
+const ADMIN_ACTIONS = new Set(["review", "claim_link", "decide_claim", "set_applications", "list_review", "list_feed_drafts"]);
 const LIST_FIELDS = "id, kind, status, visibility, title, original_publisher, location, source_type, source_url, apply_url, source_published_at, deadline_at, excerpt, flagged_instructions, possible_duplicates, extraction_issues, verification_status, last_checked_at, created_at";
 
 Deno.serve(async (req) => {
@@ -65,6 +65,8 @@ Deno.serve(async (req) => {
       const { data } = await admin.from("external_listings").select(LIST_FIELDS).eq("created_by", userId).order("created_at", { ascending: false }).limit(100);
       return json({ ok: true, listings: data ?? [] });
     }
+    case "list_feed_drafts":
+      return json({ ok: true, ...(await listFeedDrafts(deps, LIST_FIELDS)) });
     case "list_review": {
       const { data } = await admin.from("external_listings").select(LIST_FIELDS).in("status", ["in_review", "published", "claimed"]).order("created_at", { ascending: false }).limit(200);
       const { data: claims } = await admin.from("external_listing_claims").select("id, listing_id, claimant_user_id, status, method, created_at").in("status", ["pending", "disputed"]).limit(200);

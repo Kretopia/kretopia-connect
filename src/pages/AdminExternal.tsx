@@ -25,6 +25,8 @@ interface Item {
   extraction_issues: { code: string; message: string }[];
   last_checked_at: string | null;
 }
+const FEED_PAGE = 25;
+
 interface Claim {
   id: string;
   listing_id: string;
@@ -41,6 +43,9 @@ export default function AdminExternal() {
   const { toast } = useToast();
   const [items, setItems] = useState<Item[] | null>(null);
   const [drafts, setDrafts] = useState<Item[]>([]);
+  const [feedDrafts, setFeedDrafts] = useState<Item[]>([]);
+  const [feedTotal, setFeedTotal] = useState(0);
+  const [feedShown, setFeedShown] = useState(FEED_PAGE);
   const [claims, setClaims] = useState<Claim[]>([]);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
@@ -63,10 +68,13 @@ export default function AdminExternal() {
 
   const load = useCallback(async () => {
     // A fresh import is a private draft and the queue only lists what is in review or live, so the caller's own drafts are read too.
-    const [r, mine] = await Promise.all([call({ action: "list_review" }), call({ action: "list_mine" })]);
+    const [r, mine, feed] = await Promise.all([call({ action: "list_review" }), call({ action: "list_mine" }), call({ action: "list_feed_drafts" })]);
     setItems(r.ok ? ((r.listings as Item[]) ?? []) : []);
     setClaims(r.ok ? ((r.claims as Claim[]) ?? []) : []);
     setDrafts(mine.ok ? ((mine.listings as Item[]) ?? []).filter((l) => l.status === "draft") : []);
+    // What the scheduled run found: nobody owns these drafts, so they are in neither list above. A failed read changes nothing else.
+    setFeedDrafts(feed.ok ? ((feed.listings as Item[]) ?? []) : []);
+    setFeedTotal(feed.ok ? Number(feed.total ?? 0) : 0);
   }, [call]);
 
   useEffect(() => {
@@ -160,6 +168,18 @@ export default function AdminExternal() {
               <h2 className="text-sm font-semibold text-foreground">Your drafts</h2>
               <p className="text-xs text-muted-foreground">Imports stay private until you send them to review or publish them. Read what was left unknown first.</p>
               {drafts.map((l) => renderCard(l))}
+            </section>
+          )}
+
+          {feedDrafts.length > 0 && (
+            <section className="space-y-3" aria-label="Feed drafts">
+              <h2 className="text-sm font-semibold text-foreground">Feed drafts ({feedTotal})</h2>
+              <p className="text-xs text-muted-foreground">Found by the scheduled run. Nobody owns them and none is public. Read the source first, then send to review or reject: a rejected posting is not brought back by later runs.</p>
+              {feedTotal > feedDrafts.length && <p className="text-xs text-muted-foreground">Showing the newest {feedDrafts.length} of {feedTotal}.</p>}
+              {feedDrafts.slice(0, feedShown).map((l) => renderCard(l))}
+              {feedDrafts.length > feedShown && (
+                <Button variant="outline" size="sm" className="min-h-11 sm:min-h-0" onClick={() => setFeedShown((n) => n + FEED_PAGE)}>Show {Math.min(FEED_PAGE, feedDrafts.length - feedShown)} more</Button>
+              )}
             </section>
           )}
 

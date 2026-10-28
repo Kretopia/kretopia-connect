@@ -92,6 +92,22 @@ describe("external-import", () => {
     expect((await call("external-import", { action: "claim_link", listing_id: UUID })).status).toBe(409); // no such published listing: refused, not created
   });
 
+  it("feed drafts are read by an admin only, and only the ones nobody owns: a user and the cron secret are refused", async () => {
+    world.user = "u1";
+    expect((await call("external-import", { action: "list_feed_drafts" })).status).toBe(403);
+    world.admin = { userId: null, viaCron: true }; // the cron secret is not a person
+    expect((await call("external-import", { action: "list_feed_drafts" })).status).toBe(403);
+
+    await world.db.rpc("import_external_listing", { p_actor: null, p_row: { kind: "gig", source_type: "feed", title: "From the feed" } });
+    await world.db.rpc("import_external_listing", { p_actor: "u1", p_row: { kind: "gig", source_type: "text", title: "A person's draft" } });
+    world.admin = { userId: "admin-1", viaCron: false };
+    const r = await (await call("external-import", { action: "list_feed_drafts" })).json();
+    expect(r.ok).toBe(true);
+    expect(r.listings.map((l: { title: string }) => l.title)).toEqual(["From the feed"]);
+    expect(r.total).toBe(1);
+    expect(world.db.listings.size).toBe(2); // reading changes nothing
+  });
+
   it("a user lists only their own drafts", async () => {
     world.user = "u1";
     world.db.rpc("import_external_listing", { p_actor: "u1", p_row: { kind: "gig", source_type: "text", title: "Mine" } });

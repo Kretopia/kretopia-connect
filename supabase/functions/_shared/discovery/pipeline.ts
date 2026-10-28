@@ -362,10 +362,23 @@ export interface RunReport {
   imported?: number;
   alreadyKnown?: number;
   rejected?: number;
+  /** Postings a curator already rejected or removed: the run does not bring them back. */
+  skippedDecided?: number;
   settledCents?: number;
 }
 
 export const MAX_CANDIDATES_PER_RUN = 100;
+export const FEED_DRAFTS_LIMIT = 100;
+
+/**
+ * Drafts the scheduled run imported. Nobody owns them (created_by is null), so they appear in no person's own list and in
+ * no review queue: this is how a curator reads them. Private and unpublished; `total` can exceed what is returned.
+ */
+export async function listFeedDrafts(d: PipelineDeps, fields: string): Promise<{ listings: unknown[]; total: number }> {
+  const res = await d.from("external_listings").select(fields, { count: "exact" }).eq("status", "draft").is("created_by", null).order("created_at", { ascending: false }).limit(FEED_DRAFTS_LIMIT);
+  const listings = Array.isArray(res?.data) ? res.data : [];
+  return { listings, total: typeof res?.count === "number" ? res.count : listings.length };
+}
 
 export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}): Promise<{ ran: RunReport[]; skipped?: string }> {
   const now = clock(d);
@@ -408,11 +421,21 @@ export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}
         report.fetched = (report.fetched ?? 0) + candidates.length;
         for (const c of candidates) raws.push({ ...candidateToRaw(c), __url: c.source_url, __feed: url });
       }
-      for (const item of raws.slice(0, MAX_CANDIDATES_PER_RUN)) {
+      const batch = raws.slice(0, MAX_CANDIDATES_PER_RUN);
+      // A rejected or removed listing frees its identity in the database (so a person can import it again on purpose), which
+      // would let every run recreate what a curator decided against. The run leaves those out.
+      const keys = batch.map((x) => canonicalizeUrl(String(x.__url ?? ""))).filter((c): c is string => !!c).map((c) => identityKey(c));
+      const decided = new Set<string>(
+        keys.length === 0
+          ? []
+          : ((await d.from("external_listings").select("identity_key").in("identity_key", keys).in("status", ["rejected", "removed"]))?.data ?? []).map((r: { identity_key: string }) => r.identity_key),
+      );
+      for (const item of batch) {
         const { __url, __feed, ...raw } = item as Record<string, unknown> & { __url: string; __feed: string };
         const parsed = parseExtraction(raw, { now, kind: "gig" });
         const canonical = canonicalizeUrl(__url);
         if (!parsed.ok || !parsed.draft || !canonical) { report.rejected = (report.rejected ?? 0) + 1; continue; }
+        if (decided.has(identityKey(canonical))) { report.skippedDecided = (report.skippedDecided ?? 0) + 1; continue; }
         const dr = parsed.draft;
         const identity = sourceIdentity(canonical);
         const res = await d.rpc("import_external_listing", {

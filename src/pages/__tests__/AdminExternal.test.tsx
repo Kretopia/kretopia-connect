@@ -34,6 +34,7 @@ beforeEach(() => {
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   replies.list_review = { data: { ok: true, listings: [item()], claims: [] } };
   replies.list_mine = { data: { ok: true, listings: [] } };
+  replies.list_feed_drafts = { data: { ok: true, listings: [], total: 0 } };
 });
 
 describe("AdminExternal", () => {
@@ -144,5 +145,59 @@ describe("AdminExternal", () => {
     expect(await screen.findByText(/possible duplicate of 22222222/i)).toBeInTheDocument();
     expect(screen.getByText(/also in scouted: same address; shown to 2 members\. advice only, nothing was hidden or merged/i)).toBeInTheDocument();
     expect(screen.queryByText(/possible duplicate of .*scouted/i)).not.toBeInTheDocument();
+  });
+
+  describe("feed drafts: what the scheduled run found, owned by nobody", () => {
+    const fd = (n: number, over: Record<string, unknown> = {}) => item({ id: `f${String(n).padStart(7, "0")}-0000-0000-0000-000000000000`, status: "draft", source_type: "feed", title: `Posting ${n}`, original_publisher: "Acme", ...over });
+
+    it("has no section when the run found nothing", async () => {
+      renderPage();
+      await screen.findByText("Brand film editor");
+      expect(screen.queryByRole("region", { name: /feed drafts/i })).not.toBeInTheDocument();
+    });
+
+    it("shows them apart from the queue, private and unpublished, with the count, and sends one to review through the server", async () => {
+      replies.list_feed_drafts = { data: { ok: true, listings: [fd(1), fd(2)], total: 2 } };
+      renderPage();
+      const section = await screen.findByRole("region", { name: /feed drafts/i });
+      expect(section).toHaveTextContent("Feed drafts (2)");
+      expect(section).toHaveTextContent("Posting 1");
+      expect(section).toHaveTextContent("Posting 2");
+      expect(section).toHaveTextContent(/nobody owns them and none is public/i);
+      expect(section).toHaveTextContent(/not brought back by later runs/i);
+      const first = section.querySelectorAll("button");
+      expect([...first].map((b) => b.textContent)).toContain("Send to review");
+      fireEvent.click(screen.getAllByRole("button", { name: /send to review/i })[0]);
+      await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-import", { body: { action: "review", listing_id: fd(1).id, decision: "send_to_review" } }));
+    });
+
+    it("rejecting one goes through the server for that posting only", async () => {
+      replies.list_feed_drafts = { data: { ok: true, listings: [fd(1), fd(2)], total: 2 } };
+      renderPage();
+      const section = await screen.findByRole("region", { name: /feed drafts/i });
+      fireEvent.click(section.querySelectorAll("button")[2]); // Send to review, Approve and publish, Reject
+      await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-import", { body: { action: "review", listing_id: fd(1).id, decision: "reject" } }));
+      expect(invoke.mock.calls.filter((c) => (c[1].body as { decision?: string }).decision === "reject")).toHaveLength(1);
+    });
+
+    it("shows 25 at a time, and says when there are more than were loaded", async () => {
+      replies.list_feed_drafts = { data: { ok: true, listings: Array.from({ length: 30 }, (_, i) => fd(i + 1)), total: 123 } };
+      renderPage();
+      const section = await screen.findByRole("region", { name: /feed drafts/i });
+      expect(section).toHaveTextContent("Feed drafts (123)");
+      expect(section).toHaveTextContent("Showing the newest 30 of 123.");
+      expect(section).toHaveTextContent("Posting 25");
+      expect(section).not.toHaveTextContent("Posting 26");
+      fireEvent.click(screen.getByRole("button", { name: "Show 5 more" }));
+      expect(await screen.findByText("Posting 30")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /show \d+ more/i })).not.toBeInTheDocument();
+    });
+
+    it("if the feed drafts cannot be read, the rest of the page still works", async () => {
+      replies.list_feed_drafts = { data: { ok: false, code: "forbidden" } };
+      renderPage();
+      expect(await screen.findByText("Brand film editor")).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: /feed drafts/i })).not.toBeInTheDocument();
+    });
   });
 });
