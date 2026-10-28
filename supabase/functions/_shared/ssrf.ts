@@ -1,4 +1,7 @@
 // Shared SSRF guard for server-side URL fetching.
+
+// The Deno global, declared so this file also type-checks when the app's tests import it (the edge runtime provides it).
+declare const Deno: { resolveDns(host: string, type: "A" | "AAAA"): Promise<string[]> };
 // Blocks loopback, private, link-local, metadata and reserved ranges,
 // re-validating after every redirect hop.
 

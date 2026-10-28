@@ -76,6 +76,13 @@ export function looksLikeInstructions(text: string): boolean {
   return INJECTION.some((re) => re.test(text));
 }
 
+/** Contact details found in source text. They are removed, not stored: a public page never carries a person's email or phone. */
+export function redactPersonalData(text: string): string {
+  return text
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[contact removed]")
+    .replace(/(?:\+|00)?\d[\d\s().-]{7,}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}/.test(m.trim()) || m.replace(/\D/g, "").length < 9 ? m : "[contact removed]"));
+}
+
 /** Plain text from untrusted markup: no tags, no scripts, no control or zero-width characters, collapsed whitespace. */
 export function sanitizeText(input: unknown, max: number): string | null {
   if (typeof input !== "string") return null;
@@ -87,7 +94,7 @@ export function sanitizeText(input: unknown, max: number): string | null {
   s = s.replace(/<\/?[a-z][^>]*>/gi, " "); // entities can decode into markup: strip again
   // eslint-disable-next-line no-control-regex, no-irregular-whitespace
   s = s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‏‪-‮⁠﻿]/g, "");
-  s = s.replace(/\s+/g, " ").trim();
+  s = redactPersonalData(s.replace(/\s+/g, " ").trim());
   if (!s) return null;
   return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXCERPT_MAX, looksLikeInstructions, parseExtraction, parseIsoDate, sanitizeText } from "../../../../supabase/functions/_shared/discovery/extract";
+import { EXCERPT_MAX, looksLikeInstructions, parseExtraction, parseIsoDate, redactPersonalData, sanitizeText } from "../../../../supabase/functions/_shared/discovery/extract";
 import { buildExtractionRequest, parseModelJson } from "../../../../supabase/functions/_shared/discovery/untrusted";
 import { possibleDuplicates } from "../../../../supabase/functions/_shared/discovery/similarity";
 import { candidateToRaw } from "../../../../supabase/functions/_shared/discovery/candidate";
@@ -159,5 +159,15 @@ describe("a Scout feed candidate keeps only what the feed states", () => {
   it("a feed row with no posting date has an unknown date, not today", () => {
     const r = run(candidateToRaw({ source: "gigboard", source_name: "Jobicy", source_url: "https://jobicy.com/jobs/1-x", apply_url: "", title: "Editor", company: null, location: null, remote: false, description: null, compensation: null, posted_at: null, tags: [] }), "gig");
     expect(r.draft!.source_published_at).toBeNull();
+  });
+});
+
+describe("personal data never reaches a public listing", () => {
+  it("removes emails and phone numbers from every kept text, and keeps dates and pay ranges", () => {
+    expect(redactPersonalData("Write to jane.doe@studio.example or call +33 6 12 34 56 78.")).toBe("Write to [contact removed] or call [contact removed].");
+    expect(redactPersonalData("Deadline 2026-11-15, 2026-11-15T17:00, pay 80-100k EUR, 12 positions")).toBe("Deadline 2026-11-15, 2026-11-15T17:00, pay 80-100k EUR, 12 positions");
+    const r = parseExtraction({ title: "Editor wanted", excerpt: "Contact hr@acme.example (555) 123-45678 for details", location: "Berlin" }, { now: NOW, kind: "gig" });
+    expect(r.draft!.excerpt).not.toMatch(/@|\d{5}/);
+    expect(r.draft!.excerpt).toContain("[contact removed]");
   });
 });

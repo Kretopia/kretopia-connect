@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS public.discovery_sources (
   daily_budget_cents integer NOT NULL DEFAULT 0 CHECK (daily_budget_cents >= 0),
   max_fetches_per_run integer NOT NULL DEFAULT 1 CHECK (max_fetches_per_run BETWEEN 0 AND 20),
   last_run_at timestamptz,
+  consecutive_failures integer NOT NULL DEFAULT 0,        -- three failures in a row switch the source off (dead letter)
+  last_error text,
+  dead_lettered_at timestamptz,
+  run_lock_until timestamptz,                             -- overlap lock: one run per source at a time
   CONSTRAINT discovery_sources_enable_needs_known_cost CHECK (NOT enabled OR cost_per_call_cents IS NOT NULL)
 );
 
@@ -364,6 +368,22 @@ BEGIN
 END;
 $$;
 
+-- A curator turns a claim down. The claimant stays a visitor: nothing about the listing changes.
+CREATE OR REPLACE FUNCTION public.reject_external_claim(p_claim uuid, p_admin uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_listing uuid;
+BEGIN
+  IF NOT public.external_is_admin(p_admin) THEN RETURN jsonb_build_object('ok', false, 'reason', 'forbidden'); END IF;
+  UPDATE public.external_listing_claims SET status = 'rejected', decided_at = now(), decided_by = p_admin
+   WHERE id = p_claim AND status IN ('pending', 'disputed') RETURNING listing_id INTO v_listing;
+  IF v_listing IS NULL THEN RETURN jsonb_build_object('ok', false, 'reason', 'not_pending'); END IF;
+  PERFORM public.external_log(v_listing, p_admin, 'claim_rejected', jsonb_build_object('claim_id', p_claim));
+  RETURN jsonb_build_object('ok', true);
+END;
+$$;
+
 -- An owner manages ONLY their own listing, ONLY these fields. Provenance (source, retrieval, identity) stays untouched.
 CREATE OR REPLACE FUNCTION public.owner_update_external_listing(p_listing uuid, p_owner uuid, p_edits jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
@@ -488,6 +508,44 @@ CREATE OR REPLACE FUNCTION public.expire_discovery_spend() RETURNS integer
 LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp
 AS $$ WITH e AS (UPDATE public.discovery_spend_ledger SET status = 'expired' WHERE status = 'reserved' AND expires_at < now() RETURNING 1) SELECT count(*)::int FROM e $$;
 
+-- ── runs: one at a time per source, and a source that keeps failing switches itself off ────────────────────────────
+
+CREATE OR REPLACE FUNCTION public.acquire_discovery_run(p_source text, p_ttl_minutes integer DEFAULT 15) RETURNS boolean
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp
+AS $$
+  WITH l AS (
+    UPDATE public.discovery_sources SET run_lock_until = now() + make_interval(mins => GREATEST(p_ttl_minutes, 1))
+     WHERE id = p_source AND enabled AND (run_lock_until IS NULL OR run_lock_until < now())
+    RETURNING 1)
+  SELECT EXISTS (SELECT 1 FROM l)
+$$;
+
+CREATE OR REPLACE FUNCTION public.release_discovery_run(p_source text) RETURNS void
+LANGUAGE sql SECURITY DEFINER SET search_path = public, pg_temp
+AS $$ UPDATE public.discovery_sources SET run_lock_until = NULL WHERE id = p_source $$;
+
+-- Never retries indefinitely: the third failure in a row disables the source until a person enables it again.
+CREATE OR REPLACE FUNCTION public.record_discovery_run(p_source text, p_ok boolean, p_error text DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_enabled boolean;
+  v_failures integer;
+BEGIN
+  IF p_ok THEN
+    UPDATE public.discovery_sources SET consecutive_failures = 0, last_error = NULL, last_run_at = now(), run_lock_until = NULL
+     WHERE id = p_source RETURNING enabled, consecutive_failures INTO v_enabled, v_failures;
+  ELSE
+    UPDATE public.discovery_sources
+       SET consecutive_failures = consecutive_failures + 1, last_error = left(COALESCE(p_error, 'failed'), 300), last_run_at = now(), run_lock_until = NULL,
+           enabled = CASE WHEN consecutive_failures + 1 >= 3 THEN false ELSE enabled END,
+           dead_lettered_at = CASE WHEN consecutive_failures + 1 >= 3 THEN now() ELSE dead_lettered_at END
+     WHERE id = p_source RETURNING enabled, consecutive_failures INTO v_enabled, v_failures;
+  END IF;
+  RETURN jsonb_build_object('enabled', v_enabled, 'consecutive_failures', v_failures);
+END;
+$$;
+
 -- ── access to the functions: the service role only ──────────────────────────────────────────────────────────────────
 
 DO $$
@@ -500,7 +558,8 @@ DECLARE
     'public.verify_external_claim(uuid, uuid, text, text, uuid)', 'public.owner_update_external_listing(uuid, uuid, jsonb)',
     'public.set_external_applications(uuid, uuid, boolean)', 'public.dispute_external_listing(uuid, uuid, text)',
     'public.reserve_discovery_spend(text, text, uuid, integer, integer)', 'public.settle_discovery_spend(text, integer)',
-    'public.expire_discovery_spend()'
+    'public.expire_discovery_spend()', 'public.acquire_discovery_run(text, integer)', 'public.release_discovery_run(text)',
+    'public.record_discovery_run(text, boolean, text)', 'public.reject_external_claim(uuid, uuid)'
   ];
 BEGIN
   FOREACH fn IN ARRAY fns LOOP
@@ -521,4 +580,5 @@ $$;
 --     public.verify_external_claim(uuid, uuid, text, text, uuid), public.owner_update_external_listing(uuid, uuid, jsonb),
 --     public.set_external_applications(uuid, uuid, boolean), public.dispute_external_listing(uuid, uuid, text),
 --     public.reserve_discovery_spend(text, text, uuid, integer, integer), public.settle_discovery_spend(text, integer),
---     public.expire_discovery_spend();
+--     public.expire_discovery_spend(), public.acquire_discovery_run(text, integer), public.release_discovery_run(text),
+--     public.record_discovery_run(text, boolean, text), public.reject_external_claim(uuid, uuid);
