@@ -148,7 +148,7 @@ describe("Landing chapter videos", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(() => Promise.reject(new DOMException("blocked", "NotAllowedError")));
     const view = render(
       <MemoryRouter>
-        <ChapterSection index="III" kicker="K" title="T" body="B" caption="Scout" image="/x.jpg" video="/videos/x.mp4" videoWebm={videoWebm} accent="red" href="/x" />
+        <ChapterSection index="III" kicker="K" title="T" body="B" caption="Scout" image="/x.jpg" video="/videos/x.mp4" accent="red" href="/x" />
       </MemoryRouter>,
     );
     const watch = observer((o) => o.options?.threshold === 0.25);
