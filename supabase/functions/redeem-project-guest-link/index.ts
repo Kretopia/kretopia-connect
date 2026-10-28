@@ -47,35 +47,67 @@ Deno.serve(async (req) => {
 
     const admin = createClient(url, serviceKey);
 
-    const { data: link, error: linkErr } = await admin
+    const LINK_COLUMNS = "id, project_id, expires_at, max_uses, uses, revoked_at, permissions, guest_role, created_by";
+    const { data: firstRead, error: linkErr } = await admin
       .from("project_guest_links")
-      .select("id, project_id, expires_at, max_uses, uses, revoked_at, permissions, guest_role, created_by")
+      .select(LINK_COLUMNS)
       .eq("token", token)
       .maybeSingle();
-    if (linkErr || !link) {
+    if (linkErr || !firstRead) {
       return new Response(JSON.stringify({ error: "Link not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (link.revoked_at) {
-      return new Response(JSON.stringify({ error: "This link has been revoked" }), {
-        status: 410,
+
+    // Reserve the use BEFORE granting anything. The limit used to be checked on a read and the counter written
+    // afterwards from that same read, so people redeeming at once all passed the check (a single-use link admitted
+    // everyone who opened it together), the counter lost updates, and a link revoked in between still let the person
+    // in. Now one conditional update takes the use only if the counter and the revocation are still what was read; a
+    // loser re-reads and re-checks (bounded), so an unlimited link still admits everyone and counts every use.
+    const gone = (message: string) =>
+      new Response(JSON.stringify({ error: message }), { status: 410, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let link = firstRead;
+    let reserved = false;
+    // Each lost compare-and-swap means someone else took a use, so a limited link needs at most (uses left + 1)
+    // attempts before it is either won or fully redeemed; an unlimited link gets a generous fixed bound.
+    const maxAttempts = firstRead.max_uses != null ? Math.min(100, Math.max(2, firstRead.max_uses - firstRead.uses + 2)) : 40;
+    for (let attempt = 0; attempt < maxAttempts && !reserved; attempt++) {
+      if (link.revoked_at) return gone("This link has been revoked");
+      if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) return gone("This link has expired");
+      if (link.max_uses != null && link.uses >= link.max_uses) return gone("This link is fully redeemed");
+
+      const { data: won, error: reserveErr } = await admin
+        .from("project_guest_links")
+        .update({ uses: link.uses + 1 })
+        .eq("id", link.id)
+        .eq("uses", link.uses)
+        .is("revoked_at", null)
+        .select("id");
+      if (reserveErr) throw reserveErr;
+      if (won && won.length > 0) {
+        reserved = true;
+        break;
+      }
+
+      const { data: fresh } = await admin.from("project_guest_links").select(LINK_COLUMNS).eq("id", link.id).maybeSingle();
+      if (!fresh) {
+        return new Response(JSON.stringify({ error: "Link not found" }), {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      link = fresh;
+    }
+    if (!reserved) {
+      return new Response(JSON.stringify({ error: "This link is busy right now. Try again in a moment." }), {
+        status: 409,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    if (link.expires_at && new Date(link.expires_at).getTime() < Date.now()) {
-      return new Response(JSON.stringify({ error: "This link has expired" }), {
-        status: 410,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (link.max_uses != null && link.uses >= link.max_uses) {
-      return new Response(JSON.stringify({ error: "This link is fully redeemed" }), {
-        status: 410,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Gives the reserved use back if the person could not be added (best effort: only if nobody else moved the counter).
+    const releaseUse = () =>
+      admin.from("project_guest_links").update({ uses: link.uses }).eq("id", link.id).eq("uses", link.uses + 1).then(() => {}, () => {});
 
     // Already a member?
     const { data: existing } = await admin
@@ -115,6 +147,7 @@ Deno.serve(async (req) => {
         accepted_at: new Date().toISOString(),
       });
       if (insertErr) {
+        await releaseUse();
         return new Response(JSON.stringify({ error: insertErr.message }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -126,11 +159,6 @@ Deno.serve(async (req) => {
         .update({ status: "accepted", accepted_at: new Date().toISOString() })
         .eq("id", existing.id);
     }
-
-    await admin
-      .from("project_guest_links")
-      .update({ uses: link.uses + 1 })
-      .eq("id", link.id);
 
     // Notify the link creator (owner/inviter) when a fresh guest joins
     if (isNewJoin && link.created_by && link.created_by !== user.id) {
