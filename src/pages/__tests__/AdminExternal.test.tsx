@@ -17,7 +17,15 @@ vi.mock("@/hooks/useUserRole", () => ({ useUserRole: () => role }));
 type Reply = { data?: unknown; error?: unknown };
 const replies: Record<string, Reply> = {};
 const invoke = vi.fn(async (_fn: string, opts: { body: Record<string, unknown> }) => ({ data: replies[String(opts.body.action)]?.data ?? { ok: true }, error: null }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: (...a: unknown[]) => (invoke as unknown as (...x: unknown[]) => unknown)(...a) } } }));
+let scoutedList: { data: unknown; error: { message: string } | null } = { data: [], error: null };
+let scoutedDecision: { data: unknown; error: { message: string } | null } = { data: { ok: true, status: "approved" }, error: null };
+const rpc = vi.fn(async (name: string, _args?: unknown) => (name === "list_scouted_claim_requests" ? scoutedList : name === "decide_scouted_claim" ? scoutedDecision : { data: null, error: null }));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    functions: { invoke: (...a: unknown[]) => (invoke as unknown as (...x: unknown[]) => unknown)(...a) },
+    rpc: (...a: unknown[]) => (rpc as unknown as (...x: unknown[]) => unknown)(...a),
+  },
+}));
 
 import AdminExternal from "../AdminExternal";
 
@@ -29,7 +37,9 @@ const renderPage = () => render(<MemoryRouter><AdminExternal /></MemoryRouter>);
 const writeText = vi.fn(async () => {});
 
 beforeEach(() => {
-  invoke.mockClear(); toast.mockClear(); writeText.mockClear();
+  invoke.mockClear(); toast.mockClear(); writeText.mockClear(); rpc.mockClear();
+  scoutedList = { data: [], error: null };
+  scoutedDecision = { data: { ok: true, status: "approved" }, error: null };
   role.isAdmin = true;
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   replies.list_review = { data: { ok: true, listings: [item()], claims: [] } };
@@ -198,6 +208,52 @@ describe("AdminExternal", () => {
       renderPage();
       expect(await screen.findByText("Brand film editor")).toBeInTheDocument();
       expect(screen.queryByRole("region", { name: /feed drafts/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe("older scouted gigs and events: a link is a request, a curator decides", () => {
+    const request = (over: Record<string, unknown> = {}) => ({ id: "55555555-5555-5555-5555-555555555555", kind: "gig", target_id: "66666666-6666-6666-6666-666666666666", title: "Colorist for a feature", claimant_user_id: "u2", claimant_name: "Member Two", created_at: "2026-10-28T10:00:00Z", ...over });
+
+    it("lists who asked for what, says that holding the link proves nothing, and has no section when nobody asked", async () => {
+      renderPage();
+      await screen.findByText("Brand film editor");
+      expect(screen.queryByRole("region", { name: /scouted claim requests/i })).not.toBeInTheDocument();
+
+      scoutedList = { data: [request(), request({ id: "77777777-7777-7777-7777-777777777777", kind: "event", title: "Open studio night", claimant_name: null })], error: null };
+      const { unmount } = renderPage();
+      const section = await screen.findByRole("region", { name: /scouted claim requests/i });
+      expect(section).toHaveTextContent(/Gig “Colorist for a feature” · asked by Member Two/);
+      expect(section).toHaveTextContent(/Event “Open studio night” · asked by a member/);
+      expect(section).toHaveTextContent(/holding the link proves nothing/i);
+      unmount();
+    });
+
+    it("approving and declining go through the server's curator-only functions, with the request id and nothing else", async () => {
+      scoutedList = { data: [request()], error: null };
+      renderPage();
+      fireEvent.click(await screen.findByRole("button", { name: /approve as owner/i }));
+      await waitFor(() => expect(rpc).toHaveBeenCalledWith("decide_scouted_claim", { p_request: request().id, p_decision: "approve" }));
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Owner approved" }));
+
+      fireEvent.click(await screen.findByRole("button", { name: /decline request/i }));
+      await waitFor(() => expect(rpc).toHaveBeenCalledWith("decide_scouted_claim", { p_request: request().id, p_decision: "reject" }));
+      expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Request declined" }));
+    });
+
+    it("a request refused because the gig was claimed in the meantime says so, and nothing is reported as approved", async () => {
+      scoutedList = { data: [request()], error: null };
+      scoutedDecision = { data: { ok: false, reason: "not_available" }, error: null };
+      renderPage();
+      fireEvent.click(await screen.findByRole("button", { name: /approve as owner/i }));
+      await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Not done", description: "It was claimed in the meantime.", variant: "destructive" })));
+      expect(toast).not.toHaveBeenCalledWith(expect.objectContaining({ title: "Owner approved" }));
+    });
+
+    it("if the requests cannot be read, the rest of the page still works", async () => {
+      scoutedList = { data: null, error: { message: "Admins only" } };
+      renderPage();
+      expect(await screen.findByText("Brand film editor")).toBeInTheDocument();
+      expect(screen.queryByRole("region", { name: /scouted claim requests/i })).not.toBeInTheDocument();
     });
   });
 });

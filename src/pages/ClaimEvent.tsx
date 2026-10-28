@@ -20,6 +20,7 @@ const ClaimEvent = () => {
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [requested, setRequested] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -69,48 +70,30 @@ const ClaimEvent = () => {
 
     setClaiming(true);
     try {
-      // Atomic, token-checked claim. Success is only reported when a row was
-      // really claimed (the old direct UPDATE reported success even when RLS
-      // matched zero rows).
-      const { data: claim, error } = await supabase.rpc("claim_scouted_event" as any, { p_token: token });
+      // The link only opens a REQUEST for this person; a Kretopia curator decides who hosts. Success is reported only
+      // when a request really exists, and it is never described as ownership.
+      const { data: res, error } = await supabase.rpc("request_scouted_claim" as any, { p_kind: "event", p_token: token });
       if (error) throw error;
-      if (!(claim as { claimed?: boolean } | null)?.claimed) {
+      const result = (res ?? null) as { requested?: boolean; reason?: string } | null;
+      if (!result?.requested) {
         toast({
-          title: "Couldn't claim this event",
-          description: "It may already have a host, or the link is no longer valid.",
+          title: "Couldn't send the request",
+          description:
+            result?.reason === "too_many_open"
+              ? "You already have several claim requests waiting for a decision. Wait for those first."
+              : "It may already have a host, or the link is no longer valid.",
           variant: "destructive",
         });
         return;
       }
 
+      setRequested(true);
       toast({
-        title: "Event claimed",
-        description: "You're now the host. Edit details, invite guests, and share it.",
+        title: "Request sent",
+        description: "You are not the host until a Kretopia curator verifies that you organise this event.",
       });
-
-      // Notify the scout (if not the same person)
-      if (event?.scouted_by && event.scouted_by !== user.id) {
-        try {
-          const { data: claimer } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", user.id)
-            .maybeSingle();
-          await supabase.from("notifications").insert({
-            user_id: event.scouted_by,
-            title: `Your scout was claimed`,
-            message: `${claimer?.full_name || "Someone"} claimed "${event.title}" — it's now live on Kretopia.`,
-            type: "event_update",
-            action_url: `/event/${event.id}`,
-          });
-        } catch (e) {
-          console.warn("scout notify failed (non-fatal)", e);
-        }
-      }
-
-      navigate(`/events/backstage`);
     } catch (e: any) {
-      toast({ title: "Couldn't claim", description: e.message, variant: "destructive" });
+      toast({ title: "Request failed", description: e.message, variant: "destructive" });
     } finally {
       setClaiming(false);
     }
@@ -149,7 +132,7 @@ const ClaimEvent = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <SEO title={`Claim "${event.title}" on Kretopia`} description="Take ownership of your event listing." />
+      <SEO title={`Claim "${event.title}" on Kretopia`} description="Ask to host your event listing." />
       <div className="max-w-2xl mx-auto p-4 sm:p-8 space-y-6">
         <div className="text-center space-y-2">
           <Badge variant={isClaimed ? "secondary" : "outline"} className="mb-2">
@@ -161,7 +144,7 @@ const ClaimEvent = () => {
           <p className="text-muted-foreground text-sm sm:text-base">
             {isClaimed
               ? "Someone already claimed this event. View it below."
-              : "A creative spotted your event and listed it on Kretopia so the community can find it. Claim it to take over and manage RSVPs."}
+              : "A creative spotted your event and listed it on Kretopia so the community can find it. Ask to claim it: a Kretopia curator checks that you organise it, then you can manage RSVPs."}
           </p>
         </div>
 
@@ -193,16 +176,21 @@ const ClaimEvent = () => {
           </CardContent>
         </Card>
 
-        {!isClaimed ? (
+        {!isClaimed && requested ? (
+          <div className="rounded-xl border bg-muted/50 p-4 text-sm" role="status">
+            <p className="font-semibold">Request received</p>
+            <p className="mt-1 text-muted-foreground">A Kretopia curator will check that you organise this event. You become its host only when they approve; until then nothing changes on the listing.</p>
+          </div>
+        ) : !isClaimed ? (
           <div className="space-y-3">
             <Button size="lg" className="w-full gap-2" onClick={handleClaim} disabled={claiming}>
               {claiming ? <KretopiaSpinner className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
-              {user ? "Claim this event" : "Sign in to claim"}
+              {user ? "Request to claim this event" : "Sign in to request"}
               <ArrowRight className="h-4 w-4" />
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              Claiming makes you the host — you'll be able to edit details, invite guests, message
-              attendees, and check people in.
+              A curator checks that you organise this event. Once they approve, you're the host: edit details,
+              invite guests, message attendees, and check people in.
             </p>
           </div>
         ) : (
