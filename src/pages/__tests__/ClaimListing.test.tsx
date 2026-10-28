@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { StrictMode, type ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -111,5 +111,88 @@ describe("ClaimListing", () => {
     renderPage();
     expect(await screen.findByText(/not available to claim/i)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The screen a claimant sees when the link is opened, BEFORE "Start verification". Seen live with a second, non-admin
+ * account: one button, no owner controls, and the link still in the address bar. Looking at the page must change nothing:
+ * the link is spent only by the click, and it is never shown, sent to the public preview or put in the page.
+ */
+describe("ClaimListing before Start", () => {
+  const actions = () => invoke.mock.calls.map((c) => (c[1].body as { action: string }).action);
+
+  it("says whose listing this is and why Start is not ownership, with Start as the only thing to do", async () => {
+    renderPage();
+    expect(await screen.findByRole("heading", { name: /is this your listing/i })).toBeInTheDocument();
+    expect(screen.getByText("Brand film editor")).toBeInTheDocument();
+    expect(screen.getByText("Acme Studio")).toBeInTheDocument();
+    expect(screen.getByText("Starting a verification does not make you the owner. You will be asked to prove control of the publisher's own website, or to request a review by a Kretopia curator.")).toBeInTheDocument();
+    // one button, nothing to type into: no proof, review, save or edit controls exist yet
+    expect(screen.getAllByRole("button").map((b) => b.textContent?.trim())).toEqual(["Start verification"]);
+    expect(screen.queryAllByRole("textbox")).toEqual([]);
+    expect(screen.queryByRole("button", { name: /request a review|verify|save/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("proof-line")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+  });
+
+  it("opening the page only asks the public preview about the listing: the link is not spent, started or sent", async () => {
+    renderPage();
+    await screen.findByText("Brand film editor");
+    expect(invoke.mock.calls).toEqual([["external-claim", { body: { action: "preview", listing_id: "l1" } }]]);
+    expect(actions()).not.toContain("redeem");
+    expect(actions()).not.toContain("start");
+    expect(JSON.stringify(invoke.mock.calls)).not.toContain(TOKEN); // the public preview never receives the link
+  });
+
+  it("the link is never shown or put in the page, and it is not taken from the address bar until it is used", async () => {
+    const replace = vi.spyOn(window.history, "replaceState");
+    renderPage();
+    await screen.findByText("Brand film editor");
+    expect(document.body.innerHTML).not.toContain(TOKEN);
+    expect(document.body.innerHTML).not.toContain("kc_");
+    expect(JSON.stringify(seo.mock.calls)).not.toContain(TOKEN);
+    expect(document.querySelector("a[href]")).toBeNull(); // nothing on the screen links away (or carries the link in an href)
+    expect(replace).not.toHaveBeenCalled(); // the address is only rewritten once the link is spent
+    replace.mockRestore();
+  });
+
+  it("is a page nobody indexes or leaks from, before anything is clicked", async () => {
+    renderPage();
+    await screen.findByText("Brand film editor");
+    expect(seo.mock.calls[0][0]).toMatchObject({ noindex: true });
+    expect(document.querySelector('meta[name="referrer"]')?.getAttribute("content")).toBe("no-referrer");
+  });
+
+  it("effects that run twice (React StrictMode) still never spend the link", async () => {
+    const replace = vi.spyOn(window.history, "replaceState");
+    render(
+      <StrictMode>
+        <MemoryRouter initialEntries={[`/claim-listing/l1/${TOKEN}`]}>
+          <Routes><Route path="/claim-listing/:id/:token" element={<ClaimListing />} /></Routes>
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    await screen.findByText("Brand film editor");
+    expect(new Set(actions())).toEqual(new Set(["preview"]));
+    expect(replace).not.toHaveBeenCalled();
+    replace.mockRestore();
+  });
+
+  it("while the listing is still being read there is nothing to click, so the link cannot be spent on an unknown listing", async () => {
+    invoke.mockImplementationOnce(() => new Promise(() => {})); // the preview never answers
+    renderPage();
+    await waitFor(() => expect(invoke).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument();
+    expect(actions()).toEqual(["preview"]);
+  });
+
+  it("only the click spends the link, for this listing, exactly once", async () => {
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: /start verification/i }));
+    await screen.findByTestId("proof-line");
+    expect(actions().filter((a) => a === "redeem")).toHaveLength(1);
+    expect(invoke).toHaveBeenCalledWith("external-claim", { body: { action: "redeem", listing_id: "l1", token: TOKEN } });
+    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument(); // the screen has moved on
   });
 });
