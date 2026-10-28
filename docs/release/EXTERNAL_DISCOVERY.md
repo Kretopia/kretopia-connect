@@ -230,6 +230,33 @@ the "claimed" label. The external loop already works the other way; the older fl
 - Not covered: links already shared keep working as REQUESTS; nothing is revoked. Who may be approved is a curator judgment
   (the page tells them holding the link proves nothing); there is no automatic domain proof for these older rows.
 
+## Offers in the Match deck, and the Company-only lanes
+
+Decisions (2026-10-28): offers found outside Kretopia go into the Swipe deck; events and creatives found outside Kretopia have a lane
+ONLY in Company mode, in Discover and in the Studio's workspace actions.
+
+**Match deck** (`MatchDeck`, used by Discover, Match and Circle; `SwipeFeature` takes an `offers` switch, off by default):
+- A creator account sees published external GIGS between the people: one comes up after every 4 people answered, and on its own once
+  no people are left (not hidden behind "All caught up"). A company account keeps people only, and nobody sees one while the account mode
+  is still being read. The order rule is pure (`lib/swipeDeck.ts`).
+- An offer card says External / Unclaimed (or Claimed), where it came from and when it was last checked, and that Kretopia is not the
+  publisher and **sends nothing**. Pass (left), Interested (right), arrow keys and drag work like a person's card. "Open at source" is
+  a plain link in a new tab and answers nothing; "Interested" opens nothing by itself (a toast offers "Open").
+- An answer is ONE row in `swipes` written by the member's own session: `target_type = 'opportunity'`, `target_id` = the listing's id.
+  No notification, no function call, no match, no connection, no application (a test reads the code to keep it that way). Undo takes
+  an offer back and restores the counter so it is the next card again. A write that fails still removes the card for the session.
+- The gigs lane in Discover marks the gigs a member kept with "Kept".
+- **To confirm in production (read-only):** `security/verify-swipes-opportunity-2026-10-29.sql` shows the CHECK on `swipes.target_type`,
+  the keys, the policies and any trigger. The first migration allows 'opportunity'; a later one declares a different list, so production
+  must be read, not assumed. If 'opportunity' is refused, the deck still works but answers are not remembered: a migration is then needed.
+
+**Company-only lanes:** Discover > People gets "Sourced" (creatives), Discover > Events gets "On Kretopia | Sourced". The Studio's
+Company workspace actions get "Sourced creatives" and "Sourced events", which open those lanes (`?tab=people|events&mode=sourced`, used
+once and then removed). A creator's Discover is exactly what it was.
+- **These lanes are empty today:** every approved source is a gig source, and a pasted creative or event cannot become public without a
+  corroborating approved source. They fill when a source for events or creatives is approved (a decision with a cost and a terms check).
+  Until then they say so plainly. Creatives are people: nothing is sent to them from these lanes.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local

@@ -1,9 +1,10 @@
-import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Briefcase, Calendar, Globe, Handshake, LayoutGrid, Map, Plus, Radar, Radio, Search, Sparkles, Store, UserSearch, Users } from "lucide-react";
 
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
+import { useAccountTone } from "@/hooks/useAccountTone";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
@@ -16,7 +17,7 @@ import { GlassCtaButton, OutlineCta } from "@/components/ui/glass-cta";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostOpportunityDialog } from "@/components/PostOpportunityDialog";
 import { DISCOVER_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
-import { SwipeFeature } from "@/components/swipe";
+import { MatchDeck } from "@/components/swipe";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
@@ -40,14 +41,24 @@ const LANES: { id: Tab; label: string; icon: typeof Users; title: ReactNode; sce
 /** Links that predate the lane ids (Guide, Smart suggestions) still land on the right lane. */
 const ALIASES: Record<string, Tab> = { opportunities: "opps" };
 
-type PeopleMode = "swipe" | "browse" | "nearby" | "talent";
+type PeopleMode = "swipe" | "browse" | "nearby" | "sourced" | "talent";
 type OppsMode = "scouted" | "sourced" | "open" | "leads";
+type EventsMode = "kretopia" | "sourced";
 
 const PEOPLE_MODES = [
   { id: "swipe", label: "Swipe", icon: Sparkles },
   { id: "browse", label: "Browse", icon: LayoutGrid },
   { id: "nearby", label: "Nearby", icon: Map },
   { id: "talent", label: "Talent", icon: UserSearch, leaves: true },
+] as const;
+
+/** Creatives found outside Kretopia: a company's lane only (a creator is not hiring), placed before the Talent finder. */
+const PEOPLE_SOURCED = { id: "sourced", label: "Sourced", icon: Globe } as const;
+
+/** Events found outside Kretopia, next to the ones on Kretopia: a company's lane only. */
+const EVENTS_MODES = [
+  { id: "kretopia", label: "On Kretopia", icon: Calendar },
+  { id: "sourced", label: "Sourced", icon: Globe },
 ] as const;
 
 const OPPS_MODES = [
@@ -96,15 +107,34 @@ export default function Discover() {
   }, [requested]);
   const lane = LANES.find((l) => l.id === tab) ?? LANES[0];
 
+  // Company mode only: the Sourced creatives and Sourced events lanes. A creator's Discover is exactly what it was.
+  const { isBusiness } = useAccountTone();
   const [peopleMode, setPeopleMode] = useState<Exclude<PeopleMode, "talent">>("swipe");
   const [oppsMode, setOppsMode] = useState<OppsMode>("scouted");
+  const [eventsMode, setEventsMode] = useState<EventsMode>("kretopia");
   const [postOpen, setPostOpen] = useState(false);
+  const shownPeopleMode = peopleMode === "sourced" && !isBusiness ? "swipe" : peopleMode;
+  const shownEventsMode = eventsMode === "sourced" && !isBusiness ? "kretopia" : eventsMode;
+  const peopleItems = isBusiness ? [...PEOPLE_MODES.slice(0, 3), PEOPLE_SOURCED, PEOPLE_MODES[3]] : PEOPLE_MODES;
 
   const setTab = (next: Tab) => {
     const p = new URLSearchParams(params);
     p.set("tab", next);
+    p.delete("mode");
     setParams(p, { replace: true });
   };
+
+  // The Studio's links (?tab=people&mode=sourced, ?tab=events&mode=sourced) open the Sourced lane for a company. The parameter is
+  // used once and then removed, so it never lingers when the member switches lanes. A creator's parameter is simply ignored.
+  const requestedMode = params.get("mode");
+  useEffect(() => {
+    if (requestedMode !== "sourced" || !isBusiness) return;
+    if (tab === "people") setPeopleMode("sourced");
+    if (tab === "events") setEventsMode("sourced");
+    const p = new URLSearchParams(params);
+    p.delete("mode");
+    setParams(p, { replace: true });
+  }, [requestedMode, isBusiness, tab, params, setParams]);
 
   const signals = buildDiscoverSignals({ ...useDiscoverSignals(user?.id), onSelect: setTab });
 
@@ -153,17 +183,23 @@ export default function Discover() {
             <TabsContent value="people" className="accent-match mt-0 space-y-4">
               <DiscoverSwitch
                 label="People modes"
-                items={PEOPLE_MODES}
-                value={peopleMode}
+                items={peopleItems}
+                value={shownPeopleMode}
                 onChange={(id: PeopleMode) => (id === "talent" ? navigate("/talent-finder") : setPeopleMode(id))}
               />
-              {peopleMode === "swipe" && (
+              {shownPeopleMode === "swipe" && (
                 <div className="mx-auto w-full max-w-2xl">
-                  <SwipeFeature />
+                  <MatchDeck />
                 </div>
               )}
-              {peopleMode === "browse" && <BrowseCreatorsLazy />}
-              {peopleMode === "nearby" && <NearbyInline />}
+              {shownPeopleMode === "browse" && <BrowseCreatorsLazy />}
+              {shownPeopleMode === "nearby" && <NearbyInline />}
+              {shownPeopleMode === "sourced" && (
+                <>
+                  <p className="text-xs text-muted-foreground">Creatives found outside Kretopia and checked by a curator against their source. They are not on Kretopia, and nothing is sent to them from here.</p>
+                  <PublishedExternalListings kind="talent" />
+                </>
+              )}
             </TabsContent>
 
             {/* GIGS */}
@@ -213,8 +249,16 @@ export default function Discover() {
             </TabsContent>
 
             {/* EVENTS */}
-            <TabsContent value="events" className="mt-0">
-              <SessionsSection />
+            <TabsContent value="events" className={cn("mt-0", isBusiness && "space-y-4")}>
+              {isBusiness && <DiscoverSwitch label="Event lists" items={EVENTS_MODES} value={shownEventsMode} onChange={(id: EventsMode) => setEventsMode(id)} />}
+              {shownEventsMode === "sourced" ? (
+                <>
+                  <p className="text-xs text-muted-foreground">Events found outside Kretopia and checked by a curator against their source. Open them at the source.</p>
+                  <PublishedExternalListings kind="event" />
+                </>
+              ) : (
+                <SessionsSection />
+              )}
             </TabsContent>
 
             <KretoTip surface="discover" compact />

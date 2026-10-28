@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, UserSearch, Wallet, Users } from "lucide-react";
+import { Briefcase, Calendar, Globe, UserSearch, Wallet, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,9 @@ const ACTIONS = [
   { label: "Post a Gig", path: "/post-opportunity", icon: Briefcase },
   { label: "Review applicants", path: "/opportunity-dashboard", icon: Users },
   { label: "Find talent", path: "/talent-finder", icon: UserSearch },
+  // Found outside Kretopia and checked by a curator: Discover's Sourced lanes, which only a company account has.
+  { label: "Sourced creatives", path: "/discover?tab=people&mode=sourced", icon: Globe },
+  { label: "Sourced events", path: "/discover?tab=events&mode=sourced", icon: Calendar },
   { label: "Pay creators", path: "/thrivepay", icon: Wallet },
 ];
 

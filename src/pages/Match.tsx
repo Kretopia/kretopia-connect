@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { Sparkles, LayoutGrid, Users } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { SwipeFeature } from "@/components/swipe";
+import { MatchDeck } from "@/components/swipe";
 import { MatchPulse } from "@/components/swipe/MatchPulse";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
@@ -67,7 +67,7 @@ export default function Match() {
       content: (
         <div className="w-full min-w-0">
           <div className="w-full min-w-0">
-            <SwipeFeature />
+            <MatchDeck />
           </div>
         </div>
       ),

@@ -24,7 +24,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 import { CompanyWorkspaceActions } from "../CompanyWorkspaceActions";
 
 const labels = () => screen.getAllByRole("link").map((a) => a.textContent);
-const DEFAULT_ORDER = ["Post a Gig", "Review applicants", "Find talent", "Pay creators"];
+const DEFAULT_ORDER = ["Post a Gig", "Review applicants", "Find talent", "Sourced creatives", "Sourced events", "Pay creators"];
 
 const renderActions = () =>
   render(
@@ -51,14 +51,20 @@ describe("CompanyWorkspaceActions: ordered for what the company said it is here 
     expect(labels()).toEqual(DEFAULT_ORDER);
   });
 
-  it("starts from Find talent for a company that wants to sponsor or partner, with the same four links", async () => {
+  it("starts from the creator-finding links for a company that wants to sponsor or partner, with the same six links", async () => {
     state.row = { primary_intents: ["collaborate", "hire"], primary_intent: "collaborate" };
     renderActions();
     await waitFor(() => expect(labels()[0]).toBe("Find talent"));
-    expect(labels()).toEqual(["Find talent", "Post a Gig", "Review applicants", "Pay creators"]);
+    expect(labels()).toEqual(["Find talent", "Sourced creatives", "Post a Gig", "Review applicants", "Sourced events", "Pay creators"]);
     expect(screen.getByRole("link", { name: "Post a Gig" })).toHaveAttribute("href", "/post-opportunity");
     expect(screen.getByRole("link", { name: "Find talent" })).toHaveAttribute("href", "/talent-finder");
     expect(screen.getByRole("link", { name: "Pay creators" })).toHaveAttribute("href", "/thrivepay");
+  });
+
+  it("the two Sourced links open Discover's Sourced lanes, which only a company account has", () => {
+    renderActions();
+    expect(screen.getByRole("link", { name: "Sourced creatives" })).toHaveAttribute("href", "/discover?tab=people&mode=sourced");
+    expect(screen.getByRole("link", { name: "Sourced events" })).toHaveAttribute("href", "/discover?tab=events&mode=sourced");
   });
 
   it("falls back to the usual order when the saved intent cannot be read", async () => {
