@@ -185,6 +185,34 @@ pasted and deployed, "Remove" it in `/admin/external` and import the same addres
 Not changed: the scheduled run's feed imports do not compute duplicate advice; a board posting still offers curator review only
 (no publisher domain to prove).
 
+## Older scouted claim links: a link is a request, not ownership
+
+`claim_scouted_opportunity(token)` and `claim_scouted_event(token)` (20261009*) set `created_by = auth.uid()` and
+`claim_status = 'claimed'` for ANY signed-in caller holding the token. The token is a share link (the scout hands it to the
+publisher), so a link that is forwarded, pasted or screenshotted made whoever opened it the owner: edit rights, applicants and
+the "claimed" label. The external loop already works the other way; the older flows now match it.
+
+- `20261029110000_scouted_claim_requests.sql` (additive, safe before the frontend): table `scouted_claim_requests` (server-only),
+  `request_scouted_claim(kind, token)` (opens a pending request, changes no owner, one open request per person and target, at most
+  five open per person), `list_scouted_claim_requests()` and `decide_scouted_claim(request, decision)` (curators only, through
+  `external_is_admin`). Approving is the ONLY path that sets `created_by`, as a compare-and-swap on "still unclaimed", and it
+  closes the other open requests for that target.
+- `20261029110100_scouted_claim_close_token_ownership.sql` (APPLY ONLY AFTER the frontend is published): the two old functions keep
+  their name, signature and grants but answer `verification_required` and change nothing.
+- Frontend: `/claim-gig/:token` and `/claim-event/:token` ask, then say "Request received... you become its owner only when they
+  approve"; the false "gig claimed" notification to the scout and the jump into the gig or backstage are gone. `/admin/external`
+  lists the requests with "Approve as owner" and "Decline request".
+- Rehearsed on a throwaway Postgres 16 with stub tables: a request changes nothing, a repeat is the same request, refusals (kind,
+  token, unknown, already claimed, wrong kind), signed-out and anonymous refused, five-open cap, a member can neither list, decide,
+  read nor write, approve moves ownership and closes the other requests, no second decision, reject changes nothing, an event
+  claimed meanwhile is not taken, and 40 concurrent rounds of two curators approving two requests for one target ended with one
+  approved, one rejected, no error. After the second migration the old functions change nothing. A deadlock with a different lock
+  order was suspected but could not be reproduced, so the target-first order is a precaution, not a proven fix.
+- Order: (1) apply the first migration through a guarded paste script (to be prepared on approval), (2) merge and publish the
+  frontend, (3) apply the second migration. Applying the second early makes the OLD claim pages say "Couldn't claim".
+- Not covered: links already shared keep working as REQUESTS; nothing is revoked. Who may be approved is a curator judgment
+  (the page tells them holding the link proves nothing); there is no automatic domain proof for these older rows.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local

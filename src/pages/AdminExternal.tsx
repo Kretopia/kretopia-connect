@@ -30,6 +30,15 @@ interface Claim {
   listing_id: string;
   status: string;
 }
+/** A person asking to claim a scouted gig or event with the link. Not an owner until a curator approves. */
+interface ScoutedRequest {
+  id: string;
+  kind: "gig" | "event";
+  target_id: string;
+  title: string | null;
+  claimant_name: string | null;
+  created_at: string;
+}
 
 /**
  * The curator's queue for discovered listings: import, review against the source, publish, and COPY a claim link. Nothing
@@ -42,6 +51,7 @@ export default function AdminExternal() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [drafts, setDrafts] = useState<Item[]>([]);
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [scoutedRequests, setScoutedRequests] = useState<ScoutedRequest[]>([]);
   const [url, setUrl] = useState("");
   const [text, setText] = useState("");
   const [title, setTitle] = useState("");
@@ -67,6 +77,10 @@ export default function AdminExternal() {
     setItems(r.ok ? ((r.listings as Item[]) ?? []) : []);
     setClaims(r.ok ? ((r.claims as Claim[]) ?? []) : []);
     setDrafts(mine.ok ? ((mine.listings as Item[]) ?? []).filter((l) => l.status === "draft") : []);
+    // Older scouted gigs and events: people who opened a claim link are waiting for a curator. A failed read leaves the rest working.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimGig)
+    const scouted = await supabase.rpc("list_scouted_claim_requests" as any);
+    setScoutedRequests(!scouted.error && Array.isArray(scouted.data) ? (scouted.data as ScoutedRequest[]) : []);
   }, [call]);
 
   useEffect(() => {
@@ -80,6 +94,17 @@ export default function AdminExternal() {
     setBusy(false);
     if (r.ok) void load();
     return r;
+  };
+
+  const decideScouted = async (requestId: string, decision: "approve" | "reject") => {
+    setBusy(true);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimGig)
+    const { data, error } = await supabase.rpc("decide_scouted_claim" as any, { p_request: requestId, p_decision: decision });
+    const r = (data ?? null) as { ok?: boolean; reason?: string } | null;
+    if (!error && r?.ok) toast({ title: decision === "approve" ? "Owner approved" : "Request declined" });
+    else toast({ title: "Not done", description: error?.message ?? (r?.reason === "not_available" ? "It was claimed in the meantime." : String(r?.reason ?? "")), variant: "destructive" });
+    setBusy(false);
+    void load();
   };
 
   const copyLink = async (listingId: string) => {
@@ -169,6 +194,22 @@ export default function AdminExternal() {
             {items?.length === 0 && <p className="text-sm text-muted-foreground">Nothing to review.</p>}
             {items?.map((l) => renderCard(l))}
           </section>
+
+          {scoutedRequests.length > 0 && (
+            <section className="space-y-3" aria-label="Scouted claim requests">
+              <h2 className="text-sm font-semibold text-foreground">Scouted claim requests</h2>
+              <p className="text-xs text-muted-foreground">Someone opened a claim link for an older scouted gig or event. Holding the link proves nothing: approve only if you have checked that this person publishes it. Approving makes them its owner.</p>
+              {scoutedRequests.map((q) => (
+                <div key={q.id} className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-card p-4">
+                  <p className="text-xs text-muted-foreground">{q.kind === "gig" ? "Gig" : "Event"} “{q.title ?? q.target_id.slice(0, 8)}” · asked by {q.claimant_name ?? "a member"}</p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="min-h-11 sm:min-h-0" disabled={busy} onClick={() => decideScouted(q.id, "approve")}>Approve as owner</Button>
+                    <Button size="sm" variant="outline" className="min-h-11 sm:min-h-0" disabled={busy} onClick={() => decideScouted(q.id, "reject")}>Decline request</Button>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
 
           {claims.length > 0 && (
             <section className="space-y-3" aria-label="Claims to decide">
