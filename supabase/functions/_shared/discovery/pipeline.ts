@@ -20,7 +20,7 @@ import { CLAIM_METHODS, claimExpiry, domainChallenge, challengeLine, fileProvesC
 import { canonicalizeUrl, identityKey, sourceIdentity } from "./canonical.ts";
 import { parseExtraction, type ExternalDraft, type ExtractionIssue } from "./extract.ts";
 import { corroborates, factsToRaw, pageFacts } from "./html.ts";
-import { possibleDuplicates } from "./similarity.ts";
+import { possibleDuplicates, scoutedOverlap, type ScoutedRow } from "./similarity.ts";
 import { adapterById, adapterForUrl, approvedHosts, enableBlocker, type ListingKind } from "./sources.ts";
 import { costCents, jobKey } from "./budget.ts";
 import { buildExtractionRequest, MAX_SOURCE_CHARS, parseModelJson } from "./untrusted.ts";
@@ -133,6 +133,26 @@ async function modelExtract(d: PipelineDeps, actor: string, text: string, kind: 
   return parsed as Record<string, unknown>;
 }
 
+const likeEscape = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Rows of members' Scouted lists that may be the same posting: the same provider id inside the address, or the same title.
+ * Only the candidates are read (never the whole table); scoutedOverlap decides. A failed lookup is no reason to refuse an
+ * import, the advice is simply absent.
+ */
+async function scoutedRows(d: PipelineDeps, title: string, sourceId: string | null, now: Date): Promise<ScoutedRow[]> {
+  const cols = "target_user_id, title, company, location, source_url, apply_url";
+  const open = now.toISOString();
+  try {
+    const lookups = [d.from("scouted_gigs").select(cols).ilike("title", likeEscape(title)).gt("expires_at", open).limit(200)];
+    if (sourceId && /^[a-z0-9_-]{4,80}$/i.test(sourceId)) lookups.push(d.from("scouted_gigs").select(cols).ilike("source_url", `%${sourceId}%`).gt("expires_at", open).limit(200));
+    const found = await Promise.all(lookups);
+    return found.flatMap((r) => (Array.isArray(r?.data) ? (r.data as ScoutedRow[]) : []));
+  } catch {
+    return [];
+  }
+}
+
 export async function ingest(d: PipelineDeps, actor: string, input: IngestInput, kind: ListingKind = "gig"): Promise<Outcome> {
   if (!actor) return fail(401, "sign_in_required", "Sign in to import.");
   const now = clock(d);
@@ -200,7 +220,8 @@ export async function ingest(d: PipelineDeps, actor: string, input: IngestInput,
   const identity = canonical ? sourceIdentity(canonical) : null;
 
   const known = await d.from("external_listings").select("id, title, original_publisher, location").in("status", ["draft", "in_review", "published", "claimed"]).order("created_at", { ascending: false }).limit(300);
-  const duplicates = possibleDuplicates(draft, (known?.data ?? []) as { id: string; title: string; original_publisher: string | null; location: string | null }[]);
+  const scouted = scoutedOverlap(draft, canonical, await scoutedRows(d, draft.title, identity?.sourceId ?? null, now));
+  const duplicates = [...possibleDuplicates(draft, (known?.data ?? []) as { id: string; title: string; original_publisher: string | null; location: string | null }[]), ...(scouted ? [scouted] : [])];
 
   const row = {
     kind: draft.kind, source_type: sourceType, source_provider: identity?.provider ?? null, source_id: identity?.sourceId ?? null,

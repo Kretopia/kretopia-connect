@@ -48,9 +48,49 @@ function placeText(v: unknown): string | null {
   if (typeof addr === "string") return str(addr);
   if (addr && typeof addr === "object") {
     const a = addr as Record<string, unknown>;
-    return [str(a.addressLocality), str(a.addressRegion), str(a.addressCountry)].filter(Boolean).join(", ") || null;
+    // Boards that have no real address repeat one word in every field ("Anywhere" x5): say it once.
+    const seen = new Set<string>();
+    const parts = [str(a.addressLocality), str(a.addressRegion), str(a.addressCountry)].filter((x): x is string => {
+      if (!x) return false;
+      const key = x.trim().toLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return parts.join(", ") || null;
   }
   return nameOf(place);
+}
+
+const SALARY_PERIOD: Record<string, string> = { HOUR: "hour", DAY: "day", WEEK: "week", MONTH: "month", YEAR: "year" };
+const amount = (v: unknown): number | null => (typeof v === "number" ? v : typeof v === "string" && /^\d+(?:\.\d+)?$/.test(v.trim()) ? Number(v) : null);
+
+/**
+ * schema.org baseSalary (MonetaryAmount) as raw budget input. Only what the page states: a range or a single amount, its
+ * currency and its period. Whatever is missing or unreadable is passed on as null and parseExtraction refuses it with a
+ * reason, so a stated salary is either read or reported as "left unknown", never dropped silently and never guessed.
+ */
+function salaryOf(v: unknown): PageBudget | null {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v !== "object") {
+    // A bare number or text ("competitive") has no currency: pass it on so it is reported, not dropped.
+    const n = amount(v);
+    return { min: n, max: n, currency: "", period: null };
+  }
+  const m = v as Record<string, unknown>;
+  const val = m.value && typeof m.value === "object" ? (m.value as Record<string, unknown>) : null;
+  const single = amount(val ? val.value : m.value);
+  const min = amount(val?.minValue) ?? single;
+  const max = amount(val?.maxValue) ?? single;
+  const unit = typeof val?.unitText === "string" ? val.unitText.trim().toUpperCase() : "";
+  return { min, max, currency: typeof m.currency === "string" ? m.currency : "", period: SALARY_PERIOD[unit] ?? null };
+}
+
+export interface PageBudget {
+  min: number | null;
+  max: number | null;
+  currency: string;
+  period: string | null;
 }
 
 export interface PageFacts {
@@ -60,11 +100,17 @@ export interface PageFacts {
   location: string | null;
   remote_scope: "remote" | null;
   source_published_at: string | null;
+  /**
+   * When the listing stops being open. For a JobPosting this is the page's own `validThrough` (schema.org: "the date after
+   * which the job posting is no longer valid"), which is the posting's expiry and not necessarily an application deadline.
+   * The public view hides a listing after it, and the page labels it "Listed until".
+   */
   deadline_at: string | null;
   starts_at: string | null;
   ends_at: string | null;
   apply_url: string | null;
   excerpt: string | null;
+  budget: PageBudget | null;
   /** Where the facts came from, for provenance. */
   from: "json-ld" | "open-graph" | "none";
 }
@@ -85,6 +131,7 @@ export function pageFacts(html: string): PageFacts {
         ends_at: null,
         apply_url: str(o.url),
         excerpt: sanitizeText(o.description, 600),
+        budget: salaryOf(o.baseSalary),
         from: "json-ld",
       };
     }
@@ -101,6 +148,7 @@ export function pageFacts(html: string): PageFacts {
         ends_at: str(o.endDate),
         apply_url: str(o.url),
         excerpt: sanitizeText(o.description, 600),
+        budget: null,
         from: "json-ld",
       };
     }
@@ -109,10 +157,10 @@ export function pageFacts(html: string): PageFacts {
   if (ogTitle) {
     return {
       kind: null, title: sanitizeText(ogTitle, 200), original_publisher: null, location: null, remote_scope: null, source_published_at: null,
-      deadline_at: null, starts_at: null, ends_at: null, apply_url: null, excerpt: sanitizeText(meta(html, "og:description"), 600), from: "open-graph",
+      deadline_at: null, starts_at: null, ends_at: null, apply_url: null, excerpt: sanitizeText(meta(html, "og:description"), 600), budget: null, from: "open-graph",
     };
   }
-  return { kind: null, title: null, original_publisher: null, location: null, remote_scope: null, source_published_at: null, deadline_at: null, starts_at: null, ends_at: null, apply_url: null, excerpt: null, from: "none" };
+  return { kind: null, title: null, original_publisher: null, location: null, remote_scope: null, source_published_at: null, deadline_at: null, starts_at: null, ends_at: null, apply_url: null, excerpt: null, budget: null, from: "none" };
 }
 
 export function factsToRaw(f: PageFacts, pageUrl: string, kind: "gig" | "event" | "talent"): Record<string, unknown> {
@@ -128,6 +176,7 @@ export function factsToRaw(f: PageFacts, pageUrl: string, kind: "gig" | "event" 
     ends_at: f.ends_at,
     apply_url: f.apply_url ?? pageUrl, // "Apply at source": the page itself when it names no other destination
     excerpt: f.excerpt,
+    budget: f.budget,
   };
 }
 
