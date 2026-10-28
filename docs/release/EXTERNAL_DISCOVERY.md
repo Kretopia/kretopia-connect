@@ -1,0 +1,159 @@
+# External discovery to claim loop
+
+Branch `feat/external-discovery-claim-loop`, from `main` `acd163b7d`. Local commits only. Nothing is merged, pushed, deployed or
+applied, no migration was run, no secret was set, no network call to any source was made, no paid API was called.
+
+## What works now (manual loop)
+
+**Ingest.** A signed-in user (rate limited, 40 a day) gives an approved URL, pasted text or a screenshot.
+- Approved URL: fetched through the bounded gateway and read only from the page's own structured data (JSON-LD JobPosting or
+  Event, then Open Graph). The page is never rendered or executed. Any other URL is refused ("paste the text instead").
+- Pasted text / screenshot: always a PRIVATE draft. The fields are typed by the user, or read by the model only when an AI
+  allowance is enabled and reserved (off by default). A named source is checked (the page's title must match), not believed:
+  only a corroborated source gives the draft an identity; a screenshot with no corroborating source cannot be approved
+  (also enforced by a database constraint).
+- Extraction is strict: unknown stays unknown, the crawl time is never the publication date, relative or future dates are
+  refused, a budget needs an ISO currency, only plain http(s) apply URLs, excerpt capped at 600 characters, markup and contact
+  details (emails, phone numbers) removed, instruction-like text flagged (it blocks approval). Errors and partial results are
+  recorded on the draft; a draft without a title is rejected, never saved as a success.
+- Deduplication: one listing per provider id or canonical URL, atomic in the database. Fuzzy similarity only flags possible
+  duplicates for the reviewer; a different role, or the same title at another employer, is never flagged.
+
+**Review and publish.** An admin approves in `/admin/external` (only a listing with a source identity, a publisher and a
+destination, and no instruction-like text). Nothing is ever published automatically.
+
+**Claim handoff.** For an approved listing the curator COPIES a claim link (clipboard only; not shown, not stored, nothing is
+sent). The token is 256-bit random, stored only as a SHA-256 hash, expires (14 days, 30 at most), works once, is bound to one
+listing, 5 active links per listing. Redeeming it opens a PENDING claim and proves nothing. Ownership comes only from:
+- control of the publisher's own domain: the domain is taken from the listing (never from the claimant, never a job board or
+  a shared platform), proved by one exact line in `/.well-known/kretopia-claim.txt` carrying an HMAC bound to listing,
+  claimant and domain; or
+- an admin decision (the documented fallback when the listing has no domain of its own).
+A verified owner edits three fields of their own listing (description, deadline, budget); source provenance is untouched.
+Hosted applications stay OFF until an admin enables them for a verified owner; an unclaimed listing accepts none (Apply at
+source opens the publisher's own page). Disputes pull a listing from the public view. Every step is in an append-only audit trail.
+
+**Surfaces connected.** Scout cards ("External · Unclaimed"), Discover > Gigs > "Sourced" (published external gigs, their own
+kind, labelled), `/listing/:id` (public page), `/claim-listing/:id/:token`, `/admin/external`, the sitemap, and the existing
+`OpportunityDetail` (see SEO).
+
+**Not connected, stated plainly.** Events and talent are supported by the data model, the validator and the markup rules
+(`kind`), but there is no Events lane or talent surface for external records, and Match does not read them: no external
+creator is shown anywhere. Shortlists are untouched (they hold only what a user saved). Screenshot OCR is not a new path: a
+screenshot is read only when AI reading is enabled; otherwise the user types the fields. The "existing verified publisher
+account" verification route is not implemented (domain control and admin review are).
+
+## Secure fetch path (reused and hardened)
+
+`_shared/ssrf.ts` already blocked private addresses and re-checked redirects. `safeFetchBounded` adds: an approved-host list,
+HTTPS only, port 443 only, no credentials in the URL, a MIME allowlist, a hard size cap (declared and streamed), a timeout,
+per-hop re-validation of everything, fail-closed DNS (unresolvable, or any internal answer, is refused), plus the
+benchmarking and site-local ranges. Model-proposed URLs never reach it. Known limit: `fetch()` resolves again when it
+connects, so DNS rebinding cannot be pinned from this runtime; the approved-host list is what bounds it, and the policy must
+not be used for untrusted callers without `allowedHosts`.
+The model call carries no tools, functions or secrets, wraps the text in the existing isolation delimiters, is capped in size,
+and its answer is validated like any untrusted input. Permissions are enforced outside the model.
+
+## SEO
+
+Found and fixed: `OpportunityDetail` emitted JobPosting for every gig with Kretopia as `hiringOrganization`, `created_at` as
+`datePosted` and a hard-coded USD salary, and was always indexable. Now:
+- indexable only with 200+ characters of permitted content, a publisher, a destination, a public published/claimed status;
+  drafts, private, flagged, thin and expired listings are noindex and out of the sitemap;
+- JobPosting only on an individual gig page: for an external listing only when CLAIMED with the owner's full description and a
+  real posting date; for a native gig only when posted by an employer that names its organization, never for a scouted gig,
+  no salary unless structured, no `directApply` unless hosted applications are enabled; none for talent or event pages;
+- canonical is the ORIGINAL source for an unclaimed import, the page itself only for a verified owner's listing;
+- closed or past-deadline gigs lose markup and sitemap state on the same rule that makes them noindex;
+- event markup only with a name, a start and a place. No promise of indexing, ranking or AI citations.
+
+## Reused
+
+Search gateway: none was added (the existing public-web-search gateway is untouched). Reused: `ssrf.ts`, Scout's feed parsers
+(`scoutSources.ts`), `promptIsolation.ts`, `aiRateLimit.ts` (atomic since the quota migration), `admin-guard.ts`,
+`require-user.ts`, `aiModels.ts`, `FeaturePageHeader`, `StudioFeatureShell`, `Button`, the toast, `routePrefetch`.
+The existing scouted gig and event claim RPCs and `ClaimGig` are unchanged. NOTE: they treat possession of the token as
+ownership (the claimant becomes the owner on redemption). The new loop is stricter by design; aligning the old one is a
+decision for you, not changed here.
+
+## Bounded automation (implemented, disabled)
+
+`external-discovery-run` (admin or cron only) reuses the same adapters, validation and dedupe. Controls: a global kill switch
+(off), a per-source enable that refuses an unknown cost, a per-source run lock (30 simultaneous attempts start 1), the
+CONFIGURED price, the budget RESERVED before the first fetch (refused: nothing is fetched), settled at real usage, abandoned
+reservations expire but stay counted until reconciled, idempotent job keys, a single attempt per run (no retry loop), three
+failures in a row switch the source off (dead letter), every result is a private DRAFT. No schedule is created by this
+change. Not implemented: a company-level limit (the ledger has global, source and user scopes), an in-run cache.
+
+## Tests
+
+| Area | Where | Result |
+|---|---|---|
+| Gateway (private IPs, DNS, redirects per hop, scheme, port, credentials, MIME, size, timeout) | `ssrfPolicy.test.ts` | 17, mutation-checked |
+| Identity, sources, extraction, injection, redaction, similarity | `discovery/*.test.ts` | 70+, mutation-checked |
+| Pipeline: private-IP/redirect blocked, prompt injection (no tools, no secrets, reserved allowance), malformed extraction, concurrent import (20 -> 1), claim link alone grants nothing, expired / replayed / cross-object / cross-user, body owner id ignored, another publisher refused, unclaimed accepts no applications, run reserves first / lock / dead letter | `discovery/pipeline.test.ts` | 35, five invariants mutation-checked |
+| Edge handlers (auth, admin vs cron, rate limits, public preview) | `edge/externalDiscoveryFunctions.test.ts` | 11 |
+| Pages and list | `ExternalListing`, `ClaimListing`, `AdminExternal`, `PublishedExternalListings` | 28 |
+| Existing pages wired to the rules | `discovery/frontendWiring.test.ts` | 6 |
+| SQL on a real Postgres 16 (throwaway, local) | see below | run, not committed as a test |
+
+SQL rehearsal (throwaway local Postgres 16, nothing production): the migration applies and re-applies; 40 concurrent imports of
+one posting give 1 row (40 different give 40; a re-import never overwrites content); 40 simultaneous redemptions of one link
+open 1 claim; 3 claimants verifying at once (30 clients) give 1 owner; 40 parallel reservations against a 50-cent source cap
+give 5; one user against a 30-cent cap gives 3; 30 calls with one job key give 1 reservation; settling returns the unused part;
+an abandoned reservation stays counted; 30 run attempts on one source start 1; the third failure disables the source; clients
+cannot read any table or run any function, only the public view.
+
+## Exact missing credentials and secrets (names only, none set)
+
+- `CLAIM_CHALLENGE_SECRET`: required for domain verification. Without it only the admin review route is offered.
+- `EXTERNAL_AI_EXTRACTION=1` and the existing `LOVABLE_API_KEY`: required for model reading of text and screenshots. Without
+  them the user types the fields. Also needs an enabled `manual-ai` source row with a known cost.
+- `FIRECRAWL_API_KEY` (or another search provider): required for any search-based discovery. That adapter (`web-search`) is
+  listed with an unknown cost and cannot be enabled. No live search discovery exists until a provider, its price and the terms
+  of the result sites are approved.
+- `PUBLIC_SITE_URL`: optional (defaults to https://www.kretopia.com).
+
+## Draft migration (not applied)
+
+`supabase/migrations/20261029100000_external_discovery.sql`: purely additive (new tables, one view, 17 service-role-only
+functions); nothing existing is altered, so it is safe to apply before the code ships. Tables: `external_listings`,
+`external_listing_claim_tokens`, `external_listing_claims`, `external_listing_events`, `discovery_settings`,
+`discovery_sources`, `discovery_spend_counters`, `discovery_spend_ledger`; view `public_external_listings`. A rollback block is
+at the bottom of the file. As with the quota and credit migrations, I will prepare a guarded, rehearsed paste script when you
+approve it.
+
+## Source permissions
+
+Four public feeds are listed as approved adapters (Remote OK, We Work Remotely, Jobicy, Arbeitnow): public APIs or RSS,
+link back to the original, name the source, keep an excerpt only. This relies on the repository's existing note on their
+terms (`scoutSources.ts`); I did not re-read the sites' terms in this pass, so confirm them before enabling a source.
+Remotive stays excluded (its terms forbid showing its jobs behind a sign-up wall). Every adapter ships disabled.
+
+## Cost ceilings (decisions owed, all default to zero so nothing can spend)
+
+`discovery_settings.daily_ceiling_cents` and `per_user_daily_cents`, `discovery_sources.daily_budget_cents` and
+`max_fetches_per_run`. The four feeds cost 0 per call. `AI_EXTRACTION_CENTS = 2` in `pipeline.ts` is MY ESTIMATE of one model
+reading, not a price: confirm the gateway's real cost and change it before enabling `manual-ai`.
+
+## Activation order (each step needs your approval; none done)
+
+1. Apply the migration (additive). 2. Paste the edge functions: shared files first (`_shared/ssrf.ts`, `_shared/discovery/*`,
+   confirm `_shared/require-user.ts`, `_shared/aiRateLimit.ts`, `_shared/scoutSources.ts`, `_shared/promptIsolation.ts`,
+   `_shared/aiModels.ts` exist in `kretopia-app`), then `external-import`, `external-claim`, `external-discovery-run`,
+   `generate-sitemap`. 3. Publish the frontend. 4. Set `CLAIM_CHALLENGE_SECRET`. 5. Manual use first: import, review, publish, one
+   claim link to a publisher you know. 6. Only then, optionally: set the cost ceilings, enable one free feed source, switch the
+   kill switch on, run `external-discovery-run` by hand and read the drafts. 7. A schedule is a separate approval: one daily
+   cron call to `external-discovery-run` with the existing `x-cron-secret` header, created by a person, after step 6.
+   No SQL for steps 6 and 7 is in this document on purpose (a pasted proposal has broken production before).
+
+## Rollback
+
+Frontend: republish the previous version. Edge functions: paste the previous copies (`generate-sitemap`, `ssrf.ts` are the only
+changed existing ones; the three new functions can simply be left undeployed). Database: the rollback block in the migration
+drops only what it added. Turning the kill switch off, or disabling a source, stops all automated work immediately.
+
+## Not verified
+
+No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local
+database). The deployed copies of the shared files were not diffed. The reviewer UX was not looked at in a browser.
