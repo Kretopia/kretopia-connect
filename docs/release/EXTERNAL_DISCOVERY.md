@@ -185,6 +185,23 @@ pasted and deployed, "Remove" it in `/admin/external` and import the same addres
 Not changed: the scheduled run's feed imports do not compute duplicate advice; a board posting still offers curator review only
 (no publisher domain to prove).
 
+## Feed drafts: reading what the scheduled run finds
+
+The scheduled run imports postings as private drafts with no owner (`created_by` null). They were in no person's "Your drafts" and
+in no review queue, so a run would have created up to 100 drafts nobody could see. And a rejected or removed listing frees its
+identity in the database (on purpose, so a person can import it again), which would have let every run recreate what a curator
+rejected.
+
+- `external-import` has one more admin-only action, `list_feed_drafts` (the cron secret and ordinary users are refused): the newest
+  100 drafts nobody owns, with the total. It changes nothing.
+- `/admin/external` shows them under "Feed drafts (N)": 25 at a time, with Send to review, Approve and publish, and Reject on each,
+  and a note when more exist than were loaded.
+- The run now leaves out any posting whose identity belongs to a rejected or removed listing (`skippedDecided` in its report).
+  A person can still import such a posting on purpose.
+- The run still computes no Scouted-overlap advice for feed drafts (that lookup is per posting); the advice exists for manual imports.
+- Deploy: `_shared/discovery/pipeline.ts` and `external-import` (and `external-discovery-run`, which imports the same pipeline), then
+  publish the frontend. No migration.
+
 ## Older scouted claim links: a link is a request, not ownership
 
 `claim_scouted_opportunity(token)` and `claim_scouted_event(token)` (20261009*) set `created_by = auth.uid()` and

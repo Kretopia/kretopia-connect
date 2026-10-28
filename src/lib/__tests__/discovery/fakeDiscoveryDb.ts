@@ -52,6 +52,8 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
         l.status = "published"; l.visibility = "public"; return { ok: true };
       }
       l.status = p_action === "reject" ? "rejected" : p_action === "expire" ? "expired" : "removed"; l.visibility = "private";
+      // like the partial unique index: a rejected or removed listing no longer holds its identity, so it can be imported again
+      if ((l.status === "rejected" || l.status === "removed") && l.identity_key && byKey.get(l.identity_key) === l.id) byKey.delete(l.identity_key);
       return { ok: true };
     },
     register_claim_token: ({ p_listing, p_actor, p_token_hash, p_expires_at }) => {
@@ -178,16 +180,18 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
   };
   const from = (table: string) => {
     let rows = (tables[table]?.() ?? []).slice();
+    let total: number | null = null;
     const q: Record<string, unknown> = {
       select: () => q,
       eq: (c: string, v: unknown) => ((rows = rows.filter((r) => r[c] === v)), q),
       in: (c: string, vs: unknown[]) => ((rows = rows.filter((r) => vs.includes(r[c]))), q),
+      is: (c: string, v: unknown) => ((rows = rows.filter((r) => (v === null ? r[c] == null : r[c] === v))), q),
       ilike: (c: string, pat: string) => ((rows = rows.filter((r) => typeof r[c] === "string" && ilike(pat).test(r[c]))), q),
       gt: (c: string, v: string) => ((rows = rows.filter((r) => r[c] > v)), q),
       order: () => q,
-      limit: (k: number) => ((rows = rows.slice(0, k)), q),
+      limit: (k: number) => ((total = rows.length), (rows = rows.slice(0, k)), q),
       maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
-      then: (res: (v: unknown) => unknown) => Promise.resolve({ data: rows, error: null }).then(res),
+      then: (res: (v: unknown) => unknown) => Promise.resolve({ data: rows, count: total ?? rows.length, error: null }).then(res),
     };
     return q;
   };

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeDiscoveryDb } from "./fakeDiscoveryDb";
 import {
   AI_EXTRACTION_CENTS, createClaimLink, decideClaim, disputeListing, ingest, ownerUpdate, redeemClaim, requestAdminReview, reviewListing, runDiscovery,
-  setApplications, startVerification, validateImage, verifyDomain, type PipelineDeps,
+  setApplications, startVerification, validateImage, verifyDomain, listFeedDrafts, FEED_DRAFTS_LIMIT, type PipelineDeps,
 } from "../../../../supabase/functions/_shared/discovery/pipeline";
 import { safeFetchBounded } from "../../../../supabase/functions/_shared/ssrf";
 import { domainChallenge, challengeLine } from "../../../../supabase/functions/_shared/discovery/claim";
@@ -499,5 +499,88 @@ describe("ingest: what the first real import showed", () => {
     const r = await ingest(deps(db, world({ [FIRST]: { body: page } }), { from }), USER, { type: "url", url: FIRST });
     expect(r.ok).toBe(true);
     expect([...db.listings.values()][0].possible_duplicates).toEqual([]);
+  });
+});
+
+describe("feed drafts: what the scheduled run imports, and what a curator decided against", () => {
+  const entry = (id: string, slug: string, position: string) => ({ id, slug, position, company: "Acme", location: "Worldwide", description: "<p>Great job at a studio that makes brand films for design-led clients across Europe.</p>", url: `https://remoteok.com/remote-jobs/${slug}-${id}`, tags: ["video"], date: "2026-10-25T09:00:00Z" });
+  const twoPostings = JSON.stringify([{ legal: "x" }, entry("1098765", "brand-film-editor-acme", "Brand film editor"), entry("1098766", "motion-designer-acme", "Motion designer")]);
+  const feedWorld = () => world({ "https://remoteok.com/api": { type: "application/json", body: twoPostings } });
+  const source = () => makeDiscoveryDb({ sources: [{ id: "remoteok", enabled: true, max_fetches_per_run: 1, daily_budget_cents: 50, cost_per_call_cents: 0, lock: false, failures: 0 }] });
+  const feedRow = (title: string) => ({ kind: "gig", source_type: "feed", title, identity_key: `remoteok:${title.length}${title.charCodeAt(0)}`, original_publisher: "Acme", apply_url: "https://remoteok.com/x" });
+
+  it("lists only the drafts nobody owns: not a person's draft, not one in review, not a published one", async () => {
+    const db = source();
+    await db.rpc("import_external_listing", { p_actor: null, p_row: feedRow("Feed draft") });
+    await db.rpc("import_external_listing", { p_actor: "u1", p_row: { ...feedRow("A person's draft"), source_type: "url" } });
+    const inReview = await db.rpc("import_external_listing", { p_actor: null, p_row: feedRow("Feed in review") });
+    await reviewListing(deps(db), ADMIN, (inReview.data as { listing_id: string }).listing_id, "send_to_review");
+    const live = await db.rpc("import_external_listing", { p_actor: null, p_row: feedRow("Feed published") });
+    await reviewListing(deps(db), ADMIN, (live.data as { listing_id: string }).listing_id, "approve");
+
+    const r = await listFeedDrafts(deps(db), "id, title, status");
+    expect((r.listings as { title: string }[]).map((l) => l.title)).toEqual(["Feed draft"]);
+    expect(r.total).toBe(1);
+  });
+
+  it("is capped, and says how many there are in all", async () => {
+    const db = source();
+    for (let i = 0; i < FEED_DRAFTS_LIMIT + 5; i++) await db.rpc("import_external_listing", { p_actor: null, p_row: { ...feedRow(`Posting ${i}`), identity_key: `remoteok:${900000 + i}` } });
+    const r = await listFeedDrafts(deps(db), "id, title");
+    expect(r.listings).toHaveLength(FEED_DRAFTS_LIMIT);
+    expect(r.total).toBe(FEED_DRAFTS_LIMIT + 5);
+  });
+
+  it("a run imports them as drafts that this list shows, and publishes nothing", async () => {
+    const db = source();
+    const res = await runDiscovery(deps(db, feedWorld()));
+    expect(res.ran[0]).toMatchObject({ imported: 2 });
+    const r = await listFeedDrafts(deps(db), "id, title, status, visibility");
+    expect((r.listings as { title: string }[]).map((l) => l.title).sort()).toEqual(["Brand film editor", "Motion designer"]);
+    expect((r.listings as { status: string; visibility: string }[]).every((l) => l.status === "draft" && l.visibility === "private")).toBe(true);
+  });
+
+  it("a posting a curator rejected is not brought back by the next run, and the others are unaffected", async () => {
+    const db = source();
+    await runDiscovery(deps(db, feedWorld()));
+    const brand = [...db.listings.values()].find((l) => l.title === "Brand film editor")!;
+    expect((await reviewListing(deps(db), ADMIN, brand.id, "reject")).ok).toBe(true);
+
+    const again = await runDiscovery(deps(db, feedWorld()), { slot: "next" });
+    expect(again.ran[0]).toMatchObject({ imported: 0, alreadyKnown: 1, skippedDecided: 1 });
+    expect([...db.listings.values()].filter((l) => l.title === "Brand film editor")).toHaveLength(1); // no second copy
+    expect(brand.status).toBe("rejected");
+    expect((await listFeedDrafts(deps(db), "id, title")).listings).toHaveLength(1); // only the one still open
+  });
+
+  it("the same for one that was published and then removed", async () => {
+    const db = source();
+    await runDiscovery(deps(db, feedWorld()));
+    const motion = [...db.listings.values()].find((l) => l.title === "Motion designer")!;
+    expect((await reviewListing(deps(db), ADMIN, motion.id, "approve")).ok).toBe(true);
+    expect((await reviewListing(deps(db), ADMIN, motion.id, "remove")).ok).toBe(true);
+    const again = await runDiscovery(deps(db, feedWorld()), { slot: "next" });
+    expect(again.ran[0]).toMatchObject({ imported: 0, skippedDecided: 1 });
+    expect([...db.listings.values()].filter((l) => l.title === "Motion designer")).toHaveLength(1);
+  });
+
+  it("a person can still import a rejected posting on purpose: only the automatic run leaves it out", async () => {
+    const db = source();
+    await runDiscovery(deps(db, feedWorld()));
+    const brand = [...db.listings.values()].find((l) => l.title === "Brand film editor")!;
+    await reviewListing(deps(db), ADMIN, brand.id, "reject");
+    const url = "https://remoteok.com/remote-jobs/brand-film-editor-acme-1098765";
+    const r = await ingest(deps(db, world({ [url]: { body: jobPage("Brand film editor") } })), ADMIN, { type: "url", url });
+    expect(r).toMatchObject({ ok: true, status: 201 });
+    expect([...db.listings.values()].filter((l) => l.title === "Brand film editor" && l.status === "draft")).toHaveLength(1);
+  });
+
+  it("nothing to look up when a run finds nothing, and a decided posting costs no extra fetch", async () => {
+    const db = source();
+    const w = world({ "https://remoteok.com/api": { type: "application/json", body: JSON.stringify([{ legal: "x" }]) } });
+    expect((await runDiscovery(deps(db, w))).ran[0]).toMatchObject({ status: "ran", imported: 0 });
+    const w2 = feedWorld();
+    await runDiscovery(deps(db, w2));
+    expect(w2.calls).toEqual(["https://remoteok.com/api"]);
   });
 });
