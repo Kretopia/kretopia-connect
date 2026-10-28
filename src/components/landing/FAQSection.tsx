@@ -5,7 +5,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 /**
  * Crawlable, text-based FAQ for AI-search citation (ChatGPT, Perplexity, Claude)
@@ -67,7 +66,6 @@ const FAQS = [
 ];
 
 export const FAQSection = () => {
-  const reducedMotion = useReducedMotion();
 
   return (
     <section
@@ -77,7 +75,7 @@ export const FAQSection = () => {
     >
       <div className="relative mx-auto max-w-[820px]">
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7 }}
@@ -94,7 +92,7 @@ export const FAQSection = () => {
         </motion.div>
 
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7, delay: 0.1 }}

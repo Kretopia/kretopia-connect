@@ -1,8 +1,8 @@
 /**
  * LandingBelowFold — everything on the landing page after the hero.
  *
- * Split into its own chunk and mounted only once the visitor approaches it
- * (or the browser goes idle), so the hero stays on the critical path and
+ * Split into its own chunk and requested just after Hero renders,
+ * so the hero stays on the critical path and
  * becomes interactive as early as possible.
  *
  * Every chapter follows one structural pattern: image (or illustrative
@@ -30,22 +30,25 @@ import {
 import scoutImg       from "@/assets/kretopia/chapter-scout.jpg";
 import studioImg      from "@/assets/kretopia/chapter-studio.jpg";
 import soundstagesImg from "@/assets/kretopia/chapter-soundstages.jpg";
+import passportMp4 from "@/assets/landing/kreto-passport.mp4.asset.json";
+import passportWebm from "@/assets/landing/kreto-passport.webm.asset.json";
+import scoutMp4 from "@/assets/landing/kretovideo2.mp4.asset.json";
+import scoutWebm from "@/assets/landing/kretovideo2.webm.asset.json";
+import matchMp4 from "@/assets/landing/kreto-vertical.mp4.asset.json";
+import matchWebm from "@/assets/landing/kreto-vertical.webm.asset.json";
+import studioMp4 from "@/assets/landing/kretovideo1.mp4.asset.json";
+import studioWebm from "@/assets/landing/kretovideo1.webm.asset.json";
+import communityMp4 from "@/assets/landing/kretovideo.mp4.asset.json";
+import communityWebm from "@/assets/landing/kretovideo.webm.asset.json";
 
-// HD chapter videos — landing overhaul (24/09/2026). Served from /public
-// (not imported) since Vite would otherwise inline/hash large binaries
-// through the JS module graph; a plain absolute path is the standard way
-// to reference public/ assets. The matching *Img above is kept as each
-// <video>'s poster, so a slow connection still shows something on first
-// paint instead of a blank frame.
-const studioVideo = "/videos/kretovideo1.mp4";
-const soundstagesVideo = "/videos/kretovideo.mp4";
-const scoutVideo = "/videos/kretovideo2.mp4";
-// Passport and Match: the native 720×1280 masters, losslessly remuxed with the
-// index up front (no re-encode, no upscale), each with its own first frame as
-// the poster so the still never differs from the video.
-const passportVideo = "/videos/kreto-passport.mp4";
+// Lightweight native playback variants on the media CDN; original masters
+// remain untouched in public/videos. No still poster is shown.
+const studioVideo = studioMp4.url;
+const soundstagesVideo = communityMp4.url;
+const scoutVideo = scoutMp4.url;
+const passportVideo = passportMp4.url;
 const passportPoster = "/videos/kreto-passport-poster.jpg";
-const matchVideo = "/videos/kreto-vertical.mp4";
+const matchVideo = matchMp4.url;
 const matchPoster = "/videos/kreto-vertical-poster.jpg";
 
 export const LandingBelowFold = () => {
@@ -81,6 +84,7 @@ export const LandingBelowFold = () => {
         caption="Passport"
         image={passportPoster}
         video={passportVideo}
+        videoWebm={passportWebm.url}
         // The head comes toward the camera mid-clip: keep the frame high so
         // the helmet is never cut off by the 9:16 → 4:5 crop.
         mediaPosition="50% 20%"
@@ -124,6 +128,7 @@ export const LandingBelowFold = () => {
         caption="Scout"
         image={scoutImg}
         video={scoutVideo}
+        videoWebm={scoutWebm.url}
         accent="hsl(var(--energy))"
         href="/auth?next=/scout"
         ctaLabel="Explore Opportunities"
@@ -152,6 +157,7 @@ export const LandingBelowFold = () => {
         caption="Match"
         image={matchPoster}
         video={matchVideo}
+        videoWebm={matchWebm.url}
         accent="hsl(var(--energy))"
         href="/auth?next=/match"
         ctaLabel="Find Collaborators"
@@ -176,6 +182,7 @@ export const LandingBelowFold = () => {
         caption="Studio"
         image={studioImg}
         video={studioVideo}
+        videoWebm={studioWebm.url}
         accent="hsl(var(--energy))"
         href="/auth?next=/desk"
         ctaLabel="Create a Project"
@@ -207,6 +214,7 @@ export const LandingBelowFold = () => {
         caption="Community"
         image={soundstagesImg}
         video={soundstagesVideo}
+        videoWebm={communityWebm.url}
         accent="hsl(var(--energy))"
         href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
         ctaLabel="Join a SoundStage"

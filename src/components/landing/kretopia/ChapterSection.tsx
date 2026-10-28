@@ -5,6 +5,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState, type ComponentType } from "react";
 import { Play } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { TutorialStep } from "./FeatureTutorial";
 import { FeatureTutorialPanel } from "./FeatureTutorialPanel";
 import { KretopiaFeatureTutorial } from "./KretopiaFeatureTutorial";
@@ -22,6 +23,8 @@ export interface ChapterProps {
   image: string;
   /** Optional HD video; no still-image poster before playback. */
   video?: string;
+  /** VP9 alternative for browsers without native H.264 decoding. */
+  videoWebm?: string;
   /** CSS object-position of the media inside the 4:5 frame. Only needed when
    *  the source is taller than the frame (a 9:16 master is cropped top and
    *  bottom by object-cover) and its subject is not vertically centred. The
@@ -66,21 +69,20 @@ export interface ChapterProps {
   kretoVariant?: KretoCharacterVariant;
 }
 
-/** A phone or a data-saver setting: nothing heavy should download before the person is near it. */
+/** Respect an explicit data-saver preference, not the screen's size. */
 const isConstrainedConnection = () =>
   typeof window !== "undefined" &&
-  (window.matchMedia?.("(max-width: 767px)").matches === true ||
-    (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true);
+  (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
 
 export const ChapterSection = ({
-  index, kicker, title, body, caption, image, video, mediaPosition, accent, href, reverse, id, tutorialSteps, tutorialVisual,
+  index, kicker, title, body, caption, image, video, videoWebm, mediaPosition, accent, href, reverse, id, tutorialSteps, tutorialVisual,
   ctaLabel, concepts, closingLine, discreetTutorial, kretoVariant, gradientTitle,
 }: ChapterProps) => {
   const reducedMotion = useReducedMotion();
   const sectionId = (id ?? kicker.toLowerCase()) as LandingSectionId;
   const videoRef = useRef<HTMLVideoElement>(null);
-  // The first chapter is the one video that is fetched and started without waiting, so it is ready when reached. On a phone
-  // (or with data saver on) it waits like the rest: its download starts one screen before it comes into view.
+  // The smaller first chapter warms on phones too. Other chapters do not
+  // compete for bandwidth until they are two screens away.
   const [eager] = useState(() => index === "II" && !isConstrainedConnection());
   const [blocked, setBlocked] = useState(false);
 
@@ -92,8 +94,7 @@ export const ChapterSection = ({
   // but does NOT resume it automatically when it scrolls back into view
   // -- that resume has to be driven explicitly, same IntersectionObserver
   // pattern HoloCard.tsx already uses for its own ambient animation.
-  // Rejections are swallowed throughout: blocked autoplay just leaves the
-  // poster frame showing, never a broken page.
+  // Autoplay refusal exposes an explicit Play action, without a poster.
   useEffect(() => {
     const el = videoRef.current;
     if (!video || !el) return;
@@ -107,7 +108,11 @@ export const ChapterSection = ({
     // touch, click or key press anywhere on the page starts the video.
     const play = () => {
       if (!inView) return;
-      el.play().then(() => setBlocked(false)).catch(() => setBlocked(true));
+      if (!el.paused) return;
+      el.play().then(() => setBlocked(false)).catch((error: unknown) => {
+        // Scrolling away while play() is pending is not an autoplay refusal.
+        if (inView && error instanceof DOMException && error.name === "NotAllowedError") setBlocked(true);
+      });
     };
     const unlock = () => {
       const rect = el.getBoundingClientRect();
@@ -116,24 +121,16 @@ export const ChapterSection = ({
     };
     const gestures = ["pointerdown", "keydown", "touchend"] as const;
     gestures.forEach((g) => window.addEventListener(g, unlock, { once: true, passive: true }));
-    if (typeof IntersectionObserver === "undefined") {
-      inView = true;
-      el.preload = "auto";
-      play();
-      return;
-    }
-    // Full-quality download starts one screen before the video is reached,
-    // so it is already sharp when it scrolls in (metadata alone left the
-    // poster up until the decoder caught up).
-    const near = new IntersectionObserver(
+    // Warm nearby video without resetting its resource selection.
+    const near = typeof IntersectionObserver === "undefined" ? undefined : new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
         el.preload = "auto";
         near.disconnect();
       },
-      { rootMargin: "100% 0px" },
+      { rootMargin: isConstrainedConnection() ? "100% 0px" : "200% 0px" },
     );
-    const watch = new IntersectionObserver(
+    const watch = typeof IntersectionObserver === "undefined" ? undefined : new IntersectionObserver(
       ([entry]) => {
         inView = entry.isIntersecting;
         if (inView) play();
@@ -141,8 +138,9 @@ export const ChapterSection = ({
       },
       { threshold: 0.25 },
     );
-    near.observe(el);
-    watch.observe(el);
+    near?.observe(el);
+    watch?.observe(el);
+    if (!watch) el.preload = "auto";
     // Re-assert playback when the decoder is ready, when the tab returns, and
     // after a Daylight/Midnight switch: a video that was blocked once should
     // not sit on its poster until the visitor happens to scroll.
@@ -154,15 +152,15 @@ export const ChapterSection = ({
     window.addEventListener("ui-vibe:change", play);
     document.addEventListener("visibilitychange", play);
     return () => {
-      near.disconnect();
-      watch.disconnect();
+      near?.disconnect();
+      watch?.disconnect();
       el.removeEventListener("canplay", play);
       el.removeEventListener("loadeddata", play);
       window.removeEventListener("ui-vibe:change", play);
       document.removeEventListener("visibilitychange", play);
       gestures.forEach((g) => window.removeEventListener(g, unlock));
     };
-  }, [video]);
+  }, [video, videoWebm]);
   return (
     <section
       id={id}
@@ -180,20 +178,23 @@ export const ChapterSection = ({
               {video ? (
                 <video
                   ref={videoRef}
-                  src={video}
+                  src={videoWebm ? undefined : video}
                   // Only the first chapter asks the browser to play (and so fetch) on its own: `autoplay` overrides
                   // `preload`, and on every chapter it had all five large files buffering at once on a phone, below the
                   // fold included. The others are started by the effect above when they come into view, and their
-                  // download is promoted from metadata to full one screen before they are reached.
+                  // download is promoted from none to auto before they are reached.
                   autoPlay={eager}
                   muted
                   loop
                   playsInline
-                  preload={eager ? "auto" : "metadata"}
+                  preload={eager ? "auto" : "none"}
                   aria-label={caption}
                   style={mediaPosition ? { objectPosition: mediaPosition } : undefined}
                   className="absolute inset-0 h-full w-full object-cover"
-                />
+                >
+                  {videoWebm && <source src={video} type="video/mp4" />}
+                  {videoWebm && <source src={videoWebm} type="video/webm" />}
+                </video>
               ) : (
                 <img
                   src={image}
@@ -205,14 +206,15 @@ export const ChapterSection = ({
                 />
               )}
               {video && blocked && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
                   aria-label={`Play the ${caption} video`}
                   onClick={() => videoRef.current?.play().then(() => setBlocked(false)).catch(() => {})}
-                  className="absolute inset-0 z-10 m-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-black/55 text-white transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  className="absolute inset-0 z-10 m-auto h-16 w-16 rounded-full border border-border bg-background/80 text-foreground"
                 >
                   <Play className="h-6 w-6 translate-x-0.5" aria-hidden />
-                </button>
+                </Button>
               )}
               {/* grain: stills only. A mix-blend layer over a <video> pulls it
                   off the hardware overlay path, which is what made the
@@ -260,7 +262,7 @@ export const ChapterSection = ({
           {/* TEXT */}
           <motion.div
             data-kreto-flight-content
-            initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "160px" }}
             transition={{ duration: 0.2 }}

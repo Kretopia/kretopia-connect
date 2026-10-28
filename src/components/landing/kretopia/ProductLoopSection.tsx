@@ -10,7 +10,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Fingerprint, Radar, Users, Clapperboard, CheckCircle2, Sparkles, RotateCw } from "lucide-react";
-import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 
 const STAGES = [
@@ -23,7 +22,6 @@ const STAGES = [
 ] as const;
 
 export const ProductLoopSection = () => {
-  const reducedMotion = useReducedMotion();
   const [active, setActive] = useState(0);
 
   const setStage = (i: number) => {
@@ -39,7 +37,7 @@ export const ProductLoopSection = () => {
     >
       <div className="relative mx-auto max-w-[1320px]">
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 14 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7 }}
@@ -60,7 +58,7 @@ export const ProductLoopSection = () => {
 
         {/* Desktop: horizontal chain with a loop-back cue */}
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7, delay: 0.1 }}
@@ -111,7 +109,7 @@ export const ProductLoopSection = () => {
 
         {/* Mobile: vertical step list */}
         <motion.div
-          initial={reducedMotion ? false : { opacity: 0, y: 16 }}
+          initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7, delay: 0.1 }}

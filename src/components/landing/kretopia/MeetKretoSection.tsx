@@ -82,7 +82,7 @@ export const MeetKretoSection = () => {
         <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
           {/* Copy */}
           <motion.div
-            initial={reducedMotion ? false : { opacity: 0, y: 18 }}
+            initial={false}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.7 }}
@@ -183,7 +183,7 @@ export const MeetKretoSection = () => {
 
           {/* Command surface */}
           <motion.div
-            initial={reducedMotion ? false : { opacity: 0, scale: 0.97 }}
+            initial={false}
             whileInView={{ opacity: 1, scale: 1 }}
             onViewportEnter={() => setInView(true)}
             viewport={{ once: true, margin: "-80px" }}
@@ -229,7 +229,7 @@ export const MeetKretoSection = () => {
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={i}
-                    initial={reducedMotion ? false : { opacity: 0, y: 4 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0 }}
                     exit={reducedMotion ? undefined : { opacity: 0, y: -4 }}
                     transition={{ duration: 0.45 }}
