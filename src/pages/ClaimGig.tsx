@@ -9,16 +9,20 @@ import { SEO } from "@/components/SEO";
 import { Briefcase, CheckCircle2, UserPlus, ArrowRight } from "lucide-react";
 import { KretopiaSpinner, KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
-/** What claim_scouted_opportunity says when it did not claim, in words a person can act on. */
+/**
+ * What request_scouted_claim says when it did not open a request, in words a person can act on. The link only ASKS to
+ * claim: ownership moves when a Kretopia curator approves the request, never because someone holds the link.
+ */
 const CLAIM_FAILURE: Record<string, string> = {
-  not_available: "Someone else claimed this gig first.",
+  not_available: "This gig was already claimed, or the link is no longer valid.",
   invalid_token: "This claim link is not valid. Ask for a new one.",
+  too_many_open: "You already have several claim requests waiting for a decision. Wait for those first.",
 };
 
 interface ClaimResult {
-  claimed?: boolean;
+  requested?: boolean;
   reason?: string;
-  opportunity_id?: string;
+  request_id?: string;
 }
 
 const ClaimGig = () => {
@@ -29,6 +33,7 @@ const ClaimGig = () => {
   const [opportunity, setOpportunity] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
+  const [requested, setRequested] = useState(false);
 
   // The token is the only key: it is not readable from the table (it is the
   // secret in the claim link), so the card is fetched by a function that takes it.
@@ -72,38 +77,24 @@ const ClaimGig = () => {
     }
 
     setClaiming(true);
-    // One atomic call: it claims for the signed-in caller or says why not. A
-    // claim that changed nothing is never reported as success.
+    // One call opens a REQUEST for the signed-in caller, or says why not. It changes no owner: a curator decides.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- RPC not in the generated types yet (same as ClaimEvent)
-    const { data, error } = await supabase.rpc("claim_scouted_opportunity" as any, { p_token: token });
+    const { data, error } = await supabase.rpc("request_scouted_claim" as any, { p_kind: "gig", p_token: token });
     const result = (data ?? null) as ClaimResult | null;
 
     if (error) {
-      toast({ title: "Claim failed", description: error.message, variant: "destructive" });
-    } else if (!result?.claimed || !result.opportunity_id) {
+      toast({ title: "Request failed", description: error.message, variant: "destructive" });
+    } else if (!result?.requested) {
       toast({
-        title: "Couldn't claim this gig",
+        title: "Couldn't send the request",
         description: CLAIM_FAILURE[result?.reason ?? ""] ?? "It may no longer be available.",
         variant: "destructive",
       });
       // Show the truth on the page too: it now reads "This gig has been claimed".
       if (result?.reason === "not_available") await loadOpportunity();
     } else {
-      toast({ title: "Gig claimed!", description: "You now own this listing. Share it to get applications!" });
-
-      // Tell the scout. The function itself ignores a gig with no scout, or one the claimer scouted.
-      const { data: claimerProfile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      await supabase.rpc("notify_scout_event", {
-        _opportunity_id: result.opportunity_id,
-        _event: "claimed",
-        _actor_name: claimerProfile?.full_name || "Someone",
-      });
-
-      navigate(`/opportunity/${result.opportunity_id}`);
+      setRequested(true);
+      toast({ title: "Request sent", description: "You are not the owner until a Kretopia curator verifies that you publish this gig." });
     }
     setClaiming(false);
   };
@@ -138,7 +129,7 @@ const ClaimGig = () => {
     <div className="min-h-screen p-4 md:p-6">
       <SEO
         title={`Claim: ${opportunity.title} — Kretopia`}
-        description={`Claim ownership of this gig listing and start receiving applications on Kretopia`}
+        description={`Ask to manage this gig listing on Kretopia`}
       />
       <div className="mx-auto max-w-2xl">
         {/* Hero */}
@@ -150,7 +141,7 @@ const ClaimGig = () => {
           <p className="text-muted-foreground">
             {isClaimed
               ? "This listing has already been claimed by its owner."
-              : "Your gig was listed on Kretopia so creatives can discover and apply. Claim it to manage applicants, message talent, and fill the role faster."}
+              : "Your gig was listed on Kretopia so creatives can discover and apply. Ask to claim it: a Kretopia curator checks that you publish it, then you can manage applicants and fill the role faster."}
           </p>
         </div>
 
@@ -185,7 +176,14 @@ const ClaimGig = () => {
         </div>
 
         {/* CTA */}
-        {!isClaimed && (
+        {!isClaimed && requested && (
+          <div className="rounded-xl border bg-muted/50 p-4 text-sm" role="status">
+            <p className="font-semibold">Request received</p>
+            <p className="mt-1 text-muted-foreground">A Kretopia curator will check that you publish this gig. You become its owner only when they approve; until then nothing changes on the listing.</p>
+          </div>
+        )}
+
+        {!isClaimed && !requested && (
           <div className="space-y-3">
             <Button size="lg" className="w-full gap-2" onClick={handleClaim} disabled={claiming}>
               {claiming ? (
@@ -195,28 +193,28 @@ const ClaimGig = () => {
               ) : (
                 <UserPlus className="h-5 w-5" />
               )}
-              {claiming ? "Claiming..." : user ? "Claim This Gig" : "Sign Up & Claim This Gig"}
+              {claiming ? "Sending..." : user ? "Request to claim this gig" : "Sign up & request to claim"}
             </Button>
             {!user && (
               <p className="text-center text-sm text-muted-foreground">
-                Create a free account to claim and manage this listing
+                Create a free account to ask to claim this listing
               </p>
             )}
 
             <div className="rounded-xl bg-muted/50 p-4 mt-4">
-              <h3 className="font-semibold text-sm mb-2">What happens when you claim?</h3>
+              <h3 className="font-semibold text-sm mb-2">What happens when you ask to claim?</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                  You become the owner and can edit the listing
+                  A Kretopia curator checks that you publish this gig
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                  Share the link to receive applications from creators
+                  Once they approve, you own the listing and can edit it
                 </li>
                 <li className="flex items-start gap-2">
                   <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                  Review applicants and manage hires — all in one place
+                  Then share it to receive applications and manage hires, all in one place
                 </li>
               </ul>
             </div>
