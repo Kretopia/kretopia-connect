@@ -13,6 +13,10 @@ import { PUBLIC_LISTING_COLUMNS, type PublicListing } from "@/components/externa
  * It never throws and never blocks the deck: a failed read means no offers, a failed write means the card is still removed for
  * this session so it does not come straight back.
  */
+// How many of the newest gigs are looked at, and how many of the ones this member has not answered go into the deck. The deck used to
+// read only the newest 30 and drop the answered ones afterwards, so a member who had answered those 30 saw nothing more, however many
+// others were published.
+const WINDOW = 200;
 const MAX_OFFERS = 30;
 const seenKey = (userId: string) => `external_offers_seen_${userId}`;
 
@@ -44,16 +48,18 @@ export function useExternalOffers(userId: string | undefined, enabled: boolean) 
     let live = true;
     (async () => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the view is not in the generated types yet
-        const { data: rows, error } = await (supabase.from("public_external_listings" as any) as any).select(PUBLIC_LISTING_COLUMNS).eq("kind", "gig").order("last_checked_at", { ascending: false, nullsFirst: false }).limit(MAX_OFFERS);
+        const [{ data: rows, error }, { data: answered }] = await Promise.all([
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- the view is not in the generated types yet
+          (supabase.from("public_external_listings" as any) as any).select(PUBLIC_LISTING_COLUMNS).eq("kind", "gig").order("last_checked_at", { ascending: false, nullsFirst: false }).limit(WINDOW),
+          supabase.from("swipes").select("target_id").eq("user_id", userId).eq("target_type", "opportunity").limit(1000),
+        ]);
         if (error || !Array.isArray(rows) || rows.length === 0) {
           if (live) setOffers([]);
           return;
         }
         const listings = (rows as PublicListing[]).filter((r) => r?.id && r.title);
-        const { data: answered } = await supabase.from("swipes").select("target_id").eq("user_id", userId).eq("target_type", "opportunity").in("target_id", listings.map((r) => r.id));
         const done = new Set<string>([...(answered ?? []).map((s: { target_id: string }) => s.target_id), ...readSeen(userId)]);
-        if (live) setOffers(listings.filter((r) => !done.has(r.id)));
+        if (live) setOffers(listings.filter((r) => !done.has(r.id)).slice(0, MAX_OFFERS));
       } catch (e) {
         console.warn("[useExternalOffers] offers unavailable", e);
         if (live) setOffers([]);

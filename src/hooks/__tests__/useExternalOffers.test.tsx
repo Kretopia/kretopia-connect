@@ -16,6 +16,7 @@ const db = vi.hoisted(() => ({
   deleted: [] as [string, unknown][],
   functionsCalled: 0,
   listingsThrow: false,
+  limits: [] as [string, number][],
 }));
 
 vi.mock("@/integrations/supabase/client", () => ({
@@ -27,8 +28,11 @@ vi.mock("@/integrations/supabase/client", () => ({
       q.select = () => q;
       q.eq = (c: string, v: unknown) => (db.eq.push([`${table}.${c}`, v]), q);
       q.order = () => q;
-      q.limit = () => (db.listingsThrow ? Promise.reject(new Error("offline")) : Promise.resolve({ data: db.listings, error: db.listingsError }));
-      q.in = () => Promise.resolve({ data: db.answered, error: null });
+      q.limit = (n: number) => {
+        db.limits.push([table, n]);
+        if (table === "swipes") return Promise.resolve({ data: db.answered, error: null });
+        return db.listingsThrow ? Promise.reject(new Error("offline")) : Promise.resolve({ data: db.listings, error: db.listingsError });
+      };
       q.insert = (row: Record<string, unknown>) => (db.inserted.push(row), Promise.resolve({ error: db.insertError }));
       q.delete = () => ({
         eq: (c1: string, v1: unknown) => ({
@@ -59,6 +63,7 @@ beforeEach(() => {
   db.eq.length = 0;
   db.inserted.length = 0;
   db.deleted.length = 0;
+  db.limits.length = 0;
   db.functionsCalled = 0;
   sessionStorage.clear();
   vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -82,6 +87,33 @@ describe("useExternalOffers: reading", () => {
     expect(db.eq).toContainEqual(["swipes.target_type", "opportunity"]);
     expect(db.eq).toContainEqual(["swipes.user_id", "u1"]);
     expect(new Set(db.tables)).toEqual(new Set(["public_external_listings", "swipes"]));
+  });
+
+  it("the deck is filled from the unanswered gigs, so a member who answered the newest 30 sees the next ones", async () => {
+    const all = Array.from({ length: 45 }, (_, i) => listing(`g${String(i).padStart(2, "0")}`));
+    db.listings = all;
+    db.answered = all.slice(0, 30).map((l) => ({ target_id: l.id as string }));
+    const { result } = renderHook(() => useExternalOffers("u1", true));
+    await waitFor(() => expect(result.current.offers).toHaveLength(15));
+    expect(result.current.offers.map((o) => o.id)).toEqual(all.slice(30).map((l) => l.id));
+  });
+
+  it("a fresh member gets at most 30 offers, the newest first, from a window wider than the deck", async () => {
+    db.listings = Array.from({ length: 60 }, (_, i) => listing(`g${String(i).padStart(2, "0")}`));
+    const { result } = renderHook(() => useExternalOffers("u1", true));
+    await waitFor(() => expect(result.current.offers).toHaveLength(30));
+    expect(result.current.offers[0].id).toBe("g00");
+    expect(result.current.offers[29].id).toBe("g29");
+    expect(db.limits).toContainEqual(["public_external_listings", 200]);
+  });
+
+  it("what this member answered is read with short filters, never a list of every listing id in the address", async () => {
+    db.listings = Array.from({ length: 150 }, (_, i) => listing(`g${i}`));
+    renderHook(() => useExternalOffers("u1", true));
+    await waitFor(() => expect(db.tables).toContain("swipes"));
+    expect(db.eq).toContainEqual(["swipes.user_id", "u1"]);
+    expect(db.eq).toContainEqual(["swipes.target_type", "opportunity"]);
+    expect(db.limits).toContainEqual(["swipes", 1000]);
   });
 
   it("a failed or empty read means no offers and never throws into the deck", async () => {
