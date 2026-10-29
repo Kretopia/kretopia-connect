@@ -417,6 +417,8 @@ export function ProfileEditDialog({
         console.error('[ProfileEdit] Update error:', error);
         throw error;
       }
+      savedUsernameRef.current = nextUsername;
+      setUsernameStatus("idle");
 
       // Auto-geocode location → lat/lng for the Discover map (fire-and-forget)
       if (formData.location && formData.location !== profile.location) {
@@ -663,6 +665,50 @@ export function ProfileEditDialog({
                   onChange={(e) => handleInputChange('full_name', e.target.value)}
                   placeholder="Enter your full name"
                 />
+              </FieldWrapper>
+
+              <FieldWrapper
+                label="Username"
+                isIncomplete={false}
+                hint="Your unique @handle — sign-in, creator site and public URL"
+              >
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => { handleInputChange('username', e.target.value); setUsernameStatus("idle"); }}
+                    onBlur={handleUsernameBlur}
+                    placeholder="your_handle"
+                    autoComplete="username"
+                    className={`pl-7 ${usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "reserved" ? "border-destructive" : ""}`}
+                  />
+                  {usernameStatus === "checking" && (
+                    <KretopiaSpinner className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  {usernameStatus === "available" && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-energy" />
+                  )}
+                </div>
+                {usernameStatus === "available" && (
+                  <p className="text-xs text-energy flex items-center gap-1 mt-1">
+                    <CheckCircle2 className="h-3 w-3" /> @{normalizeUsername(formData.username)} is available
+                  </p>
+                )}
+                {usernameStatus === "taken" && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> That username is already taken
+                  </p>
+                )}
+                {(usernameStatus === "invalid" || usernameStatus === "reserved") && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> {usernameValidationMessage(usernameStatus)}
+                  </p>
+                )}
+                {usernameStatus === "error" && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> Couldn't check availability — you can still try to save
+                  </p>
+                )}
               </FieldWrapper>
 
               <FieldWrapper
