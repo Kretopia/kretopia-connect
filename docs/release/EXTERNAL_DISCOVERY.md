@@ -257,6 +257,42 @@ once and then removed). A creator's Discover is exactly what it was.
   corroborating approved source. They fill when a source for events or creatives is approved (a decision with a cost and a terms check).
   Until then they say so plainly. Creatives are people: nothing is sent to them from these lanes.
 
+## Owner controls after a curator's decision (found by the second-account test, 2026-10-29)
+
+**The gap.** A claimant who asked for a review and was approved had nowhere to go: the only route was `/claim-listing/:id/:token`, the
+link leaves the address bar once used, a reload of `/claim-listing/:id` fell through to the home page, and the owner controls existed only
+inside the page session that had proved the claim (`verified` was set by a domain-proof success, never by the server's state). The server
+side was right (`owner_update_external_listing` works for the verified owner and refuses everyone else; the admin account, which is not the
+owner, got `403 forbidden` and the deadline did not move), so this was a missing door, not a hole.
+
+**The fix** (frontend + `external-claim` + `_shared/discovery/pipeline.ts`, no migration):
+- New `external-claim` action `status` (signed-in only, after the sign-in guard): `claimStatus(deps, userId, listingId)` answers about the
+  CALLER only (the id is the session's; a static test refuses any user or owner id read from the body). It returns `owner` (the listing is
+  `claimed` and `owner_user_id` is the caller), `claim` (`verified` for the owner, otherwise the caller's own `pending` or `rejected`, else
+  `none`), the caller's OWN claim id while it is pending, and, for the owner only, the three editable values plus the title and publisher.
+  Another person's claim or owner is never returned, a verified claim on a listing that is no longer claimed is not a standing, a reported
+  ("disputed") listing keeps its owner as the owner, and a private or unknown listing is `not_found` for someone with no part in it.
+- New route `/claim-listing/:id` (sign-in required, same page). Without a link the page asks `status` and shows exactly one of: the owner
+  controls (filled with what the listing has; Save sends only what changed, and "Nothing to save" when nothing did), the SAME verification
+  choices as right after "Start verification" for a claim that is started but undecided (proof line for the publisher's domain when there is
+  one, and "Request a review"; it never claims a review was requested, because that is not stored on the claim, and asking twice is harmless),
+  "A curator reviewed your claim and did not approve it", or "You do not manage this listing". Only a successful answer can say that last
+  one: a lookup that fails says "We could not check your access ... Reload", so an owner on a bad connection (or before the function is
+  deployed) is never told they manage nothing. After "Request a review" the page says to come back to this page. While it asks there is a
+  loader and nothing to click. With a link the page is exactly what it was (the existing tests
+  that pin it are untouched).
+- `/listing/:id` shows "Manage this listing" to the signed-in verified owner of a CLAIMED listing, and asks nobody else (a guest or an unclaimed
+  listing never triggers the call; a failed answer shows no link).
+
+**To ship:** copy `supabase/functions/_shared/discovery/pipeline.ts` and `supabase/functions/external-claim/index.ts` into kretopia-app and
+deploy `external-claim` (pipeline.ts first; `external-import` and `external-discovery-run` import the same file and need no change but keep the
+same copy), then publish the frontend. Until the function is deployed the new page answers "We could not check your access" to everyone (the
+`status` call is refused as an unknown action), which is safe but hides the controls.
+
+**Positive test of the owner path without the UI (server side, 2026-10-29):** the second account calls `owner_update` for the claimed
+listing from its own session; the server must answer `200 {"ok":true}` and change only the deadline. The same call by any other account
+answers `403`.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local

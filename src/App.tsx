@@ -529,6 +529,7 @@ const AppContent = () => {
             <Route path="/claim/:claimToken" element={<ClaimProfile />} />
             <Route path="/listing/:id" element={<ExternalListing />} />
             <Route path="/claim-listing/:id/:token" element={<ProtectedRoute><ClaimListing /></ProtectedRoute>} />
+            <Route path="/claim-listing/:id" element={<ProtectedRoute><ClaimListing /></ProtectedRoute>} />
             <Route path="/post-opportunity" element={<PostOpportunity />} />
             <Route path="/claim-gig/:token" element={<ClaimGig />} />
             <Route path="/claim-event/:token" element={<ClaimEvent />} />

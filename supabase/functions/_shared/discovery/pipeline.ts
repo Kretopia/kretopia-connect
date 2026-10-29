@@ -319,6 +319,37 @@ export async function requestAdminReview(d: PipelineDeps, userId: string, claimI
   return { ok: true, status: 202, data: { verified: false, next: "wait_for_review" } };
 }
 
+export type ClaimStanding = "none" | "pending" | "rejected" | "verified";
+// "disputed" only ever follows a VERIFIED claim (a report on a claimed listing), so it is never an open request.
+const OPEN_STANDINGS: ClaimStanding[] = ["pending", "rejected"];
+
+/**
+ * What the signed-in user is to ONE listing, so the screen a claimant saw survives a reload, a bookmark or another device (the
+ * link is spent and gone from the address bar once used, and a curator's approval happens later, elsewhere): its manager (with the
+ * three fields they may edit), someone whose claim is open (their own claim id comes back so the verification choices can be shown
+ * again) or was turned down, or nothing. It answers only about the caller (the id is the session's, never the body's), never returns
+ * another person's claim or owner, and says "not found" for a listing the caller has no part in unless it is public.
+ */
+export async function claimStatus(d: PipelineDeps, userId: string, listingId: string): Promise<Outcome> {
+  const listing = (await d.from("external_listings").select("id, status, visibility, owner_user_id, title, original_publisher, deadline_at, description_full").eq("id", listingId).maybeSingle())?.data;
+  if (!listing) return fail(404, "not_found", "No such listing.");
+  const mine = ((await d.from("external_listing_claims").select("id, status").eq("listing_id", listingId).eq("claimant_user_id", userId))?.data ?? []) as { id: string; status: string }[];
+  const owner = listing.status === "claimed" && listing.owner_user_id === userId;
+  // a verified claim on a listing that is no longer claimed (removed, expired) is not a standing: there is nothing to manage
+  const claim: ClaimStanding = owner ? "verified" : OPEN_STANDINGS.find((s) => mine.some((c) => c.status === s)) ?? "none";
+  if (!owner && claim === "none" && listing.visibility !== "public") return fail(404, "not_found", "No such listing.");
+  return {
+    ok: true,
+    status: 200,
+    data: {
+      owner,
+      claim,
+      ...(claim === "pending" ? { claim_id: mine.find((c) => c.status === "pending")?.id } : {}),
+      ...(owner ? { listing: { title: listing.title, original_publisher: listing.original_publisher ?? null, deadline_at: listing.deadline_at ?? null, description_full: listing.description_full ?? null } } : {}),
+    },
+  };
+}
+
 export async function decideClaim(d: PipelineDeps, admin: string, claimId: string, decision: "approve" | "reject"): Promise<Outcome> {
   if (decision === "reject") {
     const r = await d.rpc("reject_external_claim", { p_claim: claimId, p_admin: admin });

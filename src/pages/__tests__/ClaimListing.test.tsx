@@ -196,3 +196,128 @@ describe("ClaimListing before Start", () => {
     expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument(); // the screen has moved on
   });
 });
+
+/**
+ * The page opened WITHOUT a claim link: a reload after "Start verification" (the link has left the address bar), a bookmark,
+ * another device, or the day after a curator approved the claim. Seen live: the approval worked but the new owner had no page
+ * to manage the listing from, because the owner controls only existed inside the session that proved the claim.
+ * Now the server says what this signed-in person is to the listing, and the page shows exactly that.
+ */
+describe("ClaimListing without a link", () => {
+  const renderBare = () =>
+    render(
+      <MemoryRouter initialEntries={["/claim-listing/l1"]}>
+        <Routes><Route path="/claim-listing/:id" element={<ClaimListing />} /></Routes>
+      </MemoryRouter>,
+    );
+  const actions = () => invoke.mock.calls.map((c) => (c[1].body as { action: string }).action);
+  const ownerReply = (over: Record<string, unknown> = {}) => ({ data: { ok: true, owner: true, claim: "verified", listing: { title: "Brand film editor", original_publisher: "Acme Studio", deadline_at: "2027-01-11T00:00:06+00:00", description_full: null, ...over } } });
+
+  it("a curator-approved owner gets the controls on a plain reload, filled with what the listing already has", async () => {
+    replies.status = ownerReply({ description_full: "Our current text" });
+    renderBare();
+    expect(await screen.findByTestId("owner-controls")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Verified. You can manage this listing.");
+    expect(screen.getByLabelText(/description/i)).toHaveValue("Our current text");
+    expect(screen.getByLabelText(/deadline/i)).toHaveValue("2027-01-11");
+    expect(invoke).toHaveBeenCalledWith("external-claim", { body: { action: "status", listing_id: "l1" } });
+    // no link, so nothing is redeemed or started, and there is no Start button
+    expect(actions()).not.toContain("redeem");
+    expect(actions()).not.toContain("start");
+    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument();
+  });
+
+  it("saving without a change sends nothing, and a changed deadline sends only the deadline", async () => {
+    replies.status = ownerReply();
+    replies.owner_update = { data: { ok: true } };
+    renderBare();
+    await screen.findByTestId("owner-controls");
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Nothing to save" }));
+    expect(actions()).not.toContain("owner_update");
+    fireEvent.change(screen.getByLabelText(/deadline/i), { target: { value: "2027-02-01" } });
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith("external-claim", { body: { action: "owner_update", listing_id: "l1", edits: { deadline_at: "2027-02-01T23:59:59.000Z" } } }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith({ title: "Saved" }));
+    // the saved value is now the baseline: a second Save with no change sends nothing more
+    invoke.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(actions()).not.toContain("owner_update");
+  });
+
+  it("a claim that was started but not decided shows the verification choices again, so a reload loses nothing", async () => {
+    replies.status = { data: { ok: true, owner: false, claim: "pending", claim_id: "c1" } };
+    replies.request_review = { data: { ok: true, verified: false } };
+    renderBare();
+    expect(await screen.findByTestId("proof-line")).toHaveTextContent("kretopia-claim=abc123");
+    expect(invoke).toHaveBeenCalledWith("external-claim", { body: { action: "start", claim_id: "c1" } });
+    expect(actions()).not.toContain("redeem"); // there is no link to spend
+    expect(screen.queryByRole("button", { name: /start verification/i })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+    // it does not claim a review was requested when nobody pressed the button; pressing it moves on, and tells them to come back here
+    expect(screen.queryByText(/review requested/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /request a review/i }));
+    const waiting = await screen.findByText(/not the owner of this listing until a curator approves/i);
+    expect(waiting).toHaveAttribute("role", "status");
+    expect(waiting).toHaveTextContent(/come back to this page/i);
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+  });
+
+  it("a claim a curator turned down says so and gives no way to manage the listing", async () => {
+    replies.status = { data: { ok: true, owner: false, claim: "rejected" } };
+    renderBare();
+    expect(await screen.findByText(/did not approve it/i)).toHaveAttribute("role", "status");
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toEqual([]);
+  });
+
+  it("someone who has nothing to do with the listing is told so, with no controls and nothing to click", async () => {
+    replies.status = { data: { ok: true, owner: false, claim: "none" } };
+    renderBare();
+    expect(await screen.findByText(/you do not manage this listing/i)).toBeInTheDocument();
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toEqual([]);
+    expect(screen.queryAllByRole("textbox")).toEqual([]);
+  });
+
+  it("a refused or failed lookup says it could not check, never 'you do not manage this', and never opens the controls", async () => {
+    replies.status = { error: { message: "boom" } };
+    renderBare();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not check your access/i);
+    expect(screen.queryByText(/you do not manage this listing/i)).not.toBeInTheDocument(); // an owner on a bad connection must not be told that
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toEqual([]);
+  });
+
+  it("a lookup that throws (offline) ends in the same honest message instead of a loader that never stops", async () => {
+    invoke.mockImplementationOnce(async () => ({ data: { ok: true, listing: { title: "Brand film editor", original_publisher: "Acme Studio" } }, error: null })); // the preview
+    invoke.mockImplementationOnce(async () => { throw new Error("offline"); });
+    renderBare();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/could not check your access/i);
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+  });
+
+  it("an unreadable stored deadline leaves the field empty instead of breaking the page", async () => {
+    replies.status = ownerReply({ deadline_at: "not-a-date" });
+    renderBare();
+    expect(await screen.findByTestId("owner-controls")).toBeInTheDocument();
+    expect(screen.getByLabelText(/deadline/i)).toHaveValue("");
+  });
+
+  it("while the server is being asked there is nothing to click, and the controls do not flash", async () => {
+    invoke.mockImplementationOnce(async () => ({ data: { ok: true, listing: { title: "Brand film editor", original_publisher: "Acme Studio" } }, error: null })); // the preview
+    invoke.mockImplementationOnce(() => new Promise(() => {})); // the status never answers
+    renderBare();
+    await screen.findByText("Brand film editor");
+    expect(screen.queryByTestId("owner-controls")).not.toBeInTheDocument();
+    expect(screen.queryAllByRole("button")).toEqual([]);
+  });
+
+  it("is still a page nobody indexes or leaks from", async () => {
+    replies.status = ownerReply();
+    renderBare();
+    await screen.findByTestId("owner-controls");
+    expect(seo.mock.calls[0][0]).toMatchObject({ noindex: true });
+    expect(document.querySelector('meta[name="referrer"]')?.getAttribute("content")).toBe("no-referrer");
+  });
+});
