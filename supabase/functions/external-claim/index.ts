@@ -5,7 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { requireUser } from "../_shared/require-user.ts";
 import { corsHeaders, isUuid, json, readJson, respond } from "../_shared/discovery/http.ts";
-import { disputeListing, ownerUpdate, redeemClaim, requestAdminReview, startVerification, verifyDomain, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
+import { claimStatus, disputeListing, ownerUpdate, redeemClaim, requestAdminReview, startVerification, verifyDomain, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -39,6 +39,8 @@ Deno.serve(async (req) => {
       return isUuid(body.claim_id) ? respond(await verifyDomain(deps, userId, body.claim_id)) : json({ ok: false, code: "bad_request" }, 400);
     case "request_review":
       return isUuid(body.claim_id) ? respond(await requestAdminReview(deps, userId, body.claim_id)) : json({ ok: false, code: "bad_request" }, 400);
+    case "status":
+      return isUuid(body.listing_id) ? respond(await claimStatus(deps, userId, body.listing_id)) : json({ ok: false, code: "bad_request" }, 400);
     case "owner_update":
       return isUuid(body.listing_id) && body.edits && typeof body.edits === "object" ? respond(await ownerUpdate(deps, userId, body.listing_id, body.edits as Record<string, unknown>)) : json({ ok: false, code: "bad_request" }, 400);
     case "dispute":

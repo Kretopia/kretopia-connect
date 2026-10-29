@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ExternalLink, Flag } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -53,6 +53,7 @@ export default function ExternalListing() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [row, setRow] = useState<Row | null | undefined>(undefined);
+  const [owner, setOwner] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -65,6 +66,28 @@ export default function ExternalListing() {
       live = false;
     };
   }, [id]);
+
+  // Only a signed-in person looking at a CLAIMED listing is asked whether it is theirs: the server answers about the caller alone.
+  // A failed or refused answer simply shows no link.
+  const claimed = row?.claimed === true;
+  useEffect(() => {
+    if (!user?.id || !claimed) {
+      setOwner(false);
+      return;
+    }
+    let live = true;
+    (async () => {
+      try {
+        const { data } = await supabase.functions.invoke("external-claim", { body: { action: "status", listing_id: id } });
+        if (live) setOwner((data as { owner?: boolean } | null)?.owner === true);
+      } catch {
+        if (live) setOwner(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [user?.id, claimed, id]);
 
   const report = async () => {
     if (!user) {
@@ -124,6 +147,11 @@ export default function ExternalListing() {
                 <a href={row.apply_url} target="_blank" rel="noopener noreferrer nofollow">
                   Apply at source <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />
                 </a>
+              </Button>
+            )}
+            {owner && (
+              <Button asChild variant="outline" className="min-h-11">
+                <Link to={`/claim-listing/${id}`}>Manage this listing</Link>
               </Button>
             )}
             <Button variant="ghost" size="sm" className="min-h-11 sm:min-h-0" onClick={report}>

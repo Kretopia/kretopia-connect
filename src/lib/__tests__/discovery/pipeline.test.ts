@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeDiscoveryDb } from "./fakeDiscoveryDb";
 import {
-  AI_EXTRACTION_CENTS, createClaimLink, decideClaim, disputeListing, ingest, ownerUpdate, redeemClaim, requestAdminReview, reviewListing, runDiscovery,
+  AI_EXTRACTION_CENTS, claimStatus, createClaimLink, decideClaim, disputeListing, ingest, ownerUpdate, redeemClaim, requestAdminReview, reviewListing, runDiscovery,
   setApplications, startVerification, validateImage, verifyDomain, listFeedDrafts, FEED_DRAFTS_LIMIT, type PipelineDeps,
 } from "../../../../supabase/functions/_shared/discovery/pipeline";
 import { safeFetchBounded } from "../../../../supabase/functions/_shared/ssrf";
@@ -351,6 +351,81 @@ describe("after a verified claim: a publisher manages only their own listing, an
     const id = await claimed(db, POSTING, "Brand film editor", "pub-a");
     expect((await disputeListing(deps(db), "someone", id, "not theirs")).ok).toBe(true);
     expect(db.listings.get(id)!.visibility).toBe("review");
+  });
+
+  describe("who a person is to a listing, so the claimant's screen survives a reload", () => {
+    it("the owner gets their listing's editable fields; a stranger learns nothing about the owner or the claim", async () => {
+      const db = makeDiscoveryDb();
+      const mine = await claimed(db, POSTING, "Brand film editor", "pub-a");
+      Object.assign(db.listings.get(mine)!, { deadline_at: "2027-01-11T00:00:06+00:00", description_full: "Our real description" });
+      const owner = await claimStatus(deps(db), "pub-a", mine);
+      expect(owner).toMatchObject({ ok: true, status: 200, data: { owner: true, claim: "verified", listing: { title: "Brand film editor", deadline_at: "2027-01-11T00:00:06+00:00", description_full: "Our real description" } } });
+      const stranger = await claimStatus(deps(db), "pub-b", mine);
+      expect(stranger).toMatchObject({ ok: true, data: { owner: false, claim: "none" } });
+      expect(stranger.data).not.toHaveProperty("listing");
+      expect(JSON.stringify(stranger)).not.toContain("pub-a");
+      expect(JSON.stringify(stranger)).not.toContain("Our real description");
+    });
+
+    it("a claim waiting for a curator reads as pending to its claimant only, then as turned down after a decline", async () => {
+      const db = makeDiscoveryDb();
+      const id = await publishedListing(db);
+      const token = (await createClaimLink(deps(db), ADMIN, id, "https://k.test")).data!.link.split("/").pop()!;
+      const claim = (await redeemClaim(deps(db), "pub-a", id, token)).data!.claim_id as string;
+      // the claimant gets THEIR OWN claim id back, so the verification choices can be shown again after a reload
+      expect((await claimStatus(deps(db), "pub-a", id)).data).toEqual({ owner: false, claim: "pending", claim_id: claim });
+      const other = await claimStatus(deps(db), "pub-b", id);
+      expect(other.data).toEqual({ owner: false, claim: "none" });
+      expect(JSON.stringify(other)).not.toContain(claim); // nobody else is ever shown it
+      expect((await decideClaim(deps(db), ADMIN, claim, "reject")).ok).toBe(true);
+      expect((await claimStatus(deps(db), "pub-a", id)).data).toEqual({ owner: false, claim: "rejected" });
+      expect((await claimStatus(deps(db), "pub-b", id)).data).toEqual({ owner: false, claim: "none" });
+    });
+
+    it("after a curator approves the claim the claimant is the owner, and nobody else becomes one", async () => {
+      const db = makeDiscoveryDb();
+      const id = await publishedListing(db);
+      const token = (await createClaimLink(deps(db), ADMIN, id, "https://k.test")).data!.link.split("/").pop()!;
+      const claim = (await redeemClaim(deps(db), "pub-a", id, token)).data!.claim_id as string;
+      expect((await claimStatus(deps(db), "pub-a", id)).data).toMatchObject({ owner: false, claim: "pending" });
+      expect((await decideClaim(deps(db), ADMIN, claim, "approve")).ok).toBe(true);
+      const approved = await claimStatus(deps(db), "pub-a", id);
+      expect(approved.data).toMatchObject({ owner: true, claim: "verified" });
+      expect(approved.data).not.toHaveProperty("claim_id"); // nothing is open any more
+      expect((await claimStatus(deps(db), ADMIN, id)).data).toEqual({ owner: false, claim: "none" }); // the curator who approved is not the owner
+      expect((await claimStatus(deps(db), "pub-b", id)).data).toEqual({ owner: false, claim: "none" });
+    });
+
+    it("a reported listing keeps its owner as the owner (the report hides the listing, it does not take it from them)", async () => {
+      const db = makeDiscoveryDb();
+      const id = await claimed(db, POSTING, "Brand film editor", "pub-a");
+      db.claims.find((c) => c.listing_id === id)!.status = "disputed"; // what dispute_external_listing does to the verified claim
+      db.listings.get(id)!.visibility = "review";
+      expect((await claimStatus(deps(db), "pub-a", id)).data).toMatchObject({ owner: true, claim: "verified" });
+      expect((await claimStatus(deps(db), "pub-b", id))).toMatchObject({ ok: false, status: 404 }); // hidden from people with no part in it
+    });
+
+    it("an old verified claim on a listing that is no longer claimed is not a standing: there is nothing to manage", async () => {
+      const db = makeDiscoveryDb();
+      const id = await claimed(db, POSTING, "Brand film editor", "pub-a");
+      expect((await reviewListing(deps(db), ADMIN, id, "remove")).ok).toBe(true);
+      const r = await claimStatus(deps(db), "pub-a", id);
+      expect(r).toMatchObject({ ok: false, status: 404, code: "not_found" });
+    });
+
+    it("a private draft or an unknown listing is 'not found' for someone with no part in it, so the answer does not reveal it", async () => {
+      const db = makeDiscoveryDb();
+      const draft = (await ingest(deps(db, world({ "https://remoteok.com/remote-jobs/x-2222222": { body: jobPage("Another role") } })), USER, { type: "url", url: "https://remoteok.com/remote-jobs/x-2222222" })).data!.listing_id as string;
+      expect((await claimStatus(deps(db), "pub-a", draft)).status).toBe(404);
+      expect((await claimStatus(deps(db), "pub-a", "00000000-0000-4000-8000-000000000000")).status).toBe(404);
+    });
+
+    it("the owner's fields come from the listing, and what the page may edit is still only the three allowed ones", async () => {
+      const db = makeDiscoveryDb();
+      const mine = await claimed(db, POSTING, "Brand film editor", "pub-a");
+      const fields = Object.keys((await claimStatus(deps(db), "pub-a", mine)).data!.listing as Record<string, unknown>).sort();
+      expect(fields).toEqual(["deadline_at", "description_full", "original_publisher", "title"]);
+    });
   });
 });
 

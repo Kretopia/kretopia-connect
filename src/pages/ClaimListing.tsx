@@ -28,13 +28,24 @@ const REASONS: Record<string, string> = {
   already_claimed: "Someone else has already verified this listing.",
 };
 
+/** A stored timestamp as the value of a date input (YYYY-MM-DD, UTC), or "" when there is none or it cannot be read. */
+const dateInput = (iso?: string | null) => {
+  const t = iso ? new Date(iso) : null;
+  return t && !Number.isNaN(t.getTime()) ? t.toISOString().slice(0, 10) : "";
+};
+
 /**
  * Claiming a discovered listing. The link only lets you START a verification: it is an invitation, not proof that you
  * publish this listing. You become its manager only after proving control of the publisher's own website, or after a
  * curator reviews it. Nothing is sent to an email address you type, and the link leaves the address bar once used.
+ *
+ * Without a link (a reload, a bookmark, another device, or the day after a curator's decision) the page asks the server
+ * what this signed-in person is to the listing: its manager, someone whose claim is still open (the verification choices come
+ * back), someone turned down, or nobody. Only a successful answer can say "nobody": a failed lookup says it could not check.
+ * The owner controls come only from that answer or from a verified proof, never from the address.
  */
 export default function ClaimListing() {
-  const { id, token } = useParams<{ id: string; token: string }>();
+  const { id, token } = useParams<{ id: string; token?: string }>();
   const { toast } = useToast();
   const [listing, setListing] = useState<{ title: string; original_publisher: string | null } | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
@@ -45,6 +56,11 @@ export default function ClaimListing() {
   const [waiting, setWaiting] = useState(false);
   const [description, setDescription] = useState("");
   const [deadline, setDeadline] = useState("");
+  // What the server holds now, so Save sends only what the owner changed.
+  const [saved, setSaved] = useState({ description: "", deadline: "" });
+  // Only without a link: null = not applicable, "loading" = asking the server, "none" / "rejected" = nothing to manage,
+  // "error" = the server could not answer (which says nothing about whether this person manages the listing).
+  const [standing, setStanding] = useState<"loading" | "none" | "rejected" | "error" | null>(token ? null : "loading");
 
   const call = async (body: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("external-claim", { body });
@@ -69,6 +85,43 @@ export default function ClaimListing() {
       live = false;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (token) return; // with a link this page starts a verification: there is nothing to look up yet
+    let live = true;
+    (async () => {
+      try {
+        const r = await call({ action: "status", listing_id: id });
+        if (!live) return;
+        if (!r.ok) {
+          setStanding("error");
+        } else if (r.owner === true) {
+          const own = (r.listing ?? {}) as { deadline_at?: string | null; description_full?: string | null };
+          const current = { description: own.description_full ?? "", deadline: dateInput(own.deadline_at) };
+          setSaved(current);
+          setDescription(current.description);
+          setDeadline(current.deadline);
+          setVerified(true);
+          setStanding(null);
+        } else if (r.claim === "pending" && typeof r.claim_id === "string") {
+          // The claim was started but nobody has decided: show the same choices as right after "Start verification". Whether a review
+          // was already requested is not stored on the claim, and asking again is harmless.
+          setClaimId(r.claim_id);
+          const s = await call({ action: "start", claim_id: r.claim_id });
+          if (!live) return;
+          setOptions(((s.options as Option[]) ?? []).filter(Boolean));
+          setStanding(null);
+        } else {
+          setStanding(r.claim === "rejected" ? "rejected" : "none");
+        }
+      } catch {
+        if (live) setStanding("error");
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [id, token]);
 
   const start = async () => {
     setBusy(true);
@@ -106,11 +159,16 @@ export default function ClaimListing() {
   };
 
   const save = async () => {
-    setBusy(true);
     const edits: Record<string, unknown> = {};
-    if (description.trim()) edits.description_full = description.trim();
-    if (deadline) edits.deadline_at = new Date(`${deadline}T23:59:59Z`).toISOString();
+    if (description.trim() && description.trim() !== saved.description) edits.description_full = description.trim();
+    if (deadline && deadline !== saved.deadline) edits.deadline_at = new Date(`${deadline}T23:59:59Z`).toISOString();
+    if (Object.keys(edits).length === 0) {
+      toast({ title: "Nothing to save", description: "Change the description or the deadline first." });
+      return;
+    }
+    setBusy(true);
     const r = await call({ action: "owner_update", listing_id: id, edits });
+    if (r.ok) setSaved({ description: description.trim() || saved.description, deadline: deadline || saved.deadline });
     toast(r.ok ? { title: "Saved" } : { title: "Could not save", description: r.message, variant: "destructive" });
     setBusy(false);
   };
@@ -136,7 +194,12 @@ export default function ClaimListing() {
                 {listing.original_publisher && <p className="text-xs text-muted-foreground">{listing.original_publisher}</p>}
               </div>
 
-              {!claimId && !verified && (
+              {standing === "loading" && <KretopiaLoader label="Checking your access" size="sm" />}
+              {standing === "none" && <p className="text-sm text-muted-foreground">You do not manage this listing. A claim link from a Kretopia curator starts a verification.</p>}
+              {standing === "error" && <p className="text-sm text-destructive" role="alert">We could not check your access to this listing right now. Reload the page to try again.</p>}
+              {standing === "rejected" && <p className="text-sm text-muted-foreground" role="status">A curator reviewed your claim and did not approve it. The listing is unchanged.</p>}
+
+              {token && !claimId && !verified && !waiting && (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">Starting a verification does not make you the owner. You will be asked to prove control of the publisher's own website, or to request a review by a Kretopia curator.</p>
                   <Button onClick={start} disabled={busy} className="min-h-11">
@@ -164,7 +227,11 @@ export default function ClaimListing() {
                 </div>
               )}
 
-              {waiting && <p className="text-sm text-muted-foreground" role="status">Review requested. You are not the owner of this listing until a curator approves it.</p>}
+              {waiting && (
+                <p className="text-sm text-muted-foreground" role="status">
+                  Review requested. You are not the owner of this listing until a curator approves it. Come back to this page after the review: your controls appear here once it is approved.
+                </p>
+              )}
 
               {verified && (
                 <div className="space-y-3" data-testid="owner-controls">

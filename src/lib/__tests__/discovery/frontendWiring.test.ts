@@ -30,9 +30,20 @@ describe("existing pages follow the honest SEO rules", () => {
     const app = read("src/App.tsx");
     expect(app).toContain('<Route path="/listing/:id" element={<ExternalListing />} />');
     expect(app).toContain('<Route path="/claim-listing/:id/:token" element={<ProtectedRoute><ClaimListing /></ProtectedRoute>} />');
+    // the same page without a link: a new owner returns to it after a curator's decision, so it must exist and need a sign-in too
+    expect(app).toContain('<Route path="/claim-listing/:id" element={<ProtectedRoute><ClaimListing /></ProtectedRoute>} />');
     expect(app).toContain('<Route path="/admin/external" element={<ProtectedRoute><AdminExternal /></ProtectedRoute>} />');
     const prefetch = read("src/lib/routePrefetch.ts");
     for (const r of ["/listing", "/claim-listing", "/admin/external"]) expect(prefetch).toContain(`["${r}"`);
+  });
+
+  it("the claim function answers 'status' about the SIGNED-IN user only: no user or owner id is read from the request", () => {
+    const fn = read("supabase/functions/external-claim/index.ts");
+    expect(fn).toContain('case "status":');
+    expect(fn).toContain("claimStatus(deps, userId, body.listing_id)");
+    expect(fn).not.toMatch(/claimStatus\([^)]*body\.(user|owner|claimant)/i);
+    // it sits after the sign-in guard: the only action before it is the public preview
+    expect(fn.indexOf('case "status":')).toBeGreaterThan(fn.indexOf("requireUser(req)"));
   });
 
   it("Discover keeps sourced gigs in the Gigs lane, as their own kind", () => {

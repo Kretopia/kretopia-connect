@@ -54,7 +54,8 @@ const ld = () => document.querySelector('script[type="application/ld+json"]');
 const canonical = () => document.querySelector('link[rel="canonical"]')?.getAttribute("href");
 
 beforeEach(() => {
-  seo.mockClear(); toast.mockClear(); invoke.mockClear();
+  seo.mockClear(); toast.mockClear(); invoke.mockReset();
+  invoke.mockImplementation(async () => ({ data: { ok: true }, error: null }));
   row = base();
   auth.user = null;
 });
@@ -166,5 +167,63 @@ describe("ExternalListing", () => {
     renderPage();
     await screen.findByRole("heading", { name: "Brand film editor" });
     expect(screen.queryByText(/pay stated/i)).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * After a curator approves a claim the new owner needs a way back to the controls. The listing page shows "Manage this
+ * listing" to the verified owner only: the server answers about the signed-in person alone, a guest is never asked, and an
+ * unclaimed listing has no owner to ask about.
+ */
+describe("ExternalListing for its owner", () => {
+  const claimedRow = () => ({ ...base(), status: "claimed", claimed: true, description_full: LONG });
+  const statuses = () => invoke.mock.calls.filter((c) => ((c as unknown as [string, { body: { action: string } }])[1].body.action === "status"));
+
+  it("a signed-in verified owner gets a link to manage the claimed listing", async () => {
+    row = claimedRow();
+    auth.user = { id: "owner-1" };
+    invoke.mockImplementation(async () => ({ data: { ok: true, owner: true, claim: "verified" }, error: null }));
+    renderPage();
+    const link = await screen.findByRole("link", { name: /manage this listing/i });
+    expect(link).toHaveAttribute("href", "/claim-listing/l1");
+    expect(invoke).toHaveBeenCalledWith("external-claim", { body: { action: "status", listing_id: "l1" } });
+  });
+
+  it("a signed-in person who is not the owner sees no such link", async () => {
+    row = claimedRow();
+    auth.user = { id: "someone" };
+    invoke.mockImplementation(async () => ({ data: { ok: true, owner: false, claim: "none" }, error: null }));
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    await waitFor(() => expect(statuses()).toHaveLength(1));
+    expect(screen.queryByRole("link", { name: /manage this listing/i })).not.toBeInTheDocument();
+  });
+
+  it("a guest is never asked, and sees no link", async () => {
+    row = claimedRow();
+    auth.user = null;
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /manage this listing/i })).not.toBeInTheDocument();
+  });
+
+  it("an unclaimed listing has no owner to ask about, even for a signed-in person", async () => {
+    row = base();
+    auth.user = { id: "owner-1" };
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    expect(invoke).not.toHaveBeenCalled();
+    expect(screen.queryByRole("link", { name: /manage this listing/i })).not.toBeInTheDocument();
+  });
+
+  it("a failed or refused lookup shows no link rather than guessing", async () => {
+    row = claimedRow();
+    auth.user = { id: "owner-1" };
+    invoke.mockImplementation(async () => { throw new Error("offline"); });
+    renderPage();
+    await screen.findByRole("heading", { name: "Brand film editor" });
+    await waitFor(() => expect(statuses()).toHaveLength(1));
+    expect(screen.queryByRole("link", { name: /manage this listing/i })).not.toBeInTheDocument();
   });
 });
