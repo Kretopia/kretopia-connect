@@ -32,12 +32,34 @@ export type Database = {
         }
         Relationships: []
       }
+      username_auth_attempts: {
+        Row: {
+          bucket: string
+          updated_at: string
+          used: number
+        }
+        Insert: {
+          bucket: string
+          updated_at?: string
+          used?: number
+        }
+        Update: {
+          bucket?: string
+          updated_at?: string
+          used?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       consume_public_presence_search: { Args: never; Returns: boolean }
+      consume_username_auth_attempt: {
+        Args: { _bucket: string; _day_cap: number; _minute_cap: number }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
