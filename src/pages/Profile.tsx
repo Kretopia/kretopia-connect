@@ -39,6 +39,7 @@ import { checkProfileCompletion } from "@/lib/profileCompletion";
 import { PassportAnchorStrip } from "@/components/passport/PassportAnchorStrip";
 import { PassportKretoEntry } from "@/components/passport/PassportKretoEntry";
 import { EPKPdfEditor } from "@/components/epk/EPKPdfEditor";
+import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportShareSheet } from "@/components/passport/PassportShareSheet";
 import { PassportOverview } from "@/components/passport/PassportOverview";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
@@ -584,6 +585,7 @@ const ProfileContent = () => {
             (TodayMetricsDashboard), reachable from the home screen. */}
 
         {profile && <PassportCollaborationCta firstName={profile.full_name?.split(' ')[0] || 'you'} isOwner onPreview={() => navigate(`/epk/${profile.user_id}`)} />}
+        {profile && <PassportOriginalEPK userId={profile.user_id} />}
         </section>
         {/* /Identity */}
       </div>

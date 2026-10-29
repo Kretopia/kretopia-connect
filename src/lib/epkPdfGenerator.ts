@@ -91,6 +91,8 @@ export interface EPKBrandingOptions {
   logoUrl?: string;
   tagline?: string;
   templateId?: string;
+  /** Return the actual PDF for live preview/storage without downloading it. */
+  output?: "blob";
 }
 
 // EPK PDF Template definitions
@@ -267,7 +269,7 @@ function truncateText(doc: any, text: string, maxWidth: number): string {
   return text + '...';
 }
 
-export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBrandingOptions): Promise<void> {
+export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBrandingOptions): Promise<Blob> {
   const defaults = buildEPKDefaults(input);
   input = { ...input, narratives: input.narratives ?? defaults.topics };
   const { default: jsPDF } = await import("jspdf");
@@ -1025,5 +1027,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
 
   // Save
   const safeName = (profile.full_name || 'creator').replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`${safeName}_EPK.pdf`);
+  const blob = doc.output("blob") as Blob;
+  if (brandingOptions?.output !== "blob") doc.save(`${safeName}_EPK.pdf`);
+  return blob;
 }

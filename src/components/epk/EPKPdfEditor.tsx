@@ -9,7 +9,7 @@ import {
   Monitor, Smartphone, X, Save, Eye, EyeOff,
   GripVertical, ChevronDown, ChevronRight, ChevronLeft, Wand2,
   PanelLeft, ArrowLeft, Crown, Lock, FileDown, Palette, Star,
-  Type, Image as ImageIcon, Plus, Trash2, LayoutTemplate, Check, Upload
+  Type, Image as ImageIcon, Plus, Trash2, LayoutTemplate, Check, Upload, FolderOpen, RotateCw, ArrowUp, ArrowDown, Maximize
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,10 @@ import { EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES, type EPKTemplateId } from "@/lib
 
 import { avatarEPKAccent, buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate, validateEPKFile } from "@/lib/epkDraft";
 import { EPKDraftField } from "./EPKDraftTopics";
+import { EPKDocumentViewer } from "./EPKDocumentViewer";
+import { editEPKDocument, epkDraftStorage, epkPassportPath, type EPKPageEdit } from "@/lib/epkDocument";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Editable sections for the EPK
 interface EPKSection {
@@ -72,12 +76,21 @@ interface EPKPdfEditorProps {
   userId: string;
 }
 
-type EditorTab = "content" | "sections" | "template" | "branding";
+type EditorTab = "content" | "sections" | "template" | "branding" | "files";
 
 export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorProps) => {
   const { subscriptionInfo } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [documentBlob, setDocumentBlob] = useState<Blob | null>(null);
+  const [documentMode, setDocumentMode] = useState<"kretopia" | "original">("kretopia");
+  const [pageEdits, setPageEdits] = useState<EPKPageEdit[]>([]);
+  const [documentEdited, setDocumentEdited] = useState(false);
+  const [storageBusy, setStorageBusy] = useState(false);
+  const [savedAt, setSavedAt] = useState<number | null>(null);
   const isPro = hasProAccess((subscriptionInfo?.tier || "free") as any);
   const isCreatorPlus = hasCreatorProAccess((subscriptionInfo?.tier || "free") as any);
 
@@ -89,7 +102,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const uploadRef = useRef<HTMLInputElement>(null);
   const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
 
   // Editable state
@@ -174,6 +187,10 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const handleDownload = async () => {
     setGenerating(true);
     try {
+      if (documentMode === "original" && (documentBlob || originalFile)) {
+        downloadBlob(documentBlob || originalFile as Blob, originalFile?.name || "EPK.pdf");
+        return;
+      }
       const modifiedData = buildModifiedData();
       
       if (isCreatorPlus) {
@@ -206,13 +223,79 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
     if (invalid) { toast({ title: invalid, variant: "destructive" }); return; }
     setImporting(true);
     try {
-      const { extractTextFromFile } = await import("@/lib/extractBriefDocument");
-      const document = await extractTextFromFile(file);
-      if (!document.text.trim()) throw new Error("This PDF has no readable text. Use a text-based PDF.");
-      setImportedText(document.text.replace(/--- Page \d+ ---/g, "").trim());
+      const { PDFDocument } = await import("pdf-lib");
+      const pdf = await PDFDocument.load(await file.arrayBuffer());
+      setOriginalFile(file);
+      setDocumentBlob(file);
+      setPageEdits(Array.from({ length: pdf.getPageCount() }, (_, index) => ({ index, rotation: 0 })));
+      setDocumentEdited(false);
+      setDocumentMode("original");
       setImportName(file.name);
+      setActiveTab("files");
+      markChanged();
     } catch (e) { toast({ title: e instanceof Error ? e.message : "Could not read this PDF", variant: "destructive" }); }
     finally { setImporting(false); if (uploadRef.current) uploadRef.current.value = ""; }
+  };
+
+  useEffect(() => {
+    if (!open || documentMode !== "kretopia") return;
+    let active = true;
+    const timer = window.setTimeout(() => {
+      void import("@/lib/epkPdfGenerator").then(({ generateEPKPdf }) => generateEPKPdf(buildModifiedData(), {
+        output: "blob", templateId: selectedTemplate, tagline,
+        primaryColor: hexToRgb(branding.primaryColor), accentColor: hexToRgb(branding.accentColor), darkColor: hexToRgb(branding.darkColor), logoUrl: branding.logoUrl || undefined,
+      })).then(blob => { if (active) setDocumentBlob(blob); }).catch(() => { if (active) toast({ title: "Could not refresh the PDF preview", variant: "destructive" }); });
+    }, 250);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [open, documentMode, buildModifiedData, branding, selectedTemplate, tagline, toast]);
+
+  const updatePages = async (next: EPKPageEdit[]) => {
+    if (!originalFile) return;
+    try {
+      const bytes = await editEPKDocument(new Uint8Array(await originalFile.arrayBuffer()), next);
+      setDocumentBlob(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      setPageEdits(next); setDocumentEdited(true); markChanged();
+    } catch (e) { toast({ title: e instanceof Error ? e.message : "Could not edit PDF", variant: "destructive" }); }
+  };
+
+  const storageAction = async (action: "save" | "read" | "delete" | "publish" | "unpublish") => {
+    setStorageBusy(true);
+    try {
+      if (action === "save") {
+        await epkDraftStorage(userId, "save", { name: originalFile?.name || "Kretopia EPK.pdf", file: originalFile || documentBlob || new Blob(), editor: JSON.stringify({ displayName, displayRole, bio, location, tagline, topics, sections, branding, creditOverrides, selectedTemplate, documentMode, pageEdits, documentEdited }), savedAt: Date.now() });
+        setSavedAt(Date.now()); setHasChanges(false);
+        toast({ title: "Draft saved on this device" });
+      } else if (action === "read") {
+        const draft = await epkDraftStorage(userId, "read");
+        if (!draft) { toast({ title: "No saved draft on this device" }); return; }
+        const editor = JSON.parse(draft.editor);
+        setDisplayName(editor.displayName); setDisplayRole(editor.displayRole); setBio(editor.bio); setLocation(editor.location); setTagline(editor.tagline); setTopics(editor.topics); setSections(editor.sections); setBranding(editor.branding); setCreditOverrides(editor.creditOverrides); setSelectedTemplate(editor.selectedTemplate); setSavedAt(draft.savedAt);
+        if (editor.documentMode === "original") {
+          const file = new File([draft.file], draft.name, { type: "application/pdf" });
+          setOriginalFile(file); setImportName(draft.name); setPageEdits(editor.pageEdits); setDocumentEdited(editor.documentEdited);
+          const bytes = editor.documentEdited ? await editEPKDocument(new Uint8Array(await file.arrayBuffer()), editor.pageEdits) : null;
+          setDocumentBlob(bytes ? new Blob([bytes as BlobPart], { type: "application/pdf" }) : file);
+        }
+        setDocumentMode(editor.documentMode); toast({ title: "Draft restored" });
+      } else if (action === "delete") {
+        await epkDraftStorage(userId, "delete"); setSavedAt(null); toast({ title: "Device draft deleted" });
+      } else {
+        const { data: session, error: authError } = await supabase.auth.getUser();
+        if (authError || session.user?.id !== userId) throw new Error("Sign in to your own Passport to manage its EPK.");
+        const path = epkPassportPath(userId);
+        if (action === "publish") {
+          if (!documentBlob) throw new Error("Wait for your PDF preview to finish.");
+          const { error } = await supabase.storage.from("portfolio").upload(path, documentBlob, { contentType: "application/pdf", upsert: true, cacheControl: "60" });
+          if (error) throw new Error("Your EPK could not be saved to your Passport. Your local document is safe.");
+        } else {
+          const { error } = await supabase.storage.from("portfolio").remove([path]);
+          if (error) throw new Error("Could not remove the published EPK.");
+        }
+        await queryClient.invalidateQueries({ queryKey: ["passport-original-epk", userId] });
+        toast({ title: action === "publish" ? "Complete PDF added to your public Passport" : "EPK removed from Passport" });
+      }
+    } catch (e) { toast({ title: e instanceof Error ? e.message : "Storage unavailable", variant: "destructive" }); }
+    finally { setStorageBusy(false); }
   };
 
   // Section drag & drop
@@ -241,6 +324,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
     { id: "sections", label: "Sections", icon: GripVertical },
     { id: "template", label: "Template", icon: LayoutTemplate, proOnly: true },
     { id: "branding", label: "Branding", icon: Palette, proOnly: true },
+    { id: "files", label: "Files", icon: FolderOpen },
   ];
 
   return (
@@ -253,7 +337,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           </Button>
           <BrandLogo iconOnly size="sm" />
           <div className="hidden sm:block">
-            <h2 className="text-sm font-semibold">EPK PDF Editor</h2>
+            <h2 className="k-gradient-text text-sm font-semibold">EPK PDF Editor</h2>
             <p className="text-xs text-muted-foreground">
               {displayName} · Creative Passport
             </p>
@@ -261,6 +345,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Toggle EPK preview" onClick={() => setSidebarCollapsed(v => !v)}><Eye /></Button>
+          <Button variant="ghost" size="icon" title="Save device draft" aria-label="Save device draft" disabled={storageBusy} onClick={() => void storageAction("save")}><Save className="h-4 w-4" /></Button>
           <input ref={uploadRef} type="file" accept="application/pdf,.pdf" className="hidden" aria-label="Upload your EPK" onChange={e => void handleImport(e.target.files?.[0])} />
           <Button variant="outline" size="sm" onClick={() => uploadRef.current?.click()} disabled={importing} aria-label="Upload your EPK">
             {importing ? <KretopiaSpinner className="h-4 w-4" /> : <Upload className="h-4 w-4" />}<span className="hidden sm:inline">Import EPK</span>
@@ -291,7 +376,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
               const Icon = tab.icon;
               const locked = tab.proOnly && !isCreatorPlus;
               return (
-                <button
+                <Button variant="ghost"
                   key={tab.id}
                   onClick={() => {
                     if (locked) {
@@ -304,7 +389,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
                     setActiveTab(tab.id);
                   }}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+                    "h-auto flex-1 rounded-none flex flex-col items-center justify-center gap-1 py-2.5 px-1 text-xs font-medium transition-colors",
                     activeTab === tab.id ? "bg-background text-foreground border-b-2 border-primary" : "text-muted-foreground hover:text-foreground",
                     locked && "opacity-50"
                   )}
@@ -312,7 +397,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
                   <Icon className="h-3.5 w-3.5" />
                   {tab.label}
                   {locked && <Lock className="h-3 w-3" />}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -320,6 +405,18 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           {/* Tab content */}
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-4">
+              {documentMode === "original" && activeTab !== "files" && <Button variant="outline" className="w-full" onClick={() => setActiveTab("files")}><FolderOpen className="mr-2 h-4 w-4" />Edit original PDF pages</Button>}
+              {activeTab === "files" && <div className="space-y-4">
+                <div className="flex items-center gap-2"><BrandLogo iconOnly size="sm" /><h3 className="text-sm font-semibold">EPK library</h3></div>
+                <div className="flex gap-1"><Button variant={documentMode === "kretopia" ? "secondary" : "ghost"} size="sm" onClick={() => { setDocumentMode("kretopia"); setDocumentBlob(null); }}>Kretopia draft</Button><Button variant={documentMode === "original" ? "secondary" : "ghost"} size="sm" disabled={!originalFile} onClick={() => { setDocumentMode("original"); if (originalFile) { if (documentEdited) void updatePages(pageEdits); else setDocumentBlob(originalFile); } }}>Your PDF</Button></div>
+                {originalFile && <><p className="break-all text-sm font-medium">{importName}</p><p className="text-xs text-muted-foreground">{(originalFile.size / 1024 / 1024).toFixed(2)} MB · {pageEdits.length} pages · {documentEdited ? "Edited copy" : "Original intact"}</p>
+                  <Button variant="outline" size="sm" onClick={() => downloadBlob(originalFile, originalFile.name)}><FileDown className="mr-1 h-4 w-4" />Download untouched original</Button>
+                  <div className="space-y-1">{pageEdits.map((edit, index) => <div key={`${edit.index}-${index}`} className="flex items-center gap-1 border-b border-border py-2"><span className="flex-1 text-xs">Page {edit.index + 1} · {edit.rotation}°</span><Button variant="ghost" size="icon" title="Move page up" aria-label={`Move page ${index + 1} up`} disabled={index === 0 || storageBusy} onClick={() => { const next = [...pageEdits]; [next[index - 1], next[index]] = [next[index], next[index - 1]]; void updatePages(next); }}><ArrowUp className="h-3 w-3" /></Button><Button variant="ghost" size="icon" title="Move page down" aria-label={`Move page ${index + 1} down`} disabled={index === pageEdits.length - 1 || storageBusy} onClick={() => { const next = [...pageEdits]; [next[index + 1], next[index]] = [next[index], next[index + 1]]; void updatePages(next); }}><ArrowDown className="h-3 w-3" /></Button><Button variant="ghost" size="icon" title="Rotate page" aria-label={`Rotate page ${index + 1}`} onClick={() => void updatePages(pageEdits.map((p, i) => i === index ? { ...p, rotation: (p.rotation + 90) % 360 } : p))}><RotateCw className="h-3 w-3" /></Button><Button variant="ghost" size="icon" title="Remove page from copy" aria-label={`Remove page ${index + 1}`} disabled={pageEdits.length <= 1} onClick={() => void updatePages(pageEdits.filter((_, i) => i !== index))}><Trash2 className="h-3 w-3" /></Button></div>)}</div>
+                  <Button variant="ghost" size="sm" onClick={() => { setDocumentEdited(false); setDocumentBlob(originalFile); void import("pdf-lib").then(async ({ PDFDocument }) => { const pdf = await PDFDocument.load(await originalFile.arrayBuffer()); setPageEdits(Array.from({ length: pdf.getPageCount() }, (_, index) => ({ index, rotation: 0 }))); }); }}>Restore all original pages</Button>
+                </>}
+                <div className="space-y-2 border-t border-border pt-4"><p className="text-xs font-semibold">Device storage</p>{savedAt && <p className="text-xs text-muted-foreground">Saved {new Date(savedAt).toLocaleString()}</p>}<div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" disabled={storageBusy} onClick={() => void storageAction("save")}><Save className="mr-1 h-4 w-4" />Save draft</Button><Button variant="outline" size="sm" disabled={storageBusy} onClick={() => void storageAction("read")}><FolderOpen className="mr-1 h-4 w-4" />Restore draft</Button><Button variant="ghost" size="sm" disabled={storageBusy} onClick={() => void storageAction("delete")}><Trash2 className="mr-1 h-4 w-4" />Delete draft</Button></div></div>
+                <div className="space-y-2 border-t border-border pt-4"><p className="text-xs font-semibold">Public Passport</p><Button className="w-full" disabled={storageBusy || !documentBlob} onClick={() => { if (window.confirm("Make this complete PDF public on your Passport? It will replace your current published EPK.")) void storageAction("publish"); }}>{storageBusy ? <KretopiaSpinner className="mr-2 h-4 w-4" /> : <Upload className="mr-2 h-4 w-4" />}Add complete PDF to Passport</Button><Button variant="ghost" size="sm" disabled={storageBusy} onClick={() => { if (window.confirm("Remove your published EPK from your Passport?")) void storageAction("unpublish"); }}>Remove from Passport</Button></div>
+              </div>}
               {activeTab === "content" && (
                 <>
                   <div className="space-y-2">
@@ -586,17 +683,11 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
             >
               <PanelLeft className="h-4 w-4" />
             </Button>
-            <span className="text-xs text-muted-foreground">Live Preview</span>
-            <div />
+            <span className="text-xs font-semibold text-foreground">Live Preview {documentMode === "original" && "· Your PDF"}</span>
+            <Button variant="ghost" size="icon" title="Fullscreen preview" aria-label="Fullscreen preview" onClick={() => void previewRef.current?.requestFullscreen().catch(() => toast({ title: "Fullscreen unavailable in this browser" }))}><Maximize className="h-4 w-4" /></Button>
           </div>
-          <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center">
-            <EPKPreview
-              data={buildModifiedData()}
-              branding={branding}
-              templateId={selectedTemplate}
-              tagline={tagline}
-              sections={sections}
-            />
+          <div ref={previewRef} className="flex-1 min-h-0 w-full overflow-hidden bg-background">
+            {documentBlob ? <EPKDocumentViewer source={documentBlob} /> : <div className="flex h-full items-center justify-center"><KretopiaSpinner className="h-10 w-10" /></div>}
           </div>
         </div>
       </div>
@@ -911,4 +1002,10 @@ function hexToRgb(hex: string): [number, number, number] {
 
 function rgbToHex(rgb: [number, number, number]): string {
   return '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function downloadBlob(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a"); link.href = url; link.download = name; link.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

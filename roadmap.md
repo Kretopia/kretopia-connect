@@ -1,10 +1,16 @@
 # Roadmap
 
+## Original EPK and full-space editor
+- [x] Actual PDF fills preview width by default; hide editing panels initially, add zoom/page navigation and fullscreen. PDF.js pinned to browser-compatible v4 after reproducing v5 runtime incompatibility.
+- [x] Uploaded PDF remains byte-identical unless explicit page edits; original download retained. Explicit public Passport upload/removal reuses existing portfolio storage under the owner's path; owner/public viewers added without migrations or profile writes.
+- [x] User-keyed device draft save/restore/delete, original page reorder/rotate/remove/reset, shared branding and real generated-PDF preview. 30 focused tests pass; isolated browser verifies byte-identical import/download, rotation, draft restoration, fullscreen and phone default preview; compilation OK. Website not published.
+- [ ] Verify real connected-account upload and public read-back — external legacy account session unavailable; existing storage policies and PDF acceptance cannot be certified from this sandbox. Original PDF content editing is limited to pages; typography/text remain editable in Kretopia drafts, not arbitrary imported PDF artwork.
+
 ## Passport and EPK refinement (October 29)
 - [x] Merge Passport identity/intelligence in one Holo surface, remove following collaboration divider and soften Edit with shared theme-aware controls.
 - [x] Enrich factual EPK defaults, profession/interests template selection, avatar-derived teal accent, reviewed AI draft actions for bio and seven topics, and local PDF-text import with explicit application. Existing paid custom controls preserved; no public upload/persistence or profile writes.
 - [x] 33 focused tests passed; isolated actual editor on desktop/375px, real PDF download and PDF import/read-back verified. PDF cover inspected; missing asset delivery retains text wordmark. Automatic compilation OK. Legacy backend unchanged; not published.
-- [ ] Verify AI generation and merged Passport on a connected legacy account — external unmanaged session unavailable. Existing authenticated generate-content endpoint reused unchanged; live AI request could not be checked. Persistent uploaded EPK hosting is not implemented; current import is local editable text, not original PDF layout replacement.
+- [ ] Verify AI generation and merged Passport on a connected legacy account — external unmanaged session unavailable. Existing authenticated generate-content endpoint reused unchanged; live AI request could not be checked. Full original PDF hosting is now implemented above; authenticated storage read-back remains unverified.
 
 ## Landing video startup (October 28)
 - [x] Five CDN video variants reduce H.264 transfers from 31.8 MB to 9.0 MB (71.6%); VP9 fallback, unchanged masters/crops, no posters, first chapter warmed on phones too, later transfers deferred until two screens away (one with data saver).
