@@ -5,9 +5,9 @@ import {
 import {
   canonicalFor, eventJsonLd, externalJobPosting, isExpired, isSitemapEligible, MIN_INDEXABLE_CHARS, nativeGigJobPosting, nativeGigRobots, robotsFor, type ListingSeoInput,
 } from "../../../../supabase/functions/_shared/discovery/seo";
-import { listingLabels, relativeDays } from "../../../../supabase/functions/_shared/discovery/labels";
+import { listingLabels, relativeDays, sourceDisplayName } from "../../../../supabase/functions/_shared/discovery/labels";
 import { costCents, jobKey, scopesFor, utcDay } from "../../../../supabase/functions/_shared/discovery/budget";
-import { adapterById } from "../../../../supabase/functions/_shared/discovery/sources";
+import { adapterById, SOURCE_ADAPTERS } from "../../../../supabase/functions/_shared/discovery/sources";
 
 const NOW = new Date("2026-10-28T12:00:00Z");
 const LONG = "A real description of the role. ".repeat(12);
@@ -193,6 +193,22 @@ describe("labels say only what is true", () => {
       origin: "External", ownership: "Unclaimed", lastChecked: "Last checked 3 days ago", source: "via Remote OK",
     });
     expect(listingLabels({ origin: "external", claimed: true, last_checked_at: null, source_name: null }, NOW)).toMatchObject({ ownership: "Claimed", lastChecked: null, source: null });
+  });
+
+  it("credits a source by its name, not its id: the stored provider id 'jobicy' reads 'via Jobicy' (its terms ask for a clear credit)", () => {
+    const via = (id: string | null) => listingLabels({ origin: "external", claimed: false, last_checked_at: null, source_name: id }, NOW).source;
+    expect(via("jobicy")).toBe("via Jobicy");
+    expect(via("remoteok")).toBe("via Remote OK");
+    expect(via("weworkremotely")).toBe("via We Work Remotely");
+    expect(via("arbeitnow")).toBe("via Arbeitnow");
+    expect(via("some-new-feed")).toBe("via some-new-feed"); // an id nobody listed is shown as it is, never hidden or invented
+    expect(via("Remote OK")).toBe("via Remote OK"); // a caller that already passes a name is unchanged
+    expect(via(null)).toBeNull();
+    expect(sourceDisplayName(null)).toBeNull();
+  });
+
+  it("every approved source has the display name its registry entry gives it, so the two lists cannot drift", () => {
+    for (const a of SOURCE_ADAPTERS) expect(sourceDisplayName(a.id)).toBe(a.name);
   });
 
   it("a Kretopia listing carries no ownership or last-checked label", () => {
