@@ -47,9 +47,12 @@ export async function checkUsernameAvailability(raw: string): Promise<UsernameAv
   }
 }
 
-export type UsernameSignInResult =
-  | { ok: true }
-  | { ok: false; error: "invalid" | "rate_limited" | "network" | "unavailable" };
+// Single shape (not a discriminated union): this project's tsconfig runs with
+// strict:false, where union narrowing on `ok` does not apply.
+export type UsernameSignInResult = {
+  ok: boolean;
+  error?: "invalid" | "rate_limited" | "network" | "unavailable";
+};
 
 /**
  * Sign in with @username + password. The edge function resolves the email
