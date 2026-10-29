@@ -80,3 +80,26 @@ export async function signInWithUsername(rawUsername: string, password: string):
     return { ok: false, error: "network" };
   }
 }
+
+const linkedTokens = new Set<string>();
+/**
+ * Records that this signed-in account can use @username sign-in. Sends only
+ * the user's own session token; the server verifies it. Fire-and-forget.
+ */
+export async function linkUsernameLogin(accessToken: string | undefined | null): Promise<void> {
+  if (!accessToken || linkedTokens.has(accessToken)) return;
+  linkedTokens.add(accessToken);
+  try {
+    await fetch(`${AUTH_BACKEND_URL}/functions/v1/username-auth`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: AUTH_BACKEND_PUBLISHABLE_KEY,
+        "x-legacy-access-token": accessToken,
+      },
+      body: JSON.stringify({ action: "link" }),
+    });
+  } catch {
+    /* non-blocking */
+  }
+}

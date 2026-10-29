@@ -15,6 +15,13 @@
       "when": 1793260020240,
       "tag": "0001_username_auth_rate_limit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793269284977,
+      "tag": "0002_migration",
+      "breakpoints": true
     }
   ]
 }

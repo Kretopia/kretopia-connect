@@ -155,6 +155,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        if (session?.access_token && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+          const token = session.access_token;
+          setTimeout(() => {
+            import('@/lib/usernameAuth').then(m => m.linkUsernameLogin(token)).catch(() => {});
+          }, 0);
+        }
         
         if (session?.user && event === 'SIGNED_IN') {
           // Defer subscription check to avoid calling Supabase inside callback

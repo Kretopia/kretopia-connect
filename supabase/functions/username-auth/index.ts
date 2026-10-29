@@ -1,5 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders as baseCors } from "npm:@supabase/supabase-js@2/cors";
+
+const corsHeaders = {
+  ...baseCors,
+  "Access-Control-Allow-Headers": `${baseCors["Access-Control-Allow-Headers"] ?? "authorization, x-client-info, apikey, content-type"}, x-legacy-access-token`,
+};
 
 /**
  * username-auth — @username sign-in and availability checks.
@@ -77,7 +82,7 @@ Deno.serve(async (req) => {
   const LEGACY_SERVICE = Deno.env.get("LEGACY_SUPABASE_SERVICE_ROLE_KEY");
   const CLOUD_URL = Deno.env.get("SUPABASE_URL");
   const CLOUD_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!LEGACY_URL || !LEGACY_ANON || !LEGACY_SERVICE || !CLOUD_URL || !CLOUD_SERVICE) {
+  if (!LEGACY_URL || !LEGACY_ANON || !CLOUD_URL || !CLOUD_SERVICE) {
     return json({ error: "Username sign-in is not available yet" }, 503);
   }
 
@@ -102,12 +107,37 @@ Deno.serve(async (req) => {
     return data === true;
   };
 
+  // Records "legacy account -> email" after verifying the caller's own legacy
+  // session. Needs only the public key: the legacy auth server validates the
+  // token. The username itself is always read live from public profiles.
+  if (action === "link") {
+    const token = (req.headers.get("x-legacy-access-token") || "").trim();
+    if (!token) return json({ error: "Missing session" }, 401);
+    if (!(await allowed(`link:${ip}`, 20, 200))) return json({ error: "Too many attempts" }, 429);
+    const res = await fetch(`${LEGACY_URL}/auth/v1/user`, {
+      headers: { apikey: LEGACY_ANON, Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return json({ error: "Invalid session" }, 401);
+    const u = (await res.json().catch(() => null)) as { id?: string; email?: string } | null;
+    if (!u?.id || !u?.email) return json({ error: "Invalid session" }, 401);
+    const { error } = await cloud.from("username_login_links").upsert({
+      legacy_user_id: u.id,
+      email: u.email.toLowerCase(),
+      updated_at: new Date().toISOString(),
+    });
+    if (error) {
+      console.error("[username-auth] link upsert failed", error.message);
+      return json({ error: "Link failed" }, 500);
+    }
+    return json({ linked: true });
+  }
+
   if (action === "check-username") {
     const v = validate(username);
     if (v === "required" || v === "invalid") return json({ available: false, reason: "invalid" });
     if (v === "reserved") return json({ available: false, reason: "reserved" });
     if (!(await allowed(`check:${ip}`, 30, 300))) return json({ error: "Too many attempts" }, 429);
-    const found = await findProfileByUsername(LEGACY_URL, LEGACY_SERVICE, username);
+    const found = await findProfileByUsername(LEGACY_URL, LEGACY_ANON, username);
     if (found === "error") return json({ error: "Username check unavailable" }, 503);
     return json({ available: !found, reason: found ? "taken" : null });
   }
@@ -122,22 +152,25 @@ Deno.serve(async (req) => {
       return json({ error: "Too many attempts. Try again later." }, 429);
     }
 
-    const legacyAdmin = createClient(LEGACY_URL, LEGACY_SERVICE, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
+    const profile = await findProfileByUsername(LEGACY_URL, LEGACY_ANON, username);
+    if (profile === "error" || !profile?.user_id) return json({ error: GENERIC_ERROR }, 401);
 
-    const profile = await findProfileByUsername(LEGACY_URL, LEGACY_SERVICE, username);
-    if (profile === "error") return json({ error: GENERIC_ERROR }, 401);
-    if (!profile?.user_id) return json({ error: GENERIC_ERROR }, 401);
-
-    const { data: userData, error: userError } = await legacyAdmin.auth.admin.getUserById(profile.user_id);
-    const email = userData?.user?.email;
-    if (userError || !email) {
-      // Distinguishes a bad LEGACY_SUPABASE_SERVICE_ROLE_KEY (403/not admin)
-      // from a missing account in the function logs.
-      console.error("[username-auth] admin getUserById failed", userError?.message ?? "no email");
-      return json({ error: GENERIC_ERROR }, 401);
+    let email: string | undefined;
+    const { data: link } = await cloud
+      .from("username_login_links")
+      .select("email")
+      .eq("legacy_user_id", profile.user_id)
+      .maybeSingle();
+    email = link?.email;
+    if (!email && LEGACY_SERVICE) {
+      // Optional fallback when a real legacy service key is configured.
+      const legacyAdmin = createClient(LEGACY_URL, LEGACY_SERVICE, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+      const { data: userData } = await legacyAdmin.auth.admin.getUserById(profile.user_id);
+      email = userData?.user?.email ?? undefined;
     }
+    if (!email) return json({ error: GENERIC_ERROR }, 401);
 
     const legacyAnon = createClient(LEGACY_URL, LEGACY_ANON, {
       auth: { autoRefreshToken: false, persistSession: false },
