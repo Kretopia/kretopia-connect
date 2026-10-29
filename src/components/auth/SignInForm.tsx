@@ -169,6 +169,56 @@ export const SignInForm = ({
 
   return (
     <form onSubmit={handlePasswordSubmit} className="space-y-4">
+      {/* Identifier mode: email (default) or @username — same password, same account. */}
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label="Sign-in method">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "email"}
+          onClick={() => setMode("email")}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Email
+          {lastMethod === "email" && <LastUsedPill />}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "username"}
+          onClick={() => setMode("username")}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "username" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          @Username
+          {lastMethod === "username" && <LastUsedPill />}
+        </button>
+      </div>
+
+      {mode === "username" && (
+        <div className="space-y-2">
+          <Label htmlFor="signin-username">Username</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base">@</span>
+            <Input
+              id="signin-username"
+              type="text"
+              inputMode="text"
+              placeholder="your_handle"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value); setUsernameError(""); }}
+              required
+              className={`h-12 text-base pl-8 ${usernameError ? "border-destructive" : ""}`}
+              autoComplete="username"
+            />
+          </div>
+          {usernameError && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {usernameError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {mode === "email" && (
       <div className="space-y-2">
         <Label htmlFor="signin-email">Email</Label>
         <div className="relative">
