@@ -390,6 +390,66 @@ const Auth = () => {
     setLoading(false);
   };
 
+  // @username sign-in — the edge function resolves the email server-side and
+  // returns session tokens only; every credential failure is one generic error.
+  const handleUsernameSignIn = async (username: string, usernamePassword: string) => {
+    setLoading(true);
+
+    const { trackEvent, EventCategory } = await import("@/lib/analytics");
+    trackEvent({ eventName: 'signin_attempt', eventCategory: EventCategory.AUTH, properties: { method: 'username', time_on_page_ms: Date.now() - authLoadTime } });
+    trackSigninAttempt(authEntrySource, "username");
+
+    try {
+      try {
+        localStorage.removeItem('sb-kwmcocsitwssrtzkdojh-auth-token');
+        sessionStorage.clear();
+        await supabase.auth.signOut({ scope: 'local' });
+      } catch (cleanupErr) {
+        console.warn('[Auth] Session cleanup warning:', cleanupErr);
+      }
+
+      const { signInWithUsername, GENERIC_USERNAME_SIGNIN_ERROR } = await import("@/lib/usernameAuth");
+      const result = await signInWithUsername(username, usernamePassword);
+
+      if (!result.ok) {
+        trackSigninError(authEntrySource, "username",
+          result.error === "network" ? "network_error"
+          : result.error === "invalid" ? "invalid_input"
+          : "unknown_error");
+        if (result.error === "rate_limited") {
+          toast({ title: "Too many attempts", description: "Please wait a moment and try again.", variant: "destructive" });
+        } else if (result.error === "network") {
+          toast({ title: "Connection Error", description: "Please check your internet connection and try again.", variant: "destructive" });
+        } else if (result.error === "unavailable") {
+          toast({ title: "Username sign-in unavailable", description: "Sign in with your email instead — same account.", variant: "destructive" });
+        } else {
+          toast({ title: GENERIC_USERNAME_SIGNIN_ERROR, description: "Check your @username and password, or sign in with your email.", variant: "destructive" });
+        }
+      } else {
+        const { analytics } = await import("@/lib/analytics");
+        analytics.signIn('username');
+        trackSigninSuccess(authEntrySource, "username");
+        const { setLastSignInMethod } = await import("@/lib/authProviderHints");
+        setLastSignInMethod("username");
+
+        const { data: { user: signedInUser } } = await supabase.auth.getUser();
+        if (signedInUser) {
+          const { data: adminData } = await supabase
+            .from("user_roles").select("role").eq("user_id", signedInUser.id).eq("role", "admin").maybeSingle();
+
+          toast({ title: "Welcome back!", description: "You've successfully signed in" });
+          navigate(!!adminData ? "/admin" : redirectTo);
+        } else {
+          navigate(redirectTo);
+        }
+      }
+    } catch (err: any) {
+      console.error('[Auth] Username sign in error:', err);
+      toast({ title: "Connection Error", description: "Unable to connect. Please check your internet and try again.", variant: "destructive" });
+    }
+    setLoading(false);
+  };
+
   const handleOAuthSignIn = async (provider: OAuthProvider) => {
     setOauthLoading(provider);
     if (provider === "google") setGoogleLoading(true);
@@ -745,6 +805,7 @@ const Auth = () => {
                   email={email} setEmail={setEmail}
                   password={password} setPassword={setPassword}
                   loading={loading} onSubmit={handleSignIn}
+                  onUsernameSubmit={handleUsernameSignIn}
                   onForgotPassword={() => setShowForgotPassword(true)}
                   onGoogleSignIn={() => handleOAuthSignIn("google")}
                   googleLoading={googleLoading}
