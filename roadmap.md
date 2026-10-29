@@ -187,3 +187,4 @@
 - [ ] Vérifier que LEGACY_SUPABASE_SERVICE_ROLE_KEY est bien la clé service_role (l'utilisateur ne voit que la clé anon) : tester check-username sur un handle existant connu ; si tout renvoie "available", la clé est mauvaise → update_secret
 - [x] Diagnostic : la clé enregistrée est la clé anon (« User not allowed » dans les logs) — la résolution email exige la vraie clé service_role du projet actif ; lookup username basculé sur la vue publique (april → "taken" ✓)
 - [ ] Utilisateur : entrer la vraie clé service_role (Project Settings → API Keys du projet kwmcocsitwssrtzkdojh) via le formulaire sécurisé
+- [x] Bilan : tout fonctionne sauf la résolution email finale (clé service_role introuvable côté utilisateur — formulaire refusé). Sign-in @username fail-closed (erreur générique) jusqu'à la vraie clé. Disponibilité + Edit Profile + validation opérationnels.
