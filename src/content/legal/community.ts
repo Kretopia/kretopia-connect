@@ -1,71 +1,102 @@
-/** Supplied privacy document, displayed on Community by explicit user request. */
+/** Community Guidelines from the user-supplied Kretopia_Community_Guidelines_2026_v6.html. */
 import type { LegalDocument } from "./types";
 
 export const COMMUNITY: LegalDocument = {
   "slug": "community",
   "name": "Community",
-  "seoDescription": "How Kretopia handles information across Creative Passport, opportunity discovery, collaboration, payments and AI-assisted workflows.",
-  "title": "Your work. Your data.",
-  "accentTitle": "Your context.",
-  "subtitle": "How Kretopia handles information across Creative Passport, opportunity discovery, collaboration, payments and AI-assisted workflows.",
+  "seoDescription": "Kretopia is built for creative careers. These guidelines protect the trust that makes identity, opportunity, collaboration and the record of real work useful.",
+  "title": "Respect the work.",
+  "accentTitle": "Respect the people.",
+  "subtitle": "Kretopia is built for creative careers. These guidelines protect the trust that makes identity, opportunity, collaboration and the record of real work useful.",
   "updated": "Last updated 7 October 2026",
   "panelHeading": {
-    "before": "Professional context needs ",
-    "accent": "professional boundaries."
+    "before": "Creative careers grow through ",
+    "accent": "trust."
   },
   "sections": [
     {
       "id": "s01",
       "num": "01",
-      "title": "Scope and privacy responsibility",
+      "title": "The standard",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "This Privacy Policy explains how Kretopia collects, uses, shares, stores and protects personal information when you use Kretopia websites, products and related services."
+            "Kretopia is not built around popularity for its own sake. A polished profile, follower count or impressive claim cannot replace the record of what someone actually did, with whom, under what conditions and with what evidence."
           ]
         },
         {
           "type": "p",
           "content": [
-            "The final published policy must identify the legal entity that acts as the data controller or equivalent responsible entity for the relevant users and services."
+            "The community works when creatives, clients, producers, organisations and collaborators can rely on each other without being forced to guess what is true."
           ]
         },
         {
           "type": "callout",
-          "cap": "To complete before publication",
-          "text": "Insert Kretopia’s confirmed legal entity, registered address and any jurisdiction-specific controller or representative details."
+          "cap": "Respect the person",
+          "text": "Disagreement is part of creative work. Harassment, humiliation, intimidation and discrimination are not."
+        },
+        {
+          "type": "callout",
+          "cap": "Tell the truth",
+          "text": "Represent your identity, experience, availability, work, relationships and professional claims accurately."
+        },
+        {
+          "type": "callout",
+          "cap": "Credit contribution precisely",
+          "text": "Role, authorship, identity, payment and client confirmation are different facts. Do not use one to imply another."
+        },
+        {
+          "type": "callout",
+          "cap": "Respect consent and boundaries",
+          "text": "Privacy, audience, permissions, confidentiality and the right to say no remain part of professional trust."
+        },
+        {
+          "type": "callout",
+          "cap": "Keep the community useful",
+          "text": "Opportunity, conversation and visibility should help people move work forward — not create noise, pressure or manipulation."
         }
       ]
     },
     {
       "id": "s02",
       "num": "02",
-      "title": "Information we collect",
+      "title": "Identity, credits and evidence",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kretopia may collect account information, professional profile information, work and collaboration information, opportunity and hiring information, payment-related information, communications, device and browser information, usage events, cookie data where used, and source, provenance, permission, version and audit information needed to keep records trustworthy and access-controlled."
+            "Your Kretopia presence may include your Creative Passport, work history, roles, collaborators, services and evidence connected to professional contribution. Other people may rely on that information when deciding to contact, shortlist, hire, recommend or work with you."
           ]
+        },
+        {
+          "type": "p",
+          "content": [
+            "Only present work you created, commissioned or genuinely contributed to; describe your role accurately; credit collaborators; do not fabricate clients, testimonials, Co-Signs or evidence; and do not treat one kind of evidence as proof of another claim."
+          ]
+        },
+        {
+          "type": "callout",
+          "cap": "Visibility is not evidence",
+          "text": "Popularity, reach and presentation can be useful context, but they do not automatically prove delivery, authorship, quality or reliability."
         }
       ]
     },
     {
       "id": "s03",
       "num": "03",
-      "title": "How we use information",
+      "title": "Opportunity, hiring and outreach",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kretopia may process personal information to create and operate accounts and Creative Passports; provide Studio, Scout, search, messaging, booking and payment-related features; preserve source, version, approval, permission and professional evidence context; secure the Services; prevent abuse and fraud; respond to support, privacy and safety requests; personalise and improve product experiences; and comply with legal obligations."
+            "Kretopia connects people to paid work, collaborations, grants, castings, residencies, bookings and other professional opportunities. Whether an opportunity originates on Kretopia or elsewhere, its source and current state matter."
           ]
         },
         {
           "type": "p",
           "content": [
-            "The lawful basis for particular processing can vary by jurisdiction and purpose, including performance of a contract, legitimate interests, consent and legal obligations."
+            "Use accurate titles, scope, requirements, location and timing; state compensation when known; do not disguise unpaid work as paid work; do not post fake opportunities; update or close changed opportunities; and do not represent a click, message, redirect or invitation as a completed application or agreement."
           ]
         }
       ]
@@ -73,296 +104,163 @@ export const COMMUNITY: LegalDocument = {
     {
       "id": "s04",
       "num": "04",
-      "title": "Public, shared and private information",
+      "title": "Collaboration, files and money",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kretopia contains information with different audiences. A public profile or published Creative Passport is different from a private relationship record, restricted client file, organisation membership, internal note or Work Room audience."
+            "Creative work changes. Briefs evolve, versions move, dates shift and responsibilities overlap. Professional conduct means making those changes visible to the people they affect."
+          ]
+        },
+        {
+          "type": "p",
+          "content": [
+            "Agree scope, responsibilities, deliverables, dates, rates and revision expectations as clearly as the work allows. Do not pressure collaborators into hidden extra scope, treat one version approval as approval of another, collapse completion/payment/contribution into one state, or manipulate payment records."
           ]
         },
         {
           "type": "callout",
-          "cap": "Visibility",
-          "text": "Information you choose to publish may be visible to other users or the public according to the relevant setting."
-        },
-        {
-          "type": "callout",
-          "cap": "Private relationship data",
-          "text": "Private contacts, imported rosters, relationship notes and restricted workspace content are not intended to become public by default."
-        },
-        {
-          "type": "callout",
-          "cap": "Scoped access",
-          "text": "Organisation and Work Room access should remain scoped to authorised users and records."
-        },
-        {
-          "type": "callout",
-          "cap": "Retention after sharing",
-          "text": "Changing visibility or revoking access may not erase information another party is legally required to retain or that forms part of an independent record, transaction or dispute."
+          "cap": "A room is not unlimited permission",
+          "text": "Being added to a project, thread or workspace does not grant access to unrelated organisation records, private contacts or confidential material."
         }
       ]
     },
     {
       "id": "s05",
       "num": "05",
-      "title": "AI-assisted processing",
+      "title": "Content, rights and AI",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kreto and other AI-assisted features may process permissioned context to help prepare drafts, organise work, retrieve relevant information, explain options or coordinate supported actions."
+            "Kretopia supports creative work made with traditional tools, digital tools and AI. The standard is not whether AI was used; it is whether people are being misled about identity, authorship, evidence, endorsement or what actually happened."
           ]
         },
         {
           "type": "p",
           "content": [
-            "Access to information for AI-assisted features should remain subject to the same authority and workspace boundaries as the underlying product. A prompt, model output or external content should not expand a user’s permissions."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "Kretopia may retain execution history, source references, approvals and receipts where needed to make AI-assisted actions inspectable and recoverable."
+            "Only publish material you have the rights or permission to use. Do not impersonate people through generated media, present fictional people as real creators or customers, fabricate professional history or publish confidential client work without permission."
           ]
         },
         {
           "type": "callout",
-          "cap": "Training use is not stated here",
-          "text": "The supplied Kretopia materials do not establish a final policy for whether customer content is used to train general-purpose models. That point should be decided explicitly before publication rather than implied."
+          "cap": "AI does not remove human responsibility",
+          "text": "The person publishing, submitting or acting remains responsible for the claim, permission and consequence attached to that action."
         }
       ]
     },
     {
       "id": "s06",
       "num": "06",
-      "title": "How information is shared",
+      "title": "Community conduct",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kretopia may share personal information only as needed for the purposes described in this Policy, including with authorised users, service providers, for legal and safety reasons, or in connection with a business transaction subject to applicable safeguards."
+            "Creative careers are built through relationships. The way people communicate, give feedback, negotiate, invite, decline and disagree matters as much as the profile they present."
           ]
         },
         {
           "type": "callout",
-          "cap": "Subprocessors",
-          "text": "A current subprocessor list should be maintained separately once confirmed."
+          "cap": "Harassment and abuse",
+          "text": "Bullying, stalking, intimidation, threats, sexual harassment, coercion, discriminatory abuse or repeated unwelcome contact."
+        },
+        {
+          "type": "callout",
+          "cap": "Fraud and deception",
+          "text": "Impersonation, scams, fabricated evidence, fake opportunities, manipulated reviews, payment fraud or materially false professional claims."
+        },
+        {
+          "type": "callout",
+          "cap": "Rights violations",
+          "text": "Plagiarism, piracy, unauthorised distribution, misuse of confidential material or knowingly claiming another person’s work as your own."
+        },
+        {
+          "type": "callout",
+          "cap": "Spam and manipulation",
+          "text": "Unsolicited bulk messaging, repetitive irrelevant promotion, coordinated account manipulation, abusive automation or attempts to game discovery systems."
+        },
+        {
+          "type": "callout",
+          "cap": "Serious harm",
+          "text": "Credible threats, exploitation, non-consensual intimate content, malicious software, credential theft or unlawful or seriously harmful activity."
         }
       ]
     },
     {
       "id": "s07",
       "num": "07",
-      "title": "Payments and financial information",
+      "title": "What Kretopia commits to",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Where Kretopia enables payment-related features, payment providers may collect and process information needed for checkout, identity verification, fraud controls, settlement, refunds, disputes and payouts."
+            "The standard runs both ways."
           ]
         },
         {
-          "type": "p",
-          "content": [
-            "Kretopia may receive transaction references, status events, provider fees, settlement information and other records needed to reconcile an engagement or invoice. Payment method details may be handled directly by the applicable payment provider rather than stored by Kretopia."
-          ]
+          "type": "callout",
+          "cap": "Evidence over hype",
+          "text": "Kretopia should distinguish different kinds of professional evidence rather than collapse them into one universal trust score."
         },
         {
-          "type": "p",
-          "content": [
-            "Available providers, countries, currencies and payment methods may vary. The Privacy Policy should be updated when the production payment architecture and subprocessors are confirmed."
-          ]
+          "type": "callout",
+          "cap": "Unknowns stay visible",
+          "text": "Missing evidence, stale availability, uncertain outcomes and external-source limits should not be converted into invented certainty."
+        },
+        {
+          "type": "callout",
+          "cap": "Privacy by relationship",
+          "text": "Private contacts, restricted files, internal notes and relationship context should remain visible only to the people who need them."
+        },
+        {
+          "type": "callout",
+          "cap": "Human authority",
+          "text": "AI may interpret, prepare and coordinate within permission, but consequential decisions should not silently become autonomous authority."
+        },
+        {
+          "type": "callout",
+          "cap": "Product truth",
+          "text": "Capabilities, outcomes and professional states should be described as they actually are — not as stronger states because the wording sounds better."
         }
       ]
     },
     {
       "id": "s08",
       "num": "08",
-      "title": "Cookies, analytics and similar technologies",
+      "title": "Reporting and enforcement",
       "blocks": [
         {
           "type": "p",
           "content": [
-            "Kretopia may use cookies or similar technologies that are necessary for authentication, security, preferences and operation of the Services. Additional analytics or measurement technologies may be used where configured and permitted."
+            "If you encounter behaviour or content that may violate these guidelines, use the in-product reporting control where it is available. If a reporting control is not available, use Kretopia’s official contact route on the website."
           ]
         },
         {
           "type": "p",
           "content": [
-            "Where applicable law requires consent for non-essential technologies, Kretopia should provide an appropriate consent mechanism and explain the relevant categories and providers in a Cookie Policy."
+            "Reports should be considered in context. Kretopia may look at the behaviour itself, available evidence, severity, repetition and risk to others."
           ]
         },
         {
           "type": "callout",
-          "cap": "Cookie inventory required",
-          "text": "The supplied materials do not establish the live cookie and analytics inventory. Do not publish a detailed cookie claim until the production site has been audited."
-        }
-      ]
-    },
-    {
-      "id": "s09",
-      "num": "09",
-      "title": "Security",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Kretopia uses technical and organisational measures intended to protect personal information against unauthorised access, loss, alteration or disclosure. Security controls may include authentication, access controls, encrypted transport, scoped permissions, logging and other safeguards appropriate to the Services."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "No internet or storage system can be guaranteed to be completely secure. Users are responsible for protecting their credentials and should report suspected unauthorised access promptly."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s10",
-      "num": "10",
-      "title": "Data retention and deletion",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Kretopia retains personal information for as long as reasonably necessary for the purposes described in this Policy, including to provide the Services, preserve professional or transaction records, secure the Platform, resolve disputes and comply with legal obligations."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "When an account is deleted, Kretopia may delete, anonymise or restrict personal information that is no longer needed. Some information may need to remain where it is connected to another party’s engagement, payment, legal record, fraud investigation, dispute, audit trail or other legitimate retention requirement."
-          ]
+          "cap": "Possible action",
+          "text": "Content removal, feature restrictions, warnings, temporary suspension or account termination, depending on the circumstances."
         },
         {
           "type": "callout",
-          "cap": "Previous 30-day promise",
-          "text": "The current source set does not confirm that Kretopia can operationally guarantee deletion or anonymisation within 30 days across canonical records, backups, payment evidence and revocation propagation. The fixed promise is therefore removed pending technical and legal confirmation."
-        }
-      ]
-    },
-    {
-      "id": "s11",
-      "num": "11",
-      "title": "Your privacy rights",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Depending on where you live and the law that applies, you may have rights to request access, correction, deletion, restriction or objection, portability, withdrawal of consent, and information about relevant automated processing or human review where required by law."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "These rights can be subject to legal exceptions and identity verification. Kretopia may retain information where required by law or where another lawful basis applies."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s12",
-      "num": "12",
-      "title": "International data transfers",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Kretopia may use service providers or infrastructure located in countries other than the country where you live. Where personal information is transferred internationally, Kretopia should use safeguards required by applicable data-protection law."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "The final policy should identify the relevant transfer mechanisms once the production hosting, provider and contracting structure is confirmed."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s13",
-      "num": "13",
-      "title": "Children’s privacy",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Kretopia is intended for users aged 18 and over. Kretopia does not knowingly intend to provide accounts to children under 18 under the current policy."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "If Kretopia learns that personal information was collected from a person who is not eligible to use the Services, it may take appropriate steps to restrict the account and delete or otherwise handle the information as required by law."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s14",
-      "num": "14",
-      "title": "Third-party links and external services",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "The Services may contain links to external websites, opportunities, platforms or services that Kretopia does not control. Their privacy practices are governed by their own policies."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "Opening an external link or using an external service does not make Kretopia responsible for that third party’s privacy, security or content practices."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s15",
-      "num": "15",
-      "title": "Changes to this Policy",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Kretopia may update this Privacy Policy as the Services, providers, legal requirements or data practices change. Material changes should be communicated through the Platform, by email or through another reasonable channel where required."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "The “Last updated” date at the top of the page identifies the version currently displayed."
-          ]
-        }
-      ]
-    },
-    {
-      "id": "s16",
-      "num": "16",
-      "title": "Contact and complaints",
-      "blocks": [
-        {
-          "type": "p",
-          "content": [
-            "Privacy questions and requests can be sent to ",
-            {
-              "strong": "privacy@kretopia.com"
-            },
-            "."
-          ]
-        },
-        {
-          "type": "p",
-          "content": [
-            "Depending on where you live, you may also have the right to complain to a competent data-protection or privacy authority."
-          ]
+          "cap": "Good-faith reports",
+          "text": "You do not need to prove a violation before raising a concern. Knowingly false or malicious reports intended to target someone may themselves violate these guidelines."
         },
         {
           "type": "callout",
-          "cap": "Before publication",
-          "text": "Confirm that the privacy mailbox is monitored, add the legal entity and registered address, and determine whether Kretopia has appointed a Data Protection Officer or other required privacy representative."
+          "cap": "Review",
+          "text": "Where a review or appeal route is available, the enforcement notice will explain the applicable process."
+        },
+        {
+          "type": "callout",
+          "cap": "Changes",
+          "text": "These guidelines may evolve as Kretopia’s products, community and operating environments develop."
         }
       ]
     }
@@ -370,8 +268,8 @@ export const COMMUNITY: LegalDocument = {
   "closing": {
     "eyebrow": "Everything about Kretopia",
     "heading": {
-      "before": "Privacy should follow the ",
-      "accent": "relationship."
+      "before": "Good work needs a ",
+      "accent": "good record."
     }
   }
 };
