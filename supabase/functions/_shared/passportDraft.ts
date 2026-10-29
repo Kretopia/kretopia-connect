@@ -11,7 +11,8 @@ export interface ProfileFacts {
   location?: string | null;
   bio?: string | null;
   avatar_url?: string | null;
-  professional_skills?: string[] | null;
+  /** jsonb in production: strings, {skill, category, level} objects, a keyed object, or null. Read it with skillList. */
+  professional_skills?: unknown;
   website?: string | null;
   imdb_url?: string | null;
 }
@@ -108,10 +109,47 @@ export function buildWorkCandidates(profile: ProfileFacts): WorkCandidate[] {
   return out;
 }
 
+/**
+ * The skills as plain names. profiles.professional_skills is jsonb with three shapes in production: strings, {skill, category, level}
+ * objects (more than half of the profiles that have any) and a keyed object; anything else is no skills. Joining the raw value would
+ * hand the model "[object Object]" and leave the real names out of what the bio may rely on.
+ */
+export function skillList(value: unknown): string[] {
+  const names: string[] = [];
+  const add = (v: unknown) => {
+    if (typeof v === "string" && v.trim()) names.push(v.trim().slice(0, 80));
+  };
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (item && typeof item === "object") {
+        const o = item as Record<string, unknown>;
+        add(o.skill ?? o.name ?? o.label);
+      } else add(item);
+    }
+  } else if (value && typeof value === "object") {
+    Object.keys(value as Record<string, unknown>).forEach(add);
+  }
+  return [...new Set(names)].slice(0, 20);
+}
+
+/** True when the person has anything a bio could honestly rest on: a role, a skill or a credit with a name. */
+export function hasBioFacts(profile: ProfileFacts, credits: CreditFacts[]): boolean {
+  return (
+    !!(profile.role && profile.role.trim()) ||
+    skillList(profile.professional_skills).length > 0 ||
+    credits.some((c) => !!(c.project_name && c.project_name.trim()))
+  );
+}
+
+/** The model is worth a call, and a usage count, only when it has something to write or something to choose from. */
+export function needsModel(input: { missing: Record<PassportField, boolean>; hasBioFacts: boolean; photos: PhotoCandidate[]; works: WorkCandidate[] }): boolean {
+  return (input.missing.bio && input.hasBioFacts) || input.photos.length > 0 || input.works.length > 0;
+}
+
 /** Everything the bio may rely on, as one lower-cased string. */
 export function factsCorpus(profile: ProfileFacts, credits: CreditFacts[]): string {
   const parts = [
-    profile.full_name, profile.role, profile.location, ...(profile.professional_skills ?? []),
+    profile.full_name, profile.role, profile.location, ...skillList(profile.professional_skills),
     ...credits.flatMap((c) => [c.project_name, c.role]),
   ];
   return parts.filter((p): p is string => typeof p === "string" && p.trim().length > 0).join(" \n ").toLowerCase();

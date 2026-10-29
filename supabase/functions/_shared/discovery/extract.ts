@@ -78,9 +78,12 @@ export function looksLikeInstructions(text: string): boolean {
 
 /** Contact details found in source text. They are removed, not stored: a public page never carries a person's email or phone. */
 export function redactPersonalData(text: string): string {
+  // Every quantifier is bounded (an address's local part is at most 64 characters and its domain 255; no phone number is longer than
+  // 32), so a long unbroken run of letters or digits in a hostile or broken posting costs linear time. Unbounded, the same text took
+  // seconds (quadratic) and could stall a whole run.
   return text
-    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[contact removed]")
-    .replace(/(?:\+|00)?\d[\d\s().-]{7,}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}/.test(m.trim()) || m.replace(/\D/g, "").length < 9 ? m : "[contact removed]"));
+    .replace(/[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,}/gi, "[contact removed]")
+    .replace(/(?:\+|00)?\d[\d\s().-]{7,30}\d/g, (m) => (/^\d{4}-\d{2}-\d{2}/.test(m.trim()) || m.replace(/\D/g, "").length < 9 ? m : "[contact removed]"));
 }
 
 /** Plain text from untrusted markup: no tags, no scripts, no control or zero-width characters, collapsed whitespace. */

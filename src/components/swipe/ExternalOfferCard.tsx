@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import { SwipeCard } from "@/components/ui/swipe-card";
 import { ListingLabels } from "@/components/external/ListingLabels";
+import { sourceLinkRel } from "../../../supabase/functions/_shared/discovery/labels";
 import type { PublicListing } from "@/components/external/PublishedExternalListings";
 import { useSwipeGestures } from "@/hooks/useSwipeGestures";
 import { cn } from "@/lib/utils";
@@ -101,7 +102,7 @@ export function ExternalOfferCard({ offer, onInterested, onPass }: ExternalOffer
             </Button>
             {offer.apply_url && (
               <Button asChild variant="outline" className="h-11 shrink-0 rounded-full">
-                <a href={offer.apply_url} target="_blank" rel="noopener noreferrer nofollow" aria-label={`Open ${offer.title} at the source`}>
+                <a href={offer.apply_url} target="_blank" rel={sourceLinkRel(offer.source_provider)} aria-label={`Open ${offer.title} at the source`}>
                   Open at source <ExternalLink className="ml-1 h-3.5 w-3.5" aria-hidden />
                 </a>
               </Button>

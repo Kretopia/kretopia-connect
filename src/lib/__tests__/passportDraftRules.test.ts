@@ -4,9 +4,12 @@ import {
   buildWorkCandidates,
   checkBio,
   factsCorpus,
+  hasBioFacts,
   missingFields,
+  needsModel,
   parseModelJson,
   resolveDraft,
+  skillList,
   type ProfileFacts,
 } from "../../../supabase/functions/_shared/passportDraft";
 
@@ -121,5 +124,56 @@ describe("resolveDraft copies every concrete value from a candidate, never from 
   it("falls back to a generic role label only when the profile has no role", () => {
     const { draft } = resolveDraft({ pick: { work_id: "w1" }, missing: { bio: false, photo: false, work_item: true }, profile: { ...profile, role: null }, corpus, photos: [], works });
     expect(draft.work_item?.role).toBe("Creator");
+  });
+});
+
+describe("skillList reads every shape professional_skills is stored in", () => {
+  it("strings, {skill, category, level} objects, a keyed object, mixed arrays and nothing", () => {
+    expect(skillList(["Storyboarding", " Character design "])).toEqual(["Storyboarding", "Character design"]);
+    expect(skillList([{ skill: "Colour grading", category: "Post", level: "expert" }, { name: "Foley" }, { label: "ADR" }])).toEqual(["Colour grading", "Foley", "ADR"]);
+    expect(skillList({ Animation: true, Rigging: 3 })).toEqual(["Animation", "Rigging"]);
+    expect(skillList(["A", { skill: "A" }, "", null, 5, {}, { skill: 7 }])).toEqual(["A"]);
+    for (const none of [null, undefined, "Animation", 7, [], {}]) expect(skillList(none), String(none)).toEqual([]);
+  });
+  it("never lets an object reach the facts as '[object Object]', and the names count as facts the bio may use", () => {
+    const profile = { skills: [{ skill: "Character design" }] };
+    expect(factsCorpus({ professional_skills: profile.skills }, [])).toContain("character design");
+    expect(factsCorpus({ professional_skills: profile.skills }, [])).not.toContain("object");
+  });
+  it("bounds a very long list and very long names", () => {
+    const many = skillList(Array.from({ length: 100 }, (_, i) => `skill ${i}`));
+    expect(many).toHaveLength(20);
+    expect(skillList(["x".repeat(500)])[0]).toHaveLength(80);
+  });
+});
+
+describe("when the model is worth calling", () => {
+  const none = { bio: false, photo: false, work_item: false };
+  const photo = [{ id: "p1", url: "https://lh3.test/me", source: "auth_provider" as const }];
+  const work = [{ id: "w1", url: "https://x.test", project_name: "Portfolio · x.test", source_label: "Link already on your profile" }];
+
+  it("hasBioFacts: a role, a skill or a named credit; a name and a place alone are not facts to write a bio from", () => {
+    expect(hasBioFacts({ role: "Illustrator" }, [])).toBe(true);
+    expect(hasBioFacts({ professional_skills: [{ skill: "Foley" }] }, [])).toBe(true);
+    expect(hasBioFacts({}, [{ project_name: "Monsoon Short" }])).toBe(true);
+    expect(hasBioFacts({ full_name: "Amara Vega", location: "Jakarta" }, [])).toBe(false);
+    expect(hasBioFacts({ role: "  ", professional_skills: [] }, [{ project_name: " " }])).toBe(false);
+  });
+
+  it("is not called when the bio is fine and there is no image or link to choose from", () => {
+    expect(needsModel({ missing: { ...none, work_item: true }, hasBioFacts: true, photos: [], works: [] })).toBe(false);
+  });
+  it("is not called for a missing bio with nothing to rest on and nothing else to choose", () => {
+    expect(needsModel({ missing: { ...none, bio: true }, hasBioFacts: false, photos: [], works: [] })).toBe(false);
+  });
+  it("is called to write a bio that has facts, or to choose among images or links", () => {
+    expect(needsModel({ missing: { ...none, bio: true }, hasBioFacts: true, photos: [], works: [] })).toBe(true);
+    expect(needsModel({ missing: { ...none, photo: true }, hasBioFacts: false, photos: photo, works: [] })).toBe(true);
+    expect(needsModel({ missing: { ...none, work_item: true }, hasBioFacts: false, photos: [], works: work })).toBe(true);
+  });
+  it("the no-model answer carries the same reasons a model call would have ended with", () => {
+    const r = resolveDraft({ pick: {}, missing: { bio: true, photo: true, work_item: true }, profile: {}, corpus: "", photos: [], works: [] });
+    expect(r.draft).toEqual({ bio: null, photo: null, work_item: null });
+    expect(r.unavailable).toEqual({ bio: "not_enough_facts", photo: "no_candidates", work_item: "no_candidates" });
   });
 });

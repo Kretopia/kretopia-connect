@@ -34,6 +34,16 @@ export function sourceDisplayName(id: string | null): string | null {
   return id ? SOURCE_DISPLAY_NAMES[id] ?? id : null;
 }
 
+/**
+ * The rel of a link that leads to a source's own page. Third-party links carry nofollow, except where a source's terms ask for
+ * a followed link back: Remote OK's API notice reads "link back (with follow, and without nofollow!) to the URL on Remote OK and
+ * mention Remote OK as a source", or API access is suspended (read from the API itself, 2026-10-29).
+ */
+const FOLLOWED_LINK_BACK = new Set(["remoteok"]);
+export function sourceLinkRel(id: string | null | undefined): string {
+  return id && FOLLOWED_LINK_BACK.has(id) ? "noopener noreferrer" : "noopener noreferrer nofollow";
+}
+
 export function relativeDays(iso: string | null, now: Date): string | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();

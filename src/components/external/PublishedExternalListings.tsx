@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { ListingLabels } from "./ListingLabels";
+import { sourceLinkRel } from "../../../supabase/functions/_shared/discovery/labels";
 
 export interface PublicListing {
   id: string;
@@ -112,7 +113,7 @@ export function PublishedExternalListings({ kind }: { kind: Kind }) {
           {l.excerpt && <p className="line-clamp-3 text-xs text-muted-foreground">{l.excerpt}</p>}
           {l.apply_url && (
             <Button asChild size="sm" variant="outline" className="mt-auto min-h-11 sm:min-h-0">
-              <a href={l.apply_url} target="_blank" rel="noopener noreferrer nofollow">
+              <a href={l.apply_url} target="_blank" rel={sourceLinkRel(l.source_provider)}>
                 {copy.cta} <ExternalLink className="ml-1 h-3 w-3" aria-hidden />
               </a>
             </Button>

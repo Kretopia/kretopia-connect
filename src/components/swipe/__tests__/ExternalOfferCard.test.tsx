@@ -59,6 +59,13 @@ describe("ExternalOfferCard: what it says", () => {
     expect(screen.getByTestId("listing-labels")).toHaveTextContent("Claimed");
   });
 
+  it("a link to any other source stays nofollow", () => {
+    renderCard(offer({ source_provider: "jobicy", apply_url: "https://jobicy.com/jobs/1-x" }));
+    const open = screen.getByRole("link", { name: /at the source/i });
+    expect(open).toHaveAttribute("href", "https://jobicy.com/jobs/1-x");
+    expect(open.getAttribute("rel")).toBe("noopener noreferrer nofollow");
+  });
+
   it("never promises a match, a connection or a reply", () => {
     renderCard();
     const text = document.body.textContent ?? "";
@@ -73,7 +80,8 @@ describe("ExternalOfferCard: what it does", () => {
     expect(open).toHaveAttribute("href", "https://remoteok.com/remote-jobs/x-1137507");
     expect(open).toHaveAttribute("target", "_blank");
     expect(open.getAttribute("rel")).toMatch(/noopener/);
-    expect(open.getAttribute("rel")).toMatch(/nofollow/);
+    // Remote OK's API terms ask for a followed link back; every other source's link stays nofollow.
+    expect(open.getAttribute("rel")).not.toMatch(/nofollow/);
     fireEvent.click(open);
     expect(onInterested).not.toHaveBeenCalled();
     expect(onPass).not.toHaveBeenCalled();
