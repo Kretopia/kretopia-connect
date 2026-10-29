@@ -96,13 +96,31 @@ export const KRETOPIA_SOURCE = "kretopia";
 
 const PERIOD_SHORT: Record<PayPeriod, string> = { hour: "hr", day: "day", week: "wk", month: "mo", year: "yr" };
 
-function money(n: number, currency: string): string {
+/**
+ * 128000 -> "128K", 27500 -> "27.5K", 2500000 -> "2.5M". Done by hand: Intl's compact notation prints "$128.0K" on some engines and
+ * "$128K" on others (the fraction digits of a currency leak into it), and a pay line must read the same everywhere.
+ */
+export function compactAmount(n: number): string {
+  const unit = (v: number, u: string) => `${Number(v.toFixed(1))}${u}`;
+  const abs = Math.abs(n);
+  if (abs >= 1e9) return unit(n / 1e9, "B");
+  if (abs >= 1e6) return unit(n / 1e6, "M");
+  if (abs >= 1e3) return unit(n / 1e3, "K");
+  return String(Number(n.toFixed(2)));
+}
+
+/** The currency's own symbol ("$", "€", "CA$"); a code the engine does not know is printed as the code, then a space. */
+function currencySymbol(currency: string): string {
   try {
-    return new Intl.NumberFormat("en", { style: "currency", currency, notation: "compact", maximumFractionDigits: 1 }).format(n);
+    const part = new Intl.NumberFormat("en", { style: "currency", currency }).formatToParts(1).find((p) => p.type === "currency");
+    const symbol = part?.value || currency;
+    return /^[A-Za-z]+$/.test(symbol) ? `${symbol} ` : symbol;
   } catch {
-    return `${currency} ${n}`;
+    return `${currency} `;
   }
 }
+
+const money = (n: number, currency: string): string => `${currencySymbol(currency)}${compactAmount(n)}`;
 
 /** "$128K–$160K / yr": only from numbers a source stated with a currency code and a period; never guessed from text. */
 export function payLabel(b: Budget | null | undefined): string | null {

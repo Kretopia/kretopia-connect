@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_FILTERS, buildCatalog, externalToItem, facets, filterCatalog, filtersActive, groupByCategory, kretopiaToItem, payLabel, shortLocation, type CatalogFilters, type ExternalRow, type KretopiaRow } from "../scoutCatalog";
+import { NO_FILTERS, buildCatalog, compactAmount, externalToItem, facets, filterCatalog, filtersActive, groupByCategory, kretopiaToItem, payLabel, shortLocation, type CatalogFilters, type ExternalRow, type KretopiaRow } from "../scoutCatalog";
 
 const NOW = Date.parse("2026-10-29T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -22,6 +22,21 @@ const ext = (over: Partial<ExternalRow> = {}): ExternalRow => ({
 });
 const kre = (over: Partial<KretopiaRow> = {}): KretopiaRow => ({ id: "k1", title: "Wedding photographer wanted", type: "job", description: "Two days in Porto.", compensation: "$800", location: "Porto", created_at: daysAgo(2), ...over });
 
+describe("compactAmount", () => {
+  it("prints thousands and millions with at most one decimal and never a trailing .0, the same on every engine", () => {
+    expect(compactAmount(128000)).toBe("128K");
+    expect(compactAmount(27500)).toBe("27.5K");
+    expect(compactAmount(1500)).toBe("1.5K");
+    expect(compactAmount(1000)).toBe("1K");
+    expect(compactAmount(2500000)).toBe("2.5M");
+    expect(compactAmount(3e9)).toBe("3B");
+    expect(compactAmount(999)).toBe("999");
+    expect(compactAmount(35)).toBe("35");
+    expect(compactAmount(12.5)).toBe("12.5");
+    expect(compactAmount(19999)).toBe("20K");
+  });
+});
+
 describe("payLabel", () => {
   it("prints a stated range with its currency and period, and nothing when none was stated", () => {
     expect(payLabel({ min: 128000, max: 160000, currency: "USD", period: "year" })).toBe("$128K–$160K / yr");
@@ -33,7 +48,15 @@ describe("payLabel", () => {
   });
 
   it("a currency code the browser does not know is printed as the code, not dropped", () => {
-    expect(payLabel({ min: 10, max: 20, currency: "ZZZ", period: "day" })).toMatch(/ZZZ|¤/);
+    // the code, then a space, as a symbol-less amount reads best ("ZZZ 10–ZZZ 20"); an engine that prints the generic currency sign keeps it
+    expect(payLabel({ min: 10, max: 20, currency: "ZZZ", period: "day" })).toMatch(/^(ZZZ 10–ZZZ 20|¤10–¤20) \/ day$/);
+  });
+
+  it("a stated range reads the same whatever the engine: no '.0', a symbol that says which dollar", () => {
+    expect(payLabel({ min: 22000, max: 27500, currency: "PHP", period: "month" })).toMatch(/22K.*27\.5K \/ mo$/);
+    expect(payLabel({ min: 90000, max: 120000, currency: "CAD", period: "year" })).toMatch(/90K.*120K \/ yr$/);
+    expect(payLabel({ min: 90000, max: 120000, currency: "CAD", period: "year" })).not.toBe("$90K–$120K / yr"); // Canadian dollars are not US dollars
+    expect(payLabel({ min: 128000, max: 160000, currency: "USD", period: "year" })).not.toMatch(/\.0/);
   });
 });
 
