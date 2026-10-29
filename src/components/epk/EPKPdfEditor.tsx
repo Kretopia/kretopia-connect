@@ -567,7 +567,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         </div>
 
         {/* Preview area */}
-        <div className=cn("flex-1 min-w-0 flex-col overflow-hidden bg-muted/20", sidebarCollapsed ? "flex" : "hidden sm:flex")>
+        <div className={cn("flex-1 min-w-0 flex-col overflow-hidden bg-muted/20", sidebarCollapsed ? "flex" : "hidden sm:flex")}>
           <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
             <Button
               aria-label="Toggle editor panels"
