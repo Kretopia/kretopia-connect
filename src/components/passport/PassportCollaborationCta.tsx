@@ -18,8 +18,7 @@ interface Props {
 export function PassportCollaborationCta({ firstName, isOwner, connectionStatus = "none", isConnecting = false, onConnect, onMessage, onPropose, onInvite, onPreview }: Props) {
   const pending = connectionStatus === "pending";
   return (
-    <section className="relative space-y-4 border-y border-border py-5" aria-label="Collaborate on Kretopia">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-primary via-energy to-accent" aria-hidden />
+    <section className="relative space-y-4 py-5" aria-label="Collaborate on Kretopia">
       <BrandLogo size="sm" />
       <div className="space-y-2">
         <h2 className="break-words text-xl font-bold text-foreground">

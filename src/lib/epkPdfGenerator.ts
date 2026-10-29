@@ -14,6 +14,7 @@
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
 import { APP_URL } from "@/lib/constants";
+import { buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate } from "@/lib/epkDraft";
 
 interface EPKProfileData {
   full_name: string;
@@ -79,6 +80,8 @@ export interface EPKPdfInput {
   pressLinks: EPKPressLink[];
   industryStats: EPKIndustryStat[];
   reviews: EPKReview[];
+  /** Editable, user-reviewed editorial sections; never profile writes. */
+  narratives?: Record<string, string>;
 }
 
 export interface EPKBrandingOptions {
@@ -265,11 +268,13 @@ function truncateText(doc: any, text: string, maxWidth: number): string {
 }
 
 export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBrandingOptions): Promise<void> {
+  const defaults = buildEPKDefaults(input);
+  input = { ...input, narratives: input.narratives ?? defaults.topics };
   const { default: jsPDF } = await import("jspdf");
   const doc: any = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] });
 
   // Resolve template palette first, then allow branding overrides
-  const tpl = getEPKTemplate(brandingOptions?.templateId);
+  const tpl = getEPKTemplate(brandingOptions?.templateId || suggestedEPKTemplate(input));
 
   const C = {
     bg: brandingOptions?.darkColor || tpl.palette.bg,
@@ -406,6 +411,11 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       const wordH = 5.5;
       const wordW = wordH * wordmark.aspect;
       doc.addImage(wordmark.dataUrl, 'PNG', cx, y + (markH - wordH) / 2, wordW, wordH);
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(...C.white);
+      doc.text('kretopia', cx, y + 6);
     }
   };
 
@@ -549,9 +559,23 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     doc.text(stat.label.toUpperCase(), sx + statCardW / 2, statsY + 25, { align: 'center' });
   });
 
+  // Fill the cover with real editorial context rather than decorative empty space.
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...C.light);
+  const introduction = profile.bio || defaults.bio;
+  doc.text(doc.splitTextToSize(introduction, CONTENT_W).slice(0, 5), MARGIN, 112);
+  const coverTagline = brandingOptions?.tagline || defaults.tagline;
+  if (coverTagline) {
+    doc.setFontSize(9);
+    doc.setTextColor(...C.primary);
+    doc.text(doc.splitTextToSize(coverTagline, CONTENT_W).slice(0, 2), MARGIN, 153);
+  }
+
   // ════════════════════════════════════════════════════════════
   // SLIDE 2: ABOUT + SKILLS
   // ════════════════════════════════════════════════════════════
+  if (profile.bio || (Array.isArray(profile.professional_skills) && profile.professional_skills.length) || (Array.isArray(profile.passion_skills) && profile.passion_skills.length)) {
   newPage();
   drawEyebrow('Profile', MARGIN, 24);
   drawSectionHeadline('About', MARGIN, 34);
@@ -625,6 +649,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   // No contact-links card: a Kretopia press kit points to the Passport on
   // Kretopia and nowhere else (no Instagram, LinkedIn, X, YouTube, Spotify,
   // personal site or booking link).
+  }
 
   // ════════════════════════════════════════════════════════════
   // SLIDE 3+: CREDITS (Visual Cards)
@@ -648,7 +673,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       );
 
       const startY = 42;
-      const cardH = (PAGE_H - startY - MARGIN);
+      const cardH = (PAGE_H - startY - MARGIN - cardGap) / ROWS_PER_PAGE;
 
       pageCredits.forEach((credit, i) => {
         const row = Math.floor(i / CARDS_PER_ROW);
@@ -846,6 +871,31 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   // ════════════════════════════════════════════════════════════
   // FINAL SLIDE: Closing / Contact
   // ════════════════════════════════════════════════════════════
+  // User-approved topic text paginates instead of clipping long drafts.
+  const narrativeBlocks: { label: string; lines: string[] }[] = [];
+  for (const topic of EPK_TOPICS) {
+    const text = input.narratives?.[topic.id]?.trim();
+    if (!text) continue;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    const columnLines: string[] = doc.splitTextToSize(text, CONTENT_W / 2 - 12);
+    for (let offset = 0; offset < columnLines.length; offset += 10) {
+      narrativeBlocks.push({ label: topic.label + (offset ? ' (continued)' : ''), lines: columnLines.slice(offset, offset + 10) });
+    }
+  }
+  for (let offset = 0; offset < narrativeBlocks.length; offset += 4) {
+    newPage();
+    drawEyebrow('Creative dossier', MARGIN, 24);
+    narrativeBlocks.slice(offset, offset + 4).forEach((block, index) => {
+      const x = MARGIN + (index % 2) * (CONTENT_W / 2 + 4);
+      const y = 38 + Math.floor(index / 2) * 66;
+      drawSectionHeadline(block.label, x, y, 13);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...C.light);
+      doc.text(block.lines, x, y + 10, { lineHeightFactor: 1.35 });
+    });
+  }
   newPage();
 
   doc.setGState(new doc.GState({ opacity: 0.10 }));

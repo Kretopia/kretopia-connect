@@ -3,6 +3,7 @@ import { FileDown, PencilLine, QrCode, Share2 } from "lucide-react";
 
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface PassportSmartActionsProps {
   /** 0 to 100, from the Passport's own strength formula. */
@@ -15,10 +16,10 @@ interface PassportSmartActionsProps {
 }
 
 const tileBase =
-  "group flex min-h-[64px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-2xl border px-1 py-2 text-[10px] font-semibold leading-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--energy)/0.6)] focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+  "group h-16 min-h-[64px] w-full min-w-0 flex-col gap-1 rounded-lg px-1 py-2 text-[10px] leading-none";
 
 const tileTone = {
-  primary: "border-transparent bg-primary text-primary-foreground hover:opacity-90",
+  primary: "border-border bg-muted/40 text-foreground hover:border-foreground/40",
   quiet: "border-border bg-card text-foreground hover:border-foreground/40",
 } as const;
 
@@ -39,10 +40,10 @@ function Tile({
 }) {
   return (
     <li className="min-w-0">
-      <button type="button" onClick={onClick} aria-label={ariaLabel} title={title ?? ariaLabel} className={cn(tileBase, tileTone[tone])}>
+      <Button variant="outline" type="button" onClick={onClick} aria-label={ariaLabel} title={title ?? ariaLabel} className={cn(tileBase, tileTone[tone])}>
         {children}
         <span className="truncate">{label}</span>
-      </button>
+      </Button>
     </li>
   );
 }

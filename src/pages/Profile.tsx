@@ -562,14 +562,15 @@ const ProfileContent = () => {
                 isUploadingAvatar={isUploadingAvatar}
                 onShowQR={() => setIsQRDialogOpen(true)}
                 onDownloadEPK={() => setIsEPKEditorOpen(true)}
-              />
-              <PassportOverview
+                intelligence={<PassportOverview
+                embedded
                 userId={profile.user_id}
                 credits={credits || []}
                 verified={verified}
                 cosigns={cosigns}
                 standing={standing}
                 onReviewCredits={() => navigate('/credits')}
+              />}
               />
             </>
           );

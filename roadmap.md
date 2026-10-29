@@ -1,5 +1,11 @@
 # Roadmap
 
+## Passport and EPK refinement (October 29)
+- [x] Merge Passport identity/intelligence in one Holo surface, remove following collaboration divider and soften Edit with shared theme-aware controls.
+- [x] Enrich factual EPK defaults, profession/interests template selection, avatar-derived teal accent, reviewed AI draft actions for bio and seven topics, and local PDF-text import with explicit application. Existing paid custom controls preserved; no public upload/persistence or profile writes.
+- [x] 33 focused tests passed; isolated actual editor on desktop/375px, real PDF download and PDF import/read-back verified. PDF cover inspected; missing asset delivery retains text wordmark. Automatic compilation OK. Legacy backend unchanged; not published.
+- [ ] Verify AI generation and merged Passport on a connected legacy account — external unmanaged session unavailable. Existing authenticated generate-content endpoint reused unchanged; live AI request could not be checked. Persistent uploaded EPK hosting is not implemented; current import is local editable text, not original PDF layout replacement.
+
 ## Landing video startup (October 28)
 - [x] Five CDN video variants reduce H.264 transfers from 31.8 MB to 9.0 MB (71.6%); VP9 fallback, unchanged masters/crops, no posters, first chapter warmed on phones too, later transfers deferred until two screens away (one with data saver).
 - [x] Removed hidden initial content states across Hero, chapters, product loop, Kreto, organisations and FAQ; 25 focused tests and automatic compilation pass. Browser at 731×657 and 1280×1800: all five videos play and resume, no page errors/overflow; chapter entry to playback 54–858 ms with real CDN delivery bridged into localhost (local server does not serve asset URLs). CDN ranged GET verified 206. Not published; cold page startup/network cannot be guaranteed instantaneous.

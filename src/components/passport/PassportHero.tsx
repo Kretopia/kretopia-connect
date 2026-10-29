@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
@@ -41,6 +41,7 @@ interface PassportHeroProps {
   onShowQR: () => void;
   onDownloadEPK: () => void;
   onRefresh?: () => void;
+  intelligence?: ReactNode;
 }
 
 /**
@@ -67,6 +68,7 @@ export function PassportHero({
   onShowQR,
   onDownloadEPK,
   onRefresh,
+  intelligence,
 }: PassportHeroProps) {
   const displayName = profile.full_name;
   const passportId = useMemo(
@@ -111,7 +113,7 @@ export function PassportHero({
   }, [profile?.user_id, profile?.id]);
 
   return (
-    <HoloCard>
+    <HoloCard maxTilt={0}>
       <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-lg">
         {/* Cover */}
         <div
@@ -300,6 +302,7 @@ export function PassportHero({
 
            {profile.user_id && <SocialStatsInline userId={profile.user_id} />}
         </div>
+        {intelligence}
       </div>
     </HoloCard>
   );
