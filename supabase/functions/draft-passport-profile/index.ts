@@ -8,9 +8,12 @@ import {
   buildPhotoCandidates,
   buildWorkCandidates,
   factsCorpus,
+  hasBioFacts,
   missingFields,
+  needsModel,
   parseModelJson,
   resolveDraft,
+  skillList,
   type CreditFacts,
   type ProfileFacts,
 } from "../_shared/passportDraft.ts";
@@ -97,6 +100,14 @@ Deno.serve(async (req) => {
     const photos = missing.photo ? buildPhotoCandidates(meta.avatar_url ?? meta.picture, credits) : [];
     const works = missing.work_item ? buildWorkCandidates(profile) : [];
     const corpus = factsCorpus(profile, credits);
+    const bioFacts = hasBioFacts(profile, credits);
+
+    // Nothing to write and nothing to choose from (the bio is fine or has no facts to rest on, no image, no link): no model call and
+    // no usage counted. The reasons are the same ones a model call would have ended with.
+    if (!needsModel({ missing, hasBioFacts: bioFacts, photos, works })) {
+      const { draft, unavailable } = resolveDraft({ pick: {}, missing, profile, corpus, photos, works });
+      return json({ ok: true, missing, draft, unavailable });
+    }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
     if (!apiKey) return json({ ok: false, code: "ai_unavailable", error: "Drafting is not available right now." }, 503);
@@ -108,11 +119,11 @@ Deno.serve(async (req) => {
       `Name: ${profile.full_name ?? "unknown"}`,
       `Role: ${profile.role ?? "unknown"}`,
       `Location: ${profile.location ?? "unknown"}`,
-      `Skills: ${(profile.professional_skills ?? []).join(", ") || "none listed"}`,
+      `Skills: ${skillList(profile.professional_skills).join(", ") || "none listed"}`,
       `Existing credits: ${credits.map((c) => `${c.project_name ?? "untitled"} (${c.role ?? "role unknown"})`).join("; ") || "none"}`,
     ].join("\n");
     const lists = [
-      missing.bio ? "Write the bio." : "The bio is already fine: return null for it.",
+      !missing.bio ? "The bio is already fine: return null for it." : bioFacts ? "Write the bio." : "There are too few facts for an honest bio: return null for it.",
       `Photo candidates (images attached in this order): ${photos.map((p) => p.id).join(", ") || "none"}`,
       `Link candidates: ${works.map((w) => `${w.id} = ${w.url}`).join("; ") || "none"}`,
     ].join("\n");

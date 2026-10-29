@@ -123,6 +123,62 @@ describe("draft-passport-profile: a complete profile costs nothing", () => {
   });
 });
 
+describe("draft-passport-profile: no model call when there is nothing to draft", () => {
+  it("a good bio and photo, no credit and no link on the profile: nothing to choose, so no model call and no usage count", async () => {
+    // exactly what a real test account returned live: bio and photo fine, work item missing, nothing to build it from
+    world.profile = { ...INCOMPLETE, bio: "x".repeat(30), avatar_url: "https://x.test/a.png", website: null, imdb_url: null };
+    const res = await call();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({
+      ok: true,
+      missing: { bio: false, photo: false, work_item: true },
+      draft: { bio: null, photo: null, work_item: null },
+      unavailable: { bio: "already_complete", photo: "already_complete", work_item: "no_candidates" },
+    });
+    expect(world.bodies).toEqual([]);
+    expect(world.rateCalls).toEqual([]);
+  });
+
+  it("a missing bio with no role, skill or credit to rest on, and nothing else to choose: no model call, and the reason is given", async () => {
+    world.meta = {};
+    world.profile = { ...INCOMPLETE, role: null, professional_skills: null, website: null };
+    const body = await (await call()).json();
+    expect(body.unavailable).toEqual({ bio: "not_enough_facts", photo: "no_candidates", work_item: "no_candidates" });
+    expect(world.bodies).toEqual([]);
+    expect(world.rateCalls).toEqual([]);
+  });
+
+  it("it needs no gateway key to say so", async () => {
+    world.profile = { ...INCOMPLETE, bio: "x".repeat(30), avatar_url: "https://x.test/a.png", website: null };
+    delete world.env.LOVABLE_API_KEY;
+    expect((await call()).status).toBe(200);
+  });
+
+  it("with only an image to choose, the model is called and told there are too few facts for a bio", async () => {
+    world.profile = { ...INCOMPLETE, role: null, professional_skills: null, website: null };
+    world.gateway = [answer(JSON.stringify({ bio: null, photo_id: "p1", work_id: null }))];
+    const body = await (await call()).json();
+    expect(world.bodies).toHaveLength(1);
+    const text = (world.bodies[0] as { messages: { content: { text?: string }[] }[] }).messages[1].content[0].text;
+    expect(text).toContain("too few facts for an honest bio");
+    expect(body.draft.photo).toEqual({ url: "https://lh3.test/me.jpg", source: "auth_provider" });
+    expect(body.unavailable.bio).toBe("not_enough_facts");
+  });
+});
+
+describe("draft-passport-profile: skills stored as objects", () => {
+  it("reach the model as names, and a bio resting on one of them is accepted", async () => {
+    world.profile = { ...INCOMPLETE, role: null, professional_skills: [{ skill: "Character design", category: "Art", level: "expert" }], website: null };
+    world.meta = {};
+    world.gateway = [answer(JSON.stringify({ bio: "I'm focused on character design.", photo_id: null, work_id: null }))];
+    const body = await (await call()).json();
+    const text = (world.bodies[0] as { messages: { content: { text?: string }[] }[] }).messages[1].content[0].text;
+    expect(text).toContain("Skills: Character design");
+    expect(text).not.toContain("[object Object]");
+    expect(body.draft.bio).toEqual({ text: "I'm focused on character design." });
+  });
+});
+
 describe("draft-passport-profile: the draft", () => {
   it("one model call: facts isolated as untrusted, candidates listed, images attached, no tools; the draft copies values from candidates", async () => {
     world.gateway = [answer(`\`\`\`json\n${JSON.stringify({ bio: GOOD_BIO, photo_id: "p1", work_id: "w1" })}\n\`\`\``)];
