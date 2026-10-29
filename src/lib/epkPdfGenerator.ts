@@ -1027,5 +1027,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
 
   // Save
   const safeName = (profile.full_name || 'creator').replace(/[^a-zA-Z0-9]/g, '_');
-  doc.save(`${safeName}_EPK.pdf`);
+  const blob = doc.output("blob") as Blob;
+  if (brandingOptions?.output !== "blob") doc.save(`${safeName}_EPK.pdf`);
+  return blob;
 }

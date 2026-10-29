@@ -9,6 +9,7 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
+import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
@@ -658,6 +659,7 @@ const CreatorEPK = () => {
             </section>
           )}
           <PassportShowcase pieces={portfolioItems} credits={credits} onOpenMedia={(piece) => setSelectedItem(piece)} />
+          <PassportOriginalEPK userId={profile.user_id} />
           {industryStats.length > 0 && (
             <section>
               <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Credentials & stats</h3>
