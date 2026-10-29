@@ -50,6 +50,24 @@ export type Database = {
         }
         Relationships: []
       }
+      username_login_links: {
+        Row: {
+          email: string
+          legacy_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          email: string
+          legacy_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          email?: string
+          legacy_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
