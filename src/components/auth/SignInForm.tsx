@@ -42,10 +42,13 @@ const LastUsedPill = () => (
 
 export const SignInForm = ({
   email, setEmail, password, setPassword,
-  loading, onSubmit, onForgotPassword,
+  loading, onSubmit, onUsernameSubmit, onForgotPassword,
   onGoogleSignIn, googleLoading, hideOAuth = false,
 }: SignInFormProps) => {
   const { toast } = useToast();
+  const [mode, setMode] = useState<"email" | "username">("email");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -57,8 +60,9 @@ export const SignInForm = ({
 
   useEffect(() => { setLastMethod(getLastSignInMethod()); }, []);
 
-  // Debounced provider lookup as user types email.
+  // Debounced provider lookup as user types email (email mode only).
   useEffect(() => {
+    if (mode !== "email") { setLookup(null); return; }
     const ev = validateEmail(email);
     if (!ev.valid) { setLookup(null); return; }
     setLookupLoading(true);
