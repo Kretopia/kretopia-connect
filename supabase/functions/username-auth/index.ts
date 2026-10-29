@@ -53,9 +53,11 @@ async function findProfileByUsername(
   username: string,
 ): Promise<{ user_id: string; username: string } | null | "error"> {
   // "_" and "%" are LIKE wildcards — escape them before ilike.
+  // The public safe view is the canonical username surface (it is what the
+  // app's HandleResolver uses); the raw profiles table is RLS-restricted.
   const pattern = username.replace(/[%_\\]/g, (c) => `\\${c}`);
   const res = await fetch(
-    `${legacyUrl}/rest/v1/profiles?select=user_id,username&username=ilike.${encodeURIComponent(pattern)}&limit=5`,
+    `${legacyUrl}/rest/v1/public_profiles_safe?select=user_id,username&username=ilike.${encodeURIComponent(pattern)}&limit=5`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
   if (!res.ok) {
@@ -130,7 +132,12 @@ Deno.serve(async (req) => {
 
     const { data: userData, error: userError } = await legacyAdmin.auth.admin.getUserById(profile.user_id);
     const email = userData?.user?.email;
-    if (userError || !email) return json({ error: GENERIC_ERROR }, 401);
+    if (userError || !email) {
+      // Distinguishes a bad LEGACY_SUPABASE_SERVICE_ROLE_KEY (403/not admin)
+      // from a missing account in the function logs.
+      console.error("[username-auth] admin getUserById failed", userError?.message ?? "no email");
+      return json({ error: GENERIC_ERROR }, 401);
+    }
 
     const legacyAnon = createClient(LEGACY_URL, LEGACY_ANON, {
       auth: { autoRefreshToken: false, persistSession: false },
