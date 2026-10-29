@@ -165,3 +165,15 @@
 - [x] Guard with src/lib/__tests__/noGuestEmailPopup.test.ts (2 tests) — appChrome suite still green (11 total).
 - [x] Verified in the live preview as a guest: no dialog and no email field 37 seconds in (past the old 30s timer). Component file kept, unmounted, so it can be revived deliberately.
 - [ ] Publish to www.kretopia.com — waiting on Noé's explicit go.
+
+## @username canonical handle (October 29 brief)
+- [x] Shared validation module src/lib/username.ts (3–30, [a-z0-9_], no edge _, reserved list)
+- [x] Cloud migration: username_auth_attempts + consume_username_auth_attempt RPC (rate limiting)
+- [x] Edge function supabase/functions/username-auth (sign-in + check-username, generic errors, legacy access via secrets)
+- [x] Client helper src/lib/usernameAuth.ts
+- [ ] Secrets: LEGACY_SUPABASE_URL + LEGACY_SUPABASE_ANON_KEY set; LEGACY_SUPABASE_SERVICE_ROLE_KEY requested from user (must come from the kwmcocsitwssrtzkdojh project — the paused "ThriveIN" project is a different, older one)
+- [ ] SignInForm @username mode + Auth.tsx wiring
+- [ ] Edit Profile username field (debounced blur availability check)
+- [ ] CreatorSiteSettings switched to shared validation
+- [ ] Legacy DB migration SQL prepared (unique lower index, collision suffix backfill, rename log) — cannot be applied by me; legacy pipeline only
+- [ ] Tests + one build
