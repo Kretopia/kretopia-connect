@@ -283,7 +283,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         {/* Sidebar */}
         <div className={cn(
           "border-r bg-muted/30 transition-all duration-200 flex flex-col shrink-0",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-full sm:w-80"
+          sidebarCollapsed ? "hidden" : "w-full sm:w-80"
         )}>
           {/* Tab bar */}
           <div className="flex border-b shrink-0">
