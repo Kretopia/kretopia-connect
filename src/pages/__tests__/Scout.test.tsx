@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -32,8 +32,11 @@ vi.mock("@/components/scout/ScoutWrapped", () => ({
   ),
 }));
 vi.mock("@/components/scout/ScoutResultsWrapped", () => ({
-  ScoutResultsWrapped: ({ children }: { children: ReactNode }) => <section aria-label="Scout results" data-testid="results-wrapped">{children}</section>,
+  ScoutResultsWrapped: ({ children, status }: { children: ReactNode; status?: { label: string; active: boolean } }) => (
+    <section aria-label="Scout results" data-testid="results-wrapped" data-status={status ? status.label : ""}>{children}</section>
+  ),
 }));
+vi.mock("@/components/scout/ScoutAllSources", () => ({ ScoutAllSources: () => <div data-testid="all-sources" /> }));
 vi.mock("@/components/circle/OpportunitiesFeed", () => ({ OpportunitiesFeed: () => <div data-testid="marketplace" /> }));
 vi.mock("@/components/opportunity/ScoutedGigsSection", () => ({ ScoutedGigsSection: () => <div data-testid="scouted" /> }));
 vi.mock("@/components/opportunity/ShortlistedGigs", () => ({ ShortlistedGigs: () => <div data-testid="shortlist" /> }));
@@ -47,6 +50,7 @@ vi.mock("@/components/features/FeaturePageHeader", () => ({
 }));
 
 import Scout from "../Scout";
+import { SCOUT_CATALOG_KEY } from "@/hooks/useScoutCatalog";
 
 const gigs = [
   { id: "g1", title: "Motion Designer", company: "Nord", location: "Remote", remote: true, compensation: "$60k / year", fit_score: 88, fit_reason: "Matches your motion", source_name: "Remote OK" },
@@ -58,6 +62,19 @@ const renderScout = (cached: unknown[] | null = gigs) => {
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/scout"]}>
+        <Scout />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+};
+
+const renderAt = (url: string, catalog?: unknown) => {
+  const queryClient = new QueryClient();
+  queryClient.setQueryData(["scouted-gigs", "u1"], gigs);
+  if (catalog) queryClient.setQueryData(SCOUT_CATALOG_KEY, catalog);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[url]}>
         <Scout />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -129,6 +146,31 @@ describe("Scout page", () => {
     expect(assist()).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: /All open gigs on Kretopia/i }));
     expect(assist()).not.toBeNull();
+  });
+
+  it("has an All Sources tab right after For You, which opens the catalog inside the results panel", () => {
+    renderScout();
+    const tabs = within(screen.getByRole("tablist", { name: "Scout sections" })).getAllByRole("tab");
+    expect(tabs.map((t) => t.textContent)).toEqual(["For You", "All Sources", "Open Gigs", "Shortlist"]);
+    expect(screen.queryByTestId("all-sources")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("tab", { name: /every opportunity from every source/i }));
+    expect(screen.getByTestId("all-sources")).toBeInTheDocument();
+    expect(screen.queryByTestId("scouted")).not.toBeInTheDocument();
+    expect(screen.getByTestId("results-wrapped").contains(screen.getByTestId("all-sources"))).toBe(true);
+  });
+
+  it("?tab=all opens it directly, and its status line counts the catalog it reads from the cache", () => {
+    const { unmount } = renderAt("/scout?tab=all");
+    expect(screen.getByTestId("all-sources")).toBeInTheDocument();
+    expect(screen.getByTestId("results-wrapped")).toHaveAttribute("data-status", "Every source, sorted");
+    unmount();
+    renderAt("/scout?tab=all", { items: [{}, {}, {}], partial: false });
+    expect(screen.getByTestId("results-wrapped")).toHaveAttribute("data-status", "3 opportunities from every source");
+  });
+
+  it("the other tabs keep the list's own status line", () => {
+    renderScout();
+    expect(screen.getByTestId("results-wrapped")).toHaveAttribute("data-status", "");
   });
 
   it("no longer carries the old explainer, the warm-intro block or the people rail", () => {

@@ -361,6 +361,16 @@ This is a reading of the published terms, not legal advice; nothing here certifi
 
 **Not added:** Working Nomads (no documented API terms found, and about 3 creative roles among its 41 current jobs) and an events source (no keyless, free feed with clear terms found; Ticketmaster needs a key and its commercial-use terms are unread). Either needs your word and a read of its terms first.
 
+## Scout: the All sources tab (2026-10-29)
+
+**What it is.** A fourth tab in Scout, right after For You, that lists every opportunity Kretopia can show from every source, sorted into fields. It reads two things and nothing else: the reviewed gigs found outside Kretopia (the public view `public_external_listings`, kind gig, up to 1000) and the open gigs posted on Kretopia. It adds no table, no function and no migration; whatever is public appears, and nothing private can.
+
+**How it sorts.** `src/lib/opportunityTaxonomy.ts`, pure and without AI: seventeen fields (ten creative: creative direction, design & brand, product & UX, video & motion, photography, illustration & art, games & 3D, audio & music, writing & content, social & community; then marketing, engineering, data & AI, product & project management, sales, operations/finance/people, everything else), a level (intern to director), a working mode and a language. Each rule names a field and how plainly it names the job; the strongest title match wins, the excerpt only decides when the title names nothing and the excerpt names the job outright, and a posting that names two crafts ("Graphic Designer & Video Editor") is listed under the first and found under both. Accents are ignored, so Spanish, Portuguese, French, Italian and German titles of the main crafts sort too. Titles are cleaned (entities and double-encoded text repaired, emoji and "(remote)" / "(m/f/d)" dropped, shouted capitals set in normal case); a long list of places is cut to two and a count; one job posted for several places by one company on one source is one card that lists the other places with their own links.
+
+**What it shows.** Counts next to every filter (each computed with the other filters applied), search across title, company, every place, source and field, filters for source, working mode, level, language, freshness and "pay listed" (only offered when it would separate something). A creative field always shows every match; a field outside the creative ones shows its first six until it is opened, unless the person is searching or filtering. A pay line exists only when the source stated a range with a currency code and a period. Links follow each source's terms (Remote OK followed, Himalayas with `utm_source=api`, the rest nofollow).
+
+**What it does not do.** It does not publish anything. It is as full as the number of reviewed listings: on 2026-10-29 that is 44 public gigs plus the open Kretopia gigs, and it grows when a curator publishes drafts. Nothing from Arbeitnow or We Work Remotely appears while their listings stay unpublished.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local

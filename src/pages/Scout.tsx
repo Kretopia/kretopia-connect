@@ -7,13 +7,15 @@ import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
-import { Radar, Store, Bookmark } from "lucide-react";
+import { Radar, Store, Bookmark, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { ScoutKretoAssist } from "@/components/scout/ScoutKretoAssist";
 import { ScoutScanProvider } from "@/components/scout/ScoutScanProvider";
 import { ScoutWrapped } from "@/components/scout/ScoutWrapped";
+import { ScoutAllSources } from "@/components/scout/ScoutAllSources";
+import { SCOUT_CATALOG_KEY, type ScoutCatalog } from "@/hooks/useScoutCatalog";
 import { ScoutResultsWrapped } from "@/components/scout/ScoutResultsWrapped";
 import type { ScoutTab } from "@/components/scout/scout.types";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -22,9 +24,11 @@ import { Button } from "@/components/ui/button";
 type Tab = ScoutTab;
 
 // Tab order: For You first (the personalized scout is the reason to open
-// this page), then the open marketplace, then saved gigs.
+// this page), then everything from every source, the open marketplace, and
+// saved gigs.
 const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
   { id: "scouted", label: "For You", icon: Radar, hint: "Real gigs scouted from across the web" },
+  { id: "all", label: "All Sources", icon: Layers, hint: "Every opportunity from every source, sorted into fields" },
   { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
   { id: "shortlist", label: "Shortlist", icon: Bookmark, hint: "Gigs you saved for later" },
 ];
@@ -66,6 +70,14 @@ const Scout = () => {
   });
   const showKreto = tab !== "scouted" || scoutedCount > 0;
 
+  // The catalog's own count for the status line of the All Sources tab; read from the cache that tab fills, never fetched from here.
+  const { data: catalogCount = 0 } = useQuery({
+    queryKey: SCOUT_CATALOG_KEY,
+    queryFn: skipToken,
+    select: (c: ScoutCatalog) => c.items.length,
+    enabled: tab === "all",
+  });
+
   return (
     <div className="accent-scout min-h-screen bg-background">
       <SEO
@@ -92,7 +104,9 @@ const Scout = () => {
       <StudioFeatureShell>
         <ScoutWrapped onSelectTab={switchTab} />
 
-        <ScoutResultsWrapped>
+        <ScoutResultsWrapped
+          status={tab === "all" ? { label: catalogCount === 0 ? "Every source, sorted" : `${catalogCount} opportunit${catalogCount === 1 ? "y" : "ies"} from every source`, active: catalogCount > 0 } : undefined}
+        >
         <div
           role="tablist"
           aria-label="Scout sections"
@@ -134,6 +148,7 @@ const Scout = () => {
           </div>
         )}
         {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
+        {tab === "all" && <ScoutAllSources />}
         {tab === "shortlist" && <ShortlistedGigs onOpenForYou={() => switchTab("scouted")} />}
         {tab === "marketplace" && <OpportunitiesFeed onOpenForYou={() => switchTab("scouted")} />}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}

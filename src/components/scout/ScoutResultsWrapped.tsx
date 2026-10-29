@@ -8,6 +8,8 @@ import { useScoutScan } from "./scoutScanContext";
 interface ScoutResultsWrappedProps {
   /** The section switcher, the results and Kreto's panel: everything under the top section. */
   children: ReactNode;
+  /** What the status line says when the section is not the personal list (the "All sources" catalog counts its own rows). */
+  status?: { label: string; active: boolean };
 }
 
 /**
@@ -17,11 +19,13 @@ interface ScoutResultsWrappedProps {
  * It states two numbers it can count (gigs on the list, gigs saved) and
  * carries the Kretopia lockup at its foot.
  */
-export function ScoutResultsWrapped({ children }: ScoutResultsWrappedProps) {
+export function ScoutResultsWrapped({ children, status }: ScoutResultsWrappedProps) {
   const { gigs, progress, loading, listError } = useScoutScan();
   const saved = progress.saved;
 
-  const label = listError
+  const label = status
+    ? status.label
+    : listError
     ? "Couldn't load your list"
     : loading
       ? "Loading your list…"
@@ -40,9 +44,9 @@ export function ScoutResultsWrapped({ children }: ScoutResultsWrappedProps) {
       }
       status={
         <WrappedStatus
-          active={!listError && gigs.length > 0}
+          active={status ? status.active : !listError && gigs.length > 0}
           label={label}
-          detail={saved > 0 ? <>· {saved} saved</> : null}
+          detail={!status && saved > 0 ? <>· {saved} saved</> : null}
         />
       }
       aside={<KretoScene scene="talent-search" size="thumb" className="hidden h-16 w-32 shrink-0 rounded-xl border border-border sm:block" />}
