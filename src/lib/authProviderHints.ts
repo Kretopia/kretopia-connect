@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type SignInMethod = "email" | "google";
+export type SignInMethod = "email" | "username" | "google";
 
 const LAST_METHOD_KEY = "thrivein_last_signin_method";
 
