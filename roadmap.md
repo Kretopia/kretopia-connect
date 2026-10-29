@@ -183,4 +183,7 @@
 - [x] CreatorSiteSettings basculé sur le module partagé
 - [x] SQL legacy préparé : docs/product/LEGACY_USERNAME_MIGRATION.sql (NON appliqué — pipeline legacy uniquement)
 - [x] Tests : 9 username + 16 auth passent ; build production OK
-- [ ] En attente utilisateur : LEGACY_SUPABASE_SERVICE_ROLE_KEY (projet actif kwmcocsitwssrtzkdojh, PAS le projet ThriveIN en pause) puis application de la migration SQL legacy
+- [x] LEGACY_SUPABASE_SERVICE_ROLE_KEY enregistrée ; fonction testée en direct : available/reserved/401 générique/429 rate-limit (5/min/username) ; 503 fail-closed sans clé
+- [ ] Vérifier que LEGACY_SUPABASE_SERVICE_ROLE_KEY est bien la clé service_role (l'utilisateur ne voit que la clé anon) : tester check-username sur un handle existant connu ; si tout renvoie "available", la clé est mauvaise → update_secret
+- [x] Diagnostic : la clé enregistrée est la clé anon (« User not allowed » dans les logs) — la résolution email exige la vraie clé service_role du projet actif ; lookup username basculé sur la vue publique (april → "taken" ✓)
+- [ ] Utilisateur : entrer la vraie clé service_role (Project Settings → API Keys du projet kwmcocsitwssrtzkdojh) via le formulaire sécurisé
