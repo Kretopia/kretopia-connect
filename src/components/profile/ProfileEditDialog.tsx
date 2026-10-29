@@ -281,10 +281,35 @@ export function ProfileEditDialog({
   const [incompleteFields, setIncompleteFields] = useState<string[]>([]);
   const hasShownToastRef = useRef(false);
 
+  // Username availability — real states only: idle, checking, available,
+  // taken, invalid, reserved, error. Checked on blur (debounced), never while typing.
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | UsernameAvailability>("idle");
+  const savedUsernameRef = useRef("");
+  const usernameBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleUsernameBlur = () => {
+    if (usernameBlurTimer.current) clearTimeout(usernameBlurTimer.current);
+    usernameBlurTimer.current = setTimeout(async () => {
+      const handle = normalizeUsername(formData.username);
+      if (!handle || handle === savedUsernameRef.current) {
+        setUsernameStatus("idle");
+        return;
+      }
+      const v = validateUsername(handle);
+      if (v !== "ok") {
+        setUsernameStatus(v === "reserved" ? "reserved" : "invalid");
+        return;
+      }
+      setUsernameStatus("checking");
+      setUsernameStatus(await checkUsernameAvailability(handle));
+    }, 300);
+  };
+
   useEffect(() => {
     if (profile && open) {
       setFormData({
         full_name: profile.full_name || "",
+        username: (profile as any).username || "",
         role: profile.role || "",
         sub_roles: ((profile as any).sub_roles as string[] | null) || [],
         location: profile.location || "",
