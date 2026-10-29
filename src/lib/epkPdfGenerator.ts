@@ -14,6 +14,7 @@
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
 import { APP_URL } from "@/lib/constants";
+import { buildEPKDefaults, EPK_TOPICS } from "@/lib/epkDraft";
 
 interface EPKProfileData {
   full_name: string;
@@ -79,6 +80,8 @@ export interface EPKPdfInput {
   pressLinks: EPKPressLink[];
   industryStats: EPKIndustryStat[];
   reviews: EPKReview[];
+  /** Editable, user-reviewed editorial sections; never profile writes. */
+  narratives?: Record<string, string>;
 }
 
 export interface EPKBrandingOptions {
@@ -265,6 +268,8 @@ function truncateText(doc: any, text: string, maxWidth: number): string {
 }
 
 export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBrandingOptions): Promise<void> {
+  const defaults = buildEPKDefaults(input);
+  input = { ...input, narratives: input.narratives ?? defaults.topics };
   const { default: jsPDF } = await import("jspdf");
   const doc: any = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] });
 
@@ -549,9 +554,23 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     doc.text(stat.label.toUpperCase(), sx + statCardW / 2, statsY + 25, { align: 'center' });
   });
 
+  // Fill the cover with real editorial context rather than decorative empty space.
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...C.light);
+  const introduction = profile.bio || defaults.bio;
+  doc.text(doc.splitTextToSize(introduction, CONTENT_W).slice(0, 5), MARGIN, 112);
+  const coverTagline = brandingOptions?.tagline || defaults.tagline;
+  if (coverTagline) {
+    doc.setFontSize(9);
+    doc.setTextColor(...C.primary);
+    doc.text(doc.splitTextToSize(coverTagline, CONTENT_W).slice(0, 2), MARGIN, 153);
+  }
+
   // ════════════════════════════════════════════════════════════
   // SLIDE 2: ABOUT + SKILLS
   // ════════════════════════════════════════════════════════════
+  if (profile.bio || (Array.isArray(profile.professional_skills) && profile.professional_skills.length) || (Array.isArray(profile.passion_skills) && profile.passion_skills.length)) {
   newPage();
   drawEyebrow('Profile', MARGIN, 24);
   drawSectionHeadline('About', MARGIN, 34);
@@ -625,6 +644,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   // No contact-links card: a Kretopia press kit points to the Passport on
   // Kretopia and nowhere else (no Instagram, LinkedIn, X, YouTube, Spotify,
   // personal site or booking link).
+  }
 
   // ════════════════════════════════════════════════════════════
   // SLIDE 3+: CREDITS (Visual Cards)
@@ -648,7 +668,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       );
 
       const startY = 42;
-      const cardH = (PAGE_H - startY - MARGIN);
+      const cardH = (PAGE_H - startY - MARGIN - cardGap) / ROWS_PER_PAGE;
 
       pageCredits.forEach((credit, i) => {
         const row = Math.floor(i / CARDS_PER_ROW);
@@ -846,6 +866,23 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   // ════════════════════════════════════════════════════════════
   // FINAL SLIDE: Closing / Contact
   // ════════════════════════════════════════════════════════════
+  // User-approved topic text paginates instead of clipping long drafts.
+  for (const topic of EPK_TOPICS) {
+    const text = input.narratives?.[topic.id]?.trim();
+    if (!text) continue;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+    const lines: string[] = doc.splitTextToSize(text, CONTENT_W - 12);
+    for (let offset = 0; offset < lines.length; offset += 22) {
+      newPage();
+      drawEyebrow('Creative dossier', MARGIN, 24);
+      drawSectionHeadline(topic.label + (offset ? ' (continued)' : ''), MARGIN, 34);
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...C.light);
+      doc.text(lines.slice(offset, offset + 22), MARGIN, 48, { lineHeightFactor: 1.4 });
+    }
+  }
   newPage();
 
   doc.setGState(new doc.GState({ opacity: 0.10 }));
