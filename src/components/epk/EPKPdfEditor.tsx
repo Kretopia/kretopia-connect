@@ -677,7 +677,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         {/* Preview area */}
         <div className={cn("flex-1 min-w-0 flex-col overflow-hidden bg-muted/20", sidebarCollapsed ? "flex" : "hidden sm:flex")}>
           <div ref={previewRef} className="flex-1 min-h-0 w-full overflow-hidden bg-background">
-            {documentBlob ? <EPKDocumentViewer source={documentBlob} label={documentMode === "original" ? "Your PDF" : "Kretopia draft"} toolbarLeading={<Button variant="ghost" size="icon" aria-label="Toggle editor panels" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><PanelLeft className="h-4 w-4" /></Button>} /> : <div className="flex h-full items-center justify-center"><KretopiaSpinner className="h-10 w-10" /></div>}
+            {documentBlob ? <EPKDocumentViewer source={documentBlob} label={documentMode === "original" ? "Your PDF" : "Kretopia draft"} toolbarLeading={<Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label="Toggle editor panels" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><PanelLeft className="h-4 w-4" /></Button>} /> : <div className="flex h-full items-center justify-center"><KretopiaSpinner className="h-10 w-10" /></div>}
           </div>
         </div>
       </div>
