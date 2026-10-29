@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
     if (v === "reserved") return json({ available: false, reason: "reserved" });
     if (!(await allowed(`check:${ip}`, 30, 300))) return json({ error: "Too many attempts" }, 429);
     const found = await findProfileByUsername(LEGACY_URL, LEGACY_SERVICE, username);
+    if (found === "error") return json({ error: "Username check unavailable" }, 503);
     return json({ available: !found, reason: found ? "taken" : null });
   }
 
@@ -124,6 +125,7 @@ Deno.serve(async (req) => {
     });
 
     const profile = await findProfileByUsername(LEGACY_URL, LEGACY_SERVICE, username);
+    if (profile === "error") return json({ error: GENERIC_ERROR }, 401);
     if (!profile?.user_id) return json({ error: GENERIC_ERROR }, 401);
 
     const { data: userData, error: userError } = await legacyAdmin.auth.admin.getUserById(profile.user_id);
