@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { ListingLabels } from "@/components/external/ListingLabels";
 import type { Budget } from "../../supabase/functions/_shared/discovery/extract";
 import { canonicalFor, eventJsonLd, externalJobPosting, robotsFor, type ListingSeoInput } from "../../supabase/functions/_shared/discovery/seo";
+import { sourceLinkRel } from "../../supabase/functions/_shared/discovery/labels";
 
 interface Row {
   id: string;
@@ -144,7 +145,7 @@ export default function ExternalListing() {
           <div className="flex flex-wrap items-center gap-2">
             {row.apply_url && (
               <Button asChild className="min-h-11">
-                <a href={row.apply_url} target="_blank" rel="noopener noreferrer nofollow">
+                <a href={row.apply_url} target="_blank" rel={sourceLinkRel(row.source_provider)}>
                   Apply at source <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />
                 </a>
               </Button>

@@ -5,7 +5,7 @@ import {
 import {
   canonicalFor, eventJsonLd, externalJobPosting, isExpired, isSitemapEligible, MIN_INDEXABLE_CHARS, nativeGigJobPosting, nativeGigRobots, robotsFor, type ListingSeoInput,
 } from "../../../../supabase/functions/_shared/discovery/seo";
-import { listingLabels, relativeDays, sourceDisplayName } from "../../../../supabase/functions/_shared/discovery/labels";
+import { listingLabels, relativeDays, sourceDisplayName, sourceLinkRel } from "../../../../supabase/functions/_shared/discovery/labels";
 import { costCents, jobKey, scopesFor, utcDay } from "../../../../supabase/functions/_shared/discovery/budget";
 import { adapterById, SOURCE_ADAPTERS } from "../../../../supabase/functions/_shared/discovery/sources";
 
@@ -209,6 +209,15 @@ describe("labels say only what is true", () => {
 
   it("every approved source has the display name its registry entry gives it, so the two lists cannot drift", () => {
     for (const a of SOURCE_ADAPTERS) expect(sourceDisplayName(a.id)).toBe(a.name);
+  });
+
+  it("a link to a source's own page carries nofollow, except Remote OK, whose terms ask for a followed link back", () => {
+    expect(sourceLinkRel("remoteok")).toBe("noopener noreferrer");
+    for (const id of ["jobicy", "weworkremotely", "arbeitnow", "some-new-feed", null, undefined]) {
+      expect(sourceLinkRel(id), String(id)).toBe("noopener noreferrer nofollow");
+    }
+    // opening a new tab is never done without noopener, followed or not
+    for (const a of SOURCE_ADAPTERS) expect(sourceLinkRel(a.id)).toContain("noopener");
   });
 
   it("a Kretopia listing carries no ownership or last-checked label", () => {
