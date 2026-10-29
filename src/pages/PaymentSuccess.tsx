@@ -5,16 +5,22 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Sparkles, Crown } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
+import { subscriptionReturnState, type SubscriptionReturn } from "@/lib/checkoutReturn";
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(true);
   const [tier, setTier] = useState<string>("");
+  // Coming back from Stripe is not a confirmed payment: the page says "active" only once verification succeeded.
+  const [outcome, setOutcome] = useState<SubscriptionReturn>("unconfirmed");
+  const [attempt, setAttempt] = useState(0);
   const isFounder = searchParams.get("type") === "founder";
 
   useEffect(() => {
     const verifyPayment = async () => {
+      setVerifying(true);
+      let verificationFailed = false;
       try {
         await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -34,6 +40,7 @@ export default function PaymentSuccess() {
               { body: { sessionId } }
             );
             if (founderError) {
+              verificationFailed = true;
               console.error('[PaymentSuccess] Founder verification error:', founderError);
             } else {
               console.log('[PaymentSuccess] Founder verified:', founderData);
@@ -44,6 +51,7 @@ export default function PaymentSuccess() {
           console.log('[PaymentSuccess] Syncing subscription with Stripe...');
           const { data: syncData, error: syncError } = await supabase.functions.invoke("check-subscription");
           if (syncError) {
+            verificationFailed = true;
             console.error('[PaymentSuccess] Error syncing subscription:', syncError);
           } else {
             console.log('[PaymentSuccess] Subscription synced:', syncData);
@@ -61,19 +69,23 @@ export default function PaymentSuccess() {
         if (profile?.subscription_tier) {
           setTier(profile.subscription_tier);
           console.log('[PaymentSuccess] Updated tier:', profile.subscription_tier);
-          
+        }
+        const state = subscriptionReturnState({ verificationFailed, tier: profile?.subscription_tier });
+        setOutcome(state);
+        if (state === "confirmed" && profile?.subscription_tier) {
           const { analytics } = await import("@/lib/analytics");
           analytics.subscriptionStart(profile.subscription_tier);
         }
       } catch (error) {
         console.error("Error verifying payment:", error);
+        setOutcome("unconfirmed");
       } finally {
         setVerifying(false);
       }
     };
 
     verifyPayment();
-  }, [navigate, searchParams, isFounder]);
+  }, [navigate, searchParams, isFounder, attempt]);
 
   if (verifying) {
     return (
@@ -85,6 +97,25 @@ export default function PaymentSuccess() {
             <p className="text-sm text-muted-foreground mt-2">
               This will only take a moment
             </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (outcome !== "confirmed") {
+    return (
+      <div className="container mx-auto py-16 px-4 flex items-center justify-center min-h-screen">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">We could not confirm your payment yet</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Coming back from checkout does not confirm a payment. Your plan has not changed, and it updates once Stripe confirms.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Button onClick={() => setAttempt((n) => n + 1)} className="w-full">Check again</Button>
+            <Button onClick={() => navigate("/settings")} variant="outline" className="w-full">Go to Settings</Button>
           </CardContent>
         </Card>
       </div>
@@ -147,7 +178,7 @@ export default function PaymentSuccess() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Button onClick={() => navigate("/circle")} className="w-full">
+            <Button onClick={() => navigate("/match")} className="w-full">
               Start Matching
             </Button>
             <Button onClick={() => navigate("/profile")} variant="outline" className="w-full">

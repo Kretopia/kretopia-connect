@@ -127,8 +127,9 @@ export function MarkPaidBankTransferDialog({
       });
       if (invErr) throw invErr;
 
-      toast.success("Marked as paid", {
-        description: `Receipt saved with ref ${(transfer as any)?.reference_code || ""}`,
+      // A manual record, not a provider confirmation: say so.
+      toast.success("Recorded as paid by bank transfer", {
+        description: `Your proof is saved${(transfer as any)?.reference_code ? ` (ref ${(transfer as any).reference_code})` : ""}. This is self-reported and is not confirmed by a payment provider.`,
       });
       reset();
       onOpenChange(false);

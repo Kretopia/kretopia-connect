@@ -155,6 +155,29 @@ const ProfileContent = () => {
     }
   }, [profile]);
 
+  // "Edit" links from Credits, the starter checklist and claim nudges arrive as /profile/edit (-> ?edit=true) and open
+  // the same edit dialog the Passport's own Edit button opens. The query is read once the profile has loaded.
+  useEffect(() => {
+    if (!profile) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("edit") !== "true") return;
+    const company = profile.account_type === "company";
+    setEditForm({
+      full_name: (company && profile.company_name) || profile.full_name || "",
+      role: (company && profile.company_industry) || profile.role || "",
+      bio: (company && profile.company_about) || profile.bio || "",
+      location: (company && profile.company_address) || profile.location || "",
+      avatar_url: (company && profile.company_logo_url) || profile.avatar_url || "",
+      company_size: profile.company_size || "",
+      collab_intent: company ? "seeking_collaborators" : (profile as any).collab_intent || "seeking_collaborators",
+      company_tagline: company ? profile.company_tagline || "" : "",
+      cover_image_url: company ? profile.cover_image_url || "" : "",
+    });
+    setIsEditOpen(true);
+    window.history.replaceState({}, "", "/profile");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
   const handleShare = async () => {
     const { analytics } = await import("@/lib/analytics");
     analytics.featureUsed("profile_shared");

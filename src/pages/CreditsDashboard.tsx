@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useMyCredits } from "@/hooks/useMyCredits";
 import { CreditsPermissionState } from "@/components/credits/CreditsPermissionState";
@@ -92,6 +92,14 @@ export default function CreditsDashboard() {
   }, [userId]);
 
   const { credits, overview, loading, searching, error, refresh } = useMyCredits(query);
+
+  // A co-sign suggestion or "ask a collaborator" link arrives as /credits?action=co_sign. The place to ask is each
+  // stamp's "Ask for a co-sign" in the Stamps section, so open the page there once the stamps have loaded.
+  const [searchParams] = useSearchParams();
+  const wantsCoSign = searchParams.get("action") === "co_sign";
+  useEffect(() => {
+    if (wantsCoSign && !loading) document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [wantsCoSign, loading]);
 
   const record = useMemo(() => {
     const checks = [

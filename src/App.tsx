@@ -332,6 +332,8 @@ const AppContent = () => {
             <Route path="/circle/:circleId" element={<ProtectedRoute><CircleToCrewRedirect /></ProtectedRoute>} />
             <Route path="/circle/:circleId/chat" element={<ProtectedRoute><CircleToCrewRedirect suffix="/chat" /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            {/* Older links ("Edit", "Add bio + photo", claim nudges) point here; it opens the edit dialog on /profile. */}
+            <Route path="/profile/edit" element={<Navigate to="/profile?edit=true" replace />} />
             {/* /dashboard: the old standalone page is gone -- its content
                 (profile health, standing, trust, audience) now lives in
                 one unified dashboard inside Today. Redirect rather than
