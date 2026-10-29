@@ -5,7 +5,7 @@ import { memo, useEffect, useState } from "react";
 import { useAccountTone } from "@/hooks/useAccountTone";
 
 /**
- * Kretopia V1 bottom nav — Home · Passport · Opportunities · Studio.
+ * Kretopia V1 bottom nav — Home · Passport · Scout · Studio. Scout leads to /scout, the same page as the desktop nav.
  *
  * Kreto is a persistent bar/FAB layer, NOT a nav tab.
  * Company/business accounts keep their existing B2B nav unchanged.
@@ -13,7 +13,7 @@ import { useAccountTone } from "@/hooks/useAccountTone";
 const CREATIVE_ITEMS = [
   { path: "/", icon: Home, label: "Home", hint: "Today, insights, and Kreto's brief" },
   { path: "/profile", icon: BadgeCheck, label: "Passport", hint: "Your verified creative identity" },
-  { path: "/opportunities", icon: Briefcase, label: "Scout", hint: "Scouted gigs matched to you" },
+  { path: "/scout", icon: Briefcase, label: "Scout", hint: "Scouted gigs matched to you" },
   { path: "/desk", icon: LayoutGrid, label: "Studio", hint: "Projects, files, and collaborators" },
 ];
 
@@ -58,7 +58,8 @@ const KretopiaBottomNav = memo(() => {
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
-    if (path === "/opportunities") {
+    // Scout is one destination on desktop and mobile (/scout); the opportunities pages stay part of it.
+    if (path === "/scout" || path === "/opportunities") {
       return (
         location.pathname.startsWith("/opportunities") ||
         location.pathname.startsWith("/opportunity") ||

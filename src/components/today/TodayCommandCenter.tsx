@@ -188,7 +188,7 @@ export function TodayCommandCenter({
                   scene="passport" sceneLabel="Passport"
                   actions={
                     <>
-                      <GlassCta to="/passport" className="w-full">Build my Passport</GlassCta>
+                      <GlassCta to="/profile" className="w-full">Build my Passport</GlassCta>
                       <OutlineCtaButton onClick={openKretoChat} className="w-full">Ask Kreto</OutlineCtaButton>
                     </>
                   }
@@ -236,7 +236,7 @@ function PassportKretoCard({
       scene="passport" sceneLabel="Passport"
       actions={
         <>
-          <GlassCta to="/passport" className="w-full">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}</GlassCta>
+          <GlassCta to="/profile" className="w-full">{missingFields.length > 0 ? "Complete Passport" : "Open Passport"}</GlassCta>
           <OutlineCtaButton onClick={onKreto} className="w-full">Ask Kreto</OutlineCtaButton>
         </>
       }

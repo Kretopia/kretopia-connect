@@ -814,7 +814,7 @@ export default function Onboarding() {
                   Let's find the work you've already done.
                 </h1>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                  Drop your name (and a portfolio link if you have one) — Kreto will search the web and turn it into verified {BRAND.stamps.toLowerCase()} on your {BRAND.passport}. Then we'll get you matched and earning.
+                  Drop your name (and a portfolio link if you have one) — Kreto will search the web for work you may have done. Anything you pick is added to your {BRAND.passport} as pending {BRAND.stamps.toLowerCase()}, not verified until it is confirmed. Then we'll get you matched and earning.
                 </p>
               </div>
 

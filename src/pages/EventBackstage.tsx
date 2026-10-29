@@ -94,7 +94,7 @@ const formatRange = (start: string, end?: string | null) => {
   return `${datePart} · ${timePart}`;
 };
 
-const EventBackstage = () => {
+const EventBackstage = ({ embedded = false }: { embedded?: boolean }) => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -737,16 +737,20 @@ const EventBackstage = () => {
         />
       </Helmet>
 
-      <div className="min-h-screen bg-background">
+      <div className={embedded ? "" : "min-h-screen bg-background"}>
         {/* Header */}
-        <div className="sticky top-0 z-30 bg-background/95 border-b">
+        <div className={`${embedded ? "" : "sticky top-0 z-30 "}bg-background/95 border-b`}>
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               
               <div className="min-w-0">
-                <h1 className="text-base sm:text-lg font-bold leading-tight truncate">
-                  Backstage
-                </h1>
+                {embedded ? (
+                  <h2 className="text-base sm:text-lg font-bold leading-tight truncate">Backstage</h2>
+                ) : (
+                  <h1 className="text-base sm:text-lg font-bold leading-tight truncate">
+                    Backstage
+                  </h1>
+                )}
                 <p className="text-[11px] sm:text-xs text-muted-foreground leading-tight">
                   Your host & promoter dashboard
                 </p>

@@ -1,196 +1,31 @@
-import { useState, ReactNode } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Camera, FileText, Image as ImageIcon, Sparkles, ArrowRight, CheckCircle2 } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { ReactNode } from "react";
+import { PassportDraftCard } from "@/components/passport/PassportDraftCard";
 
 interface ProfileActivationGateProps {
   /** True when profile already meets discovery requirements */
   isVisible: boolean;
-  /** Specific fields the user is missing (e.g. "Profile Picture") */
+  /** Fields the caller found missing. The draft function re-reads the profile itself and decides what to offer. */
   missingFields: string[];
   /** Content to render when the profile is complete */
   children: ReactNode;
-  /** Surface label used in the headline ("Discover", "Match", etc.) */
+  /** Surface label used in the headline ("Stage", "Discover", etc.) */
   surfaceLabel?: string;
 }
 
-const fieldIconMap: Record<string, React.ReactNode> = {
-  "Profile Picture": <Camera className="h-4 w-4" />,
-  "Bio (20+ characters)": <FileText className="h-4 w-4" />,
-  "At least 1 Work Item (Portfolio or Credit)": <ImageIcon className="h-4 w-4" />,
-};
-
 /**
- * Non-blocking activation guidance. Discovery remains usable while the user
- * completes the fields that make their Passport visible to other people.
+ * Non-blocking activation guidance. The surface stays usable while the person completes what makes their Passport
+ * visible, with Kreto drafting it for them to review (see PassportDraftCard).
  */
 export const ProfileActivationGate = ({
   isVisible,
-  missingFields,
   children,
   surfaceLabel = "Discover",
 }: ProfileActivationGateProps) => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [importUrl, setImportUrl] = useState("");
-  const [importing, setImporting] = useState(false);
-
   if (isVisible) return <>{children}</>;
-
-  const handleAutoImport = async () => {
-    if (!importUrl.trim() || !user) return;
-    setImporting(true);
-    try {
-      // Step 1: persist the URL on the profile so enrichment can use it as a verified source
-      const lower = importUrl.toLowerCase();
-      const profileUpdate: Record<string, string> = {};
-      if (lower.includes("linkedin.com")) profileUpdate.linkedin_url = importUrl;
-      else if (lower.includes("imdb.com")) profileUpdate.imdb_url = importUrl;
-      else profileUpdate.website = importUrl;
-      const { error: profileError } = await supabase.from("profiles").update(profileUpdate as any).eq("user_id", user.id);
-      if (profileError) throw profileError;
-
-      // Step 2: scrape page directly for bio/skills/portfolio (analyze-profile-url)
-      const { data: scrape, error: scrapeErr } = await supabase.functions.invoke("analyze-profile-url", {
-        body: { url: importUrl },
-      });
-      if (scrapeErr) throw scrapeErr;
-
-      if (scrape?.isLinkedInBlock) {
-        toast({
-          title: "LinkedIn blocks scraping",
-          description: "Try your personal site, IMDb, Behance, or another portfolio URL.",
-          variant: "destructive",
-        });
-        setImporting(false);
-        return;
-      }
-
-      const data = scrape?.data;
-      if (data) {
-        const updates: Record<string, any> = {};
-        if (data.bio && data.bio.length >= 20) updates.bio = data.bio.slice(0, 500);
-        if (data.location) updates.location = data.location;
-        if (data.role) updates.role = data.role;
-        if (Array.isArray(data.skills) && data.skills.length > 0) {
-          updates.professional_skills = data.skills.slice(0, 12);
-        }
-        if (Object.keys(updates).length > 0) {
-          const { error: updateError } = await supabase.from("profiles").update(updates as any).eq("user_id", user.id);
-          if (updateError) throw updateError;
-        }
-        // Insert portfolio items as credits (verified work)
-        if (Array.isArray(data.portfolio_items) && data.portfolio_items.length > 0) {
-          const rows = data.portfolio_items.slice(0, 6).map((p: any) => ({
-            user_id: user.id,
-            project_name: String(p.title || "Untitled").slice(0, 200),
-            role: data.role || "Creator",
-            url: p.media_url || null,
-            thumbnail_url: p.thumbnail_url || null,
-            primary_media_url: p.thumbnail_url || p.media_url || null,
-            media_type: p.media_type || "image",
-            source: "web_verified",
-            verification_status: "pending_review",
-          }));
-          const { error: creditsError } = await supabase.from("credits").insert(rows);
-          if (creditsError) throw creditsError;
-        }
-      }
-
-      // Step 3: trigger background enrichment for avatar (og:image) + extras
-      supabase.functions
-        .invoke("enrich-creator-profile", { body: { user_id: user.id, scrape_website: true } })
-        .catch(() => {});
-
-      toast({
-        title: "Profile imported",
-        description: "We pulled what we could verify. Your discovery access will update automatically.",
-      });
-      window.dispatchEvent(new CustomEvent("kretopia:profile-updated"));
-      setImporting(false);
-    } catch (e: any) {
-      console.error("[ActivationGate] import failed:", e);
-      toast({
-        title: "Import failed",
-        description: e?.message || "Try another URL or complete your profile manually.",
-        variant: "destructive",
-      });
-      setImporting(false);
-    }
-  };
 
   return (
     <div className="space-y-4">
-      <section className="rounded-lg border border-primary/20 bg-card p-4 sm:p-5" aria-labelledby="profile-activation-title">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <Sparkles className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h2 id="profile-activation-title" className="text-lg font-semibold text-foreground">Strengthen your Passport for {surfaceLabel}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Add a photo, bio, and one piece of work so people can find you. You can still browse now.</p>
-            </div>
-          </div>
-
-          {/* Missing checklist */}
-          <div className="mt-4 space-y-2">
-            {missingFields.map((field) => (
-              <div
-                key={field}
-                className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-              >
-                <span className="text-muted-foreground">
-                  {fieldIconMap[field] || <CheckCircle2 className="h-4 w-4" />}
-                </span>
-                <span>{field}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Auto-import */}
-          <div className="mt-4 space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <Label htmlFor="gate-import" className="text-xs font-semibold uppercase tracking-wide text-primary">
-              Fast track: import from a link
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              Paste your portfolio, IMDb, Behance, or personal site. We only save what we can verify — no fake details.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                id="gate-import"
-                type="url"
-                placeholder="https://yoursite.com"
-                value={importUrl}
-                onChange={(e) => setImportUrl(e.target.value)}
-                disabled={importing}
-                className="text-sm"
-              />
-              <Button
-                onClick={handleAutoImport}
-                disabled={importing || !importUrl.trim()}
-                size="sm"
-              >
-                {importing ? <KretopiaSpinner className="h-4 w-4" /> : "Import"}
-              </Button>
-            </div>
-          </div>
-
-          <Button
-            onClick={() => navigate("/profile")}
-            className="mt-4 w-full sm:w-auto"
-            variant="outline"
-          >
-            Complete profile manually
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-      </section>
+      <PassportDraftCard surfaceLabel={surfaceLabel} />
       {children}
     </div>
   );

@@ -24,19 +24,19 @@ const NO_MOMENTUM: MomentumData = { completedThisWeek: 0, activeProjects: [], ne
 describe("derivePrimaryCta", () => {
   it("new user with no Passport data at all -> Build my Passport", () => {
     const cta = derivePrimaryCta({ priority: NONE, passport: null, stamps: null, momentum: null, approvalCount: 0 });
-    expect(cta).toEqual({ label: "Build my Passport", href: "/passport" });
+    expect(cta).toEqual({ label: "Build my Passport", href: "/profile" });
   });
 
   it("Passport at 0% -> Build my Passport", () => {
     const passport: PassportReadiness = { percentage: 0, missingFields: ["Full Name"], isComplete: false };
     const cta = derivePrimaryCta({ priority: NONE, passport, stamps: null, momentum: null, approvalCount: 0 });
-    expect(cta).toEqual({ label: "Build my Passport", href: "/passport" });
+    expect(cta).toEqual({ label: "Build my Passport", href: "/profile" });
   });
 
   it("Passport incomplete but started -> Complete my Passport", () => {
     const passport: PassportReadiness = { percentage: 60, missingFields: ["Bio"], isComplete: false };
     const cta = derivePrimaryCta({ priority: NONE, passport, stamps: null, momentum: null, approvalCount: 0 });
-    expect(cta).toEqual({ label: "Complete my Passport", href: "/passport" });
+    expect(cta).toEqual({ label: "Complete my Passport", href: "/profile" });
   });
 
   it("Passport complete + credits waiting for co-sign -> Send co-sign requests", () => {

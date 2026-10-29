@@ -18,7 +18,7 @@ type Peer = { id: string; full_name: string | null; avatar_url: string | null; r
  * in the group room with) and lets them follow up: open chat, send Connect.
  * Also linked from the recap email.
  */
-export default function SpeedRecap() {
+export default function SpeedRecap({ embedded = false }: { embedded?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -92,7 +92,7 @@ export default function SpeedRecap() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-3">
+      <div className={`${embedded ? "min-h-[40vh]" : "min-h-screen"} flex flex-col items-center justify-center p-6 text-center gap-3`}>
         <p className="font-semibold">Sign in to see your recap</p>
         <Link to={`/auth?redirect=/circle/speed/${id}/recap`}>
           <Button>Sign in</Button>
@@ -102,15 +102,15 @@ export default function SpeedRecap() {
   }
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><KretopiaSpinner className="h-6 w-6" /></div>;
+    return <div className={`${embedded ? "min-h-[40vh]" : "min-h-screen"} flex items-center justify-center`}><KretopiaSpinner className="h-6 w-6" /></div>;
   }
 
   return (
-    <div className="min-h-screen pb-28 bg-background">
+    <div className={embedded ? "pb-6" : "min-h-screen pb-28 bg-background"}>
       <SEO title={`Recap · ${title}`} description="Follow up with everyone you met." />
-      <div className="sticky top-0 z-10 bg-background border-b">
+      <div className={`${embedded ? "" : "sticky top-0 z-10 "}bg-background border-b`}>
         <div className="container mx-auto px-3 py-3 flex items-center gap-2 max-w-xl">
-          <h1 className="text-base font-bold truncate flex-1">Recap · {title}</h1>
+          {embedded ? <h2 className="text-base font-bold truncate flex-1">Recap · {title}</h2> : <h1 className="text-base font-bold truncate flex-1">Recap · {title}</h1>}
         </div>
       </div>
 

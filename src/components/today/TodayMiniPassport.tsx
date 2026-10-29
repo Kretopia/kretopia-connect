@@ -31,7 +31,7 @@ export function TodayMiniPassport({ profile, creditCount, completion }: TodayMin
   const collabIntent = profile.collab_intent ? profile.collab_intent.replace(/_/g, " ") : null;
 
   return (
-    <Link to="/passport" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl" aria-label="Open my Creative Passport">
+    <Link to="/profile" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl" aria-label="Open my Creative Passport">
       <HoloCard className="h-full" maxTilt={5}>
         <article className="relative min-h-[210px] h-full overflow-hidden rounded-2xl border border-border bg-card p-4 sm:p-5">
           {profile.cover_image_url ? (

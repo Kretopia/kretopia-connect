@@ -75,7 +75,7 @@ describe("TodayCommandCenter", () => {
   it("new user with no Passport progress sees Build my Passport, not fabricated activity", () => {
     const signals = baseSignals({
       passport: { percentage: 0, missingFields: ["Full Name", "Bio"], isComplete: false },
-      primaryCta: { label: "Build my Passport", href: "/passport" },
+      primaryCta: { label: "Build my Passport", href: "/profile" },
     });
     renderCommandCenter(signals);
     expect(screen.getByRole("button", { name: /Build my Passport/ })).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe("TodayCommandCenter", () => {
   it("overdue task as the priority action shows its own label, Complete/Snooze/Open Project actions", () => {
     const signals = baseSignals({
       priority: { kind: "task", task: { id: "t1", title: "Send the sponsor deck", projectId: "p1", projectTitle: "Bali Carnival", dueDate: "2020-01-01", overdue: true } },
-      primaryCta: { label: "Complete my Passport", href: "/passport" },
+      primaryCta: { label: "Complete my Passport", href: "/profile" },
       passport: { percentage: 45, missingFields: ["Location"], isComplete: false },
     });
     renderCommandCenter(signals);
@@ -127,7 +127,7 @@ describe("TodayCommandCenter", () => {
     expect(card.className).toContain("min-h-[460px]");
     expect(activity.className).toContain("min-h-[460px]");
     expect(screen.getByRole("progressbar", { name: "Passport completion" })).toHaveAttribute("aria-valuenow", "72");
-    expect(screen.getByRole("link", { name: /Complete Passport/ })).toHaveAttribute("href", "/passport");
+    expect(screen.getByRole("link", { name: /Complete Passport/ })).toHaveAttribute("href", "/profile");
   });
 
   it("every card has the same anatomy and ends in the Landing CTA pair", () => {

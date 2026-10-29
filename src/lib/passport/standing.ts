@@ -233,7 +233,7 @@ function suggestNextActions(
       id: "request-cosign",
       label: "Ask a collaborator for a co-sign",
       points: 18,
-      deeplink: "/profile?focus=cosigns",
+      deeplink: "/credits?action=co_sign",
     });
   }
 

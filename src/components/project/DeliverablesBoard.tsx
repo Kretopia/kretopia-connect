@@ -591,24 +591,24 @@ export const DeliverablesBoard = ({ projectId, projectTitle, currentUserId, onEm
         prev.map((d) => (d.id === activeIdStr ? { ...d, status: toStatus, sort_order: insertIdx } : d)),
       );
 
-      let moved = true;
-      await supabase.from("project_deliverables").update(patch as any).eq("id", activeIdStr).then(({ error }) => {
-        if (error) {
-          moved = false;
-          toast({ title: "Move failed", description: error.message, variant: "destructive" });
-        }
-      });
+      const { error: moveError } = await supabase.from("project_deliverables").update(patch as any).eq("id", activeIdStr);
+      if (moveError) {
+        // The write failed: put the card back where it was and say nothing was approved, rejected or submitted.
+        setItems((prev) =>
+          prev.map((d) => (d.id === activeIdStr ? { ...d, status: moving.status, sort_order: moving.sort_order } : d)),
+        );
+        toast({ title: "Move failed", description: moveError.message, variant: "destructive" });
+        return;
+      }
 
       // Tell the right people about the move (best-effort, never throws).
-      if (moved) {
-        if (toStatus === "submitted") {
-          void notifyReviewRequested({ projectId, projectTitle, deliverableTitle: moving.title, actorId: currentUserId });
-        } else if (toStatus === "approved" || toStatus === "rejected") {
-          void notifyDeliverableDecision({
-            projectId, projectTitle, deliverableTitle: moving.title,
-            decision: toStatus, recipientIds: [moving.submitted_by, moving.assignee_id], actorId: currentUserId,
-          });
-        }
+      if (toStatus === "submitted") {
+        void notifyReviewRequested({ projectId, projectTitle, deliverableTitle: moving.title, actorId: currentUserId });
+      } else if (toStatus === "approved" || toStatus === "rejected") {
+        void notifyDeliverableDecision({
+          projectId, projectTitle, deliverableTitle: moving.title,
+          decision: toStatus, recipientIds: [moving.submitted_by, moving.assignee_id], actorId: currentUserId,
+        });
       }
 
       // Re-number sort_order in target column

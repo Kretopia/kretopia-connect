@@ -295,9 +295,9 @@ export function derivePrimaryCta(input: {
 }): PrimaryCtaAction {
   const { priority, passport, stamps, momentum, approvalCount } = input;
 
-  if (!passport) return { label: "Build my Passport", href: "/passport" };
-  if (passport.percentage === 0) return { label: "Build my Passport", href: "/passport" };
-  if (!passport.isComplete) return { label: "Complete my Passport", href: "/passport" };
+  if (!passport) return { label: "Build my Passport", href: "/profile" };
+  if (passport.percentage === 0) return { label: "Build my Passport", href: "/profile" };
+  if (!passport.isComplete) return { label: "Complete my Passport", href: "/profile" };
   if (stamps && stamps.waitingForCoSign > 0) return { label: "Send co-sign requests", href: "/credits" };
   if (priority.kind === "approval") return { label: "Review Kreto's suggestion", href: priority.approval.href ?? "/desk" };
   if (approvalCount > 0) return { label: "Review pending approvals", href: "/desk" };

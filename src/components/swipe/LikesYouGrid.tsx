@@ -90,7 +90,8 @@ export function LikesYouGrid() {
       });
       if (error) throw error;
       setLikers((l) => l.filter((p) => p.user_id !== targetId));
-      if (direction === "right") toast({ title: "It's a match", description: "Say hello in Messages." });
+      // A saved answer is all this write proves: it creates no connection, so it must not announce a match.
+      if (direction === "right") toast({ title: "Interest saved", description: "Your answer is saved. You can say hello in Messages." });
     } catch (e: any) {
       toast({ title: "Couldn't save that", description: e?.message, variant: "destructive" });
     } finally {
@@ -115,7 +116,7 @@ export function LikesYouGrid() {
           title="No one waiting yet"
           description="When a creator swipes right on you, they land here so you can answer in one tap."
           accent="lime"
-          action={{ label: "Browse creators", icon: Heart, onClick: () => navigate("/circle") }}
+          action={{ label: "Browse creators", icon: Heart, onClick: () => navigate("/match?tab=browse") }}
         />
       </div>
     );

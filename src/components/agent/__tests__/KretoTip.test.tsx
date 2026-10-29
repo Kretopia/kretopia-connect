@@ -6,7 +6,7 @@ import { KretoTip } from "../KretoTip";
 /**
  * Regression coverage for Kreto's controlled rollout across KretoTip's
  * route groups (KRETO_3D_REFERENCE_AND_RIGHTS_AUDIT.md §13): Studio shipped
- * in the pilot, Scout, Passport, Events and Circle are the rollout surfaces
+ * in the pilot, Scout, Passport and Events are the rollout surfaces
  * approved after pilot review so far. Events has since been moved to the
  * Kretopia K-mark (like Scout) on the owner's direction. This guards that the embodied
  * presence only appears on the approved route groups and every other group
@@ -99,18 +99,14 @@ describe("KretoTip — Kreto presence rollout scope", () => {
     expect(screen.getByRole("button", { name: /Dismiss tip/i })).toBeInTheDocument();
   });
 
-  it("Circle (/circle route) renders the embodied KretoPresence -- the fourth rollout surface", () => {
-    const { container } = renderTipAtRoute("/circle");
-    expect(cardPresence(container)).toHaveLength(1);
-    expect(labelRobots(container)).toHaveLength(1);
-    expect(screen.getByText(/Kreto · Circle/i)).toBeInTheDocument();
-  });
-
-  it("/stages route also resolves to the Circle group and renders the embodied presence", () => {
-    const { container } = renderTipAtRoute("/stages");
-    expect(cardPresence(container)).toHaveLength(1);
-    expect(labelRobots(container)).toHaveLength(1);
-    expect(screen.getByText(/Kreto · Circle/i)).toBeInTheDocument();
+  it("Stages (/circle and /stages) has no Circle tip: the surface carries its own Kreto actions", () => {
+    for (const route of ["/circle", "/stages"]) {
+      const { container, unmount } = renderTipAtRoute(route);
+      expect(screen.queryByText(/who's worth adding to your circle/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Suggest people/i)).not.toBeInTheDocument();
+      expect(cardPresence(container)).toHaveLength(0);
+      unmount();
+    }
   });
 
   it.each(["today", "match", "pay"] as const)(

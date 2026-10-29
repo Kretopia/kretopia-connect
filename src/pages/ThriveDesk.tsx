@@ -29,6 +29,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useProjectData } from "@/hooks/useProjectData";
 import { useProjectFlow, PROJECT_FLOW_STAGES, STUDIO_PHASES, stageToPhase, type ProjectFlowStageId } from "@/hooks/useProjectFlow";
 import { useProjectFlowExtras } from "@/hooks/useProjectFlowExtras";
+import { milestoneReturnNotice } from "@/lib/checkoutReturn";
 import { notifyPhaseAdvanced } from "@/lib/notifyPhaseAdvanced";
 import { parseDeepLinkTab } from "@/lib/studioNotifications";
 import { supabase } from "@/integrations/supabase/client";
@@ -126,14 +127,10 @@ const ThriveDesk = () => {
     const paymentStatus = searchParams.get("payment");
     if (!paymentStatus) return;
 
-    if (paymentStatus === "success") {
-      toast.success("Payment received", {
-        description: "Confirming with Stripe — the milestone will update automatically in a moment.",
-      });
-      setActiveTab("finance");
-    } else if (paymentStatus === "cancelled") {
-      toast("Payment cancelled", { description: "No charge was made." });
-    }
+    // A browser redirect is not a payment: say we are back from checkout, never "received".
+    const notice = milestoneReturnNotice(paymentStatus);
+    if (notice) toast(notice.title, { description: notice.description });
+    if (paymentStatus === "success") setActiveTab("finance");
 
     const next = new URLSearchParams(searchParams);
     next.delete("payment");
