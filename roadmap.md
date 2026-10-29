@@ -1,5 +1,10 @@
 # Roadmap
 
+## Original EPK and full-space editor
+- [ ] Fill Live Preview by default, with fullscreen and document controls.
+- [ ] Preserve uploaded PDFs in full and connect explicit Passport publication through existing storage.
+- [ ] Add draft storage and original-document editing controls; verify relevant flows and tests without publishing the website.
+
 ## Passport and EPK refinement (October 29)
 - [x] Merge Passport identity/intelligence in one Holo surface, remove following collaboration divider and soften Edit with shared theme-aware controls.
 - [x] Enrich factual EPK defaults, profession/interests template selection, avatar-derived teal accent, reviewed AI draft actions for bio and seven topics, and local PDF-text import with explicit application. Existing paid custom controls preserved; no public upload/persistence or profile writes.
