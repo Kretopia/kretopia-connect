@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, Minimize, Scan } 
 import { Button } from "@/components/ui/button";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
-export function EPKDocumentViewer({ source, onPages, toolbarLeading }: { source: string | Blob; onPages?: (count: number) => void; toolbarLeading?: ReactNode }) {
+export function EPKDocumentViewer({ source, onPages, toolbarLeading, label }: { source: string | Blob; onPages?: (count: number) => void; toolbarLeading?: ReactNode; label?: ReactNode }) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [document, setDocument] = useState<PDFDocumentProxy>();
@@ -68,8 +68,9 @@ export function EPKDocumentViewer({ source, onPages, toolbarLeading }: { source:
   }, [document, page, width, zoom]);
   return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer" aria-busy={busy}>
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-border px-2 py-1">
-      <div className="flex items-center gap-1">
+      <div className="flex min-w-0 items-center gap-1">
         {toolbarLeading}
+        {label && <span className="truncate text-xs font-semibold text-foreground">{label}</span>}
         <Button variant="ghost" size="icon" aria-label="Previous PDF page" disabled={!document || page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
         <span className="min-w-16 text-center text-xs tabular-nums">{page} / {document?.numPages || "—"}</span>
         <Button variant="ghost" size="icon" aria-label="Next PDF page" disabled={!document || page >= document.numPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
