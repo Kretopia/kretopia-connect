@@ -53,6 +53,25 @@ export const SOURCE_ADAPTERS: SourceAdapter[] = [
     terms: "Public API. Link back to the original posting and name Arbeitnow as the source.",
   },
   {
+    // Terms read 2026-10-29 (himalayas.app/docs/remote-jobs-api and clause 113 of himalayas.app/terms): free, no key, personal and commercial use
+    // without asking, on sites and apps you operate. Conditions: a visible credit and link to Himalayas, every apply action on the job's own
+    // Himalayas page (applicationLink), jobs removed once they expire, nothing passed on to other boards, aggregators, Google Jobs or LinkedIn
+    // (no JobPosting data). The feed refreshes daily: polling more often gains nothing. Tested queries only; there is no category filter.
+    id: "himalayas", name: "Himalayas", kind: "gig", hosts: ["himalayas.app"],
+    feedUrls: [
+      "https://himalayas.app/jobs/api/search?q=video%20editor&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=motion%20designer&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=art%20director&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=photographer&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=illustrator&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=copywriter&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=content%20creator&sort=recent",
+      "https://himalayas.app/jobs/api/search?q=designer&sort=recent",
+    ],
+    feedFormat: "json", requiresCredential: null, costPerCallCents: 0, enabledByDefault: false,
+    terms: "Public API, no key. Credit Himalayas with a visible link, apply only through the job's own Himalayas page, show the jobs only on Kretopia, remove a job once it expires, never pass them on to other job boards or aggregators. Poll at most once a day.",
+  },
+  {
     id: "web-search", name: "Web search provider", kind: "gig", hosts: [], feedUrls: [], feedFormat: null,
     requiresCredential: "FIRECRAWL_API_KEY", costPerCallCents: null, enabledByDefault: false,
     terms: "Not approved: provider pricing and the terms of each result site are unconfirmed. Stays disabled.",

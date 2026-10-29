@@ -66,6 +66,15 @@ describe("ExternalOfferCard: what it says", () => {
     expect(open.getAttribute("rel")).toBe("noopener noreferrer nofollow");
   });
 
+  it("a Himalayas offer is credited by name and opens the job's own Himalayas page with utm_source=api", () => {
+    const page = "https://himalayas.app/companies/customer-io/jobs/senior-brand-designer";
+    renderCard(offer({ source_provider: "himalayas", apply_url: page }));
+    expect(screen.getByTestId("listing-labels")).toHaveTextContent("via Himalayas");
+    const open = screen.getByRole("link", { name: /at the source/i });
+    expect(open).toHaveAttribute("href", `${page}?utm_source=api`);
+    expect(open.getAttribute("rel")).toBe("noopener noreferrer nofollow");
+  });
+
   it("never promises a match, a connection or a reply", () => {
     renderCard();
     const text = document.body.textContent ?? "";
