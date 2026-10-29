@@ -18,6 +18,22 @@ export interface ListingLabels {
   source: string | null; // "via Remote OK"
 }
 
+/**
+ * What each approved source is called where people read it. A listing stores the adapter's id ("jobicy"), but the credit a source's
+ * terms ask for is its NAME ("via Jobicy"). Kept in step with the registry's names by a test; an id nobody listed is shown as it is.
+ */
+export const SOURCE_DISPLAY_NAMES: Record<string, string> = {
+  remoteok: "Remote OK",
+  weworkremotely: "We Work Remotely",
+  jobicy: "Jobicy",
+  arbeitnow: "Arbeitnow",
+  "web-search": "Web search provider",
+};
+
+export function sourceDisplayName(id: string | null): string | null {
+  return id ? SOURCE_DISPLAY_NAMES[id] ?? id : null;
+}
+
 export function relativeDays(iso: string | null, now: Date): string | null {
   if (!iso) return null;
   const t = new Date(iso).getTime();
@@ -35,6 +51,6 @@ export function listingLabels(l: ListingLabelInput, now: Date): ListingLabels {
     origin: l.origin === "external" ? "External" : "Kretopia",
     ownership: l.origin === "external" ? (l.claimed ? "Claimed" : "Unclaimed") : null,
     lastChecked: l.origin === "external" && when ? `Last checked ${when}` : null,
-    source: l.origin === "external" && l.source_name ? `via ${l.source_name}` : null,
+    source: l.origin === "external" && l.source_name ? `via ${sourceDisplayName(l.source_name)}` : null,
   };
 }

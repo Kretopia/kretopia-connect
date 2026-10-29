@@ -36,7 +36,7 @@ describe("ExternalOfferCard: what it says", () => {
     expect(labels).toHaveTextContent("External");
     expect(labels).toHaveTextContent("Unclaimed");
     expect(labels).toHaveTextContent("Last checked yesterday");
-    expect(labels).toHaveTextContent("via remoteok");
+    expect(labels).toHaveTextContent("via Remote OK");
   });
 
   it("shows the title, who published it and where, and the short excerpt", () => {

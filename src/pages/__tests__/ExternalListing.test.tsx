@@ -67,7 +67,7 @@ describe("ExternalListing", () => {
     expect(labels).toHaveTextContent("External");
     expect(labels).toHaveTextContent("Unclaimed");
     expect(labels).toHaveTextContent("Last checked 3 days ago");
-    expect(labels).toHaveTextContent("via remoteok");
+    expect(labels).toHaveTextContent("via Remote OK");
     expect(screen.getByText(/does not verify this listing and does not collect applications/i)).toBeInTheDocument();
   });
 
