@@ -293,6 +293,26 @@ same copy), then publish the frontend. Until the function is deployed the new pa
 listing from its own session; the server must answer `200 {"ok":true}` and change only the deadline. The same call by any other account
 answers `403`.
 
+## Opening the other three feeds (prepared 2026-10-29, not applied)
+
+**State read from production (read-only, 2026-10-29):** kill switch on, both ceilings 0, Jobicy the only enabled source (last run 2026-10-28 16:57 UTC, one fetch), 16 published + 30 private feed drafts from Jobicy, plus the Remote OK posting BlueTuskr. Scout already reads all four feeds for its own private, per-member results; this section is about the curated public layer (Discover Gigs > Sourced, the Match deck, `/listing/:id`).
+
+**What is prepared (untracked, `security/`):** `apply-open-feeds-2026-10-29.sql` and `rollback-open-feeds-2026-10-29.sql`. The apply script opens Remote OK, We Work Remotely (its first feed, design) and Arbeitnow, each free (cost 0, no budget, one fetch per run); Jobicy is not touched and no schedule is created. The list of sources is a table at the top of the script: delete a line to leave that source off. The preflight refuses unless the kill switch is on, both ceilings are 0, Jobicy is the only enabled source and the list holds only approved ids; a smoke test per source (lock, zero-cost reservation, one cent refused, AI reading refused, a feed import is a private draft) rolls everything back on any surprise. Rehearsed 37/37 on a throwaway Postgres 16 that went through the real migration and the real "automation on" script (apply, repeat, rollback, re-apply, nine preflight refusals, six injected failures, a shorter list, a dead-lettered source reset, real roles locked out). Expected result row: `t|t|t|t|t|t|t|t|0`.
+
+**Terms, as read on 2026-10-29:**
+- Remote OK (the API's own notice): "link back (with follow, and without nofollow!) to the URL on Remote OK and mention Remote OK as a source", or API access is suspended; no logo. The listing page, the Match offer card and the Sourced lane carried nofollow for every source; `sourceLinkRel` now leaves Remote OK's link followed and keeps nofollow for the others.
+- Arbeitnow (API notice + terms of service): free, "please do not abuse", jobs refresh hourly; section 11 asks for a link back to Arbeitnow.com. Section 2 forbids "any public display" of "materials on the website" and does not say whether API data is covered: unresolved, so no Arbeitnow listing should be published until you decide.
+- We Work Remotely: the feed page sits behind a bot challenge and could not be read (not bypassed). Read https://weworkremotely.com/remote-job-rss-feed before publishing any of its listings.
+- Jobicy: unchanged (credit to Jobicy, link to its own job page, poll at most once an hour). Its marketing feed and WWR's marketing feed are NOT opened: more noise, and a second Jobicy call per run is a stricter reading of "once an hour" than needed.
+
+**What to expect (dry run of the real feeds through our parsers):** Remote OK 99 postings, mostly engineering and sales (its tags are loose: `?tag=design` returns "Senior Software Engineer"); We Work Remotely design 23; Arbeitnow 300 per page of which the run imports the first 100, mostly German-language, about one in eight creative. The gain is a few dozen more creative gigs, not hundreds, and every one still needs a human decision. None of the four feeds lists events or talent, so the Company-only events and talent lanes stay empty until a source for them is approved.
+
+**Publishing stays a decision per listing:** the imports are private drafts; the Feed drafts panel lists them; approving one makes it public.
+
+**Reliability fix found on the way:** the contact-redaction patterns were quadratic on a long unbroken run of letters or digits (40,000 characters: about 3 s; 100,000: about 17 s), enough to stall a run and, after three failures, switch a source off. Bounded now (`extract.ts`, tested). It reaches production only when `_shared/discovery/extract.ts` is copied into kretopia-app and external-import / external-discovery-run are redeployed. The tag, comment and script patterns have the same shape on adversarial markup repeated tens of thousands of times: not changed.
+
+**Order:** merge and publish the frontend (the followed Remote OK link) -> copy `extract.ts` and redeploy the two functions -> apply the SQL -> one manual `external-discovery-run` per source (Jobicy at least an hour after its last run) -> read the drafts -> publish the ones you approve.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local
