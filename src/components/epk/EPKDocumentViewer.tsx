@@ -66,7 +66,7 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
     })().catch(e => { if (active && e?.name !== "RenderingCancelledException") { console.warn("EPK page rendering failed", e); setError("Could not render this PDF page."); setBusy(false); } });
     return () => { active = false; render?.cancel(); };
   }, [document, page, width, zoom]);
-  return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer">
+  return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer" aria-busy={busy}>
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-border px-2 py-1">
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" aria-label="Previous PDF page" disabled={!document || page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
