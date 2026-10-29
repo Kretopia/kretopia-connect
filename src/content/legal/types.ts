@@ -23,7 +23,7 @@ export interface LegalHeading {
 }
 
 export interface LegalDocument {
-  slug: "terms" | "privacy";
+  slug: "terms" | "privacy" | "community";
   /** "Terms of Service": names the page in the header, the panel and the browser title. */
   name: string;
   seoDescription: string;

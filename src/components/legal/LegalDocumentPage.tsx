@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 const LEGAL_PAGES = [
   { to: "/terms", label: "Terms", slug: "terms" },
   { to: "/privacy", label: "Privacy", slug: "privacy" },
-  { to: "/community-guidelines", label: "Guidelines", slug: "guidelines" },
+  { to: "/community-guidelines", label: "Community", slug: "community" },
 ] as const;
 
 const prefersReducedMotion = () => typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;

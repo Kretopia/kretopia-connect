@@ -93,7 +93,7 @@ export const Footer = () => {
               </li>
               <li>
                 <Link to="/community-guidelines" className="text-muted-foreground hover:text-foreground transition-colors">
-                  {t("footer.communityGuidelines")}
+                  Community
                 </Link>
               </li>
             </ul>

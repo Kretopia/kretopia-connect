@@ -18,6 +18,7 @@ describe("EditorialFooter legal column", () => {
       ["Contact", "mailto:support@kretopia.com"],
       ["Terms of Service", "/terms"],
       ["Privacy Policy", "/privacy"],
+      ["Community", "/community-guidelines"],
     ]);
     expect(within(legal).queryByRole("link", { name: "Legal" })).not.toBeInTheDocument();
     expect(within(legal).queryByRole("link", { name: "Privacy" })).not.toBeInTheDocument();
