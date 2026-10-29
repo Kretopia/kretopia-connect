@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type ReactNode, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useRef, type ReactNode, type CSSProperties } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import {
   Monitor, Smartphone, X, Save, Eye, EyeOff,
   GripVertical, ChevronDown, ChevronRight, ChevronLeft, Wand2,
   PanelLeft, ArrowLeft, Crown, Lock, FileDown, Palette, Star,
-  Type, Image as ImageIcon, Plus, Trash2, LayoutTemplate, Check
+  Type, Image as ImageIcon, Plus, Trash2, LayoutTemplate, Check, Upload
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,9 @@ import { useNavigate } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
 import type { EPKPdfInput } from "@/lib/epkPdfGenerator";
 import { EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES, type EPKTemplateId } from "@/lib/epkPdfGenerator";
+
+import { buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate, validateEPKFile } from "@/lib/epkDraft";
+import { EPKDraftField } from "./EPKDraftTopics";
 
 // Editable sections for the EPK
 interface EPKSection {
@@ -78,6 +81,12 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const isPro = hasProAccess((subscriptionInfo?.tier || "free") as any);
   const isCreatorPlus = hasCreatorProAccess((subscriptionInfo?.tier || "free") as any);
 
+  const defaults = buildEPKDefaults(epkData);
+  const [topics, setTopics] = useState<Record<string, string>>(defaults.topics);
+  const [importedText, setImportedText] = useState("");
+  const [importName, setImportName] = useState("");
+  const [importing, setImporting] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
   const [generating, setGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<EditorTab>("content");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -86,9 +95,9 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   // Editable state
   const [displayName, setDisplayName] = useState(epkData.profile.full_name || "");
   const [displayRole, setDisplayRole] = useState(epkData.profile.job_title || epkData.profile.role || "");
-  const [bio, setBio] = useState(epkData.profile.bio || "");
+  const [bio, setBio] = useState(defaults.bio);
   const [location, setLocation] = useState(epkData.profile.location || "");
-  const [tagline, setTagline] = useState("");
+  const [tagline, setTagline] = useState(defaults.tagline);
   const [sections, setSections] = useState<EPKSection[]>(DEFAULT_SECTIONS);
   const [branding, setBranding] = useState<EPKBranding>({
     // Default before the creator customizes it: the first template's own accent, shared with it.
@@ -107,7 +116,12 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
     if (open && epkData) {
       setDisplayName(epkData.profile.full_name || "");
       setDisplayRole(epkData.profile.job_title || epkData.profile.role || "");
-      setBio(epkData.profile.bio || "");
+      setBio(defaults.bio);
+      setTopics(defaults.topics);
+      setTagline(defaults.tagline);
+      const template = EPK_TEMPLATES.find(t => t.id === suggestedEPKTemplate(epkData)) || EPK_TEMPLATES[0];
+      setSelectedTemplate(template.id);
+      setBranding(prev => ({ ...prev, primaryColor: rgbToHex(template.palette.primary), accentColor: rgbToHex(template.palette.accent), darkColor: rgbToHex(template.palette.bg) }));
       setLocation(epkData.profile.location || "");
       setHasChanges(false);
     }
@@ -125,7 +139,9 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         full_name: displayName,
         job_title: displayRole,
         role: displayRole,
-        bio,
+        bio: visibleSectionIds.has("bio") ? bio : "",
+        professional_skills: visibleSectionIds.has("skills") ? epkData.profile.professional_skills : [],
+        passion_skills: visibleSectionIds.has("skills") ? epkData.profile.passion_skills : [],
         location,
       },
       credits: visibleSectionIds.has("credits")
@@ -142,8 +158,9 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
       pressLinks: visibleSectionIds.has("press") ? epkData.pressLinks : [],
       industryStats: visibleSectionIds.has("credentials") ? epkData.industryStats : [],
       reviews: visibleSectionIds.has("reviews") ? epkData.reviews : [],
+      narratives: Object.fromEntries(Object.entries(topics).filter(([key]) => key === "practice" || key === "approach" ? visibleSectionIds.has("skills") : key === "portfolio" ? visibleSectionIds.has("credits") : key === "recognition" ? visibleSectionIds.has("awards") || visibleSectionIds.has("press") : visibleSectionIds.has("contact"))),
     };
-  }, [epkData, displayName, displayRole, bio, location, sections, creditOverrides]);
+  }, [epkData, displayName, displayRole, bio, location, sections, creditOverrides, topics]);
 
   const handleDownload = async () => {
     setGenerating(true);
@@ -163,7 +180,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         });
       } else {
         const { generateEPKPdf } = await import("@/lib/epkPdfGenerator");
-        await generateEPKPdf(modifiedData);
+        await generateEPKPdf(modifiedData, { tagline });
       }
       toast({ title: "EPK PDF downloaded!", description: "Your professional EPK deck has been saved." });
     } catch (error) {
@@ -172,6 +189,21 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleImport = async (file?: File) => {
+    if (!file) return;
+    const invalid = validateEPKFile(file);
+    if (invalid) { toast({ title: invalid, variant: "destructive" }); return; }
+    setImporting(true);
+    try {
+      const { extractTextFromFile } = await import("@/lib/extractBriefDocument");
+      const document = await extractTextFromFile(file);
+      if (!document.text.trim()) throw new Error("This PDF has no readable text. Use a text-based PDF.");
+      setImportedText(document.text.replace(/--- Page \d+ ---/g, "").trim());
+      setImportName(file.name);
+    } catch (e) { toast({ title: e instanceof Error ? e.message : "Could not read this PDF", variant: "destructive" }); }
+    finally { setImporting(false); if (uploadRef.current) uploadRef.current.value = ""; }
   };
 
   // Section drag & drop
@@ -203,29 +235,35 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
+    <div className="k-epk-editor fixed inset-0 z-50 bg-background flex flex-col" role="dialog" aria-modal="true" aria-label="EPK PDF Editor">
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur shrink-0">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5">
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
+          <BrandLogo iconOnly size="sm" />
           <div className="hidden sm:block">
             <h2 className="text-sm font-semibold">EPK PDF Editor</h2>
             <p className="text-xs text-muted-foreground">
-              {isCreatorPlus ? "Creator+ • Full Branding" : "Creator • Basic Editor"}
+              {displayName} · Creative Passport
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" className="sm:hidden" aria-label="Toggle EPK preview" onClick={() => setSidebarCollapsed(v => !v)}><Eye /></Button>
+          <input ref={uploadRef} type="file" accept="application/pdf,.pdf" className="hidden" aria-label="Upload your EPK" onChange={e => void handleImport(e.target.files?.[0])} />
+          <Button variant="outline" size="sm" onClick={() => uploadRef.current?.click()} disabled={importing} aria-label="Upload your EPK">
+            {importing ? <KretopiaSpinner className="h-4 w-4" /> : <Upload className="h-4 w-4" />}<span className="hidden sm:inline">Import EPK</span>
+          </Button>
           {hasChanges && (
-            <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Unsaved changes</Badge>
+            <Badge variant="outline" className="text-xs text-muted-foreground border-border">PDF draft</Badge>
           )}
           <Button size="sm" onClick={handleDownload} disabled={generating} className="gap-1.5">
             {generating ? <KretopiaSpinner className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
             {generating ? "Generating..." : "Download PDF"}
           </Button>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close EPK editor">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -236,7 +274,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         {/* Sidebar */}
         <div className={cn(
           "border-r bg-muted/30 transition-all duration-200 flex flex-col shrink-0",
-          sidebarCollapsed ? "w-0 overflow-hidden" : "w-80"
+          sidebarCollapsed ? "w-0 overflow-hidden" : "w-full sm:w-80"
         )}>
           {/* Tab bar */}
           <div className="flex border-b shrink-0">
@@ -299,15 +337,14 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
                       placeholder="A short tagline for your EPK cover"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-semibold">Bio</Label>
-                    <Textarea
-                      value={bio}
-                      onChange={e => { setBio(e.target.value); markChanged(); }}
-                      placeholder="About you..."
-                      rows={5}
-                    />
-                  </div>
+                  <EPKDraftField label="Bio" value={bio} data={buildModifiedData()} onChange={value => { setBio(value); markChanged(); }} />
+                  {EPK_TOPICS.map(topic => <EPKDraftField key={topic.id} label={topic.label} value={topics[topic.id] || ""} data={buildModifiedData()} onChange={value => { setTopics(prev => ({ ...prev, [topic.id]: value })); markChanged(); }} />)}
+                  {importedText && <div className="space-y-2 rounded-lg border border-border p-3">
+                    <p className="text-xs font-semibold break-all">{importName} · Imported draft</p>
+                    <Textarea aria-label="Imported EPK text" value={importedText} onChange={e => setImportedText(e.target.value)} rows={8} />
+                    <div className="flex flex-wrap gap-2">{[{ id: "bio", label: "Bio" }, ...EPK_TOPICS].map(topic => <Button key={topic.id} variant="outline" size="sm" onClick={() => { if (topic.id === "bio") setBio(importedText); else setTopics(prev => ({ ...prev, [topic.id]: importedText })); markChanged(); }}><Check className="h-3 w-3" />{topic.label}</Button>)}</div>
+                    <Button variant="ghost" size="sm" onClick={() => setImportedText("")}>Discard import</Button>
+                  </div>}
                   <div className="space-y-2">
                     <Label className="text-xs font-semibold">Location</Label>
                     <Input
@@ -530,9 +567,10 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         </div>
 
         {/* Preview area */}
-        <div className="flex-1 flex flex-col overflow-hidden bg-muted/20">
+        <div className=cn("flex-1 min-w-0 flex-col overflow-hidden bg-muted/20", sidebarCollapsed ? "flex" : "hidden sm:flex")>
           <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
             <Button
+              aria-label="Toggle editor panels"
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -546,6 +584,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
             <EPKPreview
               data={buildModifiedData()}
               branding={isCreatorPlus ? branding : undefined}
+              templateId={isCreatorPlus ? selectedTemplate : "cinematic-dark"}
               tagline={tagline}
               sections={sections}
             />
@@ -570,15 +609,15 @@ const PdfPageFrame = ({
   children: ReactNode;
 }) => (
   <div
-    className="relative w-full aspect-[338/190] rounded-xl border border-white/10 overflow-hidden shrink-0"
-    style={{ background: dark, fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+    className="relative w-full aspect-[338/190] rounded-lg border border-[var(--epk-line)] overflow-hidden shrink-0"
+    style={{ background: dark, fontFamily: "var(--font-family-brand)" }}
   >
     {children}
   </div>
 );
 
 const PdfCard = ({ className, style, children }: { className?: string; style?: CSSProperties; children: ReactNode }) => (
-  <div className={cn("rounded-md border border-white/[0.08] bg-white/[0.03]", className)} style={style}>
+  <div className={cn("rounded-md border border-[var(--epk-line)] bg-[var(--epk-surface)]", className)} style={style}>
     {children}
   </div>
 );
@@ -591,7 +630,7 @@ const PdfEyebrow = ({ label, primary }: { label: string; primary: string }) => (
 );
 
 const PdfPill = ({ label }: { label: string }) => (
-  <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[7px] text-white/70">
+  <span className="inline-flex items-center gap-1 rounded-full border border-[var(--epk-line)] bg-[var(--epk-surface)] px-2 py-0.5 text-[7px] text-[var(--epk-muted)]">
     {label}
   </span>
 );
@@ -600,14 +639,17 @@ const EPKPreview = ({
   data,
   branding,
   sections,
+  templateId,
 }: {
   data: EPKPdfInput;
   branding?: EPKBranding;
   tagline?: string;
   sections: EPKSection[];
+  templateId?: EPKTemplateId;
 }) => {
-  const primary = branding?.primaryColor || EPK_DEFAULT_ACCENT_HEX;
-  const dark = branding?.darkColor || "#05070D";
+  const template = EPK_TEMPLATES.find(t => t.id === templateId) || EPK_TEMPLATES[0];
+  const primary = branding?.primaryColor || rgbToHex(template.palette.primary);
+  const dark = branding?.darkColor || rgbToHex(template.palette.bg);
   const { profile, credits, awards, pressLinks, industryStats, reviews } = data;
   // Content-driven sections (credits/awards/press/credentials/reviews) are
   // already filtered into empty arrays by buildModifiedData() when hidden,
@@ -635,7 +677,7 @@ const EPKPreview = ({
             <img src={profile.avatar_url} alt="" className="h-12 w-12 rounded-md object-cover ring-2" style={{ ["--tw-ring-color" as string]: primary }} />
           )}
           <div>
-            <p className="text-lg font-bold text-white leading-tight">{profile.full_name || "Creator"}</p>
+            <p className="text-lg font-bold text-[var(--epk-ink)] leading-tight">{profile.full_name || "Creator"}</p>
             <p className="text-[10px] font-semibold" style={{ color: primary }}>{profile.job_title || profile.role || "Creative Professional"}</p>
           </div>
         </div>
@@ -647,6 +689,8 @@ const EPKPreview = ({
             </span>
           )}
         </div>
+        {profile.bio && <p className="mt-3 max-w-lg text-[9px] leading-relaxed text-[var(--epk-muted)] line-clamp-4">{profile.bio}</p>}
+        {data.narratives?.practice && <p className="mt-2 text-[8px] text-[var(--epk-muted)] line-clamp-2">{data.narratives.practice}</p>}
         <div className="mt-auto flex gap-2 self-end">
           {[
             credits.length > 0 && { l: "Credits", v: credits.length },
@@ -655,7 +699,7 @@ const EPKPreview = ({
           ].filter(Boolean).map((s: any) => (
             <PdfCard key={s.l} className="px-3 py-1.5 text-center">
               <p className="text-sm font-bold" style={{ color: primary }}>{s.v}</p>
-              <p className="text-[6px] uppercase tracking-wide text-white/50">{s.l}</p>
+              <p className="text-[6px] uppercase tracking-wide text-[var(--epk-muted)]">{s.l}</p>
             </PdfCard>
           ))}
         </div>
@@ -670,14 +714,14 @@ const EPKPreview = ({
         <div className="h-full p-4 grid grid-cols-2 gap-4">
           <div>
             <PdfEyebrow label="Profile" primary={primary} />
-            <p className="text-[11px] font-bold text-white mb-1.5">About</p>
+            <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-1.5">About</p>
             {visibleIds.has("bio") && profile.bio && (
-              <p className="text-[7.5px] leading-relaxed text-white/70 line-clamp-6">{profile.bio}</p>
+              <p className="text-[7.5px] leading-relaxed text-[var(--epk-muted)] line-clamp-6">{profile.bio}</p>
             )}
           </div>
           <div>
             <PdfEyebrow label="Expertise" primary={primary} />
-            <p className="text-[11px] font-bold text-white mb-1.5">Skills</p>
+            <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-1.5">Skills</p>
             {visibleIds.has("skills") && (
               <div className="flex flex-wrap gap-1">
                 {[...(Array.isArray(profile.professional_skills) ? profile.professional_skills : []), ...(Array.isArray(profile.passion_skills) ? profile.passion_skills : [])]
@@ -697,14 +741,14 @@ const EPKPreview = ({
       render: () => (
         <div className="h-full p-4">
           <PdfEyebrow label="Portfolio" primary={primary} />
-          <p className="text-[11px] font-bold text-white mb-2">Selected Work — {credits.length} Credits</p>
+          <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-2">Selected Work — {credits.length} Credits</p>
           <div className="grid grid-cols-4 gap-2">
             {credits.slice(0, 4).map((c, i) => (
               <PdfCard key={i} className="overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: primary }} />
                 <div className="p-1.5">
-                  <p className="text-[7px] font-bold text-white truncate">{c.project_name || c.title}</p>
-                  <p className="text-[6px] text-white/60 truncate">{c.role}</p>
+                  <p className="text-[7px] font-bold text-[var(--epk-ink)] truncate">{c.project_name || c.title}</p>
+                  <p className="text-[6px] text-[var(--epk-muted)] truncate">{c.role}</p>
                 </div>
               </PdfCard>
             ))}
@@ -721,23 +765,23 @@ const EPKPreview = ({
         <div className="h-full p-4 grid grid-cols-2 gap-4">
           <div>
             <PdfEyebrow label="Recognition" primary={primary} />
-            <p className="text-[11px] font-bold text-white mb-1.5">Awards</p>
+            <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-1.5">Awards</p>
             <div className="space-y-1">
               {awards.slice(0, 3).map((a, i) => (
                 <PdfCard key={i} className="p-1.5">
                   <p className="text-[7px] font-bold" style={{ color: primary }}>{a.title}</p>
-                  <p className="text-[6px] text-white/50">{a.organization}</p>
+                  <p className="text-[6px] text-[var(--epk-muted)]">{a.organization}</p>
                 </PdfCard>
               ))}
             </div>
           </div>
           <div>
             <PdfEyebrow label="Coverage" primary={primary} />
-            <p className="text-[11px] font-bold text-white mb-1.5">Featured In</p>
+            <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-1.5">Featured In</p>
             <div className="space-y-1">
               {pressLinks.slice(0, 3).map((p, i) => (
                 <PdfCard key={i} className="p-1.5">
-                  <p className="text-[7px] font-bold text-white">{p.title}</p>
+                  <p className="text-[7px] font-bold text-[var(--epk-ink)]">{p.title}</p>
                 </PdfCard>
               ))}
             </div>
@@ -753,7 +797,7 @@ const EPKPreview = ({
       render: () => (
         <div className="h-full p-4">
           <PdfEyebrow label="Word of Mouth" primary={primary} />
-          <p className="text-[11px] font-bold text-white mb-2">Client Testimonials</p>
+          <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-2">Client Testimonials</p>
           <div className="grid grid-cols-2 gap-2">
             {reviews.slice(0, 2).map((r, i) => (
               <PdfCard key={i} className="p-2">
@@ -763,7 +807,7 @@ const EPKPreview = ({
                   ))}
                 </div>
                 {r.reviewer_name && <p className="text-[7px] font-bold" style={{ color: primary }}>{r.reviewer_name}</p>}
-                {r.review_text && <p className="text-[6.5px] italic text-white/60 line-clamp-3 mt-0.5">"{r.review_text}"</p>}
+                {r.review_text && <p className="text-[6.5px] italic text-[var(--epk-muted)] line-clamp-3 mt-0.5">"{r.review_text}"</p>}
               </PdfCard>
             ))}
           </div>
@@ -778,18 +822,24 @@ const EPKPreview = ({
       render: () => (
         <div className="h-full p-4">
           <PdfEyebrow label="Credentials" primary={primary} />
-          <p className="text-[11px] font-bold text-white mb-2">Credentials &amp; Industry Stats</p>
+          <p className="text-[11px] font-bold text-[var(--epk-ink)] mb-2">Credentials &amp; Industry Stats</p>
           <div className="flex gap-2">
             {industryStats.slice(0, 4).map((s, i) => (
               <PdfCard key={i} className="flex-1 p-2 text-center">
                 <p className="text-sm font-bold" style={{ color: primary }}>{s.value}</p>
-                <p className="text-[6px] font-semibold text-white/70 mt-0.5">{s.title}</p>
+                <p className="text-[6px] font-semibold text-[var(--epk-muted)] mt-0.5">{s.title}</p>
               </PdfCard>
             ))}
           </div>
         </div>
       ),
     });
+  }
+
+  for (const topic of EPK_TOPICS) {
+    const text = data.narratives?.[topic.id];
+    if (!text?.trim()) continue;
+    pages.push({ key: topic.id, render: () => <div className="h-full p-4"><PdfEyebrow label="Creative dossier" primary={primary} /><p className="text-[11px] font-bold text-[var(--epk-ink)] mb-3">{topic.label}</p><p className="text-[9px] leading-relaxed whitespace-pre-line text-[var(--epk-muted)] line-clamp-[14]">{text}</p></div> });
   }
 
   pages.push({
@@ -799,7 +849,7 @@ const EPKPreview = ({
         <BrandLogo size="sm" className="[&_img]:h-3" />
         <div className="mt-auto flex items-end justify-between">
           <div>
-            <p className="text-xl font-bold text-white leading-tight">Let's create</p>
+            <p className="text-xl font-bold text-[var(--epk-ink)] leading-tight">Let's create</p>
             <p className="text-xl font-bold leading-tight" style={{ color: primary }}>together.</p>
             <div className="h-[2px] w-8 mt-1.5 mb-2" style={{ backgroundColor: primary }} />
             <span className="inline-block rounded-full px-3 py-1 text-[8px] font-bold" style={{ backgroundColor: primary, color: dark }}>
@@ -807,8 +857,8 @@ const EPKPreview = ({
             </span>
           </div>
           <PdfCard className="p-2.5 w-32">
-            <p className="text-[6px] uppercase tracking-wide text-white/40">Contact</p>
-            <p className="text-[9px] font-bold text-white mt-0.5">{profile.full_name}</p>
+            <p className="text-[6px] uppercase tracking-wide text-[var(--epk-muted)]">Contact</p>
+            <p className="text-[9px] font-bold text-[var(--epk-ink)] mt-0.5">{profile.full_name}</p>
             <p className="text-[7px]" style={{ color: primary }}>{profile.job_title || profile.role}</p>
           </PdfCard>
         </div>
@@ -820,7 +870,7 @@ const EPKPreview = ({
   const clampedIdx = Math.min(pageIdx, pages.length - 1);
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="k-epk-preview w-full max-w-2xl" style={{ "--epk-ink": rgbToHex(template.palette.white), "--epk-muted": rgbToHex(template.palette.muted), "--epk-line": rgbToHex(template.palette.cardBorder), "--epk-surface": rgbToHex(template.palette.card), "--epk-accent": primary, "--epk-canvas": dark } as CSSProperties}>
       <PdfPageFrame dark={dark}>
         {pages[clampedIdx]?.render()}
         <div className="absolute inset-x-0 bottom-0 h-[3px]" style={{ backgroundColor: primary, opacity: 0.6 }} />
