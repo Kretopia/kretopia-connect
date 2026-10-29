@@ -204,7 +204,7 @@ export const SignInForm = ({
               inputMode="text"
               placeholder="your_handle"
               value={username}
-              onChange={(e) => { setUsername(e.target.value); setUsernameError(""); }}
+              onChange={(e) => { setUsername(e.target.value.replace(/^@+/, "")); setUsernameError(""); }}
               required
               className={`h-12 text-base pl-8 ${usernameError ? "border-destructive" : ""}`}
               autoComplete="username"

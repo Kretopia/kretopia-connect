@@ -178,3 +178,9 @@
 - [ ] Legacy DB migration SQL prepared (unique lower index, collision suffix backfill, rename log) — cannot be applied by me; legacy pipeline only
 - [ ] Tests + one build
 - [ ] ThriveIN backup (db_cluster-10-02-2025, projet tgscgltalyusuahlqmjc en pause) reçu : inspecter le contenu et confirmer qu'il ne sert pas le site en ligne (qui tourne sur kwmcocsitwssrtzkdojh, actif)
+- [x] SignInForm @username mode + Auth.tsx wiring (vérifié Playwright : bascule, champ, validation inline)
+- [x] Edit Profile : champ Username sous Full Name, préfixe @ fixe, vérif dispo au blur (debounce 300ms), sauvegarde bloquée si pris/invalide
+- [x] CreatorSiteSettings basculé sur le module partagé
+- [x] SQL legacy préparé : docs/product/LEGACY_USERNAME_MIGRATION.sql (NON appliqué — pipeline legacy uniquement)
+- [x] Tests : 9 username + 16 auth passent ; build production OK
+- [ ] En attente utilisateur : LEGACY_SUPABASE_SERVICE_ROLE_KEY (projet actif kwmcocsitwssrtzkdojh, PAS le projet ThriveIN en pause) puis application de la migration SQL legacy
