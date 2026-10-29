@@ -32,4 +32,4 @@ export interface ScoutActionRow {
   outcome: string | null;
 }
 
-export type ScoutTab = "scouted" | "shortlist" | "marketplace";
+export type ScoutTab = "scouted" | "all" | "shortlist" | "marketplace";

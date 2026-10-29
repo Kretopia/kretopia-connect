@@ -35,11 +35,11 @@ const value = (over: Partial<ScoutScanValue> = {}): ScoutScanValue => ({
   ...over,
 });
 
-const renderIt = (v: ScoutScanValue) =>
+const renderIt = (v: ScoutScanValue, status?: { label: string; active: boolean }) =>
   render(
     <MemoryRouter>
       <ScoutScanContext.Provider value={v}>
-        <ScoutResultsWrapped>
+        <ScoutResultsWrapped status={status}>
           <div role="tablist" aria-label="Scout sections" />
           <div data-testid="list">the list</div>
         </ScoutResultsWrapped>
@@ -60,6 +60,13 @@ describe("ScoutResultsWrapped", () => {
     renderIt(value());
     expect(screen.getByText("3 gigs on your list")).toBeInTheDocument();
     expect(screen.getByText(/2 saved/)).toBeInTheDocument();
+  });
+
+  it("a section that is not the personal list states its own count, and not the list's saved gigs", () => {
+    renderIt(value(), { label: "44 opportunities from every source", active: true });
+    expect(screen.getByText("44 opportunities from every source")).toBeInTheDocument();
+    expect(screen.queryByText("3 gigs on your list")).not.toBeInTheDocument();
+    expect(screen.queryByText(/2 saved/)).not.toBeInTheDocument();
   });
 
   it("says one gig in the singular, and nothing yet when there is none", () => {
