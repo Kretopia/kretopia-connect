@@ -72,7 +72,7 @@ export const SignInForm = ({
       setLookupLoading(false);
     }, 450);
     return () => { clearTimeout(t); setLookupLoading(false); };
-  }, [email]);
+  }, [email, mode]);
 
   const hasEmailProvider = !!lookup?.providers.includes("email");
   const hasGoogle = !!lookup?.providers.includes("google");
@@ -112,6 +112,20 @@ export const SignInForm = ({
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // @username mode — server-side resolution, generic error on failure.
+    if (mode === "username") {
+      const handle = normalizeUsername(username);
+      const uv = validateUsername(handle);
+      if (uv !== "ok") { setUsernameError(usernameValidationMessage(uv) || "Invalid username"); return; }
+      const pv = validatePassword(password);
+      if (!pv.valid) { setPasswordError(pv.error || ""); return; }
+      setUsernameError("");
+      setPasswordError("");
+      onUsernameSubmit(handle, password);
+      return;
+    }
+
     const ev = validateEmail(email);
     if (!ev.valid) { setEmailError(ev.error || ""); return; }
 
