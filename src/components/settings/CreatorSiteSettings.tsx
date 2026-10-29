@@ -12,24 +12,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 
-const RESERVED = new Set([
-  "admin", "settings", "website-builder", "api", "auth", "login", "signup",
-  "site", "profile", "notifications", "messages", "discover", "circle",
-  "wallet", "subscription", "spotlight", "magazine", "podcast", "fund",
-  "ambassadors", "claim", "verify", "share", "support", "terms", "privacy",
-  "thrive", "thrivein", "kretopia", "www", "app", "root", "system",
-]);
+// Canonical handle rules live in @/lib/username — single source of truth
+// shared with Auth, Edit Profile and the username-auth edge function.
+import { normalizeUsername, validateUsername, usernameValidationMessage } from "@/lib/username";
 
-const USERNAME_RE = /^[a-z0-9_-]{3,30}$/;
-
-const normalize = (v: string) => v.trim().toLowerCase().replace(/^@/, "");
-
-const validate = (v: string): string | null => {
-  if (!v) return "Username is required";
-  if (!USERNAME_RE.test(v)) return "3–30 chars, lowercase letters, numbers, _ or -";
-  if (RESERVED.has(v)) return "That username is reserved";
-  return null;
-};
+const normalize = normalizeUsername;
+const validate = (v: string): string | null => usernameValidationMessage(validateUsername(v));
 
 /**
  * Slim Creator Site card for /settings.

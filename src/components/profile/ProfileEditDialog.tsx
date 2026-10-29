@@ -12,6 +12,8 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { checkProfileCompletion } from "@/lib/profileCompletion";
+import { normalizeUsername, validateUsername, usernameValidationMessage } from "@/lib/username";
+import { checkUsernameAvailability, type UsernameAvailability } from "@/lib/usernameAuth";
 import type { Database } from "@/integrations/supabase/types";
 import { SubRolesPicker } from "./SubRolesPicker";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -251,6 +253,7 @@ export function ProfileEditDialog({
   
   const [formData, setFormData] = useState({
     full_name: "",
+    username: "",
     role: "",
     sub_roles: [] as string[],
     location: "",
@@ -278,10 +281,35 @@ export function ProfileEditDialog({
   const [incompleteFields, setIncompleteFields] = useState<string[]>([]);
   const hasShownToastRef = useRef(false);
 
+  // Username availability — real states only: idle, checking, available,
+  // taken, invalid, reserved, error. Checked on blur (debounced), never while typing.
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | UsernameAvailability>("idle");
+  const savedUsernameRef = useRef("");
+  const usernameBlurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleUsernameBlur = () => {
+    if (usernameBlurTimer.current) clearTimeout(usernameBlurTimer.current);
+    usernameBlurTimer.current = setTimeout(async () => {
+      const handle = normalizeUsername(formData.username);
+      if (!handle || handle === savedUsernameRef.current) {
+        setUsernameStatus("idle");
+        return;
+      }
+      const v = validateUsername(handle);
+      if (v !== "ok") {
+        setUsernameStatus(v === "reserved" ? "reserved" : "invalid");
+        return;
+      }
+      setUsernameStatus("checking");
+      setUsernameStatus(await checkUsernameAvailability(handle));
+    }, 300);
+  };
+
   useEffect(() => {
     if (profile && open) {
       setFormData({
         full_name: profile.full_name || "",
+        username: (profile as any).username || "",
         role: profile.role || "",
         sub_roles: ((profile as any).sub_roles as string[] | null) || [],
         location: profile.location || "",
@@ -303,6 +331,8 @@ export function ProfileEditDialog({
         cover_image_url: (profile as any).cover_image_url || "",
         passport_profession: (profile as any).passport_profession || "",
       });
+      savedUsernameRef.current = ((profile as any).username || "").toLowerCase();
+      setUsernameStatus("idle");
 
       const completion = checkProfileCompletion(profile);
       setIncompleteFields(completion.missingFields);
@@ -321,13 +351,39 @@ export function ProfileEditDialog({
   const handleSave = async () => {
     if (!profile) return;
 
+    // Username: single source of truth, validated before anything is written.
+    // On failure the typed value stays in the field and the real error shows.
+    const nextUsername = normalizeUsername(formData.username);
+    const savedUsername = savedUsernameRef.current;
+    if (nextUsername && nextUsername !== savedUsername) {
+      const v = validateUsername(nextUsername);
+      if (v !== "ok") {
+        setUsernameStatus(v === "reserved" ? "reserved" : "invalid");
+        toast({ title: "Username not saved", description: usernameValidationMessage(v) || "Invalid username", variant: "destructive" });
+        return;
+      }
+      const availability = usernameStatus === "available"
+        ? "available"
+        : await checkUsernameAvailability(nextUsername);
+      setUsernameStatus(availability);
+      if (availability !== "available") {
+        const msg = availability === "taken" ? "That username is already taken"
+          : availability === "reserved" ? "That username is reserved"
+          : availability === "invalid" ? "3–30 chars: lowercase letters, numbers or _ (not at the start or end)"
+          : "Couldn't check this username — try again";
+        toast({ title: "Username not saved", description: msg, variant: "destructive" });
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const hourlyRate = formData.hourly_rate ? parseFloat(formData.hourly_rate) : null;
       const projectRate = formData.project_rate ? parseFloat(formData.project_rate) : null;
-      
+
       const updatePayload = {
         full_name: formData.full_name || null,
+        username: nextUsername || null,
         role: formData.role || null,
         sub_roles: formData.sub_roles && formData.sub_roles.length > 0 ? formData.sub_roles : [],
         location: formData.location || null,
@@ -361,6 +417,8 @@ export function ProfileEditDialog({
         console.error('[ProfileEdit] Update error:', error);
         throw error;
       }
+      savedUsernameRef.current = nextUsername;
+      setUsernameStatus("idle");
 
       // Auto-geocode location → lat/lng for the Discover map (fire-and-forget)
       if (formData.location && formData.location !== profile.location) {
@@ -607,6 +665,50 @@ export function ProfileEditDialog({
                   onChange={(e) => handleInputChange('full_name', e.target.value)}
                   placeholder="Enter your full name"
                 />
+              </FieldWrapper>
+
+              <FieldWrapper
+                label="Username"
+                isIncomplete={false}
+                hint="Your unique @handle — sign-in, creator site and public URL"
+              >
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => { handleInputChange('username', e.target.value); setUsernameStatus("idle"); }}
+                    onBlur={handleUsernameBlur}
+                    placeholder="your_handle"
+                    autoComplete="username"
+                    className={`pl-7 ${usernameStatus === "taken" || usernameStatus === "invalid" || usernameStatus === "reserved" ? "border-destructive" : ""}`}
+                  />
+                  {usernameStatus === "checking" && (
+                    <KretopiaSpinner className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  {usernameStatus === "available" && (
+                    <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-energy" />
+                  )}
+                </div>
+                {usernameStatus === "available" && (
+                  <p className="text-xs text-energy flex items-center gap-1 mt-1">
+                    <CheckCircle2 className="h-3 w-3" /> @{normalizeUsername(formData.username)} is available
+                  </p>
+                )}
+                {usernameStatus === "taken" && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> That username is already taken
+                  </p>
+                )}
+                {(usernameStatus === "invalid" || usernameStatus === "reserved") && (
+                  <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> {usernameValidationMessage(usernameStatus)}
+                  </p>
+                )}
+                {usernameStatus === "error" && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                    <AlertCircle className="h-3 w-3" /> Couldn't check availability — you can still try to save
+                  </p>
+                )}
               </FieldWrapper>
 
               <FieldWrapper

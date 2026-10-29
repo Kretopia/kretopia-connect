@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AlertCircle, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
+import { AlertCircle, AtSign, Mail, Sparkles, Chrome, CheckCircle2, Info } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
 import { validateEmail, validatePassword } from "@/lib/validation";
+import { normalizeUsername, validateUsername, usernameValidationMessage } from "@/lib/username";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthOrigin } from "@/lib/authRedirect";
@@ -24,6 +25,7 @@ interface SignInFormProps {
   setPassword: (v: string) => void;
   loading: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  onUsernameSubmit: (username: string, password: string) => void;
   onForgotPassword: () => void;
   onGoogleSignIn: () => void;
   googleLoading: boolean;
@@ -40,10 +42,13 @@ const LastUsedPill = () => (
 
 export const SignInForm = ({
   email, setEmail, password, setPassword,
-  loading, onSubmit, onForgotPassword,
+  loading, onSubmit, onUsernameSubmit, onForgotPassword,
   onGoogleSignIn, googleLoading, hideOAuth = false,
 }: SignInFormProps) => {
   const { toast } = useToast();
+  const [mode, setMode] = useState<"email" | "username">("email");
+  const [username, setUsername] = useState("");
+  const [usernameError, setUsernameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -55,8 +60,9 @@ export const SignInForm = ({
 
   useEffect(() => { setLastMethod(getLastSignInMethod()); }, []);
 
-  // Debounced provider lookup as user types email.
+  // Debounced provider lookup as user types email (email mode only).
   useEffect(() => {
+    if (mode !== "email") { setLookup(null); return; }
     const ev = validateEmail(email);
     if (!ev.valid) { setLookup(null); return; }
     setLookupLoading(true);
@@ -66,7 +72,7 @@ export const SignInForm = ({
       setLookupLoading(false);
     }, 450);
     return () => { clearTimeout(t); setLookupLoading(false); };
-  }, [email]);
+  }, [email, mode]);
 
   const hasEmailProvider = !!lookup?.providers.includes("email");
   const hasGoogle = !!lookup?.providers.includes("google");
@@ -106,6 +112,20 @@ export const SignInForm = ({
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // @username mode — server-side resolution, generic error on failure.
+    if (mode === "username") {
+      const handle = normalizeUsername(username);
+      const uv = validateUsername(handle);
+      if (uv !== "ok") { setUsernameError(usernameValidationMessage(uv) || "Invalid username"); return; }
+      const pv = validatePassword(password);
+      if (!pv.valid) { setPasswordError(pv.error || ""); return; }
+      setUsernameError("");
+      setPasswordError("");
+      onUsernameSubmit(handle, password);
+      return;
+    }
+
     const ev = validateEmail(email);
     if (!ev.valid) { setEmailError(ev.error || ""); return; }
 
@@ -149,6 +169,56 @@ export const SignInForm = ({
 
   return (
     <form onSubmit={handlePasswordSubmit} className="space-y-4">
+      {/* Identifier mode: email (default) or @username — same password, same account. */}
+      <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1" role="tablist" aria-label="Sign-in method">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "email"}
+          onClick={() => setMode("email")}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "email" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Email
+          {lastMethod === "email" && <LastUsedPill />}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "username"}
+          onClick={() => setMode("username")}
+          className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${mode === "username" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          @Username
+          {lastMethod === "username" && <LastUsedPill />}
+        </button>
+      </div>
+
+      {mode === "username" && (
+        <div className="space-y-2">
+          <Label htmlFor="signin-username">Username</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-base">@</span>
+            <Input
+              id="signin-username"
+              type="text"
+              inputMode="text"
+              placeholder="your_handle"
+              value={username}
+              onChange={(e) => { setUsername(e.target.value.replace(/^@+/, "")); setUsernameError(""); }}
+              required
+              className={`h-12 text-base pl-8 ${usernameError ? "border-destructive" : ""}`}
+              autoComplete="username"
+            />
+          </div>
+          {usernameError && (
+            <p className="text-sm text-destructive flex items-center gap-1">
+              <AlertCircle className="h-3 w-3" /> {usernameError}
+            </p>
+          )}
+        </div>
+      )}
+
+      {mode === "email" && (
       <div className="space-y-2">
         <Label htmlFor="signin-email">Email</Label>
         <div className="relative">
@@ -192,6 +262,7 @@ export const SignInForm = ({
           </p>
         )}
       </div>
+      )}
 
       {/* Hide password field when we know the account is OAuth-only — avoids confusing failures. */}
       {!oauthOnlyProvider && (
@@ -265,8 +336,8 @@ export const SignInForm = ({
         </>
       )}
 
-      {/* Magic link fallback */}
-      {!oauthOnlyProvider && (
+      {/* Magic link fallback (email mode only — the link is sent to an email) */}
+      {mode === "email" && !oauthOnlyProvider && (
         magicSent ? (
           <div className="rounded-lg border border-energy/40 bg-energy/5 p-3 text-center">
             <Mail className="h-4 w-4 text-energy mx-auto mb-1" />
