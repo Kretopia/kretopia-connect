@@ -66,7 +66,7 @@ function StrengthMark() {
  * its QR code and its press kit. Each is an icon with a one-word label under
  * it, a 64 px tall target, and the same name a screen reader had before.
  *
- * Strength is not decoration: the ring is the Passport's real strength and
+ * Strength is not decoration: the number is the Passport's real strength and
  * pressing it opens the editor, which is the only way to raise it.
  */
 export function PassportSmartActions({ strength, onEdit, onShare, onShowQR, onDownloadEPK, className }: PassportSmartActionsProps) {
@@ -79,7 +79,7 @@ export function PassportSmartActions({ strength, onEdit, onShare, onShowQR, onDo
         title={`Passport Strength — ${pct}%`}
         onClick={onEdit}
       >
-        <StrengthRing value={pct} />
+        <StrengthMark />
       </Tile>
       <Tile label="Edit" ariaLabel="Edit Profile" tone="primary" onClick={onEdit}>
         <PencilLine className="h-5 w-5" aria-hidden />
