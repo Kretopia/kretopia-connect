@@ -167,7 +167,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
       pressLinks: visibleSectionIds.has("press") ? epkData.pressLinks : [],
       industryStats: visibleSectionIds.has("credentials") ? epkData.industryStats : [],
       reviews: visibleSectionIds.has("reviews") ? epkData.reviews : [],
-      narratives: Object.fromEntries(Object.entries(topics).filter(([key]) => key === "practice" || key === "approach" ? visibleSectionIds.has("skills") : key === "portfolio" ? visibleSectionIds.has("credits") : key === "recognition" ? visibleSectionIds.has("awards") || visibleSectionIds.has("press") : visibleSectionIds.has("contact"))),
+      narratives: Object.fromEntries(Object.entries(topics).filter(([key]) => key === "practice" || key === "approach" ? visibleSectionIds.has("skills") : key === "portfolio" ? visibleSectionIds.has("credits") : key === "recognition" ? visibleSectionIds.has("awards") || visibleSectionIds.has("press") : key === "credentials" || key === "reviews" ? visibleSectionIds.has(key) : visibleSectionIds.has("contact"))),
     };
   }, [epkData, displayName, displayRole, bio, location, sections, creditOverrides, topics]);
 
@@ -716,7 +716,7 @@ const EPKPreview = ({
     ),
   });
 
-  if (visibleIds.has("bio") || visibleIds.has("skills")) {
+  if ((visibleIds.has("bio") && profile.bio) || (visibleIds.has("skills") && ((Array.isArray(profile.professional_skills) && profile.professional_skills.length) || (Array.isArray(profile.passion_skills) && profile.passion_skills.length)))) {
     pages.push({
       key: "about",
       render: () => (
@@ -845,10 +845,10 @@ const EPKPreview = ({
     });
   }
 
-  for (const topic of EPK_TOPICS) {
-    const text = data.narratives?.[topic.id];
-    if (!text?.trim()) continue;
-    pages.push({ key: topic.id, render: () => <div className="h-full p-4"><PdfEyebrow label="Creative dossier" primary={primary} /><p className="text-[11px] font-bold text-[var(--epk-ink)] mb-3">{topic.label}</p><p className="text-[9px] leading-relaxed whitespace-pre-line text-[var(--epk-muted)] line-clamp-[14]">{text}</p></div> });
+  const narrativeTopics = EPK_TOPICS.filter(topic => data.narratives?.[topic.id]?.trim());
+  for (let offset = 0; offset < narrativeTopics.length; offset += 4) {
+    const group = narrativeTopics.slice(offset, offset + 4);
+    pages.push({ key: `dossier-${offset / 4 + 1}`, render: () => <div className="h-full p-4"><PdfEyebrow label="Creative dossier" primary={primary} /><div className="grid grid-cols-2 gap-3">{group.map(topic => <div key={topic.id}><p className="text-[10px] font-bold text-[var(--epk-ink)] mb-1">{topic.label}</p><p className="text-[8px] leading-relaxed whitespace-pre-line text-[var(--epk-muted)] line-clamp-6">{data.narratives?.[topic.id]}</p></div>)}</div></div> });
   }
 
   pages.push({

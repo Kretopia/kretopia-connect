@@ -5,6 +5,8 @@ export const EPK_TOPICS = [
   { id: "approach", label: "Interests & direction" },
   { id: "portfolio", label: "Selected work" },
   { id: "recognition", label: "Recognition & press" },
+  { id: "credentials", label: "Credentials & stats" },
+  { id: "reviews", label: "Client reviews" },
   { id: "collaboration", label: "Collaboration" },
 ] as const;
 export type EPKTopicId = typeof EPK_TOPICS[number]["id"];
@@ -29,6 +31,8 @@ export function buildEPKDefaults(input: EPKPdfInput) {
     approach: interests.length ? `Creative interests: ${interests.join(", ")}.` : "",
     portfolio: credits.slice(0, 12).map(c => `${c.project_name || c.title || ""} — ${c.role}${c.year ? ` (${c.year})` : ""}`).join("\n"),
     recognition: [...awards.map(a => `${a.title} — ${a.organization}${a.year ? ` (${a.year})` : ""}`), ...pressLinks.map(p => [p.title, p.publication].filter(Boolean).join(" — "))].join("\n"),
+    credentials: input.industryStats.map(s => [s.title, s.value, s.issuer].filter(Boolean).join(" — ")).join("\n"),
+    reviews: input.reviews.map(r => [r.reviewer_name, r.review_text].filter(Boolean).join(": ")).join("\n"),
     collaboration: [profile.collab_intent?.replace(/_/g, " "), profile.rate_range, profile.location].filter(Boolean).join(" · "),
   };
   return { bio: profile.bio || identity, tagline: [...skills, ...interests].slice(0, 3).join(" / "), topics };

@@ -867,21 +867,30 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   // FINAL SLIDE: Closing / Contact
   // ════════════════════════════════════════════════════════════
   // User-approved topic text paginates instead of clipping long drafts.
+  const narrativeBlocks: { label: string; lines: string[] }[] = [];
   for (const topic of EPK_TOPICS) {
     const text = input.narratives?.[topic.id]?.trim();
     if (!text) continue;
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
     const lines: string[] = doc.splitTextToSize(text, CONTENT_W - 12);
-    for (let offset = 0; offset < lines.length; offset += 22) {
-      newPage();
-      drawEyebrow('Creative dossier', MARGIN, 24);
-      drawSectionHeadline(topic.label + (offset ? ' (continued)' : ''), MARGIN, 34);
-      doc.setFontSize(11);
+    const columnLines: string[] = doc.splitTextToSize(text, CONTENT_W / 2 - 12);
+    for (let offset = 0; offset < columnLines.length; offset += 10) {
+      narrativeBlocks.push({ label: topic.label + (offset ? ' (continued)' : ''), lines: columnLines.slice(offset, offset + 10) });
+    }
+  }
+  for (let offset = 0; offset < narrativeBlocks.length; offset += 4) {
+    newPage();
+    drawEyebrow('Creative dossier', MARGIN, 24);
+    narrativeBlocks.slice(offset, offset + 4).forEach((block, index) => {
+      const x = MARGIN + (index % 2) * (CONTENT_W / 2 + 4);
+      const y = 38 + Math.floor(index / 2) * 66;
+      drawSectionHeadline(block.label, x, y, 13);
+      doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(...C.light);
-      doc.text(lines.slice(offset, offset + 22), MARGIN, 48, { lineHeightFactor: 1.4 });
-    }
+      doc.text(block.lines, x, y + 10, { lineHeightFactor: 1.35 });
+    });
   }
   newPage();
 
