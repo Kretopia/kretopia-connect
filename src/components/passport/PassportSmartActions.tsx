@@ -48,29 +48,16 @@ function Tile({
   );
 }
 
-/** A ring that fills with the Passport's strength, with Kretopia's K at its centre. */
-function StrengthRing({ value }: { value: number }) {
-  const pct = Math.max(0, Math.min(100, Math.round(value)));
-  const r = 12;
-  const c = 2 * Math.PI * r;
+/** Kretopia's K, whole and uncovered — the strength tile shows a number, not a meter. */
+function StrengthMark() {
   return (
-    <span className="relative inline-flex h-8 w-8 items-center justify-center" aria-hidden>
-      <svg viewBox="0 0 32 32" className="absolute inset-0 -rotate-90">
-        <circle cx="16" cy="16" r={r} fill="none" strokeWidth="3" className="stroke-muted" />
-        <circle
-          cx="16"
-          cy="16"
-          r={r}
-          fill="none"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={c * (1 - pct / 100)}
-          className="stroke-[hsl(var(--energy))] transition-[stroke-dashoffset] duration-500 motion-reduce:transition-none"
-        />
-      </svg>
-      <img src={kMarkAsset.url} alt="" draggable={false} className="relative h-3.5 w-3.5 select-none object-contain" />
-    </span>
+    <img
+      src={kMarkAsset.url}
+      alt=""
+      draggable={false}
+      aria-hidden
+      className="h-6 w-6 select-none object-contain"
+    />
   );
 }
 
@@ -79,7 +66,7 @@ function StrengthRing({ value }: { value: number }) {
  * its QR code and its press kit. Each is an icon with a one-word label under
  * it, a 64 px tall target, and the same name a screen reader had before.
  *
- * Strength is not decoration: the ring is the Passport's real strength and
+ * Strength is not decoration: the number is the Passport's real strength and
  * pressing it opens the editor, which is the only way to raise it.
  */
 export function PassportSmartActions({ strength, onEdit, onShare, onShowQR, onDownloadEPK, className }: PassportSmartActionsProps) {
@@ -92,7 +79,7 @@ export function PassportSmartActions({ strength, onEdit, onShare, onShowQR, onDo
         title={`Passport Strength — ${pct}%`}
         onClick={onEdit}
       >
-        <StrengthRing value={pct} />
+        <StrengthMark />
       </Tile>
       <Tile label="Edit" ariaLabel="Edit Profile" tone="primary" onClick={onEdit}>
         <PencilLine className="h-5 w-5" aria-hidden />

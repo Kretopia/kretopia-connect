@@ -52,10 +52,12 @@ describe("PassportSmartActions", () => {
     expect(h.onDownloadEPK).toHaveBeenCalledTimes(1);
   });
 
-  it("every target is at least 44 px tall, and Kretopia's K sits in the ring", () => {
+  it("every target is at least 44 px tall, and Kretopia's K sits uncovered in the strength tile", () => {
     setup();
     for (const b of screen.getAllByRole("button")) expect(b.className).toContain("min-h-[64px]");
     const ring = screen.getByRole("button", { name: /Passport Strength/ });
     expect(ring.querySelector('img[src*="kretopia-k-mark"]')).toBeInTheDocument();
+    // the strength tile is a number, not a meter: no ring/loader circle drawn over the K
+    expect(ring.querySelector("svg")).toBeNull();
   });
 });
