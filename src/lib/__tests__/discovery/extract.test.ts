@@ -125,6 +125,34 @@ describe("untrusted content never gets instructions or tool permissions", () => 
   });
 });
 
+describe("a long unbroken run in untrusted text cannot stall a run", () => {
+  // Unbounded, the contact patterns were quadratic: 40,000 letters took about 3 s and 100,000 about 17 s, enough to kill a feed run.
+  const time = (f: () => unknown) => {
+    const t = performance.now();
+    f();
+    return performance.now() - t;
+  };
+
+  it("sanitizes 100,000 letters, digits or digits with punctuation in well under a second each", () => {
+    for (const run of ["x".repeat(100_000), "1".repeat(100_000), "1.2-".repeat(25_000), `${"a".repeat(100_000)}@`]) {
+      let out: string | null = null;
+      expect(time(() => { out = sanitizeText(run, 20_000); })).toBeLessThan(1_000);
+      expect(out === null || out.length <= 20_000).toBe(true);
+    }
+  });
+
+  it("still redacts contact details, now by bounded patterns", () => {
+    expect(redactPersonalData(`${"a".repeat(64)}@example.com`)).toBe("[contact removed]");
+    expect(redactPersonalData("jane.doe+jobs@sub.studio.example.co.uk")).toBe("[contact removed]");
+    const phones = redactPersonalData("call 0044 20 7946 0958 or (415) 555-0132 now");
+    expect(phones).toMatch(/^call \[contact removed\] or \(?\[contact removed\] now$/); // the number goes; an opening bracket may stay
+    expect(phones).not.toMatch(/7946|0958|555|0132/);
+    // a digit run longer than any phone number is redacted in pieces, never left whole
+    expect(redactPersonalData("1".repeat(100))).toContain("[contact removed]");
+    expect(redactPersonalData("1".repeat(100))).not.toMatch(/\d{40}/);
+  });
+});
+
 describe("possible duplicates are advice, and different roles are never merged", () => {
   const known = [
     { id: "a", title: "Senior Video Editor", original_publisher: "Acme Studio", location: "Berlin" },
