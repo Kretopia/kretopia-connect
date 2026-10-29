@@ -22,7 +22,7 @@ interface Row {
   status: string;
 }
 
-export default function SpeedIndex() {
+export default function SpeedIndex({ embedded = false }: { embedded?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ export default function SpeedIndex() {
     vertical === "all" ? rows : rows.filter((r) => r.vertical === vertical), [rows, vertical]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={embedded ? "" : "min-h-screen bg-background"}>
       <SEO
         title="Speed Networking Nights — Meet 6+ Creators in 30 Minutes | Kretopia"
         description="Themed video speed-networking for the creator economy. Producers × Singers, Filmmakers, Content Creators and more. RSVP free and meet your next collab."
@@ -81,9 +81,13 @@ export default function SpeedIndex() {
           <Badge variant="secondary" className="mb-3">
             <Sparkles className="h-3 w-3 mr-1" /> Live weekly
           </Badge>
-          <h1 className="text-3xl sm:text-5xl font-serif tracking-tight">
-            Speed Networking for Creatives
-          </h1>
+          {embedded ? (
+            <h2 className="text-2xl sm:text-3xl font-serif tracking-tight">Speed Networking for Creatives</h2>
+          ) : (
+            <h1 className="text-3xl sm:text-5xl font-serif tracking-tight">
+              Speed Networking for Creatives
+            </h1>
+          )}
           <p className="mt-3 text-muted-foreground max-w-2xl">
             5–7 minutes face-to-face, then we rotate. Connect or save anyone you vibe with.
             Themed nights so you meet the right people on purpose.

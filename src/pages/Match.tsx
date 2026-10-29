@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-import { Sparkles, LayoutGrid, Users } from "lucide-react";
+import { Sparkles, LayoutGrid, UserCheck, Users } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { MatchDeck } from "@/components/swipe";
 import { MatchPulse } from "@/components/swipe/MatchPulse";
@@ -10,11 +10,15 @@ import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureS
 import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 
-const TAB_IDS = ["discover", "browse", "interested"] as const;
+const TAB_IDS = ["discover", "browse", "interested", "connected"] as const;
 type MatchTabId = (typeof TAB_IDS)[number];
 
 const LikesYouGrid = lazy(() =>
   import("@/components/swipe/LikesYouGrid").then((m) => ({ default: m.LikesYouGrid }))
+);
+
+const ConnectedCollaborators = lazy(() =>
+  import("@/components/circle/ConnectedCollaborators").then((m) => ({ default: m.ConnectedCollaborators }))
 );
 
 const BrowseCreators = lazy(() =>
@@ -28,8 +32,10 @@ const loadingRow = (label: string) => (
 );
 
 /**
- * Match — one-card-at-a-time deck (Discover) + a grid (Browse) + real
- * connection state (Connections) -- not dating-app labels. The deck itself
+ * Match — one-card-at-a-time deck (Discover) + a grid (Browse) + the people
+ * who showed interest (Interested) + accepted connections (Connected) -- not
+ * dating-app labels. Connected is the old /circle Network tab, which is where
+ * /circle?tab=network now lands. The deck itself
  * (SwipeFeature -> HingeStyleCard, real server-authoritative swipe/match via
  * useSwipeActions) and the HoloCard visual treatment are a separate, more
  * involved pass: HingeStyleCard almost certainly owns its own pointer-based
@@ -46,7 +52,7 @@ export default function Match() {
   // this effect keep the two in sync in both directions: a manual tab
   // click still writes the URL (via StudioSectionTabs' own queryParam
   // handling), and an external URL change now updates the visible tab too.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<MatchTabId>(() => {
     const fromQuery = searchParams.get("tab");
     return (TAB_IDS as readonly string[]).includes(fromQuery || "") ? (fromQuery as MatchTabId) : "discover";
@@ -58,6 +64,17 @@ export default function Match() {
       setActiveTab(fromQuery as MatchTabId);
     }
   }, [searchParams, activeTab]);
+
+  // The handoff from onboarding (/circle?welcome=match used to open the deck with this toast).
+  useEffect(() => {
+    if (searchParams.get("welcome") !== "match") return;
+    import("sonner")
+      .then(({ toast }) => toast.success("We found you a match!", { description: "Tap the first card to say hi.", duration: 5000 }))
+      .catch(() => {});
+    const next = new URLSearchParams(searchParams);
+    next.delete("welcome");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const matchTabs: StudioSectionTab[] = [
     {
@@ -85,18 +102,25 @@ export default function Match() {
     {
       // LikesYouGrid queries the swipes table for people who swiped right on
       // you and you haven't responded to yet -- that's genuinely different
-      // from an accepted-connections list (Circle's Network tab uses the
-      // `connections` table for that). Labeled for what this tab actually
-      // shows rather than either the old dating-app "Likes you" or a
-      // "Connections" name that would misdescribe its real content. A real
-      // Connections tab reusing Circle's ConnectionList/connections-table
-      // data is a further enhancement, not done in this pass.
+      // from an accepted-connections list (the `connections` table, shown in
+      // the Connected tab below). Labeled for what this tab actually shows
+      // rather than the old dating-app "Likes you".
       id: "interested",
       label: "Interested",
       icon: Users,
       content: (
         <Suspense fallback={loadingRow("Loading…")}>
           <LikesYouGrid />
+        </Suspense>
+      ),
+    },
+    {
+      id: "connected",
+      label: "Connected",
+      icon: UserCheck,
+      content: (
+        <Suspense fallback={loadingRow("Loading…")}>
+          <ConnectedCollaborators />
         </Suspense>
       ),
     },

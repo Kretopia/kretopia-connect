@@ -115,7 +115,7 @@ export function LikesYouGrid() {
           title="No one waiting yet"
           description="When a creator swipes right on you, they land here so you can answer in one tap."
           accent="lime"
-          action={{ label: "Browse creators", icon: Heart, onClick: () => navigate("/circle") }}
+          action={{ label: "Browse creators", icon: Heart, onClick: () => navigate("/match?tab=browse") }}
         />
       </div>
     );

@@ -31,7 +31,7 @@ type Stage = {
   description?: string | null;
 };
 
-const CuratedStage = () => {
+const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
@@ -232,17 +232,20 @@ const CuratedStage = () => {
   const isFull = stage.rsvp_count >= stage.capacity && !myRsvp;
   const Icon = stage.type === "scout" ? Search : Mic2;
   const remaining = Math.max(0, stage.capacity - stage.rsvp_count);
+  const Title = embedded ? "h2" : "h1";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className={embedded ? "pb-6" : "min-h-screen bg-background pb-24"}>
       <SEO title={`${stage.title} | Sound Stages`} description={stage.blurb ?? "Curated live stage on Kretopia."} />
 
-      <header className="border-b border-border/60 sticky top-0 bg-background z-20 pt-[env(safe-area-inset-top)]">
-        <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Sound Stages</p>
-        </div>
-      </header>
+      {!embedded && (
+        <header className="border-b border-border/60 sticky top-0 bg-background z-20 pt-[env(safe-area-inset-top)]">
+          <div className="container max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+            
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">Sound Stages</p>
+          </div>
+        </header>
+      )}
 
       <div className="container max-w-3xl mx-auto px-4 py-6 space-y-6">
         {/* Cover */}
@@ -263,7 +266,7 @@ const CuratedStage = () => {
 
         {/* Title + meta */}
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold leading-tight">{stage.title}</h1>
+          <Title className="text-2xl font-bold leading-tight">{stage.title}</Title>
           {stage.blurb && <p className="text-sm text-muted-foreground">{stage.blurb}</p>}
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-1">
             <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{format(new Date(stage.starts_at), "EEE, MMM d · h:mma")}</span>

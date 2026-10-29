@@ -71,16 +71,12 @@ const Profile = lazy(() => import("./pages/Profile"));
 const DisputeCredit = lazy(() => import("./pages/DisputeCredit"));
 const DisputeManage = lazy(() => import("./pages/DisputeManage"));
 
-const Circle = lazy(() => import("./pages/Circle"));
+// One surface for every live-room view (Sound Stages, curated stages, speed nights, event backstage).
+const Stages = lazy(() => import("./pages/Stages"));
 const Discover = lazy(() => import("./pages/Discover"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
 
 const Match = lazy(() => import("./pages/Match"));
-const SoundStages = lazy(() => import("./pages/SoundStages"));
-const SpeedSession = lazy(() => import("./pages/SpeedSession"));
-const SpeedIndex = lazy(() => import("./pages/SpeedIndex"));
-const SpeedRecap = lazy(() => import("./pages/SpeedRecap"));
-const CuratedStage = lazy(() => import("./pages/CuratedStage"));
 const CircleDetailPage = lazy(() => import("./pages/CircleDetail"));
 const CircleChatView = lazy(() => import("./pages/CircleChatView"));
 const Circles = lazy(() => import("./pages/Circles"));
@@ -150,7 +146,6 @@ const Meetup = lazy(() => import("./pages/Meetup"));
 const MeetupManage = lazy(() => import("./pages/MeetupManage"));
 
 const Scene = lazy(() => import("./pages/Scene"));
-const EventBackstage = lazy(() => import("./pages/EventBackstage"));
 const EventCrewMode = lazy(() => import("./pages/EventCrewMode"));
 const Podcast = lazy(() => import("./pages/Podcast"));
 const Magazine = lazy(() => import("./pages/Magazine"));
@@ -321,13 +316,13 @@ const AppContent = () => {
             <Route path="/company-onboarding" element={<ProtectedRoute><CompanyOnboarding /></ProtectedRoute>} />
             
             {/* Core Feature Pages - Public browsable, actions gated */}
-            <Route path="/circle" element={<Circle />} />
+            <Route path="/circle" element={<Stages />} />
           {/* Speed Networking — public index of upcoming themed nights */}
-          <Route path="/circle/speed" element={<SpeedIndex />} />
+          <Route path="/circle/speed" element={<Stages />} />
           {/* Speed Session = public landing for share links; sign-up gating happens inside the page */}
-          <Route path="/circle/speed/:id" element={<SpeedSession />} />
-          <Route path="/circle/speed/:id/recap" element={<SpeedRecap />} />
-           <Route path="/circle/stage/:id" element={<CuratedStage />}/>
+          <Route path="/circle/speed/:id" element={<Stages />} />
+          <Route path="/circle/speed/:id/recap" element={<Stages />} />
+           <Route path="/circle/stage/:id" element={<Stages />}/>
             {/* Crews — canonical surfaces (private, invite-only). */}
             <Route path="/crews" element={<Circles />} />
             <Route path="/crew/:circleId" element={<ProtectedRoute><CircleDetailPage /></ProtectedRoute>} />
@@ -425,7 +420,7 @@ const AppContent = () => {
             
             {/* Public Browsable Routes */}
             <Route path="/nearby" element={<NearbyCreators />} />
-            <Route path="/events/backstage" element={<EventBackstage />} />
+            <Route path="/events/backstage" element={<Stages />} />
             <Route path="/events" element={<Navigate to="/meetup" replace />} />
             <Route path="/desk/:projectId/crew" element={<EventCrewMode />} />
             <Route path="/scene" element={<Scene />} />
@@ -508,7 +503,7 @@ const AppContent = () => {
 
             <Route path="/discover" element={<Discover />} />
             <Route path="/match" element={<Match />} />
-            <Route path="/soundstages" element={<SoundStages />} />
+            <Route path="/soundstages" element={<Stages />} />
             <Route path="/sound-stages" element={<Navigate to="/soundstages" replace />} />
             <Route path="/opportunities" element={<Opportunities />} />
             <Route path="/scout" element={<ProtectedRoute><Scout /></ProtectedRoute>} />

@@ -95,9 +95,9 @@ const CreativeCircle = () => {
         scene="coworking"
         eyebrow="Creative Circle"
         title="Creative Circle."
-        accentTitle="Earn as it grows."
-        subtitle="Invite creatives, climb tiers, and earn passive commission — all from one link."
-        tutorial={{ featureKey: "creative-circle", label: "How Creative Circle works", steps: CREATIVE_CIRCLE_TUTORIAL }}
+        accentTitle="Invite with purpose."
+        subtitle="Track attributable invitations separately from your professional network. Benefits remain subject to verified eligibility and approval."
+        tutorial={{ featureKey: "creative-circle", label: "How this works", steps: CREATIVE_CIRCLE_TUTORIAL }}
       />
 
       <StudioFeatureShell wrapped={{ name: "Creative Circle" }}>

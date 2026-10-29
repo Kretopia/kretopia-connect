@@ -24,8 +24,7 @@ import { StagePrimaryCard } from "./StagePrimaryCard";
 import { StageGrid } from "./StageGrid";
 
 interface LiveCallsPanelProps {
-  /** Jumps the parent page to its Match tab — lets "Find a Collaborator"
-   * live inside Sound Stages instead of a separate card above it. */
+  /** Where "Find a Collaborator" goes: Match, the one place to discover people. */
   onFindCollaborator?: () => void;
   /** From a shared Stage link (?join=<stage_id>) — auto-joins on mount once.
    * join-sound-stage re-validates is_live server-side regardless of how the
@@ -34,8 +33,7 @@ interface LiveCallsPanelProps {
 }
 
 /**
- * Sound Stages — the live tab on /circle (and the standalone /discover
- * page). One unified card: live rail, the two primary actions, curated
+ * Sound Stages — the default view of the Stages surface. One unified card: live rail, the two primary actions, curated
  * stages, and the upcoming call sheet, all inside the same Studio-grammar
  * surface instead of a stack of independently-styled sections.
  */
@@ -298,6 +296,9 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
           <h3 className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1.5">
             <Calendar className="h-3 w-3" /> Call sheet — Speed Sessions
           </h3>
+          <Link to="/circle/speed" className="text-xs font-semibold text-muted-foreground underline hover:text-foreground">
+            All nights
+          </Link>
         </div>
         <CallSheetUpcoming />
       </section>

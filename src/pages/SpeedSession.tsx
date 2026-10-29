@@ -48,7 +48,7 @@ type PeerInfo = { id: string; full_name: string | null; avatar_url: string | nul
  * - Live: subscribes to pairings → auto-opens room → in-call Connect / Save-for-later.
  * - Recap: lists pairings the user had.
  */
-export default function SpeedSession() {
+export default function SpeedSession({ embedded = false }: { embedded?: boolean }) {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const { isAdmin } = useUserRole();
@@ -562,11 +562,11 @@ export default function SpeedSession() {
   }, [session, user, myRsvp, callRoom?.name, myName, id]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><KretopiaSpinner className="h-6 w-6" /></div>;
+    return <div className={`${embedded ? "min-h-[40vh]" : "min-h-screen"} flex items-center justify-center`}><KretopiaSpinner className="h-6 w-6" /></div>;
   }
   if (!session) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center gap-3">
+      <div className={`${embedded ? "min-h-[40vh]" : "min-h-screen"} flex flex-col items-center justify-center p-6 text-center gap-3`}>
         <p className="font-semibold">Session not found</p>
         <Link to="/circle?tab=live"><Button variant="outline">Back to Sound Stages</Button></Link>
       </div>
@@ -678,12 +678,12 @@ export default function SpeedSession() {
 
 
   return (
-    <div className="min-h-screen pb-28 bg-background">
+    <div className={embedded ? "pb-6" : "min-h-screen pb-28 bg-background"}>
       <SEO title={`${session.title} · Speed Session`} description={session.theme ?? ""} />
 
-      <div className="sticky top-0 z-10 bg-background border-b">
+      <div className={`${embedded ? "" : "sticky top-0 z-10 "}bg-background border-b`}>
         <div className="container mx-auto px-3 py-3 flex items-center gap-2">
-          <h1 className="text-base font-bold truncate flex-1">{session.title}</h1>
+          {embedded ? <h2 className="text-base font-bold truncate flex-1">{session.title}</h2> : <h1 className="text-base font-bold truncate flex-1">{session.title}</h1>}
           {isLive && (
             <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold uppercase">
               <Radio className="h-2.5 w-2.5 animate-pulse" /> Live

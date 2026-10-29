@@ -77,12 +77,6 @@ const ROUTE_TIPS: Array<{ match: (p: string) => boolean; tips: Tip[] }> = [
     ],
   },
   {
-    match: (p) => p.startsWith("/circle") || p.startsWith("/stages"),
-    tips: [
-      { eyebrow: "Circle",  line: "I can tell you who's worth adding to your circle based on who you've already worked with.", cta: "Suggest people",         prompt: "Based on my credits and collaborations, who should I add to my circle and why?" },
-    ],
-  },
-  {
     match: (p) => p.startsWith("/recordings"),
     tips: [
       { eyebrow: "Recordings", line: "Give me a recording and I'll pull the brief, the decisions and the follow-ups out of it.", cta: "Summarise a call",    prompt: "Summarise my latest recorded call: key decisions, action items and who owns each one." },
@@ -110,10 +104,10 @@ const DISMISS_HOURS = 6;
  *  approval after the pilot review (KRETO_3D_REFERENCE_AND_RIGHTS_AUDIT.md
  *  §13, KRETO_3D_PILOT_IMPLEMENTATION_REPORT.md). Route groups in this set
  *  get the embodied presence instead of the flat KretoMark used by every
- *  other group here. Studio shipped in the pilot; Scout, Passport, Events
- *  and Circle (the brief's "Stage/Circle context" -- covers both /circle
- *  and /stages) are the rollout surfaces approved so far. */
-const PRESENCE_EYEBROWS = new Set(["Studio", "Passport", "Circle"]);
+ *  other group here. Studio shipped in the pilot; Scout, Passport and
+ *  Events are the rollout surfaces approved so far. Stages has no tip: it is
+ *  one surface with its own Kreto-powered actions. */
+const PRESENCE_EYEBROWS = new Set(["Studio", "Passport"]);
 
 /** Scout wears the Kretopia K-mark itself (same mark, same size as Passport's
  *  Kreto entry) instead of the embodied robot: the card is the entry point to
