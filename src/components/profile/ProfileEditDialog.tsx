@@ -12,6 +12,8 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { checkProfileCompletion } from "@/lib/profileCompletion";
+import { normalizeUsername, validateUsername, usernameValidationMessage } from "@/lib/username";
+import { checkUsernameAvailability, type UsernameAvailability } from "@/lib/usernameAuth";
 import type { Database } from "@/integrations/supabase/types";
 import { SubRolesPicker } from "./SubRolesPicker";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -251,6 +253,7 @@ export function ProfileEditDialog({
   
   const [formData, setFormData] = useState({
     full_name: "",
+    username: "",
     role: "",
     sub_roles: [] as string[],
     location: "",
