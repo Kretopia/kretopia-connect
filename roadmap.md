@@ -1,8 +1,8 @@
 # Roadmap
 
 ## Community legal page
-- [ ] Replace the mistakenly supplied privacy content with all eight sections of Kretopia_Community_Guidelines_2026_v6.html; preserve the shared Terms/Privacy layout, Community links and existing URL.
-- [ ] Verify corrected Community content and navigation; no publication or backend changes.
+- [x] Replace the mistakenly supplied privacy content with all eight sections and 36 content blocks of Kretopia_Community_Guidelines_2026_v6.html; preserve the shared Terms/Privacy layout, Community links and existing URL.
+- [x] 16 legal/footer tests pass; browser verifies Privacy → Community, corrected heading, eight sections, no old privacy text and reporting anchor; automatic compilation OK. No publication or backend changes.
 
 ## Original EPK and full-space editor
 - [x] Actual PDF fills preview width by default; hide editing panels initially, add zoom/page navigation and fullscreen. PDF.js pinned to browser-compatible v4 after reproducing v5 runtime incompatibility.
