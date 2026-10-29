@@ -336,8 +336,8 @@ export const SignInForm = ({
         </>
       )}
 
-      {/* Magic link fallback */}
-      {!oauthOnlyProvider && (
+      {/* Magic link fallback (email mode only — the link is sent to an email) */}
+      {mode === "email" && !oauthOnlyProvider && (
         magicSent ? (
           <div className="rounded-lg border border-energy/40 bg-energy/5 p-3 text-center">
             <Mail className="h-4 w-4 text-energy mx-auto mb-1" />
