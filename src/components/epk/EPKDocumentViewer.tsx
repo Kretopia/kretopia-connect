@@ -60,7 +60,7 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
       element.style.height = `${viewport.height}px`;
       const context = element.getContext("2d");
       if (!context) return;
-      render = pdfPage.render({ canvas: element, canvasContext: context, viewport, transform: [pixelRatio, 0, 0, pixelRatio, 0, 0] });
+      render = pdfPage.render({ canvasContext: context, viewport, transform: [pixelRatio, 0, 0, pixelRatio, 0, 0] });
       await render.promise;
       if (active) setBusy(false);
     })().catch(e => { if (active && e?.name !== "RenderingCancelledException") { console.warn("EPK page rendering failed", e); setError("Could not render this PDF page."); setBusy(false); } });
