@@ -335,12 +335,14 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5 px-2" aria-label="Back to Passport">
             <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Back</span>
           </Button>
-          <BrandLogo iconOnly size="sm" />
-          <div className="hidden sm:block">
-            <h2 className="k-gradient-text text-sm font-semibold">EPK PDF Editor</h2>
-            <p className="text-xs text-muted-foreground">
-              {displayName} · Creative Passport
-            </p>
+          <div className="hidden min-w-0 items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-2.5 py-1.5 sm:flex">
+            <BrandLogo iconOnly size="md" />
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-black uppercase tracking-[0.16em] text-foreground">EPK PDF Editor</h2>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {displayName} · {documentMode === "original" ? "Your PDF" : "Creative Passport"}
+              </p>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -674,20 +676,8 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
 
         {/* Preview area */}
         <div className={cn("flex-1 min-w-0 flex-col overflow-hidden bg-muted/20", sidebarCollapsed ? "flex" : "hidden sm:flex")}>
-          <div className="flex items-center justify-between px-4 py-2 border-b shrink-0">
-            <Button
-              aria-label="Toggle editor panels"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-xs font-semibold text-foreground">Live Preview {documentMode === "original" && "· Your PDF"}</span>
-            <Button variant="ghost" size="icon" title="Fullscreen preview" aria-label="Fullscreen preview" onClick={() => void previewRef.current?.requestFullscreen().catch(() => toast({ title: "Fullscreen unavailable in this browser" }))}><Maximize className="h-4 w-4" /></Button>
-          </div>
           <div ref={previewRef} className="flex-1 min-h-0 w-full overflow-hidden bg-background">
-            {documentBlob ? <EPKDocumentViewer source={documentBlob} /> : <div className="flex h-full items-center justify-center"><KretopiaSpinner className="h-10 w-10" /></div>}
+            {documentBlob ? <EPKDocumentViewer source={documentBlob} label={documentMode === "original" ? "Your PDF" : "Kretopia draft"} toolbarLeading={<Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label="Toggle editor panels" onClick={() => setSidebarCollapsed(!sidebarCollapsed)}><PanelLeft className="h-4 w-4" /></Button>} /> : <div className="flex h-full items-center justify-center"><KretopiaSpinner className="h-10 w-10" /></div>}
           </div>
         </div>
       </div>
@@ -774,7 +764,7 @@ const EPKPreview = ({
         </div>
         <div className="mt-1 flex items-center gap-3">
           {profile.avatar_url && (
-            <img src={profile.avatar_url} alt="" className="h-12 w-12 rounded-md object-cover ring-2" style={{ ["--tw-ring-color" as string]: primary }} />
+            <img src={profile.avatar_url} alt="" className="h-12 w-12 rounded-md object-cover" />
           )}
           <div>
             <p className="text-lg font-bold text-[var(--epk-ink)] leading-tight">{profile.full_name || "Creator"}</p>

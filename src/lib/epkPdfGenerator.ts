@@ -494,8 +494,6 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   const avatarSize = 40;
   const avatarY = eyebrowY + 10;
   if (avatarData) {
-    doc.setFillColor(...C.primary);
-    doc.roundedRect(heroLeftX - 1.5, avatarY - 1.5, avatarSize + 3, avatarSize + 3, 6, 6, 'F');
     doc.addImage(avatarData, 'JPEG', heroLeftX, avatarY, avatarSize, avatarSize);
   }
 

@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, Minimize, Scan } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
-export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; onPages?: (count: number) => void }) {
+export function EPKDocumentViewer({ source, onPages, toolbarLeading, label }: { source: string | Blob; onPages?: (count: number) => void; toolbarLeading?: ReactNode; label?: ReactNode }) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [document, setDocument] = useState<PDFDocumentProxy>();
@@ -68,14 +68,16 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
   }, [document, page, width, zoom]);
   return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer" aria-busy={busy}>
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-border px-2 py-1">
-      <div className="flex items-center gap-1">
+      <div className="flex min-w-0 items-center gap-1">
+        {toolbarLeading}
+        {label && <span className="truncate text-xs font-semibold text-foreground">{label}</span>}
         <Button variant="ghost" size="icon" aria-label="Previous PDF page" disabled={!document || page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-        <span className="min-w-16 text-center text-xs tabular-nums">{page} / {document?.numPages || "—"}</span>
+        <span className="min-w-11 text-center text-xs tabular-nums">{page} / {document?.numPages || "—"}</span>
         <Button variant="ghost" size="icon" aria-label="Next PDF page" disabled={!document || page >= document.numPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
       </div>
       <div className="flex items-center gap-1">
         <Button variant="ghost" size="icon" title="Zoom out" aria-label="Zoom out" onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}><ZoomOut className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="sm" title="Fit width" aria-label="Fit PDF width" onClick={() => setZoom(1)}><Scan className="mr-1 h-4 w-4" />{Math.round(zoom * 100)}%</Button>
+        <Button variant="ghost" size="sm" title="Fit width" aria-label="Fit PDF width" onClick={() => setZoom(1)}><Scan className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">{Math.round(zoom * 100)}%</span></Button>
         <Button variant="ghost" size="icon" title="Zoom in" aria-label="Zoom in" onClick={() => setZoom(z => Math.min(3, z + 0.25))}><ZoomIn className="h-4 w-4" /></Button>
         <Button variant="ghost" size="icon" title="Fullscreen" aria-label={fullscreen ? "Exit PDF fullscreen" : "PDF fullscreen"} onClick={() => { if (fullscreen) void window.document.exitFullscreen(); else void container.current?.requestFullscreen().catch(() => setError("Fullscreen is unavailable in this browser.")); }}>{fullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}</Button>
       </div>
