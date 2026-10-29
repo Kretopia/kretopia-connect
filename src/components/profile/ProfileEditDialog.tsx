@@ -331,6 +331,8 @@ export function ProfileEditDialog({
         cover_image_url: (profile as any).cover_image_url || "",
         passport_profession: (profile as any).passport_profession || "",
       });
+      savedUsernameRef.current = ((profile as any).username || "").toLowerCase();
+      setUsernameStatus("idle");
 
       const completion = checkProfileCompletion(profile);
       setIncompleteFields(completion.missingFields);
