@@ -411,6 +411,11 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
       const wordH = 5.5;
       const wordW = wordH * wordmark.aspect;
       doc.addImage(wordmark.dataUrl, 'PNG', cx, y + (markH - wordH) / 2, wordW, wordH);
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(18);
+      doc.setTextColor(...C.white);
+      doc.text('kretopia', cx, y + 6);
     }
   };
 
@@ -873,7 +878,6 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
     if (!text) continue;
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    const lines: string[] = doc.splitTextToSize(text, CONTENT_W - 12);
     const columnLines: string[] = doc.splitTextToSize(text, CONTENT_W / 2 - 12);
     for (let offset = 0; offset < columnLines.length; offset += 10) {
       narrativeBlocks.push({ label: topic.label + (offset ? ' (continued)' : ''), lines: columnLines.slice(offset, offset + 10) });

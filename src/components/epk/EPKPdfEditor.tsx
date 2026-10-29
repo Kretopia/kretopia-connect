@@ -268,7 +268,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           {hasChanges && (
             <Badge variant="outline" className="hidden sm:inline-flex text-xs text-muted-foreground border-border">PDF draft</Badge>
           )}
-          <Button size="sm" onClick={handleDownload} disabled={generating} className="gap-1.5">
+          <Button size="sm" onClick={handleDownload} disabled={generating} className="gap-1.5" aria-label={generating ? "Generating..." : "Download PDF"}>
             {generating ? <KretopiaSpinner className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
             <span className="hidden sm:inline">{generating ? "Generating..." : "Download PDF"}</span><span className="sm:hidden">PDF</span>
           </Button>
