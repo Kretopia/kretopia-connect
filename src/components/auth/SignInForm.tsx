@@ -262,6 +262,7 @@ export const SignInForm = ({
           </p>
         )}
       </div>
+      )}
 
       {/* Hide password field when we know the account is OAuth-only — avoids confusing failures. */}
       {!oauthOnlyProvider && (
