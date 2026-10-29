@@ -313,6 +313,14 @@ answers `403`.
 
 **Order:** merge and publish the frontend (the followed Remote OK link) -> copy `extract.ts` and redeploy the two functions -> apply the SQL -> one manual `external-discovery-run` per source (Jobicy at least an hour after its last run) -> read the drafts -> publish the ones you approve.
 
+## The public view was writable by clients (found 2026-10-29, fix prepared)
+
+**What it was.** `public.public_external_listings` runs with its owner's rights (the base table is service-role only, so it must) and is a plain single-table view, which Postgres treats as auto-updatable: an INSERT, UPDATE or DELETE on the view is applied to the base table with the OWNER's rights. The first migration ended with `REVOKE ALL ... FROM PUBLIC`, which does not remove the privileges Supabase's default privileges had already granted to `anon` and `authenticated` by name (ACL `anon=arwdDxtm`, `authenticated=arwdDxtm`). With only the public key, anyone could change or delete a published listing (for example point its `apply_url` elsewhere) and insert rows into `external_listings`. The rehearsals of the migration checked reading and the base tables' revokes and never a write through the view; that is how it was missed.
+
+**Confirmed against production with zero-row requests only:** `PATCH` and `DELETE` on the view with the public key answered 204, and a `POST` reached the base table's NOT NULL check. A read-only audit of every view in `public` found this the only one open: all the others carry `security_invoker=true`, so their writes are checked against their own base tables as the caller. Signs of use in the data: 278 listings, every one with an audit event, no published listing changed after its last audit event, all 44 public `apply_url`s on jobicy.com or remoteok.com. That is what the data shows, not proof for the past.
+
+**Fix.** `supabase/migrations/20261029120000_close_public_view_writes.sql` revokes everything from `PUBLIC, anon, authenticated`, grants clients `SELECT` only, keeps `service_role`, and turns on `security_barrier` so a client filter cannot be evaluated against rows the view excludes (drafts, private, flagged). Paste script: `security/apply-close-view-writes-2026-10-29.sql` (untracked), rehearsed 29/29 on a throwaway Postgres 16 with Supabase-style default privileges: the hole reproduced first (anon defaces, deletes, inserts), then closed for `anon` and `authenticated`, reading kept, `service_role` kept, idempotent, same ACL as the migration, four injected failures roll back. No undo script on purpose: if reads ever fail, `GRANT SELECT ON public.public_external_listings TO anon, authenticated;` is the whole repair.
+
 ## Not verified
 
 No real signed-in session, no real feed, no real model, no real domain proof was exercised (all fakes, fixtures and a local
