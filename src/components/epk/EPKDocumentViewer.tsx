@@ -45,7 +45,7 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
     if (!document || !canvas.current || !width) return;
     let active = true;
     let render: ReturnType<Awaited<ReturnType<PDFDocumentProxy["getPage"]>>["render"]> | undefined;
-    setBusy(true);
+    setBusy(true); setError("");
     void (async () => {
       const pdfPage = await document.getPage(Math.min(page, document.numPages));
       if (!active || !canvas.current) return;
@@ -63,7 +63,7 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
       render = pdfPage.render({ canvas: element, canvasContext: context, viewport, transform: [pixelRatio, 0, 0, pixelRatio, 0, 0] });
       await render.promise;
       if (active) setBusy(false);
-    })().catch(e => { if (active && e?.name !== "RenderingCancelledException") { setError("Could not render this PDF page."); setBusy(false); } });
+    })().catch(e => { if (active && e?.name !== "RenderingCancelledException") { console.warn("EPK page rendering failed", e); setError("Could not render this PDF page."); setBusy(false); } });
     return () => { active = false; render?.cancel(); };
   }, [document, page, width, zoom]);
   return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer">
@@ -82,7 +82,8 @@ export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; 
     </div>
     <div className="relative flex-1 overflow-auto bg-muted/30 p-2">
       {busy && <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80"><KretopiaLoader /></div>}
-      {error ? <p role="alert" className="p-6 text-sm text-muted-foreground">{error}</p> : <canvas ref={canvas} className="mx-auto block" aria-label={`PDF page ${page}`} />}
+      {error && <p role="alert" className="p-6 text-sm text-muted-foreground">{error}</p>}
+      <canvas ref={canvas} className="mx-auto block" aria-label={`PDF page ${page}`} />
     </div>
   </div>;
 }
