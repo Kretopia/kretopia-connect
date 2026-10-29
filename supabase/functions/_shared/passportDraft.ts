@@ -193,7 +193,8 @@ export function resolveDraft({ pick, missing, profile, corpus, photos, works }: 
   if (!missing.bio) unavailable.bio = "already_complete";
   else {
     const checked = checkBio(pick.bio, corpus);
-    if (checked.ok) draft.bio = { text: checked.text };
+    // `in` narrows without strictNullChecks, where a boolean `ok` discriminant does not.
+    if ("text" in checked) draft.bio = { text: checked.text };
     else unavailable.bio = checked.reason;
   }
 
