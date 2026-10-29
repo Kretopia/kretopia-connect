@@ -8,6 +8,13 @@
       "when": 1793069124348,
       "tag": "0000_public_presence_search_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793260020240,
+      "tag": "0001_username_auth_rate_limit",
+      "breakpoints": true
     }
   ]
 }
