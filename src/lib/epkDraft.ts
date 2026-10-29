@@ -41,6 +41,21 @@ export function suggestedEPKTemplate(input: EPKPdfInput): EPKTemplateId {
   return "cinematic-dark";
 }
 
+/** Avatar colours stay in the Passport's teal family; no inferred personality or forbidden violet. */
+export async function avatarEPKAccent(url: string): Promise<[number, number, number] | null> {
+  try {
+    const image = new Image(); image.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = reject; image.src = url; });
+    const canvas = document.createElement("canvas"); canvas.width = 16; canvas.height = 16;
+    const context = canvas.getContext("2d"); if (!context) return null;
+    context.drawImage(image, 0, 0, 16, 16);
+    const pixels = context.getImageData(0, 0, 16, 16).data;
+    let sum = 0; for (let i = 0; i < pixels.length; i += 4) sum += (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+    const brightness = sum / (pixels.length / 4) / 255;
+    return [23, Math.round(200 + brightness * 32), Math.round(198 + brightness * 30)];
+  } catch { return null; }
+}
+
 export function validateEPKFile(file: Pick<File, "name" | "size" | "type">): string | null {
   if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) return "Choose a PDF EPK.";
   if (file.size > 20 * 1024 * 1024) return "Choose a PDF smaller than 20 MB.";

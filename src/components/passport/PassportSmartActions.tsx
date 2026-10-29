@@ -16,7 +16,7 @@ interface PassportSmartActionsProps {
 }
 
 const tileBase =
-  "group h-16 w-full min-w-0 flex-col gap-1 rounded-lg px-1 py-2 text-[10px] leading-none";
+  "group h-16 min-h-[64px] w-full min-w-0 flex-col gap-1 rounded-lg px-1 py-2 text-[10px] leading-none";
 
 const tileTone = {
   primary: "border-border bg-muted/40 text-foreground hover:border-foreground/40",

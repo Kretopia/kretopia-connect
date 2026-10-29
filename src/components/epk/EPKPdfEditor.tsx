@@ -21,7 +21,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import type { EPKPdfInput } from "@/lib/epkPdfGenerator";
 import { EPK_DEFAULT_ACCENT_HEX, EPK_TEMPLATES, type EPKTemplateId } from "@/lib/epkPdfGenerator";
 
-import { buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate, validateEPKFile } from "@/lib/epkDraft";
+import { avatarEPKAccent, buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate, validateEPKFile } from "@/lib/epkDraft";
 import { EPKDraftField } from "./EPKDraftTopics";
 
 // Editable sections for the EPK
@@ -128,6 +128,15 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   }, [open, epkData]);
 
   const markChanged = useCallback(() => setHasChanges(true), []);
+
+  useEffect(() => {
+    if (!open || !epkData.profile.avatar_url || !isCreatorPlus || suggestedEPKTemplate(epkData) === "clean-light") return;
+    let active = true;
+    void avatarEPKAccent(epkData.profile.avatar_url).then(accent => {
+      if (active && accent) setBranding(prev => ({ ...prev, primaryColor: rgbToHex(accent) }));
+    });
+    return () => { active = false; };
+  }, [open, epkData, isCreatorPlus]);
 
   // Build modified EPK data from editor state
   const buildModifiedData = useCallback((): EPKPdfInput => {
