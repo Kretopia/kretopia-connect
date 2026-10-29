@@ -1,9 +1,10 @@
 # Roadmap
 
 ## Original EPK and full-space editor
-- [ ] Fill Live Preview by default, with fullscreen and document controls.
-- [ ] Preserve uploaded PDFs in full and connect explicit Passport publication through existing storage.
-- [ ] Add draft storage and original-document editing controls; verify relevant flows and tests without publishing the website.
+- [x] Actual PDF fills preview width by default; hide editing panels initially, add zoom/page navigation and fullscreen. PDF.js pinned to browser-compatible v4 after reproducing v5 runtime incompatibility.
+- [x] Uploaded PDF remains byte-identical unless explicit page edits; original download retained. Explicit public Passport upload/removal reuses existing portfolio storage under the owner's path; owner/public viewers added without migrations or profile writes.
+- [x] User-keyed device draft save/restore/delete, original page reorder/rotate/remove/reset, shared branding and real generated-PDF preview. 30 focused tests pass; isolated browser verifies byte-identical import/download, rotation, draft restoration, fullscreen and phone default preview; compilation OK. Website not published.
+- [ ] Verify real connected-account upload and public read-back — external legacy account session unavailable; existing storage policies and PDF acceptance cannot be certified from this sandbox. Original PDF content editing is limited to pages; typography/text remain editable in Kretopia drafts, not arbitrary imported PDF artwork.
 
 ## Passport and EPK refinement (October 29)
 - [x] Merge Passport identity/intelligence in one Holo surface, remove following collaboration divider and soften Edit with shared theme-aware controls.

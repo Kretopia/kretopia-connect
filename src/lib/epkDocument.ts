@@ -1,9 +1,8 @@
-import { PDFDocument, degrees } from "pdf-lib";
-
 export interface EPKPageEdit { index: number; rotation: number }
 
 /** Copy original PDF pages without rasterizing or recreating their content. */
 export async function editEPKDocument(source: Uint8Array, pages: EPKPageEdit[]): Promise<Uint8Array> {
+  const { PDFDocument, degrees } = await import("pdf-lib");
   if (!pages.length) throw new Error("Keep at least one page in your EPK.");
   const original = await PDFDocument.load(source);
   const result = await PDFDocument.create();
