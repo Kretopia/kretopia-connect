@@ -78,6 +78,15 @@ describe("TodayDeck — 3D roulette (wide, fine pointer)", () => {
     expect(screen.getByText("Card 1 of 3: Passport")).toHaveAttribute("aria-live", "polite");
   });
 
+  it("keeps its announcement inside a positioned wrapper, so it cannot stretch the document and leave an empty band under Today", () => {
+    render(<TodayDeck cards={cards} />);
+    const note = screen.getByText("Card 1 of 3: Passport");
+    expect(note).toHaveClass("sr-only"); // position:absolute: without a positioned ancestor it is placed against the page, outside the app's scroller
+    const positioned = note.closest(".relative");
+    expect(positioned).not.toBeNull();
+    expect(screen.getByRole("group", { name: "Today cards" }).contains(positioned)).toBe(true); // the deck itself or something inside it, never an outer wrapper
+  });
+
   it("turns exactly one card per Next/Previous and wraps around the three", () => {
     render(<TodayDeck cards={cards} />);
     fireEvent.click(screen.getByRole("button", { name: "Next card" }));
@@ -190,6 +199,17 @@ describe("TodayDeck — swipe row (touch or narrow)", () => {
     }
     // no 3D transforms to fight the scroll
     expect(document.querySelector("[style*='rotateY']")).toBeNull();
+  });
+
+  it("keeps its announcement inside a positioned wrapper, so it cannot stretch the document and leave an empty band under Today", () => {
+    render(<TodayDeck cards={cards} />);
+    const note = screen.getByText("Card 1 of 3: Passport");
+    expect(note).toHaveClass("sr-only");
+    const positioned = note.closest(".relative");
+    expect(positioned).not.toBeNull();
+    expect(screen.getByRole("group", { name: "Today cards" }).contains(positioned)).toBe(true);
+    // the track keeps its own positioned box too, and the controls row is the announcement's wrapper
+    expect(positioned).toContainElement(screen.getByRole("button", { name: "Next card" }));
   });
 
   it("Previous is disabled on the first card, Next on the last, and the announcement follows", () => {

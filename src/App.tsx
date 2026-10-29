@@ -267,8 +267,10 @@ const AppContent = () => {
   // Don't add bottom padding when on individual project pages or desk list
   const shouldAddBottomPadding = showBottomNav && !location.pathname.startsWith('/desk');
   
+  // overscroll-y-contain: this is the app's one scroller. Reaching its end must never hand the scroll to the document (html and body also
+  // contain it), or any stray absolutely positioned element that stretches the document drags the whole app up and leaves an empty band.
   return (
-    <div className="h-full overflow-auto">
+    <div className="h-full overflow-auto overscroll-y-contain">
       <ModeThemeSync />
       <VibeThemeSync />
       <NetworkStatus />
