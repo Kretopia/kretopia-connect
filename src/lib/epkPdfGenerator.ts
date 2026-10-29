@@ -14,7 +14,7 @@
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import wordmarkAsset from "@/assets/brand/kretopia-wordmark.png.asset.json";
 import { APP_URL } from "@/lib/constants";
-import { buildEPKDefaults, EPK_TOPICS } from "@/lib/epkDraft";
+import { buildEPKDefaults, EPK_TOPICS, suggestedEPKTemplate } from "@/lib/epkDraft";
 
 interface EPKProfileData {
   full_name: string;
@@ -274,7 +274,7 @@ export async function generateEPKPdf(input: EPKPdfInput, brandingOptions?: EPKBr
   const doc: any = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [PAGE_W, PAGE_H] });
 
   // Resolve template palette first, then allow branding overrides
-  const tpl = getEPKTemplate(brandingOptions?.templateId);
+  const tpl = getEPKTemplate(brandingOptions?.templateId || suggestedEPKTemplate(input));
 
   const C = {
     bg: brandingOptions?.darkColor || tpl.palette.bg,

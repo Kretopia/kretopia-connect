@@ -130,7 +130,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   const markChanged = useCallback(() => setHasChanges(true), []);
 
   useEffect(() => {
-    if (!open || !epkData.profile.avatar_url || !isCreatorPlus || suggestedEPKTemplate(epkData) === "clean-light") return;
+    if (!open || !epkData.profile.avatar_url || suggestedEPKTemplate(epkData) === "clean-light") return;
     let active = true;
     void avatarEPKAccent(epkData.profile.avatar_url).then(accent => {
       if (active && accent) setBranding(prev => ({ ...prev, primaryColor: rgbToHex(accent) }));
@@ -189,7 +189,7 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
         });
       } else {
         const { generateEPKPdf } = await import("@/lib/epkPdfGenerator");
-        await generateEPKPdf(modifiedData, { tagline });
+        await generateEPKPdf(modifiedData, { tagline, templateId: selectedTemplate, primaryColor: hexToRgb(branding.primaryColor) });
       }
       toast({ title: "EPK PDF downloaded!", description: "Your professional EPK deck has been saved." });
     } catch (error) {
@@ -246,10 +246,10 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
   return (
     <div className="k-epk-editor fixed inset-0 z-50 bg-background flex flex-col" role="dialog" aria-modal="true" aria-label="EPK PDF Editor">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b bg-background/95 backdrop-blur shrink-0">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5">
-            <ArrowLeft className="h-4 w-4" /> Back
+      <div className="flex items-center justify-between gap-2 px-2 sm:px-4 py-2 border-b bg-background/95 backdrop-blur shrink-0">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5 px-2" aria-label="Back to Passport">
+            <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Back</span>
           </Button>
           <BrandLogo iconOnly size="sm" />
           <div className="hidden sm:block">
@@ -266,11 +266,11 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
             {importing ? <KretopiaSpinner className="h-4 w-4" /> : <Upload className="h-4 w-4" />}<span className="hidden sm:inline">Import EPK</span>
           </Button>
           {hasChanges && (
-            <Badge variant="outline" className="text-xs text-muted-foreground border-border">PDF draft</Badge>
+            <Badge variant="outline" className="hidden sm:inline-flex text-xs text-muted-foreground border-border">PDF draft</Badge>
           )}
           <Button size="sm" onClick={handleDownload} disabled={generating} className="gap-1.5">
             {generating ? <KretopiaSpinner className="h-4 w-4" /> : <FileDown className="h-4 w-4" />}
-            {generating ? "Generating..." : "Download PDF"}
+            <span className="hidden sm:inline">{generating ? "Generating..." : "Download PDF"}</span><span className="sm:hidden">PDF</span>
           </Button>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close EPK editor">
             <X className="h-4 w-4" />
@@ -592,8 +592,8 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           <div className="flex-1 overflow-auto p-4 sm:p-8 flex justify-center">
             <EPKPreview
               data={buildModifiedData()}
-              branding={isCreatorPlus ? branding : undefined}
-              templateId={isCreatorPlus ? selectedTemplate : "cinematic-dark"}
+              branding={branding}
+              templateId={selectedTemplate}
               tagline={tagline}
               sections={sections}
             />
