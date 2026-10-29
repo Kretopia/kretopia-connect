@@ -1,5 +1,10 @@
 # Roadmap
 
+## Passport and EPK refinement (October 29)
+- [ ] Merge Passport identity/intelligence, remove memory divider and soften Edit.
+- [ ] Enrich EPK defaults, personalized branding, topic/bio AI drafts and own-PDF import.
+- [ ] Run focused tests and verify editor/PDF presentation; preserve legacy backend and do not publish.
+
 ## Landing video startup (October 28)
 - [x] Five CDN video variants reduce H.264 transfers from 31.8 MB to 9.0 MB (71.6%); VP9 fallback, unchanged masters/crops, no posters, first chapter warmed on phones too, later transfers deferred until two screens away (one with data saver).
 - [x] Removed hidden initial content states across Hero, chapters, product loop, Kreto, organisations and FAQ; 25 focused tests and automatic compilation pass. Browser at 731×657 and 1280×1800: all five videos play and resume, no page errors/overflow; chapter entry to playback 54–858 ms with real CDN delivery bridged into localhost (local server does not serve asset URLs). CDN ranged GET verified 206. Not published; cold page startup/network cannot be guaranteed instantaneous.
