@@ -222,8 +222,11 @@ function RouletteDeck({ cards }: TodayDeckProps) {
     }
   };
 
+  // `relative`: the sr-only live region below is position:absolute and needs a containing block of its own. Without one it is placed
+  // against the page, outside the app's scroller, and stretches the DOCUMENT's scroll height: scrolling past the bottom of Today then
+  // dragged the whole app up and left an empty band under it.
   return (
-    <div role="group" aria-roledescription="carousel" aria-label="Today cards" className="group space-y-3">
+    <div role="group" aria-roledescription="carousel" aria-label="Today cards" className="group relative space-y-3">
       <div
         tabIndex={0}
         onKeyDown={onKeyDown}
@@ -357,7 +360,8 @@ function DeckControls({
   const arrow =
     "inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:border-foreground/40 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--energy)/0.5)]";
   return (
-    <div className="flex items-center justify-between">
+    // relative: keeps the sr-only live region at the bottom of this row inside it (see the roulette above)
+    <div className="relative flex items-center justify-between">
       <button type="button" onClick={onPrev} disabled={prevDisabled} aria-label="Previous card" className={arrow}>
         <ChevronLeft className="h-5 w-5" aria-hidden />
       </button>
