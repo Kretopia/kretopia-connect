@@ -335,12 +335,14 @@ export const EPKPdfEditor = ({ open, onClose, epkData, userId }: EPKPdfEditorPro
           <Button variant="ghost" size="sm" onClick={onClose} className="gap-1.5 px-2" aria-label="Back to Passport">
             <ArrowLeft className="h-4 w-4" /><span className="hidden sm:inline">Back</span>
           </Button>
-          <BrandLogo iconOnly size="sm" />
-          <div className="hidden sm:block">
-            <h2 className="k-gradient-text text-sm font-semibold">EPK PDF Editor</h2>
-            <p className="text-xs text-muted-foreground">
-              {displayName} · Creative Passport
-            </p>
+          <div className="hidden min-w-0 items-center gap-2.5 rounded-lg border border-border/60 bg-muted/40 px-2.5 py-1.5 sm:flex">
+            <BrandLogo iconOnly size="md" />
+            <div className="min-w-0">
+              <h2 className="truncate text-base font-black uppercase tracking-[0.16em] text-foreground">EPK PDF Editor</h2>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {displayName} · {documentMode === "original" ? "Your PDF" : "Creative Passport"}
+              </p>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">

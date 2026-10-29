@@ -69,6 +69,7 @@ export function EPKDocumentViewer({ source, onPages, toolbarLeading }: { source:
   return <div ref={container} className="relative flex h-full min-h-0 w-full flex-col bg-background" aria-label="EPK document viewer" aria-busy={busy}>
     <div className="flex shrink-0 flex-wrap items-center justify-between gap-1 border-b border-border px-2 py-1">
       <div className="flex items-center gap-1">
+        {toolbarLeading}
         <Button variant="ghost" size="icon" aria-label="Previous PDF page" disabled={!document || page <= 1} onClick={() => setPage(p => p - 1)}><ChevronLeft className="h-4 w-4" /></Button>
         <span className="min-w-16 text-center text-xs tabular-nums">{page} / {document?.numPages || "—"}</span>
         <Button variant="ghost" size="icon" aria-label="Next PDF page" disabled={!document || page >= document.numPages} onClick={() => setPage(p => p + 1)}><ChevronRight className="h-4 w-4" /></Button>
