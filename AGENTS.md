@@ -53,3 +53,4 @@
 - Keep the guest email-list popup unmounted from the app shell, because it read as the sign-up path and interrupted the flow; email capture stays inline in Landing forms.
 - Fuse a feature header's Kreto scene banner into its FeatureWrapped panel head via featureSceneStore (header draws it only when no panel is mounted), and wrap feature bodies identically in Creator and Company mode, because separate banners duplicated the Kretopia mark and mode-specific layouts drifted from Studio.
 - Keep AuthGate a pass-through (no "Sign up to unlock" overlay), because the blocking card interrupted the guest flow; sign-up lives in the navbar CTAs.
+- Render Community through LegalDocumentPage and structured legal content on the existing /community-guidelines route, because all legal surfaces must stay consistent without breaking existing links.

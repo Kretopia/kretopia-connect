@@ -87,7 +87,7 @@ describe.each([
 
   it("links the three legal pages in equal tracks and marks this one", () => {
     renderPage(page);
-    const links = ["Terms", "Privacy", "Guidelines"].map((name) => screen.getByRole("link", { name }));
+    const links = ["Terms", "Privacy", "Community"].map((name) => screen.getByRole("link", { name }));
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/terms", "/privacy", "/community-guidelines"]);
     const here = links.filter((l) => l.getAttribute("aria-current") === "page");
     expect(here).toHaveLength(1);

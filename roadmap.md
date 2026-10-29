@@ -1,5 +1,9 @@
 # Roadmap
 
+## Community legal page
+- [ ] Replace the old Community Guidelines page with the supplied document in the shared Terms/Privacy layout; label footer and legal closing links Community and preserve the existing URL.
+- [ ] Verify public navigation and section anchors; no publication or backend changes.
+
 ## Original EPK and full-space editor
 - [x] Actual PDF fills preview width by default; hide editing panels initially, add zoom/page navigation and fullscreen. PDF.js pinned to browser-compatible v4 after reproducing v5 runtime incompatibility.
 - [x] Uploaded PDF remains byte-identical unless explicit page edits; original download retained. Explicit public Passport upload/removal reuses existing portfolio storage under the owner's path; owner/public viewers added without migrations or profile writes.

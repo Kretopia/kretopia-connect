@@ -66,6 +66,7 @@ const COLUMNS: FooterColumn[] = [
       { label: "Contact", to: "mailto:support@kretopia.com", external: true },
       { label: "Terms of Service", to: "/terms" },
       { label: "Privacy Policy", to: "/privacy" },
+      { label: "Community", to: "/community-guidelines" },
     ],
   },
 ];
