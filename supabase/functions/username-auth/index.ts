@@ -44,19 +44,24 @@ function json(body: unknown, status = 200) {
   });
 }
 
-/** Exact, case-insensitive username lookup on the legacy profiles table. */
+/** Exact, case-insensitive username lookup on the legacy profiles table.
+ *  Returns "error" on query failure so callers can fail CLOSED — a failed
+ *  lookup must never report a handle as available. */
 async function findProfileByUsername(
   legacyUrl: string,
   serviceKey: string,
   username: string,
-): Promise<{ user_id: string; username: string } | null> {
+): Promise<{ user_id: string; username: string } | null | "error"> {
   // "_" and "%" are LIKE wildcards — escape them before ilike.
   const pattern = username.replace(/[%_\\]/g, (c) => `\\${c}`);
   const res = await fetch(
     `${legacyUrl}/rest/v1/profiles?select=user_id,username&username=ilike.${encodeURIComponent(pattern)}&limit=5`,
     { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
-  if (!res.ok) return null;
+  if (!res.ok) {
+    console.error("[username-auth] legacy profiles lookup failed", res.status);
+    return "error";
+  }
   const rows = (await res.json().catch(() => [])) as { user_id: string; username: string }[];
   return rows.find((r) => (r.username || "").toLowerCase() === username) ?? null;
 }
