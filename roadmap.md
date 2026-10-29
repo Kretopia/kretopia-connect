@@ -177,3 +177,4 @@
 - [ ] CreatorSiteSettings switched to shared validation
 - [ ] Legacy DB migration SQL prepared (unique lower index, collision suffix backfill, rename log) — cannot be applied by me; legacy pipeline only
 - [ ] Tests + one build
+- [ ] ThriveIN backup (db_cluster-10-02-2025, projet tgscgltalyusuahlqmjc en pause) reçu : inspecter le contenu et confirmer qu'il ne sert pas le site en ligne (qui tourne sur kwmcocsitwssrtzkdojh, actif)
