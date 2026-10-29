@@ -45,6 +45,17 @@ describe("PublishedExternalListings", () => {
     expect(apply.getAttribute("rel")).toMatch(/noopener/);
   });
 
+  it("a Himalayas job is credited by name and its Apply link is the job's own Himalayas page with utm_source=api", async () => {
+    const page = "https://himalayas.app/companies/customer-io/jobs/senior-brand-designer";
+    rows = [row({ source_provider: "himalayas", apply_url: page })];
+    renderList();
+    await screen.findByText("Brand film editor");
+    expect(screen.getByTestId("listing-labels")).toHaveTextContent("via Himalayas");
+    const apply = screen.getByRole("link", { name: /apply at source/i });
+    expect(apply).toHaveAttribute("href", `${page}?utm_source=api`);
+    expect(apply.getAttribute("rel")).toBe("noopener noreferrer nofollow");
+  });
+
   it("asks for one kind only: gigs are never mixed with events or talent", async () => {
     rows = [row()];
     renderList();

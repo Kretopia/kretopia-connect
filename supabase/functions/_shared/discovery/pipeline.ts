@@ -452,7 +452,19 @@ export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}
         report.fetched = (report.fetched ?? 0) + candidates.length;
         for (const c of candidates) raws.push({ ...candidateToRaw(c), __url: c.source_url, __feed: url });
       }
-      const batch = raws.slice(0, MAX_CANDIDATES_PER_RUN);
+      // Several queries of one source overlap (the same job answers "designer" and "art director"): the bound counts distinct jobs, so
+      // a repeated one cannot push the last queries' jobs out of the run.
+      const seen = new Set<string>();
+      const batch = raws
+        .filter((x) => {
+          const c = canonicalizeUrl(String(x.__url ?? ""));
+          if (!c) return true; // rejected below, as before
+          const k = identityKey(c);
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        })
+        .slice(0, MAX_CANDIDATES_PER_RUN);
       // A rejected or removed listing frees its identity in the database (so a person can import it again on purpose), which
       // would let every run recreate what a curator decided against. The run leaves those out.
       const keys = batch.map((x) => canonicalizeUrl(String(x.__url ?? ""))).filter((c): c is string => !!c).map((c) => identityKey(c));
@@ -474,7 +486,7 @@ export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}
           p_row: {
             kind: "gig", source_type: "feed", source_provider: identity.provider, source_id: identity.sourceId, source_url: canonical, canonical_url: canonical,
             identity_key: identityKey(canonical), original_publisher: dr.original_publisher, title: dr.title, location: dr.location, remote_scope: dr.remote_scope,
-            source_published_at: dr.source_published_at, apply_url: dr.apply_url, excerpt: dr.excerpt, flagged_instructions: dr.flagged_instructions,
+            source_published_at: dr.source_published_at, deadline_at: dr.deadline_at, deadline_tz: dr.deadline_tz, budget: dr.budget, apply_url: dr.apply_url, excerpt: dr.excerpt, flagged_instructions: dr.flagged_instructions,
             extraction_issues: parsed.issues, provenance: { adapter: adapter.id, feed_url: __feed, job_key: key, input: "scheduled_feed" }, retrieved_at: now.toISOString(),
           },
         });

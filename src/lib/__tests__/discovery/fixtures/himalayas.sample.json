@@ -1,0 +1,155 @@
+{
+ "comments": "fixture trimmed from the real feed on 2026-10-29",
+ "updatedAt": 1793253492,
+ "offset": 0,
+ "limit": 20,
+ "totalCount": 129814,
+ "jobs": [
+  {
+   "title": "Senior Brand Designer",
+   "excerpt": "About Customer. ioOver 9,000 companies — from scrappy startups to global brands — use our platform to send billions of emails, push notifications, in-app messag",
+   "companyName": "Customer.io",
+   "companySlug": "customer-io",
+   "companyLogo": null,
+   "employmentType": "Full Time",
+   "minSalary": 128000,
+   "maxSalary": 160000,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": "USD",
+   "locationRestrictions": [
+    "Antigua and Barbuda",
+    "Argentina",
+    "Bahamas",
+    "Barbados",
+    "Belize",
+    "Bolivia",
+    "Spain",
+    "France",
+    "Italy",
+    "Poland",
+    "Chile",
+    "Peru"
+   ],
+   "timezoneRestrictions": [],
+   "categories": [
+    "Brand-Designer",
+    "Visual-Designer"
+   ],
+   "parentCategories": [
+    "Design"
+   ],
+   "description": "<p>(full description omitted from the fixture)</p>",
+   "pubDate": 1793246098,
+   "expiryDate": 1798430096,
+   "applicationLink": "https://himalayas.app/companies/customer-io/jobs/senior-brand-designer?utm_source=api",
+   "guid": "https://himalayas.app/companies/customer-io/jobs/senior-brand-designer"
+  },
+  {
+   "title": "Fotógrafo en España",
+   "excerpt": "Somos un medio digital independiente que da voz a personas reales y convierte sus historias en ayuda para quienes más lo necesitan.",
+   "companyName": "ESCOMOES",
+   "companySlug": "escomoes",
+   "companyLogo": null,
+   "employmentType": "Part Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Mid-level",
+    "Entry-level",
+    "Senior"
+   ],
+   "currency": "USD",
+   "locationRestrictions": [],
+   "timezoneRestrictions": [],
+   "categories": [
+    "Photographer",
+    "Photography"
+   ],
+   "parentCategories": [
+    "Content Creator"
+   ],
+   "description": "<p>(full description omitted from the fixture)</p>",
+   "pubDate": 1792562414,
+   "expiryDate": 1795121428,
+   "applicationLink": "https://himalayas.app/companies/escomoes/jobs/fotografo-en-espana?utm_source=api",
+   "guid": "https://himalayas.app/companies/escomoes/jobs/fotografo-en-espana"
+  },
+  {
+   "title": "Senior UI & UX Designer",
+   "excerpt": "helps companies in the US and Europe hire experienced engineers & designers, from funded startups to teams like Klarna, Retool, and Pinterest.",
+   "companyName": "lemon.io",
+   "companySlug": "lemon-io",
+   "companyLogo": null,
+   "employmentType": "Contractor",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": "USD",
+   "locationRestrictions": [
+    "Albania",
+    "Andorra",
+    "Argentina",
+    "Australia",
+    "Austria",
+    "Belgium",
+    "Spain",
+    "France",
+    "Italy",
+    "Poland",
+    "Chile",
+    "Peru"
+   ],
+   "timezoneRestrictions": [],
+   "categories": [
+    "UI-UX-Designer",
+    "Senior-UI-Designer"
+   ],
+   "parentCategories": [
+    "Design"
+   ],
+   "description": "<p>(full description omitted from the fixture)</p>",
+   "pubDate": 1792675549,
+   "expiryDate": 1795259343,
+   "applicationLink": "https://himalayas.app/companies/lemon-io/jobs/senior-ui-ux-designer?utm_source=api",
+   "guid": "https://himalayas.app/companies/lemon-io/jobs/senior-ui-ux-designer"
+  },
+  {
+   "title": "Lead Visual Designer, Brand and Product",
+   "excerpt": "About StepStep's mission is to improve the financial future of the next generation.",
+   "companyName": "Step",
+   "companySlug": "step",
+   "companyLogo": null,
+   "employmentType": "Full Time",
+   "minSalary": null,
+   "maxSalary": null,
+   "salaryPeriod": "annual",
+   "seniority": [
+    "Senior"
+   ],
+   "currency": null,
+   "locationRestrictions": [
+    "United States"
+   ],
+   "timezoneRestrictions": [],
+   "categories": [
+    "Visual-Designer",
+    "Brand-Designer"
+   ],
+   "parentCategories": [
+    "Design"
+   ],
+   "description": "<p>(full description omitted from the fixture)</p>",
+   "pubDate": 1793188497,
+   "expiryDate": 1798372496,
+   "applicationLink": "https://himalayas.app/companies/step/jobs/lead-visual-designer-brand-and-product?utm_source=api",
+   "guid": "https://himalayas.app/companies/step/jobs/lead-visual-designer-brand-and-product"
+  }
+ ]
+}

@@ -69,6 +69,10 @@ export function sourceIdentity(canonicalUrl: string): SourceIdentity {
     const m = path.match(/^\/jobs\/([a-z0-9-]+)$/);
     return { provider: "arbeitnow", sourceId: m ? m[1] : null };
   }
+  if (host === "himalayas.app") {
+    const m = path.match(/^\/companies\/([a-z0-9-]+)\/jobs\/([a-z0-9-]+)\/?$/);
+    return { provider: "himalayas", sourceId: m ? `${m[1]}/${m[2]}` : null };
+  }
   return { provider: host, sourceId: null };
 }
 

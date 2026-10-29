@@ -27,6 +27,7 @@ export const SOURCE_DISPLAY_NAMES: Record<string, string> = {
   weworkremotely: "We Work Remotely",
   jobicy: "Jobicy",
   arbeitnow: "Arbeitnow",
+  himalayas: "Himalayas",
   "web-search": "Web search provider",
 };
 
@@ -42,6 +43,23 @@ export function sourceDisplayName(id: string | null): string | null {
 const FOLLOWED_LINK_BACK = new Set(["remoteok"]);
 export function sourceLinkRel(id: string | null | undefined): string {
   return id && FOLLOWED_LINK_BACK.has(id) ? "noopener noreferrer" : "noopener noreferrer nofollow";
+}
+
+/**
+ * The address of a source's own page as the source supplied it. Himalayas hands out its apply link with utm_source=api (its terms: every
+ * apply action uses that link); the stored canonical form drops tracking parameters, so the parameter is put back for Himalayas links.
+ */
+export function sourceLinkHref(id: string | null | undefined, url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  if (id !== "himalayas") return url;
+  try {
+    const u = new URL(url);
+    if (u.hostname !== "himalayas.app" || u.searchParams.has("utm_source")) return url;
+    u.searchParams.set("utm_source", "api");
+    return u.toString();
+  } catch {
+    return url;
+  }
 }
 
 export function relativeDays(iso: string | null, now: Date): string | null {
