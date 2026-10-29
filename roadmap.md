@@ -183,4 +183,4 @@
 - [x] CreatorSiteSettings basculé sur le module partagé
 - [x] SQL legacy préparé : docs/product/LEGACY_USERNAME_MIGRATION.sql (NON appliqué — pipeline legacy uniquement)
 - [x] Tests : 9 username + 16 auth passent ; build production OK
-- [ ] En attente utilisateur : LEGACY_SUPABASE_SERVICE_ROLE_KEY (projet actif kwmcocsitwssrtzkdojh, PAS le projet ThriveIN en pause) puis application de la migration SQL legacy
+- [x] LEGACY_SUPABASE_SERVICE_ROLE_KEY enregistrée ; fonction testée en direct : available/reserved/401 générique/429 rate-limit (5/min/username) ; 503 fail-closed sans clé
