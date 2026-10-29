@@ -351,13 +351,39 @@ export function ProfileEditDialog({
   const handleSave = async () => {
     if (!profile) return;
 
+    // Username: single source of truth, validated before anything is written.
+    // On failure the typed value stays in the field and the real error shows.
+    const nextUsername = normalizeUsername(formData.username);
+    const savedUsername = savedUsernameRef.current;
+    if (nextUsername && nextUsername !== savedUsername) {
+      const v = validateUsername(nextUsername);
+      if (v !== "ok") {
+        setUsernameStatus(v === "reserved" ? "reserved" : "invalid");
+        toast({ title: "Username not saved", description: usernameValidationMessage(v) || "Invalid username", variant: "destructive" });
+        return;
+      }
+      const availability = usernameStatus === "available"
+        ? "available"
+        : await checkUsernameAvailability(nextUsername);
+      setUsernameStatus(availability);
+      if (availability !== "available") {
+        const msg = availability === "taken" ? "That username is already taken"
+          : availability === "reserved" ? "That username is reserved"
+          : availability === "invalid" ? "3–30 chars: lowercase letters, numbers or _ (not at the start or end)"
+          : "Couldn't check this username — try again";
+        toast({ title: "Username not saved", description: msg, variant: "destructive" });
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const hourlyRate = formData.hourly_rate ? parseFloat(formData.hourly_rate) : null;
       const projectRate = formData.project_rate ? parseFloat(formData.project_rate) : null;
-      
+
       const updatePayload = {
         full_name: formData.full_name || null,
+        username: nextUsername || null,
         role: formData.role || null,
         sub_roles: formData.sub_roles && formData.sub_roles.length > 0 ? formData.sub_roles : [],
         location: formData.location || null,
