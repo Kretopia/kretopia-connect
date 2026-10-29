@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, Maximize, Minimize, Scan } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 
-export function EPKDocumentViewer({ source, onPages }: { source: string | Blob; onPages?: (count: number) => void }) {
+export function EPKDocumentViewer({ source, onPages, toolbarLeading }: { source: string | Blob; onPages?: (count: number) => void; toolbarLeading?: ReactNode }) {
   const container = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [document, setDocument] = useState<PDFDocumentProxy>();
