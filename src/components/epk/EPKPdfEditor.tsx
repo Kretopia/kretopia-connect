@@ -774,7 +774,7 @@ const EPKPreview = ({
         </div>
         <div className="mt-1 flex items-center gap-3">
           {profile.avatar_url && (
-            <img src={profile.avatar_url} alt="" className="h-12 w-12 rounded-md object-cover ring-2" style={{ ["--tw-ring-color" as string]: primary }} />
+            <img src={profile.avatar_url} alt="" className="h-12 w-12 rounded-md object-cover" />
           )}
           <div>
             <p className="text-lg font-bold text-[var(--epk-ink)] leading-tight">{profile.full_name || "Creator"}</p>
