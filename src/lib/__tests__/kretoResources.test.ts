@@ -30,7 +30,7 @@ describe('same Cloud control endpoint for UI and reservations', () => {
   it('takes the backend ceiling denial path separately', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: 'AI_BUDGET_EXHAUSTED' }), { status: 429 }));
     const onError = vi.fn();
-    await streamCopilot({ messages: [{ role: 'user', content: 'brief' }], surface: 'home', onError, onDelta: vi.fn(), onDone: vi.fn() });
+    await streamCopilot({ messages: [{ role: 'user', content: 'brief' }], surface: 'home', conversationId: 'conv', onError, onDelta: vi.fn(), onDone: vi.fn() });
     expect(onError).toHaveBeenCalledWith("This backend's AI ceiling is reached for today. Your draft is kept. Resets at midnight UTC.");
   });
   it('deletes a retained original through the authenticated endpoint', async () => {

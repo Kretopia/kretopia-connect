@@ -98,6 +98,17 @@ export async function streamCopilot({
     onError("Please sign in to chat with Kreto.");
     return;
   }
+  // Global/desk callers may omit a conversation; resolve the existing legacy
+  // primary thread without creating a second canonical history.
+  if (!conversationId) {
+    const { data: existing } = await supabase.from("ai_conversations").select("id").eq("user_id", session.user.id).eq("title", PRIMARY_THREAD_TITLE).maybeSingle();
+    if (existing?.id) conversationId = existing.id;
+    else {
+      const { data: created } = await supabase.from("ai_conversations").insert({ user_id: session.user.id, title: PRIMARY_THREAD_TITLE }).select("id").single();
+      conversationId = created?.id;
+    }
+    if (!conversationId) { onError("Could not open your conversation. Your draft is kept."); return; }
+  }
 
   let resp: Response;
   try {
@@ -299,7 +310,7 @@ export async function loadConversationMessages(conversationId: string): Promise<
     .order("created_at", { ascending: false })
     .limit(60);
   if (error || !data) return [];
-  const references = await kretoResource({ mode: "list", conversation_id: conversationId });
+  const references = await kretoResource({ mode: "list", conversation_id: conversationId }).catch(() => ({ attachments: [] }));
   return [...data].reverse().map((r: { id: string; role: string; content: string }) => ({
     id: r.id,
     role: r.role as "user" | "assistant",
