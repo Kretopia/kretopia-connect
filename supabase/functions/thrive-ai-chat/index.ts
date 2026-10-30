@@ -169,6 +169,140 @@ serve(async (req) => {
       }
     }
 
+    // Anonymous callers share one bucket so unauthenticated use still passes
+    // through the same gate and the same global envelope.
+    const gateUserId = resolvedUser?.id ?? ANON_USER_ID;
+    const jsonOk = (payload: unknown) =>
+      new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    // ---- Autocomplete: ghost-text completion for the composer ----
+    // Own tight allowance + the global envelope, never the chat allowance.
+    // Silent failure by design: any problem returns an empty suggestion.
+    if (mode === "autocomplete") {
+      const fragment = typeof prefix === "string" ? prefix.slice(-600) : "";
+      if (fragment.trim().length < 4) return jsonOk({ suggestion: "" });
+      const gate = await gateAiCall(admin, gateUserId, "kreto_autocomplete", 1);
+      if (!gate.allowed) return jsonOk({ suggestion: "" }); // silent — never an error UI
+      try {
+        const up = await fetchWithTimeout(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: GEMINI_FLASH_LITE,
+              max_tokens: 24,
+              messages: [
+                {
+                  role: "system",
+                  content:
+                    "Complete the message the user is typing to Kreto, their Executive Producer on Kretopia. " +
+                    "Return only the completion — no quotes, no restating what they typed, max 12 words. " +
+                    "If the fragment already reads as complete or is unclear, return an empty string.",
+                },
+                { role: "user", content: fragment },
+              ],
+            }),
+          },
+          5_000,
+        );
+        if (!up.ok) {
+          await releaseAiCredit(admin, gateUserId, "kreto_autocomplete", 1);
+          return jsonOk({ suggestion: "" });
+        }
+        const j = await up.json();
+        const suggestion = String(j?.choices?.[0]?.message?.content ?? "").trim().replace(/^["']|["']$/g, "");
+        await commitAiCredit(admin, gateUserId, "kreto_autocomplete", 1);
+        return jsonOk({ suggestion });
+      } catch (e) {
+        console.warn("autocomplete failed", e);
+        await releaseAiCredit(admin, gateUserId, "kreto_autocomplete", 1);
+        return jsonOk({ suggestion: "" });
+      }
+    }
+
+    // ---- Attachment parse: extract text server-side, never keep the file ----
+    // Charged at upload (attachment_parse), not at send. PDF text is pulled
+    // with pdf.js; images go through the vision model for a factual read;
+    // plain text is decoded directly. Output is capped so a huge PDF cannot
+    // blow up the next chat call's context.
+    if (mode === "parse_attachment") {
+      const name = typeof attachment?.name === "string" ? attachment.name.slice(0, 200) : "file";
+      const mime = typeof attachment?.mime === "string" ? attachment.mime : "";
+      const b64 = typeof attachment?.data_base64 === "string" ? attachment.data_base64 : "";
+      const allowed = mime === "application/pdf" || mime.startsWith("text/") || mime.startsWith("image/");
+      // base64 inflates by 4/3 — 10MB binary ≈ 14M base64 chars.
+      if (!allowed || !b64 || b64.length > 14_000_000) {
+        return new Response(JSON.stringify({ error: "Unsupported or oversized file (PDF, image or text, max 10MB)." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const gate = await gateAiCall(admin, gateUserId, "attachment_parse", 1);
+      if (!gate.allowed) return gate.response;
+      try {
+        let text = "";
+        if (mime.startsWith("text/")) {
+          text = new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)));
+        } else if (mime === "application/pdf") {
+          const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+          const pdfjs = await import("npm:pdfjs-dist@4.2.67/legacy/build/pdf.min.mjs");
+          const doc = await pdfjs.getDocument({
+            data: bytes,
+            useWorkerFetch: false,
+            isEvalSupported: false,
+            disableFontFace: true,
+          }).promise;
+          const pages = Math.min(doc.numPages, 40);
+          for (let i = 1; i <= pages; i++) {
+            const page = await doc.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map((it: { str?: string }) => it.str ?? "").join(" ") + "\n";
+            if (text.length > 30_000) break;
+          }
+        } else {
+          // image/* — factual read via the vision-capable model.
+          const up = await fetchWithTimeout(
+            "https://ai.gateway.lovable.dev/v1/chat/completions",
+            {
+              method: "POST",
+              headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                model: GEMINI_3_FLASH,
+                max_tokens: 512,
+                messages: [
+                  {
+                    role: "user",
+                    content: [
+                      { type: "text", text: "Extract all readable text from this image and describe what it shows, factually, in under 100 words." },
+                      { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+                    ],
+                  },
+                ],
+              }),
+            },
+            30_000,
+          );
+          if (!up.ok) throw new Error(`vision parse failed: ${up.status}`);
+          const j = await up.json();
+          text = String(j?.choices?.[0]?.message?.content ?? "");
+        }
+        text = text.replace(/\s+\n/g, "\n").trim().slice(0, 30_000);
+        if (!text) throw new Error("no text extracted");
+        await commitAiCredit(admin, gateUserId, "attachment_parse", 1);
+        return jsonOk({ name, text });
+      } catch (e) {
+        console.warn("attachment parse failed", e);
+        await releaseAiCredit(admin, gateUserId, "attachment_parse", 1);
+        return new Response(JSON.stringify({ error: `Could not read ${name}. Try another file.` }), {
+          status: 422,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (resolvedUser) {
       try {
         const user = resolvedUser;
