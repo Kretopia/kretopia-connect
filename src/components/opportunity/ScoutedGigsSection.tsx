@@ -33,6 +33,7 @@ import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoScene } from "@/components/brand/KretoScene";
+import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 
 const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   web: Globe, linkedin: Linkedin, instagram: Instagram, ats: Briefcase, gigboard: Briefcase,
@@ -303,82 +304,18 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
     setOpenGig(null);
   };
 
-  const renderGigCard = (g: ScoutedGig) => {
-    // CEO overhaul: Holo Card treatment (same 3D tilt/sheen wrapper as
-    // PassportHero/Passport Directory), around this card's existing
-    // content/logic unchanged -- it already had a real HD image, fit
-    // score and "why this fits you" reasoning, just no HoloCard wrapper.
-    return (
-      <HoloCard className="h-full" glow={false}>
-      <div
-        onClick={() => openDetail(g)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(g); } }}
-        aria-label={`View brief for ${g.title}`}
-        className="group relative h-full flex flex-col rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
-      >
-        <div className="relative aspect-[16/9] overflow-hidden shrink-0">
-          {g.image_url && !brokenImageIds.has(g.id) ? (
-            <img
-              src={g.image_url}
-              alt={g.title}
-              loading="lazy"
-              decoding="async"
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-              onError={() => markImageBroken(g.id)}
-            />
-          ) : (
-            <KretoScene scene="scout" size="thumb" className="h-full w-full" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-
-          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
-            <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/90 border-border">
-              <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
-              Scouted
-            </Badge>
-            <StateChip state={gigStates.get(g.id)} />
-          </div>
-
-          <div className="absolute bottom-0 inset-x-0 p-3">
-            <h3 className="font-bold text-base leading-tight line-clamp-2 text-foreground">{g.title}</h3>
-          </div>
-        </div>
-
-        <div className="p-3 flex flex-col gap-2 flex-1">
-          <PayChip compensation={g.compensation} className="self-start" />
-          {(g.company || g.location) && (
-            <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-              {g.company && <span className="font-medium text-foreground/90">{g.company}</span>}
-              {g.location && <><span>·</span><MapPin className="h-3 w-3" />{g.location}</>}
-              {g.remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
-            </div>
-          )}
-
-          <ScoutEvidence gig={g} compact />
-
-          <div className="mt-auto space-y-0.5 pt-1">
-            <SourceLine gig={g} />
-            <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
-              <Button asChild size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground">
-                <a href={g.source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${g.title}`} title="Open source">
-                  <ExternalLink className="h-4 w-4" />
-                </a>
-              </Button>
-              <Button size="icon" variant="ghost" className="h-11 w-11" onClick={(e) => save(g.id, e)} title={savedIds.has(g.id) ? "Saved" : "Save"} aria-label={savedIds.has(g.id) ? `${g.title} is saved` : `Save ${g.title}`}>
-                <Bookmark className={cn("h-4 w-4", savedIds.has(g.id) && "fill-current text-energy")} />
-              </Button>
-              <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground" onClick={(e) => { e.stopPropagation(); dismiss(g.id); }} title="Dismiss" aria-label={`Dismiss ${g.title}`}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-      </HoloCard>
-    );
-  };
+  const renderGigCard = (g: ScoutedGig) => (
+    <ScoutGigCard title={g.title} image={g.image_url} pay={g.compensation} onOpen={() => void openDetail(g)}
+      badges={<><Badge variant="outline" className="bg-background/90 text-[10px]"><Sparkles className="mr-1 h-3 w-3 text-energy" />Scouted</Badge><StateChip state={gigStates.get(g.id)} /></>}
+      footer={<><SourceLine gig={g} /><div className="flex justify-end">
+        <Button asChild size="icon" variant="ghost" className="h-11 w-11"><a href={g.source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${g.title}`} title="Open source"><ExternalLink className="h-4 w-4" /></a></Button>
+        <Button size="icon" variant="ghost" className="h-11 w-11" onClick={(e) => save(g.id, e)} title="Save" aria-label={savedIds.has(g.id) ? `${g.title} is saved` : `Save ${g.title}`}><Bookmark className={cn("h-4 w-4", savedIds.has(g.id) && "fill-current text-energy")} /></Button>
+        <Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => dismiss(g.id)} title="Dismiss" aria-label={`Dismiss ${g.title}`}><X className="h-4 w-4" /></Button>
+      </div></>}>
+      {(g.company || g.location) && <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{g.company}{g.location && <><MapPin className="h-3 w-3" />{g.location}</>}{g.remote && <Badge variant="outline">Remote</Badge>}</p>}
+      <ScoutEvidence gig={g} compact />
+    </ScoutGigCard>
+  );
 
   if (loading) {
     return (

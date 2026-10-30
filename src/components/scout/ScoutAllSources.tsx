@@ -5,6 +5,9 @@ import { Banknote, ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lu
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PILL_ITEM, PILL_ITEM_ACTIVE } from "@/components/discover/DiscoverSwitch";
+import { ScoutGigCard } from "./ScoutGigCard";
+import { ScoutFieldCarousel } from "./ScoutFieldCarousel";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ListingLabels } from "@/components/external/ListingLabels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,10 +52,10 @@ function Chips<T extends string>({ label, options, isOn, onPick }: { label: stri
       <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
       <div role="group" aria-label={label} className={CHIP_ROW}>
         {options.map((o) => (
-          <button key={o.id} type="button" aria-pressed={isOn(o.id)} onClick={() => onPick(o.id)} className={cn(CHIP, isOn(o.id) && "border-transparent bg-background text-foreground shadow-sm ring-1 ring-border")}>
+          <Button variant="ghost" key={o.id} type="button" aria-pressed={isOn(o.id)} onClick={() => onPick(o.id)} className={cn(CHIP, isOn(o.id) && "border-transparent bg-background text-foreground shadow-sm ring-1 ring-border")}>
             {o.label}
             {o.count != null && <span className="tabular-nums text-[10px] opacity-70">{o.count}</span>}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -66,10 +69,10 @@ function Pills<T extends string | number>({ label, options, isOn, onPick }: { la
       <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
       <div role="group" aria-label={label} className={RAIL}>
         {options.map((o) => (
-          <button key={String(o.id)} type="button" aria-pressed={isOn(o.id)} onClick={() => onPick(o.id)} className={cn(PILL_ITEM, isOn(o.id) && PILL_ITEM_ACTIVE)}>
+          <Button variant="ghost" key={String(o.id)} type="button" aria-pressed={isOn(o.id)} onClick={() => onPick(o.id)} className={cn(PILL_ITEM, isOn(o.id) && PILL_ITEM_ACTIVE)}>
             {o.label}
             {o.count != null && <span className="tabular-nums text-[10px] opacity-70">{o.count}</span>}
-          </button>
+          </Button>
         ))}
       </div>
     </div>
@@ -103,7 +106,7 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
   return (
     // content-visibility keeps a few hundred cards cheap: the ones off screen are not laid out until they are near.
     <li className="[contain-intrinsic-size:auto_168px] [content-visibility:auto]">
-      <article className="flex h-full flex-col gap-2 rounded-2xl border border-border bg-card p-4" data-testid="catalog-card">
+      <ScoutGigCard title={item.title} href={item.detailTo} pay={item.pay} testId="catalog-card" badges={<FamilyPill id={item.category} primary />}>
         <div className="flex flex-wrap items-center gap-1.5">
           <FamilyPill id={item.category} primary />
           {item.alsoIn.map((c) => (
@@ -112,9 +115,6 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
           {levelLabel && <span className={SMALL_PILL}>{levelLabel}</span>}
         </div>
 
-        <Link to={item.detailTo} className="text-sm font-semibold leading-snug text-foreground hover:underline">
-          {item.title}
-        </Link>
 
         <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
           {place && (
@@ -127,14 +127,6 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
-          {item.pay ? (
-            <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400" title={item.pay}>
-              <Banknote className="h-3 w-3 shrink-0" aria-hidden />
-              <span className="truncate">{item.pay}</span>
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">Pay not listed</span>
-          )}
           {posted && <span className="text-[11px] text-muted-foreground">{posted}</span>}
         </div>
 
@@ -176,7 +168,7 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
             </Button>
           )}
         </div>
-      </article>
+      </ScoutGigCard>
     </li>
   );
 }
@@ -276,13 +268,13 @@ export function ScoutAllSources() {
         />
       </div>
 
-      <Chips label="Field" options={families} isOn={(id) => f.category === id} onPick={(id) => set({ category: id })} />
+
 
       <Button
         type="button"
         variant="outline"
         size="sm"
-        className="min-h-11 gap-1.5 sm:hidden"
+        className="min-h-11 gap-1.5"
         aria-expanded={filtersOpen}
         aria-controls="scout-all-filters"
         onClick={() => setFiltersOpen((v) => !v)}
@@ -291,27 +283,33 @@ export function ScoutAllSources() {
         Filters{secondaryOn > 0 ? ` · ${secondaryOn}` : ""}
       </Button>
 
-      <div id="scout-all-filters" className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-3", !filtersOpen && "hidden sm:grid")}>
+      {filtersOpen && <Accordion type="single" collapsible id="scout-all-filters" className="border-y border-border">
+        <AccordionItem value="field"><AccordionTrigger>Creative field{f.category !== "all" ? ` · ${categoryOf(f.category).label}` : ""}</AccordionTrigger><AccordionContent><Chips label="Field" options={families} isOn={(id) => f.category === id} onPick={(id) => set({ category: id })} /></AccordionContent></AccordionItem>
+        <AccordionItem value="source"><AccordionTrigger>Sources{f.sources.length ? ` · ${f.sources.length}` : ""}</AccordionTrigger><AccordionContent>
         <div className="flex min-w-0 flex-col gap-1 lg:col-span-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Source</span>
           <div role="group" aria-label="Source" className={RAIL}>
-            <button type="button" aria-pressed={f.sources.length === 0} onClick={() => set({ sources: [] })} className={cn(PILL_ITEM, f.sources.length === 0 && PILL_ITEM_ACTIVE)}>
+            <Button variant="ghost" type="button" aria-pressed={f.sources.length === 0} onClick={() => set({ sources: [] })} className={cn(PILL_ITEM, f.sources.length === 0 && PILL_ITEM_ACTIVE)}>
               All
-            </button>
+            </Button>
             {sourceIds.map(([id, name]) => (
-              <button key={id} type="button" aria-pressed={f.sources.includes(id)} onClick={() => toggleSource(id)} className={cn(PILL_ITEM, f.sources.includes(id) && PILL_ITEM_ACTIVE)}>
+              <Button variant="ghost" key={id} type="button" aria-pressed={f.sources.includes(id)} onClick={() => toggleSource(id)} className={cn(PILL_ITEM, f.sources.includes(id) && PILL_ITEM_ACTIVE)}>
                 {name}
                 <span className="tabular-nums text-[10px] opacity-70">{fa.sources.get(id) ?? 0}</span>
-              </button>
+              </Button>
             ))}
           </div>
         </div>
+        </AccordionContent></AccordionItem>
+        <AccordionItem value="work"><AccordionTrigger>Work & experience</AccordionTrigger><AccordionContent className="space-y-3">
         {works.length > 2 && <Pills label="Work" options={works} isOn={(id) => f.workMode === id} onPick={(id) => set({ workMode: id })} />}
         {levels.length > 1 && (
           <div className="min-w-0 lg:col-span-2">
             <Pills label="Level" options={levels} isOn={(id) => f.level === id} onPick={(id) => set({ level: id })} />
           </div>
         )}
+        </AccordionContent></AccordionItem>
+        <AccordionItem value="details"><AccordionTrigger>Pay, language & freshness</AccordionTrigger><AccordionContent className="space-y-3">
         {dated && <Pills label="Posted" options={DAYS} isOn={(id) => f.days === id} onPick={(id) => set({ days: id })} />}
         {langs.length > 2 && <Pills label="Language" options={langs} isOn={(id) => f.language === id} onPick={(id) => set({ language: id })} />}
         {(fa.paid > 0 || f.payOnly) && (
@@ -325,7 +323,7 @@ export function ScoutAllSources() {
             onPick={(id) => set({ payOnly: id === "listed" })}
           />
         )}
-      </div>
+      </AccordionContent></AccordionItem></Accordion>}
 
       {active && (
         <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={() => setF(NO_FILTERS)}>
@@ -353,11 +351,11 @@ export function ScoutAllSources() {
                     {def.label}
                     <span className="text-xs font-medium tabular-nums text-muted-foreground">{g.items.length}</span>
                   </h3>
-                  <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  <ScoutFieldCarousel label={def.label}>
                     {list.map((it) => (
                       <OpportunityCard key={it.id} item={it} />
                     ))}
-                  </ul>
+                  </ScoutFieldCarousel>
                   {collapsible && (
                     <Button type="button" variant="ghost" size="sm" className="min-h-11 sm:min-h-0" aria-expanded={open} onClick={() => toggleOpen(g.id)}>
                       {open ? "Show fewer" : `Show all ${g.items.length}`}
