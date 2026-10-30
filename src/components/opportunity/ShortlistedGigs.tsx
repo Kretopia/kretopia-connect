@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,7 +10,6 @@ import { Bookmark, MapPin, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScoutEvidence } from "./ScoutEvidence";
-import { KretoScene } from "@/components/brand/KretoScene";
 import { useOptionalScoutScan } from "@/components/scout/scoutScanContext";
 import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 import { gigStatesById } from "@/components/scout/gigState";
@@ -42,7 +41,6 @@ export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const scan = useOptionalScoutScan();
   const gigStates = useMemo(() => gigStatesById(scan?.actions ?? []), [scan?.actions]);
   const queryKey = ["shortlisted-gigs", user?.id];

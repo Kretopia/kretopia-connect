@@ -88,6 +88,16 @@ beforeEach(() => watchSpy.mockClear());
 afterEach(() => vi.restoreAllMocks());
 
 describe("Scout page", () => {
+  it("opens All Sources by default", () => {
+    renderAt("/scout");
+    expect(screen.getByTestId("all-sources")).toBeInTheDocument();
+  });
+
+  it("preserves old Open Gigs links inside Shortlist", () => {
+    renderAt("/scout?tab=marketplace");
+    expect(screen.getByTestId("marketplace")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Gigs you saved for later/i })).toHaveAttribute("aria-selected", "true");
+  });
   it("uses the Studio header: tutorial slot, no tabs inside the header, a promise to filter and chat", () => {
     renderScout();
     const props = headerProps.at(-1)!;

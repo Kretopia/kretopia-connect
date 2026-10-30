@@ -70,7 +70,7 @@ function PayChip({ compensation, className }: { compensation: string | null; cla
 function SourceLine({ gig, className }: { gig: ScoutedGig; className?: string }) {
   const Icon = SOURCE_ICON[gig.source] || Globe;
   return (
-    <div className={cn("flex min-w-0 items-center gap-1.5 text-[10px] text-muted-foreground", className)}>
+    <div className={cn("flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground", className)}>
       <Icon className="h-3 w-3 shrink-0" />
       <span className="truncate">via {gig.source_name || gig.source}</span>
       <span>·</span>

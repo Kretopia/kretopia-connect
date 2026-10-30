@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Banknote, ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PILL_ITEM, PILL_ITEM_ACTIVE } from "@/components/discover/DiscoverSwitch";
@@ -109,7 +109,6 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
     <li className="[contain-intrinsic-size:auto_168px] [content-visibility:auto]">
       <ScoutGigCard title={item.title} image={item.image} href={item.detailTo} pay={item.pay} testId="catalog-card" badges={<FamilyPill id={item.category} primary />}>
         <div className="flex flex-wrap items-center gap-1.5">
-          <FamilyPill id={item.category} primary />
           {item.alsoIn.map((c) => (
             <FamilyPill key={c} id={c} />
           ))}
