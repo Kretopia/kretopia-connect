@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { checkAiFeatureRateLimit, gateAiCall, commitAiCredit, releaseAiCredit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 const corsHeaders = {
@@ -33,6 +33,59 @@ serve(async (req) => {
     if (!rateLimit.allowed) return rateLimit.response;
 
     const { opportunity_id, role_filter, skills_filter, brief_text, limit = 10 } = await req.json();
+
+    // Zero-cost reuse: one generation per user per day. If today's run already
+    // produced suggestions, serve those stored rows instead of calling a model
+    // again — a repeat view must cost nothing.
+    const todayStart = new Date();
+    todayStart.setUTCHours(0, 0, 0, 0);
+    const { data: todaysPicks } = await supabase
+      .from('talent_shortlist')
+      .select('talent_user_id, match_score, match_reasons')
+      .eq('company_user_id', user.id)
+      .eq('status', 'suggested')
+      .gte('created_at', todayStart.toISOString())
+      .order('match_score', { ascending: false })
+      .limit(limit);
+
+    if (todaysPicks && todaysPicks.length > 0) {
+      const ids = todaysPicks.map((p) => p.talent_user_id);
+      const { data: profs } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, role, avatar_url, location, level, xp, professional_skills')
+        .in('user_id', ids);
+      const byId = new Map((profs ?? []).map((p) => [p.user_id, p]));
+      const cached = todaysPicks
+        .map((p) => {
+          const c = byId.get(p.talent_user_id);
+          if (!c) return null;
+          return {
+            user_id: c.user_id,
+            full_name: c.full_name,
+            role: c.role,
+            avatar_url: c.avatar_url,
+            location: c.location,
+            level: c.level,
+            xp: c.xp,
+            professional_skills: c.professional_skills,
+            match_score: p.match_score,
+            match_reasons: p.match_reasons,
+            headline: Array.isArray(p.match_reasons) ? p.match_reasons[0] : null,
+          };
+        })
+        .filter(Boolean);
+      if (cached.length > 0) {
+        return new Response(
+          JSON.stringify({ suggestions: cached, cached: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Reserve before the model call: one generation per user per day, and the
+    // global envelope is checked first. Released if the call fails.
+    const gate = await gateAiCall(supabase, user.id, "match_generation", 1);
+    if (!gate.allowed) return gate.response;
 
     // Build context from opportunity or freeform brief
     let opportunityContext = '';
