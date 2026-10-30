@@ -203,7 +203,7 @@ describe("Scout page", () => {
   it("switches sections from the body", async () => {
     renderScout();
     fireEvent.click(screen.getByRole("tab", { name: /Gigs you saved for later/i }));
-    fireEvent.click(screen.getByRole("button", { name: "Open gigs", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Open gigs$/ }));
     expect(await screen.findByTestId("marketplace")).toBeInTheDocument();
   });
 });
