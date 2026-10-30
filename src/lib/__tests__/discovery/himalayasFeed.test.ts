@@ -194,12 +194,14 @@ describe("a bounded run over the Himalayas queries", () => {
     expect([...db.listings.values()].some((l) => String(l.title) === `Designer ${100 + 7 * 10 + 7}`)).toBe(true);
   });
 
-  it("still never imports more than the run's bound of distinct jobs", async () => {
+  it("takes every distinct job of its eight full pages (160), the cap of the other sources being 100", async () => {
     const body = (url: string) => JSON.stringify({ jobs: Array.from({ length: 20 }, (_, i) => job(feedUrls.indexOf(url) * 20 + i)) }); // 160 distinct
     const db = makeDiscoveryDb({ sources: [source] });
     const w = world(body);
     const res = await runDiscovery({ rpc: db.rpc, from: db.from, fetchBounded: w.fetchBounded, now: () => NOW, claimSecret: "s" });
-    expect(res.ran[0]).toMatchObject({ fetched: 160, imported: MAX_CANDIDATES_PER_RUN });
-    expect(db.listings.size).toBe(MAX_CANDIDATES_PER_RUN);
+    expect(res.ran[0]).toMatchObject({ fetched: 160, imported: 160 });
+    expect(res.ran[0].cut).toBeUndefined();
+    expect(db.listings.size).toBe(160);
+    expect(MAX_CANDIDATES_PER_RUN).toBe(100); // the default, still the bound of every source that has no cap of its own
   });
 });
