@@ -6,9 +6,22 @@ import {
   getOrCreateCopilotThread,
 } from "../_shared/copilotContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
-import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
+import { GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
+import {
+  gateAiCall,
+  commitAiCredit,
+  releaseAiCredit,
+  type AiCreditFeature,
+} from "../_shared/aiRateLimit.ts";
+
+// Anonymous callers share one bucket so unauthenticated chat still passes
+// through the same gate and the same global envelope.
+const ANON_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+/** Rough token estimate for a text blob (4 chars/token). */
+const estTokens = (s: string) => Math.ceil(s.length / 4);
 
 // Bounds time-to-first-byte on the gateway call, not total streaming
 // duration (the timer clears as soon as fetch() resolves, i.e. once headers
