@@ -918,6 +918,9 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
           }
         }
 
+        // Stream completed cleanly — commit the reservation with actual usage.
+        await settleSuccess(assistantBuffer);
+
         if (assistantBuffer.trim() && conversationId) {
           try {
             await admin.from("ai_messages").insert({
