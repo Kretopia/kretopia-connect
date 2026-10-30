@@ -43,6 +43,13 @@
       "when": 1793341187355,
       "tag": "0005_ai_reservation_first_insert_bounds",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793341269666,
+      "tag": "0006_protect_ai_credit_bookkeeping",
+      "breakpoints": true
     }
   ]
 }
