@@ -8,7 +8,8 @@ import { MatchPulse } from "@/components/swipe/MatchPulse";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
-import { StudioSectionTabs, type StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
+import { FeatureSectionNav } from "@/components/features/FeatureSectionNav";
+import type { StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 
 const TAB_IDS = ["discover", "browse", "interested", "connected"] as const;
 type MatchTabId = (typeof TAB_IDS)[number];
@@ -143,12 +144,11 @@ export default function Match() {
 
       <StudioFeatureShell wrapped={{ name: "Match" }}>
         <MatchPulse />
-        <StudioSectionTabs
-          tabs={matchTabs}
-          queryParam="tab"
-          activeId={activeTab}
-          onTabChange={(id) => setActiveTab(id as MatchTabId)}
-        />
+        <FeatureSectionNav items={matchTabs.map(t => ({ id: t.id, label: t.label, icon: t.icon || Sparkles }))} value={activeTab} label="Match sections" onChange={(id) => {
+          setActiveTab(id as MatchTabId);
+          const next = new URLSearchParams(searchParams); next.set("tab", id); setSearchParams(next, { replace: true });
+        }} />
+        <div role="tabpanel" aria-label={matchTabs.find(t => t.id === activeTab)?.label} className="mt-4 min-w-0">{matchTabs.find(t => t.id === activeTab)?.content}</div>
       </StudioFeatureShell>
     </div>
   );

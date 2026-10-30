@@ -23,7 +23,7 @@ export function ScoutGigCard({ title, image, href, onOpen, badges, children, foo
   const titleClass = "block text-left text-base font-bold leading-tight text-foreground line-clamp-2";
   return (
     <HoloCard className="h-full" glow={false} maxTilt={0}>
-      <article data-testid={testId} className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card">
+      <article data-testid={testId} className="group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card">
         <div className="relative aspect-[16/9] shrink-0 overflow-hidden">
           {image && !broken ? <img src={image} alt={title} loading="lazy" decoding="async" onError={() => setBroken(true)} className="h-full w-full object-cover" /> : <KretoScene scene="scout" size="thumb" className="h-full w-full" />}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
