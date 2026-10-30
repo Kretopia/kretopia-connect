@@ -366,3 +366,93 @@ export function extractActions(raw: string): {
   visible = visible.replace(/\n{3,}/g, "\n\n").trim();
   return { visible, actions, plans };
 }
+
+// ---------------------------------------------------------------------
+// Credit-gated side modes on thrive-ai-chat: autocomplete, attachment
+// parsing, and the quota overview. Each has its own allowance; all share
+// the global daily envelope.
+// ---------------------------------------------------------------------
+
+/**
+ * Ghost-text completion for the composer. Silent failure by design: any
+ * problem (network, gate, timeout) resolves to "" and never surfaces UI.
+ */
+export async function autocompleteKreto(prefix: string, signal?: AbortSignal): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return "";
+  try {
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ mode: "autocomplete", prefix }),
+      signal,
+    });
+    if (!resp.ok) return "";
+    const j = await resp.json().catch(() => ({}));
+    return typeof j?.suggestion === "string" ? j.suggestion : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Read a File as base64 (without the data: URL prefix). */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error(`Could not read ${file.name}.`));
+    reader.onload = () => {
+      const url = String(reader.result ?? "");
+      resolve(url.slice(url.indexOf(",") + 1));
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Extract text from a PDF, image or plain-text file, server-side. Charged
+ * (attachment_parse) at upload, not at send. Throws an Error with a
+ * user-facing message on failure — the caller keeps the chip and offers retry.
+ */
+export async function parseKretoAttachment(file: File, signal?: AbortSignal): Promise<ParsedAttachment> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("Sign in to attach files.");
+  if (file.size > 10 * 1024 * 1024) throw new Error(`${file.name} is over 10MB.`);
+  const data_base64 = await fileToBase64(file);
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      mode: "parse_attachment",
+      attachment: { name: file.name, mime: file.type || "application/octet-stream", data_base64 },
+    }),
+    signal,
+  });
+  const j = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(typeof j?.error === "string" ? j.error : `Could not read ${file.name}.`);
+  return { name: file.name, text: String(j.text ?? "") };
+}
+
+export interface AiCreditOverview {
+  envelope: {
+    day: string;
+    credits_used: number;
+    credits_cap: number;
+    credits_reserved: number;
+    denials_allowance: number;
+    denials_budget: number;
+  };
+  features: Array<{ feature: string; used: number; reserved: number; credits_used: number }>;
+  mine: Array<{ feature: string; used: number; cap: number; reserved: number }>;
+}
+
+/** Today's credit picture: global envelope, per-feature totals, and the
+ *  caller's own usage. Read-only RPC; null when signed out or unavailable. */
+export async function loadAiCreditOverview(): Promise<AiCreditOverview | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  const { data, error } = await supabase.rpc("get_ai_credit_overview" as never, { _user_id: user.id } as never);
+  if (error || !data) return null;
+  return data as unknown as AiCreditOverview;
+}
