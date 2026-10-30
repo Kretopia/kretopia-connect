@@ -164,7 +164,7 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
     expect(roles).toHaveLength(4);
     expect(roles.filter(role => role === "photographer")).toHaveLength(3);
     expect(roles.filter(role => role === "stylist")).toHaveLength(1);
-    const photoRail = screen.getByRole("region", { name: "Photo & Video creators" });
+    const photoRail = screen.getByRole("region", { name: "Photo & Video creators" }).filter;
     expect(within(photoRail).getByRole("button", { name: /Photo One/ })).toBeInTheDocument();
     expect(within(photoRail).queryByRole("button", { name: /Sam Stylist/ })).toBeNull();
   });
