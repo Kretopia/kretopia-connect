@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PostOpportunityDialog } from "@/components/PostOpportunityDialog";
 import { SavedOpportunitiesDialog } from "@/components/opportunity/SavedOpportunitiesDialog";
 import { ScoutGigDialog } from "@/components/opportunity/ScoutGigDialog";
+import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 import GigCard, { type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { computeOpportunityMatch, type ViewerProfileForMatch } from "@/lib/opportunityMatch";
 import { 
@@ -69,7 +70,7 @@ const SKILLS_OPTIONS = [
 
 // TYPE_CONFIG moved to shared GigCard component
 
-export const OpportunitiesFeed = ({ onOpenForYou }: { onOpenForYou?: () => void } = {}) => {
+export const OpportunitiesFeed = ({ onOpenForYou, scoutCards = false }: { onOpenForYou?: () => void; scoutCards?: boolean } = {}) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { pick: pickTone } = useAccountTone();
@@ -508,7 +509,10 @@ export const OpportunitiesFeed = ({ onOpenForYou }: { onOpenForYou?: () => void 
 
             return (
               <DiscoveryGate key={opp.id} totalItems={opportunities.length} freePreviewCount={4} index={index} itemLabel="gigs">
-                <GigCard opportunity={opp} creator={creator} matchScore={computeOpportunityMatch(opp, viewerProfile)} />
+                {scoutCards ? <ScoutGigCard title={opp.title} image={opp.image_url} pay={opp.compensation} href={`/opportunity/${opp.id}`} badges={<Badge variant="outline" className="bg-background/90 text-[10px]">Kretopia</Badge>} footer={<Button asChild size="sm" variant="outline"><Link to={`/opportunity/${opp.id}`}>View gig</Link></Button>}>
+                  <p className="text-xs text-muted-foreground">{creator?.full_name}{opp.location && ` · ${opp.location}`}</p>
+                  {opp.description && <p className="line-clamp-3 text-xs text-muted-foreground">{opp.description}</p>}
+                </ScoutGigCard> : <GigCard opportunity={opp} creator={creator} matchScore={computeOpportunityMatch(opp, viewerProfile)} />}
               </DiscoveryGate>
             );
           })}
