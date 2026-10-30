@@ -312,6 +312,35 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     setStreaming(false);
   };
 
+  // Ghost-text autocomplete: 250ms debounce, 2s hard timeout, cancelled on
+  // every keystroke, never under 4 characters, silent on any failure.
+  const onInputChange = (value: string) => {
+    setInput(value);
+    ghostAbortRef.current?.abort();
+    window.clearTimeout(ghostTimerRef.current);
+    setGhost("");
+    if (streaming || value.trim().length < 4) return;
+    ghostTimerRef.current = window.setTimeout(() => {
+      const ctrl = new AbortController();
+      ghostAbortRef.current = ctrl;
+      const hardTimeout = window.setTimeout(() => ctrl.abort(), 2000);
+      autocompleteKreto(value, ctrl.signal)
+        .then((suggestion) => {
+          window.clearTimeout(hardTimeout);
+          if (ctrl.signal.aborted || !suggestion) return;
+          setGhost(value.endsWith(" ") || suggestion.startsWith(" ") ? suggestion : ` ${suggestion}`);
+        })
+        .catch(() => {});
+    }, 250);
+  };
+
+  const acceptGhost = (): boolean => {
+    if (!ghost) return false;
+    setInput((v) => v + ghost);
+    setGhost("");
+    return true;
+  };
+
   return (
     // One fixed height from the first paint to the last token: the thread scrolls inside the
     // card, so streaming text can never push the page (or the cards below it) around. The
