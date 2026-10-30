@@ -217,6 +217,7 @@ Location: ${opp.location || 'Remote'}`;
     });
 
     if (!aiResponse.ok) {
+      await releaseAiCredit(supabase, user.id, "match_generation", 1);
       const status = aiResponse.status;
       if (status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Try again shortly." }), {
@@ -232,6 +233,7 @@ Location: ${opp.location || 'Remote'}`;
     }
 
     const aiData = await aiResponse.json();
+    await commitAiCredit(supabase, user.id, "match_generation", 1);
     let rankings: any[] = [];
 
     // Extract from tool call
