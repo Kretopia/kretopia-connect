@@ -379,44 +379,80 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         )}
       </div>
 
-      <form
-        onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
-        className="flex shrink-0 items-end gap-2 border-t border-white/10 bg-white/[0.02] p-3"
-      >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send(input).catch((err) => console.error(err));
-            }
-          }}
-          rows={1}
-          placeholder={`Ask ${BRAND.agentName} anything…`}
-          className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
-        />
-        {streaming ? (
-          <button
-            type="button"
-            onClick={stop}
-            className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center"
-            aria-label="Stop"
-          >
-            <Square className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
-            aria-label="Send"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
+      <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
+        <div className="flex items-center justify-between gap-2 px-3 pt-2">
+          <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
+          <KretoQuotaIndicator refreshKey={quotaRefresh} />
+        </div>
+
+        {lastError && (
+          <div className="flex items-center justify-between gap-2 px-3 pt-2">
+            <p className="text-xs text-white/50">That didn't go through — your draft is back in the composer.</p>
+            <button
+              type="button"
+              onClick={() => send(lastError.draft).catch((err) => console.error(err))}
+              className="btn-glass btn-glass-outline rounded-full px-3 py-1 text-xs font-semibold"
+            >
+              Retry
+            </button>
+          </div>
         )}
-      </form>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
+          className="flex items-end gap-2 p-3 pt-2"
+        >
+          <div className="relative flex-1">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === "Tab" || (e.key === "ArrowRight" && e.currentTarget.selectionStart === input.length)) && acceptGhost()) {
+                  e.preventDefault();
+                  return;
+                }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send(input).catch((err) => console.error(err));
+                }
+              }}
+              rows={1}
+              placeholder={`Ask ${BRAND.agentName} anything…`}
+              className="relative z-10 w-full resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
+            />
+            {ghost && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre py-2 text-sm"
+              >
+                <span className="invisible">{input}</span>
+                <span className="text-white/35">{ghost}</span>
+                <span className="ml-1 rounded border border-white/15 px-1 text-[9px] uppercase tracking-wider text-white/30">Tab</span>
+              </div>
+            )}
+          </div>
+          {streaming ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center"
+              aria-label="Stop"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
+              aria-label="Send"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          )}
+        </form>
+      </div>
     </div>
   );
 }
