@@ -1,18 +1,11 @@
 import { useMemo, useState } from "react";
 import {
   Copy, Check, Share2, Mail, MessageCircle, Globe, Lock, Linkedin, Twitter, Instagram, QrCode, ChevronDown,
-  UserRound, FileText, IdCard, Clapperboard, Newspaper, Receipt, Users, FileDown, CalendarRange, type LucideIcon,
+  Sparkles, UserRound, FileText, IdCard, Clapperboard, Newspaper, Receipt, Users, FileDown, CalendarRange, type LucideIcon,
 } from "lucide-react";
 import { KretopiaQRCode } from "@/components/brand/KretopiaQRCode";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import {
-  GlassModal,
-  GlassModalContent,
-  GlassModalHeader,
-  GlassModalTitle,
-  GlassModalDescription,
-  GlassModalTrigger,
-} from "@/components/ui/glass/GlassModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { getProfessionLayout, type ShareTarget } from "@/lib/passport/professionProfiles";
@@ -113,15 +106,18 @@ export const PassportShareSheet = ({
 
   return (
     <>
-    <GlassModal open={defaultOpen} onOpenChange={onOpenChange}>
-      {trigger && <GlassModalTrigger asChild>{trigger}</GlassModalTrigger>}
-      <GlassModalContent className="sm:max-w-md">
-        <GlassModalHeader>
-          <GlassModalTitle>Share your {layout.label}</GlassModalTitle>
-          <GlassModalDescription>{layout.tagline}</GlassModalDescription>
-        </GlassModalHeader>
+    <Dialog open={defaultOpen} onOpenChange={onOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" aria-hidden />
+            Share your {layout.label}
+          </DialogTitle>
+          <DialogDescription>{layout.tagline}</DialogDescription>
+        </DialogHeader>
 
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-0.5">
+        <div className="space-y-4 py-3">
           <section aria-labelledby="share-year" className="rounded-xl border border-border/60 bg-card p-3.5">
             <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
@@ -248,8 +244,8 @@ export const PassportShareSheet = ({
             );
           })}
         </div>
-      </GlassModalContent>
-    </GlassModal>
+      </DialogContent>
+    </Dialog>
     {retroOpen && <PassportRetrospectiveDialog open onOpenChange={setRetroOpen} userId={userId} name={profile.full_name ?? ""} />}
     </>
   );
