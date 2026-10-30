@@ -17,6 +17,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { INTENTS, normalizeIntents, type PrimaryIntent } from "@/lib/intents";
 import { HIRING_GOALS, intentColumnsFor, mergeGoalIntents } from "@/lib/companyHiringGoal";
+import { saveOnboardingProfile, ONBOARDING_PASSPORT_PATH } from "@/lib/onboardingProfile";
 
 const STEPS = [
   { id: 1, title: "Company Info", icon: Building2 },
@@ -123,7 +124,8 @@ export default function CompanyOnboarding() {
     // The chosen goal becomes the account's saved intent (the record Home, nudges and matching read); a missing,
     // "Other" or unknown choice leaves the saved intents exactly as they are.
     const intentColumns = intentColumnsFor(mergeGoalIntents(savedIntents, form.hiring_goal), savedIntents);
-    const { error } = await supabase.from("profiles").update({
+    try {
+    await saveOnboardingProfile(user.id, {
       company_name: form.company_name.trim(),
       company_industry: form.company_industry,
       company_size: form.company_size,
@@ -136,20 +138,16 @@ export default function CompanyOnboarding() {
       // column of profiles, so the whole update was rejected as an unknown column.
       onboarding_completed: true,
       ...(intentColumns ?? {}),
-    } as any).eq("user_id", user.id);
-
-    if (error) {
-      toast({ title: "Error saving profile", description: error.message, variant: "destructive" });
+    });
+    } catch (error) {
+      toast({ title: "Error saving profile", description: error instanceof Error ? error.message : "Please try again.", variant: "destructive" });
       setLoading(false);
       return;
     }
 
     if (intentColumns) setSavedIntents(intentColumns.primary_intents);
     toast({ title: "Welcome to Kretopia!", description: "Your company page is ready." });
-    // "/work" isn't a real route (App.tsx only defines "/desk" for
-    // WorkHome/BrandWorkHome) — every brand finishing onboarding was
-    // landing on CatchAllRedirect instead of their actual dashboard.
-    navigate("/desk");
+    navigate(ONBOARDING_PASSPORT_PATH, { replace: true });
     setLoading(false);
   };
 

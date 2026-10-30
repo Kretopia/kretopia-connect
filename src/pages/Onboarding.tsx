@@ -3,7 +3,9 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { HoloCard } from "@/components/passport/HoloCard";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
+import { saveOnboardingProfile, ONBOARDING_PASSPORT_PATH } from "@/lib/onboardingProfile";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +18,6 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Textarea } from "@/components/ui/textarea";
 import { SEO } from "@/components/SEO";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
-import { ProfileLaunchScreen } from "@/components/onboarding/ProfileLaunchScreen";
 import { FirstStampReveal } from "@/components/onboarding/FirstStampReveal";
 import { useAuth } from "@/hooks/useAuth";
 import { ROLE_OPTIONS } from "@/components/profile/ProfileEditDialog";
@@ -76,10 +77,6 @@ export default function Onboarding() {
   const [generatingBio, setGeneratingBio] = useState(false);
   const [showCropDialog, setShowCropDialog] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState("");
-
-  // Celebration
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [pendingConnectForCelebration, setPendingConnectForCelebration] = useState<string | null>(null);
 
   // Email verification
   const [emailToVerify, setEmailToVerify] = useState("");
@@ -142,7 +139,7 @@ export default function Onboarding() {
 
     persistedStepRef.current = profileData?.onboarding_step || 0;
 
-    if (profileData?.onboarding_completed) { navigate("/circle"); return; }
+    if (profileData?.onboarding_completed) { navigate(ONBOARDING_PASSPORT_PATH, { replace: true }); return; }
 
     // Extract OAuth identity (Google) for prefill
     const meta = (user.user_metadata || {}) as Record<string, any>;
@@ -550,7 +547,7 @@ export default function Onboarding() {
         d.setDate(d.getDate() - day + 1);
         return d.toISOString().slice(0, 10);
       })();
-      const { error: profileSaveError } = await supabase.from("profiles").update({
+      await saveOnboardingProfile(user.id, {
         full_name: fullName.trim(),
         role: effectiveRole,
         location: location || null,
@@ -564,9 +561,7 @@ export default function Onboarding() {
           intent_set_at: new Date().toISOString(),
           intent_week_start: weekStart,
         } : {}),
-      } as any).eq("user_id", user.id);
-
-      if (profileSaveError) throw profileSaveError;
+      });
       persistedStepRef.current = 6;
 
       toast({
@@ -581,6 +576,12 @@ export default function Onboarding() {
 
       // Profile is durably saved now — the draft's job is done.
       try { sessionStorage.removeItem(`onboarding_draft:${user.id}`); } catch (e) { console.error("Clear onboarding draft:", e); }
+
+      // Passport opens as soon as the owner row is confirmed. All remaining
+      // work is optional and must never hold the welcome screen open.
+      navigate(ONBOARDING_PASSPORT_PATH, { replace: true });
+
+      void (async () => {
 
       // Insert selected discovered credits
       const creditsToInsert = discoveredCredits
@@ -678,17 +679,7 @@ export default function Onboarding() {
 
       const { analytics } = await import("@/lib/analytics");
       analytics.onboardingComplete();
-
-      // Check email verification
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      const emailVerified = currentUser?.email_confirmed_at || currentUser?.confirmed_at;
-      if (!emailVerified) {
-        setPhase("verify");
-        toast({ title: "Almost there!", description: "Verify your email to complete setup." });
-      } else {
-        setPendingConnectForCelebration(pendingConnect || null);
-        setShowCelebration(true);
-      }
+      })().catch(error => console.warn("[Onboarding] Optional follow-up:", error));
     } catch (error) {
       console.error("Onboarding error:", error);
       setSaveStatus("error");
@@ -743,7 +734,7 @@ export default function Onboarding() {
         const { data: { user: currentUser } } = await supabase.auth.getUser();
         if (currentUser?.email_confirmed_at || currentUser?.confirmed_at) {
           toast({ title: "Email verified!", description: "Welcome to Kretopia!" });
-          navigate("/");
+          navigate(ONBOARDING_PASSPORT_PATH, { replace: true });
         }
       };
       checkVerification();
@@ -779,14 +770,16 @@ export default function Onboarding() {
   return (
     <>
       <SEO title="Welcome to Kretopia — Set Up Your Profile" description="Set up your creator profile on Kretopia in seconds with Smart discovery." />
-      <div className="min-h-screen bg-background relative overflow-hidden flex items-center justify-center p-4">
-        {/* Brand gradient accents */}
-        <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent pointer-events-none" />
-        <div className="absolute top-20 -left-32 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-        <div className="absolute top-40 -right-32 w-64 h-64 rounded-full bg-accent/5 blur-3xl pointer-events-none" />
-
-        <HoloCard className="w-full max-w-lg relative z-10">
-        <div className="relative overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-xl shadow-primary/5">
+      <div className="min-h-screen bg-background text-foreground">
+        <FeaturePageHeader
+          eyebrow="Welcome to Kretopia"
+          title="Your Creative"
+          accentTitle="Passport"
+          subtitle="Your identity. Your work. Your next connection."
+          compact
+        />
+        <StudioFeatureShell as="main" className="max-w-3xl" wrapped={{ name: "Passport", hideTitle: true }}>
+        <div className="relative min-w-0">
 
           {/* Unified funnel header */}
           {phase !== "verify" && (() => {
@@ -810,9 +803,9 @@ export default function Onboarding() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-primary">
                   Step 1 · Own your record
                 </p>
-                <h1 className="font-serif text-3xl leading-tight tracking-tight">
+                <h2 className="font-serif text-3xl leading-tight">
                   Let's find the work you've already done.
-                </h1>
+                </h2>
                 <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                   Drop your name (and a portfolio link if you have one) — Kreto will search the web for work you may have done. Anything you pick is added to your {BRAND.passport} as pending {BRAND.stamps.toLowerCase()}, not verified until it is confirmed. Then we'll get you matched and earning.
                 </p>
@@ -1064,7 +1057,7 @@ export default function Onboarding() {
                       <button
                         type="button"
                         onClick={() => document.getElementById("avatar-upload")?.click()}
-                        className="text-xs text-white hover:text-primary font-medium inline-flex items-center gap-1.5 transition-colors text-left"
+                        className="text-xs text-foreground hover:text-primary font-medium inline-flex items-center gap-1.5 transition-colors text-left"
                       >
                         <Sparkles className="h-3 w-3 shrink-0" />
                         <span>Add a photo — profiles with photos get 3× more matches</span>
@@ -1079,7 +1072,7 @@ export default function Onboarding() {
                   {showCustomRole || (!isRoleInOptions && role) ? (
                     <div className="space-y-1.5">
                       <Input id="review-role-trigger" value={role} onChange={e => setRole(e.target.value)} placeholder="e.g. Music Producer" className="h-10" />
-                      <button type="button" className="text-xs text-white hover:text-primary hover:underline transition-colors" onClick={() => { setShowCustomRole(false); setRole(""); }}>
+                      <button type="button" className="text-xs text-foreground hover:text-primary hover:underline transition-colors" onClick={() => { setShowCustomRole(false); setRole(""); }}>
                         Choose from list
                       </button>
                     </div>
@@ -1147,7 +1140,7 @@ export default function Onboarding() {
                           setGeneratingBio(false);
                         }
                       }}
-                      className="text-xs font-medium inline-flex items-center gap-1 text-white hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="text-xs font-medium inline-flex items-center gap-1 text-foreground hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       {generatingBio ? <KretopiaSpinner className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
                       {bio ? "Rewrite for me" : "Suggest a bio"}
@@ -1229,7 +1222,7 @@ export default function Onboarding() {
                 </p>
 
                 {/* Back */}
-                <button onClick={() => setPhase("discover")} className="block w-full text-center text-xs text-white/60 hover:text-primary transition-colors py-1">
+                <button onClick={() => setPhase("discover")} className="block w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors py-1">
                   ← Back to search
                 </button>
               </div>
@@ -1260,10 +1253,7 @@ export default function Onboarding() {
                 </Button>
                 <Button 
                   variant="ghost" 
-                  onClick={() => {
-                    setPendingConnectForCelebration(null);
-                    setShowCelebration(true);
-                  }}
+                  onClick={() => navigate(ONBOARDING_PASSPORT_PATH, { replace: true })}
                   className="text-muted-foreground"
                 >
                   Skip for now — I'll verify later
@@ -1275,21 +1265,7 @@ export default function Onboarding() {
 
           <ImageCropDialog imageUrl={tempImageUrl} open={showCropDialog} onClose={() => { setShowCropDialog(false); setTempImageUrl(""); }} onCropComplete={uploadAvatar} loading={uploadingAvatar} />
         </div>
-        </HoloCard>
-
-        <ProfileLaunchScreen
-          open={showCelebration}
-          onOpenChange={setShowCelebration}
-          userId={userId}
-          fullName={fullName}
-          role={role}
-          avatarUrl={avatarUrl}
-          topCredit={
-            discoveredCredits.find((_, i) => selectedCredits.has(i))?.project_name || null
-          }
-          creditsCount={selectedCredits.size}
-          pendingConnect={pendingConnectForCelebration}
-        />
+        </StudioFeatureShell>
 
         {/* First-Stamp reveal — between Discover and Review when Kreto finds work */}
         <FirstStampReveal
