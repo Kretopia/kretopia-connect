@@ -700,12 +700,21 @@ serve(async (req) => {
       .update({ last_run_at: new Date().toISOString() })
       .eq("user_id", userId);
 
+    if (scanReserved && userId) {
+      scanReserved = false;
+      await commitAiCredit(supabase, userId, "scout_scan", 1);
+    }
+
     return json({
       ok: true, found, filtered, inserted, queries: queryCount,
       sources: sourcesUsed, degraded,
     });
   } catch (e) {
     console.error("[scout] error", e);
+    if (scanReserved && userId) {
+      scanReserved = false;
+      await releaseAiCredit(supabase, userId, "scout_scan", 1);
+    }
     if (userId) {
       await supabase.from("scout_runs").insert({
         user_id: userId, trigger, error: String(e),
