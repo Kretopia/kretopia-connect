@@ -47,7 +47,7 @@ async function launch() {
   render(<MemoryRouter><Onboarding /></MemoryRouter>);
   await screen.findByDisplayValue("Creator Test");
   fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Launch my Passport" }));
+  fireEvent.click(await screen.findByRole("button", { name: /Launch my .*Passport/ }));
 }
 
 describe("creator onboarding completion", () => {
