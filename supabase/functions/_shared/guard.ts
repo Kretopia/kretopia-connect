@@ -1,5 +1,7 @@
 /** Shared edge perimeter. No SDK runtime import: callers supply their admin client. */
-import type { ZodType } from 'npm:zod@4';
+interface JsonSchema<T> {
+  safeParse(value: unknown): { success: true; data: T } | { success: false; error: { issues: { path: PropertyKey[]; message: string }[] } };
+}
 
 declare const Deno: { env: { get(name: string): string | undefined } };
 
@@ -63,7 +65,7 @@ export async function requireServiceRole(req: Request): Promise<void> {
   }
 }
 
-export async function readJson<T>(req: Request, schema: ZodType<T>, maxBytes = 64_000): Promise<T> {
+export async function readJson<T>(req: Request, schema: JsonSchema<T>, maxBytes = 64_000): Promise<T> {
   const declared = req.headers.get('Content-Length');
   if (declared && Number(declared) > maxBytes) throw new GuardError(413, { error: 'Request too large' });
   const reader = req.body?.getReader();

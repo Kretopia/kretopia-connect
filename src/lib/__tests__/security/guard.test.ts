@@ -1,9 +1,10 @@
-// @vitest-environment node
-import { describe, it, expect, vi } from 'vitest';
+import { webcrypto } from 'node:crypto';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import { corsFor, constantTimeEqual, requireServiceRole, requireUser, readJson, rateLimit, safeError, GuardError } from '../../../../supabase/functions/_shared/guard';
 
 describe('edge guard', () => {
+  beforeEach(() => { vi.stubGlobal('crypto', webcrypto); });
   it.each(['https://www.kretopia.com', 'https://kretopia.com', 'https://id-preview.lovable.app', 'https://draft.lovableproject.com'])('allows %s', origin => {
     expect(corsFor(new Request('https://edge.test', { headers: { Origin: origin } }))['Access-Control-Allow-Origin']).toBe(origin);
   });
