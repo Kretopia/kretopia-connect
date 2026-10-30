@@ -58,18 +58,23 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader?.match(/^Bearer\s+(\S+)$/i)?.[1];
+    const unauthorized = () => new Response(JSON.stringify({
+      error: "Please sign in again to check your subscription.",
+      code: "AUTH_SESSION_INVALID",
+    }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 });
+    if (!token) return unauthorized();
+
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    const user = userData.user;
+    // A deleted user or a token from another backend is not a server failure.
+    // Keep the server lookup: verified claims alone do not prove the user still exists.
+    if (userError || !user?.email) return unauthorized();
+    logStep("User authenticated", { userId: user.id });
+
     const stripeKey = resolveStripeSecretKey();
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Fetch existing profile
     const { data: profileData } = await supabaseClient

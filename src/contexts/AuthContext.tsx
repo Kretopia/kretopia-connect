@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { processPendingPost } from "@/lib/pendingPost";
 import { User, Session } from "@supabase/supabase-js";
 import { attachPendingCreditClaim } from "@/lib/pendingCreditClaim";
+import { validatedSubscriptionToken } from "@/lib/subscriptionSession";
 
 interface SubscriptionInfo {
   tier: string;
@@ -84,12 +85,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const shouldSyncStripe = forceSync || (now - lastSyncRef.current) > CACHE_DURATION;
       if (shouldSyncStripe) {
         lastSyncRef.current = now;
-        // Only sync with a live session token; without one the function
-        // receives the public key and rejects with "Auth session missing".
+        // Validate against this backend before calling the subscription function;
+        // a cached token can belong to a deleted user or a different backend.
         void (async () => {
           try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
+            const token = await validatedSubscriptionToken(supabase, userId);
             if (!token) return;
             const { error } = await supabase.functions.invoke('check-subscription', {
               headers: { Authorization: `Bearer ${token}` },
