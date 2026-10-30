@@ -653,18 +653,81 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       return streamTextResponse(affirmedReplay, conversationId);
     }
 
+    // Ground the reply on already-parsed attachment text (max 3, capped) —
+    // the raw file never reaches the model, only the extracted text.
+    const safeAttachments = (Array.isArray(attachments) ? attachments : [])
+      .filter((a) => a && typeof a.text === "string" && a.text.trim())
+      .slice(0, 3)
+      .map((a) => ({ name: String(a.name ?? "file").slice(0, 200), text: String(a.text).slice(0, 10_000) }));
+    const attachmentBlock = safeAttachments.length
+      ? "\n\n" + safeAttachments.map((a) => `[Attachment: ${a.name}]\n${a.text}`).join("\n\n")
+      : "";
+
     // Final messages array sent to the model
     const modelMessages = [
       { role: "system", content: systemPrompt },
       // Prior persisted history (when we have a thread)
       ...priorMessages,
       // Anything the client added on top of history (typically just the latest user message)
-      ...messages.filter((m) => {
-        // De-dupe: if the latest user msg is already the tail of priorMessages, skip it.
-        const tail = priorMessages[priorMessages.length - 1];
-        return !(tail && tail.role === m.role && tail.content.trim() === m.content.trim());
-      }),
+      ...messages
+        .filter((m) => {
+          // De-dupe: if the latest user msg is already the tail of priorMessages, skip it.
+          const tail = priorMessages[priorMessages.length - 1];
+          return !(tail && tail.role === m.role && tail.content.trim() === m.content.trim());
+        })
+        .map((m, i, arr) =>
+          attachmentBlock && i === arr.length - 1 && m.role === "user"
+            ? { ...m, content: m.content + attachmentBlock }
+            : m,
+        ),
     ];
+
+    // ---- Credit gate: reserve BEFORE the model call ----
+    // Envelope first, then personal allowance. Committed on success,
+    // released on failure or abort — never left outstanding.
+    const latestUserText = (latestUser?.content ?? "") + attachmentBlock;
+    const docIntent =
+      safeAttachments.length > 0 ||
+      /deck|proposal|treatment|one[- ]?pager|rate card|moodboard|document|pdf|brief|contract/i.test(latestUserText);
+    const isShortAsk = latestUserText.length < 200 && !docIntent;
+    // Route by intent: fast small model for short asks, stronger model only
+    // for long or document requests. Output tokens capped per mode.
+    const model = isShortAsk ? GEMINI_3_FLASH : GEMINI_3_8_FLASH;
+    const maxOutputTokens = isShortAsk ? 400 : 800;
+
+    const msgGate = await gateAiCall(admin, gateUserId, "kreto_message", 1);
+    if (!msgGate.allowed) return msgGate.response;
+    const tokenEst =
+      estTokens(systemPrompt) +
+      priorMessages.reduce((t, m) => t + estTokens(m.content), 0) +
+      modelMessages.reduce((t, m) => t + estTokens(m.content), 0) +
+      maxOutputTokens;
+    const tokGate = await gateAiCall(admin, gateUserId, "kreto_tokens", tokenEst, 0);
+    if (!tokGate.allowed) {
+      await releaseAiCredit(admin, gateUserId, "kreto_message", 1);
+      return tokGate.response;
+    }
+
+    // Exactly one of these runs per reservation. Success commits the actual
+    // token usage (releasing the over-reserved difference); failure or abort
+    // releases everything.
+    let settled = false;
+    const settleSuccess = async (assistantText: string) => {
+      if (settled) return;
+      settled = true;
+      const actualTokens = tokenEst - maxOutputTokens + estTokens(assistantText);
+      await commitAiCredit(admin, gateUserId, "kreto_message", 1);
+      await commitAiCredit(admin, gateUserId, "kreto_tokens", Math.min(actualTokens, tokenEst), 0);
+      if (actualTokens < tokenEst) {
+        await releaseAiCredit(admin, gateUserId, "kreto_tokens", tokenEst - actualTokens, 0);
+      }
+    };
+    const settleFailure = async () => {
+      if (settled) return;
+      settled = true;
+      await releaseAiCredit(admin, gateUserId, "kreto_message", 1);
+      await releaseAiCredit(admin, gateUserId, "kreto_tokens", tokenEst, 0);
+    };
 
     let upstream: Response;
     try {
