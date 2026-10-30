@@ -159,4 +159,17 @@ describe("InlineKretoChat", () => {
     await waitFor(() => expect(screen.getByText("answer")).toBeInTheDocument());
     expect(screen.queryByText("pick a starter")).toBeNull();
   });
+
+  it("a failed call keeps the draft in the composer and offers a retry", async () => {
+    mocks.stream.mockImplementation(async ({ onError }: StreamArgs) => onError("Daily limit reached (30/30)."));
+    render(<Harness />);
+    send("my important draft");
+    await waitFor(() => expect(screen.getByText("Daily limit reached (30/30).")).toBeInTheDocument());
+    // The draft is restored, not cleared.
+    expect(screen.getByRole("textbox")).toHaveValue("my important draft");
+    // Retry resends the same draft.
+    mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("second attempt works"));
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.getByText("second attempt works")).toBeInTheDocument());
+  });
 });
