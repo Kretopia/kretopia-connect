@@ -1,5 +1,10 @@
 # Roadmap
 
+## Scout sources overhaul
+- [ ] Make All Sources first; merge Open Gigs into Shortlist while preserving saved/open flows and old links.
+- [ ] Progressively disclose filters; render one horizontal carousel per field using For You card presentation.
+- [ ] Run focused tests and verify live desktop/mobile Scout; no publication or backend changes.
+
 ## Community legal page
 - [x] Replace the mistakenly supplied privacy content with all eight sections and 36 content blocks of Kretopia_Community_Guidelines_2026_v6.html; preserve the shared Terms/Privacy layout, Community links and existing URL.
 - [x] 16 legal/footer tests pass; browser verifies Privacy → Community, corrected heading, eight sections, no old privacy text and reporting anchor; automatic compilation OK. No publication or backend changes.
