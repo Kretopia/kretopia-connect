@@ -10,18 +10,18 @@ const setup = (strength = 72) => {
 };
 
 describe("PassportSmartActions", () => {
-  it("puts Strength, Edit, Share, QR and the press kit on one line", () => {
+  it("merges Strength and Edit into one tile, then Share, QR and the press kit on one line", () => {
     setup();
     const list = screen.getByRole("list", { name: "Passport actions" });
     const items = within(list).getAllByRole("listitem");
-    expect(items).toHaveLength(5);
-    // one row: a five-column grid, no wrapping container
-    expect(list.className).toContain("grid-cols-5");
+    expect(items).toHaveLength(4);
+    // one row: a four-column grid, no wrapping container
+    expect(list.className).toContain("grid-cols-4");
   });
 
   it("keeps the accessible names the three actions always had", () => {
     setup();
-    expect(screen.getByRole("button", { name: "Edit Profile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Edit Profile/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Share Passport" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show QR code" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download press kit PDF" })).toBeInTheDocument();
@@ -42,7 +42,7 @@ describe("PassportSmartActions", () => {
 
   it("each action calls its own handler once", () => {
     const h = setup();
-    fireEvent.click(screen.getByRole("button", { name: "Edit Profile" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Edit Profile/ }));
     fireEvent.click(screen.getByRole("button", { name: "Share Passport" }));
     fireEvent.click(screen.getByRole("button", { name: "Show QR code" }));
     fireEvent.click(screen.getByRole("button", { name: "Download press kit PDF" }));
@@ -57,7 +57,7 @@ describe("PassportSmartActions", () => {
     for (const b of screen.getAllByRole("button")) expect(b.className).toContain("min-h-[64px]");
     const ring = screen.getByRole("button", { name: /Passport Strength/ });
     expect(ring.querySelector('img[src*="kretopia-k-mark"]')).toBeInTheDocument();
-    // the strength tile is a number, not a meter: no ring/loader circle drawn over the K
-    expect(ring.querySelector("svg")).toBeNull();
+    // no ring/loader drawn over the K: the only icon is the small edit badge
+    expect(ring.querySelectorAll("svg")).toHaveLength(1);
   });
 });
