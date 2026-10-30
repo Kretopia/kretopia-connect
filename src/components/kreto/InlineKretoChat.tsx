@@ -161,6 +161,19 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     const text = raw.trim();
     if (!text || streaming) return;
 
+    // A new send aborts any in-flight request and any pending autocomplete.
+    abortRef.current?.abort();
+    ghostAbortRef.current?.abort();
+    window.clearTimeout(ghostTimerRef.current);
+    setGhost("");
+    setLastError(null);
+
+    // Only fully parsed attachments travel with the message — a failed one
+    // keeps its chip (with retry) and never blocks sending the text.
+    const readyAttachments = attachments
+      .filter((a) => a.status === "ready" && a.text)
+      .map((a) => ({ name: a.name, text: a.text! }));
+
     setInput("");
     followRef.current = true;
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
