@@ -1,5 +1,16 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Security lockdown (October 30)
+- [ ] 1. Shared request guard implemented; 18 behavioral tests pass; managed build OK. Completion gate blocked by pre-existing VoiceFirstCreateModal tutorial assertion (line 209), which requires an out-of-scope UI or test-expectation change. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
+- [ ] 2. Edge perimeter: origins, authentication, validation, isolation, errors. Blocked by the mandatory Step 1 full-suite gate.
+- [ ] 3. SSRF bounded fetching. Blocked by step order.
+- [ ] 4. Exposed endpoint removal and authentication hardening. Blocked by step order.
+- [ ] 5. CSP, safe links, HTML sanitation, QR print safety. Blocked by step order.
+- [ ] 6. Patched dependencies and audit. Blocked by step order.
+- [ ] 7. Read-only policy audit and unapplied SQL migrations. Blocked by step order.
+- [ ] 8. Security regression suite and final verification. Blocked by step order.
+SQL must stay files only; no publication or legacy deployment. Full tests run per step; build/typecheck are managed by the preview harness.
+
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
 - [x] Guard optional username linking with live account validation, retain server 401 protection, and allow retry after failed linking. 19 tests pass; authenticated end-to-end check still awaits an available session, no publication.
