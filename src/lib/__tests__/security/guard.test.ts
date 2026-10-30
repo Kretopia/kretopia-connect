@@ -22,6 +22,9 @@ describe('edge guard', () => {
   it('rejects an anon key without a verified user', async () => {
     await expect(requireUser(new Request('https://edge.test', { headers: { Authorization: 'Bearer anon' } }), { auth: { getUser: async () => ({ data: { user: null }, error: null }) } })).rejects.toMatchObject({ status: 401 });
   });
+  it('rejects authentication transport failures with 401', async () => {
+    await expect(requireUser(new Request('https://edge.test', { headers: { Authorization: 'Bearer token' } }), { auth: { getUser: async () => { throw new Error('private auth details'); } } })).rejects.toMatchObject({ status: 401 });
+  });
   it('enforces 64000 bytes even without Content-Length', async () => {
     await expect(readJson(new Request('https://edge.test', { method: 'POST', body: JSON.stringify({ text: 'x'.repeat(64000) }) }), z.object({ text: z.string() }))).rejects.toMatchObject({ status: 413 });
   });
@@ -35,6 +38,12 @@ describe('edge guard', () => {
     try { await rateLimit({ rpc }, 'owner', 'chat', 20); throw new Error('should deny'); }
     catch (error) { expect(error).toBeInstanceOf(GuardError); const response = safeError(error); expect(response.status).toBe(429); expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0); }
     expect(rpc).toHaveBeenCalledWith('consume_ai_feature_call', expect.objectContaining({ _daily_cap: 20 }));
+  });
+  it('fails closed when the limiter is unavailable', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try { await rateLimit({ rpc: async () => ({ data: null, error: new Error('private SQL') }) }, 'owner', 'chat', 20); throw new Error('must deny'); }
+    catch (error) { expect(safeError(error).status).toBe(500); }
+    log.mockRestore();
   });
   it('hides provider, SQL and stack details', async () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});

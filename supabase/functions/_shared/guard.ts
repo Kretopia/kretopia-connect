@@ -43,9 +43,11 @@ interface RateAdmin {
 export async function requireUser(req: Request, admin: AuthAdmin) {
   const match = req.headers.get('Authorization')?.match(/^Bearer ([^\s]+)$/);
   if (!match) throw new GuardError(401, { error: 'Unauthorized' });
-  const { data, error } = await admin.auth.getUser(match[1]);
-  if (error || !data?.user?.id) throw new GuardError(401, { error: 'Unauthorized' });
-  return data.user;
+  try {
+    const { data, error } = await admin.auth.getUser(match[1]);
+    if (error || !data?.user?.id) throw new GuardError(401, { error: 'Unauthorized' });
+    return data.user;
+  } catch { throw new GuardError(401, { error: 'Unauthorized' }); }
 }
 
 /** Hash to equal-length buffers before comparison; no early exit on a byte mismatch. */
@@ -87,7 +89,7 @@ export async function readJson<T>(req: Request, schema: JsonSchema<T>, maxBytes 
   try { body = JSON.parse(new TextDecoder().decode(bytes)); }
   catch { throw new GuardError(400, { error: 'Invalid JSON' }); }
   const parsed = schema.safeParse(body);
-  if (!parsed.success) {
+  if (parsed.success === false) {
     const fields: Record<string, string[]> = {};
     for (const issue of parsed.error.issues) {
       const field = issue.path.map(String).join('.') || '_root';
@@ -98,7 +100,10 @@ export async function readJson<T>(req: Request, schema: JsonSchema<T>, maxBytes 
   return parsed.data;
 }
 
-/** Reuses the existing atomic usage ledger with a UTC minute-keyed bucket. */
+/** Reuses the existing usage ledger with a UTC minute-keyed bucket.
+ * Its deployed SQL must be concurrency-audited before relying on strict limits:
+ * the historical repository definition performs a separate read then upsert.
+ */
 export async function rateLimit(admin: RateAdmin, identity: string, key: string, perMinute: number): Promise<void> {
   if (!identity || !key || !Number.isInteger(perMinute) || perMinute < 1) throw new Error('Invalid limiter configuration');
   const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(identity)));
