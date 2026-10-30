@@ -740,17 +740,19 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // Use the pro-preview model everywhere — flash drops <action>/<plan> tags
-            // under load, which surfaces as Thrive saying "I'll do X" with no card
-            // appearing. Pro-preview reliably follows the tag protocol.
-            model: GEMINI_3_8_FLASH,
+            // Routed above: flash for short asks, the stronger model for long
+            // or document requests (it follows the <action>/<plan> tag protocol
+            // more reliably). Output capped per mode.
+            model,
             messages: modelMessages,
             stream: stream,
+            max_tokens: maxOutputTokens,
           }),
         },
         GATEWAY_CONNECT_TIMEOUT_MS,
       );
     } catch (e) {
+      await settleFailure();
       if (e instanceof DOMException && e.name === "AbortError") {
         return new Response(
           JSON.stringify({ error: "AI response timed out. Please try again." }),
@@ -761,6 +763,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
     }
 
     if (!upstream.ok) {
+      await settleFailure();
       if (upstream.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
