@@ -2,9 +2,10 @@
 
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
-- [ ] Explain measured daily ceiling versus request average; no legacy automation changes.
-- [ ] Align Cloud quota reads and enforcement; document exact denial path; authenticated verification remains a release prerequisite.
-- [ ] Persist extracted text and original reference linked to message; TTL, open and delete paths; tests.
+- [x] Explain measured daily ceiling versus request average; no legacy automation changes.
+- [x] Align Cloud quota reads and enforcement; document exact denial path.
+- [x] Persist extracted text and original reference linked to message; TTL, open and delete paths; tests.
+- [ ] Real connected-account test: quota denials and upload → send → reopen → open → delete. Blocked by unavailable legacy test session; required before reliance/publication.
 
 - [x] P1: ai_credit_ledger / ai_credit_envelope / ai_credit_config + try_reserve/commit/release/get_ai_credit_overview RPCs; gate in _shared/aiRateLimit.ts
 - [x] P2: thrive-ai-chat reserve/commit/release, model routing, max_tokens; InlineKretoChat draft preservation + retry
