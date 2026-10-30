@@ -19,7 +19,7 @@ export function getAuthOrigin(): string {
   return isLocalHost(hostname) ? origin : APP_URL;
 }
 
-/** After confirming their email, a new member lands straight on their profile. */
-export const POST_SIGNUP_PATH = "/profile";
+/** Confirmed members finish their profile before opening their Passport. */
+export const POST_SIGNUP_PATH = "/onboarding";
 
 export const getPostSignupUrl = (): string => `${getAuthOrigin()}${POST_SIGNUP_PATH}`;

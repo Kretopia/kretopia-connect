@@ -20,7 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({
       update: (payload: Record<string, unknown>) => ({
         eq: () => {
           db.updates.push(payload);
-          return Promise.resolve({ error: db.updateError });
+          return { select: () => ({ single: () => Promise.resolve({ data: db.updateError ? null : { user_id: "company-1", onboarding_completed: true }, error: db.updateError }) }) };
         },
       }),
     }),
@@ -81,7 +81,7 @@ describe("company onboarding: the page can be saved", () => {
     const sent = await finish();
     expect(sent.onboarding_completed).toBe(true);
     expect("onboarding_complete" in sent).toBe(false);
-    expect(db.navigate).toHaveBeenCalledWith("/desk");
+    expect(db.navigate).toHaveBeenCalledWith("/profile", { replace: true });
   });
 });
 
