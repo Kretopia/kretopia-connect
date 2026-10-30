@@ -125,6 +125,8 @@ export async function gateAiCall(
   units: number = 1,
   estCredits?: number,
 ): Promise<AiGateResult> {
+  const { count, error: receiptError } = await admin.from('ai_model_calls').select('id', { count: 'exact', head: true }).in('status', ['usage_missing', 'pending']).gte('created_at', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString());
+  if (receiptError || (count ?? 0) > 0) return { allowed: false, reason: 'budget', used: 0, cap: 0, response: json({ error: 'Provider usage is awaiting reconciliation. No further model calls can be verified.', code: 'AI_USAGE_UNVERIFIED' }, 503) };
   const { data, error } = await admin.rpc("try_reserve_ai_credit", {
     _user_id: userId,
     _feature: feature,
@@ -187,7 +189,7 @@ export async function commitAiCredit(
     _user_id: userId,
     _feature: feature,
     _units: units,
-    _credits: credits ?? null,
+    _credits: credits ?? 0,
   });
   if (error) console.warn(`commit_ai_credit failed for ${feature}`, error);
 }
