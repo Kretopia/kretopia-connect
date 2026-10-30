@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { checkAiFeatureRateLimit, gateAiCall, commitAiCredit, releaseAiCredit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { measuredModelFetch } from "../_shared/measuredModelFetch.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -169,7 +170,7 @@ Location: ${opp.location || 'Remote'}`;
       ? `You are a talent matching AI for a creative industry platform. A company is hiring for this role:\n\n${opportunityContext}\n\nRank the top ${limit} best-fit candidates from this pool and explain why each is a good match:\n\n${candidateSummaries}`
       : `You are a talent matching AI for a creative industry platform. ${role_filter ? `The company is looking for: ${role_filter}` : 'Suggest the strongest creative talent'}${skills_filter ? `. Required skills: ${skills_filter}` : ''}.\n\nRank the top ${limit} best candidates from this pool:\n\n${candidateSummaries}`;
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await measuredModelFetch(supabase, user.id, "match_generation", "https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,

@@ -50,6 +50,13 @@
       "when": 1793341269666,
       "tag": "0006_protect_ai_credit_bookkeeping",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793342575784,
+      "tag": "0007_provider_usage_receipts",
+      "breakpoints": true
     }
   ]
 }

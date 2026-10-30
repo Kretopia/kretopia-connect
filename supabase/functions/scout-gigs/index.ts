@@ -20,6 +20,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit, gateAiCall, commitAiCredit, releaseAiCredit } from "../_shared/aiRateLimit.ts";
 import { PREMIUM_ENFORCED } from "../_shared/premiumSwitch.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { measuredModelFetch } from "../_shared/measuredModelFetch.ts";
 import {
   dedupeKey,
   firecrawlToCandidate,
@@ -246,6 +247,8 @@ async function extractAndScore(
   profile: ScoutProfile,
   prefs: ScoutPrefs,
   lovableKey: string,
+  admin: any,
+  ownerId: string,
 ): Promise<AiGig[]> {
   if (raw.length === 0) return [];
   const snippets = raw
@@ -276,7 +279,7 @@ ${prefBlurb ? `\nUSER SCOUT PREFERENCES:\n${prefBlurb}` : ""}`;
   const aiTimer = setTimeout(() => aiController.abort(), 25000);
   let r: Response;
   try {
-    r = await fetch(AI_URL, {
+    r = await measuredModelFetch(admin, ownerId, "scout_scan", AI_URL, {
     method: "POST",
     headers: { Authorization: `Bearer ${lovableKey}`, "Content-Type": "application/json" },
     signal: aiController.signal,
@@ -668,7 +671,7 @@ serve(async (req) => {
 
       let webRanked: ScoredCandidate[] = [];
       if (aiKey) {
-        webRanked = acceptAiGigs(await extractAndScore(allRaw, mergedProfile, prefs, aiKey), mergedProfile, prefs, imgByUrl);
+        webRanked = acceptAiGigs(await extractAndScore(allRaw, mergedProfile, prefs, aiKey, supabase, userId), mergedProfile, prefs, imgByUrl);
         if (webRanked.length === 0 && allRaw.length > 0) degraded.push("ai_unavailable");
       } else {
         degraded.push("ai_unavailable");

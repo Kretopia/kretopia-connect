@@ -104,6 +104,75 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_model_calls: {
+        Row: {
+          cached_input_tokens: number | null
+          created_at: string
+          credits: number | null
+          feature: string
+          gateway_request_id: string | null
+          id: string
+          input_tokens: number | null
+          model: string
+          output_tokens: number | null
+          pricing_snapshot: Json | null
+          status: string
+          usage: Json | null
+          user_id: string
+        }
+        Insert: {
+          cached_input_tokens?: number | null
+          created_at?: string
+          credits?: number | null
+          feature: string
+          gateway_request_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model: string
+          output_tokens?: number | null
+          pricing_snapshot?: Json | null
+          status?: string
+          usage?: Json | null
+          user_id: string
+        }
+        Update: {
+          cached_input_tokens?: number | null
+          created_at?: string
+          credits?: number | null
+          feature?: string
+          gateway_request_id?: string | null
+          id?: string
+          input_tokens?: number | null
+          model?: string
+          output_tokens?: number | null
+          pricing_snapshot?: Json | null
+          status?: string
+          usage?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_model_pricing: {
+        Row: {
+          fetched_at: string
+          model: string
+          pricing: Json
+          source: string
+        }
+        Insert: {
+          fetched_at?: string
+          model: string
+          pricing: Json
+          source?: string
+        }
+        Update: {
+          fetched_at?: string
+          model?: string
+          pricing?: Json
+          source?: string
+        }
+        Relationships: []
+      }
       kreto_attachments: {
         Row: {
           conversation_id: string | null
@@ -217,6 +286,18 @@ export type Database = {
         Returns: boolean
       }
       get_ai_credit_overview: { Args: { _user_id?: string }; Returns: Json }
+      record_ai_model_usage: {
+        Args: {
+          _cached: number
+          _call_id: string
+          _credits: number
+          _input: number
+          _output: number
+          _pricing: Json
+          _usage: Json
+        }
+        Returns: undefined
+      }
       release_ai_credit: {
         Args: {
           _est_credits?: number
