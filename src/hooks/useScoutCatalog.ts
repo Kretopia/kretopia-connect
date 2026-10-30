@@ -7,7 +7,7 @@ export const SCOUT_CATALOG_KEY = ["scout-catalog"] as const;
 // The public view only: a curator has reviewed every row against its original source, and nothing private is in it.
 const EXTERNAL_COLUMNS =
   "id, title, original_publisher, location, remote_scope, source_published_at, deadline_at, apply_url, excerpt, last_checked_at, source_provider, claimed, budget";
-const KRETOPIA_COLUMNS = "id, title, type, description, compensation, location, created_at";
+const KRETOPIA_COLUMNS = "id, title, type, description, compensation, location, created_at, image_url";
 
 export interface ScoutCatalog {
   items: CatalogItem[];

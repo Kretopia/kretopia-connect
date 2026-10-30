@@ -7,13 +7,14 @@ import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PILL_ITEM, PILL_ITEM_ACTIVE } from "@/components/discover/DiscoverSwitch";
 import { ScoutGigCard } from "./ScoutGigCard";
 import { ScoutFieldCarousel } from "./ScoutFieldCarousel";
+import { useOptionalScoutScan } from "./scoutScanContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { ListingLabels } from "@/components/external/ListingLabels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useScoutCatalog } from "@/hooks/useScoutCatalog";
 import { CATEGORIES, LEVELS, categoryOf, type CategoryId, type Language, type Level, type WorkMode } from "@/lib/opportunityTaxonomy";
-import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, groupByCategory, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
+import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
 import { cn } from "@/lib/utils";
 
 /** Outside the creative families a section shows this many until opened, unless the person is searching or filtering. */
@@ -106,7 +107,7 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
   return (
     // content-visibility keeps a few hundred cards cheap: the ones off screen are not laid out until they are near.
     <li className="[contain-intrinsic-size:auto_168px] [content-visibility:auto]">
-      <ScoutGigCard title={item.title} href={item.detailTo} pay={item.pay} testId="catalog-card" badges={<FamilyPill id={item.category} primary />}>
+      <ScoutGigCard title={item.title} image={item.image} href={item.detailTo} pay={item.pay} testId="catalog-card" badges={<FamilyPill id={item.category} primary />}>
         <div className="flex flex-wrap items-center gap-1.5">
           <FamilyPill id={item.category} primary />
           {item.alsoIn.map((c) => (
@@ -150,7 +151,7 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
 
         <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-1">
           {item.origin === "external" ? (
-            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceId} />
+            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceName} />
           ) : (
             <span className={SMALL_PILL}>Kretopia</span>
           )}
@@ -180,7 +181,8 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
  */
 export function ScoutAllSources() {
   const { data, isLoading, isError } = useScoutCatalog();
-  const items = useMemo(() => data?.items ?? [], [data]);
+  const scan = useOptionalScoutScan();
+  const items = useMemo(() => includeScoutedGigs(data?.items ?? [], scan?.gigs ?? []), [data, scan?.gigs]);
   const [f, setF] = useState<CatalogFilters>(NO_FILTERS);
   const [opened, setOpened] = useState<Set<CategoryId>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -193,7 +195,7 @@ export function ScoutAllSources() {
     return [...ids.entries()].sort((a, b) => (a[0] === KRETOPIA_SOURCE ? -1 : b[0] === KRETOPIA_SOURCE ? 1 : a[1].localeCompare(b[1])));
   }, [items]);
 
-  if (isLoading) return <KretopiaLoader label="Loading every opportunity" size="sm" />;
+  if (isLoading && items.length === 0) return <KretopiaLoader label="Loading every opportunity" size="sm" />;
   if (isError && items.length === 0) return <p className="text-sm text-muted-foreground">The opportunities could not be loaded right now. Try again in a moment.</p>;
   if (items.length === 0) {
     return (

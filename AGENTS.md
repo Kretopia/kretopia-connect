@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Keep `desk-agent-watch` disabled while the production legacy backend is active, because that optional function cannot resolve current Studio project IDs.
+- Scout shares ScoutGigCard across For You, catalog and shortlist surfaces, retains source-specific actions, and uses native field rails plus progressive filter disclosures; this avoids divergent cards without changing save IDs or backend rules.
 - Keep Studio project cards in one scrollable, keyboard-accessible row with all filtered results mounted, because a capped grid hides projects and creates excessive page height.
 - Keep Passport's action, trust and record in one compact overview, and read Reach only from connected-platform syncs, because separate panels and stale profile counters misrepresent the creator's status.
 - Embed Passport intelligence inside the identity surface; keep EPK drafts in user-keyed device storage and preserve original PDFs separately from page-edited copies. Publish only after explicit confirmation to the existing owner-scoped portfolio EPK path and render it on owner/public Passports without profile or schema changes, because imports must remain intact and private until approved.
