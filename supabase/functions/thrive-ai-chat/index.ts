@@ -118,6 +118,10 @@ serve(async (req) => {
       conversation_id: clientConvId,
       persist = false,
       stream = true,
+      mode,
+      prefix,
+      attachment,
+      attachments = [],
     } = body as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
       surface?: string;
@@ -125,6 +129,15 @@ serve(async (req) => {
       conversation_id?: string;
       persist?: boolean;
       stream?: boolean;
+      /** "autocomplete" | "parse_attachment" — gated side modes that return
+       *  immediately and never touch conversation state. */
+      mode?: string;
+      /** Autocomplete: the text the user is typing. */
+      prefix?: string;
+      /** Parse: one file to extract text from server-side. */
+      attachment?: { name?: string; mime?: string; data_base64?: string };
+      /** Chat: already-parsed attachment text to ground the reply on. */
+      attachments?: Array<{ name?: string; text?: string }>;
     };
 
     // ---- Auth + context ----
