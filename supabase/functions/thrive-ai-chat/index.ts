@@ -8,6 +8,7 @@ import {
 import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { resolveKretoIdentity } from "../_shared/kretoIdentity.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 import {
   gateAiCall,
@@ -156,17 +157,11 @@ serve(async (req) => {
     // Resolve user: either internal (service role + header) or public (user JWT).
     let resolvedUser: { id: string } | null = null;
     if (isInternal) {
-      resolvedUser = { id: internalUserId! };
+      if (internalUserId) resolvedUser = { id: internalUserId };
     } else if (authHeader.startsWith("Bearer ")) {
-      try {
-        const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const { data: { user } } = await userClient.auth.getUser();
-        if (user) resolvedUser = { id: user.id };
-      } catch (e) {
-        console.warn("auth.getUser failed", e);
-      }
+      const identity = await resolveKretoIdentity(req);
+      if (identity) resolvedUser = { id: identity.id };
+      if (!resolvedUser) return new Response(JSON.stringify({ error: "Please sign in again to use Kreto.", code: "AUTH_REQUIRED" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     // Anonymous callers share one bucket so unauthenticated use still passes
@@ -229,6 +224,7 @@ serve(async (req) => {
     // plain text is decoded directly. Output is capped so a huge PDF cannot
     // blow up the next chat call's context.
     if (mode === "parse_attachment") {
+      if (!resolvedUser) return new Response(JSON.stringify({ error: "Sign in to attach files." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       const name = typeof attachment?.name === "string" ? attachment.name.slice(0, 200) : "file";
       const mime = typeof attachment?.mime === "string" ? attachment.mime : "";
       const b64 = typeof attachment?.data_base64 === "string" ? attachment.data_base64 : "";

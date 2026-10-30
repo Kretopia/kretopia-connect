@@ -19,18 +19,45 @@ export type CopilotSurface =
   | "event";
 
 export interface CopilotMessage {
+  id?: string;
   role: "user" | "assistant";
   content: string;
+  attachments?: ParsedAttachment[];
 }
 
 /** An attachment already parsed server-side — only the extracted text is
  *  ever sent with a chat message, never the raw file. */
 export interface ParsedAttachment {
+  id: string;
   name: string;
   text: string;
+  expires_at?: string;
+  expired?: boolean;
 }
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/thrive-ai-chat`;
+// Cloud control plane only; production profiles, conversations, and auth remain legacy.
+const CHAT_URL = "https://czpucbhnmcudggydwxlg.supabase.co/functions/v1/kreto-resources";
+const CLOUD_PUBLIC_KEY = "sb_publishable_ssXNn-GlHaO9CYIjNj_URg_jQFG1Vep";
+
+async function kretoResource(payload: Record<string, unknown>): Promise<any> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Please sign in again to use Kreto.");
+  const response = await fetch(CHAT_URL, { method: "POST", headers: { "Content-Type": "application/json", apikey: CLOUD_PUBLIC_KEY, Authorization: `Bearer ${session.access_token}` }, body: JSON.stringify(payload) });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error ?? "Kreto is temporarily unavailable.");
+  return result;
+}
+
+export const deleteKretoAttachment = (id: string) => kretoResource({ mode: "delete", id });
+export async function openKretoAttachment(id: string): Promise<void> {
+  const { url } = await kretoResource({ mode: "open", id });
+  if (typeof url !== "string") throw new Error("Original unavailable.");
+  const link = document.createElement("a");
+  link.href = url;
+  link.rel = "noopener noreferrer";
+  link.target = "_blank";
+  link.click();
+}
 
 interface StreamCopilotArgs {
   /** Latest turn(s) the client wants the model to see. Server hydrates prior history. */
@@ -71,6 +98,17 @@ export async function streamCopilot({
     onError("Please sign in to chat with Kreto.");
     return;
   }
+  // Global/desk callers may omit a conversation; resolve the existing legacy
+  // primary thread without creating a second canonical history.
+  if (!conversationId) {
+    const { data: existing } = await supabase.from("ai_conversations").select("id").eq("user_id", session.user.id).eq("title", PRIMARY_THREAD_TITLE).maybeSingle();
+    if (existing?.id) conversationId = existing.id;
+    else {
+      const { data: created } = await supabase.from("ai_conversations").insert({ user_id: session.user.id, title: PRIMARY_THREAD_TITLE }).select("id").single();
+      conversationId = created?.id;
+    }
+    if (!conversationId) { onError("Could not open your conversation. Your draft is kept."); return; }
+  }
 
   let resp: Response;
   try {
@@ -79,14 +117,16 @@ export async function streamCopilot({
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
+        apikey: CLOUD_PUBLIC_KEY,
       },
       body: JSON.stringify({
+        mode: "chat",
         messages,
         surface,
         surface_context: surfaceContext,
         conversation_id: conversationId,
         persist: true,
-        attachments: attachments?.length ? attachments : undefined,
+        attachments: attachments?.map(a => ({ id: a.id })),
       }),
       signal,
     });
@@ -109,7 +149,7 @@ export async function streamCopilot({
       onError(`You've used today's ${data.used}/${data.cap} for this. Resets at midnight UTC.`);
     } else if (resp.status === 429 && data?.code === "AI_BUDGET_EXHAUSTED") {
       // Global budget: same honesty, different wording — temporary, not personal.
-      onError("Kretopia's AI capacity for today is fully used — this is temporary and global, not about your account. Resets at midnight UTC.");
+      onError("This backend's AI ceiling is reached for today. Your draft is kept. Resets at midnight UTC.");
     } else if (resp.status === 429 && data?.code === "COPILOT_DAILY_LIMIT") {
       onError(`You've used ${data.used}/${data.cap} Copilot messages today. Upgrade your plan for more — resets at midnight UTC.`);
     } else if (resp.status === 429) {
@@ -252,6 +292,7 @@ export async function archiveConversation(conversationId: string): Promise<boole
 
 /** Deletes the conversation and, via ON DELETE CASCADE, every message in it. */
 export async function deleteConversation(conversationId: string): Promise<boolean> {
+  try { await kretoResource({ mode: "delete_conversation", conversation_id: conversationId }); } catch { return false; }
   const { error } = await supabase
     .from("ai_conversations")
     .delete()
@@ -264,14 +305,17 @@ export async function deleteConversation(conversationId: string): Promise<boolea
 export async function loadConversationMessages(conversationId: string): Promise<CopilotMessage[]> {
   const { data, error } = await supabase
     .from("ai_messages")
-    .select("role, content, created_at")
+    .select("id, role, content, created_at")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: false })
     .limit(60);
   if (error || !data) return [];
-  return [...data].reverse().map((r: { role: string; content: string }) => ({
+  const references = await kretoResource({ mode: "list", conversation_id: conversationId }).catch(() => ({ attachments: [] }));
+  return [...data].reverse().map((r: { id: string; role: string; content: string }) => ({
+    id: r.id,
     role: r.role as "user" | "assistant",
     content: r.content,
+    attachments: (references.attachments ?? []).filter((a: { message_id: string }) => a.message_id === r.id).map((a: ParsedAttachment) => ({ ...a, text: "" })),
   }));
 }
 
@@ -384,8 +428,8 @@ export async function autocompleteKreto(prefix: string, signal?: AbortSignal): P
   try {
     const resp = await fetch(CHAT_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ mode: "autocomplete", prefix }),
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: CLOUD_PUBLIC_KEY },
+      body: JSON.stringify({ mode: "autocomplete", prefix: prefix.slice(-600) }),
       signal,
     });
     if (!resp.ok) return "";
@@ -422,7 +466,7 @@ export async function parseKretoAttachment(file: File, signal?: AbortSignal): Pr
   const data_base64 = await fileToBase64(file);
   const resp = await fetch(CHAT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, apikey: CLOUD_PUBLIC_KEY },
     body: JSON.stringify({
       mode: "parse_attachment",
       attachment: { name: file.name, mime: file.type || "application/octet-stream", data_base64 },
@@ -431,7 +475,7 @@ export async function parseKretoAttachment(file: File, signal?: AbortSignal): Pr
   });
   const j = await resp.json().catch(() => ({}));
   if (!resp.ok) throw new Error(typeof j?.error === "string" ? j.error : `Could not read ${file.name}.`);
-  return { name: file.name, text: String(j.text ?? "") };
+  return { id: j.id, name: file.name, text: String(j.text ?? ""), expires_at: j.expires_at };
 }
 
 export interface AiCreditOverview {
@@ -450,9 +494,5 @@ export interface AiCreditOverview {
 /** Today's credit picture: global envelope, per-feature totals, and the
  *  caller's own usage. Read-only RPC; null when signed out or unavailable. */
 export async function loadAiCreditOverview(): Promise<AiCreditOverview | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data, error } = await supabase.rpc("get_ai_credit_overview" as never, { _user_id: user.id } as never);
-  if (error || !data) return null;
-  return data as unknown as AiCreditOverview;
+  try { return await kretoResource({ mode: "overview" }) as AiCreditOverview; } catch { return null; }
 }

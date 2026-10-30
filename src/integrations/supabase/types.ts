@@ -104,6 +104,45 @@ export type Database = {
         }
         Relationships: []
       }
+      kreto_attachments: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          expires_at: string
+          extracted_text: string
+          id: string
+          message_id: string | null
+          mime: string
+          name: string
+          object_path: string
+          owner_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          extracted_text: string
+          id?: string
+          message_id?: string | null
+          mime: string
+          name: string
+          object_path: string
+          owner_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          expires_at?: string
+          extracted_text?: string
+          id?: string
+          message_id?: string | null
+          mime?: string
+          name?: string
+          object_path?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       public_presence_search_quota: {
         Row: {
           bucket: string
