@@ -183,10 +183,10 @@ describe("ScoutAllSources: sorting it out", () => {
   });
 
   it("hides the pay filter when no posting states a pay, shows it when one does", () => {
-    show(rows());
+    const initial = show(rows());
     openFilter("Pay, language & freshness");
     expect(screen.queryByRole("group", { name: "Pay" })).not.toBeInTheDocument();
-    document.body.innerHTML = "";
+    initial.unmount();
     show([ext("Art Director", { budget: { min: 90000, max: 120000, currency: "USD", period: "year" } }), ext("Illustrator")]);
     openFilter("Pay, language & freshness");
     fireEvent.click(within(screen.getByRole("group", { name: "Pay" })).getByRole("button", { name: /^Pay listed/ }));
