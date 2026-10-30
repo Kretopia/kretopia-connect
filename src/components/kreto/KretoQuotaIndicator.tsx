@@ -37,7 +37,7 @@ export function KretoQuotaIndicator({ refreshKey }: KretoQuotaIndicatorProps) {
   const parts: string[] = [];
   if (msgLeft !== null) parts.push(`${msgLeft} messages left today`);
   if (tokLeft !== null) parts.push(`${Math.round(tokLeft / 1000)}k tokens`);
-  parts.push(`Kretopia capacity ${envPct}%`);
+  parts.push(`This backend's ceiling ${envPct}% remaining`);
 
   return (
     <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/35 font-semibold" aria-live="polite">
