@@ -87,7 +87,7 @@ export function ConnectedCollaborators() {
       {state === "ready" && (
         <>
           {connections.length === 0 && <InviteCircleCard variant="match" />}
-          <NetworkVisualization onInvite={() => setShowInvite(true)} />
+          <NetworkVisualization connections={connections} onInvite={() => setShowInvite(true)} />
           {connections.length > 0 && (
             <div className="border-t pt-4">
               <h3 className="mb-3 text-sm font-semibold">Your collaborators</h3>

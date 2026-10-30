@@ -8,7 +8,7 @@ import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
 import { Radar, Bookmark, Layers } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FeatureSectionNav } from "@/components/features/FeatureSectionNav";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { ScoutKretoAssist } from "@/components/scout/ScoutKretoAssist";
@@ -104,36 +104,7 @@ const Scout = () => {
         <ScoutResultsWrapped
           status={tab === "all" ? { label: catalogCount === 0 ? "Every source, sorted" : `${catalogCount} opportunit${catalogCount === 1 ? "y" : "ies"} from every source`, active: catalogCount > 0 } : undefined}
         >
-        <div
-          role="tablist"
-          aria-label="Scout sections"
-          className="inline-flex items-center gap-1 p-1 rounded-full border border-border bg-card w-fit max-w-full overflow-x-auto"
-        >
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.id;
-            return (
-              <Button
-                key={t.id}
-                type="button"
-                variant="ghost"
-                role="tab"
-                aria-selected={active}
-                aria-label={t.hint}
-                onClick={() => switchTab(t.id)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all",
-                  active
-                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                <Icon className={cn("h-3.5 w-3.5", active && "text-foreground")} />
-                {t.label}
-              </Button>
-            );
-          })}
-        </div>
+        <FeatureSectionNav items={TABS} value={tab} onChange={(id) => switchTab(id as Tab)} label="Scout sections" />
 
         {contextQuery && (
           <div className="rounded-xl border border-border bg-card p-3 text-xs flex items-start gap-2">

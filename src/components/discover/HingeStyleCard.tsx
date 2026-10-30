@@ -130,9 +130,9 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       onTouchStart={handleDragStart}
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
-      className="w-full min-w-0 rounded-xl border-border bg-card"
+      className="w-full min-w-0 rounded-lg border-border bg-card"
     >
-      <HoloCard glow={false} maxTilt={isDragging || isAnimating ? 0 : 3}>
+      <HoloCard glow={false} maxTilt={0}>
       <div className="min-w-0 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <div className="min-w-0 border-b border-border lg:border-b-0 lg:border-r">
         <div className="relative aspect-[4/3] overflow-hidden bg-muted lg:aspect-[4/3]">
@@ -146,6 +146,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           ) : (
             <div className="flex h-full items-center justify-center text-5xl font-bold text-muted-foreground">{profile.full_name.split(" ").map(part => part[0]).slice(0, 2).join("")}</div>
           )}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
           {profile.cover_image_url && profile.avatar_url && (
             <img src={profile.avatar_url} alt="" draggable={false} className="absolute bottom-3 left-3 h-14 w-14 rounded-full border-2 border-background object-cover pointer-events-none" />
           )}
@@ -171,11 +172,11 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       </div>
 
       {/* Engageable Content Sections */}
-      <CardContent className="flex min-w-0 flex-col gap-5 p-4 sm:p-6">
+      <CardContent className="flex min-w-0 flex-col gap-4 p-4 sm:p-6">
         {/* Common ground — why this profile ranked where it did */}
         {commonGround.length > 0 && (
           <div>
-            <p className="mb-2 text-xs font-semibold text-foreground">Why you connect</p>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Why you connect</p>
             <div className="flex flex-wrap gap-1.5">
             {commonGround.map(({ icon: Icon, label }) => (
               <span
@@ -192,7 +193,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {/* Bio */}
         {profile.bio && (
           <div className="relative group">
-            <p className="mb-2 text-xs font-semibold text-foreground">About</p>
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">About</p>
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
               {profile.bio}
             </p>

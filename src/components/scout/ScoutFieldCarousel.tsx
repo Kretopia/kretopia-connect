@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /** Native touch/trackpad rail; gentle edge-hover scrolling only for fine pointers. */
-export function ScoutFieldCarousel({ label, children }: { label: string; children: ReactNode }) {
+export function ScoutFieldCarousel({ label, children, heading }: { label: string; children: ReactNode; heading?: ReactNode }) {
   const rail = useRef<HTMLUListElement>(null);
   const direction = useRef(0);
   const frame = useRef(0);
@@ -27,9 +27,12 @@ export function ScoutFieldCarousel({ label, children }: { label: string; childre
   };
   return (
     <div className="relative min-w-0">
-      <div className="mb-2 flex justify-end gap-1">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="min-w-0">{heading}</div>
+        <div className="flex shrink-0 gap-1">
         <Button size="icon" variant="ghost" className="h-9 w-9" disabled={!position.previous} onClick={() => step(-1)} aria-label={`Previous — ${label}`} title="Previous"><ArrowLeft className="h-4 w-4" /></Button>
         <Button size="icon" variant="ghost" className="h-9 w-9" disabled={!position.next} onClick={() => step(1)} aria-label={`Next — ${label}`} title="Next"><ArrowRight className="h-4 w-4" /></Button>
+        </div>
       </div>
       <ul ref={rail} role="region" aria-roledescription="carousel" aria-label={label} tabIndex={0}
         className="flex min-w-0 gap-3 overflow-x-auto overscroll-x-contain pb-3 pt-1 [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy [&>li]:w-[min(82vw,320px)] [&>li]:max-w-full [&>li]:shrink-0"

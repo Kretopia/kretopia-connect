@@ -96,7 +96,7 @@ describe("Scout page", () => {
   it("preserves old Open Gigs links inside Shortlist", () => {
     renderAt("/scout?tab=marketplace");
     expect(screen.getByTestId("marketplace")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Gigs you saved for later/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Shortlist" })).toHaveAttribute("aria-selected", "true");
   });
   it("uses the Studio header: tutorial slot, no tabs inside the header, a promise to filter and chat", () => {
     renderScout();
@@ -119,7 +119,7 @@ describe("Scout page", () => {
     // the bottom of the page is one Wrapped panel, right after the top one, and the tabs open it
     const bottom = screen.getByTestId("results-wrapped");
     expect(wrapped.nextElementSibling).toBe(bottom);
-    expect(bottom.firstElementChild).toBe(tabs);
+    expect(bottom.firstElementChild?.contains(tabs)).toBe(true);
     expect(bottom.contains(results)).toBe(true);
     expect(bottom.contains(kreto)).toBe(true);
     expect(before(tabs, results)).toBe(true);
@@ -154,7 +154,7 @@ describe("Scout page", () => {
   it("waits for something to act on: no panel on For You while there are no gigs", () => {
     renderScout([]);
     expect(assist()).toBeNull();
-    fireEvent.click(screen.getByRole("tab", { name: /Gigs you saved for later/i }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Shortlist" }), { button: 0 });
     expect(assist()).not.toBeNull();
   });
 
@@ -163,7 +163,7 @@ describe("Scout page", () => {
     const tabs = within(screen.getByRole("tablist", { name: "Scout sections" })).getAllByRole("tab");
     expect(tabs.map((t) => t.textContent)).toEqual(["All Sources", "For You", "Shortlist"]);
     expect(screen.queryByTestId("all-sources")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: /every opportunity from every source/i }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "All Sources" }), { button: 0 });
     expect(screen.getByTestId("all-sources")).toBeInTheDocument();
     expect(screen.queryByTestId("scouted")).not.toBeInTheDocument();
     expect(screen.getByTestId("results-wrapped").contains(screen.getByTestId("all-sources"))).toBe(true);
@@ -193,8 +193,7 @@ describe("Scout page", () => {
   it("never renders the legacy Kreto Suggests cards, on any tab, and never starts the surface watcher", () => {
     renderScout();
     for (const id of ["marketplace", "shortlist"] as const) {
-      const tab = id === "marketplace" ? /Gigs you saved for later/i : /Gigs you saved for later/i;
-      fireEvent.click(screen.getByRole("tab", { name: tab }));
+      fireEvent.mouseDown(screen.getByRole("tab", { name: "Shortlist" }), { button: 0 });
     }
     expect(screen.queryByTestId("proactive-cards")).not.toBeInTheDocument();
     for (const gone of [/Kreto Suggests/i, /Set your day rate/i, /Set rate/i, /fresh gigs? matched you/i, /Not now/i]) {
@@ -207,12 +206,12 @@ describe("Scout page", () => {
     renderScout();
     fireEvent.click(screen.getByRole("button", { name: "Go to saved" }));
     expect(await screen.findByTestId("shortlist")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Gigs you saved for later/i })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Shortlist" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("switches sections from the body", async () => {
     renderScout();
-    fireEvent.click(screen.getByRole("tab", { name: /Gigs you saved for later/i }));
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Shortlist" }), { button: 0 });
     fireEvent.click(screen.getByRole("button", { name: /^Open gigs$/ }));
     expect(await screen.findByTestId("marketplace")).toBeInTheDocument();
   });

@@ -9,7 +9,7 @@ let state: State = { isLoading: false, isError: false };
 vi.mock("@/hooks/useScoutCatalog", () => ({ useScoutCatalog: () => state, SCOUT_CATALOG_KEY: ["scout-catalog"] }));
 
 vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => null }));
-vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul> }));
+vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children, heading }: { children: React.ReactNode; heading?: React.ReactNode }) => <div>{heading}<ul>{children}</ul></div> }));
 
 import { ScoutAllSources } from "../ScoutAllSources";
 
@@ -183,10 +183,10 @@ describe("ScoutAllSources: sorting it out", () => {
   });
 
   it("hides the pay filter when no posting states a pay, shows it when one does", () => {
-    show(rows());
+    const initial = show(rows());
     openFilter("Pay, language & freshness");
     expect(screen.queryByRole("group", { name: "Pay" })).not.toBeInTheDocument();
-    document.body.innerHTML = "";
+    initial.unmount();
     show([ext("Art Director", { budget: { min: 90000, max: 120000, currency: "USD", period: "year" } }), ext("Illustrator")]);
     openFilter("Pay, language & freshness");
     fireEvent.click(within(screen.getByRole("group", { name: "Pay" })).getByRole("button", { name: /^Pay listed/ }));

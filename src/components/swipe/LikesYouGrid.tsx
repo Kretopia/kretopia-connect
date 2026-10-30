@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
+import { CreatorPassportCard } from "@/components/discover/CreatorPassportCard";
 
 interface Liker {
   user_id: string;
@@ -27,7 +28,6 @@ export function LikesYouGrid() {
   const [likers, setLikers] = useState<Liker[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -123,55 +123,13 @@ export function LikesYouGrid() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-3">
-      {likers.map((p) => (
-        <div key={p.user_id} className="rounded-2xl border border-border bg-card overflow-hidden">
-          <button
-            type="button"
-            onClick={() => navigate(`/profile/${p.user_id}`)}
-            className="block w-full aspect-[3/4] bg-muted"
-          >
-            {p.avatar_url && !failedAvatars.has(p.user_id) ? (
-              <img
-                src={p.avatar_url}
-                alt={p.full_name ?? "Creator"}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                onError={() => setFailedAvatars((prev) => new Set(prev).add(p.user_id))}
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
-                {(p.full_name ?? "?").charAt(0)}
-              </div>
-            )}
-          </button>
-          <div className="p-2.5">
-            <p className="font-semibold text-sm truncate">{p.full_name ?? "Creator"}</p>
-            <p className="text-[11px] text-muted-foreground truncate">
-              {[p.role, p.location].filter(Boolean).join(" · ") || "Creator"}
-            </p>
-            <div className="flex gap-1.5 mt-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 h-8 text-xs"
-                disabled={busyId === p.user_id}
-                onClick={() => respond(p.user_id, "left")}
-              >
-                Pass
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1 h-8 text-xs gap-1"
-                disabled={busyId === p.user_id}
-                onClick={() => respond(p.user_id, "right")}
-              >
-                <Heart className="h-3 w-3" /> Match
-              </Button>
-            </div>
-          </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {likers.map(p => <CreatorPassportCard key={p.user_id} profile={p} onOpen={() => navigate(`/profile/${p.user_id}`)} footer={
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="min-h-11 flex-1" disabled={busyId === p.user_id} onClick={() => respond(p.user_id, "left")}>Pass</Button>
+          <Button size="sm" variant="secondary" className="min-h-11 flex-1 gap-1" disabled={busyId === p.user_id} onClick={() => respond(p.user_id, "right")}><Heart className="h-3 w-3" />Match</Button>
         </div>
-      ))}
+      } />)}
     </div>
   );
 }

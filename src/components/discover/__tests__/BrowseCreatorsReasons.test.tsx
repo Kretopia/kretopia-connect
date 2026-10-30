@@ -147,7 +147,7 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
     for (const name of [/Aa Person/, /Bb Person/]) expect(within(screen.getByRole("button", { name })).getByText(/View Passport/)).toBeInTheDocument();
   });
 
-  it("does not stack the same role three times in a row when another is close behind", async () => {
+  it("retains every ranked creator in the correct craft rail", async () => {
     db.rows = [
       row({ user_id: "p1", full_name: "Photo One", role: "Photographer", professional_skills: ["lighting"] }),
       row({ user_id: "p2", full_name: "Photo Two", role: "Photographer", professional_skills: ["lighting"] }),
@@ -162,7 +162,12 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
       .filter((t) => /Photo (One|Two|Three)|Sam Stylist/.test(t))
       .map((t) => (/Sam Stylist/.test(t) ? "stylist" : "photographer"));
     expect(roles).toHaveLength(4);
-    expect(roles.slice(0, 3)).toContain("stylist");
+    expect(roles.filter(role => role === "photographer")).toHaveLength(3);
+    expect(roles.filter(role => role === "stylist")).toHaveLength(1);
+    const photoRail = screen.getAllByRole("region", { name: "Photo & Video creators" }).find(element => element.tagName === "UL");
+    if (!photoRail) throw new Error("Missing photo carousel");
+    expect(within(photoRail).getByRole("button", { name: /Photo One/ })).toBeInTheDocument();
+    expect(within(photoRail).queryByRole("button", { name: /Sam Stylist/ })).toBeNull();
   });
 
   it("when a search matches nobody it shows other real members and says so, instead of an empty feed", async () => {

@@ -6,17 +6,18 @@ import { useToast } from "@/hooks/use-toast";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { ScoutFieldCarousel } from "@/components/scout/ScoutFieldCarousel";
+import { CreatorPassportCard } from "./CreatorPassportCard";
+import { groupCreatorsByCraft } from "./creatorCategories";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
-  Search, SlidersHorizontal, Sparkles, Star, Verified, MapPin,
-  Bell, BellOff, Bookmark, X, Trash2, ArrowRight,
+  Search, SlidersHorizontal, Sparkles,
+  Bell, BellOff, Bookmark, X,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ interface CreatorRow {
   last_active_date?: string | null;
   updated_at?: string | null;
   collab_intent?: string | null;
+  bio?: string | null;
   /** Ranking weight only (see matchScoring.ts): decides the order, is never shown as a percentage. */
   match_rank?: number;
   /** Why this person was suggested, from real fields and signals (see matchReasons.ts). */
@@ -431,7 +433,8 @@ export function BrowseCreators() {
 
         {/* Mode toggle + save */}
         <div className="flex items-center justify-between gap-2">
-          <button
+          <Button variant="ghost"
+            aria-pressed={aiMode}
             onClick={() => setAiMode(v => !v)}
             className={cn(
               "flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors",
@@ -440,7 +443,7 @@ export function BrowseCreators() {
           >
             <Sparkles className="h-3 w-3" />
             {aiMode ? "Smart search on" : "Try Smart search"}
-          </button>
+          </Button>
           <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setShowSaveDialog(true)}>
             <Bookmark className="h-3 w-3 mr-1" /> Save search
           </Button>
@@ -449,7 +452,7 @@ export function BrowseCreators() {
         {/* Sort + sector priority — apply immediately, unlike the advanced
             filter popover above which still needs an explicit "Apply". */}
         {!aiMode && (
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
               <SelectTrigger className="h-8 w-[150px] text-xs">
                 <SelectValue />
@@ -512,73 +515,12 @@ export function BrowseCreators() {
             Nobody matches that search exactly. Here are other real members you may want to meet.
           </p>
         )}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-          {results.map(c => (
-            <button
-              key={c.user_id}
-              onClick={() => navigate(`/profile/${c.user_id}`)}
-              className="text-left rounded-xl border bg-card overflow-hidden hover:shadow-md hover:border-primary/30 transition-all group"
-            >
-              {/* Cover artwork leads the card; avatar is a small identity badge,
-                  same treatment as the swipe deck -- a real photo of the work
-                  reads far better in a grid than a row of small round avatars. */}
-              <div className="relative aspect-[4/3] w-full overflow-hidden">
-                {c.cover_image_url || c.avatar_url ? (
-                  <img
-                    src={c.cover_image_url || c.avatar_url || ""}
-                    alt={c.full_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div
-                    className="w-full h-full"
-                    style={{ background: "linear-gradient(150deg, hsl(var(--energy)/0.45), hsl(var(--primary)/0.35))" }}
-                  />
-                )}
-                {c.cover_image_url && c.avatar_url && (
-                  <Avatar className="absolute bottom-1.5 left-1.5 h-7 w-7 border-2 border-background">
-                    <AvatarImage src={c.avatar_url} alt="" />
-                    <AvatarFallback className="text-[10px]">{c.full_name?.[0] || "?"}</AvatarFallback>
-                  </Avatar>
-                )}
-                {c.verification_tier && c.verification_tier !== "none" && (
-                  <div className="absolute top-1.5 right-1.5 h-4 w-4 rounded-full bg-primary flex items-center justify-center border-2 border-background">
-                    <Verified className="h-2.5 w-2.5 text-primary-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="p-2.5">
-                <p className="text-xs font-semibold truncate">{c.full_name}</p>
-                <p className="text-[10px] text-muted-foreground truncate">{c.role || "Creator"}</p>
-                {c.location && (
-                  <p className="text-[10px] text-muted-foreground truncate flex items-center gap-0.5 mt-0.5">
-                    <MapPin className="h-2.5 w-2.5 shrink-0" />{c.location}
-                  </p>
-                )}
-                <div className="flex items-center gap-1 mt-1.5">
-                  {c.average_rating ? (
-                    <Badge variant="secondary" className="text-[9px] px-1.5 py-0 gap-0.5">
-                      <Star className="h-2.5 w-2.5 fill-current" />{Number(c.average_rating).toFixed(1)}
-                    </Badge>
-                  ) : null}
-                </div>
-                {c.match_reasons && c.match_reasons.length > 0 && (
-                  <ul className="mt-1.5 flex flex-wrap gap-1" aria-label={`Why ${c.full_name} is suggested`}>
-                    {c.match_reasons.map((reason) => (
-                      <li key={reason.key}>
-                        <Badge variant="outline" className="max-w-full whitespace-normal text-left text-[9px] font-normal leading-tight px-1.5 py-0.5 border-primary/30 text-primary">
-                          {reason.label}
-                        </Badge>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <span className="mt-1.5 inline-flex items-center gap-1 text-[10px] font-semibold text-primary group-hover:underline">
-                  View Passport <ArrowRight className="h-2.5 w-2.5" aria-hidden />
-                </span>
-              </div>
-            </button>
-          ))}
+        <div className="space-y-6">
+          {groupCreatorsByCraft(results).map(group => <section key={group.id} aria-label={`${group.label} creators`} className="min-w-0">
+            <ScoutFieldCarousel label={`${group.label} creators`} heading={<h2 className="flex items-center gap-2 text-sm font-bold text-foreground">{group.label}<span className="text-xs font-normal tabular-nums text-muted-foreground">{group.creators.length}</span></h2>}>
+              {group.creators.map(c => <li key={c.user_id}><CreatorPassportCard profile={c} onOpen={() => navigate(`/profile/${c.user_id}`)} /></li>)}
+            </ScoutFieldCarousel>
+          </section>)}
         </div>
         </>
       )}
