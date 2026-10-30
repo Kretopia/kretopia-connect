@@ -23,6 +23,13 @@ export interface CopilotMessage {
   content: string;
 }
 
+/** An attachment already parsed server-side — only the extracted text is
+ *  ever sent with a chat message, never the raw file. */
+export interface ParsedAttachment {
+  name: string;
+  text: string;
+}
+
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/thrive-ai-chat`;
 
 interface StreamCopilotArgs {
@@ -37,6 +44,8 @@ interface StreamCopilotArgs {
   onDone: () => void;
   onError: (err: string) => void;
   signal?: AbortSignal;
+  /** Parsed attachment text to ground the reply on (max 3). */
+  attachments?: ParsedAttachment[];
 }
 
 /**
