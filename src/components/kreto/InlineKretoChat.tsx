@@ -1,11 +1,12 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Square } from "lucide-react";
+import { ArrowDown, ArrowUp, Square, Paperclip, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
   streamCopilot, loadConversationMessages, createConversation, extractActions, autocompleteKreto,
-  type CopilotMessage,
+  openKretoAttachment, deleteKretoAttachment, type CopilotMessage,
 } from "@/lib/thriveCopilot";
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
 import { KretoQuotaIndicator } from "@/components/kreto/KretoQuotaIndicator";
@@ -32,7 +33,9 @@ function stripTagsLive(raw: string): string {
 const FOLLOW_THRESHOLD_PX = 48;
 
 // Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
-const MessageBubble = memo(function MessageBubble({ role, content }: CopilotMessage) {
+const MessageBubble = memo(function MessageBubble({ role, content, attachments }: CopilotMessage) {
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [attachmentError, setAttachmentError] = useState("");
   return (
     <div
       className={
@@ -46,6 +49,15 @@ const MessageBubble = memo(function MessageBubble({ role, content }: CopilotMess
           <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
         </span>
       )}
+      {attachments?.filter(a => !removed.includes(a.id)).map(a => (
+        <div key={a.id} className="mt-2 flex items-center gap-2 border-t border-border pt-2 text-foreground">
+          <Button variant="ghost" size="sm" disabled={a.expired} className="min-w-0" onClick={() => openKretoAttachment(a.id).catch(e => setAttachmentError(e.message))}>
+            <Paperclip className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{a.name}{a.expired ? " · Expired" : ""}</span>
+          </Button>
+          <Button variant="ghost" size="icon" aria-label={`Delete ${a.name}`} title={`Delete ${a.name}`} onClick={() => deleteKretoAttachment(a.id).then(() => setRemoved(ids => [...ids, a.id])).catch(e => setAttachmentError(e.message))}><Trash2 className="h-3.5 w-3.5" /></Button>
+        </div>
+      ))}
+      {attachmentError && <p role="alert" className="mt-2 text-xs text-destructive">{attachmentError}</p>}
     </div>
   );
 });
@@ -171,12 +183,11 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     // Only fully parsed attachments travel with the message — a failed one
     // keeps its chip (with retry) and never blocks sending the text.
     const readyAttachments = attachments
-      .filter((a) => a.status === "ready" && a.text)
-      .map((a) => ({ name: a.name, text: a.text! }));
+      .flatMap(a => a.status === "ready" && a.text && a.referenceId ? [{ id: a.referenceId, name: a.name, text: a.text, expires_at: a.expires_at }] : []);
 
     setInput("");
     followRef.current = true;
-    setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
+    setMessages((m) => [...m, { role: "user", content: text, attachments: readyAttachments }, { role: "assistant", content: "" }]);
     setStreaming(true);
 
     // A draft conversation doesn't exist server-side until the first
@@ -297,7 +308,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       }
       setStreaming(false);
     }
-  }, [streaming, conversationId, onConversationCreated]);
+  }, [streaming, conversationId, onConversationCreated, attachments]);
 
   // A quick-action click seeds the thread and sends immediately. Keyed on
   // seedNonce (not seedPrompt itself) so clicking the same quick action
@@ -364,7 +375,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
               <p className="py-6 text-center text-sm text-white/50">Ask {BRAND.agentName} anything to get started.</p>
             )
           ) : (
-            messages.map((m, i) => <MessageBubble key={i} role={m.role} content={m.content} />)
+            messages.map((m, i) => <MessageBubble key={m.id ?? i} {...m} />)
           )}
         </div>
 
