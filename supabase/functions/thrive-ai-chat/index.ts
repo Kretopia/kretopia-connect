@@ -788,6 +788,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
     if (!stream) {
       const j = await upstream.json();
       const content: string = j?.choices?.[0]?.message?.content?.trim() ?? "";
+      await settleSuccess(content);
       if (persist && conversationId && content) {
         try {
           await admin.from("ai_messages").insert({
@@ -809,15 +810,43 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       );
     }
 
-    // If we don't need to persist, forward the stream directly (zero-overhead path —
-    // identical to the original behavior for AIChatTab).
+    // If we don't need to persist, forward the stream through a minimal tee
+    // that only settles the reservation: commit on clean completion, release
+    // when the client aborts (cancel) — the reservation is never left behind.
     if (!persist || !conversationId || !upstream.body) {
       const headers: Record<string, string> = {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
       };
       if (conversationId) headers["X-Copilot-Conversation-Id"] = conversationId;
-      return new Response(upstream.body, { headers });
+      const teeDecoder = new TextDecoder();
+      let teeBuffer = "";
+      let teeText = "";
+      const settle = new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+          teeBuffer += teeDecoder.decode(chunk, { stream: true });
+          let idx: number;
+          while ((idx = teeBuffer.indexOf("\n")) !== -1) {
+            const line = teeBuffer.slice(0, idx);
+            teeBuffer = teeBuffer.slice(idx + 1);
+            if (!line.startsWith("data: ")) continue;
+            const json = line.slice(6).trim();
+            if (json === "[DONE]") continue;
+            try {
+              const c = JSON.parse(json).choices?.[0]?.delta?.content;
+              if (c) teeText += c;
+            } catch { /* partial line — next chunk completes it */ }
+          }
+        },
+        flush() {
+          settleSuccess(teeText).catch((e) => console.warn("settle failed", e));
+        },
+        cancel() {
+          settleFailure().catch((e) => console.warn("release failed", e));
+        },
+      });
+      return new Response(upstream.body.pipeThrough(settle), { headers });
     }
 
     // Persist path — tee the upstream stream, parse for assistant tokens to buffer,
