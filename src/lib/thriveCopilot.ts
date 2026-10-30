@@ -63,6 +63,7 @@ export async function streamCopilot({
   onDone,
   onError,
   signal,
+  attachments,
 }: StreamCopilotArgs) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -85,6 +86,7 @@ export async function streamCopilot({
         surface_context: surfaceContext,
         conversation_id: conversationId,
         persist: true,
+        attachments: attachments?.length ? attachments : undefined,
       }),
       signal,
     });
@@ -102,7 +104,13 @@ export async function streamCopilot({
 
   if (!resp.ok) {
     const data: any = await resp.json().catch(() => ({}));
-    if (resp.status === 429 && data?.code === "COPILOT_DAILY_LIMIT") {
+    if (resp.status === 429 && data?.code === "AI_ALLOWANCE_EXHAUSTED") {
+      // Personal allowance: what was used, when it resets.
+      onError(`You've used today's ${data.used}/${data.cap} for this. Resets at midnight UTC.`);
+    } else if (resp.status === 429 && data?.code === "AI_BUDGET_EXHAUSTED") {
+      // Global budget: same honesty, different wording — temporary, not personal.
+      onError("Kretopia's AI capacity for today is fully used — this is temporary and global, not about your account. Resets at midnight UTC.");
+    } else if (resp.status === 429 && data?.code === "COPILOT_DAILY_LIMIT") {
       onError(`You've used ${data.used}/${data.cap} Copilot messages today. Upgrade your plan for more — resets at midnight UTC.`);
     } else if (resp.status === 429) {
       onError("Slow down a sec — too many requests. Try again in a moment.");
