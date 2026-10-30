@@ -17,7 +17,7 @@
 // while Scout is open: feeds only, throttled, spends nothing).
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { checkAiFeatureRateLimit, gateAiCall, commitAiCredit, releaseAiCredit } from "../_shared/aiRateLimit.ts";
 import { PREMIUM_ENFORCED } from "../_shared/premiumSwitch.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import {
@@ -430,6 +430,9 @@ serve(async (req) => {
 
   let userId: string | null = null;
   let trigger = "manual";
+  // Whether a scout_scan reservation is outstanding and must be committed
+  // (success) or released (failure) before this request ends.
+  let scanReserved = false;
   try {
     const body = await req.json().catch(() => ({}));
     trigger = typeof body.trigger === "string" && body.trigger ? body.trigger.slice(0, 24) : "manual";
@@ -461,6 +464,29 @@ serve(async (req) => {
     } else {
       const rateLimit = await checkAiFeatureRateLimit(supabase, userId, "scout-gigs");
       if (!rateLimit.allowed) return rateLimit.response;
+
+      // One scan per user per day: results are cached 24h and repeat visits
+      // are served from that cache at zero cost. A scan within the last 24h
+      // means today's results are already on the board.
+      const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString();
+      const { count: recentRuns } = await supabase
+        .from("scout_runs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("started_at", dayAgo);
+      if ((recentRuns ?? 0) > 0) {
+        return json({
+          ok: true, cached: true,
+          message: "Today's Scout results are already on your board — fresh scan tomorrow.",
+          found: 0, filtered: 0, inserted: 0, queries: 0,
+        });
+      }
+
+      // Reserve before any Firecrawl/AI spend: one scan per user per day,
+      // global envelope checked first. Released if the scan fails.
+      const gate = await gateAiCall(supabase, userId, "scout_scan", 1);
+      if (!gate.allowed) return gate.response;
+      scanReserved = true;
     }
 
     const [{ data: profile }, { data: prefsRow }] = await Promise.all([
@@ -674,12 +700,21 @@ serve(async (req) => {
       .update({ last_run_at: new Date().toISOString() })
       .eq("user_id", userId);
 
+    if (scanReserved && userId) {
+      scanReserved = false;
+      await commitAiCredit(supabase, userId, "scout_scan", 1);
+    }
+
     return json({
       ok: true, found, filtered, inserted, queries: queryCount,
       sources: sourcesUsed, degraded,
     });
   } catch (e) {
     console.error("[scout] error", e);
+    if (scanReserved && userId) {
+      scanReserved = false;
+      await releaseAiCredit(supabase, userId, "scout_scan", 1);
+    }
     if (userId) {
       await supabase.from("scout_runs").insert({
         user_id: userId, trigger, error: String(e),

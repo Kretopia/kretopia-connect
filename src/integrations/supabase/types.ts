@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_credit_config: {
+        Row: {
+          daily_allowance: number
+          est_credits: number
+          feature: string
+          max_output_tokens: number | null
+          model: string | null
+          updated_at: string
+        }
+        Insert: {
+          daily_allowance?: number
+          est_credits?: number
+          feature: string
+          max_output_tokens?: number | null
+          model?: string | null
+          updated_at?: string
+        }
+        Update: {
+          daily_allowance?: number
+          est_credits?: number
+          feature?: string
+          max_output_tokens?: number | null
+          model?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_credit_envelope: {
+        Row: {
+          credits_cap: number
+          credits_reserved: number
+          credits_used: number
+          day: string
+          denials_allowance: number
+          denials_budget: number
+          updated_at: string
+        }
+        Insert: {
+          credits_cap: number
+          credits_reserved?: number
+          credits_used?: number
+          day: string
+          denials_allowance?: number
+          denials_budget?: number
+          updated_at?: string
+        }
+        Update: {
+          credits_cap?: number
+          credits_reserved?: number
+          credits_used?: number
+          day?: string
+          denials_allowance?: number
+          denials_budget?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_credit_ledger: {
+        Row: {
+          cap: number
+          credits_used: number
+          feature: string
+          reserved: number
+          updated_at: string
+          used: number
+          user_id: string
+          window_key: string
+        }
+        Insert: {
+          cap?: number
+          credits_used?: number
+          feature: string
+          reserved?: number
+          updated_at?: string
+          used?: number
+          user_id: string
+          window_key: string
+        }
+        Update: {
+          cap?: number
+          credits_used?: number
+          feature?: string
+          reserved?: number
+          updated_at?: string
+          used?: number
+          user_id?: string
+          window_key?: string
+        }
+        Relationships: []
+      }
       public_presence_search_quota: {
         Row: {
           bucket: string
@@ -73,10 +163,43 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      commit_ai_credit: {
+        Args: {
+          _credits: number
+          _feature: string
+          _units: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
       consume_public_presence_search: { Args: never; Returns: boolean }
       consume_username_auth_attempt: {
         Args: { _bucket: string; _day_cap: number; _minute_cap: number }
         Returns: boolean
+      }
+      get_ai_credit_overview: { Args: { _user_id?: string }; Returns: Json }
+      release_ai_credit: {
+        Args: {
+          _est_credits?: number
+          _feature: string
+          _units: number
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      try_reserve_ai_credit: {
+        Args: {
+          _est_credits?: number
+          _feature: string
+          _units: number
+          _user_id: string
+        }
+        Returns: {
+          allowed: boolean
+          cap: number
+          reason: string
+          used: number
+        }[]
       }
     }
     Enums: {

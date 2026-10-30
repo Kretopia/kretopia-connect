@@ -4,9 +4,11 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
-  streamCopilot, loadConversationMessages, createConversation, extractActions,
+  streamCopilot, loadConversationMessages, createConversation, extractActions, autocompleteKreto,
   type CopilotMessage,
 } from "@/lib/thriveCopilot";
+import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
+import { KretoQuotaIndicator } from "@/components/kreto/KretoQuotaIndicator";
 
 // Strip <action>/<plan> tags from the live-streaming buffer, same approach
 // already proven in ThriveAgentFab.tsx — remove fully-closed tags, then hide
@@ -87,6 +89,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // on screen, so the history effect must not wipe and reload them mid-stream.
   const createdHereRef = useRef<string | null>(null);
   const reducedMotion = useReducedMotion();
+  // Attachments (parsed server-side at upload), the last failed draft for
+  // retry, the ghost-text autocomplete suggestion, and a counter that
+  // re-reads the quota indicator after each send.
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  const [lastError, setLastError] = useState<{ message: string; draft: string } | null>(null);
+  const [ghost, setGhost] = useState("");
+  const [quotaRefresh, setQuotaRefresh] = useState(0);
+  const ghostTimerRef = useRef<number | undefined>(undefined);
+  const ghostAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -150,6 +161,19 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     const text = raw.trim();
     if (!text || streaming) return;
 
+    // A new send aborts any in-flight request and any pending autocomplete.
+    abortRef.current?.abort();
+    ghostAbortRef.current?.abort();
+    window.clearTimeout(ghostTimerRef.current);
+    setGhost("");
+    setLastError(null);
+
+    // Only fully parsed attachments travel with the message — a failed one
+    // keeps its chip (with retry) and never blocks sending the text.
+    const readyAttachments = attachments
+      .filter((a) => a.status === "ready" && a.text)
+      .map((a) => ({ name: a.name, text: a.text! }));
+
     setInput("");
     followRef.current = true;
     setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: "" }]);
@@ -203,11 +227,21 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         messages: [{ role: "user", content: text }],
         surface: "home",
         conversationId: activeId ?? undefined,
+        attachments: readyAttachments,
         onConversationId: (id) => { conversationIdRef.current = id; },
         onDelta: appendDelta,
-        onDone: () => {},
+        onDone: () => {
+          // Sent and answered — the attachments' job is done.
+          if (readyAttachments.length) {
+            setAttachments((list) => list.filter((a) => a.status !== "ready"));
+          }
+        },
         onError: (err) => {
           if (controller.signal.aborted) return; // the user pressed Stop; that is not an error
+          // A failed call never clears the draft: restore the text, show the
+          // real error, and offer a retry.
+          setInput(text);
+          setLastError({ message: err, draft: text });
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
@@ -238,6 +272,9 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       const aborted = e instanceof DOMException && e.name === "AbortError";
       if (!aborted) {
         console.error("InlineKretoChat stream failed:", e);
+        // Same contract as onError: keep the draft, show the error, offer retry.
+        setInput(text);
+        setLastError({ message: "Something went wrong on my end. Try again?", draft: text });
         setMessages((m) => {
           const next = [...m];
           const last = next[next.length - 1];
@@ -248,6 +285,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         });
       }
     } finally {
+      setQuotaRefresh((k) => k + 1);
       if (frame) cancelAnimationFrame(frame);
       // Stopped before a single token arrived: drop the empty "thinking" bubble instead of
       // leaving it spinning forever.
@@ -272,6 +310,35 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   const stop = () => {
     abortRef.current?.abort();
     setStreaming(false);
+  };
+
+  // Ghost-text autocomplete: 250ms debounce, 2s hard timeout, cancelled on
+  // every keystroke, never under 4 characters, silent on any failure.
+  const onInputChange = (value: string) => {
+    setInput(value);
+    ghostAbortRef.current?.abort();
+    window.clearTimeout(ghostTimerRef.current);
+    setGhost("");
+    if (streaming || value.trim().length < 4) return;
+    ghostTimerRef.current = window.setTimeout(() => {
+      const ctrl = new AbortController();
+      ghostAbortRef.current = ctrl;
+      const hardTimeout = window.setTimeout(() => ctrl.abort(), 2000);
+      autocompleteKreto(value, ctrl.signal)
+        .then((suggestion) => {
+          window.clearTimeout(hardTimeout);
+          if (ctrl.signal.aborted || !suggestion) return;
+          setGhost(value.endsWith(" ") || suggestion.startsWith(" ") ? suggestion : ` ${suggestion}`);
+        })
+        .catch(() => {});
+    }, 250);
+  };
+
+  const acceptGhost = (): boolean => {
+    if (!ghost) return false;
+    setInput((v) => v + ghost);
+    setGhost("");
+    return true;
   };
 
   return (
@@ -312,44 +379,80 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         )}
       </div>
 
-      <form
-        onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
-        className="flex shrink-0 items-end gap-2 border-t border-white/10 bg-white/[0.02] p-3"
-      >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              send(input).catch((err) => console.error(err));
-            }
-          }}
-          rows={1}
-          placeholder={`Ask ${BRAND.agentName} anything…`}
-          className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
-        />
-        {streaming ? (
-          <button
-            type="button"
-            onClick={stop}
-            className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center"
-            aria-label="Stop"
-          >
-            <Square className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button
-            type="submit"
-            disabled={!input.trim()}
-            className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
-            aria-label="Send"
-          >
-            <ArrowUp className="h-4 w-4" />
-          </button>
+      <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
+        <div className="flex items-center justify-between gap-2 px-3 pt-2">
+          <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
+          <KretoQuotaIndicator refreshKey={quotaRefresh} />
+        </div>
+
+        {lastError && (
+          <div className="flex items-center justify-between gap-2 px-3 pt-2">
+            <p className="text-xs text-white/50">That didn't go through — your draft is back in the composer.</p>
+            <button
+              type="button"
+              onClick={() => send(lastError.draft).catch((err) => console.error(err))}
+              className="btn-glass btn-glass-outline rounded-full px-3 py-1 text-xs font-semibold"
+            >
+              Retry
+            </button>
+          </div>
         )}
-      </form>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
+          className="flex items-end gap-2 p-3 pt-2"
+        >
+          <div className="relative flex-1">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => onInputChange(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.key === "Tab" || (e.key === "ArrowRight" && e.currentTarget.selectionStart === input.length)) && acceptGhost()) {
+                  e.preventDefault();
+                  return;
+                }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send(input).catch((err) => console.error(err));
+                }
+              }}
+              rows={1}
+              placeholder={`Ask ${BRAND.agentName} anything…`}
+              className="relative z-10 w-full resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
+            />
+            {ghost && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre py-2 text-sm"
+              >
+                <span className="invisible">{input}</span>
+                <span className="text-white/35">{ghost}</span>
+                <span className="ml-1 rounded border border-white/15 px-1 text-[9px] uppercase tracking-wider text-white/30">Tab</span>
+              </div>
+            )}
+          </div>
+          {streaming ? (
+            <button
+              type="button"
+              onClick={stop}
+              className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center"
+              aria-label="Stop"
+            >
+              <Square className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={!input.trim()}
+              className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
+              aria-label="Send"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </button>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

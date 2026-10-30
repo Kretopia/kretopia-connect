@@ -26,6 +26,7 @@ import { AmbassadorsTab } from "@/components/admin/AmbassadorsTab";
 import { ProductDashboardTab } from "@/components/admin/ProductDashboardTab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { loadAiCreditOverview } from "@/lib/thriveCopilot";
 
 interface OdosImportResult {
   name: string;
@@ -107,7 +108,10 @@ const TAB_GROUPS: AdminTabGroup[] = [
   },
   {
     label: "System",
-    tabs: [{ value: "system", label: "System", icon: Settings }],
+    tabs: [
+      { value: "system", label: "System", icon: Settings },
+      { value: "ai-credits", label: "AI Credits", icon: Bot },
+    ],
   },
 ];
 
@@ -116,6 +120,94 @@ interface AdminOverview {
   pendingVerifications: number;
   unclaimedProfiles: number;
   pendingTransfers: number;
+}
+
+/**
+ * Read-only AI credit view: today's credits used vs the global cap, the
+ * per-feature breakdown, and denial counts. No charts, no writes — the
+ * numbers come from the get_ai_credit_overview RPC.
+ */
+function AiCreditsTab() {
+  const [data, setData] = useState<Awaited<ReturnType<typeof loadAiCreditOverview>>>(null);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadAiCreditOverview()
+      .then((o) => { if (!cancelled) { setData(o); setLoaded(true); } })
+      .catch(() => { if (!cancelled) setLoaded(true); });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (!loaded) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground py-6">
+        <KretopiaSpinner className="h-4 w-4" /> Loading today's AI credit picture…
+      </div>
+    );
+  }
+  if (!data) {
+    return <p className="text-sm text-muted-foreground py-6">AI credit data is unavailable on this backend.</p>;
+  }
+
+  const env = data.envelope;
+  const used = Number(env.credits_used);
+  const cap = Number(env.credits_cap);
+  const reserved = Number(env.credits_reserved);
+
+  return (
+    <Card className="rounded-2xl shadow-none">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bot className="h-5 w-5" />
+          AI Credits — today
+        </CardTitle>
+        <CardDescription>
+          Global envelope and per-feature usage for {env.day}. Limits live in the ai_credit_config table.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Used</p>
+            <p className="text-lg font-semibold">{used.toFixed(3)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Cap</p>
+            <p className="text-lg font-semibold">{cap.toFixed(3)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Reserved</p>
+            <p className="text-lg font-semibold">{reserved.toFixed(3)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Denials</p>
+            <p className="text-lg font-semibold">
+              {env.denials_allowance + env.denials_budget}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">
+                ({env.denials_allowance} allowance · {env.denials_budget} budget)
+              </span>
+            </p>
+          </div>
+        </div>
+
+        {data.features.length > 0 ? (
+          <div className="rounded-xl border border-border divide-y divide-border">
+            {data.features.map((f) => (
+              <div key={f.feature} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <span className="font-medium">{f.feature}</span>
+                <span className="text-muted-foreground">
+                  {f.used} used{f.reserved > 0 ? ` · ${f.reserved} in flight` : ""} · {Number(f.credits_used).toFixed(4)} cr
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">No AI usage recorded today.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 export default function Admin() {
@@ -473,6 +565,10 @@ export default function Admin() {
 
         <TabsContent value="scout-funnel" className="mt-4 sm:mt-6">
           <ScoutFunnelTab />
+        </TabsContent>
+
+        <TabsContent value="ai-credits" className="mt-4 sm:mt-6">
+          <AiCreditsTab />
         </TabsContent>
 
         <TabsContent value="system" className="mt-4 sm:mt-6">
