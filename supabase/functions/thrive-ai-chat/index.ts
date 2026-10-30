@@ -958,6 +958,11 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
           }
         }
       },
+      // Client aborted mid-stream (Stop button, navigation): release the
+      // reservation so unused credit is never held.
+      cancel() {
+        settleFailure().catch((e) => console.warn("release on abort failed", e));
+      },
     });
 
     const piped = upstream.body.pipeThrough(transformer);
