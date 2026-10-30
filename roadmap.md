@@ -1,5 +1,16 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Security lockdown (October 30)
+- [ ] 1. Shared request guard and behavioral tests.
+- [ ] 2. Edge perimeter: origins, authentication, validation, isolation, errors.
+- [ ] 3. SSRF bounded fetching.
+- [ ] 4. Exposed endpoint removal and authentication hardening.
+- [ ] 5. CSP, safe links, HTML sanitation, QR print safety.
+- [ ] 6. Patched dependencies and audit.
+- [ ] 7. Read-only policy audit and unapplied SQL migrations.
+- [ ] 8. Security regression suite and final verification.
+SQL must stay files only; no publication or legacy deployment. Full tests run per step; build/typecheck are managed by the preview harness.
+
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
 - [x] Guard optional username linking with live account validation, retain server 401 protection, and allow retry after failed linking. 19 tests pass; authenticated end-to-end check still awaits an available session, no publication.
