@@ -7,7 +7,7 @@ import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { ShortlistedGigs } from "@/components/opportunity/ShortlistedGigs";
-import { Radar, Store, Bookmark, Layers } from "lucide-react";
+import { Radar, Bookmark, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
@@ -23,13 +23,9 @@ import { Button } from "@/components/ui/button";
 
 type Tab = ScoutTab;
 
-// Tab order: For You first (the personalized scout is the reason to open
-// this page), then everything from every source, the open marketplace, and
-// saved gigs.
 const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
-  { id: "scouted", label: "For You", icon: Radar, hint: "Real gigs scouted from across the web" },
   { id: "all", label: "All Sources", icon: Layers, hint: "Every opportunity from every source, sorted into fields" },
-  { id: "marketplace", label: "Open Gigs", icon: Store, hint: "All open gigs on Kretopia" },
+  { id: "scouted", label: "For You", icon: Radar, hint: "Real gigs scouted from across the web" },
   { id: "shortlist", label: "Shortlist", icon: Bookmark, hint: "Gigs you saved for later" },
 ];
 
@@ -39,14 +35,15 @@ const TABS: { id: Tab; label: string; icon: typeof Radar; hint: string }[] = [
 const Scout = () => {
   const [params, setParams] = useSearchParams();
   const requestedTab = params.get("tab");
-  const initial = TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "scouted";
+  const initial = requestedTab === "marketplace" ? "shortlist" : TABS.some((t) => t.id === requestedTab) ? (requestedTab as Tab) : "all";
   const contextQuery = params.get("q") || "";
-  const [tab, setTab] = useState<Tab>(initial);
+  const tab = initial;
+  const [shortlistView, setShortlistView] = useState(requestedTab === "marketplace" ? "open" : "saved");
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const switchTab = (next: Tab) => {
-    setTab(next);
+    if (next === "marketplace") { next = "shortlist"; setShortlistView("open"); }
     const p = new URLSearchParams(params);
     p.set("tab", next);
     setParams(p, { replace: true });
@@ -149,8 +146,12 @@ const Scout = () => {
         )}
         {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
         {tab === "all" && <ScoutAllSources />}
-        {tab === "shortlist" && <ShortlistedGigs onOpenForYou={() => switchTab("scouted")} />}
-        {tab === "marketplace" && <OpportunitiesFeed onOpenForYou={() => switchTab("scouted")} />}
+        {tab === "shortlist" && <div className="space-y-4">
+          <div role="group" aria-label="Shortlist lists" className="flex items-center gap-2 border-b border-border pb-3">
+            {([ ["saved", "Saved gigs"], ["open", "Open gigs"] ] as const).map(([id, label]) => <Button key={id} variant={shortlistView === id ? "secondary" : "ghost"} size="sm" aria-pressed={shortlistView === id} onClick={() => setShortlistView(id)}>{label}</Button>)}
+          </div>
+          {shortlistView === "saved" ? <ShortlistedGigs onOpenForYou={() => switchTab("scouted")} /> : <OpportunitiesFeed onOpenForYou={() => switchTab("scouted")} scoutCards />}
+        </div>}
         {showKreto && <ScoutKretoAssist getPromptContext={describeScoutedGigs} />}
         </ScoutResultsWrapped>
       </StudioFeatureShell>

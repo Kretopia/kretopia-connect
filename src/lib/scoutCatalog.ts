@@ -7,6 +7,7 @@
 
 import { categoryOf, classifyOpportunity, cleanTitle, type CategoryGroup, type CategoryId, type Language, type Level, type WorkMode } from "./opportunityTaxonomy";
 import { hasRealCompensation } from "./scoutPay";
+import type { ScoutedGig } from "@/components/scout/scout.types";
 import { sourceDisplayName, sourceLinkHref, sourceLinkRel } from "../../supabase/functions/_shared/discovery/labels";
 
 export type PayPeriod = "hour" | "day" | "week" | "month" | "year";
@@ -43,6 +44,7 @@ export interface KretopiaRow {
   compensation: string | null;
   location: string | null;
   created_at: string | null;
+  image_url?: string | null;
 }
 
 /** The same job as another posting of the same company and title, for another place. */
@@ -60,6 +62,7 @@ export interface CatalogItem {
   sourceId: string;
   sourceName: string;
   title: string;
+  image?: string | null;
   company: string | null;
   /** For the card: a long list of places is cut to the first two and a count. */
   location: string | null;
@@ -186,6 +189,7 @@ export function kretopiaToItem(r: KretopiaRow): CatalogItem {
   const posted = time(r.created_at) != null ? r.created_at : null;
   return {
     id: `kre:${r.id}`,
+    image: r.image_url,
     origin: "kretopia",
     sourceId: KRETOPIA_SOURCE,
     sourceName: "Kretopia",
@@ -252,6 +256,28 @@ export function buildCatalog(external: ExternalRow[], kretopia: KretopiaRow[]): 
     it.location = shortLocation(it.locationFull);
   }
   return out;
+}
+
+/** Include the actual For You records, with their artwork; never invent matching IDs or fit claims. */
+export function includeScoutedGigs(items: CatalogItem[], gigs: ScoutedGig[]): CatalogItem[] {
+  const merged = [...items];
+  for (const gig of gigs) {
+    const index = merged.findIndex((item) => item.openUrl?.split("?")[0] === gig.source_url.split("?")[0] || (item.title.toLowerCase() === gig.title.toLowerCase() && item.company?.toLowerCase() === gig.company?.toLowerCase()));
+    if (index >= 0) {
+      merged[index] = { ...merged[index], image: gig.image_url ?? merged[index].image };
+      continue;
+    }
+    const classified = classifyOpportunity({ title: gig.title, excerpt: gig.description, location: gig.location, remote_scope: gig.remote ? "remote" : null });
+    merged.push({
+      id: `scout:${gig.id}`, origin: "external", sourceId: gig.source, sourceName: gig.source_name || gig.source,
+      title: gig.title, image: gig.image_url, company: gig.company, location: shortLocation(gig.location), locationFull: gig.location,
+      more: [], workMode: classified.workMode, level: classified.level, category: classified.category, alsoIn: classified.alsoIn,
+      group: classified.group, language: classified.language, pay: hasRealCompensation(gig.compensation) ? gig.compensation : null,
+      postedAt: gig.posted_at ?? null, seenAt: null, sortAt: time(gig.posted_at ?? null) ?? time(gig.scouted_at) ?? 0,
+      excerpt: gig.description, claimed: false, detailTo: gig.source_url, openUrl: gig.apply_url || gig.source_url, openRel: "noopener noreferrer",
+    });
+  }
+  return merged.sort((a, b) => b.sortAt - a.sortAt);
 }
 
 // ── Filters and counts ────────────────────────────────────────────────────────────────────────────────────

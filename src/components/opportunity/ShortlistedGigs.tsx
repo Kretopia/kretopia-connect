@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,8 +10,8 @@ import { Bookmark, MapPin, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScoutEvidence } from "./ScoutEvidence";
-import { KretoScene } from "@/components/brand/KretoScene";
 import { useOptionalScoutScan } from "@/components/scout/scoutScanContext";
+import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 import { gigStatesById } from "@/components/scout/gigState";
 
 interface ScoutedGig {
@@ -41,18 +41,18 @@ export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } 
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const scan = useOptionalScoutScan();
   const gigStates = useMemo(() => gigStatesById(scan?.actions ?? []), [scan?.actions]);
   const queryKey = ["shortlisted-gigs", user?.id];
   const { data: gigs = [], isLoading: loading } = useQuery({
     queryKey,
     queryFn: async () => {
+      if (!user) return [];
       // Fetch all 'saved' actions then their gigs (subset is small).
       const { data: actions } = await supabase
         .from("scouted_gig_actions")
         .select("scouted_gig_id, created_at")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("action", "saved")
         .order("created_at", { ascending: false })
         .limit(60);
@@ -122,64 +122,15 @@ export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } 
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {gigs.map((g) => (
-          <Card key={g.id} className="overflow-hidden flex flex-col">
-            <div className="aspect-[16/9] overflow-hidden bg-muted">
-              {g.image_url && !failedImages.has(g.id) ? (
-                <img
-                  src={g.image_url}
-                  alt={g.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  decoding="async"
-                  onError={() => setFailedImages((prev) => new Set(prev).add(g.id))}
-                />
-              ) : (
-                <KretoScene scene="scout" size="thumb" className="h-full w-full" />
-              )}
-            </div>
-            <div className="p-3 flex flex-col gap-2 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-bold leading-tight line-clamp-2">{g.title}</h3>
-                {gigStates.get(g.id) && (
-                  <Badge variant="outline" title={gigStates.get(g.id)!.hint} className="px-2 py-0.5 text-[10px] font-semibold">
-                    {gigStates.get(g.id)!.label}
-                  </Badge>
-                )}
-              </div>
-              {(g.company || g.location) && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                  {g.company && <span className="font-medium text-foreground/80">{g.company}</span>}
-                  {g.location && <><span>·</span><MapPin className="h-3 w-3" />{g.location}</>}
-                  {g.remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
-                </p>
-              )}
-              <ScoutEvidence gig={g} compact />
-              <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-                <span className="text-[10px] text-muted-foreground">
-                  {g.saved_at
-                    ? `Saved ${formatDistanceToNow(new Date(g.saved_at), { addSuffix: true })}`
-                    : `Found ${formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}`}
-                </span>
-                <div className="flex items-center gap-1">
-                  <Button asChild size="sm" variant="outline" className="min-h-11 text-xs">
-                    <a href={g.apply_url || g.source_url} target="_blank" rel="noopener noreferrer">
-                      Apply <ExternalLink className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-11 w-11 text-muted-foreground"
-                    onClick={() => unsave(g.id)}
-                    title="Remove from shortlist"
-                    aria-label={`Remove ${g.title} from shortlist`}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </Card>
+          <ScoutGigCard key={g.id} title={g.title} image={g.image_url} href={g.apply_url || g.source_url} pay={g.compensation}
+            badges={gigStates.get(g.id) && <Badge variant="outline" title={gigStates.get(g.id)?.hint} className="bg-background/90 text-[10px]">{gigStates.get(g.id)?.label}</Badge>}
+            footer={<div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">{g.saved_at ? `Saved ${formatDistanceToNow(new Date(g.saved_at), { addSuffix: true })}` : `Found ${formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}`}</span>
+              <div className="flex items-center gap-1"><Button asChild size="sm" variant="outline" className="min-h-11"><a href={g.apply_url || g.source_url} target="_blank" rel="noopener noreferrer">Apply <ExternalLink className="ml-1 h-3 w-3" /></a></Button><Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => unsave(g.id)} title="Remove from shortlist" aria-label={`Remove ${g.title} from shortlist`}><X className="h-4 w-4" /></Button></div>
+            </div>}>
+            {(g.company || g.location) && <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{g.company}{g.location && <><MapPin className="h-3 w-3" />{g.location}</>}{g.remote && <Badge variant="outline">Remote</Badge>}</p>}
+            <ScoutEvidence gig={g} compact />
+          </ScoutGigCard>
         ))}
       </div>
     </div>

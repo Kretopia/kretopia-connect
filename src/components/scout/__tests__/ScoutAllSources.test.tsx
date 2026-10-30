@@ -8,6 +8,9 @@ type State = { data?: { items: CatalogItem[]; partial: boolean }; isLoading: boo
 let state: State = { isLoading: false, isError: false };
 vi.mock("@/hooks/useScoutCatalog", () => ({ useScoutCatalog: () => state, SCOUT_CATALOG_KEY: ["scout-catalog"] }));
 
+vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => null }));
+vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul> }));
+
 import { ScoutAllSources } from "../ScoutAllSources";
 
 const DAY = 86_400_000;
@@ -40,7 +43,13 @@ const show = (rows: ExternalRow[], k: KretopiaRow[] = [], partial = false) => {
   );
 };
 const cards = () => screen.queryAllByTestId("catalog-card");
-const family = (name: string) => within(screen.getByRole("group", { name: "Field" })).getByRole("button", { name: new RegExp(`^${name}`) });
+const openFilter = (name: string) => {
+  const filters = screen.getByRole("button", { name: /^Filters/ });
+  if (filters.getAttribute("aria-expanded") === "false") fireEvent.click(filters);
+  const trigger = screen.getByRole("button", { name: new RegExp(`^${name}`) });
+  if (trigger.getAttribute("aria-expanded") === "false") fireEvent.click(trigger);
+};
+const family = (name: string) => { openFilter("Creative field"); return within(screen.getByRole("group", { name: "Field" })).getByRole("button", { name: new RegExp(`^${name}`) }); };
 
 beforeEach(() => {
   n = 0;
@@ -122,12 +131,15 @@ describe("ScoutAllSources: sorting it out", () => {
 
   it("the counts next to a filter ignore that filter itself", () => {
     show(rows());
+    openFilter("Sources");
     fireEvent.click(screen.getByRole("button", { name: /^Remote OK/ }));
     expect(cards()).toHaveLength(2);
     // with Remote OK on, the family pills count what is left, and the source pills still count every source's own share
     expect(family("Engineering")).toHaveTextContent("1");
+    openFilter("Sources");
     expect(within(screen.getByRole("group", { name: "Source" })).getByRole("button", { name: /^Jobicy/ })).toHaveTextContent("1");
     // the pill that has nothing left disappears; the pressed one stays
+    openFilter("Creative field");
     expect(within(screen.getByRole("group", { name: "Field" })).queryByRole("button", { name: /^Writing/ })).not.toBeInTheDocument();
   });
 
@@ -151,32 +163,32 @@ describe("ScoutAllSources: sorting it out", () => {
 
   it("offers the work-mode filter only when it would separate something, and applies it", () => {
     show(rows());
+    openFilter("Work & experience");
     const work = screen.getByRole("group", { name: "Work" });
     fireEvent.click(within(work).getByRole("button", { name: /^On-site/ }));
     expect(cards()).toHaveLength(1);
     expect(cards()[0]).toHaveTextContent("Senior Software Engineer");
   });
 
-  it("on a phone the other filters open from one Filters button, which counts the ones that are on", () => {
+  it("progressively applies filters without exposing every group", () => {
     show(rows());
-    const button = screen.getByRole("button", { name: /^Filters/ });
-    const panel = document.getElementById("scout-all-filters")!;
-    expect(button).toHaveAttribute("aria-controls", "scout-all-filters");
-    expect(button).toHaveAttribute("aria-expanded", "false");
-    expect(panel).toHaveClass("hidden", "sm:grid"); // tucked away below sm, always there from sm up
-    fireEvent.click(button);
-    expect(button).toHaveAttribute("aria-expanded", "true");
-    expect(panel).not.toHaveClass("hidden");
+    expect(screen.queryByRole("group", { name: "Source" })).not.toBeInTheDocument();
+    openFilter("Work & experience");
     fireEvent.click(within(screen.getByRole("group", { name: "Work" })).getByRole("button", { name: /^Remote/ }));
+    expect(cards()).toHaveLength(3);
+    openFilter("Sources");
+    expect(screen.queryByRole("group", { name: "Work" })).not.toBeInTheDocument();
     fireEvent.click(within(screen.getByRole("group", { name: "Source" })).getByRole("button", { name: /^Jobicy/ }));
-    expect(button).toHaveTextContent("Filters · 2");
+    expect(cards()).toHaveLength(1);
   });
 
   it("hides the pay filter when no posting states a pay, shows it when one does", () => {
     show(rows());
+    openFilter("Pay, language & freshness");
     expect(screen.queryByRole("group", { name: "Pay" })).not.toBeInTheDocument();
     document.body.innerHTML = "";
     show([ext("Art Director", { budget: { min: 90000, max: 120000, currency: "USD", period: "year" } }), ext("Illustrator")]);
+    openFilter("Pay, language & freshness");
     fireEvent.click(within(screen.getByRole("group", { name: "Pay" })).getByRole("button", { name: /^Pay listed/ }));
     expect(cards()).toHaveLength(1);
     expect(cards()[0]).toHaveTextContent("$90K–$120K / yr");

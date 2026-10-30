@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NO_FILTERS, buildCatalog, compactAmount, externalToItem, facets, filterCatalog, filtersActive, groupByCategory, kretopiaToItem, payLabel, shortLocation, type CatalogFilters, type ExternalRow, type KretopiaRow } from "../scoutCatalog";
+import { NO_FILTERS, buildCatalog, includeScoutedGigs, compactAmount, externalToItem, facets, filterCatalog, filtersActive, groupByCategory, kretopiaToItem, payLabel, shortLocation, type CatalogFilters, type ExternalRow, type KretopiaRow } from "../scoutCatalog";
 
 const NOW = Date.parse("2026-10-29T12:00:00Z");
 const daysAgo = (n: number) => new Date(NOW - n * 86_400_000).toISOString();
@@ -278,5 +278,22 @@ describe("filters and counts", () => {
     expect(groups[0].items.map((i) => i.id)).toEqual(["ext:3", "ext:5"]); // dated before undated
     // a posting named under two families is listed once, under its first
     expect(groups.reduce((n, g) => n + g.items.length, 0)).toBe(5);
+  });
+});
+
+
+describe("For You records in All Sources", () => {
+  const gig = { id: "personal-1", title: "Motion Designer", company: "Studio", location: "Remote", remote: true, source: "gigboard", source_name: "Real Board", source_url: "https://board.example/jobs/1", apply_url: null, description: "Animate films", full_description: null, image_url: "/actual-artwork.webp", compensation: "$800", contact_email: null, fit_score: 80, fit_reason: "Motion", scouted_at: daysAgo(1), posted_at: null, details_fetched_at: null };
+  it("includes actual For You artwork, title, pay and source without changing the source destination", () => {
+    const result = includeScoutedGigs([], [gig]);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ title: "Motion Designer", image: "/actual-artwork.webp", pay: "$800", detailTo: "https://board.example/jobs/1" });
+  });
+  it("keeps one source record when the same gig already exists in the catalog", () => {
+    const catalog = buildCatalog([ext({ title: "Motion Designer", original_publisher: "Studio", apply_url: gig.source_url })], []);
+    const result = includeScoutedGigs(catalog, [gig]);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("ext:e1");
+    expect(result[0].image).toBe("/actual-artwork.webp");
   });
 });

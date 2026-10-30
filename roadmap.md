@@ -1,5 +1,11 @@
 # Roadmap
 
+## Scout sources overhaul
+- [x] Make All Sources default/first; merge Open Gigs into Shortlist as Saved gigs/Open gigs, preserving old marketplace links.
+- [x] Progressively disclose four filter groups; one native horizontal rail per field, shared For You card anatomy across tabs, actual personalized records/artwork merged into All Sources without fabricated IDs.
+- [x] Focused tests and live public Scout at 1280/375px: 217 real opportunities, progressive disclosures, mouse edge-scroll, keyboard/native mobile rail, merged Open gigs access, no page overflow/errors. No publication or backend changes.
+- [ ] Verify personalized For You and saved-card read-back on a connected legacy account; no managed legacy session is available. Mobile native touch gestures are supported but physical-device swipe is unverified.
+
 ## Community legal page
 - [x] Replace the mistakenly supplied privacy content with all eight sections and 36 content blocks of Kretopia_Community_Guidelines_2026_v6.html; preserve the shared Terms/Privacy layout, Community links and existing URL.
 - [x] 16 legal/footer tests pass; browser verifies Privacy → Community, corrected heading, eight sections, no old privacy text and reporting anchor; automatic compilation OK. No publication or backend changes.
