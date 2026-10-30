@@ -61,3 +61,4 @@ export const NetworkVisualization = ({ onInvite, connections = [] }: { onInvite:
     <footer className="flex flex-wrap items-center gap-2 pt-3"><Button variant="ghost" size="sm" onClick={() => navigate("/credits")}><Trophy className="mr-1.5 h-3.5 w-3.5" />Kretopia Credits</Button><Button variant="ghost" size="sm" onClick={() => navigate("/scout?tab=all")}><Radar className="mr-1.5 h-3.5 w-3.5" />Find Gigs</Button></footer>
     <DegreeExplorerDrawer open={drawer} onOpenChange={setDrawer} initialDegree={degree} />
   </section>;
+};

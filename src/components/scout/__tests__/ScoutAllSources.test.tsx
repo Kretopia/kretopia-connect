@@ -9,7 +9,7 @@ let state: State = { isLoading: false, isError: false };
 vi.mock("@/hooks/useScoutCatalog", () => ({ useScoutCatalog: () => state, SCOUT_CATALOG_KEY: ["scout-catalog"] }));
 
 vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => null }));
-vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children }: { children: React.ReactNode }) => <ul>{children}</ul> }));
+vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children, heading }: { children: React.ReactNode; heading?: React.ReactNode }) => <div>{heading}<ul>{children}</ul></div> }));
 
 import { ScoutAllSources } from "../ScoutAllSources";
 
