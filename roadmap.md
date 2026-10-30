@@ -1,10 +1,11 @@
 # Roadmap
 
 ## Scout and Match presentation overhaul (October 30)
-- [ ] Consolidate Scout search/filter controls with progressive disclosure and compact field navigation.
-- [ ] Share Scout-style section tabs with Match; retain Discover dimensions and actions, improve creator card hierarchy and add one Browse carousel per creative category.
-- [ ] Replace Connected's circular visualization with an interactive Kreto 3D scene of actual connections; consolidate path, reach, circle and rewards into one workspace without auto-accepting relationships.
-- [ ] Run focused regressions and desktop/mobile browser checks; leave backend, publication and consent rules unchanged.
+- [x] Parse published Scout: 217 opportunities across 4 sources. Consolidate search/filters in a bounded popover with one accordion group open; combine field heading and carousel arrows.
+- [x] Share Scout-style section tabs with Match; retain Discover grid geometry, image ratio, gestures and actions; add shared real-data creator cards to Browse/Interested and one Browse carousel per Passport craft.
+- [x] Replace Connected's circular visualization with a lazy volumetric Three.js Kreto scene of accepted profiles passed from its existing query; consolidate path, reach, health, circle and rewards into one progressive workspace. No automatic relationship writes or backend changes.
+- [x] 97 focused regressions plus 2 network-workspace tests passed. Browser checks live Scout filters, tabs and 217 results at 1280/375px; isolated real creator-card and 3D components verify nonblank rendering, drag/reset, profile actions and no page overflow. No publication.
+- [ ] Verify personalized Discover/Browse/Interested and populated Connected on a real legacy account — legacy session unavailable; isolated fixture checks do not certify authenticated live data or storage. Official logo CDN delivery in localhost remains unavailable.
 
 ## Scout sources overhaul
 - [x] Make All Sources default/first; merge Open Gigs into Shortlist as Saved gigs/Open gigs, preserving old marketplace links.

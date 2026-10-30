@@ -31,7 +31,7 @@ describe("Connected workspace", () => {
     fireEvent.click(screen.getByRole("button", { name: "Creative Circle" }));
     expect(screen.queryByLabelText("Path search")).toBeNull();
     expect(callbacks.invite).not.toHaveBeenCalled();
-    fireEvent.click(screen.getAllByRole("button", { name: "Invite", exact: true })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Invite$/ })[0]);
     expect(callbacks.invite).toHaveBeenCalledTimes(1);
   });
 });
