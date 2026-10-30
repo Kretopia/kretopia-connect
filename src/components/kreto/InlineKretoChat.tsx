@@ -4,9 +4,11 @@ import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
-  streamCopilot, loadConversationMessages, createConversation, extractActions,
+  streamCopilot, loadConversationMessages, createConversation, extractActions, autocompleteKreto,
   type CopilotMessage,
 } from "@/lib/thriveCopilot";
+import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
+import { KretoQuotaIndicator } from "@/components/kreto/KretoQuotaIndicator";
 
 // Strip <action>/<plan> tags from the live-streaming buffer, same approach
 // already proven in ThriveAgentFab.tsx — remove fully-closed tags, then hide
@@ -87,6 +89,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // on screen, so the history effect must not wipe and reload them mid-stream.
   const createdHereRef = useRef<string | null>(null);
   const reducedMotion = useReducedMotion();
+  // Attachments (parsed server-side at upload), the last failed draft for
+  // retry, the ghost-text autocomplete suggestion, and a counter that
+  // re-reads the quota indicator after each send.
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  const [lastError, setLastError] = useState<{ message: string; draft: string } | null>(null);
+  const [ghost, setGhost] = useState("");
+  const [quotaRefresh, setQuotaRefresh] = useState(0);
+  const ghostTimerRef = useRef<number | undefined>(undefined);
+  const ghostAbortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
