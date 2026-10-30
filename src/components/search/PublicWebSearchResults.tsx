@@ -11,7 +11,6 @@ export function PublicWebSearchResults({ query }: { query: string }) {
   const [rows, setRows] = useState<PresenceResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
-  const [ranking, setRanking] = useState(false);
   const [resolvedQuery, setResolvedQuery] = useState(query);
   const valid = query.trim().length >= 2 && query.length <= 200;
   useEffect(() => {
@@ -19,7 +18,6 @@ export function PublicWebSearchResults({ query }: { query: string }) {
     setRows([]);
     setUnavailable(false);
     setLoading(false);
-    setRanking(false);
     setResolvedQuery(query);
     if (!PUBLIC_WEB_SEARCH_ENABLED || query.trim().length < 2 || query.length > 200) return;
     const cached = getCachedPublicWebSearch(query);
@@ -30,7 +28,6 @@ export function PublicWebSearchResults({ query }: { query: string }) {
         const data = await invokePublicWebSearch(query.trim(), controller.signal, update => {
           if (controller.signal.aborted) return;
           if (update.available) setRows(normalizePresenceResults(update.results ?? []));
-          setRanking(update.phase === 'web');
         });
         if (controller.signal.aborted) return;
         if (data?.available !== true) setUnavailable(true);
@@ -38,7 +35,6 @@ export function PublicWebSearchResults({ query }: { query: string }) {
       } catch {
         if (!controller.signal.aborted) setUnavailable(true);
       } finally {
-        if (!controller.signal.aborted) { setLoading(false); setRanking(false); }
       }
     }, PUBLIC_WEB_SEARCH_DEBOUNCE_MS);
     return () => { clearTimeout(timer); controller.abort(); };
