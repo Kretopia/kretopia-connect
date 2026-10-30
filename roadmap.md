@@ -2,6 +2,8 @@
 
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
+- [x] Guard optional username linking with live account validation, retain server 401 protection, and allow retry after failed linking. 19 tests pass; authenticated end-to-end check still awaits an available session, no publication.
+
 - [x] Fix check-subscription authentication failures in source: reject absent/deleted/foreign sessions with 401 and prevent background calls with an unvalidated session. 27 tests pass; payment behavior unchanged.
 - [ ] Apply the function's auth-only fix on the backend serving the failing call and verify a real signed-in session; legacy deployment access/session unavailable here. No unrelated Cloud/payment deployment.
 
