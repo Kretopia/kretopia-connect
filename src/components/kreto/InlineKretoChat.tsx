@@ -272,6 +272,9 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       const aborted = e instanceof DOMException && e.name === "AbortError";
       if (!aborted) {
         console.error("InlineKretoChat stream failed:", e);
+        // Same contract as onError: keep the draft, show the error, offer retry.
+        setInput(text);
+        setLastError({ message: "Something went wrong on my end. Try again?", draft: text });
         setMessages((m) => {
           const next = [...m];
           const last = next[next.length - 1];
@@ -282,6 +285,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         });
       }
     } finally {
+      setQuotaRefresh((k) => k + 1);
       if (frame) cancelAnimationFrame(frame);
       // Stopped before a single token arrived: drop the empty "thinking" bubble instead of
       // leaving it spinning forever.
