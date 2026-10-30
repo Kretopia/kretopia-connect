@@ -82,15 +82,20 @@ export async function signInWithUsername(rawUsername: string, password: string):
 }
 
 const linkedTokens = new Set<string>();
+const linkingTokens = new Set<string>();
 /**
  * Records that this signed-in account can use @username sign-in. Sends only
  * the user's own session token; the server verifies it. Fire-and-forget.
  */
 export async function linkUsernameLogin(accessToken: string | undefined | null): Promise<void> {
-  if (!accessToken || linkedTokens.has(accessToken)) return;
-  linkedTokens.add(accessToken);
+  if (!accessToken || linkedTokens.has(accessToken) || linkingTokens.has(accessToken)) return;
+  linkingTokens.add(accessToken);
   try {
-    await fetch(`${AUTH_BACKEND_URL}/functions/v1/username-auth`, {
+    // Stored tokens can outlive their account or belong to another auth service.
+    // Validate with the app's auth server before the optional legacy link call.
+    const { data, error } = await supabase.auth.getUser(accessToken);
+    if (error || !data.user?.id || !data.user.email) return;
+    const response = await fetch(`${AUTH_BACKEND_URL}/functions/v1/username-auth`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,7 +104,16 @@ export async function linkUsernameLogin(accessToken: string | undefined | null):
       },
       body: JSON.stringify({ action: "link" }),
     });
+    if (!response.ok) return;
+    const result = await response.json().catch(() => null);
+    if (result?.linked === true) {
+      // Keep only the latest successful token, never an unbounded credential cache.
+      linkedTokens.clear();
+      linkedTokens.add(accessToken);
+    }
   } catch {
     /* non-blocking */
+  } finally {
+    linkingTokens.delete(accessToken);
   }
 }
