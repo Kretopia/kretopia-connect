@@ -393,7 +393,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
         <div className="flex items-center justify-between gap-2 px-3 pt-2">
           <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
-          <KretoQuotaIndicator refreshKey={quotaRefresh} />
+          <KretoQuotaIndicator refreshKey={quotaRefresh + (streaming ? 1 : 0) + attachments.filter(a => a.status === "ready").length} />
         </div>
 
         {lastError && (
