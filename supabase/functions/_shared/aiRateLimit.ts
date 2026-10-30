@@ -24,6 +24,7 @@
 //   const gate = await checkAiFeatureRateLimit(admin, userId, "generate-content");
 //   if (!gate.allowed) return gate.response;
 
+// @ts-ignore Deno resolves this remote type import; browser-only test typechecks do not.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {

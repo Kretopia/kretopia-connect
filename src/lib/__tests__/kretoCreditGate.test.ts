@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+// @ts-ignore Deno module's remote type imports are resolved by Vitest, not the browser compiler.
 import { gateAiCall, releaseAiCredit } from '../../../supabase/functions/_shared/aiRateLimit';
 
 describe('Cloud reservation contract', () => {
@@ -7,21 +8,21 @@ describe('Cloud reservation contract', () => {
     const gate = await gateAiCall({ rpc } as never, 'validated-owner', 'kreto_message', 1);
     expect(rpc).toHaveBeenCalledWith('try_reserve_ai_credit', { _user_id: 'validated-owner', _feature: 'kreto_message', _units: 1, _est_credits: null });
     expect(gate.allowed).toBe(false);
-    if (gate.allowed) throw new Error('Expected denial');
+    if (!("response" in gate)) throw new Error('Expected denial');
     expect(gate.response.status).toBe(429);
     expect(await gate.response.json()).toMatchObject({ code: 'AI_ALLOWANCE_EXHAUSTED', used: 30, cap: 30 });
   });
   it('returns backend envelope denial separately', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: [{ allowed: false, reason: 'budget', used: 0, cap: 0 }], error: null });
     const gate = await gateAiCall({ rpc } as never, 'validated-owner', 'kreto_message', 1);
-    if (gate.allowed) throw new Error('Expected denial');
+    if (!("response" in gate)) throw new Error('Expected denial');
     expect(gate.response.status).toBe(429);
     expect(await gate.response.json()).toMatchObject({ code: 'AI_BUDGET_EXHAUSTED' });
   });
   it('fails closed when reservation cannot be verified', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const gate = await gateAiCall({ rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'unavailable' } }) } as never, 'validated-owner', 'kreto_message');
-    if (gate.allowed) throw new Error('Expected denial');
+    if (!("response" in gate)) throw new Error('Expected denial');
     expect(gate.response.status).toBe(500);
     vi.restoreAllMocks();
   });
