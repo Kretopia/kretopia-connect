@@ -164,7 +164,8 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
     expect(roles).toHaveLength(4);
     expect(roles.filter(role => role === "photographer")).toHaveLength(3);
     expect(roles.filter(role => role === "stylist")).toHaveLength(1);
-    const photoRail = screen.getByRole("region", { name: "Photo & Video creators" }).filter;
+    const photoRail = screen.getAllByRole("region", { name: "Photo & Video creators" }).find(element => element.tagName === "UL");
+    if (!photoRail) throw new Error("Missing photo carousel");
     expect(within(photoRail).getByRole("button", { name: /Photo One/ })).toBeInTheDocument();
     expect(within(photoRail).queryByRole("button", { name: /Sam Stylist/ })).toBeNull();
   });
