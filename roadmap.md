@@ -1,5 +1,11 @@
 # Roadmap
 
+## Scout and Match presentation overhaul (October 30)
+- [ ] Consolidate Scout search/filter controls with progressive disclosure and compact field navigation.
+- [ ] Share Scout-style section tabs with Match; retain Discover dimensions and actions, improve creator card hierarchy and add one Browse carousel per creative category.
+- [ ] Replace Connected's circular visualization with an interactive Kreto 3D scene of actual connections; consolidate path, reach, circle and rewards into one workspace without auto-accepting relationships.
+- [ ] Run focused regressions and desktop/mobile browser checks; leave backend, publication and consent rules unchanged.
+
 ## Scout sources overhaul
 - [x] Make All Sources default/first; merge Open Gigs into Shortlist as Saved gigs/Open gigs, preserving old marketplace links.
 - [x] Progressively disclose four filter groups; one native horizontal rail per field, shared For You card anatomy across tabs, actual personalized records/artwork merged into All Sources without fabricated IDs.
