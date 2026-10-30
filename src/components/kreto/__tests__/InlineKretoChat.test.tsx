@@ -19,6 +19,9 @@ vi.mock("@/lib/thriveCopilot", () => ({
   loadConversationMessages: (id: string) => mocks.load(id),
   createConversation: () => mocks.create(),
   extractActions: () => ({ actions: [], plans: [] }),
+  // Silent-failure side modes: no suggestion, no quota data in tests.
+  autocompleteKreto: () => Promise.resolve(""),
+  loadAiCreditOverview: () => Promise.resolve(null),
 }));
 
 import { InlineKretoChat } from "../InlineKretoChat";
