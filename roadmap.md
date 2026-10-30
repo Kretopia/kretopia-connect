@@ -2,9 +2,10 @@
 
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
-- [ ] Replace fixed model charges with provider usage receipts and centralized pricing; real reply cost comparison.
-- [ ] Enumerate remaining uncapped legacy/downstream paths; do not claim complete gating without verification.
-- [ ] Explain minimum Cloud test-account step without migrating production auth.
+- [x] Add provider receipt accounting and centralized workspace pricing; real gateway probe matches 0.000412 credits. Reservations remain estimates, never recorded charges.
+- [x] Enumerate uncapped legacy/downstream paths in docs/product/MEASURED_AI_ACCOUNTING.md; complete shared gating not claimed.
+- [x] Explain minimum Cloud test-account step: More → Users → Add user → Send invitation, accept invitation.
+- [ ] Authenticated reply and actual ledger delta: blocked until one real Cloud account exists; legacy coverage also needs deployed receipt support/access.
 
 - [x] Explain measured daily ceiling versus request average; no legacy automation changes.
 - [x] Align Cloud quota reads and enforcement; document exact denial path.
