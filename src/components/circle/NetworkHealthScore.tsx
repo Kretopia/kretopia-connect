@@ -20,9 +20,10 @@ interface HealthData {
 interface NetworkHealthScoreProps {
   className?: string;
   compact?: boolean;
+  embedded?: boolean;
 }
 
-export function NetworkHealthScore({ className, compact = false }: NetworkHealthScoreProps) {
+export function NetworkHealthScore({ className, compact = false, embedded = false }: NetworkHealthScoreProps) {
   const { user } = useAuth();
   const [health, setHealth] = useState<HealthData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -59,10 +60,10 @@ export function NetworkHealthScore({ className, compact = false }: NetworkHealth
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-500";
-    if (score >= 60) return "text-yellow-500";
-    if (score >= 40) return "text-orange-500";
-    return "text-red-500";
+    if (score >= 80) return "text-success";
+    if (score >= 60) return "text-warning";
+    if (score >= 40) return "text-warning";
+    return "text-destructive";
   };
 
   const getScoreLabel = (score: number) => {
@@ -71,6 +72,10 @@ export function NetworkHealthScore({ className, compact = false }: NetworkHealth
     if (score >= 40) return "Fair";
     return "Needs Work";
   };
+
+  if (embedded) {
+    return <div className={cn("min-w-0", className)}><div className="flex items-center justify-between gap-2"><span className="text-xs text-muted-foreground">Network Health</span><span className="text-sm font-bold tabular-nums">{loading ? "—" : health ? `${health.overall_score} / 100` : "Unavailable"}</span></div>{health && <Progress value={health.overall_score} className="mt-2 h-1" />}</div>;
+  }
 
   if (loading) {
     return (

@@ -32,9 +32,10 @@ interface PathProfile {
 
 interface PathFinderProps {
   className?: string;
+  embedded?: boolean;
 }
 
-export function PathFinder({ className }: PathFinderProps) {
+export function PathFinder({ className, embedded = false }: PathFinderProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -140,12 +141,13 @@ export function PathFinder({ className }: PathFinderProps) {
     setPathProfiles([]);
   };
 
+  const Surface = embedded ? "div" : Card;
   return (
-    <Card className={cn("p-4", className)}>
-      <div className="flex items-center gap-2 mb-3">
+    <Surface className={cn(embedded ? "min-w-0" : "p-4", className)}>
+      {!embedded && <div className="flex items-center gap-2 mb-3">
         <Compass className="h-5 w-5 text-primary" />
         <h3 className="font-semibold">Find Connection Path</h3>
-      </div>
+      </div>}
       <p className="text-sm text-muted-foreground mb-4">
         Search for any creator to see how you're connected
       </p>
@@ -159,7 +161,7 @@ export function PathFinder({ className }: PathFinderProps) {
           onKeyPress={handleKeyPress}
           className="flex-1"
         />
-        <Button onClick={handleSearch} disabled={searching || query.length < 2}>
+        <Button aria-label="Search connection path" onClick={handleSearch} disabled={searching || query.length < 2}>
           <Search className="h-4 w-4" />
         </Button>
       </div>
@@ -285,6 +287,6 @@ export function PathFinder({ className }: PathFinderProps) {
           )}
         </div>
       )}
-    </Card>
+    </Surface>
   );
 }
