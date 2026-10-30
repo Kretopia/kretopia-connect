@@ -107,7 +107,10 @@ const TAB_GROUPS: AdminTabGroup[] = [
   },
   {
     label: "System",
-    tabs: [{ value: "system", label: "System", icon: Settings }],
+    tabs: [
+      { value: "system", label: "System", icon: Settings },
+      { value: "ai-credits", label: "AI Credits", icon: Bot },
+    ],
   },
 ];
 
@@ -473,6 +476,10 @@ export default function Admin() {
 
         <TabsContent value="scout-funnel" className="mt-4 sm:mt-6">
           <ScoutFunnelTab />
+        </TabsContent>
+
+        <TabsContent value="ai-credits" className="mt-4 sm:mt-6">
+          <AiCreditsTab />
         </TabsContent>
 
         <TabsContent value="system" className="mt-4 sm:mt-6">
