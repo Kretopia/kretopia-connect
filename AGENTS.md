@@ -65,3 +65,4 @@
 - @username sign-in resolves emails from the private Cloud table username_login_links (service-role only), filled by the username-auth `link` action after verifying the user's own legacy session on sign-in; the legacy service key is an optional fallback, because no legacy service_role key is available.
 - Onboarding uses the shared feature header and Wrapped shell; verify the owner profile row returned by a save before navigating, and run optional enrichment after the handoff so secondary calls cannot strand a successfully saved user.
 - Subscription sync validates the user server-side before calling; the function returns 401 for invalid sessions before payment work, because cached or foreign tokens do not prove account existence.
+- Optional username linking validates the live app user first and caches only success; failed links remain retryable and never bypass server authentication.
