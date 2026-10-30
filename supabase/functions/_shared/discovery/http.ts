@@ -22,4 +22,15 @@ export async function readJson(req: Request, maxBytes = 200_000): Promise<Record
   }
 }
 
+/**
+ * The `sources` of a discovery run request: a list of up to eight source ids. Absent means every enabled source (null here); anything
+ * else that is not such a list is refused (the string "invalid") rather than guessed at.
+ */
+export function parseRunSources(v: unknown): string[] | null | "invalid" {
+  if (v === undefined || v === null) return null;
+  if (!Array.isArray(v) || v.length === 0 || v.length > 8) return "invalid";
+  if (!v.every((s) => typeof s === "string" && /^[a-z0-9-]{1,32}$/.test(s))) return "invalid";
+  return [...new Set(v as string[])];
+}
+
 export const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);

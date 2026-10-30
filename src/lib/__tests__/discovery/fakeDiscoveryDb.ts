@@ -3,7 +3,8 @@
 // see docs/release/EXTERNAL_DISCOVERY.md): each rpc is one atomic step, so Promise.all interleaves like parallel callers.
 type Row = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ enabled: boolean; ceiling: number; perUser: number }>; sources?: Row[]; scouted?: Row[] } = {}) {
+export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ enabled: boolean; ceiling: number; perUser: number }>; sources?: Row[]; scouted?: Row[]; now?: () => Date } = {}) {
+  const nowFn = init.now ?? (() => new Date());
   const admins = new Set(init.admins ?? ["admin-1"]);
   const settings = { enabled: true, ceiling: 100, perUser: 30, ...(init.settings ?? {}) };
   const sources: Row[] = init.sources ?? [{ id: "remoteok", enabled: true, max_fetches_per_run: 1, daily_budget_cents: 50, cost_per_call_cents: 0, lock: false, failures: 0 }];
@@ -28,7 +29,7 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
       const key = p_row.identity_key ?? null;
       if (key && byKey.has(key)) {
         const ex = listings.get(byKey.get(key)!)!;
-        ex.last_checked_at = new Date();
+        ex.last_checked_at = nowFn();
         return { created: false, listing_id: ex.status === "published" || ex.status === "claimed" || ex.created_by === p_actor ? ex.id : null, reason: "already_known" };
       }
       const lid = id("l");
@@ -162,6 +163,7 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
   const tables: Record<string, () => Row[]> = {
     external_listings: () => [...listings.values()],
     external_listing_claims: () => claims,
+    external_listing_claim_tokens: () => tokens,
     discovery_settings: () => [{ enabled: settings.enabled }],
     discovery_sources: () => sources,
     scouted_gigs: () => scouted,
@@ -181,8 +183,10 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
   const from = (table: string) => {
     let rows = (tables[table]?.() ?? []).slice();
     let total: number | null = null;
+    let patch: Row | null = null; // update(patch): applied to the rows the filters keep, when the query is awaited
     const q: Record<string, unknown> = {
       select: () => q,
+      update: (p: Row) => ((patch = p), q),
       eq: (c: string, v: unknown) => ((rows = rows.filter((r) => r[c] === v)), q),
       in: (c: string, vs: unknown[]) => ((rows = rows.filter((r) => vs.includes(r[c]))), q),
       is: (c: string, v: unknown) => ((rows = rows.filter((r) => (v === null ? r[c] == null : r[c] === v))), q),
@@ -191,7 +195,10 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
       order: () => q,
       limit: (k: number) => ((total = rows.length), (rows = rows.slice(0, k)), q),
       maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
-      then: (res: (v: unknown) => unknown) => Promise.resolve({ data: rows, count: total ?? rows.length, error: null }).then(res),
+      then: (res: (v: unknown) => unknown) => {
+        if (patch) for (const r of rows) Object.assign(r, patch); // rows are the stored objects themselves
+        return Promise.resolve({ data: patch ? null : rows, count: total ?? rows.length, error: null }).then(res);
+      },
     };
     return q;
   };

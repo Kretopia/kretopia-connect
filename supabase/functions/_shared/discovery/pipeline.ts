@@ -21,7 +21,7 @@ import { canonicalizeUrl, identityKey, sourceIdentity } from "./canonical.ts";
 import { parseExtraction, type ExternalDraft, type ExtractionIssue } from "./extract.ts";
 import { corroborates, factsToRaw, pageFacts } from "./html.ts";
 import { possibleDuplicates, scoutedOverlap, type ScoutedRow } from "./similarity.ts";
-import { adapterById, adapterForUrl, approvedHosts, enableBlocker, type ListingKind } from "./sources.ts";
+import { adapterById, adapterForUrl, approvedHosts, enableBlocker, type ListingKind, type SourceAdapter } from "./sources.ts";
 import { costCents, jobKey } from "./budget.ts";
 import { buildExtractionRequest, MAX_SOURCE_CHARS, parseModelJson } from "./untrusted.ts";
 
@@ -395,6 +395,10 @@ export interface RunReport {
   rejected?: number;
   /** Postings a curator already rejected or removed: the run does not bring them back. */
   skippedDecided?: number;
+  /** DISTINCT postings beyond the run's cap that were not even looked at. Absent means nothing was left out. */
+  cut?: number;
+  /** What was asked of the source about the postings already published (only for a source that can answer). */
+  reconciled?: ReconcileReport;
   settledCents?: number;
 }
 
@@ -411,14 +415,99 @@ export async function listFeedDrafts(d: PipelineDeps, fields: string): Promise<{
   return { listings, total: typeof res?.count === "number" ? res.count : listings.length };
 }
 
-export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}): Promise<{ ran: RunReport[]; skipped?: string }> {
+// ── keeping what is published honest: ask the source whether a posting is still open ─────────────────────────────
+
+/** At most this many published postings are asked about per run: a source's unkeyed allowance is small (Himalayas: 60 a minute). */
+export const RECONCILE_MAX_PER_RUN = 30;
+/** And for no longer than this: the run shares the platform's wall clock with every other source. */
+export const RECONCILE_BUDGET_MS = 45_000;
+/** From this many definite answers on, if more than this share say "closed" or "gone", the source is misbehaving (an outage, a changed address): nothing is taken down. */
+export const RECONCILE_MIN_ANSWERS_FOR_SHARE = 5;
+export const RECONCILE_MAX_ENDED_SHARE = 0.3;
+
+export interface ReconcileReport {
+  checked: number;
+  open: number;
+  takenDown: number;
+  unknown: number;
+  /** Published postings the feed did not show this run that are still to be asked about, next run. */
+  remaining: number;
+  aborted?: "too_many_ended" | "rate_limited";
+  error?: string;
+}
+
+/**
+ * The feed shows only the newest postings of each query, so a published posting that is not in today's read is not necessarily closed. Such
+ * a posting is asked about, one by one, through the source's own way of answering (adapter.openCheck): only an explicit "closed" or "gone"
+ * takes it down (status expired and private, the state a curator's "expire" leaves), with the reason in the audit trail. An error, a timeout
+ * or any other status leaves it exactly as it is. A claimed posting belongs to its owner and is never touched. A source with a price per
+ * call, or without a way to answer, is not asked.
+ */
+export async function reconcilePublished(d: PipelineDeps, adapter: SourceAdapter, runStartedAt: Date, costPerCallCents: number | null = adapter.costPerCallCents): Promise<ReconcileReport | null> {
+  const check = adapter.openCheck;
+  if (!check || costPerCallCents !== 0) return null;
+  const startedAt = clock(d).getTime();
+
+  const res = await d.from("external_listings").select("id, source_url, last_checked_at").eq("source_provider", adapter.id).eq("status", "published").limit(2000);
+  const rows = (Array.isArray(res?.data) ? res.data : []) as { id: string; source_url: string | null; last_checked_at: string | Date | null }[];
+  const at = (v: string | Date | null) => (v ? new Date(v).getTime() : 0);
+  // A posting this run's read showed was just touched by the import (its last_checked_at moved up): the feed itself says it is open.
+  const cutoff = runStartedAt.getTime() - 5_000;
+  const stale = rows.filter((r) => r.source_url && at(r.last_checked_at) < cutoff).sort((a, b) => at(a.last_checked_at) - at(b.last_checked_at));
+
+  const answers: { id: string; state: "open" | "closed" | "gone" | "unknown"; status?: number }[] = [];
+  let rateLimited = false;
+  for (const r of stale.slice(0, RECONCILE_MAX_PER_RUN)) {
+    if (clock(d).getTime() - startedAt > RECONCILE_BUDGET_MS) break;
+    const url = check.urlFor(r.source_url as string);
+    if (!url) { answers.push({ id: r.id, state: "unknown" }); continue; }
+    try {
+      const a = await fetcher(d)(url, { allowedHosts: adapter.hosts, allowedMime: ["application/json", "text/html", "text/plain"], maxBytes: 100_000, maxRedirects: 0, timeoutMs: 8_000 });
+      if (a.status === 429) { rateLimited = true; break; }
+      answers.push({ id: r.id, state: check.interpret(a.status), status: a.status });
+    } catch {
+      answers.push({ id: r.id, state: "unknown" });
+    }
+  }
+
+  const open = answers.filter((a) => a.state === "open");
+  const ended = answers.filter((a) => a.state === "closed" || a.state === "gone");
+  const out: ReconcileReport = { checked: answers.length, open: open.length, takenDown: 0, unknown: answers.length - open.length - ended.length, remaining: stale.length - answers.length };
+  if (rateLimited) out.aborted = "rate_limited";
+
+  const definite = open.length + ended.length;
+  if (definite >= RECONCILE_MIN_ANSWERS_FOR_SHARE && ended.length / definite > RECONCILE_MAX_ENDED_SHARE) {
+    out.aborted = "too_many_ended"; // far more than a normal day's closures: trust nothing from this source today, write nothing
+    return out;
+  }
+
+  const iso = clock(d).toISOString();
+  if (open.length > 0) await d.from("external_listings").update({ last_checked_at: iso }).in("id", open.map((a) => a.id));
+  for (const a of ended) {
+    const done = await d.from("external_listings").update({ status: "expired", visibility: "private", updated_at: iso }).eq("id", a.id).eq("status", "published");
+    if (done?.error) { out.unknown += 1; continue; }
+    out.takenDown += 1;
+    await d.from("external_listing_claim_tokens").update({ revoked_at: iso }).eq("listing_id", a.id).is("used_at", null).is("revoked_at", null);
+    await d.rpc("external_log", { p_listing: a.id, p_actor: null, p_event: "source_closed", p_detail: { source: adapter.id, state: a.state, http: a.status ?? null } });
+  }
+  return out;
+}
+
+/**
+ * One run over the enabled sources. `only` limits it to the named sources (a source that is named but not enabled is reported as skipped,
+ * never run), so a source that must not be read again today is simply left out.
+ */
+export async function runDiscovery(d: PipelineDeps, opts: { slot?: string; only?: string[] } = {}): Promise<{ ran: RunReport[]; skipped?: string }> {
   const now = clock(d);
   const settings = (await d.from("discovery_settings").select("enabled").maybeSingle())?.data;
   if (!settings?.enabled) return { ran: [], skipped: "kill_switch_off" };
 
   const rows = ((await d.from("discovery_sources").select("id, enabled, max_fetches_per_run, cost_per_call_cents").eq("enabled", true))?.data ?? []) as { id: string; max_fetches_per_run: number; cost_per_call_cents: number | null }[];
   const reports: RunReport[] = [];
+  const only = opts.only && opts.only.length > 0 ? new Set(opts.only) : null;
+  if (only) for (const id of only) if (!rows.some((r) => r.id === id)) reports.push({ source: id, status: "skipped", reason: "not_enabled" });
   for (const row of rows) {
+    if (only && !only.has(row.id)) continue;
     const adapter = adapterById(row.id);
     if (!adapter) { reports.push({ source: row.id, status: "skipped", reason: "not_an_approved_adapter" }); continue; }
     const blocker = d.env ? enableBlocker(adapter, d.env) : adapter.costPerCallCents === null ? "cost per call is unknown" : null;
@@ -442,29 +531,33 @@ export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}
 
     const report: RunReport = { source: row.id, status: "ran", fetched: 0, imported: 0, alreadyKnown: 0, rejected: 0 };
     let calls = 0;
+    const cap = adapter.maxCandidatesPerRun ?? MAX_CANDIDATES_PER_RUN;
     try {
       const raws: Record<string, unknown>[] = [];
       for (const url of urls) {
         calls += 1;
         const res = await fetcher(d)(url, { allowedHosts: adapter.hosts, allowedMime: ["application/json", "application/rss+xml", "application/xml", "text/xml", "text/plain", "text/html"], maxBytes: 3_000_000, maxRedirects: 2, timeoutMs: 10_000 });
         if (res.status < 200 || res.status >= 300) throw new Error(`HTTP ${res.status}`);
-        const candidates = parseOpportunityFeed(adapter.id, res.text).slice(0, MAX_CANDIDATES_PER_RUN);
+        // Not cut here: the cap counts DISTINCT postings across every feed below, and what it leaves out is reported (a feed that
+        // carries 300 postings must not lose 200 of them without a word).
+        const candidates = parseOpportunityFeed(adapter.id, res.text);
         report.fetched = (report.fetched ?? 0) + candidates.length;
         for (const c of candidates) raws.push({ ...candidateToRaw(c), __url: c.source_url, __feed: url });
       }
       // Several queries of one source overlap (the same job answers "designer" and "art director"): the bound counts distinct jobs, so
       // a repeated one cannot push the last queries' jobs out of the run.
       const seen = new Set<string>();
-      const batch = raws
-        .filter((x) => {
-          const c = canonicalizeUrl(String(x.__url ?? ""));
-          if (!c) return true; // rejected below, as before
-          const k = identityKey(c);
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        })
-        .slice(0, MAX_CANDIDATES_PER_RUN);
+      const distinct = raws.filter((x) => {
+        const c = canonicalizeUrl(String(x.__url ?? ""));
+        if (!c) return true; // rejected below, as before
+        const k = identityKey(c);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      const batch = distinct.slice(0, cap);
+      // Never silent: a run that leaves postings out says how many.
+      if (distinct.length > cap) report.cut = distinct.length - cap;
       // A rejected or removed listing frees its identity in the database (so a person can import it again on purpose), which
       // would let every run recreate what a curator decided against. The run leaves those out.
       const keys = batch.map((x) => canonicalizeUrl(String(x.__url ?? ""))).filter((c): c is string => !!c).map((c) => identityKey(c));
@@ -492,6 +585,13 @@ export async function runDiscovery(d: PipelineDeps, opts: { slot?: string } = {}
         });
         if (res.data?.created) report.imported = (report.imported ?? 0) + 1;
         else if (res.data) report.alreadyKnown = (report.alreadyKnown ?? 0) + 1;
+      }
+      // The feed was read: now the published postings it did not show are asked about. A failure here never fails the run.
+      try {
+        const reconciled = await reconcilePublished(d, adapter, now, unit.costPerCallCents);
+        if (reconciled) report.reconciled = reconciled;
+      } catch (e) {
+        report.reconciled = { checked: 0, open: 0, takenDown: 0, unknown: 0, remaining: 0, error: e instanceof Error ? e.message.slice(0, 100) : "failed" };
       }
       await d.rpc("record_discovery_run", { p_source: row.id, p_ok: true, p_error: null });
     } catch (e) {

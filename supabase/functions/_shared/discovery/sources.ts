@@ -13,6 +13,17 @@ import { hostMatches } from "../ssrf.ts";
 
 export type ListingKind = "gig" | "event" | "talent";
 
+/** How to ask a source itself whether a posting we published is still open. */
+export interface OpenCheck {
+  /** The address that answers for ONE posting, built from the posting's own page; null when the page is not one this source can answer for. */
+  urlFor(sourcePageUrl: string): string | null;
+  /**
+   * What the answer's HTTP status means. Only an explicit "closed" (the source says the posting ended) or "gone" (the source no longer has
+   * it) ever takes a posting down: any other status, an error or a timeout is "unknown" and leaves the posting exactly as it is.
+   */
+  interpret(status: number): "open" | "closed" | "gone" | "unknown";
+}
+
 export interface SourceAdapter {
   id: string;
   name: string;
@@ -27,7 +38,26 @@ export interface SourceAdapter {
   costPerCallCents: number | null;
   enabledByDefault: false;
   terms: string;
+  /** Most DISTINCT postings one run takes from this source (the run's default when absent). A source with several queries needs room for all of them. */
+  maxCandidatesPerRun?: number;
+  /** Absent: the source offers no way to ask, and a posting leaves only when its own date passes or a curator takes it down. */
+  openCheck?: OpenCheck;
 }
+
+/** Himalayas answers "is this job still open?" at the job's own address under /jobs/api (docs read 2026-10-29): 200 open, 410 closed, 404 not in the API. */
+export function himalayasOpenUrl(sourcePageUrl: string): string | null {
+  let u: URL;
+  try {
+    u = new URL(sourcePageUrl);
+  } catch {
+    return null;
+  }
+  const m = u.hostname.toLowerCase() === "himalayas.app" ? u.pathname.match(/^\/companies\/([a-z0-9-]+)\/jobs\/([a-z0-9-]+)\/?$/) : null;
+  return m ? `https://himalayas.app/jobs/api/companies/${m[1]}/jobs/${m[2]}` : null;
+}
+
+/** The most results one Himalayas query page carries (its `limit` is capped at 20). */
+export const HIMALAYAS_PAGE_SIZE = 20;
 
 export const SOURCE_ADAPTERS: SourceAdapter[] = [
   {
@@ -70,6 +100,11 @@ export const SOURCE_ADAPTERS: SourceAdapter[] = [
     ],
     feedFormat: "json", requiresCredential: null, costPerCallCents: 0, enabledByDefault: false,
     terms: "Public API, no key. Credit Himalayas with a visible link, apply only through the job's own Himalayas page, show the jobs only on Kretopia, remove a job once it expires, never pass them on to other job boards or aggregators. Poll at most once a day.",
+    // Eight queries of up to HIMALAYAS_PAGE_SIZE postings each: room for every distinct one, so a run never leaves the last queries unread.
+    maxCandidatesPerRun: 200,
+    // The docs ask to "re-read the feed daily and drop jobs that are no longer in it". The feed shows only the newest postings of each query,
+    // so a job missing from it is not necessarily closed: it is asked about, one by one, and only a 410 or a 404 takes it down.
+    openCheck: { urlFor: himalayasOpenUrl, interpret: (s) => (s === 200 ? "open" : s === 410 ? "closed" : s === 404 ? "gone" : "unknown") },
   },
   {
     id: "web-search", name: "Web search provider", kind: "gig", hosts: [], feedUrls: [], feedFormat: null,

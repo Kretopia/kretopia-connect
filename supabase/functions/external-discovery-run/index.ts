@@ -4,7 +4,7 @@
 // schedule (see docs/release/EXTERNAL_DISCOVERY.md); this function creates no schedule itself.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
-import { corsHeaders, json, readJson } from "../_shared/discovery/http.ts";
+import { corsHeaders, json, parseRunSources, readJson } from "../_shared/discovery/http.ts";
 import { runDiscovery, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
 
 Deno.serve(async (req) => {
@@ -14,12 +14,16 @@ Deno.serve(async (req) => {
   if (!guard.ok) return guard.response;
 
   const body = (await readJson(req)) ?? {};
+  // Optional: only these sources. A source that must not be read again today (a once-a-day feed) is left out by naming the others.
+  // A bad list is refused before anything is touched.
+  const only = parseRunSources(body.sources);
+  if (only === "invalid") return json({ ok: false, code: "bad_request", message: "sources must be a list of up to 8 source ids." }, 400);
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const deps: PipelineDeps = { rpc: (n, a) => admin.rpc(n, a), from: (t) => admin.from(t), env: Deno.env };
 
   // Abandoned reservations are marked first; they stay counted for the day until a person reconciles them.
   await admin.rpc("expire_discovery_spend");
   const slot = typeof body.slot === "string" && /^[a-z0-9-]{1,24}$/.test(body.slot) ? body.slot : "run";
-  const result = await runDiscovery(deps, { slot });
-  return json({ ok: true, ...result, via: guard.viaCron ? "schedule" : "manual" });
+  const result = await runDiscovery(deps, { slot, ...(only ? { only } : {}) });
+  return json({ ok: true, ...result, ...(only ? { only } : {}), via: guard.viaCron ? "schedule" : "manual" });
 });
