@@ -11,6 +11,7 @@
 
 - Keep `desk-agent-watch` disabled while the production legacy backend is active, because that optional function cannot resolve current Studio project IDs.
 - Kreto's Cloud control endpoint validates the existing account session and reads/reserves the same Cloud ledger; manual chat forwards to the existing legacy conversation endpoint, never enabling legacy automation or migrating auth/data.
+- Provider receipts and workspace-catalog pricing snapshots feed measured Cloud model costs; reservation estimates never become recorded charges, and missing receipts block further gated calls pending reconciliation.
 - Kreto attachments use private Cloud originals and service-only text/reference rows bound to owner-readable legacy messages; signed opens and deletion stay in the authenticated control endpoint, and one daily cleanup removes expired files before references.
 - Scout shares ScoutGigCard across For You, catalog and shortlist surfaces, retains source-specific actions, and uses native field rails plus progressive filter disclosures; this avoids divergent cards without changing save IDs or backend rules.
 - Scout and Match use FeatureSectionNav; Browse groups existing ranked results by Passport craft and reuses ScoutFieldCarousel and CreatorPassportCard, because common presentation must not fork discovery queries or consent actions.
