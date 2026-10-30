@@ -26,6 +26,7 @@ import { AmbassadorsTab } from "@/components/admin/AmbassadorsTab";
 import { ProductDashboardTab } from "@/components/admin/ProductDashboardTab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { loadAiCreditOverview } from "@/lib/thriveCopilot";
 
 interface OdosImportResult {
   name: string;
@@ -191,9 +192,9 @@ function AiCreditsTab() {
         </div>
 
         {data.features.length > 0 ? (
-          <div className="rounded-xl border border-border">
+          <div className="rounded-xl border border-border divide-y divide-border">
             {data.features.map((f) => (
-              <div key={f.feature} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm not-last:border-b not-last:border-border">
+              <div key={f.feature} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
                 <span className="font-medium">{f.feature}</span>
                 <span className="text-muted-foreground">
                   {f.used} used{f.reserved > 0 ? ` · ${f.reserved} in flight` : ""} · {Number(f.credits_used).toFixed(4)} cr
