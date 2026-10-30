@@ -314,6 +314,7 @@ const AppContent = () => {
             <Route path="/founder-kit/onepager" element={<FounderKitOnePager />} />
             <Route path="/founder-kit/metrics" element={<FounderKitMetrics />} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/unboarding" element={<Navigate to="/onboarding" replace />} />
             <Route path="/founding-member" element={<ProtectedRoute><FoundingMember /></ProtectedRoute>} />
             <Route path="/company-onboarding" element={<ProtectedRoute><CompanyOnboarding /></ProtectedRoute>} />
             
