@@ -2,6 +2,10 @@
 
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
+- [ ] Replace fixed model charges with provider usage receipts and centralized pricing; real reply cost comparison.
+- [ ] Enumerate remaining uncapped legacy/downstream paths; do not claim complete gating without verification.
+- [ ] Explain minimum Cloud test-account step without migrating production auth.
+
 - [x] Explain measured daily ceiling versus request average; no legacy automation changes.
 - [x] Align Cloud quota reads and enforcement; document exact denial path.
 - [x] Persist extracted text and original reference linked to message; TTL, open and delete paths; tests.
