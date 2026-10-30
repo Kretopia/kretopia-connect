@@ -163,7 +163,7 @@ function AiCreditsTab() {
           AI Credits — today
         </CardTitle>
         <CardDescription>
-          Global envelope and per-feature usage for {env.day}. Limits live in the ai_credit_config table.
+          This backend's ledger ceiling and estimated usage for {env.day}; not total AI spend across backends.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -173,8 +173,8 @@ function AiCreditsTab() {
             <p className="text-lg font-semibold">{used.toFixed(3)}</p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Cap</p>
-            <p className="text-lg font-semibold">{cap.toFixed(3)}</p>
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">This backend's ceiling</p>
+            <p className="text-lg font-semibold">{cap.toFixed(6)}</p>
           </div>
           <div>
             <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Reserved</p>

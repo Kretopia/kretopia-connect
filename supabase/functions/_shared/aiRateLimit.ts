@@ -93,7 +93,8 @@ export async function checkAiFeatureRateLimit(
 // attachment parse) must pass through gateAiCall BEFORE the call and then
 // exactly one of commitAiCredit (success) / releaseAiCredit (failure or
 // abort). The envelope is checked first, then the personal allowance, so
-// the global daily budget can never be exceeded under concurrency.
+// this backend's estimated ledger ceiling is checked under concurrency.
+// This is not an invoice-level invariant or a ceiling across separate backends.
 // ---------------------------------------------------------------------
 
 export type AiCreditFeature =
@@ -157,7 +158,7 @@ export async function gateAiCall(
         {
           error:
             reason === "budget"
-              ? "Kretopia's AI budget for today is fully used. This is temporary and global — it resets at midnight UTC."
+              ? "This backend's AI ceiling is reached for today. Resets at midnight UTC."
               : `Daily limit reached for this feature (${used}/${cap}). Resets at midnight UTC.`,
           code: reason === "budget" ? "AI_BUDGET_EXHAUSTED" : "AI_ALLOWANCE_EXHAUSTED",
           feature,
