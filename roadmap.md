@@ -2,7 +2,7 @@
 
 Follow-up: backend-scoped ceiling, quota identity/read consistency, persisted openable attachments. No publication.
 
-- [ ] Correct onboarding links, align the welcome screen with Kretopia, and navigate to Passport immediately after a confirmed profile save.
+- [x] Correct onboarding links, align the welcome screen with Kretopia, and navigate to Passport immediately after a confirmed profile save. Browser layout and automated handoff checks; no publication.
 - [ ] Verify the accepted invitation with a real session; managed Cloud still reports no auth users on October 30.
 
 - [x] Add provider receipt accounting and centralized workspace pricing; real gateway probe matches 0.000412 credits. Reservations remain estimates, never recorded charges.
