@@ -61,7 +61,7 @@ const renderScout = (cached: unknown[] | null = gigs) => {
   if (cached) queryClient.setQueryData(["scouted-gigs", "u1"], cached);
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={["/scout"]}>
+      <MemoryRouter initialEntries={["/scout?tab=scouted"]}>
         <Scout />
       </MemoryRouter>
     </QueryClientProvider>,
@@ -144,14 +144,14 @@ describe("Scout page", () => {
   it("waits for something to act on: no panel on For You while there are no gigs", () => {
     renderScout([]);
     expect(assist()).toBeNull();
-    fireEvent.click(screen.getByRole("tab", { name: /All open gigs on Kretopia/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Gigs you saved for later/i }));
     expect(assist()).not.toBeNull();
   });
 
   it("has an All Sources tab right after For You, which opens the catalog inside the results panel", () => {
     renderScout();
     const tabs = within(screen.getByRole("tablist", { name: "Scout sections" })).getAllByRole("tab");
-    expect(tabs.map((t) => t.textContent)).toEqual(["For You", "All Sources", "Open Gigs", "Shortlist"]);
+    expect(tabs.map((t) => t.textContent)).toEqual(["All Sources", "For You", "Shortlist"]);
     expect(screen.queryByTestId("all-sources")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("tab", { name: /every opportunity from every source/i }));
     expect(screen.getByTestId("all-sources")).toBeInTheDocument();
@@ -183,7 +183,7 @@ describe("Scout page", () => {
   it("never renders the legacy Kreto Suggests cards, on any tab, and never starts the surface watcher", () => {
     renderScout();
     for (const id of ["marketplace", "shortlist"] as const) {
-      const tab = id === "marketplace" ? /All open gigs on Kretopia/i : /Gigs you saved for later/i;
+      const tab = id === "marketplace" ? /Gigs you saved for later/i : /Gigs you saved for later/i;
       fireEvent.click(screen.getByRole("tab", { name: tab }));
     }
     expect(screen.queryByTestId("proactive-cards")).not.toBeInTheDocument();
@@ -202,7 +202,8 @@ describe("Scout page", () => {
 
   it("switches sections from the body", async () => {
     renderScout();
-    fireEvent.click(screen.getByRole("tab", { name: /All open gigs on Kretopia/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /Gigs you saved for later/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Open gigs", exact: true }));
     expect(await screen.findByTestId("marketplace")).toBeInTheDocument();
   });
 });
