@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { ListingLabels } from "@/components/external/ListingLabels";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useScoutCatalog } from "@/hooks/useScoutCatalog";
 import { CATEGORIES, LEVELS, categoryOf, type CategoryId, type Language, type Level, type WorkMode } from "@/lib/opportunityTaxonomy";
 import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
@@ -45,7 +46,7 @@ interface PillOption<T> {
 const CHIP =
   "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50 sm:min-h-9";
 const CHIP_ROW =
-  "flex gap-1.5 overflow-x-auto pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0 sm:[mask-image:none]";
+  "flex gap-1.5 overflow-x-auto pb-1 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden flex-wrap overflow-visible [mask-image:none]";
 
 function Chips<T extends string>({ label, options, isOn, onPick }: { label: string; options: PillOption<T>[]; isOn: (id: T) => boolean; onPick: (id: T) => void }) {
   return (
@@ -257,7 +258,8 @@ export function ScoutAllSources() {
 
       {data?.partial && <p className="text-[11px] text-muted-foreground">Part of the list could not be loaded, so some opportunities may be missing.</p>}
 
-      <div className="relative">
+      <div className="flex min-w-0 items-start gap-2">
+      <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
@@ -271,19 +273,20 @@ export function ScoutAllSources() {
 
 
 
-      <Button
+      <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+      <PopoverTrigger asChild><Button
         type="button"
         variant="outline"
         size="sm"
         className="min-h-11 gap-1.5"
         aria-expanded={filtersOpen}
         aria-controls="scout-all-filters"
-        onClick={() => setFiltersOpen((v) => !v)}
       >
         <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
-        Filters{secondaryOn > 0 ? ` · ${secondaryOn}` : ""}
-      </Button>
-
+        Filters{secondaryOn + (f.category !== "all" ? 1 : 0) > 0 ? ` · ${secondaryOn + (f.category !== "all" ? 1 : 0)}` : ""}
+      </Button></PopoverTrigger>
+      <PopoverContent align="end" className="w-[min(440px,calc(100vw-32px))] max-h-[min(560px,70dvh)] overflow-y-auto p-4">
+      <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold">Refine opportunities</h3><span className="text-xs tabular-nums text-muted-foreground">{shown.length} results</span></div>
       {filtersOpen && <Accordion type="single" collapsible id="scout-all-filters" className="border-y border-border">
         <AccordionItem value="field"><AccordionTrigger>Creative field{f.category !== "all" ? ` · ${categoryOf(f.category).label}` : ""}</AccordionTrigger><AccordionContent><Chips label="Field" options={families} isOn={(id) => f.category === id} onPick={(id) => set({ category: id })} /></AccordionContent></AccordionItem>
         <AccordionItem value="source"><AccordionTrigger>Sources{f.sources.length ? ` · ${f.sources.length}` : ""}</AccordionTrigger><AccordionContent>
@@ -325,6 +328,9 @@ export function ScoutAllSources() {
           />
         )}
       </AccordionContent></AccordionItem></Accordion>}
+      <div className="mt-3 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" disabled={!active} onClick={() => setF(NO_FILTERS)}>Reset</Button><Button variant="secondary" size="sm" onClick={() => setFiltersOpen(false)}>Show {shown.length} results</Button></div>
+      </PopoverContent></Popover>
+      </div>
 
       {active && (
         <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={() => setF(NO_FILTERS)}>
@@ -348,11 +354,10 @@ export function ScoutAllSources() {
               <div key={g.id} className="space-y-3">
                 {heading && <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{heading}</p>}
                 <section aria-labelledby={`family-${g.id}`} className="space-y-2">
-                  <h3 id={`family-${g.id}`} className="flex items-baseline gap-2 text-sm font-bold text-foreground">
+                  <ScoutFieldCarousel label={def.label} heading={<h3 id={`family-${g.id}`} className="flex items-baseline gap-2 text-sm font-bold text-foreground">
                     {def.label}
                     <span className="text-xs font-medium tabular-nums text-muted-foreground">{g.items.length}</span>
-                  </h3>
-                  <ScoutFieldCarousel label={def.label}>
+                  </h3>}>
                     {list.map((it) => (
                       <OpportunityCard key={it.id} item={it} />
                     ))}
