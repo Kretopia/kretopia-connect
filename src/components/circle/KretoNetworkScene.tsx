@@ -68,13 +68,13 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const positions = people.map((_, index) => {
       const side = index % 2 === 0 ? -1 : 1;
       const row = Math.floor(index / 2);
-      return new THREE.Vector3(side * (2.25 + (row % 2) * 0.18), 1.35 - row * 0.92, -0.3);
+      return new THREE.Vector3(side * (2.4 + (row % 2) * 0.12), 2.1 - row * 1.4, -0.3);
     });
     positions.forEach((position, index) => {
       ball(graph, index % 2 ? amber : pink, [0.05, 0.05, 0.05], [position.x, position.y, position.z]);
       const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -0.1, -0.4), position]), new THREE.LineBasicMaterial({ color: color(index % 2 ? "--k-g-4" : "--k-g-3"), transparent: true, opacity: 0.4 })); graph.add(line);
     });
-    const resize = () => { const width = mount.clientWidth; const height = mount.clientHeight; renderer.setSize(width, height); camera.aspect = width / height; camera.position.z = width < 550 ? 17 : 12; camera.updateProjectionMatrix(); };
+    const resize = () => { const width = mount.clientWidth; const height = mount.clientHeight; renderer.setSize(width, height); camera.aspect = width / height; camera.position.z = width < 550 ? 14 : 10.5; camera.updateProjectionMatrix(); };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
     let frame = 0; let visible = true; let yaw = -0.1; let targetYaw = -0.1; let pitch = 0; let dragging = false; let previousX = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");

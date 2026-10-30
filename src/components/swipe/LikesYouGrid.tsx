@@ -28,7 +28,6 @@ export function LikesYouGrid() {
   const [likers, setLikers] = useState<Liker[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [failedAvatars, setFailedAvatars] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
