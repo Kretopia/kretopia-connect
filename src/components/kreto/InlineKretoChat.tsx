@@ -227,11 +227,21 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         messages: [{ role: "user", content: text }],
         surface: "home",
         conversationId: activeId ?? undefined,
+        attachments: readyAttachments,
         onConversationId: (id) => { conversationIdRef.current = id; },
         onDelta: appendDelta,
-        onDone: () => {},
+        onDone: () => {
+          // Sent and answered — the attachments' job is done.
+          if (readyAttachments.length) {
+            setAttachments((list) => list.filter((a) => a.status !== "ready"));
+          }
+        },
         onError: (err) => {
           if (controller.signal.aborted) return; // the user pressed Stop; that is not an error
+          // A failed call never clears the draft: restore the text, show the
+          // real error, and offer a retry.
+          setInput(text);
+          setLastError({ message: err, draft: text });
           setMessages((m) => {
             const next = [...m];
             const last = next[next.length - 1];
