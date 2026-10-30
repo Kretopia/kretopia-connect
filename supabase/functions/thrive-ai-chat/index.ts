@@ -9,6 +9,7 @@ import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { resolveKretoIdentity } from "../_shared/kretoIdentity.ts";
+import { measuredModelFetch } from "../_shared/measuredModelFetch.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 import {
   gateAiCall,
@@ -181,7 +182,7 @@ serve(async (req) => {
       const gate = await gateAiCall(admin, gateUserId, "kreto_autocomplete", 1);
       if (!gate.allowed) return jsonOk({ suggestion: "" }); // silent — never an error UI
       try {
-        const up = await fetchWithTimeout(
+        const up = await measuredModelFetch(admin, gateUserId, "kreto_autocomplete",
           "https://ai.gateway.lovable.dev/v1/chat/completions",
           {
             method: "POST",
@@ -201,7 +202,7 @@ serve(async (req) => {
               ],
             }),
           },
-          5_000,
+          (input, init) => fetchWithTimeout(String(input), init ?? {}, 5_000),
         );
         if (!up.ok) {
           await releaseAiCredit(admin, gateUserId, "kreto_autocomplete", 1);
@@ -260,7 +261,7 @@ serve(async (req) => {
           }
         } else {
           // image/* — factual read via the vision-capable model.
-          const up = await fetchWithTimeout(
+          const up = await measuredModelFetch(admin, gateUserId, "attachment_parse",
             "https://ai.gateway.lovable.dev/v1/chat/completions",
             {
               method: "POST",
@@ -279,7 +280,7 @@ serve(async (req) => {
                 ],
               }),
             },
-            30_000,
+            (input, init) => fetchWithTimeout(String(input), init ?? {}, 30_000),
           );
           if (!up.ok) throw new Error(`vision parse failed: ${up.status}`);
           const j = await up.json();
@@ -727,7 +728,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
 
     let upstream: Response;
     try {
-      upstream = await fetchWithTimeout(
+      upstream = await measuredModelFetch(admin, gateUserId, "kreto_message",
         "https://ai.gateway.lovable.dev/v1/chat/completions",
         {
           method: "POST",
@@ -745,7 +746,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
             max_tokens: maxOutputTokens,
           }),
         },
-        GATEWAY_CONNECT_TIMEOUT_MS,
+        (input, init) => fetchWithTimeout(String(input), init ?? {}, GATEWAY_CONNECT_TIMEOUT_MS),
       );
     } catch (e) {
       await settleFailure();

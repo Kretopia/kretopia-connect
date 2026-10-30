@@ -3,6 +3,7 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3';
 import { resolveKretoIdentity } from '../_shared/kretoIdentity.ts';
 import { gateAiCall, commitAiCredit, releaseAiCredit } from '../_shared/aiRateLimit.ts';
+import { measuredModelFetch } from '../_shared/measuredModelFetch.ts';
 import { ATTACHMENT_BUCKET, ATTACHMENT_MAX_BYTES, attachmentExpiresAt, attachmentIsLive } from '../_shared/kretoAttachmentPolicy.ts';
 
 const Id = z.string().uuid();
@@ -102,7 +103,7 @@ Deno.serve(async (request) => {
     }
     let upstream: Response;
     try {
-      upstream = await fetch(`${identity.url}/functions/v1/thrive-ai-chat`, { method: 'POST', headers: { Authorization: identity.authorization, apikey: identity.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, mode: undefined, messages: groundedMessages, persist: true, attachments: undefined }), signal: request.signal });
+      upstream = await measuredModelFetch(admin, identity.id, 'kreto_message', `${identity.url}/functions/v1/thrive-ai-chat`, { method: 'POST', headers: { Authorization: identity.authorization, apikey: identity.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, mode: undefined, messages: groundedMessages, persist: true, stream_options: { include_usage: true }, attachments: undefined }), signal: request.signal });
     } catch {
       await release();
       return json({ error: 'Chat unavailable. Your draft has been kept.' }, 503);
