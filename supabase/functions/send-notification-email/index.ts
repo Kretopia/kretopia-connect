@@ -24,20 +24,6 @@ const EmailRequestSchema = z.object({
   { message: "Either 'to' or 'recipientId' must be provided" }
 );
 
-function parseJwtClaims(token: string): Record<string, unknown> | null {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1]
-      .replaceAll("-", "+")
-      .replaceAll("_", "/")
-      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
-    return JSON.parse(atob(payload)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
 // Authorizes the caller against the recipient they asked for. Three paths:
 //  1. Service-role JWT (other edge functions / cron, e.g. notify-swipe,
 //     send-streak-warning) — always allowed.
@@ -53,7 +39,8 @@ async function authorizeSend(
   req: Request,
   to: string | undefined,
   recipientId: string | undefined,
-): Promise<{ ok: true } | { ok: false; response: Response }> {
+  corsHeaders: Record<string, string>,
+): Promise<{ ok: true; caller: VerifiedCaller } | { ok: false; response: Response }> {
   const deny = (status: number, message: string) =>
     new Response(JSON.stringify({ error: message }), {
       status,
@@ -66,41 +53,50 @@ async function authorizeSend(
   }
 
   const token = authHeader.slice("Bearer ".length).trim();
-  const claims = parseJwtClaims(token);
-  if (!claims) {
-    return { ok: false, response: deny(401, "Unauthorized") };
+
+  // Internal callers (other edge functions, cron) authenticate with the
+  // service-role key itself, compared in constant time. A JWT merely
+  // *claiming* role=service_role proves nothing — anyone can mint one.
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  if (await constantTimeEqual(token, serviceKey)) {
+    return { ok: true, caller: { id: null, email: null, isServiceRole: true } };
   }
 
-  if (claims.role === "service_role") {
-    return { ok: true };
-  }
-
-  const callerId = claims.sub as string | undefined;
-  const callerEmail = claims.email as string | undefined;
-  if (!callerId) {
+  // User path: verify the token with the auth server; decoded-but-unverified
+  // claims are never trusted.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const userClient = createClient(supabaseUrl, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: userData, error: userErr } = await userClient.auth.getUser(token);
+  const caller = userData?.user;
+  if (userErr || !caller?.id) {
     return { ok: false, response: deny(401, "Unauthorized") };
   }
+  const callerId = caller.id;
+  const callerEmail = caller.email ?? null;
 
   const isSelf =
     (!!recipientId && recipientId === callerId) ||
     (!!to && !!callerEmail && to.toLowerCase() === callerEmail.toLowerCase());
   if (isSelf) {
-    return { ok: true };
+    return { ok: true, caller: { id: callerId, email: callerEmail, isServiceRole: false } };
   }
 
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const roleResponse = await fetch(
     `${supabaseUrl}/rest/v1/user_roles?user_id=eq.${callerId}&role=eq.admin&select=role`,
-    { headers: { apikey: supabaseServiceKey, Authorization: `Bearer ${supabaseServiceKey}` } },
+    { headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` } },
   );
   const roles = roleResponse.ok ? await roleResponse.json() : [];
   if (Array.isArray(roles) && roles.length > 0) {
-    return { ok: true };
+    return { ok: true, caller: { id: callerId, email: callerEmail, isServiceRole: false } };
   }
 
   return { ok: false, response: deny(403, "Forbidden: cannot send notifications to other users") };
 }
+
+type VerifiedCaller = { id: string | null; email: string | null; isServiceRole: boolean };
 
 interface EmailRequest {
   to?: string;
@@ -455,7 +451,7 @@ const handler = async (req: Request): Promise<Response> => {
     // default (verify_jwt=true) — but that only proves the caller holds *a*
     // signed JWT, and the public anon key qualifies. authorizeSend() is the
     // real gate: service-role callers, self-service, or admin-only.
-    const authResult = await authorizeSend(req, body.to, body.recipientId);
+    const authResult = await authorizeSend(req, body.to, body.recipientId, corsHeaders);
     if (!authResult.ok) {
       return authResult.response;
     }
@@ -533,11 +529,10 @@ const handler = async (req: Request): Promise<Response> => {
     // welcome per address -- see sendWelcomeOnce. Service-role and admin
     // callers (e.g. test sends) keep the direct path below, unchanged.
     if (type === 'welcome') {
-      const bearer = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
-      const claims = parseJwtClaims(bearer);
-      const callerId = typeof claims?.sub === "string" ? claims.sub : null;
-      const callerEmail = typeof claims?.email === "string" ? claims.email : null;
-      const isServiceRole = claims?.role === "service_role";
+      const verified = authResult.ok ? authResult.caller : null;
+      const callerId = verified?.id ?? null;
+      const callerEmail = verified?.email ?? null;
+      const isServiceRole = verified?.isServiceRole === true;
       const isSelf =
         !isServiceRole && !!callerId &&
         ((!!body.recipientId && body.recipientId === callerId) ||
