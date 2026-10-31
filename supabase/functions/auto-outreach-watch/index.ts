@@ -33,7 +33,7 @@ serve(async (req) => {
       .eq("provider", "gmail");
 
     const userIds = (settings || []).map((s: any) => s.user_id);
-    if (userIds.length === 0) return json({ ok: true, drafted: 0, reason: "no eligible users" });
+    if (userIds.length === 0) return json(corsHeaders, { ok: true, drafted: 0, reason: "no eligible users" });
 
     const { data: profiles } = await admin
       .from("profiles")
@@ -105,14 +105,14 @@ serve(async (req) => {
       }
     }
 
-    return json({ ok: true, total_drafted: totalDrafted, users: Object.keys(perUserCounts).length });
+    return json(corsHeaders, { ok: true, total_drafted: totalDrafted, users: Object.keys(perUserCounts).length });
   } catch (e) {
     console.error("auto-outreach-watch error", e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
-function json(data: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

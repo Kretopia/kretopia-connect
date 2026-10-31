@@ -182,13 +182,13 @@ serve(async (req) => {
       milestoneProposals++;
     }
 
-    return json({ ok: true, chase_drafts: chaseDrafts, chase_proposals: chaseProposals, milestone_proposals: milestoneProposals });
+    return json(corsHeaders, { ok: true, chase_drafts: chaseDrafts, chase_proposals: chaseProposals, milestone_proposals: milestoneProposals });
   } catch (e) {
     console.error("money-agent-watch error", e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
-function json(d: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, d: unknown, s = 200) {
   return new Response(JSON.stringify(d), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
