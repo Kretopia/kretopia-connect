@@ -29,7 +29,14 @@ beforeAll(async () => {
 });
 beforeEach(() => fetchMock.mockReset());
 
-const call = (fn: string, body: unknown) => world.handlers[fn](new Request("https://fn.example", { method: "POST", body: JSON.stringify(body) }));
+const call = (fn: string, body: unknown) =>
+  world.handlers[fn](
+    new Request("https://fn.example", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-user-token" },
+      body: JSON.stringify(body),
+    }),
+  );
 const requested = () => fetchMock.mock.calls.map((c) => String(c[0]));
 
 // Addresses the old substring blocklist ("10.", "127.0.0.1", ...) lets through.
