@@ -1,20 +1,25 @@
 // Phase 14 — Thrive drafts short, on-brand reply options for a Hot Lead.
 // Voice: warm Executive Producer. Never says "AI". Always 3 options.
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-interface ReqBody {
-  inbound: string;
-  senderName?: string;
-  myName?: string;
-  myRole?: string;
-}
+const BodySchema = z.object({
+  inbound: z.string().trim().min(1).max(16000),
+  senderName: z.string().max(255).optional(),
+  myName: z.string().max(255).optional(),
+  myRole: z.string().max(255).optional(),
+});
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const body = await req.json() as ReqBody;
+    await requireAiCaller(req, 'draft-lead-reply');
+    const body = await readJson(req, BodySchema);
     const inbound = String(body?.inbound || '').slice(0, 1200).trim();
     if (!inbound) {
       return new Response(JSON.stringify({ error: 'inbound required' }), {
@@ -31,20 +36,18 @@ Draft EXACTLY 3 short reply options to an inbound hire/booking message.
 Voice: warm, confident, human, low-friction. NEVER say "AI", "I'm an assistant", or use emoji.
 Each draft is 1–2 sentences, max ~220 chars. Each ends with a clear next step (ask scope, propose a quick call, share rate range, or confirm availability).
 Vary the three: (1) quick yes + ask scope, (2) propose 15-min call, (3) share rate window / availability.
-Return JSON only.`;
+Return JSON only.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
-    const user = `Creator: ${myName}${myRole ? ` (${myRole})` : ''}
+    const user = wrapUntrustedContent('reply context', `Creator: ${myName}${myRole ? ` (${myRole})` : ''}
 From: ${senderName}
 Inbound message:
 """${inbound}"""
 
-Reply on behalf of ${myName}. First person.`;
+Reply on behalf of ${myName}. First person.`);
 
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'missing LOVABLE_API_KEY' }), {
-        status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      throw new Error('AI configuration unavailable');
     }
 
     const res = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -84,9 +87,8 @@ Reply on behalf of ${myName}. First person.`;
 
     if (!res.ok) {
       const t = await res.text();
-      return new Response(JSON.stringify({ error: 'gateway', detail: t.slice(0, 300) }), {
-        status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.error('Reply provider failed', res.status, t);
+      return safeError(new Error('Reply provider failed'), req);
     }
     const data = await res.json();
     const call = data?.choices?.[0]?.message?.tool_calls?.[0];
@@ -95,8 +97,6 @@ Reply on behalf of ${myName}. First person.`;
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e?.message || e) }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return safeError(e, req);
   }
 });

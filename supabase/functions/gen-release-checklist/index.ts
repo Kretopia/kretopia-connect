@@ -1,15 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
+const BodySchema = z.object({ release_type: z.string().max(255).nullish(), release_date: z.string().max(100).nullish(), distributor: z.string().max(1000).nullish(), project_title: z.string().max(1000).nullish(), artist: z.string().max(1000).nullish() });
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { release_type, release_date, distributor, project_title, artist } = await req.json();
+    await requireAiCaller(req, 'gen-release-checklist');
+    const { release_type, release_date, distributor, project_title, artist } = await readJson(req, BodySchema);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -26,7 +29,7 @@ DISTRIBUTOR: ${distributor || "—"}`;
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: GEMINI_FLASH,
-        messages: [{ role: "system", content: sys }, { role: "user", content: user }],
+        messages: [{ role: "system", content: sys + PROMPT_INJECTION_DEFENSE_CLAUSE }, { role: "user", content: wrapUntrustedContent("production input", user) }],
         tools: [{
           type: "function",
           function: {
@@ -69,10 +72,6 @@ DISTRIBUTOR: ${distributor || "—"}`;
     const args = call?.function?.arguments ? JSON.parse(call.function.arguments) : { items: [] };
     return new Response(JSON.stringify(args), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    console.error("gen-release-checklist", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

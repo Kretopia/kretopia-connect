@@ -1,24 +1,29 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { requireUser } from "../_shared/require-user.ts";
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const BodySchema = z.object({
+  title: z.string().trim().min(3).max(1000),
+  category: z.string().max(255).nullish(),
+  gigType: z.string().max(255).nullish(),
+  location: z.string().max(1000).nullish(),
+});
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const guard = await requireUser(req);
-    if (!guard.ok) return guard.response;
+    await requireAiCaller(req, 'generate-gig-description');
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const { title, category, gigType, location } = await req.json();
+    const { title, category, gigType, location } = await readJson(req, BodySchema);
 
     if (!title || typeof title !== "string" || title.trim().length < 3) {
       return new Response(JSON.stringify({ error: "A title of at least 3 characters is required" }), {
@@ -26,14 +31,12 @@ serve(async (req) => {
       });
     }
 
-    const prompt = `You are a creative industry copywriter. Write a compelling, professional gig description (3-5 sentences) for this listing:
-
-Title: ${title.trim()}
+    const prompt = wrapUntrustedContent('gig input', `Title: ${title.trim()}
 ${category ? `Category: ${category}` : ""}
 ${gigType ? `Type: ${gigType}` : ""}
-${location ? `Location: ${location}` : ""}
-
-Keep it concise, professional, and appealing to creative freelancers. Include what the role involves and what makes it exciting. Do NOT include compensation details or application instructions. Return ONLY the description text, no quotes or labels.`;
+${location ? `Location: ${location}` : ""}`);
+    const systemPrompt = `You are a creative industry copywriter. Write a compelling, professional gig description (3-5 sentences) for the supplied listing.
+Keep it concise, professional, and appealing to creative freelancers. Include what the role involves and what makes it exciting. Do NOT include compensation details or application instructions. Return ONLY the description text, no quotes or labels.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -43,7 +46,7 @@ Keep it concise, professional, and appealing to creative freelancers. Include wh
       },
       body: JSON.stringify({
         model: GEMINI_3_FLASH,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: prompt }],
         max_tokens: TOKENS_SHORT_DRAFT,
       }),
     });
@@ -69,9 +72,6 @@ Keep it concise, professional, and appealing to creative freelancers. Include wh
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-gig-description error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

@@ -2,19 +2,21 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
+const BodySchema = z.object({ episode_title: z.string().min(1).max(1000), guest_names: z.array(z.string().max(255)).max(100).default([]), show_concept: z.string().max(16000).nullish(), notes: z.string().max(16000).nullish() });
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    await requireAiCaller(req, 'gen-podcast-questions');
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { episode_title, guest_names = [], show_concept, notes } = await req.json();
+    const { episode_title, guest_names = [], show_concept, notes } = await readJson(req, BodySchema);
 
     if (!episode_title) {
       return new Response(JSON.stringify({ error: "episode_title required" }), {
@@ -35,8 +37,8 @@ Generate 8 interview questions: 1 warm opener, 5 substantive (story, craft, turn
       body: JSON.stringify({
         model: GEMINI_FLASH,
         messages: [
-          { role: "system", content: "You are a senior podcast producer. Craft sharp, specific, conversational interview questions. No filler." },
-          { role: "user", content: userPrompt },
+          { role: "system", content: "You are a senior podcast producer. Craft sharp, specific, conversational interview questions. No filler." + PROMPT_INJECTION_DEFENSE_CLAUSE },
+          { role: "user", content: wrapUntrustedContent("podcast input", userPrompt) },
         ],
         tools: [{
           type: "function",
@@ -79,7 +81,7 @@ Generate 8 interview questions: 1 warm opener, 5 substantive (story, craft, turn
     if (!resp.ok) {
       const t = await resp.text();
       console.error("AI error", resp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      return safeError(new Error("AI gateway request failed"), req);
     }
 
     const data = await resp.json();
@@ -89,9 +91,6 @@ Generate 8 interview questions: 1 warm opener, 5 substantive (story, craft, turn
       status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("gen-podcast-questions error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

@@ -1,24 +1,31 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
+const BodySchema = z.object({
+  line_items: z.array(z.object({ description: z.string().max(4000), quantity: z.number().finite(), rate: z.number().finite() })).min(1).max(100),
+  currency: z.string().min(1).max(10),
+  location: z.string().max(1000).nullish(),
+  project_location: z.string().max(1000).nullish(),
+});
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await requireAiCaller(req, 'ai-markup-suggest');
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { line_items, currency, location, project_location } = await req.json();
+    const { line_items, currency, location, project_location } = await readJson(req, BodySchema);
 
     const itemsList = line_items
-      .map((i: any, idx: number) => `${idx + 1}. "${i.description}" — Qty: ${i.quantity}, Rate: ${currency} ${i.rate}`)
+      .map((i, idx) => `${idx + 1}. "${i.description}" — Qty: ${i.quantity}, Rate: ${currency} ${i.rate}`)
       .join("\n");
 
     const locLine = [project_location, location].filter(Boolean).join(" | ") || "unknown";
@@ -44,11 +51,11 @@ LOCAL MARKET RULES (critical):
 - Always state your industry_range using LOCAL norms, not global averages.
 - Reasoning MUST mention the location and why the markup fits it.
 
-Return structured data via the tool provided.`,
+Return structured data via the tool provided.${PROMPT_INJECTION_DEFENSE_CLAUSE}`,
           },
           {
             role: "user",
-            content: `Location: ${locLine}\nCurrency: ${currency}\n\nLine items:\n${itemsList}\n\nSuggest a markup that wins the job in this market.`,
+            content: wrapUntrustedContent('pricing context', `Location: ${locLine}\nCurrency: ${currency}\n\nLine items:\n${itemsList}\n\nSuggest a markup that wins the job in this market.`),
           },
         ],
         tools: [
@@ -112,11 +119,7 @@ Return structured data via the tool provided.`,
     return new Response(JSON.stringify(suggestion), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (e: any) {
-    console.error("ai-markup-suggest error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (e) {
+    return safeError(e, req);
   }
 });
