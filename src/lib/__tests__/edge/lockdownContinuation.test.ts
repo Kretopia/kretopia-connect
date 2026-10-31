@@ -1,5 +1,4 @@
 import { webcrypto } from 'node:crypto';
-import { AbortSignal as NodeAbortSignal } from 'node:util';
 import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 const world = vi.hoisted(() => ({
