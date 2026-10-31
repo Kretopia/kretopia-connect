@@ -26,11 +26,7 @@
 
 // @ts-ignore Deno resolves this remote type import; browser-only test typechecks do not.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsFor } from "./guard.ts";
 
 // TODO product decision: real values per feature/tier. -1 = unlimited
 // (count-only) so wiring this in changes no current behavior.
@@ -38,10 +34,10 @@ export const DEFAULT_DAILY_CAP = -1;
 
 export type AiRateLimitResult = { allowed: true; used: number; cap: number } | { allowed: false; response: Response };
 
-function json(body: unknown, status: number): Response {
+function json(body: unknown, status: number, req?: Request): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...(req ? corsFor(req) : { Vary: "Origin" }), "Content-Type": "application/json" },
   });
 }
 

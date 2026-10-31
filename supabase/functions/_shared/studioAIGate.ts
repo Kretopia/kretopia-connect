@@ -13,13 +13,8 @@
 //   if (somethingFailed) await refundStudioAIGeneration(admin, userId);
 
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { corsFor } from "./guard.ts";
 import { ABUSE_CEILING_DAILY_GENERATIONS, dailyCapFor } from "./premiumSwitch.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 export const FREE_DAILY_CAP = 5;
 
@@ -27,10 +22,10 @@ export type StudioAIGateResult =
   | { allowed: true; used: number; cap: number }
   | { allowed: false; response: Response };
 
-function json(body: unknown, status: number): Response {
+function json(body: unknown, status: number, req?: Request): Response {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...(req ? corsFor(req) : { Vary: "Origin" }), "Content-Type": "application/json" },
   });
 }
 
