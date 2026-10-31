@@ -7,7 +7,8 @@ import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
-import { corsFor } from '../_shared/guard.ts';
+import { z } from "npm:zod@^4.4.3";
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
 const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
@@ -322,7 +323,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
+    const body = await readJson(req, z.record(z.string(), z.unknown()), 64_000);
     const requestedTool = typeof body?._tool === "string" ? body._tool as ToolName : null;
     const project_id = body?.project_id ?? body?.target_project_id ?? null;
     const message = String(
@@ -1101,9 +1102,6 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
     );
   } catch (e) {
     console.error("desk-agent error", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });
