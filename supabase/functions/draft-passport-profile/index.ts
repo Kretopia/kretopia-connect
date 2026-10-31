@@ -24,7 +24,7 @@ import { corsFor } from '../_shared/guard.ts';
 // shows the draft, the person accepts or rejects each field, and only accepted fields are written, by them.
 
 
-const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const SYSTEM = `You prepare a DRAFT of a creative professional's Passport profile. A person will review every field before anything is saved.

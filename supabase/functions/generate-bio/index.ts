@@ -18,7 +18,7 @@ export const MAX_LOCATION = 160;
 export const MAX_SKILLS = 40;
 export const MAX_SKILL = 80;
 
-const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 type BioInput = { fullName: string; role: string; location: string; skills: string[] };

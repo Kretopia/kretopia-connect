@@ -6,7 +6,7 @@ import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
-const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
