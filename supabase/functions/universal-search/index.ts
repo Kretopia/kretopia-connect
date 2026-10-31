@@ -3,11 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { requireUser } from "../_shared/require-user.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
 
+import { corsFor } from '../_shared/guard.ts';
 function extractJsonObject(raw: string) {
   const cleaned = raw
     .replace(/^```json\s*/im, '')
@@ -53,6 +50,7 @@ function buildRelatedSearches(query: string) {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

@@ -5,13 +5,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { encodeBase64 as b64encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
@@ -25,7 +20,7 @@ interface ReqBody {
   voice?: string;
 }
 
-function jsonResponse(data: unknown, status = 200) {
+function jsonResponse(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -51,30 +46,31 @@ function resolveVoice(raw?: string): string {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+  if (req.method !== "POST") return jsonResponse(corsHeaders, { error: "method_not_allowed" }, 405);
 
   try {
     // Auth — keep TTS gated to signed-in users.
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return jsonResponse({ error: "missing_auth" }, 401);
+    if (!token) return jsonResponse(corsHeaders, { error: "missing_auth" }, 401);
     const userClient = createClient(
       SUPABASE_URL,
       Deno.env.get("SUPABASE_ANON_KEY") || "",
       { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return jsonResponse({ error: "invalid_auth" }, 401);
+    if (userErr || !userData?.user) return jsonResponse(corsHeaders, { error: "invalid_auth" }, 401);
 
     const body = (await req.json()) as ReqBody;
     const text = (body?.text || "").trim();
-    if (!text) return jsonResponse({ error: "missing_text" }, 400);
+    if (!text) return jsonResponse(corsHeaders, { error: "missing_text" }, 400);
     // Cap reply length so we don't burn credits on huge bodies.
     const speakText = text.length > 1200 ? text.slice(0, 1200) : text;
 
     if (!LOVABLE_API_KEY) {
-      return jsonResponse({ tts_fallback: true, tts_error: "lovable_ai_not_configured" });
+      return jsonResponse(corsHeaders, { tts_fallback: true, tts_error: "lovable_ai_not_configured" });
     }
 
     const voice = resolveVoice(body.voice || body.voice_id);
@@ -97,26 +93,26 @@ Deno.serve(async (req) => {
         const err = await ttsResp.text();
         console.error("TTS failed", ttsResp.status, err);
         if (ttsResp.status === 429) {
-          return jsonResponse({ tts_fallback: true, tts_error: "rate_limited" });
+          return jsonResponse(corsHeaders, { tts_fallback: true, tts_error: "rate_limited" });
         }
         if (ttsResp.status === 402) {
-          return jsonResponse({ tts_fallback: true, tts_error: "ai_credits_exhausted" });
+          return jsonResponse(corsHeaders, { tts_fallback: true, tts_error: "ai_credits_exhausted" });
         }
-        return jsonResponse({ tts_fallback: true, tts_error: `tts_${ttsResp.status}` });
+        return jsonResponse(corsHeaders, { tts_fallback: true, tts_error: `tts_${ttsResp.status}` });
       }
       const audioBuf = new Uint8Array(await ttsResp.arrayBuffer());
-      return jsonResponse({
+      return jsonResponse(corsHeaders, {
         ok: true,
         audio_base64: b64encode(audioBuf),
         audio_mime: "audio/mpeg",
       });
     } catch (e) {
       console.error("TTS exception", e);
-      return jsonResponse({ tts_fallback: true, tts_error: "tts_network_error" });
+      return jsonResponse(corsHeaders, { tts_fallback: true, tts_error: "tts_network_error" });
     }
   } catch (e) {
     console.error("voice-tts fatal", e);
-    return jsonResponse(
+    return jsonResponse(corsHeaders, 
       { error: "internal", detail: e instanceof Error ? e.message : String(e) },
       500,
     );

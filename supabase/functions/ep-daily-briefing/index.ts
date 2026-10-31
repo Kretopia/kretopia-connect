@@ -10,12 +10,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -35,7 +31,7 @@ type Section = {
   items: Item[];
 };
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -47,16 +43,17 @@ function todayUTC(): string {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const auth = req.headers.get("Authorization") ?? "";
-    if (!auth.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+    if (!auth.startsWith("Bearer ")) return json(corsHeaders, { error: "unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
+    if (userErr || !userData?.user) return json(corsHeaders, { error: "unauthorized" }, 401);
     const user = userData.user;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -73,7 +70,7 @@ Deno.serve(async (req) => {
       existing &&
       Date.now() - new Date(existing.created_at).getTime() < 30 * 60 * 1000
     ) {
-      return json({ ok: true, briefing: existing, cached: true });
+      return json(corsHeaders, { ok: true, briefing: existing, cached: true });
     }
 
     // ===== Scan signals =====
@@ -274,12 +271,12 @@ Deno.serve(async (req) => {
       .select("*")
       .maybeSingle();
     if (saveErr) {
-      return json({ error: saveErr.message }, 500);
+      return json(corsHeaders, { error: saveErr.message }, 500);
     }
 
-    return json({ ok: true, briefing: saved });
+    return json(corsHeaders, { ok: true, briefing: saved });
   } catch (e) {
     console.error("ep-daily-briefing error", e);
-    return json({ error: String((e as Error)?.message ?? e) }, 500);
+    return json(corsHeaders, { error: String((e as Error)?.message ?? e) }, 500);
   }
 });

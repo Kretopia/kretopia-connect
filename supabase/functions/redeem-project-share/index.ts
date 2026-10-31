@@ -6,14 +6,9 @@ import {
   approvalNeedsListing,
   decideApprovalTarget,
   type ShareVisibleFile,
+import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/shareLinkScope.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -63,6 +58,7 @@ const clip = (v: unknown, max: number): string | null =>
   typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

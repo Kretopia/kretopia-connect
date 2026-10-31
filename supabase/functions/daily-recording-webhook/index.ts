@@ -25,10 +25,6 @@ import { dispatchTranscription, ensureTranscriptRow, runInBackground } from "../
 import { findCallByRoom } from "../_shared/findCallByRoom.ts";
 import { shouldQueueTranscription } from "../_shared/recordingTranscript.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-signature",
-};
 
 // Constant-time hex comparison
 function timingSafeEqualHex(a: string, b: string): boolean {
@@ -53,11 +49,10 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
 }
 
 function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const raw = await req.text();
@@ -68,7 +63,7 @@ serve(async (req) => {
       console.error("[daily-recording-webhook] DAILY_WEBHOOK_HMAC_SECRET not set");
       return new Response(
         JSON.stringify({ error: "misconfigured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        { status: 500, headers: { "Content-Type": "application/json" } },
       );
     }
     // Daily signs with HMAC-SHA256(timestamp + "." + body). It sends
@@ -77,7 +72,7 @@ serve(async (req) => {
     const incomingSig = (req.headers.get("x-webhook-signature") || "").trim().toLowerCase();
     const timestamp = (req.headers.get("x-webhook-timestamp") || "").trim();
     if (!incomingSig) {
-      return new Response("missing signature", { status: 401, headers: corsHeaders });
+      return new Response("missing signature", { status: 401, });
     }
     const timestampedSig = timestamp ? await hmacSha256Hex(hmacSecret, `${timestamp}.${raw}`) : null;
     const rawBodySig = await hmacSha256Hex(hmacSecret, raw);
@@ -85,7 +80,7 @@ serve(async (req) => {
     const rawBodyOk = timingSafeEqualHex(rawBodySig, incomingSig);
     if (!timestampedOk && !rawBodyOk) {
       console.warn("[daily-recording-webhook] signature mismatch");
-      return new Response("bad signature", { status: 401, headers: corsHeaders });
+      return new Response("bad signature", { status: 401, });
     }
 
     // Freshness (audit GA REL-04). The timestamped signature covers `${timestamp}.${body}`, so a captured
@@ -95,7 +90,7 @@ serve(async (req) => {
       const fresh = checkWebhookTimestamp(timestamp, Math.floor(Date.now() / 1000));
       if (!fresh.ok) {
         console.warn("[daily-recording-webhook] rejected:", fresh.reason);
-        return new Response("stale or invalid timestamp", { status: 401, headers: corsHeaders });
+        return new Response("stale or invalid timestamp", { status: 401, });
       }
     } else {
       console.warn("[daily-recording-webhook] accepted a raw-body signature: its age cannot be bounded");
@@ -177,7 +172,7 @@ serve(async (req) => {
     console.error("[daily-recording-webhook] error", e);
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 });

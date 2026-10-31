@@ -3,12 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { ROOM_SESSION_CEILING_SECONDS } from "../_shared/roomSessionLimits.ts";
 import { checkRoomCostGate } from "../_shared/subscriptionRoomLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
 /**
@@ -16,6 +12,7 @@ const DAILY_API = "https://api.daily.co/v1";
  * a sound_stages row. Returns host meeting token + room URL.
  */
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const DAILY_API_KEY = Deno.env.get("DAILY_API_KEY");

@@ -7,17 +7,14 @@ import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_share
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const FIRECRAWL = "https://api.firecrawl.dev/v2/scrape";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
 const FRESH_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

@@ -5,11 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -93,6 +90,7 @@ function bestProjectMatch(projects: any[], phrase: string) {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     if (!LOVABLE_API_KEY) throw new Error("AI not configured");

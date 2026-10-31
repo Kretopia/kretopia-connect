@@ -1,11 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Cache-Control": "public, max-age=300, s-maxage=300",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 // Internal accounts to exclude from public stats
 const EXCLUDED_EMAILS = [
   "ethanauguste@hotmail.com",
@@ -14,6 +10,7 @@ const EXCLUDED_EMAILS = [
 ];
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

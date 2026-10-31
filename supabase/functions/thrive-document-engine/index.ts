@@ -7,12 +7,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_PRO } from "../_shared/aiModels.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 type Intent =
   | "sponsor_deck"
   | "pitch_deck"
@@ -498,6 +494,7 @@ function buildImageLibrary(opts: { brand: any; project: any; files: any[] }) {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

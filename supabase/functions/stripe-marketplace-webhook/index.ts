@@ -7,10 +7,6 @@ import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger
 import { resolveMilestonePayee, unattributedPaymentNotice } from "../_shared/resolveMilestonePayee.ts";
 import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
@@ -19,7 +15,7 @@ const logStep = (step: string, details?: any) => {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { });
   }
 
   // Set once this delivery owns the event in the ledger: a failure that answers non-2xx gives the row
@@ -76,7 +72,7 @@ serve(async (req) => {
       logStep("Duplicate event ignored", { id: event.id });
       return new Response(JSON.stringify({ received: true, idempotent_event: true }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
     if (ledgerClaim === "claimed") {
@@ -108,7 +104,7 @@ serve(async (req) => {
             await releaseLedger?.(); // so that Stripe's retry is processed, not answered "already seen"
             return new Response(JSON.stringify({ error: "Could not record the invoice payment" }), {
               status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json" },
             });
           }
 
@@ -127,7 +123,7 @@ serve(async (req) => {
           logStep("Invoice marked paid", { invoiceId });
         }
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -180,7 +176,7 @@ serve(async (req) => {
           logStep("Payment link payment recorded", { linkId });
         }
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -202,7 +198,7 @@ serve(async (req) => {
         if (!milestoneId || !paymentIntentId) {
           logStep("Escrow authorization missing metadata", { milestoneId, paymentIntentId });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -215,7 +211,7 @@ serve(async (req) => {
         if (!escrowMilestone) {
           logStep("Escrow milestone not found", { milestoneId });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -228,7 +224,7 @@ serve(async (req) => {
             milestoneId, existingEscrowStatus: escrowMilestone.escrow_status,
           });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -241,7 +237,7 @@ serve(async (req) => {
             milestoneId, paymentIntentId, actualStatus: intent.status,
           });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -266,7 +262,7 @@ serve(async (req) => {
         if (!authUpdatedRows || authUpdatedRows.length === 0) {
           logStep("Escrow authorization lost the race to a concurrent update, skipping", { milestoneId });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -316,7 +312,7 @@ serve(async (req) => {
         }
 
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -328,7 +324,7 @@ serve(async (req) => {
         if (!milestoneId || !paymentIntentId) {
           logStep("Milestone payment missing metadata", { milestoneId, paymentIntentId });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -341,7 +337,7 @@ serve(async (req) => {
         if (!milestone) {
           logStep("Milestone not found", { milestoneId });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -353,7 +349,7 @@ serve(async (req) => {
         if (milestone.status === "paid") {
           logStep("Milestone already paid, skipping", { milestoneId, paymentIntentId, existingPaymentIntent: milestone.payment_intent_id });
           return new Response(JSON.stringify({ received: true }), {
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json" },
           });
         }
 
@@ -533,7 +529,7 @@ serve(async (req) => {
 
         logStep("Milestone payment confirmed via webhook", { milestoneId, paymentIntentId });
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -541,14 +537,14 @@ serve(async (req) => {
       if (session.metadata?.type !== 'marketplace_purchase') {
         logStep("Skipping non-marketplace session", { sessionId: session.id });
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
       if (session.payment_status !== 'paid') {
         logStep("Payment not completed", { status: session.payment_status });
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -572,7 +568,7 @@ serve(async (req) => {
       if (existingOrder) {
         logStep("Order already exists", { orderId: existingOrder.id });
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -586,7 +582,7 @@ serve(async (req) => {
       if (existingByPI) {
         logStep("Order already exists (by PI)", { orderId: existingByPI.id });
         return new Response(JSON.stringify({ received: true }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json" },
         });
       }
 
@@ -843,14 +839,14 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ received: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
 
   } catch (error) {
     logStep("ERROR", { message: String(error) });
     await releaseLedger?.();
     return new Response(JSON.stringify({ error: String(error) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
       status: 500,
     });
   }

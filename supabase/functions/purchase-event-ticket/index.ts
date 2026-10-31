@@ -4,11 +4,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { classifyTicketSession, planFromPriorOrders } from "../_shared/ticketPurchase.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const PLATFORM_FEES: Record<string, number> = {
   'free': 0.15,
   'thriver': 0.15,
@@ -26,6 +23,7 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

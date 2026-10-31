@@ -1,4 +1,5 @@
-// Background import worker. Processes a bounded batch then re-invokes itself.
+// Background import { requireServiceRole } from "../_shared/guard.ts";
+import worker. Processes a bounded batch then re-invokes itself.
 // Invoked with the service-role key only (never from the browser).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
@@ -18,8 +19,11 @@ Deno.serve(async (req) => {
   let jobId: string | null = null;
 
   try {
-    const auth = req.headers.get("Authorization") ?? "";
-    if (!auth.includes(SERVICE_KEY)) return json({ error: "Forbidden" }, 403);
+    try {
+      await requireServiceRole(req);
+    } catch {
+      return json({ error: "Forbidden" }, 403);
+    }
 
     const body = await req.json();
     jobId = body.job_id;

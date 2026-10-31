@@ -8,23 +8,20 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { checkPledgeRequest, classifyOpenPledge } from "../_shared/pledgeRequest.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const log = (step: string, details?: any) => {
   console.log(`[THRIVEFUND-PLEDGE] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
 
-const refuse = (status: number, error: string) =>
+const refuse = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, status: number, error: string) =>
   new Response(JSON.stringify({ error }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status,
   });
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -68,7 +65,7 @@ serve(async (req) => {
     // The request itself: a positive amount with a ceiling, not the campaign's own creator, a
     // literal boolean and a clipped string message (_shared/pledgeRequest.ts).
     const checked = checkPledgeRequest({ amount, isAnonymous, backerMessage }, campaign, user.id);
-    if (!checked.ok) return refuse(checked.status, checked.error);
+    if (!checked.ok) return refuse(corsHeaders, checked.status, checked.error);
 
     const { data: creator } = await supabaseAdmin
       .from("profiles")
@@ -117,7 +114,7 @@ serve(async (req) => {
       .eq("backer_id", user.id)
       .eq("capture_status", "authorized")
       .limit(20);
-    if (earlierErr) return refuse(503, "Could not check your existing pledges, try again shortly");
+    if (earlierErr) return refuse(corsHeaders, 503, "Could not check your existing pledges, try again shortly");
     for (const old of earlier ?? []) {
       if (old.stripe_checkout_session_id) {
         let action;
@@ -125,15 +122,15 @@ serve(async (req) => {
           const prior = await stripe.checkout.sessions.retrieve(old.stripe_checkout_session_id);
           action = classifyOpenPledge(prior);
         } catch (_e) {
-          return refuse(503, "Could not check your existing pledges, try again shortly");
+          return refuse(corsHeaders, 503, "Could not check your existing pledges, try again shortly");
         }
-        if (action === "already_backed") return refuse(409, "You already have a pledge on this campaign");
-        if (action === "unknown") return refuse(503, "Could not check your existing pledges, try again shortly");
+        if (action === "already_backed") return refuse(corsHeaders, 409, "You already have a pledge on this campaign");
+        if (action === "unknown") return refuse(corsHeaders, 503, "Could not check your existing pledges, try again shortly");
         if (action === "supersede") {
           try {
             await stripe.checkout.sessions.expire(old.stripe_checkout_session_id);
           } catch (_e) {
-            return refuse(503, "Could not replace your earlier pledge, try again shortly");
+            return refuse(corsHeaders, 503, "Could not replace your earlier pledge, try again shortly");
           }
         }
       }

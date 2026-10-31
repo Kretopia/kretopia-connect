@@ -4,11 +4,8 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { studioOperatorAccess } from "../_shared/studioAccess.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 interface Guest {
   user_id: string;
   full_name: string;
@@ -28,6 +25,7 @@ function extractList(v: any): string[] {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

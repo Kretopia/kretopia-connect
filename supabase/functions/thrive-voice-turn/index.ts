@@ -8,13 +8,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { PREMIUM_ENFORCED } from "../_shared/premiumSwitch.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
@@ -26,7 +21,7 @@ interface ReqBody {
   mime_type?: string;
 }
 
-function jsonResponse(data: unknown, status = 200) {
+function jsonResponse(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -42,14 +37,15 @@ function base64ToBytes(b64: string): Uint8Array {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
+  if (req.method !== "POST") return jsonResponse(corsHeaders, { error: "method_not_allowed" }, 405);
 
   try {
     // --- Auth ---
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace(/^Bearer\s+/i, "");
-    if (!token) return jsonResponse({ error: "missing_auth" }, 401);
+    if (!token) return jsonResponse(corsHeaders, { error: "missing_auth" }, 401);
 
     const userClient = createClient(
       SUPABASE_URL,
@@ -57,17 +53,17 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: `Bearer ${token}` } } },
     );
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return jsonResponse({ error: "invalid_auth" }, 401);
+    if (userErr || !userData?.user) return jsonResponse(corsHeaders, { error: "invalid_auth" }, 401);
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 
     const body = (await req.json()) as ReqBody;
-    if (!body?.audio_base64) return jsonResponse({ error: "missing_audio" }, 400);
+    if (!body?.audio_base64) return jsonResponse(corsHeaders, { error: "missing_audio" }, 400);
 
     const audioBytes = base64ToBytes(body.audio_base64);
-    if (audioBytes.length === 0) return jsonResponse({ error: "empty_audio" }, 400);
+    if (audioBytes.length === 0) return jsonResponse(corsHeaders, { error: "empty_audio" }, 400);
     if (audioBytes.length > 8 * 1024 * 1024) {
-      return jsonResponse({ error: "audio_too_large", max_mb: 8 }, 413);
+      return jsonResponse(corsHeaders, { error: "audio_too_large", max_mb: 8 }, 413);
     }
 
     const mime = body.mime_type || "audio/webm";
@@ -107,14 +103,14 @@ Deno.serve(async (req) => {
     if (!sttResp.ok) {
       const err = await sttResp.text();
       console.error("STT failed", sttResp.status, err);
-      if (sttResp.status === 429) return jsonResponse({ error: "rate_limited" }, 429);
-      if (sttResp.status === 402) return jsonResponse({ error: "ai_credits_exhausted" }, 402);
-      return jsonResponse({ error: "stt_failed", detail: err }, 502);
+      if (sttResp.status === 429) return jsonResponse(corsHeaders, { error: "rate_limited" }, 429);
+      if (sttResp.status === 402) return jsonResponse(corsHeaders, { error: "ai_credits_exhausted" }, 402);
+      return jsonResponse(corsHeaders, { error: "stt_failed", detail: err }, 502);
     }
     const sttJson = await sttResp.json();
     const rawTranscript: string = (sttJson?.choices?.[0]?.message?.content || "").trim();
     const transcript = rawTranscript.replace(/^<empty>$/i, "").trim();
-    if (!transcript) return jsonResponse({ error: "no_speech_detected" }, 400);
+    if (!transcript) return jsonResponse(corsHeaders, { error: "no_speech_detected" }, 400);
 
     // --- Tier gate (count seconds against daily cap) ---
     const seconds = Math.max(1, Math.ceil(audioBytes.length / 2000));
@@ -124,21 +120,21 @@ Deno.serve(async (req) => {
     });
     if (gateErr) {
       console.error("voice gate error", gateErr);
-      return jsonResponse({ error: "gate_failed", detail: gateErr.message }, 500);
+      return jsonResponse(corsHeaders, { error: "gate_failed", detail: gateErr.message }, 500);
     }
     // Premium is not enforced yet: the seconds are still counted (the RPC above
     // records them), but a free account's daily cap does not refuse the turn.
     if (PREMIUM_ENFORCED && gate && (gate as { ok?: boolean }).ok === false) {
-      return jsonResponse(
+      return jsonResponse(corsHeaders, 
         { error: "voice_daily_limit", ...(gate as Record<string, unknown>), transcript },
         429,
       );
     }
 
-    return jsonResponse({ ok: true, transcript, usage: gate });
+    return jsonResponse(corsHeaders, { ok: true, transcript, usage: gate });
   } catch (e) {
     console.error("voice-turn fatal", e);
-    return jsonResponse(
+    return jsonResponse(corsHeaders, 
       { error: "internal", detail: e instanceof Error ? e.message : String(e) },
       500,
     );

@@ -1,11 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 interface DraftProfile {
   full_name?: string;
   role?: string;
@@ -62,6 +58,7 @@ async function resolveFaceVerification(
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -82,10 +79,10 @@ Deno.serve(async (req) => {
 
     const email = (rawEmail || "").trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json({ error: "Valid email required" }, 400);
+      return json(corsHeaders, { error: "Valid email required" }, 400);
     }
     if (!profile?.full_name?.trim()) {
-      return json({ error: "Profile name required" }, 400);
+      return json(corsHeaders, { error: "Profile name required" }, 400);
     }
 
     // skip_magic_link is meant only for the post-Google-OAuth flow, where the
@@ -97,14 +94,14 @@ Deno.serve(async (req) => {
     if (skip_magic_link) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        return json({ error: "Unauthorized" }, 401);
+        return json(corsHeaders, { error: "Unauthorized" }, 401);
       }
       const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: authHeader } },
       });
       const { data: { user: caller } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
       if (!caller || caller.email?.toLowerCase() !== email) {
-        return json({ error: "Unauthorized" }, 401);
+        return json(corsHeaders, { error: "Unauthorized" }, 401);
       }
     }
 
@@ -123,10 +120,10 @@ Deno.serve(async (req) => {
       `magic_link_sent=${!skip_magic_link}`,
     );
 
-    return json({ success: true, ...result });
+    return json(corsHeaders, { success: true, ...result });
   } catch (err) {
     console.error("[claim-and-create-profile] error:", err);
-    return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
 });
 
@@ -315,7 +312,7 @@ async function upsertProfileAndCredits(
   return { profileSaved, creditsSaved };
 }
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

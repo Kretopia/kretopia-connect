@@ -5,11 +5,8 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const PROHIBITED = [
   "weapons",
   "firearms",
@@ -35,6 +32,7 @@ interface ModerationVerdict {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

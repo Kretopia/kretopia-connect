@@ -16,19 +16,15 @@ import {
   skillList,
   type CreditFacts,
   type ProfileFacts,
+import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/passportDraft.ts";
 
 // "Strengthen your Passport": one call drafts the pieces a Passport needs to be found (a bio, a photo, one work item)
 // from what the signed-in person already has on Kretopia. Nothing is saved here and nothing is verified: the client
 // shows the draft, the person accepts or rejects each field, and only accepted fields are written, by them.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
-const json = (body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const SYSTEM = `You prepare a DRAFT of a creative professional's Passport profile. A person will review every field before anything is saved.
@@ -58,8 +54,9 @@ async function askModel(apiKey: string, text: string, imageUrls: string[]) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, code: "method_not_allowed", error: "POST only" }, 405);
+  if (req.method !== "POST") return json(corsHeaders, { ok: false, code: "method_not_allowed", error: "POST only" }, 405);
 
   try {
     const guard = await requireUser(req);
@@ -85,7 +82,7 @@ Deno.serve(async (req) => {
     ]);
     // An unreadable profile is a failure, not an empty profile: drafting from nothing would invite invention.
     if (profileError || creditError || !profileRow) {
-      return json({ ok: false, code: "profile_unreadable", error: "Could not read your profile." }, 500);
+      return json(corsHeaders, { ok: false, code: "profile_unreadable", error: "Could not read your profile." }, 500);
     }
 
     const profile = profileRow as ProfileFacts;
@@ -94,7 +91,7 @@ Deno.serve(async (req) => {
     const missing = missingFields(profile, credits.length);
 
     if (!missing.bio && !missing.photo && !missing.work_item) {
-      return json({ ok: true, missing, draft: { bio: null, photo: null, work_item: null }, unavailable: { bio: "already_complete", photo: "already_complete", work_item: "already_complete" } });
+      return json(corsHeaders, { ok: true, missing, draft: { bio: null, photo: null, work_item: null }, unavailable: { bio: "already_complete", photo: "already_complete", work_item: "already_complete" } });
     }
 
     const photos = missing.photo ? buildPhotoCandidates(meta.avatar_url ?? meta.picture, credits) : [];
@@ -106,11 +103,11 @@ Deno.serve(async (req) => {
     // no usage counted. The reasons are the same ones a model call would have ended with.
     if (!needsModel({ missing, hasBioFacts: bioFacts, photos, works })) {
       const { draft, unavailable } = resolveDraft({ pick: {}, missing, profile, corpus, photos, works });
-      return json({ ok: true, missing, draft, unavailable });
+      return json(corsHeaders, { ok: true, missing, draft, unavailable });
     }
 
     const apiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!apiKey) return json({ ok: false, code: "ai_unavailable", error: "Drafting is not available right now." }, 503);
+    if (!apiKey) return json(corsHeaders, { ok: false, code: "ai_unavailable", error: "Drafting is not available right now." }, 503);
 
     const gate = await checkAiFeatureRateLimit(admin, userId, "draft-passport-profile");
     if (!gate.allowed) return gate.response;
@@ -137,22 +134,22 @@ Deno.serve(async (req) => {
       res = await askModel(apiKey, prompt, []);
     }
     if (!res.ok) {
-      if (res.status === 429) return json({ ok: false, code: "rate_limited", error: "Too many requests. Try again in a minute." }, 429);
-      if (res.status === 402) return json({ ok: false, code: "ai_credits", error: "Drafting is paused: the AI credits are used up." }, 402);
+      if (res.status === 429) return json(corsHeaders, { ok: false, code: "rate_limited", error: "Too many requests. Try again in a minute." }, 429);
+      if (res.status === 402) return json(corsHeaders, { ok: false, code: "ai_credits", error: "Drafting is paused: the AI credits are used up." }, 402);
       console.error("[draft-passport-profile] gateway", res.status);
-      return json({ ok: false, code: "ai_failed", error: "The draft could not be written. Try again." }, 502);
+      return json(corsHeaders, { ok: false, code: "ai_failed", error: "The draft could not be written. Try again." }, 502);
     }
 
     const body = await res.json();
     const pick = parseModelJson(body?.choices?.[0]?.message?.content);
-    if (!pick) return json({ ok: false, code: "ai_unreadable", error: "The draft could not be read. Try again." }, 502);
+    if (!pick) return json(corsHeaders, { ok: false, code: "ai_unreadable", error: "The draft could not be read. Try again." }, 502);
 
     const { draft, unavailable } = resolveDraft({ pick, missing, profile, corpus, photos: photoReadable ? photos : [], works });
     if (!photoReadable && missing.photo && photos.length > 0) unavailable.photo = "nothing_suitable";
 
-    return json({ ok: true, missing, draft, unavailable });
+    return json(corsHeaders, { ok: true, missing, draft, unavailable });
   } catch (e) {
     console.error("[draft-passport-profile]", e);
-    return json({ ok: false, code: "internal", error: "Something went wrong. Try again." }, 500);
+    return json(corsHeaders, { ok: false, code: "internal", error: "Something went wrong. Try again." }, 500);
   }
 });

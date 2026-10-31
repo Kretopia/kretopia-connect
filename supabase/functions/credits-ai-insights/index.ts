@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 /**
  * credits-ai-insights — read-only analysis of the CALLER's own Credits data.
  *
@@ -15,11 +16,6 @@ import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
  *    suggestions that the UI requires the human to review and confirm.
  */
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const MAX_INSIGHTS = 4;
 const MAX_LEN = 400;
@@ -28,6 +24,7 @@ const clamp = (v: unknown, n = MAX_LEN) =>
   typeof v === "string" ? v.slice(0, n) : "";
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

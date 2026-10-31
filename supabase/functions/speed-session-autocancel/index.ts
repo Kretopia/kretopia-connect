@@ -3,17 +3,15 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const APP_URL = "https://www.kretopia.com";
 const MIN_FOR_PAIRS = 5;
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
   // sends mail or changes data, so the public anon key must not be enough to trigger it.

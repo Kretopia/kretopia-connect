@@ -2,12 +2,8 @@
 // Calls getMe and getWebhookInfo through the Lovable connector gateway.
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const GATEWAY = "https://connector-gateway.lovable.dev/telegram";
 
 async function tg(path: string, lovableKey: string, tgKey: string) {
@@ -37,6 +33,7 @@ async function expectedSecret(tgKey: string): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const guard = await requireAdminOrCron(req);

@@ -16,12 +16,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { DOC_INTENTS, routeByRules, type RoutedOutcome } from "../_shared/studioOutcomeRouter.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SYSTEM = `You are Kreto's Studio Outcome Router. The user is inside a Studio (a project workspace) and just told you what they want to make. Decide the OUTCOME to spin up and respond by calling the route_outcome tool.
 
 Outcomes you can return:
@@ -51,6 +47,7 @@ function payloadOf(r: RoutedOutcome) {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

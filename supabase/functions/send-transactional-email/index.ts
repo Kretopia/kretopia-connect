@@ -6,17 +6,13 @@ import { SENDER_DOMAIN, FROM_DOMAIN } from '../_shared/emailSender.ts'
 import { identifyCaller } from '../_shared/callerAuth.ts'
 import { authorizeTransactionalSend, type EmailPolicyDeps } from '../_shared/transactionalEmailPolicy.ts'
 
+import { corsFor } from '../_shared/guard.ts';
 // Configuration baked in at scaffold time — do NOT change these manually.
 // SENDER_DOMAIN / FROM_DOMAIN live in _shared/emailSender.ts: they must belong together
 // (the email API rejects a From domain that does not align with the sender domain) and each
 // backend keeps its own copy of that one file.
 const SITE_NAME = "Kretopia"
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type',
-}
 
 // Generate a cryptographically random 32-byte hex token
 function generateToken(): string {
@@ -94,6 +90,7 @@ function emailPolicyDeps(db: any): EmailPolicyDeps {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

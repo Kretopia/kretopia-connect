@@ -5,11 +5,8 @@ import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { dedupeLeads, knownLeadKeys, splitByExisting, splitEvenly } from "../_shared/leadExtraction.ts";
 import { fetchAllRows } from "../_shared/weeklyEmail.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 // --- Speed notes -----------------------------------------------------------
 // A search used to be slow for two reasons, both on this server:
 //  1. Firecrawl was asked to SCRAPE the full page of up to 40 results
@@ -61,6 +58,7 @@ const EXTRACT_TOOL = {
 };
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

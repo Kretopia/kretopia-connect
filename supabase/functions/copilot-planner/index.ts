@@ -8,15 +8,11 @@ import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
 const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -25,7 +21,7 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -33,11 +29,12 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
@@ -45,7 +42,7 @@ Deno.serve(async (req) => {
     });
     const { data: claimsData, error: claimErr } = await userClient.auth.getClaims(token);
     const userId = claimsData?.claims?.sub as string | undefined;
-    if (claimErr || !userId) return json({ error: "Invalid session" }, 401);
+    if (claimErr || !userId) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const rateLimit = await checkAiFeatureRateLimit(admin, userId, "copilot-planner");
     if (!rateLimit.allowed) return rateLimit.response;
@@ -54,7 +51,7 @@ Deno.serve(async (req) => {
     const goal: string = String(body.goal ?? "").trim();
     const projectId: string | null = body.project_id ?? null;
     const surface: string = body.surface ?? "desk";
-    if (!goal || goal.length < 4) return json({ error: "goal required" }, 400);
+    if (!goal || goal.length < 4) return json(corsHeaders, { error: "goal required" }, 400);
 
     // The project lookup below runs with the service role, so a supplied
     // project_id must be proven (owner / accepted collaborator) first.
@@ -150,17 +147,17 @@ Return ONLY this JSON shape (no prose, no fences):
       );
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
-        return json({ error: "AI response timed out. Please try again." }, 504);
+        return json(corsHeaders, { error: "AI response timed out. Please try again." }, 504);
       }
       throw e;
     }
 
-    if (aiResp.status === 429) return json({ error: "Rate limited" }, 429);
-    if (aiResp.status === 402) return json({ error: "AI credits exhausted" }, 402);
+    if (aiResp.status === 429) return json(corsHeaders, { error: "Rate limited" }, 429);
+    if (aiResp.status === 402) return json(corsHeaders, { error: "AI credits exhausted" }, 402);
     if (!aiResp.ok) {
       const txt = await aiResp.text();
       console.error("planner AI error", aiResp.status, txt);
-      return json({ error: "Planner failed" }, 500);
+      return json(corsHeaders, { error: "Planner failed" }, 500);
     }
 
     const aiJson = await aiResp.json();
@@ -170,12 +167,12 @@ Return ONLY this JSON shape (no prose, no fences):
       parsed = JSON.parse(raw);
     } catch {
       console.error("planner JSON parse failed", raw);
-      return json({ error: "Planner returned invalid JSON" }, 500);
+      return json(corsHeaders, { error: "Planner returned invalid JSON" }, 500);
     }
 
     const steps = Array.isArray(parsed.steps) ? parsed.steps : [];
     if (!steps.length) {
-      return json({
+      return json(corsHeaders, {
         ok: true,
         plan_id: null,
         summary: parsed.summary ?? "Nothing to plan — try being more specific.",
@@ -201,7 +198,7 @@ Return ONLY this JSON shape (no prose, no fences):
       }));
 
     if (!validSteps.length) {
-      return json({
+      return json(corsHeaders, {
         ok: true,
         plan_id: null,
         summary: "I drafted a plan but none of the steps mapped to known tools. Try rephrasing.",
@@ -226,9 +223,9 @@ Return ONLY this JSON shape (no prose, no fences):
 
     if (insertErr) throw insertErr;
 
-    return json({ ok: true, plan_id: plan.id, ...plan });
+    return json(corsHeaders, { ok: true, plan_id: plan.id, ...plan });
   } catch (e) {
     console.error("copilot-planner error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

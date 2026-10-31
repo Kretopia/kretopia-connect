@@ -1,16 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 /**
  * Verifies both OTPs and, if successful, executes the merge.
  * Body: { request_id, source_otp, target_otp }
  */
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -22,10 +19,10 @@ Deno.serve(async (req) => {
     });
     const { data: u } = await userClient.auth.getUser();
     const userId = u?.user?.id;
-    if (!userId) return json({ error: "Unauthorized" }, 401);
+    if (!userId) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const { request_id, source_otp, target_otp } = await req.json();
-    if (!request_id || !source_otp || !target_otp) return json({ error: "Missing fields" }, 400);
+    if (!request_id || !source_otp || !target_otp) return json(corsHeaders, { error: "Missing fields" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -36,14 +33,14 @@ Deno.serve(async (req) => {
       .select("*")
       .eq("id", request_id)
       .maybeSingle();
-    if (rowErr || !row) return json({ error: "Request not found" }, 404);
-    if (row.initiator_user_id !== userId) return json({ error: "Forbidden" }, 403);
-    if (row.status !== "pending") return json({ error: `Request is ${row.status}` }, 400);
+    if (rowErr || !row) return json(corsHeaders, { error: "Request not found" }, 404);
+    if (row.initiator_user_id !== userId) return json(corsHeaders, { error: "Forbidden" }, 403);
+    if (row.status !== "pending") return json(corsHeaders, { error: `Request is ${row.status}` }, 400);
     if (new Date(row.expires_at).getTime() < Date.now()) {
       await admin.from("account_merge_requests").update({ status: "expired" }).eq("id", request_id);
-      return json({ error: "Codes expired — please restart" }, 410);
+      return json(corsHeaders, { error: "Codes expired — please restart" }, 410);
     }
-    if (row.attempts >= 5) return json({ error: "Too many attempts" }, 429);
+    if (row.attempts >= 5) return json(corsHeaders, { error: "Too many attempts" }, 429);
 
     const [srcOk, tgtOk] = await Promise.all([
       verifyHash(source_otp, row.source_otp_hash),
@@ -55,7 +52,7 @@ Deno.serve(async (req) => {
         .from("account_merge_requests")
         .update({ attempts: row.attempts + 1 })
         .eq("id", request_id);
-      return json({ error: "Codes don't match. Please try again." }, 400);
+      return json(corsHeaders, { error: "Codes don't match. Please try again." }, 400);
     }
 
     // Run the merge
@@ -88,10 +85,10 @@ Deno.serve(async (req) => {
       })
       .eq("id", request_id);
 
-    return json({ success: true, moved: merged });
+    return json(corsHeaders, { success: true, moved: merged });
   } catch (e) {
     console.error("[merge-accounts-verify]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
 
@@ -105,7 +102,7 @@ async function verifyHash(input: string, expected: string) {
   return r === 0;
 }
 
-function json(b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

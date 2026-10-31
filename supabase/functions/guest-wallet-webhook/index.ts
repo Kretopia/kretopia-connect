@@ -4,14 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { creditGuestWallet, guestTopupMismatch } from "../_shared/guestWalletCredit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const stripe = new Stripe(resolveStripeSecretKey(), {
     apiVersion: "2025-08-27.basil",
@@ -33,7 +27,7 @@ serve(async (req) => {
     console.error("[guest-wallet-webhook] signature error:", msg);
     return new Response(JSON.stringify({ error: `Webhook signature error: ${msg}` }), {
       status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -41,7 +35,7 @@ serve(async (req) => {
   if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") {
     return new Response(JSON.stringify({ received: true, ignored: event.type }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -52,14 +46,14 @@ serve(async (req) => {
   if (kind !== "guest_wallet_topup" || !topupId) {
     return new Response(JSON.stringify({ received: true, ignored: "not_guest_wallet" }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
   if (session.payment_status !== "paid") {
     return new Response(JSON.stringify({ received: true, ignored: `payment_status=${session.payment_status}` }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 
@@ -81,7 +75,7 @@ serve(async (req) => {
     if (dupErr && (dupErr as { code?: string }).code === "23505") {
       return new Response(JSON.stringify({ received: true, idempotent_event: true }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
     // This request now owns the event: if it fails before the credit, the row is given back below
@@ -101,7 +95,7 @@ serve(async (req) => {
       console.warn("[guest-wallet-webhook] topup not found:", topupId);
       return new Response(JSON.stringify({ received: true, warning: "topup_not_found" }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -109,7 +103,7 @@ serve(async (req) => {
     if (topup.status === "succeeded") {
       return new Response(JSON.stringify({ received: true, idempotent: true }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -120,7 +114,7 @@ serve(async (req) => {
       console.error("[guest-wallet-webhook] REFUSED: session does not match the top-up", { topupId, sessionId: session.id, mismatch });
       return new Response(JSON.stringify({ received: true, ignored: "session_mismatch" }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
 
@@ -136,7 +130,7 @@ serve(async (req) => {
     if (!claimed?.length) {
       return new Response(JSON.stringify({ received: true, idempotent: true }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json" },
       });
     }
     claimedTopupId = topup.id;
@@ -161,7 +155,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ received: true, credited: true }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -184,7 +178,7 @@ serve(async (req) => {
     }
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json" },
     });
   }
 });

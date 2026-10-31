@@ -4,11 +4,8 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 function wrapHtml(body: string): string {
   return body
     .split("\n\n")
@@ -25,6 +22,7 @@ function wrapHtml(body: string): string {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
   // sends mail or changes data, so the public anon key must not be enough to trigger it.

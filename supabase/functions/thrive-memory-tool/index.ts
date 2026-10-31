@@ -2,19 +2,15 @@
 // invoked by the Thrive Copilot planner/executor or directly from the chat agent.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -43,17 +39,18 @@ const ALLOWED_KINDS = new Set([
 ]);
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Invalid session" }, 401);
+    if (!user) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const body = await req.json().catch(() => ({}));
     // Accept `_tool` from executor or explicit `tool` from direct call
@@ -79,7 +76,7 @@ Deno.serve(async (req) => {
         q = q.or(`label.ilike.%${query}%,body.ilike.%${query}%`);
       }
       const { data, error } = await q;
-      if (error) return json({ error: error.message }, 500);
+      if (error) return json(corsHeaders, { error: error.message }, 500);
 
       // Bump last_used_at for returned rows (fire-and-forget)
       if (data && data.length) {
@@ -91,7 +88,7 @@ Deno.serve(async (req) => {
           .then(() => {}, () => {});
       }
 
-      return json({
+      return json(corsHeaders, {
         ok: true,
         count: data?.length ?? 0,
         memories: data ?? [],
@@ -107,11 +104,11 @@ Deno.serve(async (req) => {
       let del = admin.from("thrive_memory").delete().eq("user_id", user.id);
       if (id) del = del.eq("id", id);
       else if (mem_key && kind) del = del.eq("mem_key", mem_key).eq("kind", kind);
-      else return json({ error: "memory_id OR (mem_key + kind) required" }, 400);
+      else return json(corsHeaders, { error: "memory_id OR (mem_key + kind) required" }, 400);
 
       const { error, count } = await del.select("id", { count: "exact" });
-      if (error) return json({ error: error.message }, 500);
-      return json({ ok: true, deleted: count ?? 0 });
+      if (error) return json(corsHeaders, { error: error.message }, 500);
+      return json(corsHeaders, { ok: true, deleted: count ?? 0 });
     }
 
     // ----- remember (default) -----
@@ -123,7 +120,7 @@ Deno.serve(async (req) => {
     const context = (body.context && typeof body.context === "object") ? body.context : {};
     const mem_key = String(body.mem_key ?? slugify(label || memBody.slice(0, 60)));
 
-    if (!label && !memBody) return json({ error: "label or body required" }, 400);
+    if (!label && !memBody) return json(corsHeaders, { error: "label or body required" }, 400);
 
     const row = {
       user_id: user.id,
@@ -142,10 +139,10 @@ Deno.serve(async (req) => {
       .select("id, kind, mem_key, label, body, importance")
       .single();
 
-    if (error) return json({ error: error.message }, 500);
-    return json({ ok: true, memory: data });
+    if (error) return json(corsHeaders, { error: error.message }, 500);
+    return json(corsHeaders, { ok: true, memory: data });
   } catch (e) {
     console.error("thrive-memory-tool error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

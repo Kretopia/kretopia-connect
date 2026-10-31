@@ -3,19 +3,15 @@
 // Substitutes {{step_N.field}} placeholders from prior step outputs.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -232,11 +228,12 @@ async function dispatchStep(
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
@@ -244,13 +241,13 @@ Deno.serve(async (req) => {
     });
     const { data: claimsData, error: claimErr } = await userClient.auth.getClaims(token);
     const userId = claimsData?.claims?.sub as string | undefined;
-    if (claimErr || !userId) return json({ error: "Invalid session" }, 401);
+    if (claimErr || !userId) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const planId: string = body.plan_id;
     const decision: "approved" | "rejected" = body.decision ?? "approved";
     const skipIndices: number[] = Array.isArray(body.skip_indices) ? body.skip_indices.map((n: any) => Number(n)) : [];
-    if (!planId) return json({ error: "plan_id required" }, 400);
+    if (!planId) return json(corsHeaders, { error: "plan_id required" }, 400);
 
     const { data: plan, error: planErr } = await admin
       .from("copilot_plans")
@@ -258,9 +255,9 @@ Deno.serve(async (req) => {
       .eq("id", planId)
       .eq("user_id", userId)
       .single();
-    if (planErr || !plan) return json({ error: "Plan not found" }, 404);
+    if (planErr || !plan) return json(corsHeaders, { error: "Plan not found" }, 404);
     if (!["proposed", "approved"].includes(plan.status)) {
-      return json({ error: `Plan already ${plan.status}` }, 400);
+      return json(corsHeaders, { error: `Plan already ${plan.status}` }, 400);
     }
 
     if (decision === "rejected") {
@@ -268,7 +265,7 @@ Deno.serve(async (req) => {
         .from("copilot_plans")
         .update({ status: "cancelled", completed_at: new Date().toISOString() })
         .eq("id", planId);
-      return json({ ok: true, status: "cancelled" });
+      return json(corsHeaders, { ok: true, status: "cancelled" });
     }
 
     // Mark running
@@ -340,7 +337,7 @@ Deno.serve(async (req) => {
       })
       .eq("id", planId);
 
-    return json({
+    return json(corsHeaders, {
       ok: !failed,
       status: finalStatus,
       summary,
@@ -348,6 +345,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("copilot-executor error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

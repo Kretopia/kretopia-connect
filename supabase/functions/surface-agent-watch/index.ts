@@ -8,12 +8,8 @@
 // Auth: end-user JWT (Bearer).
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,7 +23,7 @@ interface Proposal {
   action_intent: Record<string, unknown>;
 }
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -35,22 +31,23 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const auth = req.headers.get("Authorization") ?? "";
-    if (!auth.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+    if (!auth.startsWith("Bearer ")) return json(corsHeaders, { error: "unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const surface = String(body?.surface ?? "") as Surface;
     if (!["home", "scout", "pay", "passport"].includes(surface)) {
-      return json({ error: "invalid surface" }, 400);
+      return json(corsHeaders, { error: "invalid surface" }, 400);
     }
 
     const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: { headers: { Authorization: auth } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
-    if (userErr || !userData?.user) return json({ error: "unauthorized" }, 401);
+    if (userErr || !userData?.user) return json(corsHeaders, { error: "unauthorized" }, 401);
     const user = userData.user;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -65,7 +62,7 @@ Deno.serve(async (req) => {
       .gte("created_at", since)
       .limit(1);
     if (recent && recent.length > 0) {
-      return json({ ok: true, throttled: true, proposals: [] });
+      return json(corsHeaders, { ok: true, throttled: true, proposals: [] });
     }
 
     // Pending kinds for this surface — don't duplicate
@@ -269,7 +266,7 @@ Deno.serve(async (req) => {
 
     // Cap to top 2
     const finalProps = proposals.slice(0, 2);
-    if (finalProps.length === 0) return json({ ok: true, proposals: [] });
+    if (finalProps.length === 0) return json(corsHeaders, { ok: true, proposals: [] });
 
     const rows = finalProps.map((p) => ({
       project_id: null,
@@ -289,13 +286,13 @@ Deno.serve(async (req) => {
 
     if (insErr) {
       console.error("surface-agent-watch insert error", insErr);
-      return json({ error: "insert_failed", detail: insErr.message }, 500);
+      return json(corsHeaders, { error: "insert_failed", detail: insErr.message }, 500);
     }
 
-    return json({ ok: true, proposals: inserted });
+    return json(corsHeaders, { ok: true, proposals: inserted });
   } catch (e) {
     console.error("surface-agent-watch error", e);
-    return json({ error: e instanceof Error ? e.message : "unknown" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "unknown" }, 500);
   }
 });
 

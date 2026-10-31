@@ -19,20 +19,19 @@ import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { INLINE_TRANSCRIPT_MAX_BYTES, transcriptSkippedError } from "../_shared/recordingTranscript.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor, requireServiceRole } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Service-role gate.
-  const auth = req.headers.get("Authorization") ?? "";
-  if (!auth.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)) {
+  // Service-role gate (constant-time).
+  try {
+    await requireServiceRole(req);
+  } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -91,11 +90,11 @@ serve(async (req) => {
     const declaredSize = Number(audioRes.headers.get("content-length") ?? 0);
     if (declaredSize > INLINE_TRANSCRIPT_MAX_BYTES) {
       await audioRes.body?.cancel();
-      return await skipTooLarge(admin, transcript_id, declaredSize);
+      return await skipTooLarge(admin, transcript_id, declaredSize, corsHeaders);
     }
     const audioBuf = await audioRes.arrayBuffer();
     if (audioBuf.byteLength > INLINE_TRANSCRIPT_MAX_BYTES) {
-      return await skipTooLarge(admin, transcript_id, audioBuf.byteLength);
+      return await skipTooLarge(admin, transcript_id, audioBuf.byteLength, corsHeaders);
     }
 
     const base64Audio = bufferToBase64(audioBuf);
@@ -352,7 +351,7 @@ serve(async (req) => {
  * The recording is stored and replayable but too big for the inline transcript call. Marks the row so
  * the UI says so (and nothing retries it), and tells the host the replay is saved.
  */
-async function skipTooLarge(admin: ReturnType<typeof createClient>, transcriptId: string, bytes: number): Promise<Response> {
+async function skipTooLarge(admin: ReturnType<typeof createClient>, transcriptId: string, bytes: number, corsHeaders: Record<string, string>): Promise<Response> {
   const mb = (n: number) => `${Math.round(n / (1024 * 1024))} MB`;
   const { error } = await admin
     .from("call_transcripts")

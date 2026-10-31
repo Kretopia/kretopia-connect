@@ -13,12 +13,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -77,6 +73,7 @@ const TRIAGE_TOOL = {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
@@ -89,12 +86,12 @@ Deno.serve(async (req) => {
 
     if (!isCron) {
       const auth = req.headers.get("Authorization") ?? "";
-      if (!auth.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+      if (!auth.startsWith("Bearer ")) return json(corsHeaders, { error: "unauthorized" }, 401);
       const userClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: auth } },
       });
       const { data: u } = await userClient.auth.getUser();
-      if (!u?.user) return json({ error: "unauthorized" }, 401);
+      if (!u?.user) return json(corsHeaders, { error: "unauthorized" }, 401);
       scopeUserId = u.user.id;
 
       // Only the user-triggered path is gated here -- the cron path above
@@ -119,8 +116,8 @@ Deno.serve(async (req) => {
     if (scopeUserId) q = q.eq("receiver_id", scopeUserId);
 
     const { data: msgs, error: mErr } = await q;
-    if (mErr) return json({ error: mErr.message }, 500);
-    if (!msgs || msgs.length === 0) return json({ ok: true, processed: 0 });
+    if (mErr) return json(corsHeaders, { error: mErr.message }, 500);
+    if (!msgs || msgs.length === 0) return json(corsHeaders, { ok: true, processed: 0 });
 
     // Skip already-classified
     const ids = msgs.map((m) => m.id);
@@ -130,7 +127,7 @@ Deno.serve(async (req) => {
       .in("message_id", ids);
     const seen = new Set((existing ?? []).map((r) => r.message_id));
     const todo = msgs.filter((m) => !seen.has(m.id));
-    if (todo.length === 0) return json({ ok: true, processed: 0, skipped: msgs.length });
+    if (todo.length === 0) return json(corsHeaders, { ok: true, processed: 0, skipped: msgs.length });
 
     // Lookup sender display names + receiver pro context (for tone)
     const senderIds = [...new Set(todo.map((m) => m.sender_id))];
@@ -176,10 +173,10 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ ok: true, processed, drafted, skipped: msgs.length - todo.length, errors });
+    return json(corsHeaders, { ok: true, processed, drafted, skipped: msgs.length - todo.length, errors });
   } catch (e) {
     console.error("inbox-triage-agent error:", e);
-    return json({ error: e instanceof Error ? e.message : "unknown" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "unknown" }, 500);
   }
 });
 
@@ -234,7 +231,7 @@ Be decisive. confidence = 0.5 means truly uncertain.`;
   return parsed;
 }
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

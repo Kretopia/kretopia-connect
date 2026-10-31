@@ -16,12 +16,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { authorizeHighStakesAction, recordExecutedAction } from "../_shared/agentAuthority.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -36,7 +32,7 @@ type ToolName =
   | "archive_project"
   | "delete_project";
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -44,18 +40,19 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData } = await userClient.auth.getUser();
     const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized" }, 401);
+    if (!user) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     // The orchestrator passes the tool name in `_tool` (we'll register one
@@ -67,23 +64,23 @@ Deno.serve(async (req) => {
 
     switch (tool) {
       case "find_user":
-        return await findUser(user.id, body);
+        return await findUser(corsHeaders, user.id, body);
       case "list_my_projects":
-        return await listMyProjects(user.id);
+        return await listMyProjects(corsHeaders, user.id);
       case "add_collaborator":
-        return await addCollaborator(user.id, body);
+        return await addCollaborator(corsHeaders, user.id, body);
       case "remove_collaborator":
-        return await removeCollaborator(user.id, body);
+        return await removeCollaborator(corsHeaders, user.id, body);
       case "archive_project":
-        return await archiveProject(user.id, body);
+        return await archiveProject(corsHeaders, user.id, body);
       case "delete_project":
-        return await deleteProject(user.id, body);
+        return await deleteProject(corsHeaders, user.id, body);
       default:
-        return json({ error: `Unknown tool: ${tool}` }, 400);
+        return json(corsHeaders, { error: `Unknown tool: ${tool}` }, 400);
     }
   } catch (e) {
     console.error("copilot-collaborator-tools error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
 
@@ -91,10 +88,10 @@ Deno.serve(async (req) => {
 // Resolve a spoken/typed name to one or more candidate profiles. Prefers the
 // caller's accepted connections (highest precision), then falls back to
 // public_profiles_safe by full_name ILIKE.
-async function findUser(userId: string, body: any) {
+async function findUser(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
   const q = String(body.name_query ?? body.query ?? "").trim();
   if (!q || q.length < 2) {
-    return json({ ok: false, error: "name_query must be at least 2 characters" }, 400);
+    return json(corsHeaders, { ok: false, error: "name_query must be at least 2 characters" }, 400);
   }
   const like = `%${q}%`;
 
@@ -141,7 +138,7 @@ async function findUser(userId: string, body: any) {
   }
 
   const matches = [...connMatches, ...publicMatches].slice(0, 5);
-  return json({
+  return json(corsHeaders, {
     ok: true,
     query: q,
     match_count: matches.length,
@@ -153,7 +150,7 @@ async function findUser(userId: string, body: any) {
 // ---- Tool: list_my_projects ----
 // Returns the caller's active projects with role + last activity, used for
 // disambiguating "the X project" references.
-async function listMyProjects(userId: string) {
+async function listMyProjects(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string) {
   const { data: owned } = await admin
     .from("projects")
     .select("id, title, status, updated_at, workspace_type")
@@ -192,13 +189,13 @@ async function listMyProjects(userId: string) {
       }),
   ];
 
-  return json({ ok: true, project_count: merged.length, projects: merged });
+  return json(corsHeaders, { ok: true, project_count: merged.length, projects: merged });
 }
 
 // ---- Tool: add_collaborator ----
 // Inserts an accepted project_collaborators row, posts a system message in the
 // project chat, and creates a notification. Owner-only.
-async function addCollaborator(userId: string, body: any) {
+async function addCollaborator(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   const newUserId = String(body.user_id_to_add ?? body.user_id ?? "");
   const role = String(body.role ?? "member").toLowerCase();
@@ -208,7 +205,7 @@ async function addCollaborator(userId: string, body: any) {
   const finalRole = role === "collaborator" ? "member" : allowedRoles.includes(role) ? role : "member";
 
   if (!projectId || !newUserId) {
-    return json({ ok: false, error: "project_id and user_id_to_add are required" }, 400);
+    return json(corsHeaders, { ok: false, error: "project_id and user_id_to_add are required" }, 400);
   }
 
   // Ownership / admin check
@@ -217,14 +214,14 @@ async function addCollaborator(userId: string, body: any) {
     .select("id, title, created_by")
     .eq("id", projectId)
     .single();
-  if (projErr || !project) return json({ ok: false, error: "Project not found" }, 404);
+  if (projErr || !project) return json(corsHeaders, { ok: false, error: "Project not found" }, 404);
   if (project.created_by !== userId) {
-    return json({ ok: false, error: "Only the project owner can add collaborators." }, 403);
+    return json(corsHeaders, { ok: false, error: "Only the project owner can add collaborators." }, 403);
   }
 
   // Don't add self / duplicates
   if (newUserId === userId) {
-    return json({ ok: false, error: "You're already on this project." }, 400);
+    return json(corsHeaders, { ok: false, error: "You're already on this project." }, 400);
   }
 
   // Validate the target actually has an auth.users row (FK target).
@@ -246,10 +243,10 @@ async function addCollaborator(userId: string, body: any) {
           .limit(3);
         const list = candidates ?? [];
         if (list.length === 0) {
-          return json({ ok: false, error: `I couldn't find a claimed account for "${hint}". They may need to sign up first.` }, 400);
+          return json(corsHeaders, { ok: false, error: `I couldn't find a claimed account for "${hint}". They may need to sign up first.` }, 400);
         }
         if (list.length > 1) {
-          return json({
+          return json(corsHeaders, {
             ok: false,
             needs_clarification: true,
             error: `Multiple people match "${hint}" — ask the user which one (${list.map((c: any) => c.full_name ?? c.username).join(", ")}).`,
@@ -258,12 +255,12 @@ async function addCollaborator(userId: string, body: any) {
         }
         resolvedUserId = list[0].user_id;
       } else {
-        return json({ ok: false, error: "That user account doesn't exist yet. Ask them to sign up, then try again." }, 400);
+        return json(corsHeaders, { ok: false, error: "That user account doesn't exist yet. Ask them to sign up, then try again." }, 400);
       }
     }
   } catch (e) {
     console.error("auth.users lookup failed", e);
-    return json({ ok: false, error: "Couldn't verify that user account." }, 500);
+    return json(corsHeaders, { ok: false, error: "Couldn't verify that user account." }, 500);
   }
 
   const { data: existing } = await admin
@@ -273,7 +270,7 @@ async function addCollaborator(userId: string, body: any) {
     .eq("user_id", resolvedUserId)
     .maybeSingle();
   if (existing) {
-    return json({
+    return json(corsHeaders, {
       ok: true,
       already_member: true,
       message: `Already on this project (${existing.status}).`,
@@ -301,7 +298,7 @@ async function addCollaborator(userId: string, body: any) {
     })
     .select("id, role, status")
     .single();
-  if (insErr) return json({ ok: false, error: insErr.message }, 500);
+  if (insErr) return json(corsHeaders, { ok: false, error: insErr.message }, 500);
 
   // Post a system message in project chat (best-effort; don't fail the add)
   try {
@@ -327,7 +324,7 @@ async function addCollaborator(userId: string, body: any) {
     console.warn("notification insert failed", e);
   }
 
-  return json({
+  return json(corsHeaders, {
     ok: true,
     collaborator_id: row.id,
     project_id: projectId,
@@ -342,11 +339,11 @@ async function addCollaborator(userId: string, body: any) {
 }
 
 // ---- Tool: remove_collaborator ----
-async function removeCollaborator(userId: string, body: any) {
+async function removeCollaborator(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   const removeUserId = String(body.user_id_to_remove ?? body.user_id ?? "");
   if (!projectId || !removeUserId) {
-    return json({ ok: false, error: "project_id and user_id_to_remove required" }, 400);
+    return json(corsHeaders, { ok: false, error: "project_id and user_id_to_remove required" }, 400);
   }
 
   const { data: project } = await admin
@@ -354,9 +351,9 @@ async function removeCollaborator(userId: string, body: any) {
     .select("id, title, created_by")
     .eq("id", projectId)
     .single();
-  if (!project) return json({ ok: false, error: "Project not found" }, 404);
+  if (!project) return json(corsHeaders, { ok: false, error: "Project not found" }, 404);
   if (project.created_by !== userId) {
-    return json({ ok: false, error: "Only the project owner can remove collaborators." }, 403);
+    return json(corsHeaders, { ok: false, error: "Only the project owner can remove collaborators." }, 403);
   }
 
   // Shared authority check -- see _shared/agentAuthority.ts. A human acting
@@ -375,7 +372,7 @@ async function removeCollaborator(userId: string, body: any) {
       collaborator: { request: removeUserId, approvedKeys: ["user_id_to_remove", "user_id"] },
     },
   });
-  if (!authz.ok) return json({ ok: false, error: authz.error }, authz.status);
+  if (!authz.ok) return json(corsHeaders, { ok: false, error: authz.error }, authz.status);
 
   const { data: invitee } = await admin
     .from("public_profiles_safe")
@@ -394,7 +391,7 @@ async function removeCollaborator(userId: string, body: any) {
       admin, userId, toolName: "remove_collaborator", toolArgs: body, source: authz.source,
       ok: false, error: error.message, previewTitle: `Remove collaborator from "${project.title}"`,
     });
-    return json({ ok: false, error: error.message }, 500);
+    return json(corsHeaders, { ok: false, error: error.message }, 500);
   }
 
   await recordExecutedAction({
@@ -403,7 +400,7 @@ async function removeCollaborator(userId: string, body: any) {
     previewTitle: `Remove ${invitee?.full_name ?? "collaborator"} from "${project.title}"`,
   });
 
-  return json({
+  return json(corsHeaders, {
     ok: true,
     project_title: project.title,
     removed_name: invitee?.full_name ?? "Collaborator",
@@ -412,47 +409,47 @@ async function removeCollaborator(userId: string, body: any) {
 
 // ---- Tool: archive_project ----
 // Soft hide: sets projects.status = 'archived'. Owner-only. Reversible.
-async function archiveProject(userId: string, body: any) {
+async function archiveProject(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
-  if (!projectId) return json({ ok: false, error: "project_id is required" }, 400);
+  if (!projectId) return json(corsHeaders, { ok: false, error: "project_id is required" }, 400);
 
   const { data: project } = await admin
     .from("projects")
     .select("id, title, created_by, status")
     .eq("id", projectId)
     .maybeSingle();
-  if (!project) return json({ ok: false, error: "Project not found" }, 404);
+  if (!project) return json(corsHeaders, { ok: false, error: "Project not found" }, 404);
   if (project.created_by !== userId) {
-    return json({ ok: false, error: "Only the project owner can archive this project." }, 403);
+    return json(corsHeaders, { ok: false, error: "Only the project owner can archive this project." }, 403);
   }
   if (project.status === "archived") {
-    return json({ ok: true, already_archived: true, project_title: project.title });
+    return json(corsHeaders, { ok: true, already_archived: true, project_title: project.title });
   }
 
   const { error } = await admin
     .from("projects")
     .update({ status: "archived" })
     .eq("id", projectId);
-  if (error) return json({ ok: false, error: error.message }, 500);
+  if (error) return json(corsHeaders, { ok: false, error: error.message }, 500);
 
-  return json({ ok: true, project_id: projectId, project_title: project.title, status: "archived" });
+  return json(corsHeaders, { ok: true, project_id: projectId, project_title: project.title, status: "archived" });
 }
 
 // ---- Tool: delete_project ----
 // Hard delete. Owner-only. Destructive — agent must surface this as
 // requires_approval and the orchestrator preview must spell out the project title.
-async function deleteProject(userId: string, body: any) {
+async function deleteProject(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
-  if (!projectId) return json({ ok: false, error: "project_id is required" }, 400);
+  if (!projectId) return json(corsHeaders, { ok: false, error: "project_id is required" }, 400);
 
   const { data: project } = await admin
     .from("projects")
     .select("id, title, created_by")
     .eq("id", projectId)
     .maybeSingle();
-  if (!project) return json({ ok: false, error: "Project not found" }, 404);
+  if (!project) return json(corsHeaders, { ok: false, error: "Project not found" }, 404);
   if (project.created_by !== userId) {
-    return json({ ok: false, error: "Only the project owner can delete this project." }, 403);
+    return json(corsHeaders, { ok: false, error: "Only the project owner can delete this project." }, 403);
   }
 
   // Shared authority check -- see _shared/agentAuthority.ts and the
@@ -469,7 +466,7 @@ async function deleteProject(userId: string, body: any) {
       project: { request: projectId, approvedKeys: ["project_id", "target_project_id"] },
     },
   });
-  if (!authz.ok) return json({ ok: false, error: authz.error }, authz.status);
+  if (!authz.ok) return json(corsHeaders, { ok: false, error: authz.error }, authz.status);
 
   // project_tasks/milestones/time_entries/project_files/project_messages/
   // project_collaborators all FK to projects(id) ON DELETE CASCADE, so
@@ -489,7 +486,7 @@ async function deleteProject(userId: string, body: any) {
       admin, userId, toolName: "delete_project", toolArgs: body, source: authz.source,
       ok: false, error: error.message, previewTitle: `Delete "${project.title}"`,
     });
-    return json({
+    return json(corsHeaders, {
       ok: false,
       error: `Couldn't delete "${project.title}": ${error.message}. Try archiving instead.`,
     }, 500);
@@ -502,5 +499,5 @@ async function deleteProject(userId: string, body: any) {
     previewBody: `"${project.title}" and all its tasks, files and chat were permanently deleted.`,
   });
 
-  return json({ ok: true, project_id: projectId, project_title: project.title, deleted: true });
+  return json(corsHeaders, { ok: true, project_id: projectId, project_title: project.title, deleted: true });
 }
