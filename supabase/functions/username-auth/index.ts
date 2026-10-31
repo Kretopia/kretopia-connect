@@ -2,10 +2,10 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 import { corsFor } from '../_shared/guard.ts';
 
-const corsHeaders = {
-  ...baseCors,
-  "Access-Control-Allow-Headers": `${baseCors["Access-Control-Allow-Headers"] ?? "authorization, x-client-info, apikey, content-type"}, x-legacy-access-token`,
-};
+const corsHeadersFor = (req: Request): Record<string, string> => ({
+  ...corsFor(req),
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-legacy-access-token",
+});
 
 /**
  * username-auth — @username sign-in and availability checks.
@@ -43,7 +43,7 @@ const validate = (u: string): "ok" | "required" | "invalid" | "reserved" => {
   return "ok";
 };
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -75,10 +75,10 @@ async function findProfileByUsername(
 }
 
 Deno.serve(async (req) => {
-  const corsHeaders = corsFor(req);
+  const corsHeaders = corsHeadersFor(req);
   await publicPerimeter(req, "username-auth", 10);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+  if (req.method !== "POST") return json(corsHeaders, { error: "Method not allowed" }, 405);
 
   const LEGACY_URL = Deno.env.get("LEGACY_SUPABASE_URL");
   const LEGACY_ANON = Deno.env.get("LEGACY_SUPABASE_ANON_KEY");
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
   const CLOUD_URL = Deno.env.get("SUPABASE_URL");
   const CLOUD_SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!LEGACY_URL || !LEGACY_ANON || !CLOUD_URL || !CLOUD_SERVICE) {
-    return json({ error: "Username sign-in is not available yet" }, 503);
+    return json(corsHeaders, { error: "Username sign-in is not available yet" }, 503);
   }
 
   const body = await req.json().catch(() => ({}));
@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
   // token. The username itself is always read live from public profiles.
   if (action === "link") {
     const token = (req.headers.get("x-legacy-access-token") || "").trim();
-    if (!token) return json({ error: "Missing session" }, 401);
-    if (!(await allowed(`link:${ip}`, 20, 200))) return json({ error: "Too many attempts" }, 429);
+    if (!token) return json(corsHeaders, { error: "Missing session" }, 401);
+    if (!(await allowed(`link:${ip}`, 20, 200))) return json(corsHeaders, { error: "Too many attempts" }, 429);
     const res = await fetch(`${LEGACY_URL}/auth/v1/user`, {
       headers: { apikey: LEGACY_ANON, Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return json({ error: "Invalid session" }, 401);
+    if (!res.ok) return json(corsHeaders, { error: "Invalid session" }, 401);
     const u = (await res.json().catch(() => null)) as { id?: string; email?: string } | null;
-    if (!u?.id || !u?.email) return json({ error: "Invalid session" }, 401);
+    if (!u?.id || !u?.email) return json(corsHeaders, { error: "Invalid session" }, 401);
     const { error } = await cloud.from("username_login_links").upsert({
       legacy_user_id: u.id,
       email: u.email.toLowerCase(),
@@ -130,33 +130,33 @@ Deno.serve(async (req) => {
     });
     if (error) {
       console.error("[username-auth] link upsert failed", error.message);
-      return json({ error: "Link failed" }, 500);
+      return json(corsHeaders, { error: "Link failed" }, 500);
     }
-    return json({ linked: true });
+    return json(corsHeaders, { linked: true });
   }
 
   if (action === "check-username") {
     const v = validate(username);
-    if (v === "required" || v === "invalid") return json({ available: false, reason: "invalid" });
-    if (v === "reserved") return json({ available: false, reason: "reserved" });
-    if (!(await allowed(`check:${ip}`, 30, 300))) return json({ error: "Too many attempts" }, 429);
+    if (v === "required" || v === "invalid") return json(corsHeaders, { available: false, reason: "invalid" });
+    if (v === "reserved") return json(corsHeaders, { available: false, reason: "reserved" });
+    if (!(await allowed(`check:${ip}`, 30, 300))) return json(corsHeaders, { error: "Too many attempts" }, 429);
     const found = await findProfileByUsername(LEGACY_URL, LEGACY_ANON, username);
-    if (found === "error") return json({ error: "Username check unavailable" }, 503);
-    return json({ available: !found, reason: found ? "taken" : null });
+    if (found === "error") return json(corsHeaders, { error: "Username check unavailable" }, 503);
+    return json(corsHeaders, { available: !found, reason: found ? "taken" : null });
   }
 
   if (action === "sign-in") {
     const password = typeof body?.password === "string" ? body.password : "";
-    if (validate(username) !== "ok" || !password) return json({ error: GENERIC_ERROR }, 401);
+    if (validate(username) !== "ok" || !password) return json(corsHeaders, { error: GENERIC_ERROR }, 401);
     if (
       !(await allowed(`signin:ip:${ip}`, 10, 100)) ||
       !(await allowed(`signin:u:${username}`, 5, 30))
     ) {
-      return json({ error: "Too many attempts. Try again later." }, 429);
+      return json(corsHeaders, { error: "Too many attempts. Try again later." }, 429);
     }
 
     const profile = await findProfileByUsername(LEGACY_URL, LEGACY_ANON, username);
-    if (profile === "error" || !profile?.user_id) return json({ error: GENERIC_ERROR }, 401);
+    if (profile === "error" || !profile?.user_id) return json(corsHeaders, { error: GENERIC_ERROR }, 401);
 
     let email: string | undefined;
     const { data: link } = await cloud
@@ -173,16 +173,16 @@ Deno.serve(async (req) => {
       const { data: userData } = await legacyAdmin.auth.admin.getUserById(profile.user_id);
       email = userData?.user?.email ?? undefined;
     }
-    if (!email) return json({ error: GENERIC_ERROR }, 401);
+    if (!email) return json(corsHeaders, { error: GENERIC_ERROR }, 401);
 
     const legacyAnon = createClient(LEGACY_URL, LEGACY_ANON, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
     const { data, error } = await legacyAnon.auth.signInWithPassword({ email, password });
-    if (error || !data?.session) return json({ error: GENERIC_ERROR }, 401);
+    if (error || !data?.session) return json(corsHeaders, { error: GENERIC_ERROR }, 401);
 
     // Session tokens only — never the email, never user metadata.
-    return json({
+    return json(corsHeaders, {
       session: {
         access_token: data.session.access_token,
         refresh_token: data.session.refresh_token,
@@ -193,5 +193,5 @@ Deno.serve(async (req) => {
     });
   }
 
-  return json({ error: "Unknown action" }, 400);
+  return json(corsHeaders, { error: "Unknown action" }, 400);
 });
