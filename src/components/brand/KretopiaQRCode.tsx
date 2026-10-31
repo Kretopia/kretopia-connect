@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import QRCodeStyling from "qr-code-styling";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
+import { safeQrPayload } from "@/lib/safeUrl";
 
 interface KretopiaQRCodeProps {
   /** The URL (or any string payload) the code should resolve to. */
@@ -100,7 +101,7 @@ export function KretopiaQRCode({ data, size: requestedSize = 120, className, onR
     return () => {
       cancelled = true;
     };
-  }, [data, size]);
+  }, [payload, size]);
 
   return <div ref={ref} className={className} style={{ width: size, height: size }} aria-hidden />;
 }
