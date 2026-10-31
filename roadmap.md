@@ -10,7 +10,7 @@
 - [x] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned without changing UI; 3,427 tests pass and managed build OK. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
 - [ ] 2. Edge perimeter now covers 14 handlers, including nine additional Inbox/listing/markup/Studio/gig generators. Handler suite: 121 behavioral tests; all 3,554 full-suite tests pass with four workers; nine additional Deno checks and managed build OK. Remaining endpoint inventory still needs per-caller review: 276 literal wildcard-CORS entrypoints remain, plus SDK-imported headers; do not blanket-gate public, voice/media or internal callers. No deployment; live legacy verification requires deployment access/session.
 - [x] 3. SSRF: the five functions fetching caller-supplied links (profile import/analyze, thumbnail scrape, EPK avatar) now use safeFetch with per-hop private-address checks, redirect caps and timeouts; EPK avatars also limited to image types under 2 MB. Regression test added; 436 security/edge tests pass. Not deployed.
-- [ ] 4. Exposed endpoint removal and authentication hardening. Blocked by step order.
+- [ ] 4. Exposed endpoint removal and authentication hardening. Done: every entrypoint now has an access check (only public sitemap open by design); VAPID key generator removed; last three plain secret comparisons made constant-time; regression test added. Remaining: live 401 checks need deployment.
 - [ ] 5. CSP, safe links, HTML sanitation, QR print safety. Blocked by step order.
 - [ ] 6. Patched dependencies and audit. Blocked by step order.
 - [ ] 7. Read-only policy audit and unapplied SQL migrations. Blocked by step order.
