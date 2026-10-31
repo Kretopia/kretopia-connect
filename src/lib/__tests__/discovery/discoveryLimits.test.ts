@@ -285,7 +285,7 @@ describe("the function that takes the request (not run here: it needs Deno)", ()
     expect(src.indexOf('if (only === "invalid")')).toBeLessThan(src.indexOf('rpc("expire_discovery_spend")'));
     expect(src).toContain("runDiscovery(deps, { slot, ...(only ? { only } : {}) })");
     // the answer repeats the list the run was limited to, so a caller sees what was read (checked on the answer's own line)
-    const answer = src.split("\n").find((l) => l.includes("return json({ ok: true"));
+    const answer = src.split("\n").find((l) => l.includes("return json(req, { ok: true"));
     expect(answer).toBeDefined();
     expect(answer).toContain("...(only ? { only } : {})");
   });
