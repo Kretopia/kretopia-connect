@@ -59,10 +59,8 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
-import pumpkinBody from "@/assets/kreto/halloween/kreto-pumpkin-body.png.asset.json";
-import pumpkinArm from "@/assets/kreto/halloween/kreto-pumpkin-arm.png.asset.json";
-const kretoBodyUrl = pumpkinBody.url;
-const kretoArmUrl = pumpkinArm.url;
+import pumpkin from "@/assets/kreto/halloween/kreto-pumpkin-transparent.png.asset.json";
+const kretoBodyUrl = pumpkin.url;
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
@@ -98,7 +96,6 @@ const wordVariants = (reducedMotion: boolean, _gradientText = false) =>
  *  a 908x1076 canvas; `arm` = that forearm + hand (267x316 at 641,344 of the same canvas, same pixels,
  *  overlapping the joint by a few px so the two layers never leave a seam). */
 const ART = { w: 447, h: 558 } as const;
-const ARM = { x: 285, y: 177, w: 106, h: 169, pivotX: 29, pivotY: 140 } as const;
 
 /** Waving and Flying share one box (180px, 300px from 1440px). The figure is fitted so his helmet is
  *  0.65 of the box wide (Flying's is 0.677): his silhouette is then within ~7% of Flying's height and
@@ -112,21 +109,6 @@ const FIGURE_STYLE: CSSProperties = {
   height: `${ART.h * FIT * 100}%`,
   right: `${(1 - ART.w / ART.h) * 50}%`,
   bottom: "0%",
-};
-
-const pct = (n: number, of: number) => `${(n / of) * 100}%`;
-
-/** The arm sits exactly over the body at rest. Everything is in % of the canvas, so it follows the
- *  180px / 300px box with no JS measuring. `will-change` keeps this layer on the compositor. */
-const ARM_STYLE: CSSProperties = {
-  left: pct(ARM.x, ART.w),
-  top: pct(ARM.y, ART.h),
-  width: pct(ARM.w, ART.w),
-  height: pct(ARM.h, ART.h),
-};
-const ARM_IMG_STYLE: CSSProperties = {
-  transformOrigin: `${pct(ARM.pivotX, ARM.w)} ${pct(ARM.pivotY, ARM.h)}`,
-  willChange: "transform",
 };
 
 /** One fast wave (~1.1 s, ~3 swings, fading out): [time ms, degrees].
@@ -148,7 +130,7 @@ const WAVE_MS = WAVE_STEPS[WAVE_STEPS.length - 1][0];
 const WAVE_EASE = "cubic-bezier(0.37, 0, 0.63, 1)"; // ease-in-out sine: natural pendulum feel
 const WAVE_KEYFRAMES: Keyframe[] = WAVE_STEPS.map(([t, deg]) => ({
   offset: t / WAVE_MS,
-  transform: `rotate(${deg}deg)`,
+  transform: `rotate(${deg * 0.3}deg)`,
   easing: WAVE_EASE,
 }));
 
@@ -156,16 +138,7 @@ const WAVE_KEYFRAMES: Keyframe[] = WAVE_STEPS.map(([t, deg]) => ({
  *  (px), which is what makes the turn read as depth rather than as a flat card tilting. */
 const TILT_Y = 10;
 const TILT_X = 6;
-const ARM_DEPTH_PX = 22;
 const PERSPECTIVE_PX = 900;
-
-/** A layer moved toward the viewer by z is magnified by P / (P - z) about the perspective origin (the
- *  figure's centre). Scaling it by the inverse about that same point, written in the arm's own box,
- *  keeps the forearm exactly on his body at rest; only a turn reveals the offset. */
-const ARM_FRONT_STYLE: CSSProperties = {
-  transform: `translateZ(${ARM_DEPTH_PX}px) scale(${(PERSPECTIVE_PX - ARM_DEPTH_PX) / PERSPECTIVE_PX})`,
-  transformOrigin: `${pct(ART.w / 2 - ARM.x, ARM.w)} ${pct(ART.h / 2 - ARM.y, ARM.h)}`,
-};
 
 const KretoWave = memo(function KretoWave({
   reducedMotion,
@@ -181,22 +154,19 @@ const KretoWave = memo(function KretoWave({
   const rotateY = useTransform(pointerX, [0, 0.85, 1], [-TILT_Y, 0, TILT_Y * 0.3]);
   const rotateX = useTransform(pointerY, [0, 0.8, 1], [TILT_X, 0, -TILT_X * 0.5]);
   const bodyRef = useRef<HTMLImageElement>(null);
-  const armRef = useRef<HTMLImageElement>(null);
   const waveRef = useRef<Animation | null>(null);
   const [ready, setReady] = useState(false);
   const alive = useRef(true);
 
-  // Show Kreto only once both layers are downloaded AND decoded: `complete` only says the bytes
-  // arrived, and a hand painted before the body reads as a floating glove.
+  // Decode the complete transparent silhouette before showing it.
   const checkReady = useCallback(() => {
     const body = bodyRef.current;
-    const arm = armRef.current;
-    if (!(body?.complete && body.naturalWidth > 0 && arm?.complete && arm.naturalWidth > 0)) return;
+    if (!body?.complete || body.naturalWidth === 0) return;
     const show = () => {
       if (alive.current) setReady(true);
     };
-    if (typeof body.decode === "function" && typeof arm.decode === "function") {
-      Promise.all([body.decode(), arm.decode()]).then(show, show);
+    if (typeof body.decode === "function") {
+      body.decode().then(show, show);
     } else {
       show();
     }
@@ -213,9 +183,10 @@ const KretoWave = memo(function KretoWave({
 
   /** Hover (mouse) / touch (finger, pen): one wave at a time, starts instantly. */
   const play = useCallback(() => {
-    const arm = armRef.current;
-    if (!ready || reducedMotion || waveRef.current || !arm || typeof arm.animate !== "function") return;
-    const wave = arm.animate(WAVE_KEYFRAMES, { duration: WAVE_MS });
+    const figure = bodyRef.current;
+    if (!ready || reducedMotion || waveRef.current || !figure || typeof figure.animate !== "function") return;
+    // A gentle whole-character greeting keeps the source intact, with no cut-out joints.
+    const wave = figure.animate(WAVE_KEYFRAMES, { duration: WAVE_MS });
     waveRef.current = wave;
     wave.onfinish = wave.oncancel = () => {
       waveRef.current = null;
@@ -269,21 +240,9 @@ const KretoWave = memo(function KretoWave({
             decoding="async"
             draggable={false}
             onLoad={checkReady}
+            style={{ transformOrigin: "50% 92%" }}
             className="absolute inset-0 h-full w-full select-none"
           />
-          <div className="absolute" style={reducedMotion ? ARM_STYLE : { ...ARM_STYLE, ...ARM_FRONT_STYLE }}>
-            <img
-              ref={armRef}
-              src={kretoArmUrl}
-              alt=""
-              loading="eager"
-              decoding="async"
-              draggable={false}
-              onLoad={checkReady}
-              style={ARM_IMG_STYLE}
-              className="block h-full w-full select-none"
-            />
-          </div>
         </motion.div>
       </div>
 
