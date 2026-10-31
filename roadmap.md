@@ -2,7 +2,7 @@
 
 ## Security lockdown (October 31 continuation)
 - [x] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned without changing UI; 3,427 tests pass and managed build OK. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
-- [ ] 2. Edge perimeter: origins, authentication, validation, isolation, errors. Continue after the Step 1 full-suite gate; preserve backend identity and intentional public/internal callers.
+- [ ] 2. Edge perimeter partially implemented in enhance-task, compose-magazine-article, polish-magazine-article, generate-magazine-article, infer-passport-profession. Shared account/deployment guard added; 41 new behavioral tests pass, plus 18 guard tests; five Deno checks pass. Full-suite verification pending. Remaining endpoint inventory still needs per-caller review: 284 wildcard-CORS entrypoints remain; do not blanket-gate public or internal callers. No deployment.
 - [ ] 3. SSRF bounded fetching. Blocked by step order.
 - [ ] 4. Exposed endpoint removal and authentication hardening. Blocked by step order.
 - [ ] 5. CSP, safe links, HTML sanitation, QR print safety. Blocked by step order.
