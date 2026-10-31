@@ -59,8 +59,10 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
-import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
-import kretoArmUrl from "@/assets/brand/kreto/hero-wave-hd-arm.webp";
+import pumpkinBody from "@/assets/kreto/halloween/kreto-pumpkin-body.png.asset.json";
+import pumpkinArm from "@/assets/kreto/halloween/kreto-pumpkin-arm.png.asset.json";
+const kretoBodyUrl = pumpkinBody.url;
+const kretoArmUrl = pumpkinArm.url;
 
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
@@ -95,21 +97,21 @@ const wordVariants = (reducedMotion: boolean, _gradientText = false) =>
  *  still downscaled on a 2x screen instead of stretched. `body` = Kreto without his forearm + hand,
  *  a 908x1076 canvas; `arm` = that forearm + hand (267x316 at 641,344 of the same canvas, same pixels,
  *  overlapping the joint by a few px so the two layers never leave a seam). */
-const ART = { w: 908, h: 1076 } as const;
-const ARM = { x: 641, y: 344, w: 267, h: 316, pivotX: 39, pivotY: 270 } as const; // pivot = elbow, in arm px
+const ART = { w: 447, h: 558 } as const;
+const ARM = { x: 285, y: 177, w: 106, h: 169, pivotX: 29, pivotY: 140 } as const;
 
 /** Waving and Flying share one box (180px, 300px from 1440px). The figure is fitted so his helmet is
  *  0.65 of the box wide (Flying's is 0.677): his silhouette is then within ~7% of Flying's height and
  *  the takeoff swap does not jump. 754 = the helmet's width in canvas px. His raised hand reaches 5%
  *  past the box's right edge; his feet sit on the box's bottom edge. */
-const HELMET_PX = 754;
-const HELMET_OF_BOX = 0.65;
+const HELMET_PX = 250;
+const HELMET_OF_BOX = 250 / 558;
 const FIT = HELMET_OF_BOX / HELMET_PX;
 const FIGURE_STYLE: CSSProperties = {
   width: `${ART.w * FIT * 100}%`,
   height: `${ART.h * FIT * 100}%`,
-  right: "-5%",
-  bottom: "-1%",
+  right: `${(1 - ART.w / ART.h) * 50}%`,
+  bottom: "0%",
 };
 
 const pct = (n: number, of: number) => `${(n / of) * 100}%`;

@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 // Temporary Halloween artwork: same flight layers, same motion — only the flying sprite changes.
-import halloweenLanding from "@/assets/kreto/halloween/kreto-halloween-landing.png.asset.json";
+import halloweenLanding from "@/assets/kreto/halloween/kreto-pumpkin-transparent.png.asset.json";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
@@ -17,7 +17,7 @@ const LEDGE = { peekTop: 0.81, peekBottom: BOTTOM_LEDGE };
 const HEIGHT = { peekTop: 1.446, peekBottom: BOTTOM_HEIGHT };
 // Hanging pose matches Flying's helmet, not the much taller arms-up silhouette.
 const poseClasses: Record<Layer, string> = {
-  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top", peekSide: "",
+  right: "", left: "-scale-x-100", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top", peekSide: "",
 };
 /**
  * The side hide artwork (1024 square, body cut by a straight vertical line at ~0.313): the media edge
