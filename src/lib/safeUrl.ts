@@ -16,6 +16,24 @@ export function safeHref(raw: string | null | undefined): string | undefined {
 }
 
 /**
+ * Payload allowed inside printed/shared QR codes: absolute http(s) only, max
+ * 2048 chars. A scanned code opens outside the app's link guard, so unsafe
+ * schemes or relative paths must never be encoded.
+ */
+export function safeQrPayload(raw: string | null | undefined): string | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim();
+  if (!value || value.length > 2048) return undefined;
+  if (/[\u0000-\u001f\u007f-\u009f]/.test(value)) return undefined;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Capture-phase guard: blocks clicks on links whose href resolves to an unsafe
  * scheme (javascript:, data:, vbscript:, ...) anywhere in the app, and adds
  * noopener to new-tab links. Defense in depth for user-supplied URLs.
