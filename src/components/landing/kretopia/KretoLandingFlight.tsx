@@ -2,8 +2,6 @@ import { useEffect, useId, useRef } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 // Temporary Halloween artwork: same flight layers, same motion — only the flying sprite changes.
 import halloweenLanding from "@/assets/kreto/halloween/kreto-halloween-landing.png.asset.json";
-import flyingRight from "@/assets/brand/kreto/kreto-flying.webp";
-import flyingLeft from "@/assets/brand/kreto/kreto-flying-left.webp";
 import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
 import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
 import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
@@ -11,8 +9,6 @@ import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedg
 import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, SIDE_SCALE, SIDE_UPPER_BODY_CLIP, ledgeSlideSpan, planSideHide } from "./kretoPoseGeometry";
 
 const layers = { right: halloweenLanding.url, left: halloweenLanding.url, peekTop, peekBottom, peekSide } as const;
-void flyingRight;
-void flyingLeft;
 type Layer = keyof typeof layers;
 const layerKeys = Object.keys(layers) as Layer[];
 /** Where the ledge line sits inside each hiding artwork (fraction of its rendered size). */
