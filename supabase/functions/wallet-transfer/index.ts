@@ -5,8 +5,8 @@ import {
   cleanNote,
   cleanTransferAmount,
   limitCurrency,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/walletTransfer.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 const logStep = (step: string, details?: any) => {
