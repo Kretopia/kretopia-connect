@@ -1,3 +1,4 @@
+import { requireServiceRole } from '../_shared/guard.ts'
 import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -100,12 +101,11 @@ Deno.serve(async (req) => {
     )
   }
 
-  // Defense in depth: verify_jwt=true already requires a valid JWT at the
-  // gateway layer. This adds an explicit role check so only service-role
-  // callers can trigger queue processing.
-  const token = authHeader.slice('Bearer '.length).trim()
-  const claims = parseJwtClaims(token)
-  if (claims?.role !== 'service_role') {
+  // Defense in depth: constant-time service-role key check. Decoding JWT
+  // claims locally is not authentication; only the exact service key passes.
+  try {
+    await requireServiceRole(req)
+  } catch {
     return new Response(
       JSON.stringify({ error: 'Forbidden' }),
       { status: 403, headers: { 'Content-Type': 'application/json' } }

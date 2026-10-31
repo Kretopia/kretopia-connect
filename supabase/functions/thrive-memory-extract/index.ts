@@ -112,9 +112,9 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   // Service-role only — called from other edge functions.
-  const auth = req.headers.get("Authorization") ?? "";
-  const expected = `Bearer ${SERVICE_ROLE}`;
-  if (auth !== expected) {
+  try {
+    await requireServiceRole(req);
+  } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

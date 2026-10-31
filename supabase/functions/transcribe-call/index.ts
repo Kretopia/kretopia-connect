@@ -28,9 +28,10 @@ serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  // Service-role gate.
-  const auth = req.headers.get("Authorization") ?? "";
-  if (!auth.includes(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!)) {
+  // Service-role gate (constant-time).
+  try {
+    await requireServiceRole(req);
+  } catch {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
