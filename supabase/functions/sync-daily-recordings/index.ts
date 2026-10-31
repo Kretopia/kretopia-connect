@@ -36,7 +36,7 @@ serve(async (req) => {
     if (!DAILY_API_KEY) throw new Error("DAILY_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const anon = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -49,21 +49,21 @@ serve(async (req) => {
     );
     const { data: claims } = await anon.auth.getClaims(authHeader.replace("Bearer ", ""));
     const userId = claims?.claims?.sub as string | undefined;
-    if (!userId) return json({ error: "Unauthorized" }, 401);
+    if (!userId) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const roomName: string | undefined = body?.room_name;
     // Daily room names are [A-Za-z0-9_-]; reject anything else before it is
     // interpolated into the Daily URL.
     if (roomName !== undefined && (typeof roomName !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(roomName))) {
-      return json({ error: "invalid room_name" }, 400);
+      return json(corsHeaders, { error: "invalid room_name" }, 400);
     }
     // A unix-seconds timestamp, not in the future by more than a day.
     const rawSince = body?.since_ts;
     let sinceTs: number | null = null;
     if (rawSince !== undefined && rawSince !== null) {
       if (!Number.isInteger(rawSince) || rawSince <= 0 || rawSince > Math.floor(Date.now() / 1000) + 86_400) {
-        return json({ error: "invalid since_ts" }, 400);
+        return json(corsHeaders, { error: "invalid since_ts" }, 400);
       }
       sinceTs = rawSince;
     }
@@ -167,16 +167,16 @@ serve(async (req) => {
     const failed = results.filter((r) => r.error).length;
     const saved = results.filter((r) => r.transcript_id).length;
     if (failed > 0 && saved === 0) {
-      return json({ ok: false, error: "None of the recordings could be saved", scanned, failed, since_ts: sinceTs, results }, 502);
+      return json(corsHeaders, { ok: false, error: "None of the recordings could be saved", scanned, failed, since_ts: sinceTs, results }, 502);
     }
-    return json({ ok: failed === 0, scanned, failed, since_ts: sinceTs, results });
+    return json(corsHeaders, { ok: failed === 0, scanned, failed, since_ts: sinceTs, results });
   } catch (e) {
     console.error("[sync-daily-recordings]", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
