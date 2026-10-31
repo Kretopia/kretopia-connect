@@ -6,23 +6,26 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { hasExplicitRecordingConsent } from "../_shared/recordingConsent.ts";
 import { corsFor } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { readJson, safeError } from '../_shared/guard.ts';
+import { z } from 'npm:zod@4';
 
 
 const DAILY_API = "https://api.daily.co/v1";
 
-interface Body {
-  handle?: string;
-  owner_id?: string;
-  start_iso: string; // ISO start time
-  duration_minutes?: number;
-  guest_name: string;
-  guest_email: string;
-  brief?: string;
-  record_consent?: boolean; // guest agrees to recording + Kreto transcription
-}
+const bookingSchema = z.object({
+  handle: z.string().max(31).optional(),
+  owner_id: z.uuid().optional(),
+  start_iso: z.string().max(64),
+  duration_minutes: z.number().finite().optional(),
+  guest_name: z.string().max(80),
+  guest_email: z.string().max(200),
+  brief: z.string().max(4000).optional(),
+  record_consent: z.boolean().optional(),
+});
 
 serve(async (req) => {
   const corsHeaders = corsFor(req);
+  const json = (body: unknown, status = 200) => jsonWithCors(corsHeaders, body, status);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     await publicPerimeter(req, "book-meeting", 10);
@@ -31,15 +34,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const body = (await req.json()) as Body;
+    const body = await readJson(req, bookingSchema);
     const name = (body.guest_name || "").trim().slice(0, 80);
     const email = (body.guest_email || "").trim().slice(0, 200);
     if (!name || !email || !body.start_iso) {
-      return json(corsHeaders, { error: "Name, email, and slot are required" }, 400);
+      return json({ error: "Name, email, and slot are required" }, 400);
     }
     const start = new Date(body.start_iso);
     if (isNaN(start.getTime()) || start.getTime() < Date.now() - 60_000) {
-      return json(corsHeaders, { error: "Pick a future slot" }, 400);
+      return json({ error: "Pick a future slot" }, 400);
     }
     const dur = Math.min(Math.max(body.duration_minutes ?? 30, 10), 240);
     const end = new Date(start.getTime() + dur * 60_000);
@@ -55,7 +58,7 @@ serve(async (req) => {
         .maybeSingle();
       ownerId = data?.user_id ?? null;
     }
-    if (!ownerId) return json(corsHeaders, { error: "Creator not found" }, 404);
+    if (!ownerId) return json({ error: "Creator not found" }, 404);
 
     // Owner must have bookings enabled
     const { data: prof } = await admin
@@ -64,7 +67,7 @@ serve(async (req) => {
       .eq("user_id", ownerId)
       .maybeSingle();
     if (!prof?.bookings_enabled) {
-      return json(corsHeaders, { error: "Bookings are closed for this creator" }, 403);
+      return json({ error: "Bookings are closed for this creator" }, 403);
     }
 
     // Validate slot lies in an active window for that weekday
@@ -80,7 +83,7 @@ serve(async (req) => {
     const fits = (windows || []).some(
       (w: any) => startMin >= w.start_minute && endMin <= w.end_minute,
     );
-    if (!fits) return json(corsHeaders, { error: "Slot is outside availability" }, 409);
+    if (!fits) return json({ error: "Slot is outside availability" }, 409);
 
     // Collision check vs existing scheduled meetings (±dur window around start)
     const lo = new Date(start.getTime() - dur * 60_000).toISOString();
@@ -92,7 +95,7 @@ serve(async (req) => {
       .gte("scheduled_for", lo)
       .lte("scheduled_for", hi);
     if ((clashes || []).length > 0) {
-      return json(corsHeaders, { error: "Slot just got taken — please pick another" }, 409);
+      return json({ error: "Slot just got taken — please pick another" }, 409);
     }
 
     // Create Daily room
@@ -172,7 +175,7 @@ serve(async (req) => {
       if (notifyError) console.warn("[book-meeting] host notification failed:", notifyError.message);
     } catch { /* ignore */ }
 
-    return json(corsHeaders, {
+    return json({
       meeting_id: meeting.id,
       share_url: shareUrl,
       start_iso: start.toISOString(),
@@ -182,12 +185,11 @@ serve(async (req) => {
       recording_enabled: recordConsent,
     });
   } catch (e) {
-    console.error("[book-meeting]", e);
-    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return safeError(e, req);
   }
 });
 
-function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
+function jsonWithCors(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
