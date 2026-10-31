@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
+import { z } from "npm:zod@4";
+import { corsFor, readJson, safeError } from "../_shared/guard.ts";
+import { requireAiCaller } from "../_shared/aiPerimeter.ts";
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const BodySchema = z.object({
+  rawText: z.string().trim().min(50).max(50000),
+  images: z.array(z.url().refine(value => /^https?:\/\//i.test(value))).max(50).default([]),
+  title: z.string().max(500).nullish(),
+  category: z.string().max(100).nullish(),
+});
 
 /**
  * Magic Compose: Takes raw pasted article text + a list of image URLs and uses AI
@@ -13,10 +19,12 @@ const corsHeaders = {
  * and category. Does NOT invent prose; uses only the supplied text.
  */
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { rawText, images = [], title: hintTitle, category: hintCategory } = await req.json();
+    await requireAiCaller(req, "compose-magazine-article");
+    const { rawText, images, title: hintTitle, category: hintCategory } = await readJson(req, BodySchema);
     if (!rawText || typeof rawText !== "string" || rawText.trim().length < 50) {
       return new Response(JSON.stringify({ error: "rawText (article body) is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -60,9 +68,9 @@ METADATA:
 - Choose category from this list ONLY: ${ALLOWED_CATEGORIES.join(", ")}.
 - If a title hint is given, use it. Otherwise extract the most likely title from the first lines.
 
-Return your output via the format_article tool. Output content must be markdown only.`;
+Return your output via the format_article tool. Output content must be markdown only.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
-    const userPrompt = `Title hint: ${hintTitle || "(none — extract from text)"}
+    const userPrompt = wrapUntrustedContent("article and layout hints", `Title hint: ${hintTitle || "(none — extract from text)"}
 Category hint: ${hintCategory || "(none — pick best fit)"}
 
 Available images (index: url):
@@ -73,7 +81,7 @@ Raw article text:
 ${rawText}
 ---
 
-Lay this out as a premium magazine article. Use the available images. Pick the cover. Place body images between paragraphs. Add subheadings, pull quotes, and bold emphasis. Use only the words from the article.`;
+Lay this out as a premium magazine article. Use the available images. Pick the cover. Place body images between paragraphs. Add subheadings, pull quotes, and bold emphasis. Use only the words from the article.`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -131,9 +139,7 @@ Lay this out as a premium magazine article. Use the available images. Pick the c
     const data = await response.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall?.function?.arguments) {
-      return new Response(JSON.stringify({ error: "AI did not return a formatted article" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return safeError(new Error("AI did not return a formatted article"), req);
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
@@ -148,9 +154,6 @@ Lay this out as a premium magazine article. Use the available images. Pick the c
       content: parsed.content,
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    console.error("compose-magazine-article error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

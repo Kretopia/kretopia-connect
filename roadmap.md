@@ -1,7 +1,7 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Security lockdown (October 31 continuation)
-- [ ] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned with the existing modal without changing UI. Full suite rerun pending. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
+- [x] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned without changing UI; 3,427 tests pass and managed build OK. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
 - [ ] 2. Edge perimeter: origins, authentication, validation, isolation, errors. Continue after the Step 1 full-suite gate; preserve backend identity and intentional public/internal callers.
 - [ ] 3. SSRF bounded fetching. Blocked by step order.
 - [ ] 4. Exposed endpoint removal and authentication hardening. Blocked by step order.

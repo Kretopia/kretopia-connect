@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_1_PRO } from "../_shared/aiModels.ts";
+import { z } from "npm:zod@4";
+import { corsFor, readJson, safeError } from "../_shared/guard.ts";
+import { requireAiCaller } from "../_shared/aiPerimeter.ts";
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const BodySchema = z.object({ content: z.string().min(1).max(50000), title: z.string().max(500).nullish(), subtitle: z.string().max(1000).nullish() });
 
 /**
  * Reformats an existing article without changing the words.
@@ -16,10 +17,12 @@ const corsHeaders = {
  * identical to the input. We do NOT add or remove sentences.
  */
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { content, title, subtitle } = await req.json();
+    await requireAiCaller(req, "polish-magazine-article");
+    const { content, title, subtitle } = await readJson(req, BodySchema);
     if (!content || typeof content !== "string") {
       return new Response(JSON.stringify({ error: "content is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -48,9 +51,9 @@ WHAT YOU MUST DO:
 - If the article has bullet-able items written as run-on lists ("first…, second…, third…"), you may convert to a markdown list using the original wording.
 - Preserve all existing markdown images, links, and embeds exactly.
 
-OUTPUT MARKDOWN ONLY. No preamble, no explanation.`;
+OUTPUT MARKDOWN ONLY. No preamble, no explanation.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
-    const userPrompt = `Title: ${title || "(untitled)"}
+    const userPrompt = wrapUntrustedContent("article and title", `Title: ${title || "(untitled)"}
 ${subtitle ? `Subtitle: ${subtitle}` : ""}
 
 Polish this article:
@@ -59,7 +62,7 @@ Polish this article:
 ${content}
 ---
 
-Return the polished markdown only.`;
+Return the polished markdown only.`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -95,18 +98,13 @@ Return the polished markdown only.`;
     const data = await response.json();
     const polished = data.choices?.[0]?.message?.content?.trim();
     if (!polished) {
-      return new Response(JSON.stringify({ error: "Empty response from AI" }), {
-        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return safeError(new Error("Empty response from AI"), req);
     }
 
     return new Response(JSON.stringify({ content: polished }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("polish-magazine-article error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });
