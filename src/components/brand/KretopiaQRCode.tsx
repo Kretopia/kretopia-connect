@@ -32,8 +32,16 @@ export function KretopiaQRCode({ data, size: requestedSize = 120, className, onR
   onReadyRef.current = onReady;
   const size = Math.max(requestedSize, MIN_SIZE);
 
+  const payload = safeQrPayload(data);
+
   useEffect(() => {
-    if (!data || !ref.current) return;
+    if (!ref.current) return;
+    if (!payload) {
+      ref.current.innerHTML = "";
+      onReadyRef.current?.(null);
+      return;
+    }
+    const data = payload;
     let cancelled = false;
     ref.current.innerHTML = "";
     const tokens = getComputedStyle(document.documentElement);
