@@ -4,6 +4,7 @@
 //
 // SECURITY: validates Telegram's secret_token header (derived deterministically from
 // TELEGRAM_API_KEY) before processing. No JWT — Telegram doesn't send one.
+import { constantTimeEqual } from '../_shared/guard.ts';
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const TELEGRAM_GATEWAY = "https://connector-gateway.lovable.dev/telegram";
@@ -15,11 +16,9 @@ async function deriveWebhookSecret(apiKey: string): Promise<string> {
     .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 }
 
-function safeEqual(a: string | null, b: string): boolean {
-  if (!a || a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
+// Hash both sides before comparison: no length early-exit, no byte-level timing leak.
+async function safeEqual(a: string | null, b: string): Promise<boolean> {
+  return constantTimeEqual(a ?? '', b);
 }
 
 async function tg(
@@ -178,7 +177,7 @@ Deno.serve(async (req) => {
   // --- Verify Telegram's secret header ---
   const expected = await deriveWebhookSecret(TELEGRAM_API_KEY);
   const got = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
-  if (!safeEqual(got, expected)) {
+  if (!await safeEqual(got, expected)) {
     return new Response("unauthorized", { status: 401 });
   }
 
