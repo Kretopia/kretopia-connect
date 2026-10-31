@@ -28,7 +28,7 @@ describe("book-meeting wiring", () => {
   });
 
   it("tells the client what was enabled", () => {
-    expect(source).toMatch(/json\(\{[\s\S]*recording_enabled: recordConsent[\s\S]*\}\)/);
+    expect(source).toMatch(/json\(corsHeaders, \{[\s\S]*recording_enabled: recordConsent[\s\S]*\}\)/);
   });
 });
 
