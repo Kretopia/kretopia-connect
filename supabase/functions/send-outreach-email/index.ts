@@ -12,6 +12,7 @@ import {
   countRecipientSends,
   decideSendBudget,
   recordActorSend,
+import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/outboundBudget.ts";
 
 // A refusal with its own status (400, 409, 429, 503), mapped by the final catch.
@@ -26,10 +27,6 @@ class HttpStatusError extends Error {
 // A mail body is text a person wrote: bounded, so this cannot carry a payload.
 const MAX_BODY_CHARS = 20000;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 interface EmailSettings {
   provider: string;
@@ -106,6 +103,7 @@ function wrapHtml(body: string): string {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

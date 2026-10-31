@@ -16,17 +16,13 @@ import {
   skillList,
   type CreditFacts,
   type ProfileFacts,
+import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/passportDraft.ts";
 
 // "Strengthen your Passport": one call drafts the pieces a Passport needs to be found (a bio, a photo, one work item)
 // from what the signed-in person already has on Kretopia. Nothing is saved here and nothing is verified: the client
 // shows the draft, the person accepts or rejects each field, and only accepted fields are written, by them.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -58,6 +54,7 @@ async function askModel(apiKey: string, text: string, imageUrls: string[]) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return json({ ok: false, code: "method_not_allowed", error: "POST only" }, 405);
 

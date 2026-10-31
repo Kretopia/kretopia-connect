@@ -5,13 +5,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { encodeBase64 as b64encode } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 
@@ -51,6 +46,7 @@ function resolveVoice(raw?: string): string {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   if (req.method !== "POST") return jsonResponse({ error: "method_not_allowed" }, 405);
 

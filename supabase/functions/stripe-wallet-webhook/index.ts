@@ -4,15 +4,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "stripe-signature, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const log = (s: string, d?: unknown) => console.log(`[stripe-wallet-webhook] ${s}`, d ?? "");
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const stripe = new Stripe(resolveStripeSecretKey(), { apiVersion: "2025-08-27.basil" });

@@ -7,12 +7,8 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
@@ -82,6 +78,7 @@ Available folders: ${JSON.stringify(folderNames)}`;
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

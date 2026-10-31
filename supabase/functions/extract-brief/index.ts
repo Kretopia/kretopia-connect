@@ -14,12 +14,8 @@ import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_share
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 type Source = "text" | "csv" | "sheet" | "doc" | "audio";
 
 // Largest inputs one request may carry. Generous on purpose: callers send a whole project description, a pasted CSV or a
@@ -294,6 +290,7 @@ async function callGemini(parts: unknown[], systemPrompt: string, apiKey: string
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

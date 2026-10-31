@@ -13,12 +13,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -77,6 +73,7 @@ const TRIAGE_TOOL = {
 };
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);

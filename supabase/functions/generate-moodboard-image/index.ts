@@ -7,15 +7,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
 import { guardStudioOperator } from "../_shared/studioAccess.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

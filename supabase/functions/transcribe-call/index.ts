@@ -19,15 +19,13 @@ import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { INLINE_TRANSCRIPT_MAX_BYTES, transcriptSkippedError } from "../_shared/recordingTranscript.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   // Service-role gate.

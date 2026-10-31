@@ -2,14 +2,12 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 // Run every 15 minutes. Sends 24h, 1h, and 15min reminders to RSVP'd users
 // for scheduled curated_stages. Idempotent via curated_stage_reminders_sent table.
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
   // sends mail or changes data, so the public anon key must not be enough to trigger it.

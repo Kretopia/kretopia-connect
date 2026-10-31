@@ -5,13 +5,10 @@ import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { requireUser } from "../_shared/require-user.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // Onboarding's "Suggest a bio": one short model call that drafts a bio from what the signed-in person typed. Every call
 // spends AI credits, so it needs a signed-in caller, is counted per person, and only takes a bounded prompt.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 // Well above what onboarding sends (a name, a role, a "City, Country", the skills Kreto found across a few searches),
 // and small enough that a caller cannot use this function to push a large prompt at the model.
@@ -53,6 +50,7 @@ function readInput(body: unknown): ReadInput {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

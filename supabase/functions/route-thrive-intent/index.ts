@@ -3,12 +3,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SYSTEM = `You are Kreto's intent router. A creator types or speaks one short request. You decide what surface or workflow it maps to and reply by calling the route_intent tool.
 
 Intents you can return:
@@ -27,6 +23,7 @@ Rules:
 - target_query is a refined search query for find_people / find_gigs (otherwise null).`;
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

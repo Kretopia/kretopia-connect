@@ -5,18 +5,16 @@ import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
 const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 const FREE_DAILY_LIMIT = 10;
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

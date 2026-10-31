@@ -3,11 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const SYSTEM_PROMPT = `You are Kretopia's friendly feedback assistant. Your job is to help beta testers share their thoughts about the platform.
 
 BEHAVIOR:
@@ -27,6 +24,7 @@ After each user message, you must include a hidden categorization tag at the END
 Keep responses concise (2-3 sentences max). Be enthusiastic but genuine. Use emoji sparingly.`;
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

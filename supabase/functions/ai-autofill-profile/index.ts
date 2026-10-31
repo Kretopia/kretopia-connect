@@ -2,11 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
+import { corsFor } from '../_shared/guard.ts';
 async function firecrawlSearch(query: string, apiKey: string, limit = 5) {
   const res = await fetch('https://api.firecrawl.dev/v1/search', {
     method: 'POST',
@@ -43,6 +40,7 @@ async function aiExtract(prompt: string, systemPrompt: string, lovableKey: strin
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

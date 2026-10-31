@@ -23,12 +23,8 @@ import {
 } from "../_shared/outboundBudget.ts";
 import { cleanFreeText, cleanRecipientEmail, singleLine } from "../_shared/outboundText.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const PROD_ORIGIN = "https://www.kretopia.com";
 const MAX_RECIPIENTS = 500;
 // A `ref` is a username for attribution: nothing else belongs in a link we put in a mail.
@@ -50,6 +46,7 @@ const formatStart = (iso: string) => {
 };
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

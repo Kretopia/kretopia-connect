@@ -25,11 +25,8 @@ import { dispatchTranscription, ensureTranscriptRow, runInBackground } from "../
 import { findCallByRoom } from "../_shared/findCallByRoom.ts";
 import { shouldQueueTranscription } from "../_shared/recordingTranscript.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-webhook-signature",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 // Constant-time hex comparison
 function timingSafeEqualHex(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -57,6 +54,7 @@ function json(body: unknown, status = 200): Response {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

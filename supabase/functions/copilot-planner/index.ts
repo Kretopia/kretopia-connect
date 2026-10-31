@@ -8,15 +8,11 @@ import { GEMINI_3_8_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { guardProjectAccess } from "../_shared/projectAccess.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // Bounds time-to-first-byte on the gateway call, not total response
 // duration -- see _shared/fetchWithTimeout.ts.
 const GATEWAY_CONNECT_TIMEOUT_MS = 60_000;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -33,6 +29,7 @@ function json(body: unknown, status = 200) {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

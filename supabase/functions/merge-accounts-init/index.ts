@@ -1,15 +1,11 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { generateOtp } from "../_shared/phoneOtp.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // A merge request mails a code to two inboxes, one of which is not the
 // caller's: the number of requests one account can open is bounded.
 const MAX_MERGE_REQUESTS_PER_HOUR = 3;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 /**
  * Initiates an account merge:
@@ -19,6 +15,7 @@ const corsHeaders = {
  *     and emails them via Supabase auth.admin.generateLink (otp).
  */
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;

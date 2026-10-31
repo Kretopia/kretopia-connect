@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { corsFor } from '../_shared/guard.ts';
 // Why this exists: an invitation sent to an email address is saved with
 // user_id = NULL. The invitee can neither read that row (project_collaborators'
 // SELECT rule needs user_id = auth.uid()) nor update it (the "accept own
@@ -14,11 +15,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 // Nobody can claim an invitation sent to someone else's address. No schema or
 // RLS change: it uses the service role for this one narrow, checked write.
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -39,6 +35,7 @@ type Row = {
 };
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

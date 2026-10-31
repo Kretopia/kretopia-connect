@@ -5,11 +5,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 async function processUser(supabase: any, userId: string) {
@@ -98,6 +95,7 @@ async function processUser(supabase: any, userId: string) {
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);

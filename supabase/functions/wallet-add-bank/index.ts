@@ -4,12 +4,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { cleanBankRequest } from "../_shared/bankRequest.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const log = (s: string, d?: unknown) => console.log(`[wallet-add-bank] ${s}`, d ?? "");
 
 // Same supported-country/currency/routing shape the frontend offers — kept
@@ -83,6 +79,7 @@ function validateIban(country: string, rawIban: string): { ok: true; iban: strin
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

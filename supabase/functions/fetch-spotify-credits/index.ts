@@ -2,12 +2,8 @@
 // Pulls artist name + albums/singles from open.spotify.com/artist/<id> and inserts as credits.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const FIRECRAWL = "https://api.firecrawl.dev/v2";
 
 function extractArtistId(input: string): string | null {
@@ -90,6 +86,7 @@ async function scrapeArtist(artistUrl: string, apiKey: string): Promise<{
 }
 
 Deno.serve(async (req: Request) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

@@ -6,12 +6,10 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   // Cron / admin only (x-cron-secret or an admin session): this runs with the service role and
   // sends mail or changes data, so the public anon key must not be enough to trigger it.

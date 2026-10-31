@@ -2,12 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { userMayActOnCall } from "../_shared/projectAccess.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
 /**
@@ -20,6 +16,7 @@ const DAILY_API = "https://api.daily.co/v1";
  * Only the host of the stage may toggle.
  */
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
   try {

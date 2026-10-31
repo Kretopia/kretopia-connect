@@ -2,12 +2,8 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { roomSessionExpiry } from "../_shared/roomSessionLimits.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
 /**
@@ -15,6 +11,7 @@ const DAILY_API = "https://api.daily.co/v1";
  * Anyone authenticated can join a live, public Open Stage.
  */
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
   try {

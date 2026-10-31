@@ -35,13 +35,9 @@ import {
   type ScoutPrefsLite,
   type ScoutProfile,
   type ScoutSource,
+import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/scoutSources.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const FIRECRAWL = "https://api.firecrawl.dev/v2/search";
 const AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -420,6 +416,7 @@ function acceptAiGigs(extracted: AiGig[], profile: ScoutProfile, prefs: ScoutPre
 }
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const startedAt = Date.now();

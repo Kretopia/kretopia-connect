@@ -9,12 +9,8 @@ import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, apikey, content-type, x-lovable-signature, x-lovable-timestamp, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-}
 
+import { corsFor } from '../_shared/guard.ts';
 const EMAIL_SUBJECTS: Record<string, string> = {
   signup: 'Confirm your email',
   invite: "You've been invited",
@@ -284,6 +280,7 @@ async function handleWebhook(req: Request): Promise<Response> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   const url = new URL(req.url)
 
   // Handle CORS preflight for main endpoint

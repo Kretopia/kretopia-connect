@@ -1,10 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
+import { corsFor } from '../_shared/guard.ts';
 const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
 const YOUTUBE_API_KEY = Deno.env.get("YOUTUBE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -123,6 +120,7 @@ function extractFollowersFromMarkdown(markdown: string, platform: string): numbe
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }

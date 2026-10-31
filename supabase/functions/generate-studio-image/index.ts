@@ -12,20 +12,17 @@ import { checkAndConsumeStudioAIGeneration, refundStudioAIGeneration } from "../
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
 import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
 
+import { corsFor } from '../_shared/guard.ts';
 // Generating an image spends the project owner's studio quota and writes into
 // the project's Asset Library, so it is an operator action: not for clients or
 // guests, and never for a pending invitee.
 const IMAGE_ROLES: ProjectRole[] = ["owner", "collaborator", "creative"];
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
