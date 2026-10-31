@@ -5,6 +5,13 @@ const world = vi.hoisted(() => ({ handlers: {} as Record<string, (r: Request) =>
 
 vi.mock("https://deno.land/std@0.168.0/http/server.ts", () => ({ serve: (h: any) => { world.handlers[world.current] = h; } }));
 vi.mock("https://deno.land/x/zod@v3.22.4/mod.ts", async () => await import("zod"));
+// The handlers now require a verified caller before touching the network:
+// authenticate as a signed-in user so the SSRF checks below are what fails.
+vi.mock("npm:@supabase/supabase-js@2", () => ({
+  createClient: () => ({
+    auth: { getUser: async () => ({ data: { user: { id: "11111111-1111-1111-1111-111111111111" } }, error: null }) },
+  }),
+}));
 
 const fetchMock = vi.fn();
 const html = (title: string) => `<html><head><meta property="og:title" content="${title}"><meta property="og:description" content="d"></head></html>`;
