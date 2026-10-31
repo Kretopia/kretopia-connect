@@ -20,7 +20,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { INLINE_TRANSCRIPT_MAX_BYTES, transcriptSkippedError } from "../_shared/recordingTranscript.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireServiceRole } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
