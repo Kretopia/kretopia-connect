@@ -13,7 +13,7 @@
 - [ ] 4. Exposed endpoint removal and authentication hardening. Done: every entrypoint now has an access check (only public sitemap open by design); VAPID key generator removed; last three plain secret comparisons made constant-time; regression test added. Remaining: live 401 checks need deployment.
 - [ ] 5. CSP, safe links, HTML sanitation, QR print safety. Done: app-wide unsafe-link guard (javascript:/data: blocked, new tabs get noopener), baseline CSP (object-src none, base-uri self, upgrade-insecure), creator-site embeds no longer accept inline styles; tests added. Remaining: full script-src CSP needs a header-level policy after inventorying third parties; QR print review.
 - [x] 6. Patched dependencies and audit: 272 → 71 advisories; jsPDF 4.2.1 (shipped critical fixed), vitest 3.2.6; only remaining critical is tinypool inside the test runner (not shipped). Four stale wiring tests updated; book-meeting no longer returns internal error text.
-- [ ] 7. Read-only policy audit and unapplied SQL migrations. Blocked by step order.
+- [ ] 7. Read-only policy audit: Cloud done (docs/security/POLICY_AUDIT_2026-10-31.md); one fix written unapplied (username attempt limiter). Legacy backend audit blocked: no read access from here.
 - [ ] 8. Security regression suite and final verification. Blocked by step order.
 SQL must stay files only; no publication or legacy deployment. Full tests run per step; build/typecheck are managed by the preview harness.
 
