@@ -13,29 +13,30 @@ interface PushNotificationPayload {
   tag?: string;
 }
 
-function parseJwtClaims(token: string): Record<string, unknown> | null {
-  const parts = token.split(".");
-  if (parts.length < 2) return null;
-  try {
-    const payload = parts[1]
-      .replaceAll("-", "+")
-      .replaceAll("_", "/")
-      .padEnd(Math.ceil(parts[1].length / 4) * 4, "=");
-    return JSON.parse(atob(payload)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
+// Step 1: who is calling? Internal callers authenticate with the
+// service-role key itself (constant-time compare); everyone else gets their
+// token verified against the auth server. A decoded-but-unverified JWT
+// claims nothing — anyone can mint one with role=service_role.
+type VerifiedCaller = { id: string | null; isServiceRole: boolean };
 
-// Step 1: is there a real caller at all? service-role (internal edge
-// functions, e.g. notify-swipe's own admin client) is always trusted.
-// Anything else must additionally pass the relationship check below.
-function parseCallerClaims(req: Request): { role?: string; sub?: string } | null {
+async function resolveCaller(req: Request): Promise<VerifiedCaller | null> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) return null;
-  const claims = parseJwtClaims(authHeader.slice("Bearer ".length).trim());
-  if (!claims) return null;
-  return claims as { role?: string; sub?: string };
+  const token = authHeader.slice("Bearer ".length).trim();
+
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (serviceKey && (await constantTimeEqual(token, serviceKey))) {
+    return { id: null, isServiceRole: true };
+  }
+
+  const userClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+  const { data, error } = await userClient.auth.getUser(token);
+  if (error || !data?.user?.id) return null;
+  return { id: data.user.id, isServiceRole: false };
 }
 
 // Step 2: for a plain authenticated (non-service-role) caller, this used to
@@ -253,8 +254,8 @@ serve(async (req) => {
   }
 
   try {
-    const claims = parseCallerClaims(req);
-    if (!claims) {
+    const caller = await resolveCaller(req);
+    if (!caller) {
       return new Response(
         JSON.stringify({ success: false, error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -276,14 +277,14 @@ serve(async (req) => {
 
     // service-role (internal edge functions) and self-notify are always
     // trusted; anyone else must have a real relationship with the target.
-    if (claims.role !== "service_role" && claims.sub !== payload.userId) {
-      if (!claims.sub) {
+    if (!caller.isServiceRole && caller.id !== payload.userId) {
+      if (!caller.id) {
         return new Response(
           JSON.stringify({ success: false, error: "Unauthorized" }),
           { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const related = await hasRealRelationship(supabaseClient, claims.sub, payload.userId);
+      const related = await hasRealRelationship(supabaseClient, caller.id, payload.userId);
       if (!related) {
         return new Response(
           JSON.stringify({ success: false, error: "Not authorized to notify this user" }),
