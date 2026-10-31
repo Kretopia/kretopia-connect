@@ -121,7 +121,7 @@ describe("thrivefund-create-pledge wiring", () => {
     expect(source).toMatch(/already_backed"\) return refuse\(corsHeaders, 409/);
     expect(source).toMatch(/action === "unknown"\) return refuse\(corsHeaders, 503/);
     expect(source).toContain("stripe.checkout.sessions.expire(old.stripe_checkout_session_id)");
-    expect(source).toMatch(/earlierErr\) return refuse\(503/);
+    expect(source).toMatch(/earlierErr\) return refuse\(corsHeaders, 503/);
   });
 
   it("keeps the payment mechanics exactly as they were", () => {
