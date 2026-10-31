@@ -1,11 +1,9 @@
+import { corsFor } from '../_shared/guard.ts';
 // Temporary music generation endpoint for the YC product video.
 // Calls ElevenLabs Music API and returns raw MP3 bytes.
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const key = Deno.env.get("ELEVENLABS_API_KEY");

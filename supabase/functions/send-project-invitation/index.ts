@@ -5,6 +5,7 @@ import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_
 import { cleanRecipientEmail } from "../_shared/outboundText.ts";
 import { hashInviteSecret, INVITE_PREVIEW_TOKEN_DAYS, newInviteSecret } from "../_shared/inviteSecret.ts";
 import {
+import { corsFor } from '../_shared/guard.ts';
   PROJECT_INVITES_PER_ACTOR_PER_HOUR,
   PROJECT_INVITES_PER_RECIPIENT_PER_HOUR,
   PROJECT_INVITE_TEMPLATE,
@@ -18,11 +19,6 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 const APP_URL = "https://www.kretopia.com";
 
@@ -49,6 +45,7 @@ interface InvitationRequest {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

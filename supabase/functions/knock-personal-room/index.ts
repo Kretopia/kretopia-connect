@@ -2,12 +2,8 @@
 // Inserts a room_knocks row. Owner sees it via Realtime + notification.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { corsFor } from '../_shared/guard.ts';
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 interface Body {
   handle?: string;
@@ -18,7 +14,8 @@ interface Body {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const corsHeaders = corsFor(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -27,7 +24,7 @@ serve(async (req) => {
 
     const body = (await req.json()) as Body;
     const name = (body.guest_name || "").trim().slice(0, 80);
-    if (!name) return json({ error: "Name required" }, 400);
+    if (!name) return json(corsHeaders, { error: "Name required" }, 400);
 
     // Resolve owner
     let ownerId = body.owner_id ?? null;
@@ -40,7 +37,7 @@ serve(async (req) => {
         .maybeSingle();
       ownerId = data?.user_id ?? null;
     }
-    if (!ownerId) return json({ error: "Creator not found" }, 404);
+    if (!ownerId) return json(corsHeaders, { error: "Creator not found" }, 404);
 
     // Optional auth — if signed in, attach guest_user_id
     let guestUserId: string | null = null;
@@ -82,20 +79,20 @@ serve(async (req) => {
       });
     } catch { /* ignore */ }
 
-    return json({
+    return json(corsHeaders, {
       knock_id: knock.id,
       guest_token: knock.guest_token,
       expires_at: knock.expires_at,
     });
   } catch (e) {
     console.error("[knock-personal-room]", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }

@@ -2,6 +2,7 @@
 // Body: { session_id: string, kind: "updated" | "canceled", changes?: string[], reason?: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
+import { corsFor } from '../_shared/guard.ts';
   SESSION_CANCEL_COOLDOWN_MS,
   SESSION_UPDATE_COOLDOWN_MS,
   cleanSessionChanges,
@@ -11,18 +12,15 @@ import {
   decideCooldown,
 } from "../_shared/notificationGuards.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const corsHeaders = corsFor(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { session_id, kind, changes: rawChanges, reason: rawReason } = await req.json();
     if (!session_id || !["updated", "canceled"].includes(kind)) {
-      return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: cors });
+      return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: corsHeaders });
     }
 
     const supabase = createClient(
@@ -35,14 +33,14 @@ Deno.serve(async (req) => {
     const jwt = authHeader.replace("Bearer ", "");
     const { data: userData } = await supabase.auth.getUser(jwt);
     const callerId = userData?.user?.id;
-    if (!callerId) return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: cors });
+    if (!callerId) return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: corsHeaders });
 
     const { data: session } = await supabase
       .from("speed_sessions")
       .select("id, title, host_user_id, starts_at")
       .eq("id", session_id)
       .maybeSingle();
-    if (!session) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: cors });
+    if (!session) return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: corsHeaders });
 
     const { data: roleRow } = await supabase
       .from("user_roles")
@@ -52,7 +50,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const isAdmin = !!roleRow;
     if (session.host_user_id !== callerId && !isAdmin) {
-      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: cors });
+      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: corsHeaders });
     }
 
     const { data: rsvps } = await supabase
@@ -62,7 +60,7 @@ Deno.serve(async (req) => {
 
     const recipients = (rsvps ?? []).map((r) => r.user_id).filter((id) => id !== session.host_user_id);
     if (recipients.length === 0) {
-      return new Response(JSON.stringify({ ok: true, notified: 0 }), { headers: cors });
+      return new Response(JSON.stringify({ ok: true, notified: 0 }), { headers: corsHeaders });
     }
 
     // The host's text is a clipped string and a short list of strings, never an object; and the
@@ -83,7 +81,7 @@ Deno.serve(async (req) => {
     if (!cooldown.ok) {
       return new Response(JSON.stringify({ error: cooldown.error }), {
         status: cooldown.status,
-        headers: { ...cors, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -112,11 +110,11 @@ Deno.serve(async (req) => {
     if (notifErr) throw notifErr;
 
     return new Response(JSON.stringify({ ok: true, notified: rows.length }), {
-      headers: { ...cors, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String((e as Error)?.message ?? e) }), {
-      status: 500, headers: cors,
+      status: 500, headers: corsHeaders,
     });
   }
 });

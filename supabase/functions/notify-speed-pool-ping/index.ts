@@ -2,23 +2,21 @@
 // Body: { session_id: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
+import { corsFor } from '../_shared/guard.ts';
   SESSION_PING_COOLDOWN_MS,
   cooldownCutoffIso,
   countRecentSessionNotifications,
   decideCooldown,
 } from "../_shared/notificationGuards.ts";
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const corsHeaders = corsFor(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const { session_id } = await req.json();
     if (!session_id) {
-      return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: cors });
+      return new Response(JSON.stringify({ error: "bad_request" }), { status: 400, headers: corsHeaders });
     }
 
     const supabase = createClient(
@@ -30,7 +28,7 @@ Deno.serve(async (req) => {
     const { data: userData } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
     const callerId = userData?.user?.id;
     if (!callerId) {
-      return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: cors });
+      return new Response(JSON.stringify({ error: "unauth" }), { status: 401, headers: corsHeaders });
     }
 
     const { data: session } = await supabase
@@ -39,13 +37,13 @@ Deno.serve(async (req) => {
       .eq("id", session_id)
       .maybeSingle();
     if (!session) {
-      return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: cors });
+      return new Response(JSON.stringify({ error: "not_found" }), { status: 404, headers: corsHeaders });
     }
 
     const { data: roleRow } = await supabase
       .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
     if (session.host_user_id !== callerId && !roleRow) {
-      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: cors });
+      return new Response(JSON.stringify({ error: "forbidden" }), { status: 403, headers: corsHeaders });
     }
 
     // RSVP'd but not yet joined (status != 'joined')
@@ -59,7 +57,7 @@ Deno.serve(async (req) => {
 
     if (!targets.length) {
       return new Response(JSON.stringify({ ok: true, notified: 0 }), {
-        headers: { ...cors, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -74,7 +72,7 @@ Deno.serve(async (req) => {
     if (!cooldown.ok) {
       return new Response(JSON.stringify({ error: cooldown.error }), {
         status: cooldown.status,
-        headers: { ...cors, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -92,11 +90,11 @@ Deno.serve(async (req) => {
     if (insErr) throw insErr;
 
     return new Response(JSON.stringify({ ok: true, notified: rows.length }), {
-      headers: { ...cors, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
     return new Response(JSON.stringify({ error: String((e as Error)?.message ?? e) }), {
-      status: 500, headers: cors,
+      status: 500, headers: corsHeaders,
     });
   }
 });
