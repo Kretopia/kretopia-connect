@@ -16,7 +16,7 @@ import {
   commitAiCredit,
   releaseAiCredit,
   type AiCreditFeature,
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, constantTimeEqual, safeError } from '../_shared/guard.ts';
 } from "../_shared/aiRateLimit.ts";
 
 // Anonymous callers share one bucket so unauthenticated chat still passes
@@ -85,7 +85,7 @@ function replayPriorActionForAffirmation(latestUserText: string, priorAssistantT
   return `${confirmation}\n${tag}`;
 }
 
-function streamTextResponse(content: string, conversationId: string | null) {
+function streamTextResponse(content: string, conversationId: string | null, corsHeaders: Record<string, string>) {
   const sse =
     `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n` +
     `data: [DONE]\n\n`;
@@ -150,7 +150,7 @@ serve(async (req) => {
     // Internal trusted call (e.g. Telegram webhook) — service role + explicit user id.
     const isInternal =
       !!internalUserId &&
-      authHeader === `Bearer ${SERVICE_KEY}`;
+      (await constantTimeEqual(authHeader, `Bearer ${SERVICE_KEY}`));
 
     // Resolve user: either internal (service role + header) or public (user JWT).
     let resolvedUser: { id: string } | null = null;
@@ -644,7 +644,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
           { headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
-      return streamTextResponse(affirmedReplay, conversationId);
+      return streamTextResponse(affirmedReplay, conversationId, corsHeaders);
     }
 
     // Ground the reply on already-parsed attachment text (max 3, capped) —
@@ -969,9 +969,6 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
     });
   } catch (e) {
     console.error("thrive-ai-chat error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });
