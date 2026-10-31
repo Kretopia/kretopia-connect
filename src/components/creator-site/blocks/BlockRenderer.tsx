@@ -151,7 +151,7 @@ export const BlockRenderer = ({ blocks, theme = 'dark', accentColor }: BlockRend
                   dangerouslySetInnerHTML={{
                     __html: DOMPurify.sanitize(block.embedCode, {
                       ALLOWED_TAGS: ['iframe', 'div', 'p', 'span', 'br'],
-                      ALLOWED_ATTR: ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'loading', 'referrerpolicy', 'class', 'style'],
+                      ALLOWED_ATTR: ['src', 'width', 'height', 'frameborder', 'allow', 'allowfullscreen', 'title', 'loading', 'referrerpolicy', 'class'],
                       ALLOWED_URI_REGEXP: /^https?:\/\//i,
                     }),
                   }}
