@@ -77,7 +77,22 @@ describe("who may call it", () => {
   it("answers the preflight for anyone and does nothing else", async () => {
     const res = await call(null, null, "OPTIONS");
     expect(res.status).toBe(200);
-    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    // Lockdown: no wildcard origin. Without an Origin header there is no ACAO;
+    // an allowlisted origin is echoed, anything else is not.
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
+    expect(res.headers.get("Vary")).toBe("Origin");
+    nothingSpent();
+  });
+
+  it("echoes an allowlisted origin and never a stranger's", async () => {
+    const allowed = await world.handler!(
+      new Request("https://fn.example/x", { method: "OPTIONS", headers: { Origin: "https://www.kretopia.com" } }),
+    );
+    expect(allowed.headers.get("Access-Control-Allow-Origin")).toBe("https://www.kretopia.com");
+    const stranger = await world.handler!(
+      new Request("https://fn.example/x", { method: "OPTIONS", headers: { Origin: "https://evil.example" } }),
+    );
+    expect(stranger.headers.get("Access-Control-Allow-Origin")).toBeNull();
     nothingSpent();
   });
 
@@ -85,7 +100,7 @@ describe("who may call it", () => {
     const res = await call(GOOD, null);
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ error: "Unauthorized" });
-    expect(res.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBeNull();
     nothingSpent();
   });
 
