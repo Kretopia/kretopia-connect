@@ -4,7 +4,7 @@ import { safeFetch } from "../_shared/ssrf.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "npm:@supabase/supabase-js@2";
 // SSRF protection: blocked hosts
 const BLOCKED_HOSTS = [
   'localhost', '127.0.0.1', '0.0.0.0',

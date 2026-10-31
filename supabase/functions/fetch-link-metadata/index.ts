@@ -7,7 +7,7 @@ import { safeFetch } from "../_shared/ssrf.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { createClient } from "npm:@supabase/supabase-js@2";
 const PROVIDERS: Array<{ test: RegExp; name: string }> = [
   { test: /(^|\.)docs\.google\.com/i, name: "Google Docs" },
   { test: /(^|\.)sheets\.google\.com/i, name: "Google Sheets" },
