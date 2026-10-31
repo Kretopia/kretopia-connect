@@ -90,11 +90,11 @@ serve(async (req) => {
     const declaredSize = Number(audioRes.headers.get("content-length") ?? 0);
     if (declaredSize > INLINE_TRANSCRIPT_MAX_BYTES) {
       await audioRes.body?.cancel();
-      return await skipTooLarge(admin, transcript_id, declaredSize);
+      return await skipTooLarge(admin, transcript_id, declaredSize, corsHeaders);
     }
     const audioBuf = await audioRes.arrayBuffer();
     if (audioBuf.byteLength > INLINE_TRANSCRIPT_MAX_BYTES) {
-      return await skipTooLarge(admin, transcript_id, audioBuf.byteLength);
+      return await skipTooLarge(admin, transcript_id, audioBuf.byteLength, corsHeaders);
     }
 
     const base64Audio = bufferToBase64(audioBuf);
@@ -351,7 +351,7 @@ serve(async (req) => {
  * The recording is stored and replayable but too big for the inline transcript call. Marks the row so
  * the UI says so (and nothing retries it), and tells the host the replay is saved.
  */
-async function skipTooLarge(admin: ReturnType<typeof createClient>, transcriptId: string, bytes: number): Promise<Response> {
+async function skipTooLarge(admin: ReturnType<typeof createClient>, transcriptId: string, bytes: number, corsHeaders: Record<string, string>): Promise<Response> {
   const mb = (n: number) => `${Math.round(n / (1024 * 1024))} MB`;
   const { error } = await admin
     .from("call_transcripts")
