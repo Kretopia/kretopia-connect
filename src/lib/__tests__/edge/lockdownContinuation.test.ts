@@ -48,6 +48,7 @@ describe('public search provider boundary', () => {
     world.fetch.mockResolvedValue(new Response('private-provider-secret', { status: 503 }));
     const response = await world.handlers['public-digital-presence'](request({ query: 'Creator' }));
     expect(response.status).toBe(500);
+    expect(world.fetch).toHaveBeenCalledTimes(1);
     expect(await response.json()).toEqual({ error: 'Something went wrong' });
   });
   it('strips unknown fields before spending and provider work', async () => {

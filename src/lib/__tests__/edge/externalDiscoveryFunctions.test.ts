@@ -151,6 +151,25 @@ describe("external-claim", () => {
 });
 
 describe("external-discovery-run", () => {
+  it("rejects invalid JSON and over-64000-byte requests before any discovery mutation", async () => {
+    world.admin = { userId: "admin-1", viaCron: false };
+    const rpc = vi.spyOn(world.db, "rpc");
+    const invalid = await world.handlers["external-discovery-run"](new Request("https://fn.example", { method: "POST", body: "not json" }));
+    expect(invalid.status).toBe(400);
+    const oversized = await call("external-discovery-run", { extra: "x".repeat(64000) });
+    expect(oversized.status).toBe(413);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid source list before the reservation sweep", async () => {
+    world.admin = { userId: "admin-1", viaCron: false };
+    const rpc = vi.spyOn(world.db, "rpc");
+    const response = await call("external-discovery-run", { sources: ["../private"] });
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: "bad_request" });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
   it("needs an admin or the cron secret", async () => {
     expect((await call("external-discovery-run", {})).status).toBe(403);
   });
