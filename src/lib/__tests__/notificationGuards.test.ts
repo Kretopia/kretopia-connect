@@ -307,3 +307,31 @@ describe("function wiring", () => {
     expect(s).toMatch(/draft\.source === "chase_invoice" && typeof draft\.meta\?\.invoice_id === "string"/);
   });
 });
+
+describe("notification senders: no forged-JWT authorization", () => {
+  const read = (p: string) => readFileSync(resolve(__dirname, "../../../supabase/functions", p), "utf8");
+
+  it("send-notification-email never trusts decoded claims: service key is compared constant-time, users are verified", () => {
+    const s = read("send-notification-email/index.ts");
+    // The bypass: parseJwtClaims decoded role/sub/email without signature
+    // verification, so a self-minted JWT with role=service_role authorized sends.
+    expect(s).not.toContain("parseJwtClaims");
+    expect(s).toContain("constantTimeEqual(token, serviceKey)");
+    expect(s).toContain("auth.getUser(token)");
+    // Self-service and admin checks must use the verified identity.
+    expect(s).toContain("caller.id");
+    expect(s).toContain("caller.email");
+    expect(s).not.toMatch(/claims\?\.(role|sub|email)/);
+  });
+
+  it("send-push-notification never trusts decoded claims: service key is compared constant-time, users are verified", () => {
+    const s = read("send-push-notification/index.ts");
+    expect(s).not.toContain("parseJwtClaims");
+    expect(s).not.toContain("parseCallerClaims");
+    expect(s).toContain("constantTimeEqual(token, serviceKey)");
+    expect(s).toContain("auth.getUser(token)");
+    // Relationship checks run against the verified caller id.
+    expect(s).toContain("hasRealRelationship(supabaseClient, caller.id, payload.userId)");
+    expect(s).not.toMatch(/claims\?\.(role|sub)/);
+  });
+});
