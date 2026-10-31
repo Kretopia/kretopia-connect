@@ -9,8 +9,11 @@ import { setupGlobalErrorLogging } from "./lib/errorLogger";
 import { clearAppServiceWorkerData, ensureAppServiceWorkerRegistered, isStandalonePWA } from "./lib/serviceWorker";
 import { startCacheSweep } from "./lib/cacheSweep";
 import { getStoredVibe } from "./components/VibeThemeSync";
+import { installUnsafeLinkGuard } from "./lib/safeUrl";
 import "./i18n";
 import "./index.css";
+
+installUnsafeLinkGuard();
 
 const isInIframe = (() => {
   try {
