@@ -1,14 +1,11 @@
 import { useEffect, useId, useRef } from "react";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 // Temporary Halloween artwork: same flight layers, same motion — only the flying sprite changes.
-import halloweenLanding from "@/assets/kreto/halloween/kreto-halloween-landing.png.asset.json";
-import peekTop from "@/assets/brand/kreto/kreto-peek-top.webp";
-import peekBottom from "@/assets/brand/kreto/kreto-peek-bottom.webp";
-import peekSide from "@/assets/brand/kreto/kreto-peek-side.webp";
+import halloweenLanding from "@/assets/kreto/halloween/kreto-pumpkin-transparent.png.asset.json";
 import { bottomBackflip, flipAt, headingAt, ledgeLockAt, lockX, lockY, mediaLedgeLocks, mediaSideLocks, sampleFlight, type Flip, type FlightPose, type FlightStop, type LedgeLock } from "./kretoFlightPath";
 import { BOTTOM_HEIGHT, BOTTOM_LEDGE, BOTTOM_SCALE, SIDE_SCALE, SIDE_UPPER_BODY_CLIP, ledgeSlideSpan, planSideHide } from "./kretoPoseGeometry";
 
-const layers = { right: halloweenLanding.url, left: halloweenLanding.url, peekTop, peekBottom, peekSide } as const;
+const layers = { right: halloweenLanding.url, left: halloweenLanding.url, peekTop: halloweenLanding.url, peekBottom: halloweenLanding.url, peekSide: halloweenLanding.url } as const;
 type Layer = keyof typeof layers;
 const layerKeys = Object.keys(layers) as Layer[];
 /** Where the ledge line sits inside each hiding artwork (fraction of its rendered size). */
@@ -17,7 +14,7 @@ const LEDGE = { peekTop: 0.81, peekBottom: BOTTOM_LEDGE };
 const HEIGHT = { peekTop: 1.446, peekBottom: BOTTOM_HEIGHT };
 // Hanging pose matches Flying's helmet, not the much taller arms-up silhouette.
 const poseClasses: Record<Layer, string> = {
-  right: "", left: "", peekTop: "origin-top scale-[1.446]", peekBottom: "origin-top", peekSide: "",
+  right: "", left: "-scale-x-100", peekTop: "origin-top", peekBottom: "origin-top", peekSide: "",
 };
 /**
  * The side hide artwork (1024 square, body cut by a straight vertical line at ~0.313): the media edge
@@ -220,7 +217,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
         // The same mirror and fit on the sprite and on its hands overlay, about the point where the
         // media edge crosses the artwork, so the hands never move relative to the edge.
         const mirror = activeLock.side === "left" ? -1 : 1;
-        const k = (activeLock.scale ?? 1) * SIDE_SCALE;
+        const k = activeLock.scale ?? 1;
         const originX = SIDE.cut * 100;
         for (const image of [imgs.current.peekSide, gripImgs.current.peekSide]) {
           if (!image) continue;
@@ -234,7 +231,9 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       // The hands are drawn over the media for as long as he holds the edge.
       // No hands on the side hide: only the head comes out.
       const gripping = activeLock?.pose !== "peekSide" && activeLock?.hidden !== undefined && isPeek;
-      grip.style.opacity = inFlight && gripping ? "1" : "0";
+      // The seasonal source has no separate gripping gloves: media still occludes
+      // the same moving mascot, without drawing disconnected pieces over it.
+      grip.style.opacity = "0";
       hero.style.opacity = inFlight ? "0" : "1";
       if (settling || turning) queue();
     };
@@ -455,7 +454,7 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
           <img key={key} ref={node => { imgs.current[key] = node; }} src={layers[key]} alt="" width={1024} height={1024}
             decoding="sync" draggable={false}
             className={`absolute inset-0 h-full w-full object-contain ${poseClasses[key]}`}
-            style={{ visibility: key === "left" ? "visible" : "hidden", transform: key === "peekBottom" ? `scale(${BOTTOM_SCALE})` : undefined, clipPath: key === "peekSide" ? SIDE_UPPER_BODY_CLIP : undefined }} />
+            style={{ visibility: key === "left" ? "visible" : "hidden", clipPath: key === "peekSide" ? SIDE_UPPER_BODY_CLIP : undefined }} />
         ))}
       </div>
     </div>

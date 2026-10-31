@@ -1,5 +1,11 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Temporary transparent Halloween mascots
+- [x] Use supplied transparent pumpkin on Landing with the existing flight controller, timing and scroll movements unchanged; aligned wave layers retain the greeting.
+- [x] Repair witch cauldron and residual background; use it on the existing KretoAI launcher without cropping.
+- [x] Verify flight through 11 browser transforms using actual CDN file bytes, image transparency, and launcher open event; 54 tests pass, managed build OK; no publication.
+- [ ] Verify real signed-in KretoAI opening: no Cloud auth users available to mint a session. Local browser cannot serve CDN URLs directly; verified with fetched originals intercepted at their exact asset URLs.
+
 ## Security lockdown (October 31 continuation)
 - [x] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned without changing UI; 3,427 tests pass and managed build OK. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
 - [ ] 2. Edge perimeter now covers 14 handlers, including nine additional Inbox/listing/markup/Studio/gig generators. Handler suite: 121 behavioral tests; all 3,554 full-suite tests pass with four workers; nine additional Deno checks and managed build OK. Remaining endpoint inventory still needs per-caller review: 276 literal wildcard-CORS entrypoints remain, plus SDK-imported headers; do not blanket-gate public, voice/media or internal callers. No deployment; live legacy verification requires deployment access/session.
