@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser();
     const userId = userData?.user?.id;
-    if (!userId) return json({ error: "Unauthorized" }, 401);
+    if (!userId) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -40,10 +40,10 @@ Deno.serve(async (req) => {
       ...d,
       masked_email: emails[d.candidate_user_id] || null,
     }));
-    return json({ candidates: enriched });
+    return json(corsHeaders, { candidates: enriched });
   } catch (e) {
     console.error("[detect-duplicate-accounts]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
 
@@ -54,7 +54,7 @@ function maskEmail(e: string) {
   return `${visible}${"•".repeat(Math.max(1, local.length - 2))}@${domain}`;
 }
 
-function json(b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

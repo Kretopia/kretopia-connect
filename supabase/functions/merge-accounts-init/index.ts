@@ -28,29 +28,29 @@ Deno.serve(async (req) => {
     const { data: u } = await userClient.auth.getUser();
     const targetUserId = u?.user?.id;
     const targetEmail = u?.user?.email?.toLowerCase();
-    if (!targetUserId || !targetEmail) return json({ error: "Unauthorized" }, 401);
+    if (!targetUserId || !targetEmail) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const body = await req.json();
     const sourceUserId: string = body?.source_user_id;
-    if (!sourceUserId || sourceUserId === targetUserId) return json({ error: "Invalid source" }, 400);
+    if (!sourceUserId || sourceUserId === targetUserId) return json(corsHeaders, { error: "Invalid source" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
     const { data: srcUserData, error: srcErr } = await admin.auth.admin.getUserById(sourceUserId);
-    if (srcErr || !srcUserData?.user?.email) return json({ error: "Source account not found" }, 404);
+    if (srcErr || !srcUserData?.user?.email) return json(corsHeaders, { error: "Source account not found" }, 404);
     const sourceEmail = srcUserData.user.email.toLowerCase();
-    if (sourceEmail === targetEmail) return json({ error: "Both accounts share an email" }, 400);
+    if (sourceEmail === targetEmail) return json(corsHeaders, { error: "Both accounts share an email" }, 400);
 
     const { count: recentRequests, error: recentErr } = await admin
       .from("account_merge_requests")
       .select("id", { count: "exact", head: true })
       .eq("initiator_user_id", targetUserId)
       .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
-    if (recentErr) return json({ error: "Could not start the verification, try again shortly" }, 503);
+    if (recentErr) return json(corsHeaders, { error: "Could not start the verification, try again shortly" }, 503);
     if ((recentRequests ?? 0) >= MAX_MERGE_REQUESTS_PER_HOUR) {
-      return json({ error: "Too many merge requests, try again later" }, 429);
+      return json(corsHeaders, { error: "Too many merge requests, try again later" }, 429);
     }
 
     const sourceOtp = generateOtp();
@@ -87,10 +87,10 @@ Deno.serve(async (req) => {
         .from("account_merge_requests")
         .update({ status: "failed", error: "code_delivery_failed" })
         .eq("id", row.id);
-      return json({ error: "We could not send the verification codes. Please try again later." }, 503);
+      return json(corsHeaders, { error: "We could not send the verification codes. Please try again later." }, 503);
     }
 
-    return json({
+    return json(corsHeaders, {
       request_id: row.id,
       expires_at: row.expires_at,
       // The other account's address is not shown: the caller supplied only a
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[merge-accounts-init]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
 
@@ -138,7 +138,7 @@ async function sendOtpEmail(email: string, otp: string): Promise<boolean> {
   }
 }
 
-function json(b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

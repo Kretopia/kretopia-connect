@@ -48,7 +48,7 @@ Output ONLY this JSON shape — no prose, no fences:
 
 If nothing memorable happened, return { "memories": [] }. Max 3 memories per call.`;
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -61,18 +61,18 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: uErr } = await userClient.auth.getUser();
     const userId = userData?.user?.id;
-    if (uErr || !userId) return json({ error: "Invalid session" }, 401);
+    if (uErr || !userId) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const conversationId: string | undefined = body.conversation_id;
-    if (!conversationId) return json({ error: "conversation_id required" }, 400);
+    if (!conversationId) return json(corsHeaders, { error: "conversation_id required" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: false })
       .limit(6);
-    if (!turns?.length) return json({ ok: true, extracted: 0, reason: "no turns" });
+    if (!turns?.length) return json(corsHeaders, { ok: true, extracted: 0, reason: "no turns" });
 
     const transcript = [...turns]
       .reverse()
@@ -107,12 +107,12 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiResp.status === 429) return json({ ok: true, extracted: 0, reason: "rate_limited" });
-    if (aiResp.status === 402) return json({ ok: true, extracted: 0, reason: "credits_exhausted" });
+    if (aiResp.status === 429) return json(corsHeaders, { ok: true, extracted: 0, reason: "rate_limited" });
+    if (aiResp.status === 402) return json(corsHeaders, { ok: true, extracted: 0, reason: "credits_exhausted" });
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.warn("extract LLM error", aiResp.status, t.slice(0, 200));
-      return json({ ok: true, extracted: 0, reason: "llm_error" });
+      return json(corsHeaders, { ok: true, extracted: 0, reason: "llm_error" });
     }
 
     const aiJson = await aiResp.json();
@@ -122,13 +122,13 @@ Deno.serve(async (req) => {
       parsed = JSON.parse(raw);
     } catch {
       console.warn("extract: invalid JSON", raw.slice(0, 200));
-      return json({ ok: true, extracted: 0, reason: "invalid_json" });
+      return json(corsHeaders, { ok: true, extracted: 0, reason: "invalid_json" });
     }
 
     const candidates = (parsed.memories ?? [])
       .filter((m) => m && typeof m.content === "string" && m.content.trim().length > 4)
       .slice(0, 3);
-    if (!candidates.length) return json({ ok: true, extracted: 0 });
+    if (!candidates.length) return json(corsHeaders, { ok: true, extracted: 0 });
 
     let saved = 0;
     let updated = 0;
@@ -178,9 +178,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    return json({ ok: true, extracted: saved, updated });
+    return json(corsHeaders, { ok: true, extracted: saved, updated });
   } catch (e) {
     console.error("extract-copilot-memory error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

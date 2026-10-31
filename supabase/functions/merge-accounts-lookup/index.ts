@@ -17,12 +17,12 @@ Deno.serve(async (req) => {
     const { data: u } = await userClient.auth.getUser();
     const meId = u?.user?.id;
     const meEmail = u?.user?.email?.toLowerCase();
-    if (!meId) return json({ error: "Unauthorized" }, 401);
+    if (!meId) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const { email } = await req.json();
     const target = (email || "").trim().toLowerCase();
-    if (!target) return json({ error: "Email required" }, 400);
-    if (target === meEmail) return json({ error: "That's your current account" }, 400);
+    if (!target) return json(corsHeaders, { error: "Email required" }, 400);
+    if (target === meEmail) return json(corsHeaders, { error: "That's your current account" }, 400);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
     const found = list?.users?.find((x) => x.email?.toLowerCase() === target);
-    if (!found) return json({ candidate: null });
+    if (!found) return json(corsHeaders, { candidate: null });
 
     // Previously returned the target account's real name and avatar to any
     // authenticated caller who guessed their email — an email-to-identity
@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // verify), so this lookup step doesn't need to reveal who the account
     // belongs to — just that one exists, so the UI can proceed to that
     // verified flow.
-    return json({
+    return json(corsHeaders, {
       candidate: {
         candidate_user_id: found.id,
         full_name: null,
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("[merge-accounts-lookup]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
 
@@ -63,7 +63,7 @@ function maskEmail(e: string) {
   return `${l.slice(0, 2)}${"•".repeat(Math.max(1, l.length - 2))}@${d}`;
 }
 
-function json(b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

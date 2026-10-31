@@ -27,7 +27,7 @@ const ALLOWED_KINDS = new Set([
   "dislike",
 ]);
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -40,18 +40,18 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: uErr } = await userClient.auth.getUser();
     const userId = userData?.user?.id;
-    if (uErr || !userId) return json({ error: "Invalid session" }, 401);
+    if (uErr || !userId) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const body = await req.json().catch(() => ({}));
     const content = typeof body.content === "string" ? body.content.trim().slice(0, 600) : "";
-    if (!content) return json({ error: "content required" }, 400);
+    if (!content) return json(corsHeaders, { error: "content required" }, 400);
     const kind = ALLOWED_KINDS.has(body.kind ?? "") ? (body.kind as string) : "fact";
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
           .select("id, kind, content, source, confidence, use_count, last_used_at, created_at")
           .single();
         if (error) throw error;
-        return json({ ok: true, memory: updated, deduped: true });
+        return json(corsHeaders, { ok: true, memory: updated, deduped: true });
       }
     }
 
@@ -99,9 +99,9 @@ Deno.serve(async (req) => {
       .single();
     if (error) throw error;
 
-    return json({ ok: true, memory: inserted, embedded: !!embedding });
+    return json(corsHeaders, { ok: true, memory: inserted, embedded: !!embedding });
   } catch (e) {
     console.error("embed-copilot-memory error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

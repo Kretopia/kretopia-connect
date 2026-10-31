@@ -5,7 +5,7 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
-const json = (body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -26,7 +26,7 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization");
     const token = authHeader?.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user) return json({ error: "Unauthorized" }, 401);
+    if (authError || !user) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const rateLimit = await checkAiFeatureRateLimit(supabase, user.id, "extract-event-details");
     if (!rateLimit.allowed) return rateLimit.response;
@@ -43,7 +43,7 @@ serve(async (req) => {
     };
 
     if (!text && !image_base64 && !source_url) {
-      return json({ error: "Provide text, screenshot, or a URL" }, 400);
+      return json(corsHeaders, { error: "Provide text, screenshot, or a URL" }, 400);
     }
 
     // 1. If URL provided, try to scrape its visible text (best-effort).
@@ -190,14 +190,14 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
     if (!aiResp.ok) {
       const errText = await aiResp.text();
       console.error("AI error:", aiResp.status, errText);
-      if (aiResp.status === 429) return json({ error: "Rate limited, please try again shortly" }, 429);
-      if (aiResp.status === 402) return json({ error: "AI credits exhausted" }, 402);
-      return json({ error: `AI extraction failed (${aiResp.status})` }, 500);
+      if (aiResp.status === 429) return json(corsHeaders, { error: "Rate limited, please try again shortly" }, 429);
+      if (aiResp.status === 402) return json(corsHeaders, { error: "AI credits exhausted" }, 402);
+      return json(corsHeaders, { error: `AI extraction failed (${aiResp.status})` }, 500);
     }
 
     const aiData = await aiResp.json();
     const raw = aiData.choices?.[0]?.message?.content;
-    if (!raw) return json({ error: "AI returned no content" }, 500);
+    if (!raw) return json(corsHeaders, { error: "AI returned no content" }, 500);
 
     let extracted: any;
     try {
@@ -205,7 +205,7 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
     } catch {
       const m = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
       if (m) extracted = JSON.parse(m[1].trim());
-      else return json({ error: "Could not parse AI response" }, 500);
+      else return json(corsHeaders, { error: "Could not parse AI response" }, 500);
     }
 
     // Sanitize numeric/date fields
@@ -235,7 +235,7 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
 
     // Early return for the host create-flow flyer scanner: extraction only, no DB writes / no AI cover.
     if (extract_only) {
-      return json({ success: true, extracted, has_cover_image: false });
+      return json(corsHeaders, { success: true, extracted, has_cover_image: false });
     }
 
     // 3. Generate cover image (best-effort)
@@ -326,7 +326,7 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
         .eq("source_url", source_url)
         .maybeSingle();
       if (existing) {
-        return json({
+        return json(corsHeaders, {
           success: true,
           event: existing,
           extracted,
@@ -352,14 +352,14 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
           .eq("source_url", source_url)
           .maybeSingle();
         if (existing) {
-          return json({ success: true, event: existing, extracted, has_cover_image: !!coverImageUrl, already_scouted: true });
+          return json(corsHeaders, { success: true, event: existing, extracted, has_cover_image: !!coverImageUrl, already_scouted: true });
         }
       }
       console.error("Insert error:", insErr);
-      return json({ error: `Failed to create event: ${insErr.message}` }, 500);
+      return json(corsHeaders, { error: `Failed to create event: ${insErr.message}` }, 500);
     }
 
-    return json({
+    return json(corsHeaders, {
       success: true,
       event: inserted,
       extracted,
@@ -367,6 +367,6 @@ If a field truly has no signal, use null. Never invent prices or venues.`;
     });
   } catch (e) {
     console.error("extract-event-details error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

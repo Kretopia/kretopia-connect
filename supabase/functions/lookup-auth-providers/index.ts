@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     const { email } = await req.json().catch(() => ({}));
     const target = (email || "").trim().toLowerCase();
     if (!target || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(target)) {
-      return json({ error: "valid email required" }, 400);
+      return json(corsHeaders, { error: "valid email required" }, 400);
     }
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
       if (found || !data?.users?.length || data.users.length < 1000) break;
     }
 
-    if (!found) return json({ exists: false, providers: [], masked_email: null });
+    if (!found) return json(corsHeaders, { exists: false, providers: [], masked_email: null });
 
     const providers = Array.from(
       new Set(
@@ -52,14 +52,14 @@ Deno.serve(async (req) => {
       providers.push("email");
     }
 
-    return json({
+    return json(corsHeaders, {
       exists: true,
       providers,
       masked_email: maskEmail(target),
     });
   } catch (e) {
     console.error("[lookup-auth-providers]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "error" }, 500);
   }
 });
 
@@ -70,7 +70,7 @@ function maskEmail(e: string) {
   return `${visible}${"•".repeat(Math.max(1, l.length - 2))}@${d}`;
 }
 
-function json(b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

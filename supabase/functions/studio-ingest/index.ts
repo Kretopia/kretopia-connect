@@ -132,7 +132,7 @@ const SENSITIVE_FACT_KINDS = new Set([
 ]);
 const TRUSTED_SOURCE_KINDS = new Set(["manual"]);
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    if (!authHeader.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!authHeader.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
     const {
       data: { user },
     } = await userClient.auth.getUser();
-    if (!user) return json({ error: "Invalid session" }, 401);
+    if (!user) return json(corsHeaders, { error: "Invalid session" }, 401);
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const project_id: string = String(body.project_id ?? "");
-    if (!project_id) return json({ error: "project_id required" }, 400);
+    if (!project_id) return json(corsHeaders, { error: "project_id required" }, 400);
 
     const rawKind = String(body.source_kind ?? "manual").toLowerCase();
     const source_kind = ALLOWED_SOURCE_KINDS.has(rawKind) ? rawKind : "manual";
@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
     const hasAudio = !!audio_base64;
 
     if (!text && !url && !hasVision && !hasAudio) {
-      return json({ error: "text, url, image, or audio required" }, 400);
+      return json(corsHeaders, { error: "text, url, image, or audio required" }, 400);
     }
 
     // Access from the canonical records: the owner or an ACCEPTED operator.
@@ -329,15 +329,15 @@ Deno.serve(async (req) => {
     if (!aiResp.ok) {
       const t = await aiResp.text();
       console.error("AI gateway error", aiResp.status, t);
-      if (aiResp.status === 429) return json({ error: "Rate limit exceeded" }, 429);
-      if (aiResp.status === 402) return json({ error: "AI credits exhausted" }, 402);
-      return json({ error: "Extraction failed" }, 500);
+      if (aiResp.status === 429) return json(corsHeaders, { error: "Rate limit exceeded" }, 429);
+      if (aiResp.status === 402) return json(corsHeaders, { error: "AI credits exhausted" }, 402);
+      return json(corsHeaders, { error: "Extraction failed" }, 500);
     }
 
     const aiData = await aiResp.json();
     const toolCall = aiData?.choices?.[0]?.message?.tool_calls?.[0];
     const args = toolCall?.function?.arguments ? JSON.parse(toolCall.function.arguments) : null;
-    if (!args) return json({ error: "No structured output" }, 500);
+    if (!args) return json(corsHeaders, { error: "No structured output" }, 500);
 
     const facts: any[] = Array.isArray(args.facts) ? args.facts.slice(0, 24) : [];
     const entities: any[] = Array.isArray(args.entities) ? args.entities.slice(0, 24) : [];
@@ -403,7 +403,7 @@ Deno.serve(async (req) => {
       if (eErr) console.error("entities upsert error", eErr);
     }
 
-    return json({
+    return json(corsHeaders, {
       ok: true,
       facts: factRows.length,
       entities: entityRows.length,
@@ -412,6 +412,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error("studio-ingest error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

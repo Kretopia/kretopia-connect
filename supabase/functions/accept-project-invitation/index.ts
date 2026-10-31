@@ -18,7 +18,7 @@ import { corsFor } from '../_shared/guard.ts';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const json = (body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -40,7 +40,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized", code: "unauthorized" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized", code: "unauthorized" }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -48,11 +48,11 @@ serve(async (req) => {
     });
     const { data: userData } = await userClient.auth.getUser();
     const user = userData?.user;
-    if (!user) return json({ error: "Unauthorized", code: "unauthorized" }, 401);
+    if (!user) return json(corsHeaders, { error: "Unauthorized", code: "unauthorized" }, 401);
 
     const { projectId } = await req.json().catch(() => ({ projectId: null }));
     if (typeof projectId !== "string" || !UUID_RE.test(projectId)) {
-      return json({ error: "Missing or invalid projectId", code: "bad_request" }, 400);
+      return json(corsHeaders, { error: "Missing or invalid projectId", code: "bad_request" }, 400);
     }
 
     const email = (user.email ?? "").trim().toLowerCase();
@@ -73,7 +73,7 @@ serve(async (req) => {
     if (mineErr) throw mineErr;
     const myRows = (mine ?? []) as Row[];
     if (myRows.some((r) => r.status === "accepted")) {
-      return json({ status: "already_member", projectId });
+      return json(corsHeaders, { status: "already_member", projectId });
     }
 
     // Invitations addressed to this user id, or to this (confirmed) email.
@@ -93,9 +93,9 @@ serve(async (req) => {
     if (candidates.size === 0) {
       // Say why when the likely cause is an unconfirmed address, so the page can tell the person.
       if (email && !emailConfirmed) {
-        return json({ error: "Confirm your email address first, then open the invitation again.", code: "email_not_confirmed" }, 403);
+        return json(corsHeaders, { error: "Confirm your email address first, then open the invitation again.", code: "email_not_confirmed" }, 403);
       }
-      return json({ error: "No pending invitation for this account.", code: "no_invitation" }, 404);
+      return json(corsHeaders, { error: "No pending invitation for this account.", code: "no_invitation" }, 404);
     }
 
     // Duplicates for the same person: accept the most recent invitation, close the rest.
@@ -113,7 +113,7 @@ serve(async (req) => {
       .eq("status", "pending")
       .select("id");
     if (updErr) throw updErr;
-    if (!updated || updated.length === 0) return json({ error: "This invitation is no longer valid.", code: "no_invitation" }, 404);
+    if (!updated || updated.length === 0) return json(corsHeaders, { error: "This invitation is no longer valid.", code: "no_invitation" }, 404);
 
     if (extras.length > 0) {
       await admin
@@ -141,9 +141,9 @@ serve(async (req) => {
       }
     }
 
-    return json({ status: "accepted", projectId, role: chosen.role });
+    return json(corsHeaders, { status: "accepted", projectId, role: chosen.role });
   } catch (e) {
     console.error("accept-project-invitation error:", e);
-    return json({ error: e instanceof Error ? e.message : "Failed to accept the invitation", code: "server_error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Failed to accept the invitation", code: "server_error" }, 500);
   }
 });

@@ -79,10 +79,10 @@ Deno.serve(async (req) => {
 
     const email = (rawEmail || "").trim().toLowerCase();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return json({ error: "Valid email required" }, 400);
+      return json(corsHeaders, { error: "Valid email required" }, 400);
     }
     if (!profile?.full_name?.trim()) {
-      return json({ error: "Profile name required" }, 400);
+      return json(corsHeaders, { error: "Profile name required" }, 400);
     }
 
     // skip_magic_link is meant only for the post-Google-OAuth flow, where the
@@ -94,14 +94,14 @@ Deno.serve(async (req) => {
     if (skip_magic_link) {
       const authHeader = req.headers.get("Authorization");
       if (!authHeader?.startsWith("Bearer ")) {
-        return json({ error: "Unauthorized" }, 401);
+        return json(corsHeaders, { error: "Unauthorized" }, 401);
       }
       const anonClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: authHeader } },
       });
       const { data: { user: caller } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
       if (!caller || caller.email?.toLowerCase() !== email) {
-        return json({ error: "Unauthorized" }, 401);
+        return json(corsHeaders, { error: "Unauthorized" }, 401);
       }
     }
 
@@ -120,10 +120,10 @@ Deno.serve(async (req) => {
       `magic_link_sent=${!skip_magic_link}`,
     );
 
-    return json({ success: true, ...result });
+    return json(corsHeaders, { success: true, ...result });
   } catch (err) {
     console.error("[claim-and-create-profile] error:", err);
-    return json({ error: err instanceof Error ? err.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: err instanceof Error ? err.message : "Unknown error" }, 500);
   }
 });
 
@@ -312,7 +312,7 @@ async function upsertProfileAndCredits(
   return { profileSaved, creditsSaved };
 }
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -18,7 +18,7 @@ export const MAX_LOCATION = 160;
 export const MAX_SKILLS = 40;
 export const MAX_SKILL = 80;
 
-const json = (body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 type BioInput = { fullName: string; role: string; location: string; skills: string[] };
@@ -62,10 +62,10 @@ serve(async (req) => {
     try {
       body = await req.json();
     } catch {
-      return json({ error: "Invalid request body" }, 400);
+      return json(corsHeaders, { error: "Invalid request body" }, 400);
     }
     const read = readInput(body);
-    if (!read.ok) return json({ error: read.error }, 400);
+    if (!read.ok) return json(corsHeaders, { error: read.error }, 400);
     const { fullName, role, location, skills } = read.input;
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -104,17 +104,17 @@ Guidelines:
     });
 
     if (!aiRes.ok) {
-      if (aiRes.status === 429) return json({ error: "Rate limited" }, 429);
-      if (aiRes.status === 402) return json({ error: "AI credits exhausted" }, 402);
+      if (aiRes.status === 429) return json(corsHeaders, { error: "Rate limited" }, 429);
+      if (aiRes.status === 402) return json(corsHeaders, { error: "AI credits exhausted" }, 402);
       throw new Error(`AI request failed: ${aiRes.status}`);
     }
 
     const data = await aiRes.json();
     const bio = data.choices?.[0]?.message?.content?.trim() || "";
 
-    return json({ bio });
+    return json(corsHeaders, { bio });
   } catch (e) {
     console.error("generate-bio error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });

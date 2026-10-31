@@ -39,7 +39,7 @@ type ErrorCode =
   | "database_persistence_error"
   | "unknown_error";
 
-function errorResponse(code: ErrorCode, message: string, status: number) {
+function errorResponse(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, code: ErrorCode, message: string, status: number) {
   return new Response(JSON.stringify({ code, error: message }), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -89,12 +89,12 @@ serve(async (req) => {
     const token = (req.headers.get("Authorization") ?? "").replace("Bearer ", "");
     const { data: auth } = await anon.auth.getUser(token);
     const user = auth?.user;
-    if (!user?.email) return errorResponse("authentication_required", "Sign in to add a bank account.", 401);
+    if (!user?.email) return errorResponse(corsHeaders, "authentication_required", "Sign in to add a bank account.", 401);
 
     // Every field is checked BEFORE the first Stripe call (a crafted request used to fail after a
     // Connect account had already been created for the caller): see _shared/bankRequest.ts.
     const checked = cleanBankRequest(await req.json().catch(() => null));
-    if (!checked.ok) return errorResponse(checked.code, checked.error, 400);
+    if (!checked.ok) return errorResponse(corsHeaders, checked.code, checked.error, 400);
     const country = checked.request.country;
     const currency = checked.request.currency;
     const account_holder_name = checked.request.accountHolderName;
@@ -105,17 +105,17 @@ serve(async (req) => {
 
     const countryCfg = SUPPORTED_COUNTRIES[country];
     if (!countryCfg) {
-      return errorResponse("country_not_supported", `${country} isn't a supported payout country yet.`, 400);
+      return errorResponse(corsHeaders, "country_not_supported", `${country} isn't a supported payout country yet.`, 400);
     }
     if (countryCfg.currency !== String(currency).toUpperCase()) {
-      return errorResponse(
+      return errorResponse(corsHeaders, 
         "currency_not_supported",
         `${country} accounts are paid in ${countryCfg.currency}, not ${currency}.`,
         400,
       );
     }
     if (countryCfg.routingRequired && !routing_number) {
-      return errorResponse("invalid_bank_details", "Routing details are required for this country.", 400);
+      return errorResponse(corsHeaders, "invalid_bank_details", "Routing details are required for this country.", 400);
     }
 
     let normalizedAccountNumber = String(account_number).replace(/\s+/g, "");
@@ -124,7 +124,7 @@ serve(async (req) => {
       // place this is authoritative (the frontend's own stripping is UX
       // only and can't be trusted).
       const iban = validateIban(country, normalizedAccountNumber);
-      if (!iban.ok) return errorResponse("invalid_iban", iban.message, 400);
+      if (!iban.ok) return errorResponse(corsHeaders, "invalid_iban", iban.message, 400);
       normalizedAccountNumber = iban.iban;
     }
 
@@ -139,7 +139,7 @@ serve(async (req) => {
       .maybeSingle();
     if (walletErr) {
       log("wallet lookup failed", walletErr.message);
-      return errorResponse("database_persistence_error", "Couldn't load your wallet. Try again.", 500);
+      return errorResponse(corsHeaders, "database_persistence_error", "Couldn't load your wallet. Try again.", 500);
     }
 
     let accountId = wallet?.stripe_account_id ?? null;
@@ -155,10 +155,10 @@ serve(async (req) => {
         existingAccount = await stripe.accounts.retrieve(accountId);
       } catch (err) {
         log("existing account retrieve failed", err instanceof Error ? err.message : String(err));
-        return errorResponse("connect_account_missing", "Your payout account couldn't be found. Contact support.", 404);
+        return errorResponse(corsHeaders, "connect_account_missing", "Your payout account couldn't be found. Contact support.", 404);
       }
       if (existingAccount.country && existingAccount.country !== country) {
-        return errorResponse(
+        return errorResponse(corsHeaders, 
           "connect_account_mismatch",
           `Your payout account is already set up for ${existingAccount.country}. To add a ${country} bank account, contact support to reset your payout account first.`,
           409,
@@ -210,7 +210,7 @@ serve(async (req) => {
       );
       if (upsertErr) {
         log("wallet upsert failed", upsertErr.message);
-        return errorResponse("database_persistence_error", "Couldn't save your payout account. Try again.", 500);
+        return errorResponse(corsHeaders, "database_persistence_error", "Couldn't save your payout account. Try again.", 500);
       }
     }
 
@@ -270,7 +270,7 @@ serve(async (req) => {
       .single();
     if (insErr) {
       log("payout method insert failed", insErr.message);
-      return errorResponse("database_persistence_error", "Bank account was added but couldn't be saved. Contact support.", 500);
+      return errorResponse(corsHeaders, "database_persistence_error", "Bank account was added but couldn't be saved. Contact support.", 500);
     }
 
     // Tell the account's owner that a payout destination was added. A payout goes to the default
@@ -316,7 +316,7 @@ serve(async (req) => {
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log("ERROR", msg);
-    return errorResponse("unknown_error", "Something went wrong adding your bank account. Try again.", 500);
+    return errorResponse(corsHeaders, "unknown_error", "Something went wrong adding your bank account. Try again.", 500);
   }
 });
 
@@ -327,22 +327,22 @@ function mapStripeError(err: unknown): Response {
   if (err && typeof err === "object" && "type" in err) {
     const stripeErr = err as Stripe.errors.StripeError;
     if (stripeErr.type === "StripeAuthenticationError" || stripeErr.type === "StripePermissionError") {
-      return errorResponse("stripe_configuration_error", "Payments aren't configured correctly. Contact support.", 500);
+      return errorResponse(corsHeaders, "stripe_configuration_error", "Payments aren't configured correctly. Contact support.", 500);
     }
     if (stripeErr.type === "StripeInvalidRequestError") {
       const param = stripeErr.param ?? "";
       const code = stripeErr.code ?? "";
       if (code === "bank_account_exists" || /already.*(added|exists)/i.test(msg)) {
-        return errorResponse("bank_account_already_exists", "This bank account is already on file.", 409);
+        return errorResponse(corsHeaders, "bank_account_already_exists", "This bank account is already on file.", 409);
       }
       if (param === "country" || /country/i.test(msg)) {
-        return errorResponse("country_not_supported", "That country isn't supported for this payout account.", 400);
+        return errorResponse(corsHeaders, "country_not_supported", "That country isn't supported for this payout account.", 400);
       }
       if (param.includes("account_number") || param.includes("routing_number") || code.includes("routing")) {
-        return errorResponse("invalid_bank_details", "Those bank details were rejected — please double-check them.", 400);
+        return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details were rejected — please double-check them.", 400);
       }
-      return errorResponse("invalid_bank_details", "Those bank details couldn't be validated — please double-check them.", 400);
+      return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details couldn't be validated — please double-check them.", 400);
     }
   }
-  return errorResponse("stripe_api_error", "Your bank couldn't be added right now. Try again in a moment.", 502);
+  return errorResponse(corsHeaders, "stripe_api_error", "Your bank couldn't be added right now. Try again in a moment.", 502);
 }
