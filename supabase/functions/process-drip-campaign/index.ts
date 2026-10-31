@@ -3,11 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const baseUrl = 'https://www.kretopia.com';
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }

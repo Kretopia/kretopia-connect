@@ -5,11 +5,11 @@ import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guar
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const baseUrl = 'https://www.kretopia.com';
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
