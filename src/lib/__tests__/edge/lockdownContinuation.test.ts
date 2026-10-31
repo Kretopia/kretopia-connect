@@ -1,4 +1,5 @@
 import { webcrypto } from 'node:crypto';
+import { AbortSignal as NodeAbortSignal } from 'node:util';
 import { beforeAll, beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 
 const world = vi.hoisted(() => ({
@@ -18,6 +19,8 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.resetAllMocks();
   vi.stubGlobal('crypto', webcrypto);
+  // jsdom lacks the runtime's AbortSignal.timeout; retain a real abort signal.
+  vi.stubGlobal('AbortSignal', { timeout: () => new AbortController().signal });
   const env: Record<string, string> = { PUBLIC_PRESENCE_SEARCH_ENABLED: 'true', SUPABASE_URL: 'https://backend.test', SUPABASE_SERVICE_ROLE_KEY: 'test-service', FIRECRAWL_API_KEY: 'test-search', LOVABLE_API_KEY: 'test-model' };
   vi.stubGlobal('Deno', { env: { get: (key: string) => env[key] } });
   vi.stubGlobal('fetch', world.fetch);
@@ -51,7 +54,7 @@ describe('public search provider boundary', () => {
   it('strips unknown fields before spending and provider work', async () => {
     world.fetch.mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
     const response = await world.handlers['public-digital-presence'](request({ query: 'Creator', admin: true, limit: 999, url: 'https://evil.test' }));
-    expect(response.status, JSON.stringify(vi.mocked(console.error).mock.calls.map(call => call.map(value => value instanceof Error ? value.message : value)))).toBe(200);
+    expect(response.status).toBe(200);
     expect(JSON.parse(world.fetch.mock.calls[0][1].body)).toEqual({ query: 'Creator', limit: 20 });
   });
 });
