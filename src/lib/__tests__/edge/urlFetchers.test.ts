@@ -18,7 +18,7 @@ const html = (title: string) => `<html><head><meta property="og:title" content="
 
 beforeAll(async () => {
   (AbortSignal as any).timeout ??= () => new AbortController().signal;
-  (globalThis as any).Deno = { resolveDns: async () => ["93.184.216.34"] };
+  (globalThis as any).Deno = { resolveDns: async () => ["93.184.216.34"], env: { get: () => "https://test.example" } };
   vi.stubGlobal("fetch", (...a: unknown[]) => fetchMock(...a));
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
