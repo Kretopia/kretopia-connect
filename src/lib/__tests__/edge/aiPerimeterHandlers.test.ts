@@ -71,7 +71,7 @@ describe.each(cases)('$name real request perimeter', ({ name, body }) => {
     expect(world.fetch).not.toHaveBeenCalled();
   });
   it('rejects malformed input with 400 before any model call', async () => {
-    const response = await world.handlers[name](req({ profile: 7, title: 7 }));
+    const response = await world.handlers[name](req({ profile: 7, title: 7, project_title: 7 }));
     expect(response.status).toBe(400);
     expect(world.fetch).not.toHaveBeenCalled();
   });
