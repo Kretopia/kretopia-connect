@@ -57,4 +57,15 @@ describe('public search provider boundary', () => {
     expect(response.status).toBe(200);
     expect(JSON.parse(world.fetch.mock.calls[0][1].body)).toEqual({ query: 'Creator', limit: 20 });
   });
+  it('returns sourced results from a real handler and completes bounded ranking without inventing sources', async () => {
+    world.fetch
+      .mockResolvedValueOnce(new Response(JSON.stringify({ data: [{ title: 'Creator profile', url: 'https://example.com/creator', description: 'Creative portfolio' }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ indices: [99, 0] }) } }] }), { status: 200 }));
+    const response = await world.handlers['public-digital-presence'](request({ query: 'Creator' }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ available: true, results: [{ title: 'Creator profile', url: 'https://example.com/creator', description: 'Creative portfolio', type: 'Public source' }], source: 'web', aiAvailable: true, phase: 'complete' });
+    expect(world.perimeter).toHaveBeenCalledWith(expect.any(Request), 'public-digital-presence', 30);
+    const model = JSON.parse(world.fetch.mock.calls[1][1].body);
+    expect(model.messages[1].content).toContain('BEGIN UNTRUSTED');
+  });
 });
