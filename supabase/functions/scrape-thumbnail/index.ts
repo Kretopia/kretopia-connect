@@ -5,14 +5,14 @@ import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
 import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
+import { safeFetch } from '../_shared/ssrf.ts';
 async function extractOgImage(url: string): Promise<string | null> {
   try {
-    const res = await fetch(url, {
+    const { response: res } = await safeFetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; Kretopia/1.0; +https://www.kretopia.com)',
         'Accept': 'text/html',
       },
-      redirect: 'follow',
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -116,7 +116,7 @@ serve(async (req) => {
         // Validate the URL actually returns an image
         if (imageUrl) {
           try {
-            const check = await fetch(imageUrl, { method: 'HEAD', redirect: 'follow' });
+            const { response: check } = await safeFetch(imageUrl, { method: 'HEAD' });
             const ct = check.headers.get('content-type') || '';
             if (!ct.startsWith('image/') && !check.ok) {
               imageUrl = null;

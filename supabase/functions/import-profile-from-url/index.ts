@@ -5,6 +5,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { safeFetch } from '../_shared/ssrf.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -147,7 +148,7 @@ serve(async (req) => {
     if (!content || content.length < 100) {
       console.log('Fallback: direct fetch...');
       try {
-        const response = await fetch(url, {
+        const { response } = await safeFetch(url, {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
