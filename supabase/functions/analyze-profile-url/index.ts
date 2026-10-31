@@ -78,6 +78,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "analyze-profile-url");
     const { url } = await req.json();
     console.log("Analyzing URL:", url);
 

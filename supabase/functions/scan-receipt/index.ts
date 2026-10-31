@@ -26,6 +26,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "scan-receipt");
     const { image_url, image_base64 } = await req.json();
     if (!image_url && !image_base64) {
       return new Response(JSON.stringify({ error: "image_url or image_base64 required" }), {

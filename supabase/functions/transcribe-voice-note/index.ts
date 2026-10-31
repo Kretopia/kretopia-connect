@@ -10,6 +10,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "transcribe-voice-note");
     const { message_id, audio_url, table } = await req.json();
 
     if (!message_id || !audio_url) {

@@ -51,6 +51,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "route-studio-outcome");
     const { prompt, project_title } = await req.json();
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 2) {
       return json({ error: "prompt required" }, 400);

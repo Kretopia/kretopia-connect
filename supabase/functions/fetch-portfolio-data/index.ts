@@ -4,6 +4,7 @@ import { safeFetch } from "../_shared/ssrf.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 // SSRF protection: blocked hosts
 const BLOCKED_HOSTS = [
   'localhost', '127.0.0.1', '0.0.0.0',
@@ -51,6 +52,10 @@ serve(async (req) => {
   }
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     // Parse and validate input
     const rawData = await req.json();
     const validationResult = RequestSchema.safeParse(rawData);

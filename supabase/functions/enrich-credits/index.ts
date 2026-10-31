@@ -81,6 +81,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "enrich-credits");
     const { user_id, batch_size = 50 } = await req.json().catch(() => ({}));
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

@@ -48,6 +48,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { credit_id, project_name, url, project_type } = await req.json();
 
     // Strategy 1: If URL provided, scrape og:image directly

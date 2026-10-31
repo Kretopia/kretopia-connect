@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "enrich-creator-profile");
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');

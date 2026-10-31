@@ -10,6 +10,10 @@ serve(async (req) => {
   }
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { project_name, existing_roles } = await req.json();
     if (!project_name || typeof project_name !== 'string') {
       return new Response(JSON.stringify({ error: 'project_name required' }), {

@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 // Free exchange rate API (no key needed) with fallback rates
 const FALLBACK_RATES: Record<string, number> = {
   USD: 1, EUR: 0.92, GBP: 0.79, JPY: 149.5, INR: 83.1, NGN: 1550,
@@ -20,6 +21,10 @@ serve(async (req) => {
   }
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { from, to, amount } = await req.json();
 
     if (!from || !to) {

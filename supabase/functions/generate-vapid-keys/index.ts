@@ -9,6 +9,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireServiceRole(req);
     console.log('[VAPID] Generating new VAPID key pair...');
     
     // Generate ECDSA P-256 key pair for VAPID

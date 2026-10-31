@@ -11,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "import-profile-from-url");
     const { url } = await req.json();
     
     if (!url) {

@@ -10,6 +10,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "generate-event-cover");
     const { prompt } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");

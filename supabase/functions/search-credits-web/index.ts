@@ -367,6 +367,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "search-credits-web");
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
 

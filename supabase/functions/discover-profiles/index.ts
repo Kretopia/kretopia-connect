@@ -21,6 +21,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "discover-profiles");
     const { searchType, query, platform, page = 1 } = await req.json();
     console.log("Discovery request:", { searchType, query, platform, page });
 

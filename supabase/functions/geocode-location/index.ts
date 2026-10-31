@@ -19,6 +19,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { mode, location, user_id } = await req.json().catch(() => ({}));
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,

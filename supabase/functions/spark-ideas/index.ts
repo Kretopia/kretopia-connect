@@ -12,6 +12,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "spark-ideas");
     const auth = req.headers.get("Authorization");
     if (!auth) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
