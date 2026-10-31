@@ -16,7 +16,11 @@ const ProfileSchema = z.object({
   full_name: z.string().max(255).nullish(), role: z.string().max(255).nullish(),
   sub_roles: z.array(z.string().max(255)).max(50).nullish(), bio: z.string().max(16000).nullish(),
   location: z.string().max(500).nullish(),
-  ...Object.fromEntries(["website", "instagram_url", "youtube_url", "tiktok_url", "spotify_url", "soundcloud_url", "imdb_url", "behance_url", "vimeo_url", "linkedin_url"].map(key => [key, z.string().max(2048).nullish()])),
+  website: z.string().max(2048).nullish(), instagram_url: z.string().max(2048).nullish(),
+  youtube_url: z.string().max(2048).nullish(), tiktok_url: z.string().max(2048).nullish(),
+  spotify_url: z.string().max(2048).nullish(), soundcloud_url: z.string().max(2048).nullish(),
+  imdb_url: z.string().max(2048).nullish(), behance_url: z.string().max(2048).nullish(),
+  vimeo_url: z.string().max(2048).nullish(), linkedin_url: z.string().max(2048).nullish(),
 });
 const BodySchema = z.object({ profile: ProfileSchema });
 
