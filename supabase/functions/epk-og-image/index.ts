@@ -10,6 +10,7 @@ import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { safeFetch } from '../_shared/ssrf.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
@@ -31,9 +32,11 @@ function escapeXml(s: string): string {
 async function fetchAvatarDataUri(url: string | null): Promise<string | null> {
   if (!url) return null;
   try {
-    const res = await fetch(url);
+    const { response: res } = await safeFetch(url, {}, { timeoutMs: 5000 });
     if (!res.ok) return null;
     const ct = res.headers.get("content-type") || "image/jpeg";
+    if (!/^image\/(png|jpe?g|webp|gif)$/i.test(ct.split(";")[0].trim())) return null;
+    if (Number(res.headers.get("content-length") || 0) > 2_000_000) return null;
     const buf = new Uint8Array(await res.arrayBuffer());
     let binary = "";
     for (let i = 0; i < buf.length; i++) binary += String.fromCharCode(buf[i]);

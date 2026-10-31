@@ -5,6 +5,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { safeFetch } from '../_shared/ssrf.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -24,7 +25,7 @@ serve(async (req) => {
     // Fetch the page content
     let pageContent = "";
     try {
-      const res = await fetch(url, {
+      const { response: res } = await safeFetch(url, {
         headers: { "User-Agent": "Mozilla/5.0 (compatible; Kretopia/1.0)" },
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

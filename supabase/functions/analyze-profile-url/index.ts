@@ -4,6 +4,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { safeFetch } from '../_shared/ssrf.ts';
 function detectPlatform(url: string): { platform: string; instruction: string } {
   const u = url.toLowerCase();
   if (u.includes("behance.net")) return {
@@ -156,7 +157,7 @@ serve(async (req) => {
     if (!pageMarkdown || pageMarkdown.length < 200) {
       console.log("Fallback: direct fetch...");
       try {
-        const response = await fetch(url, {
+        const { response } = await safeFetch(url, {
           headers: {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
