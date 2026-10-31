@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_1_FLASH_IMAGE } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
@@ -10,6 +11,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "generate-event-cover");
     const { prompt } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
@@ -65,12 +67,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("generate-event-cover error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return safeError(e, req);
   }
 });

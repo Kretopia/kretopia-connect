@@ -5,6 +5,7 @@ import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -12,6 +13,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "moderate-opportunity");
     const { title, description, compensation } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 

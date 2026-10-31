@@ -4,11 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "invoice-pay-info", 30);
     const url = new URL(req.url);
     const invoiceId = url.searchParams.get("id");
     if (!invoiceId) throw new Error("id required");

@@ -1,7 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 // Extract YouTube video ID from various URL formats
 function extractYouTubeId(url: string): string | null {
   const patterns = [
@@ -81,6 +82,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "enrich-credits");
     const { user_id, batch_size = 50 } = await req.json().catch(() => ({}));
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -272,9 +274,6 @@ Deno.serve(async (req) => {
     );
   } catch (error) {
     console.error("Enrichment error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return safeError(error, req);
   }
 });

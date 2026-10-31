@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
@@ -17,6 +18,7 @@ serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "sso-token", 10);
     const body = await req.json();
     const { grant_type, code, client_id, client_secret, redirect_uri } = body;
 

@@ -10,28 +10,25 @@
 //   // guard.userId is available from here on
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+import { corsFor } from "./guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+
 
 export type RequireUserResult =
   | { ok: true; userId: string }
   | { ok: false; response: Response };
 
-function deny(status: number, message: string): Response {
+function deny(status: number, message: string, req: Request): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsFor(req), "Content-Type": "application/json" },
   });
 }
 
 export async function requireUser(req: Request): Promise<RequireUserResult> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return { ok: false, response: deny(401, "Unauthorized") };
+    return { ok: false, response: deny(401, "Unauthorized", req) };
   }
 
   const supabase = createClient(
@@ -42,7 +39,7 @@ export async function requireUser(req: Request): Promise<RequireUserResult> {
 
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) {
-    return { ok: false, response: deny(401, "Unauthorized") };
+    return { ok: false, response: deny(401, "Unauthorized", req) };
   }
 
   return { ok: true, userId: user.id };

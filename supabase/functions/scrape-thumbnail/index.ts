@@ -4,7 +4,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
 async function extractOgImage(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {
@@ -48,6 +48,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { credit_id, project_name, url, project_type } = await req.json();
 
     // Strategy 1: If URL provided, scrape og:image directly
@@ -146,8 +150,6 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('scrape-thumbnail error:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return safeError(error, req);
   }
 });

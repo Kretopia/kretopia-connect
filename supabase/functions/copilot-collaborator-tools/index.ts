@@ -32,7 +32,7 @@ type ToolName =
   | "archive_project"
   | "delete_project";
 
-function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
 // Resolve a spoken/typed name to one or more candidate profiles. Prefers the
 // caller's accepted connections (highest precision), then falls back to
 // public_profiles_safe by full_name ILIKE.
-async function findUser(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
+async function findUser(corsHeaders: Record<string, string>, userId: string, body: any) {
   const q = String(body.name_query ?? body.query ?? "").trim();
   if (!q || q.length < 2) {
     return json(corsHeaders, { ok: false, error: "name_query must be at least 2 characters" }, 400);
@@ -150,7 +150,7 @@ async function findUser(corsHeaders: Record<string, string>, corsHeaders: Record
 // ---- Tool: list_my_projects ----
 // Returns the caller's active projects with role + last activity, used for
 // disambiguating "the X project" references.
-async function listMyProjects(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string) {
+async function listMyProjects(corsHeaders: Record<string, string>, userId: string) {
   const { data: owned } = await admin
     .from("projects")
     .select("id, title, status, updated_at, workspace_type")
@@ -195,7 +195,7 @@ async function listMyProjects(corsHeaders: Record<string, string>, corsHeaders: 
 // ---- Tool: add_collaborator ----
 // Inserts an accepted project_collaborators row, posts a system message in the
 // project chat, and creates a notification. Owner-only.
-async function addCollaborator(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
+async function addCollaborator(corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   const newUserId = String(body.user_id_to_add ?? body.user_id ?? "");
   const role = String(body.role ?? "member").toLowerCase();
@@ -339,7 +339,7 @@ async function addCollaborator(corsHeaders: Record<string, string>, corsHeaders:
 }
 
 // ---- Tool: remove_collaborator ----
-async function removeCollaborator(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
+async function removeCollaborator(corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   const removeUserId = String(body.user_id_to_remove ?? body.user_id ?? "");
   if (!projectId || !removeUserId) {
@@ -409,7 +409,7 @@ async function removeCollaborator(corsHeaders: Record<string, string>, corsHeade
 
 // ---- Tool: archive_project ----
 // Soft hide: sets projects.status = 'archived'. Owner-only. Reversible.
-async function archiveProject(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
+async function archiveProject(corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   if (!projectId) return json(corsHeaders, { ok: false, error: "project_id is required" }, 400);
 
@@ -438,7 +438,7 @@ async function archiveProject(corsHeaders: Record<string, string>, corsHeaders: 
 // ---- Tool: delete_project ----
 // Hard delete. Owner-only. Destructive — agent must surface this as
 // requires_approval and the orchestrator preview must spell out the project title.
-async function deleteProject(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, userId: string, body: any) {
+async function deleteProject(corsHeaders: Record<string, string>, userId: string, body: any) {
   const projectId = String(body.project_id ?? body.target_project_id ?? "");
   if (!projectId) return json(corsHeaders, { ok: false, error: "project_id is required" }, 400);
 

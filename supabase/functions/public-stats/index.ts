@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 // Internal accounts to exclude from public stats
 const EXCLUDED_EMAILS = [
   "ethanauguste@hotmail.com",
@@ -14,6 +15,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "public-stats", 30);
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,

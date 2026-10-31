@@ -35,8 +35,8 @@ import {
   type ScoutPrefsLite,
   type ScoutProfile,
   type ScoutSource,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/scoutSources.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 const FIRECRAWL = "https://api.firecrawl.dev/v2/search";

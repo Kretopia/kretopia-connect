@@ -8,20 +8,20 @@ import { corsHeaders, isUuid, json, readJson, respond } from "../_shared/discove
 import { claimStatus, disputeListing, ownerUpdate, redeemClaim, requestAdminReview, startVerification, verifyDomain, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, code: "method_not_allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
+  if (req.method !== "POST") return json(req, { ok: false, code: "method_not_allowed" }, 405);
 
   const body = await readJson(req);
-  if (!body) return json({ ok: false, code: "bad_request", message: "Send a JSON object." }, 400);
+  if (!body) return json(req, { ok: false, code: "bad_request", message: "Send a JSON object." }, 400);
   const action = String(body.action ?? "");
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const deps: PipelineDeps = { rpc: (n, a) => admin.rpc(n, a), from: (t) => admin.from(t), claimSecret: Deno.env.get("CLAIM_CHALLENGE_SECRET") ?? undefined, env: Deno.env };
 
   // The only public action: what the listing page shows (the public view has no internal column).
   if (action === "preview") {
-    if (!isUuid(body.listing_id)) return json({ ok: false, code: "bad_request" }, 400);
+    if (!isUuid(body.listing_id)) return json(req, { ok: false, code: "bad_request" }, 400);
     const { data } = await admin.from("public_external_listings").select("id, kind, title, original_publisher, claimed").eq("id", body.listing_id).maybeSingle();
-    return data ? json({ ok: true, listing: data }) : json({ ok: false, code: "not_found" }, 404);
+    return data ? json(req, { ok: true, listing: data }) : json(req, { ok: false, code: "not_found" }, 404);
   }
 
   const guard = await requireUser(req);
@@ -32,20 +32,20 @@ Deno.serve(async (req) => {
 
   switch (action) {
     case "redeem":
-      return isUuid(body.listing_id) ? respond(await redeemClaim(deps, userId, body.listing_id, body.token)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) ? respond(req, await redeemClaim(deps, userId, body.listing_id, body.token)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "start":
-      return isUuid(body.claim_id) ? respond(await startVerification(deps, userId, body.claim_id)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.claim_id) ? respond(req, await startVerification(deps, userId, body.claim_id)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "verify_domain":
-      return isUuid(body.claim_id) ? respond(await verifyDomain(deps, userId, body.claim_id)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.claim_id) ? respond(req, await verifyDomain(deps, userId, body.claim_id)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "request_review":
-      return isUuid(body.claim_id) ? respond(await requestAdminReview(deps, userId, body.claim_id)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.claim_id) ? respond(req, await requestAdminReview(deps, userId, body.claim_id)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "status":
-      return isUuid(body.listing_id) ? respond(await claimStatus(deps, userId, body.listing_id)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) ? respond(req, await claimStatus(deps, userId, body.listing_id)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "owner_update":
-      return isUuid(body.listing_id) && body.edits && typeof body.edits === "object" ? respond(await ownerUpdate(deps, userId, body.listing_id, body.edits as Record<string, unknown>)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) && body.edits && typeof body.edits === "object" ? respond(req, await ownerUpdate(deps, userId, body.listing_id, body.edits as Record<string, unknown>)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "dispute":
-      return isUuid(body.listing_id) ? respond(await disputeListing(deps, userId, body.listing_id, String(body.reason ?? ""))) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) ? respond(req, await disputeListing(deps, userId, body.listing_id, String(body.reason ?? ""))) : json(req, { ok: false, code: "bad_request" }, 400);
     default:
-      return json({ ok: false, code: "unknown_action" }, 400);
+      return json(req, { ok: false, code: "unknown_action" }, 400);
   }
 });

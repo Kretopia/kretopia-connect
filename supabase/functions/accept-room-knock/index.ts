@@ -4,12 +4,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { roomSessionExpiry } from "../_shared/roomSessionLimits.ts";
+import { corsFor } from '../_shared/guard.ts';
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const DAILY_API = "https://api.daily.co/v1";
 
@@ -19,10 +15,11 @@ interface Body {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const corsHeaders = corsFor(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const auth = req.headers.get("Authorization") ?? "";
-    if (!auth.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    if (!auth.startsWith("Bearer ")) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const user = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -35,11 +32,11 @@ serve(async (req) => {
     );
     const { data: userData } = await user.auth.getUser();
     const userId = userData.user?.id;
-    if (!userId) return json({ error: "Unauthorized" }, 401);
+    if (!userId) return json(corsHeaders, { error: "Unauthorized" }, 401);
 
     const { knock_id, action } = (await req.json()) as Body;
     if (!knock_id || !["accept", "decline"].includes(action)) {
-      return json({ error: "Bad request" }, 400);
+      return json(corsHeaders, { error: "Bad request" }, 400);
     }
 
     const { data: knock, error: kErr } = await admin
@@ -47,16 +44,16 @@ serve(async (req) => {
       .select("*")
       .eq("id", knock_id)
       .maybeSingle();
-    if (kErr || !knock) return json({ error: "Knock not found" }, 404);
-    if (knock.owner_id !== userId) return json({ error: "Forbidden" }, 403);
-    if (knock.status !== "pending") return json({ error: "Already handled" }, 409);
+    if (kErr || !knock) return json(corsHeaders, { error: "Knock not found" }, 404);
+    if (knock.owner_id !== userId) return json(corsHeaders, { error: "Forbidden" }, 403);
+    if (knock.status !== "pending") return json(corsHeaders, { error: "Already handled" }, 409);
 
     if (action === "decline") {
       await admin
         .from("room_knocks")
         .update({ status: "declined" })
         .eq("id", knock_id);
-      return json({ ok: true });
+      return json(corsHeaders, { ok: true });
     }
 
     // Accept — create Daily room
@@ -119,7 +116,7 @@ serve(async (req) => {
       })
       .eq("id", knock_id);
 
-    return json({
+    return json(corsHeaders, {
       ok: true,
       meeting_id: meeting.id,
       share_url: shareUrl,
@@ -127,13 +124,13 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[accept-room-knock]", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }

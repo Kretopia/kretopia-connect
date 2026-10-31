@@ -9,6 +9,7 @@ import { projectHasExplicitShare, requireProjectAccess } from "../_shared/projec
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
   if (wasmInitialized) return;
@@ -150,6 +151,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "project-og-image", 60);
     const url = new URL(req.url);
     const projectId = url.searchParams.get("project_id");
     if (!projectId) {

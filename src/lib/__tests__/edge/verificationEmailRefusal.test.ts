@@ -10,6 +10,9 @@ const world = vi.hoisted(() => ({
   fetched: [] as string[],
 }));
 
+vi.mock("npm:@supabase/supabase-js@2", () => ({
+  createClient: () => ({ rpc: async () => ({ data: [{ allowed: true, used: 1, cap: 10 }], error: null }) }),
+}));
 vi.mock("https://deno.land/std@0.168.0/http/server.ts", () => ({ serve: (h: any) => { world.brand = h; } }));
 vi.mock("https://esm.sh/@supabase/supabase-js@2", () => {
   const rows = (table: string, inserted: boolean) => {

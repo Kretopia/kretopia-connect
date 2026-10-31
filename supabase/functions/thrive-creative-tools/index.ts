@@ -7,11 +7,11 @@
 // All outputs are DRAFT TEXT returned to the orchestrator for user review.
 // No autonomous sends. Executive Producer voice: short, declarative, action-first.
 
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { TOKENS_SHORT_DRAFT } from "../_shared/aiLimits.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -44,6 +44,7 @@ async function llm(prompt: string, model = GEMINI_FLASH): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
     const authHeader = req.headers.get("Authorization") || "";

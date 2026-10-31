@@ -39,7 +39,7 @@ type ErrorCode =
   | "database_persistence_error"
   | "unknown_error";
 
-function errorResponse(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, code: ErrorCode, message: string, status: number) {
+function errorResponse(corsHeaders: Record<string, string>, code: ErrorCode, message: string, status: number) {
   return new Response(JSON.stringify({ code, error: message }), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

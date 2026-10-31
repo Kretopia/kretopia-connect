@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const SITE = "https://www.kretopia.com";
 const FALLBACK_OG_IMAGE = `${SITE}/og-image.png`;
 
@@ -104,6 +105,7 @@ Deno.serve(async (req) => {
 
 function formatMoney(amount: number, currency: string) {
   try {
+    await publicPerimeter(req, "og-campaign", 60);
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency || "USD",

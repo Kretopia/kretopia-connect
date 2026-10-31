@@ -25,7 +25,6 @@ import {
 } from "../_shared/weeklyEmail.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-const corsHeaders = adminGuardCorsHeaders;
 
 const FROM = "Kretopia <noreply@kretopia.com>";
 const TEMPLATE_NAME = "weekly-matches"; // email_send_log.template_name
@@ -168,6 +167,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

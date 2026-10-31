@@ -3,7 +3,6 @@ import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guar
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
-const corsHeaders = adminGuardCorsHeaders;
 
 interface EmailRequest {
   to: string;
@@ -12,6 +11,7 @@ interface EmailRequest {
 }
 
 serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }

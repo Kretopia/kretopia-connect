@@ -2,7 +2,9 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { z } from "npm:zod@^4.4.3";
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 interface ProjectLite {
   id: string;
   title: string;
@@ -28,27 +30,23 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "voice-command");
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
+    const BodySchema = z.object({
+      audio_base64: z.string().min(1).max(6_000_000),
+      mime_type: z.enum(["audio/webm", "audio/mp3", "audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4"]).default("audio/webm"),
+      projects: z.array(z.object({ id: z.string().uuid(), title: z.string().max(200) })).max(100).default([]),
+      today_iso: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    }).strip();
     const {
       audio_base64,
       mime_type = "audio/webm",
       projects = [],
       today_iso,
-    }: {
-      audio_base64: string;
-      mime_type?: string;
-      projects?: ProjectLite[];
-      today_iso?: string;
-    } = await req.json();
-
-    if (!audio_base64) {
-      return new Response(JSON.stringify({ error: "audio_base64 required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    } = await readJson(req, BodySchema, 8_000_000);
 
     const today = today_iso || new Date().toISOString().slice(0, 10);
     const projectList = projects.length
@@ -173,9 +171,6 @@ Listen, transcribe, then classify the spoken intent into ONE action.
     });
   } catch (e) {
     console.error("voice-command error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });

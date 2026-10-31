@@ -8,8 +8,8 @@ import { corsHeaders, json, parseRunSources, readJson } from "../_shared/discove
 import { runDiscovery, type PipelineDeps } from "../_shared/discovery/pipeline.ts";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, code: "method_not_allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
+  if (req.method !== "POST") return json(req, { ok: false, code: "method_not_allowed" }, 405);
   const guard = await requireAdminOrCron(req);
   if (!guard.ok) return guard.response;
 
@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
   // Optional: only these sources. A source that must not be read again today (a once-a-day feed) is left out by naming the others.
   // A bad list is refused before anything is touched.
   const only = parseRunSources(body.sources);
-  if (only === "invalid") return json({ ok: false, code: "bad_request", message: "sources must be a list of up to 8 source ids." }, 400);
+  if (only === "invalid") return json(req, { ok: false, code: "bad_request", message: "sources must be a list of up to 8 source ids." }, 400);
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   const deps: PipelineDeps = { rpc: (n, a) => admin.rpc(n, a), from: (t) => admin.from(t), env: Deno.env };
 
@@ -25,5 +25,5 @@ Deno.serve(async (req) => {
   await admin.rpc("expire_discovery_spend");
   const slot = typeof body.slot === "string" && /^[a-z0-9-]{1,24}$/.test(body.slot) ? body.slot : "run";
   const result = await runDiscovery(deps, { slot, ...(only ? { only } : {}) });
-  return json({ ok: true, ...result, ...(only ? { only } : {}), via: guard.viaCron ? "schedule" : "manual" });
+  return json(req, { ok: true, ...result, ...(only ? { only } : {}), via: guard.viaCron ? "schedule" : "manual" });
 });

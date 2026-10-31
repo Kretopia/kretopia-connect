@@ -8,8 +8,8 @@ import {
   cleanQuantity,
   promoHasRoom,
   releasePromoUse,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/ticketCheckout.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 const PLATFORM_FEES: Record<string, number> = {

@@ -6,7 +6,8 @@ import { dedupeLeads, knownLeadKeys, splitByExisting, splitEvenly } from "../_sh
 import { fetchAllRows } from "../_shared/weeklyEmail.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 // --- Speed notes -----------------------------------------------------------
 // A search used to be slow for two reasons, both on this server:
 //  1. Firecrawl was asked to SCRAPE the full page of up to 40 results
@@ -62,6 +63,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "scout-leads");
     const { query, industry, location } = await req.json();
     if (!query) return json({ error: "Query is required" }, 400);
 
@@ -265,6 +267,6 @@ Return a JSON array of objects with these fields:
     });
   } catch (e) {
     console.error("scout-leads error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return safeError(e, req);
   }
 });

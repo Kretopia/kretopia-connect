@@ -12,8 +12,8 @@ import {
   countRecipientSends,
   decideSendBudget,
   recordActorSend,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/outboundBudget.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 // A refusal with its own status (400, 409, 429, 503), mapped by the final catch.
 class HttpStatusError extends Error {

@@ -3,7 +3,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -11,6 +12,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "import-profile-from-url");
     const { url } = await req.json();
     
     if (!url) {
@@ -584,10 +586,6 @@ ${wikipediaContent.substring(0, 15000)}
 
   } catch (error: unknown) {
     console.error('Unexpected error:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to import profile';
-    return new Response(
-      JSON.stringify({ error: errorMessage }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    );
+    return safeError(error, req);
   }
 });

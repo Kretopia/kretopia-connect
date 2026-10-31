@@ -3,7 +3,8 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
+import { createClient } from "npm:@supabase/supabase-js@2";
 // SSRF protection: blocked hosts
 const BLOCKED_HOSTS = [
   'localhost', '127.0.0.1', '0.0.0.0',
@@ -50,6 +51,10 @@ serve(async (req) => {
   }
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     // Parse and validate input
     const rawData = await req.json();
     const validationResult = RequestSchema.safeParse(rawData);
@@ -190,12 +195,6 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error fetching Open Graph data:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        success: false 
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return safeError(error, req);
   }
 });

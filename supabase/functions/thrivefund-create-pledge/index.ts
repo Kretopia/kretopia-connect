@@ -14,7 +14,7 @@ const log = (step: string, details?: any) => {
   console.log(`[THRIVEFUND-PLEDGE] ${step}${details ? ` - ${JSON.stringify(details)}` : ""}`);
 };
 
-const refuse = (corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, status: number, error: string) =>
+const refuse = (corsHeaders: Record<string, string>, status: number, error: string) =>
   new Response(JSON.stringify({ error }), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
     status,

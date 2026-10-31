@@ -4,6 +4,7 @@ import { z } from "https://esm.sh/zod@3.23.8";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const BodySchema = z.object({
   email: z.string().trim().email().max(255).transform((s) => s.toLowerCase()),
   code: z.string().trim().regex(/^\d{6}$/).optional(),
@@ -28,6 +29,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "guest-wallet-session", 10);
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: "Invalid email or code" }, 400);
     const { email, code } = parsed.data;

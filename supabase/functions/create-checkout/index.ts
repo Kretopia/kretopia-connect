@@ -6,8 +6,8 @@ import {
   isKnownSubscriptionTier,
   resolveSubscriptionPriceId,
   type PriceInterval,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/subscriptionPrices.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 serve(async (req) => {

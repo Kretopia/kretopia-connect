@@ -17,7 +17,8 @@ import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { DOC_INTENTS, routeByRules, type RoutedOutcome } from "../_shared/studioOutcomeRouter.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 const SYSTEM = `You are Kreto's Studio Outcome Router. The user is inside a Studio (a project workspace) and just told you what they want to make. Decide the OUTCOME to spin up and respond by calling the route_outcome tool.
 
 Outcomes you can return:
@@ -51,6 +52,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "route-studio-outcome");
     const { prompt, project_title } = await req.json();
     if (!prompt || typeof prompt !== "string" || prompt.trim().length < 2) {
       return json({ error: "prompt required" }, 400);
@@ -124,6 +126,6 @@ serve(async (req) => {
     }
   } catch (e) {
     console.error("route-studio-outcome error", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown" }, 500);
+    return safeError(e, req);
   }
 });

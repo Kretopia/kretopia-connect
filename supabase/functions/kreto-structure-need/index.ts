@@ -18,12 +18,8 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { PROMPT_INJECTION_DEFENSE_CLAUSE, wrapUntrustedContent } from "../_shared/promptIsolation.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
+import { corsFor } from '../_shared/guard.ts';
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 // Kept in step by hand with src/lib/matching/need.ts (there is no shared import between the app and an edge function);
 // a test fails if they drift.
@@ -46,7 +42,7 @@ export interface Need {
   backedWork?: Importance;
 }
 
-const json = (body: unknown, status = 200) =>
+const json = (corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -174,8 +170,9 @@ export function buildMessages(brief: string) {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (req.method !== "POST") return json(corsHeaders, { error: "method_not_allowed" }, 405);
 
   const guard = await requireUser(req);
   if (!guard.ok) return guard.response;
@@ -185,12 +182,12 @@ const handler = async (req: Request): Promise<Response> => {
     const body = await req.json();
     brief = typeof body?.brief === "string" ? body.brief.trim() : "";
   } catch {
-    return json({ error: "brief_invalid" }, 400);
+    return json(corsHeaders, { error: "brief_invalid" }, 400);
   }
-  if (brief.length < BRIEF_MIN || brief.length > BRIEF_MAX) return json({ error: "brief_invalid" }, 400);
+  if (brief.length < BRIEF_MIN || brief.length > BRIEF_MAX) return json(corsHeaders, { error: "brief_invalid" }, 400);
 
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return json({ error: "ai_not_configured" }, 503);
+  if (!apiKey) return json(corsHeaders, { error: "ai_not_configured" }, 503);
 
   const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
   const gate = await checkAiFeatureRateLimit(admin, guard.userId, "kreto-structure-need");
@@ -210,14 +207,14 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error) {
     // The brief is never logged, here or below.
     console.error("kreto-structure-need: provider call failed", error instanceof Error ? error.name : "unknown");
-    return json({ error: error instanceof Error && error.name === "AbortError" ? "timeout" : "provider_error" }, error instanceof Error && error.name === "AbortError" ? 504 : 502);
+    return json(corsHeaders, { error: error instanceof Error && error.name === "AbortError" ? "timeout" : "provider_error" }, error instanceof Error && error.name === "AbortError" ? 504 : 502);
   }
 
   if (!response.ok) {
-    if (response.status === 429) return json({ error: "rate_limited" }, 429);
-    if (response.status === 402) return json({ error: "ai_credits" }, 402);
+    if (response.status === 429) return json(corsHeaders, { error: "rate_limited" }, 429);
+    if (response.status === 402) return json(corsHeaders, { error: "ai_credits" }, 402);
     console.error("kreto-structure-need: provider status", response.status);
-    return json({ error: "provider_error" }, 502);
+    return json(corsHeaders, { error: "provider_error" }, 502);
   }
 
   let args: unknown;
@@ -228,11 +225,11 @@ const handler = async (req: Request): Promise<Response> => {
   } catch {
     args = undefined;
   }
-  if (args === undefined) return json({ error: "invalid_output" }, 502);
+  if (args === undefined) return json(corsHeaders, { error: "invalid_output" }, 502);
 
   const { need, ignored } = sanitizeNeed(args);
-  if (criteriaCount(need) === 0) return json({ error: "no_criteria", ignored }, 422);
-  return json({ need, ignored });
+  if (criteriaCount(need) === 0) return json(corsHeaders, { error: "no_criteria", ignored }, 422);
+  return json(corsHeaders, { need, ignored });
 };
 
 serve(handler);

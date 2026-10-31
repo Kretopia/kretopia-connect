@@ -138,7 +138,7 @@ async function sendOtpEmail(email: string, otp: string): Promise<boolean> {
   }
 }
 
-function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, b: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, b: unknown, s = 200) {
   return new Response(JSON.stringify(b), {
     status: s,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

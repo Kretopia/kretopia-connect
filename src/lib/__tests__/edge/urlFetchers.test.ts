@@ -5,13 +5,20 @@ const world = vi.hoisted(() => ({ handlers: {} as Record<string, (r: Request) =>
 
 vi.mock("https://deno.land/std@0.168.0/http/server.ts", () => ({ serve: (h: any) => { world.handlers[world.current] = h; } }));
 vi.mock("https://deno.land/x/zod@v3.22.4/mod.ts", async () => await import("zod"));
+// The handlers now require a verified caller before touching the network:
+// authenticate as a signed-in user so the SSRF checks below are what fails.
+vi.mock("npm:@supabase/supabase-js@2", () => ({
+  createClient: () => ({
+    auth: { getUser: async () => ({ data: { user: { id: "11111111-1111-1111-1111-111111111111" } }, error: null }) },
+  }),
+}));
 
 const fetchMock = vi.fn();
 const html = (title: string) => `<html><head><meta property="og:title" content="${title}"><meta property="og:description" content="d"></head></html>`;
 
 beforeAll(async () => {
   (AbortSignal as any).timeout ??= () => new AbortController().signal;
-  (globalThis as any).Deno = { resolveDns: async () => ["93.184.216.34"] };
+  (globalThis as any).Deno = { resolveDns: async () => ["93.184.216.34"], env: { get: () => "https://test.example" } };
   vi.stubGlobal("fetch", (...a: unknown[]) => fetchMock(...a));
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -22,13 +29,28 @@ beforeAll(async () => {
 });
 beforeEach(() => fetchMock.mockReset());
 
-const call = (fn: string, body: unknown) => world.handlers[fn](new Request("https://fn.example", { method: "POST", body: JSON.stringify(body) }));
+const call = (fn: string, body: unknown) =>
+  world.handlers[fn](
+    new Request("https://fn.example", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-user-token" },
+      body: JSON.stringify(body),
+    }),
+  );
 const requested = () => fetchMock.mock.calls.map((c) => String(c[0]));
 
 // Addresses the old substring blocklist ("10.", "127.0.0.1", ...) lets through.
 const INTERNAL = ["http://169.254.170.2/v2/credentials", "http://[::1]/admin", "http://[::ffff:127.0.0.1]/", "http://[::ffff:169.254.169.254]/latest/meta-data", "http://printer.local/"];
 
 describe("fetch-og-data", () => {
+  it("refuses a call with no Authorization header: 401, no request made", async () => {
+    const res = await world.handlers["fetch-og-data"](
+      new Request("https://fn.example", { method: "POST", body: JSON.stringify({ url: "https://good.example/article" }) }),
+    );
+    expect(res.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it.each(INTERNAL)("refuses %s with a 400 and makes no request", async (url) => {
     const res = await call("fetch-og-data", { url });
     expect(res.status).toBe(400);

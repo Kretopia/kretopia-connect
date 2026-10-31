@@ -12,11 +12,11 @@ const ADMIN_ACTIONS = new Set(["review", "claim_link", "decide_claim", "set_appl
 const LIST_FIELDS = "id, kind, status, visibility, title, original_publisher, location, source_type, source_url, apply_url, source_published_at, deadline_at, excerpt, flagged_instructions, possible_duplicates, extraction_issues, verification_status, last_checked_at, created_at";
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-  if (req.method !== "POST") return json({ ok: false, code: "method_not_allowed" }, 405);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders(req) });
+  if (req.method !== "POST") return json(req, { ok: false, code: "method_not_allowed" }, 405);
 
   const body = await readJson(req);
-  if (!body) return json({ ok: false, code: "bad_request", message: "Send a JSON object." }, 400);
+  if (!body) return json(req, { ok: false, code: "bad_request", message: "Send a JSON object." }, 400);
   const action = String(body.action ?? "");
 
   // Admin actions need a real admin (not the cron secret); everything else needs any signed-in user.
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
   if (ADMIN_ACTIONS.has(action)) {
     const guard = await requireAdminOrCron(req);
     if (!guard.ok) return guard.response;
-    if (!guard.userId) return json({ ok: false, code: "forbidden", message: "A signed-in admin is required." }, 403);
+    if (!guard.userId) return json(req, { ok: false, code: "forbidden", message: "A signed-in admin is required." }, 403);
     userId = guard.userId;
   } else {
     const guard = await requireUser(req);
@@ -55,35 +55,35 @@ Deno.serve(async (req) => {
       const limit = await checkAiFeatureRateLimit(admin, userId, "external-import", 40);
       if (!limit.allowed) return limit.response;
       const input = body.input as IngestInput | undefined;
-      if (!input || typeof input !== "object" || !["url", "text", "screenshot"].includes(String(input.type))) return json({ ok: false, code: "bad_request", message: "Unknown input." }, 400);
+      if (!input || typeof input !== "object" || !["url", "text", "screenshot"].includes(String(input.type))) return json(req, { ok: false, code: "bad_request", message: "Unknown input." }, 400);
       const kind = ["gig", "event", "talent"].includes(String(body.kind)) ? (body.kind as "gig" | "event" | "talent") : "gig";
-      return respond(await ingest(deps, userId, input, kind));
+      return respond(req, await ingest(deps, userId, input, kind));
     }
     case "send_to_review":
-      return isUuid(body.listing_id) ? respond(await reviewListing(deps, userId, body.listing_id, "send_to_review")) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) ? respond(req, await reviewListing(deps, userId, body.listing_id, "send_to_review")) : json(req, { ok: false, code: "bad_request" }, 400);
     case "list_mine": {
       const { data } = await admin.from("external_listings").select(LIST_FIELDS).eq("created_by", userId).order("created_at", { ascending: false }).limit(100);
-      return json({ ok: true, listings: data ?? [] });
+      return json(req, { ok: true, listings: data ?? [] });
     }
     case "list_feed_drafts":
-      return json({ ok: true, ...(await listFeedDrafts(deps, LIST_FIELDS)) });
+      return json(req, { ok: true, ...(await listFeedDrafts(deps, LIST_FIELDS)) });
     case "list_review": {
       const { data } = await admin.from("external_listings").select(LIST_FIELDS).in("status", ["in_review", "published", "claimed"]).order("created_at", { ascending: false }).limit(200);
       const { data: claims } = await admin.from("external_listing_claims").select("id, listing_id, claimant_user_id, status, method, created_at").in("status", ["pending", "disputed"]).limit(200);
-      return json({ ok: true, listings: data ?? [], claims: claims ?? [] });
+      return json(req, { ok: true, listings: data ?? [], claims: claims ?? [] });
     }
     case "review":
-      return isUuid(body.listing_id) ? respond(await reviewListing(deps, userId, body.listing_id, String(body.decision ?? ""), typeof body.note === "string" ? body.note : undefined)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) ? respond(req, await reviewListing(deps, userId, body.listing_id, String(body.decision ?? ""), typeof body.note === "string" ? body.note : undefined)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "claim_link": {
-      if (!isUuid(body.listing_id)) return json({ ok: false, code: "bad_request" }, 400);
+      if (!isUuid(body.listing_id)) return json(req, { ok: false, code: "bad_request" }, 400);
       const origin = Deno.env.get("PUBLIC_SITE_URL") ?? "https://www.kretopia.com";
-      return respond(await createClaimLink(deps, userId, body.listing_id, origin));
+      return respond(req, await createClaimLink(deps, userId, body.listing_id, origin));
     }
     case "decide_claim":
-      return isUuid(body.claim_id) && (body.decision === "approve" || body.decision === "reject") ? respond(await decideClaim(deps, userId, body.claim_id, body.decision)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.claim_id) && (body.decision === "approve" || body.decision === "reject") ? respond(req, await decideClaim(deps, userId, body.claim_id, body.decision)) : json(req, { ok: false, code: "bad_request" }, 400);
     case "set_applications":
-      return isUuid(body.listing_id) && typeof body.enabled === "boolean" ? respond(await setApplications(deps, userId, body.listing_id, body.enabled)) : json({ ok: false, code: "bad_request" }, 400);
+      return isUuid(body.listing_id) && typeof body.enabled === "boolean" ? respond(req, await setApplications(deps, userId, body.listing_id, body.enabled)) : json(req, { ok: false, code: "bad_request" }, 400);
     default:
-      return json({ ok: false, code: "unknown_action" }, 400);
+      return json(req, { ok: false, code: "unknown_action" }, 400);
   }
 });

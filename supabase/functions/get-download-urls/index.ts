@@ -7,8 +7,9 @@ import {
   ENTITLED_ORDER_STATUSES,
   decideLegacyPurchase,
   orderGrantsFiles,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/purchaseEntitlement.ts";
+import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 
 
 serve(async (req) => {
@@ -18,6 +19,7 @@ serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "get-download-urls", 10);
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {

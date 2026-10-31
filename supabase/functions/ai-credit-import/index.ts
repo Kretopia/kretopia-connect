@@ -3,12 +3,14 @@ import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireAiCaller(req, "ai-credit-import");
     const { type, content, userId } = await req.json();
 
     if (!content) {
@@ -108,9 +110,6 @@ Return ONLY valid JSON.`;
     });
   } catch (error) {
     console.error("Error:", error);
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(error, req);
   }
 });

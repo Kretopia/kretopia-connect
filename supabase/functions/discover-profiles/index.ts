@@ -3,6 +3,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 interface DiscoveredProfile {
   name: string;
   role: string;
@@ -21,6 +22,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "discover-profiles");
     const { searchType, query, platform, page = 1 } = await req.json();
     console.log("Discovery request:", { searchType, query, platform, page });
 

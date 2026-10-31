@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 function detectPlatform(url: string): { platform: string; instruction: string } {
   const u = url.toLowerCase();
   if (u.includes("behance.net")) return {
@@ -78,6 +79,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "analyze-profile-url");
     const { url } = await req.json();
     console.log("Analyzing URL:", url);
 
@@ -377,12 +379,6 @@ Be conservative. Quality > quantity. The user will see a checkbox preview and ca
 
   } catch (error) {
     console.error("Error analyzing profile URL:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        success: false 
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return safeError(error, req);
   }
 });

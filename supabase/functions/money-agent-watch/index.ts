@@ -12,13 +12,13 @@ import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guar
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -182,13 +182,13 @@ serve(async (req) => {
       milestoneProposals++;
     }
 
-    return json({ ok: true, chase_drafts: chaseDrafts, chase_proposals: chaseProposals, milestone_proposals: milestoneProposals });
+    return json(corsHeaders, { ok: true, chase_drafts: chaseDrafts, chase_proposals: chaseProposals, milestone_proposals: milestoneProposals });
   } catch (e) {
     console.error("money-agent-watch error", e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
-function json(d: unknown, s = 200) {
+function json(corsHeaders: Record<string, string>, d: unknown, s = 200) {
   return new Response(JSON.stringify(d), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }

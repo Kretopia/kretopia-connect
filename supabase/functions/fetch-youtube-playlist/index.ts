@@ -1,12 +1,17 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireUser } from '../_shared/guard.ts';
+import { createClient } from "npm:@supabase/supabase-js@2";
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { playlistId } = await req.json();
     if (typeof playlistId !== "string" || !/^[A-Za-z0-9_-]{10,64}$/.test(playlistId)) {
       return new Response(JSON.stringify({ error: "playlistId required" }), {

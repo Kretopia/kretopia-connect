@@ -2,7 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 const CREATOR_PLATFORM_PATTERNS = [
   /open\.spotify\.com\/artist/i,
   /spotify\.com\/artist/i,
@@ -367,6 +368,7 @@ serve(async (req) => {
   }
 
   try {
+    await requireAiCaller(req, "search-credits-web");
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const FIRECRAWL_API_KEY = Deno.env.get('FIRECRAWL_API_KEY');
 
@@ -591,10 +593,6 @@ Return up to 8 most relevant REAL results.`;
     });
   } catch (error: unknown) {
     console.error('Error in search-credits-web:', error);
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return safeError(error, req);
   }
 });

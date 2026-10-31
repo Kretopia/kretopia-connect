@@ -132,7 +132,7 @@ const SENSITIVE_FACT_KINDS = new Set([
 ]);
 const TRUSTED_SOURCE_KINDS = new Set(["manual"]);
 
-function json(corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, corsHeaders: Record<string, string>, body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

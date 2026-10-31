@@ -7,8 +7,8 @@ import {
   claimNotificationOnce,
   releaseNotificationClaim,
   swipeNotifyMessageId,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/notificationGuards.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 interface SwipeNotificationRequest {

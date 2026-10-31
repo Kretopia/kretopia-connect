@@ -7,8 +7,8 @@ import {
   generateOtp,
   hashOtp,
   planOtpAttempt,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/phoneOtp.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 
 Deno.serve(async (req) => {

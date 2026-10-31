@@ -8,7 +8,6 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -17,6 +16,7 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET")!; // used for downstream invoke
 const ELIGIBLE_TIERS = ["pro", "creator_plus", "creatorplus", "creator+", "founder", "founding_member"];
 
 serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -33,7 +33,7 @@ serve(async (req) => {
       .eq("provider", "gmail");
 
     const userIds = (settings || []).map((s: any) => s.user_id);
-    if (userIds.length === 0) return json({ ok: true, drafted: 0, reason: "no eligible users" });
+    if (userIds.length === 0) return json(corsHeaders, { ok: true, drafted: 0, reason: "no eligible users" });
 
     const { data: profiles } = await admin
       .from("profiles")
@@ -105,14 +105,14 @@ serve(async (req) => {
       }
     }
 
-    return json({ ok: true, total_drafted: totalDrafted, users: Object.keys(perUserCounts).length });
+    return json(corsHeaders, { ok: true, total_drafted: totalDrafted, users: Object.keys(perUserCounts).length });
   } catch (e) {
     console.error("auto-outreach-watch error", e);
-    return json({ error: e instanceof Error ? e.message : String(e) }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
-function json(data: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },

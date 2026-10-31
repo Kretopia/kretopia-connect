@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -10,6 +10,10 @@ serve(async (req) => {
   }
 
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { project_name, existing_roles } = await req.json();
     if (!project_name || typeof project_name !== 'string') {
       return new Response(JSON.stringify({ error: 'project_name required' }), {
@@ -126,9 +130,6 @@ serve(async (req) => {
     });
   } catch (error: unknown) {
     console.error('Production detail error:', error);
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return safeError(error, req);
   }
 });

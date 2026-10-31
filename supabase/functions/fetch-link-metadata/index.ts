@@ -6,7 +6,8 @@
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
+import { createClient } from "npm:@supabase/supabase-js@2";
 const PROVIDERS: Array<{ test: RegExp; name: string }> = [
   { test: /(^|\.)docs\.google\.com/i, name: "Google Docs" },
   { test: /(^|\.)sheets\.google\.com/i, name: "Google Sheets" },
@@ -66,6 +67,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
   try {
+    await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
     const { url: raw } = await req.json();
     if (!raw || typeof raw !== "string") {
       return new Response(JSON.stringify({ error: "Missing url" }), {
@@ -152,10 +157,6 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(err, req);
   }
 });

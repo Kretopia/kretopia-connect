@@ -1,8 +1,8 @@
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
@@ -17,6 +17,7 @@ interface AssistBody {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

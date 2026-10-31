@@ -9,6 +9,7 @@ import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
   if (wasmInitialized) return;
@@ -127,6 +128,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "event-og-image", 60);
     const url = new URL(req.url);
     const eventId = url.searchParams.get("event_id");
     if (!eventId) {

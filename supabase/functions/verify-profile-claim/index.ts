@@ -4,6 +4,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 // Records the real, server-computed result under service_role and returns
 // an opaque single-use token. claim-and-create-profile consumes that token
 // to decide identity_face_verified — it never trusts a client-supplied
@@ -39,6 +40,7 @@ serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "verify-profile-claim", 10);
     const { profileId, profileImageUrl, selfieImage, profileName } = await req.json();
 
     if (!profileImageUrl || !selfieImage) {

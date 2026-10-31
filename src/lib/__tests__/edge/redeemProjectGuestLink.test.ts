@@ -8,6 +8,9 @@ const world = vi.hoisted(() => ({
   db: null as unknown as import("./memoryDb").MemoryDb,
 }));
 
+vi.mock("npm:@supabase/supabase-js@2", () => ({
+  createClient: () => ({ rpc: async () => ({ data: [{ allowed: true, used: 1, cap: 10 }], error: null }) }),
+}));
 vi.mock("https://esm.sh/@supabase/supabase-js@2.45.0", () => ({
   createClient: (_url: string, _key: string, opts?: { global?: { headers?: { Authorization?: string } } }) => {
     const bearer = opts?.global?.headers?.Authorization;
