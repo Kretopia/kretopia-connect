@@ -1,5 +1,4 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders as baseCors } from "npm:@supabase/supabase-js@2/cors";
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 import { corsFor } from '../_shared/guard.ts';
 

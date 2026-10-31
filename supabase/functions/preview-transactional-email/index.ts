@@ -1,7 +1,6 @@
 import { corsFor } from '../_shared/guard.ts';
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 
 // Renders all registered templates with their previewData.
