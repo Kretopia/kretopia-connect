@@ -98,7 +98,7 @@ describe("thrivefund-create-pledge wiring", () => {
     expect(check).toBeGreaterThan(campaignRead);
     expect(tier).toBeGreaterThan(check);
     expect(insert).toBeGreaterThan(tier);
-    expect(source).toContain("if (!checked.ok) return refuse(checked.status, checked.error)");
+    expect(source).toContain("if (!checked.ok) return refuse(corsHeaders, checked.status, checked.error)");
   });
 
   it("uses the checked values and never the raw request values for money and text", () => {
@@ -118,10 +118,10 @@ describe("thrivefund-create-pledge wiring", () => {
     expect(insert).toBeGreaterThan(earlier);
     expect(session).toBeGreaterThan(insert);
     expect(source).toContain('action === "already_backed"');
-    expect(source).toMatch(/already_backed"\) return refuse\(409/);
-    expect(source).toMatch(/action === "unknown"\) return refuse\(503/);
+    expect(source).toMatch(/already_backed"\) return refuse\(corsHeaders, 409/);
+    expect(source).toMatch(/action === "unknown"\) return refuse\(corsHeaders, 503/);
     expect(source).toContain("stripe.checkout.sessions.expire(old.stripe_checkout_session_id)");
-    expect(source).toMatch(/earlierErr\) return refuse\(503/);
+    expect(source).toMatch(/earlierErr\) return refuse\(corsHeaders, 503/);
   });
 
   it("keeps the payment mechanics exactly as they were", () => {

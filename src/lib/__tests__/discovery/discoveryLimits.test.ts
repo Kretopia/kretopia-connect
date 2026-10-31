@@ -280,12 +280,12 @@ describe("the function that takes the request (not run here: it needs Deno)", ()
   it("refuses a bad list of sources before it touches anything, and passes a good one to the run and back in the answer", () => {
     const parse = src.indexOf("parseRunSources(body.sources)");
     expect(parse).toBeGreaterThan(-1);
-    expect(src.indexOf('return json({ ok: false, code: "bad_request"')).toBeGreaterThan(parse);
+    expect(src.indexOf('return json(req, { ok: false, code: "bad_request"')).toBeGreaterThan(parse);
     // refused before the abandoned-reservation sweep and before the run
     expect(src.indexOf('if (only === "invalid")')).toBeLessThan(src.indexOf('rpc("expire_discovery_spend")'));
     expect(src).toContain("runDiscovery(deps, { slot, ...(only ? { only } : {}) })");
     // the answer repeats the list the run was limited to, so a caller sees what was read (checked on the answer's own line)
-    const answer = src.split("\n").find((l) => l.includes("return json({ ok: true"));
+    const answer = src.split("\n").find((l) => l.includes("return json(req, { ok: true"));
     expect(answer).toBeDefined();
     expect(answer).toContain("...(only ? { only } : {})");
   });

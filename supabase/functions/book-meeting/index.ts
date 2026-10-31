@@ -183,7 +183,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[book-meeting]", e);
-    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: "Something went wrong" }, 500);
   }
 });
 
