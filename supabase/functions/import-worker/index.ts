@@ -1,7 +1,6 @@
 // Background import worker. Processes a bounded batch then re-invokes itself.
 // Invoked with the service-role key only (never from the browser).
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { sortForWrite, writeObject } from "../_shared/import/writer.ts";
 import type { Mapping, SourceObject } from "../_shared/import/types.ts";
 import { corsFor, requireServiceRole } from '../_shared/guard.ts';
@@ -11,6 +10,7 @@ const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BATCH = 200;
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const json = (b: unknown, s = 200) =>
     new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });

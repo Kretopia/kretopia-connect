@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders as baseCors } from "npm:@supabase/supabase-js@2/cors";
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { corsFor } from '../_shared/guard.ts';
 
 const corsHeaders = {
   ...baseCors,
@@ -75,6 +76,7 @@ async function findProfileByUsername(
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req);
   await publicPerimeter(req, "username-auth", 10);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);

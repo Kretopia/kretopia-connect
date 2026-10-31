@@ -5,6 +5,7 @@ import { resolveKretoIdentity } from '../_shared/kretoIdentity.ts';
 import { gateAiCall, commitAiCredit, releaseAiCredit } from '../_shared/aiRateLimit.ts';
 import { measuredModelFetch } from '../_shared/measuredModelFetch.ts';
 import { ATTACHMENT_BUCKET, ATTACHMENT_MAX_BYTES, attachmentExpiresAt, attachmentIsLive } from '../_shared/kretoAttachmentPolicy.ts';
+import { corsFor } from '../_shared/guard.ts';
 
 const Id = z.string().uuid();
 const Schema = z.discriminatedUnion('mode', [
@@ -20,6 +21,7 @@ const Schema = z.discriminatedUnion('mode', [
 const json = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (request) => {
+  const corsHeaders = corsFor(req);
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   const identity = await resolveKretoIdentity(request);
   if (!identity) return json({ error: 'Please sign in again to use Kreto.', code: 'AUTH_REQUIRED' }, 401);
