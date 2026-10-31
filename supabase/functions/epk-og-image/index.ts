@@ -10,6 +10,7 @@ import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
   if (wasmInitialized) return;
@@ -117,6 +118,7 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "epk-og-image", 60);
     const url = new URL(req.url);
     const userId = url.searchParams.get("user_id");
     if (!userId) {

@@ -4,6 +4,7 @@ import { roomSessionExpiry } from "../_shared/roomSessionLimits.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
 // Public: anyone with a valid token can redeem to mint a Daily meeting token.
@@ -13,6 +14,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "redeem-video-guest-link", 10);
     const DAILY_API_KEY = Deno.env.get("DAILY_API_KEY");
     if (!DAILY_API_KEY) throw new Error("DAILY_API_KEY not configured");
 

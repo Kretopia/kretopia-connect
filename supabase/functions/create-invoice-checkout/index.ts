@@ -7,11 +7,13 @@ import { checkInvoicePayable, cleanPayerEmail } from "../_shared/publicCheckoutI
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "create-invoice-checkout", 10);
     const body = await req.json().catch(() => null);
     const invoice_id = typeof body?.invoice_id === "string" ? body.invoice_id : "";
     if (!invoice_id) throw new Error("invoice_id required");

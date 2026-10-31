@@ -7,6 +7,7 @@ import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 // Validation schema
 const ApplicationSchema = z.object({
   email: z.string().email().max(255),
@@ -38,6 +39,7 @@ serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "validate-waitlist-ai", 10);
     // Rate limiting
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                req.headers.get('x-real-ip') || 'unknown';

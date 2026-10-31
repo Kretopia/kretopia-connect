@@ -6,6 +6,7 @@ import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const BodySchema = z.object({
@@ -18,6 +19,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    await publicPerimeter(req, "guest-wallet-topup", 10);
     const token = req.headers.get("x-guest-token") ?? "";
     if (!UUID_RE.test(token)) {
       return new Response(

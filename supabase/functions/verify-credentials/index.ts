@@ -5,6 +5,7 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 interface VerifiedCredential {
   type: 'award' | 'credit' | 'certification' | 'social' | 'streams' | 'press';
   source: string;
@@ -44,6 +45,7 @@ serve(async (req) => {
   }
 
   try {
+    await publicPerimeter(req, "verify-credentials", 10);
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
