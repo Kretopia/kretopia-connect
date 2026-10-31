@@ -6,8 +6,8 @@ import {
   approvalNeedsListing,
   decideApprovalTarget,
   type ShareVisibleFile,
-import { publicPerimeter } from '../_shared/publicPerimeter.ts';
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor }
+import { publicPerimeter } from '../_shared/publicPerimeter.ts'; from '../_shared/guard.ts';
 } from "../_shared/shareLinkScope.ts";
 
 
