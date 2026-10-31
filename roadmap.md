@@ -1,8 +1,10 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Security lockdown (October 31 continuation)
+- [x] Repair four remaining failures without weakening tests; add public booking/search/discovery guards, remove VAPID key endpoint, eliminate final wildcard origins. 3,574 tests pass, managed build OK; gate record in docs/security/LOCKDOWN_CONTINUATION_2026-10-31.md. No SQL executed/deployment/publication.
+- [ ] Complete exposure-tier audit and remaining hardening: action ID/review tests, SSRF, frontend XSS, dependency and policy audit; then real deployed matrix and PostgreSQL concurrency proof (require authorized deployment/migration access). Gate fails; PDF withheld.
 - [x] 1. Shared request guard implemented; obsolete Studio tutorial assertion aligned without changing UI; 3,427 tests pass and managed build OK. Existing consume_ai_feature_call is not concurrency-safe in repository SQL; strict rate limiting remains provisional.
-- [ ] 2. Edge perimeter now covers 14 handlers, including nine additional Inbox/listing/markup/Studio/gig generators. Handler suite: 121 behavioral tests; all 3,554 full-suite tests pass with four workers; nine additional Deno checks and managed build OK. Remaining endpoint inventory still needs per-caller review: 276 literal wildcard-CORS entrypoints remain, plus SDK-imported headers; do not blanket-gate public, voice/media or internal callers. No deployment; live legacy verification requires deployment access/session.
+- [ ] 2. Full endpoint coverage remains incomplete. Current source: 323 entrypoints, no literal wildcard/empty ACAO; 35 public-IP-perimeter and 36 AI-caller call sites (triage, not completion). 3,574 tests pass; no deployment or live legacy verification.
 - [ ] 3. SSRF bounded fetching. Blocked by step order.
 - [ ] 4. Exposed endpoint removal and authentication hardening. Blocked by step order.
 - [ ] 5. CSP, safe links, HTML sanitation, QR print safety. Blocked by step order.

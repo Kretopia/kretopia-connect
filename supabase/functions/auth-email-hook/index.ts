@@ -8,6 +8,8 @@ import { MagicLinkEmail } from '../_shared/email-templates/magic-link.tsx'
 import { RecoveryEmail } from '../_shared/email-templates/recovery.tsx'
 import { EmailChangeEmail } from '../_shared/email-templates/email-change.tsx'
 import { ReauthenticationEmail } from '../_shared/email-templates/reauthentication.tsx'
+import { corsFor, constantTimeEqual, readJson, safeError } from '../_shared/guard.ts'
+import { z } from 'npm:zod@4'
 
 
 const EMAIL_SUBJECTS: Record<string, string> = {
@@ -81,10 +83,7 @@ const SAMPLE_DATA: Record<string, object> = {
 
 // Preview endpoint handler - returns rendered HTML without sending email
 async function handlePreview(req: Request): Promise<Response> {
-  const previewCorsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, content-type',
-  }
+  const previewCorsHeaders = corsFor(req)
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: previewCorsHeaders })
@@ -93,7 +92,7 @@ async function handlePreview(req: Request): Promise<Response> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   const authHeader = req.headers.get('Authorization')
 
-  if (!apiKey || authHeader !== `Bearer ${apiKey}`) {
+  if (!apiKey || !await constantTimeEqual(authHeader ?? '', `Bearer ${apiKey}`)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
@@ -102,13 +101,10 @@ async function handlePreview(req: Request): Promise<Response> {
 
   let type: string
   try {
-    const body = await req.json()
+    const body = await readJson(req, z.object({ type: z.enum(['signup', 'invite', 'magiclink', 'recovery', 'email_change', 'reauthentication']) }))
     type = body.type
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Invalid JSON in request body' }), {
-      status: 400,
-      headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
-    })
+    return safeError(error, req)
   }
 
   const EmailTemplate = EMAIL_TEMPLATES[type]
@@ -281,25 +277,20 @@ async function handleWebhook(req: Request): Promise<Response> {
 Deno.serve(async (req) => {
   const url = new URL(req.url)
 
-  // Handle CORS preflight for main endpoint
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { })
+  // Preview is browser-facing; the signature-verified webhook has no CORS.
+  if (url.pathname.endsWith('/preview')) {
+    try { return await handlePreview(req) } catch (error) { return safeError(error, req) }
   }
 
-  // Route to preview handler for /preview path
-  if (url.pathname.endsWith('/preview')) {
-    return handlePreview(req)
+  // Handle preflight for the webhook without CORS.
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { })
   }
 
   // Main webhook handler
   try {
     return await handleWebhook(req)
   } catch (error) {
-    console.error('Webhook handler error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return safeError(error)
   }
 })

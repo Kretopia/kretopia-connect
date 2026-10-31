@@ -66,4 +66,4 @@
 - Onboarding uses the shared feature header and Wrapped shell; verify the owner profile row returned by a save before navigating, and run optional enrichment after the handoff so secondary calls cannot strand a successfully saved user.
 - Subscription sync validates the user server-side before calling; the function returns 401 for invalid sessions before payment work, because cached or foreign tokens do not prove account existence.
 - Optional username linking validates the live app user and caches only success; failed links stay retryable.
-- Use guard.ts/aiPerimeter.ts: validate the account backend without auth fallback, meter on deployment; lockdown SQL stays unapplied.
+- Use guard.ts/aiPerimeter.ts for verified auth/metering; SQL stays unapplied. Bind CORS per request; strip unknown public-search fields and hide provider errors to avoid leaks.
