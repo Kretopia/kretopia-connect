@@ -5,12 +5,9 @@ import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/strip
 import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
 const log = (s: string, d?: unknown) => console.log(`[stripe-wallet-webhook] ${s}`, d ?? "");
 
 serve(async (req) => {
-  const corsHeaders = corsFor(req);
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const stripe = new Stripe(resolveStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
