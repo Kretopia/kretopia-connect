@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 const CREATOR_PLATFORM_PATTERNS = [
   /open\.spotify\.com\/artist/i,
   /spotify\.com\/artist/i,
@@ -592,10 +592,6 @@ Return up to 8 most relevant REAL results.`;
     });
   } catch (error: unknown) {
     console.error('Error in search-credits-web:', error);
-    const msg = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return safeError(error, req);
   }
 });

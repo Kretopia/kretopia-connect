@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 function detectPlatform(url: string): { platform: string; instruction: string } {
   const u = url.toLowerCase();
   if (u.includes("behance.net")) return {
@@ -378,12 +378,6 @@ Be conservative. Quality > quantity. The user will see a checkbox preview and ca
 
   } catch (error) {
     console.error("Error analyzing profile URL:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        success: false 
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return safeError(error, req);
   }
 });

@@ -3,7 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 // SSRF protection: blocked hosts
 const BLOCKED_HOSTS = [
@@ -351,12 +351,6 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error analyzing URL:", error);
-    return new Response(
-      JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error",
-        success: false 
-      }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return safeError(error, req);
   }
 });

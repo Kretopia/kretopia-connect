@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -100,8 +100,6 @@ Keep credits to the top 5 most notable.`;
     });
   } catch (e) {
     console.error("import-profile-url error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

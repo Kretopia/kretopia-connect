@@ -4,7 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 Deno.serve(async (req) => {
@@ -116,9 +116,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "unknown" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });

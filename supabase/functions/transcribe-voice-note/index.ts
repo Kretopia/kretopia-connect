@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
@@ -121,9 +121,6 @@ Deno.serve(async (req) => {
     );
   } catch (e) {
     console.error("transcribe-voice-note error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });

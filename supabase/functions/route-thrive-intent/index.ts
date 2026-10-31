@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 const SYSTEM = `You are Kreto's intent router. A creator types or speaks one short request. You decide what surface or workflow it maps to and reply by calling the route_intent tool.
 
 Intents you can return:
@@ -127,8 +127,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("route-thrive-intent error", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

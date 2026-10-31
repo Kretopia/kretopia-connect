@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 const allowedCategories = new Set([
   "software", "equipment", "travel", "workspace", "marketing", "education", "subscriptions", "food", "insurance", "taxes", "contractors", "entertainment", "carnival", "events", "other",
 ]);
@@ -107,6 +107,6 @@ Extract financial details from receipts, bills, invoices, or screenshots of tran
     return new Response(JSON.stringify({ error: "Could not extract data from image" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("scan-receipt error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return safeError(e, req);
   }
 });

@@ -6,7 +6,7 @@ import { dedupeLeads, knownLeadKeys, splitByExisting, splitEvenly } from "../_sh
 import { fetchAllRows } from "../_shared/weeklyEmail.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 // --- Speed notes -----------------------------------------------------------
 // A search used to be slow for two reasons, both on this server:
 //  1. Firecrawl was asked to SCRAPE the full page of up to 40 results
@@ -266,6 +266,6 @@ Return a JSON array of objects with these fields:
     });
   } catch (e) {
     console.error("scout-leads error:", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return safeError(e, req);
   }
 });

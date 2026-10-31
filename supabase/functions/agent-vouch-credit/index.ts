@@ -2,7 +2,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -32,8 +32,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });

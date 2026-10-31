@@ -6,7 +6,7 @@
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 const PROVIDERS: Array<{ test: RegExp; name: string }> = [
   { test: /(^|\.)docs\.google\.com/i, name: "Google Docs" },
@@ -157,10 +157,6 @@ Deno.serve(async (req) => {
       },
     );
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(err, req);
   }
 });

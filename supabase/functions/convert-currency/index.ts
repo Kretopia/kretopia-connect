@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 // Free exchange rate API (no key needed) with fallback rates
 const FALLBACK_RATES: Record<string, number> = {
@@ -73,10 +73,6 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: msg }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 400,
-    });
+    return safeError(error, req);
   }
 });
