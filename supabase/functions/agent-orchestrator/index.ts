@@ -664,9 +664,7 @@ serve(async (req) => {
       creator_name: z.string().max(200).optional(),
       creator_avatar_url: z.string().url().max(2000).optional(),
       project_title: z.string().max(200).optional(),
-      goal: z.string().max(10_000).optional(),
-      conversation_id: z.string().uuid().optional(),
-    }).strip().passthrough();
+    }).strip();
     const body = await readJson(req, BodySchema, 64_000);
 
     // ============ APPROVAL PATH ============
