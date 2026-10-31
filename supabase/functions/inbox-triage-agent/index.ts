@@ -14,7 +14,7 @@ import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, constantTimeEqual } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
     const body = await req.json().catch(() => ({}));
     const cronAuth = req.headers.get("x-cron-secret");
-    const isCron = !!CRON_SECRET && cronAuth === CRON_SECRET;
+    const isCron = !!CRON_SECRET && !!cronAuth && (await constantTimeEqual(cronAuth, CRON_SECRET));
 
     let scopeUserId: string | null = null;
     let singleMessageId: string | null = null;

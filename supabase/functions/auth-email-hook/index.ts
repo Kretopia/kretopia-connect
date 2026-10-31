@@ -1,3 +1,4 @@
+import { constantTimeEqual } from '../_shared/guard.ts'
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { sendLovableEmail, parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
@@ -93,7 +94,7 @@ async function handlePreview(req: Request): Promise<Response> {
   const apiKey = Deno.env.get('LOVABLE_API_KEY')
   const authHeader = req.headers.get('Authorization')
 
-  if (!apiKey || authHeader !== `Bearer ${apiKey}`) {
+  if (!apiKey || !authHeader || !(await constantTimeEqual(authHeader, `Bearer ${apiKey}`))) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { ...previewCorsHeaders, 'Content-Type': 'application/json' },
