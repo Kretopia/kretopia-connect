@@ -16,8 +16,8 @@ import {
   skillList,
   type CreditFacts,
   type ProfileFacts,
-import { corsFor } from '../_shared/guard.ts';
 } from "../_shared/passportDraft.ts";
+import { corsFor } from '../_shared/guard.ts';
 
 // "Strengthen your Passport": one call drafts the pieces a Passport needs to be found (a bio, a photo, one work item)
 // from what the signed-in person already has on Kretopia. Nothing is saved here and nothing is verified: the client
