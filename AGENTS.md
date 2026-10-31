@@ -26,7 +26,7 @@
 - Search people through the public-safe profile view for guests and rank accepted viewer connections before other name matches for signed-in users, because discovery must work without login while relationship priority stays private.
 - Use shared theme tokens for Landing's editorial shell; keep photographic overlays separate so Daylight/Midnight themes the whole page without losing caption contrast.
 - Put feature tutorial triggers in the shared header's centered pre-title slot, replacing the eyebrow only when a tour exists, because each feature needs one consistent action above its heading.
-- Keep Landing body/arm layers aligned with the flight sprite, preserving the wave pivot, flight controller, timing and scroll locks; seasonal artwork must not replace movement logic or affect other mascot surfaces.
+- Render seasonal Hero greetings as one intact transparent sprite; preserve the Landing flight controller, timing and scroll locks, because cut-out joints detach the character during motion.
 - Reuse FeatureTutorialDialogContent for feature and Landing tutorial modals, because a shared surface prevents theme and interaction drift; keep Landing CTA pairs in equal grid tracks.
 - Gradient title text (`.k-gradient-text`) must keep `box-decoration-break: clone` with its padding, because without it a wrapped gradient phrase loses its clip slack at the line break and the browser cuts italic overhangs and descenders mid-title.
 - Use KretopiaSpinner (inline) or KretopiaLoader (block) for waits; never Loader2, border rings, spinning icons or bare "Loading…". Content-shaped Skeletons are allowed; shared K-mark loaders keep waits on-brand.
