@@ -4,12 +4,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { hasExplicitRecordingConsent } from "../_shared/recordingConsent.ts";
+import { corsFor } from '../_shared/guard.ts';
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
 
 const DAILY_API = "https://api.daily.co/v1";
 
@@ -25,7 +21,8 @@ interface Body {
 }
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+  const corsHeaders = corsFor(req);
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -36,11 +33,11 @@ serve(async (req) => {
     const name = (body.guest_name || "").trim().slice(0, 80);
     const email = (body.guest_email || "").trim().slice(0, 200);
     if (!name || !email || !body.start_iso) {
-      return json({ error: "Name, email, and slot are required" }, 400);
+      return json(corsHeaders, { error: "Name, email, and slot are required" }, 400);
     }
     const start = new Date(body.start_iso);
     if (isNaN(start.getTime()) || start.getTime() < Date.now() - 60_000) {
-      return json({ error: "Pick a future slot" }, 400);
+      return json(corsHeaders, { error: "Pick a future slot" }, 400);
     }
     const dur = Math.min(Math.max(body.duration_minutes ?? 30, 10), 240);
     const end = new Date(start.getTime() + dur * 60_000);
@@ -56,7 +53,7 @@ serve(async (req) => {
         .maybeSingle();
       ownerId = data?.user_id ?? null;
     }
-    if (!ownerId) return json({ error: "Creator not found" }, 404);
+    if (!ownerId) return json(corsHeaders, { error: "Creator not found" }, 404);
 
     // Owner must have bookings enabled
     const { data: prof } = await admin
@@ -65,7 +62,7 @@ serve(async (req) => {
       .eq("user_id", ownerId)
       .maybeSingle();
     if (!prof?.bookings_enabled) {
-      return json({ error: "Bookings are closed for this creator" }, 403);
+      return json(corsHeaders, { error: "Bookings are closed for this creator" }, 403);
     }
 
     // Validate slot lies in an active window for that weekday
@@ -81,7 +78,7 @@ serve(async (req) => {
     const fits = (windows || []).some(
       (w: any) => startMin >= w.start_minute && endMin <= w.end_minute,
     );
-    if (!fits) return json({ error: "Slot is outside availability" }, 409);
+    if (!fits) return json(corsHeaders, { error: "Slot is outside availability" }, 409);
 
     // Collision check vs existing scheduled meetings (±dur window around start)
     const lo = new Date(start.getTime() - dur * 60_000).toISOString();
@@ -93,7 +90,7 @@ serve(async (req) => {
       .gte("scheduled_for", lo)
       .lte("scheduled_for", hi);
     if ((clashes || []).length > 0) {
-      return json({ error: "Slot just got taken — please pick another" }, 409);
+      return json(corsHeaders, { error: "Slot just got taken — please pick another" }, 409);
     }
 
     // Create Daily room
@@ -173,7 +170,7 @@ serve(async (req) => {
       if (notifyError) console.warn("[book-meeting] host notification failed:", notifyError.message);
     } catch { /* ignore */ }
 
-    return json({
+    return json(corsHeaders, {
       meeting_id: meeting.id,
       share_url: shareUrl,
       start_iso: start.toISOString(),
@@ -184,13 +181,13 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[book-meeting]", e);
-    return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
+    return json(corsHeaders, { error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
 
-function json(body: unknown, status = 200) {
+function json(corsHeaders: Record<string, string>, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
