@@ -23,7 +23,8 @@ import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { z } from "npm:zod@^4.4.3";
+import { corsFor, constantTimeEqual, readJson } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -630,7 +631,7 @@ serve(async (req) => {
     const internalUserId = req.headers.get("x-internal-user-id");
     const isInternal =
       internalUserId &&
-      authHeader === `Bearer ${SERVICE_KEY}`;
+      (await constantTimeEqual(authHeader, `Bearer ${SERVICE_KEY}`));
 
     let userId: string | undefined;
     if (isInternal) {
@@ -644,14 +645,29 @@ serve(async (req) => {
       userId = claimsData?.claims?.sub as string | undefined;
       if (userErr || !userId) {
         console.error("[orchestrator] auth failed:", userErr?.message);
-        return new Response(JSON.stringify({ error: "Invalid session", detail: userErr?.message }), {
+        return new Response(JSON.stringify({ error: "Invalid session" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
     }
 
-    const body = await req.json().catch(() => ({}));
+    const BodySchema = z.object({
+      action_id: z.string().uuid().optional(),
+      decision: z.enum(["approved", "rejected"]).optional(),
+      edited_args: z.record(z.string(), z.unknown()).optional(),
+      note: z.string().max(2000).optional(),
+      mode: z.enum(["draft_outreach_batch", "spin_up_project"]).optional(),
+      brief: z.string().max(10_000).optional(),
+      creators: z.array(z.record(z.string(), z.unknown())).max(8).optional(),
+      creator_user_id: z.string().uuid().optional(),
+      creator_name: z.string().max(200).optional(),
+      creator_avatar_url: z.string().url().max(2000).optional(),
+      project_title: z.string().max(200).optional(),
+      goal: z.string().max(10_000).optional(),
+      conversation_id: z.string().uuid().optional(),
+    }).strip().passthrough();
+    const body = await readJson(req, BodySchema, 64_000);
 
     // ============ APPROVAL PATH ============
     // Client calls back with { action_id, decision } to execute a previously-proposed action.
@@ -1306,7 +1322,7 @@ serve(async (req) => {
         .then(({ error }) => { if (error) console.error("[orchestrator] failed to mark run as failed", error); });
     }
     return new Response(
-      JSON.stringify({ error: message }),
+      JSON.stringify({ error: "Something went wrong" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
