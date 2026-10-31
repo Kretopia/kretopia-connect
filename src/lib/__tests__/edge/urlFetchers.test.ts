@@ -43,6 +43,14 @@ const requested = () => fetchMock.mock.calls.map((c) => String(c[0]));
 const INTERNAL = ["http://169.254.170.2/v2/credentials", "http://[::1]/admin", "http://[::ffff:127.0.0.1]/", "http://[::ffff:169.254.169.254]/latest/meta-data", "http://printer.local/"];
 
 describe("fetch-og-data", () => {
+  it("refuses a call with no Authorization header: 401, no request made", async () => {
+    const res = await world.handlers["fetch-og-data"](
+      new Request("https://fn.example", { method: "POST", body: JSON.stringify({ url: "https://good.example/article" }) }),
+    );
+    expect(res.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it.each(INTERNAL)("refuses %s with a 400 and makes no request", async (url) => {
     const res = await call("fetch-og-data", { url });
     expect(res.status).toBe(400);
