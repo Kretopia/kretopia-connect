@@ -12,21 +12,18 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { timingSafeEqualStr } from "./callerAuth.ts";
+import { corsFor } from "./guard.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-cron-secret, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+
 
 export type AdminGuardResult =
   | { ok: true; userId: string | null; viaCron: boolean }
   | { ok: false; response: Response };
 
-function deny(status: number, message: string): Response {
+function deny(status: number, message: string, req: Request): Response {
   return new Response(JSON.stringify({ error: message }), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsFor(req), "Content-Type": "application/json" },
   });
 }
 
@@ -41,7 +38,7 @@ export async function requireAdminOrCron(req: Request): Promise<AdminGuardResult
   // 2) Admin-user path
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return { ok: false, response: deny(401, "Unauthorized") };
+    return { ok: false, response: deny(401, "Unauthorized", req) };
   }
 
   const supabase = createClient(
@@ -53,7 +50,7 @@ export async function requireAdminOrCron(req: Request): Promise<AdminGuardResult
   const token = authHeader.replace("Bearer ", "");
   const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
   if (claimsErr || !claimsData?.claims?.sub) {
-    return { ok: false, response: deny(401, "Unauthorized") };
+    return { ok: false, response: deny(401, "Unauthorized", req) };
   }
   const userId = claimsData.claims.sub as string;
 
@@ -71,7 +68,7 @@ export async function requireAdminOrCron(req: Request): Promise<AdminGuardResult
     .maybeSingle();
 
   if (!roleRow) {
-    return { ok: false, response: deny(403, "Admin role required") };
+    return { ok: false, response: deny(403, "Admin role required", req) };
   }
 
   return { ok: true, userId, viaCron: false };
