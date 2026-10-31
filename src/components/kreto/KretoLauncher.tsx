@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { KretoTyping } from "@/components/brand/KretoTyping";
+import halloweenCompanion from "@/assets/kreto/halloween/kreto-halloween-companion.png.asset.json";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -68,7 +68,17 @@ export function KretoLauncher({ showOnMobile = false }: { showOnMobile?: boolean
       )}
     >
       <span className="absolute inset-x-2 bottom-0 h-5 rounded-full bg-primary/20 blur-lg transition-opacity group-hover:opacity-100" aria-hidden />
-      <KretoTyping autoPlay className="h-20 lg:h-24 drop-shadow-2xl" />
+      {/* Temporary Halloween artwork: same button, position and behaviour — only the mascot image changes. */}
+      <img
+        src={halloweenCompanion.url}
+        alt=""
+        width={96}
+        height={96}
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        className="h-20 w-20 lg:h-24 lg:w-24 select-none rounded-2xl object-cover drop-shadow-2xl"
+      />
       <span className="sr-only">Open Kreto</span>
     </Button>
   );
