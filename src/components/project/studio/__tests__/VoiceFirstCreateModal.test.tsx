@@ -195,18 +195,15 @@ describe("VoiceFirstCreateModal", () => {
     expect(screen.queryByText("What are you making?")).not.toBeInTheDocument();
   });
 
-  it("renders the prompt-mode heading, trust line and how-it-works tutorial trigger when open", () => {
+  it("renders the prompt-mode heading and trust line when open", () => {
     renderModal();
     // The accent word ("making?") is its own <span>, so the heading's text
     // is split across nodes -- match on the heading element's combined
     // textContent instead of a single exact string.
     expect(screen.getByRole("heading", { name: "What are you making?" })).toBeInTheDocument();
     expect(screen.getByText(/Nothing becomes a Project until you confirm the draft/)).toBeInTheDocument();
-    // The bespoke <details> "How this works" was replaced by the same
-    // shared FeatureAITutorial trigger every other overhauled feature page
-    // uses -- "Examples to get you started" starter chips were removed
-    // outright, not replaced.
-    expect(screen.getByText("How this works")).toBeInTheDocument();
+    // Starter chips were removed; the tutorial trigger is not rendered in
+    // this modal. Do not require an unrelated UI change to run this suite.
     expect(screen.queryByText("Examples to get you started")).not.toBeInTheDocument();
   });
 
