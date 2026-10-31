@@ -4,6 +4,7 @@ import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_share
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 function decodeHtml(text: string): string {
   if (!text) return text;
   return text

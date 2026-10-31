@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 
 
-import { corsFor, safeError } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 // Free exchange rate API (no key needed) with fallback rates
 const FALLBACK_RATES: Record<string, number> = {

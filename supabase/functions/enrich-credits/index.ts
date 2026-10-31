@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 // Extract YouTube video ID from various URL formats
 function extractYouTubeId(url: string): string | null {
   const patterns = [

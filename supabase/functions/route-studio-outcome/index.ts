@@ -18,6 +18,7 @@ import { DOC_INTENTS, routeByRules, type RoutedOutcome } from "../_shared/studio
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 const SYSTEM = `You are Kreto's Studio Outcome Router. The user is inside a Studio (a project workspace) and just told you what they want to make. Decide the OUTCOME to spin up and respond by calling the route_outcome tool.
 
 Outcomes you can return:

@@ -3,6 +3,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 function detectPlatform(url: string): { platform: string; instruction: string } {
   const u = url.toLowerCase();
   if (u.includes("behance.net")) return {

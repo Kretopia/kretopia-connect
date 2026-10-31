@@ -3,6 +3,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 interface DiscoveredProfile {
   name: string;
   role: string;

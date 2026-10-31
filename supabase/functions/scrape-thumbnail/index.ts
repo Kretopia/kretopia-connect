@@ -4,7 +4,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
-import { corsFor, safeError } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
 async function extractOgImage(url: string): Promise<string | null> {
   try {
     const res = await fetch(url, {

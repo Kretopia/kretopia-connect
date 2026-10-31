@@ -3,6 +3,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 const CREATOR_PLATFORM_PATTERNS = [
   /open\.spotify\.com\/artist/i,
   /spotify\.com\/artist/i,

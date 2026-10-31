@@ -3,6 +3,7 @@ import { GEMINI_3_1_FLASH_IMAGE } from "../_shared/aiModels.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {

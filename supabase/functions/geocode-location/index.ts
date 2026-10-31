@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireUser } from '../_shared/guard.ts';
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXRoYW5hdWd1c3RlIiwiYSI6ImNtZzhvbDk0dzAwaHYycnB6eWp4Zjh2OHAifQ.4uCSa5SdtxZAnC2Xvx6V5w';
 
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {

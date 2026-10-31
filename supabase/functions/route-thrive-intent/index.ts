@@ -5,6 +5,7 @@ import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 const SYSTEM = `You are Kreto's intent router. A creator types or speaks one short request. You decide what surface or workflow it maps to and reply by calling the route_intent tool.
 
 Intents you can return:

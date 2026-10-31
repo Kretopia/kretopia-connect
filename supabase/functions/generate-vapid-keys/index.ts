@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireServiceRole } from '../_shared/guard.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {

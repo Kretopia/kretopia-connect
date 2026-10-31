@@ -3,7 +3,7 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
-import { corsFor, safeError } from '../_shared/guard.ts';
+import { corsFor, safeError, requireUser } from '../_shared/guard.ts';
 import { createClient } from "npm:@supabase/supabase-js@2";
 // SSRF protection: blocked hosts
 const BLOCKED_HOSTS = [

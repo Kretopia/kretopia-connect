@@ -7,6 +7,7 @@ import { fetchAllRows } from "../_shared/weeklyEmail.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 // --- Speed notes -----------------------------------------------------------
 // A search used to be slow for two reasons, both on this server:
 //  1. Firecrawl was asked to SCRAPE the full page of up to 40 results

@@ -5,6 +5,7 @@ import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {

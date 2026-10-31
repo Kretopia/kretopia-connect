@@ -1,4 +1,5 @@
 import { corsFor } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 // Temporary music generation endpoint for the YC product video.
 // Calls ElevenLabs Music API and returns raw MP3 bytes.
 
