@@ -1,8 +1,8 @@
 // Notify all RSVPs about a Speed Session change or cancellation.
 // Body: { session_id: string, kind: "updated" | "canceled", changes?: string[], reason?: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import {
 import { corsFor } from '../_shared/guard.ts';
+import {
   SESSION_CANCEL_COOLDOWN_MS,
   SESSION_UPDATE_COOLDOWN_MS,
   cleanSessionChanges,

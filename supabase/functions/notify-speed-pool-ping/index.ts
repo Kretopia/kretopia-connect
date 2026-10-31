@@ -1,8 +1,8 @@
 // Host-only: ping everyone who RSVP'd but hasn't joined the pool yet.
 // Body: { session_id: string }
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import {
 import { corsFor } from '../_shared/guard.ts';
+import {
   SESSION_PING_COOLDOWN_MS,
   cooldownCutoffIso,
   countRecentSessionNotifications,

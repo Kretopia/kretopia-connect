@@ -1,11 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { corsFor } from '../_shared/guard.ts';
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
 import { cleanRecipientEmail } from "../_shared/outboundText.ts";
 import { hashInviteSecret, INVITE_PREVIEW_TOKEN_DAYS, newInviteSecret } from "../_shared/inviteSecret.ts";
 import {
-import { corsFor } from '../_shared/guard.ts';
   PROJECT_INVITES_PER_ACTOR_PER_HOUR,
   PROJECT_INVITES_PER_RECIPIENT_PER_HOUR,
   PROJECT_INVITE_TEMPLATE,
