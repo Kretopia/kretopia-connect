@@ -1,44 +1,39 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
+const BodySchema = z.object({
+  title: z.string().max(1000).optional(),
+  description: z.string().max(16000).optional(),
+  category: z.string().max(255).optional(),
+  type: z.string().max(100).optional(),
+});
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await requireAiCaller(req, 'enhance-listing-ai');
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("AI not configured");
 
-    let body: Record<string, unknown>;
-    try {
-      const text = await req.text();
-      body = text ? JSON.parse(text) : {};
-    } catch {
-      return new Response(JSON.stringify({ error: "Invalid request body" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { title, description, category, type } = body as {
-      title?: string; description?: string; category?: string; type?: string;
-    };
+    const { title, description, category, type } = await readJson(req, BodySchema);
 
     const systemPrompt = `You are a creative business copywriter for a professional creative platform.
 Your job is to enhance service/product listings to be more compelling, clear, and conversion-focused.
-Keep the tone professional but approachable. Be concise.`;
+Keep the tone professional but approachable. Be concise.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
-    const userPrompt = `Enhance this ${type || 'service'} listing:
+    const userPrompt = wrapUntrustedContent('listing input', `Enhance this ${type || 'service'} listing:
 Title: ${title || '(none provided)'}
 Description: ${description || '(none provided)'}
 Category: ${category || 'general'}
 
-Return the result using the enhance_listing function.`;
+Return the result using the enhance_listing function.`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -122,9 +117,6 @@ Return the result using the enhance_listing function.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("enhance-listing-ai error:", error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(error, req);
   }
 });
