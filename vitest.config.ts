@@ -38,6 +38,7 @@ export default defineConfig({
       // resolve even when a test mocks them. Tests that run an edge handler
       // (src/lib/__tests__/edge) point the specifier at a stub and then mock it.
       { find: /^npm:@supabase\/supabase-js@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/supabaseJsStub.ts") },
+      { find: "npm:zod@4", replacement: path.resolve(__dirname, "./node_modules/zod/index.js") },
     ],
   },
 });

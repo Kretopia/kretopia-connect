@@ -7,12 +7,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
+import { z } from "npm:zod@4";
+import { corsFor, readJson, safeError } from "../_shared/guard.ts";
+import { requireAiCaller } from "../_shared/aiPerimeter.ts";
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+const ProfileSchema = z.object({
+  full_name: z.string().max(255).nullish(), role: z.string().max(255).nullish(),
+  sub_roles: z.array(z.string().max(255)).max(50).nullish(), bio: z.string().max(16000).nullish(),
+  location: z.string().max(500).nullish(),
+  website: z.string().max(2048).nullish(), instagram_url: z.string().max(2048).nullish(),
+  youtube_url: z.string().max(2048).nullish(), tiktok_url: z.string().max(2048).nullish(),
+  spotify_url: z.string().max(2048).nullish(), soundcloud_url: z.string().max(2048).nullish(),
+  imdb_url: z.string().max(2048).nullish(), behance_url: z.string().max(2048).nullish(),
+  vimeo_url: z.string().max(2048).nullish(), linkedin_url: z.string().max(2048).nullish(),
+});
+const BodySchema = z.object({ profile: ProfileSchema });
 
 const PROFESSION_KEYS = [
   "model",
@@ -42,10 +52,12 @@ Archetypes (pick exactly one key):
 Return JSON: { "profession": <key>, "confidence": 0-1, "reasoning": "<one short sentence>" }`;
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { profile } = await req.json();
+    await requireAiCaller(req, "infer-passport-profession");
+    const { profile } = await readJson(req, BodySchema);
     if (!profile) {
       return new Response(JSON.stringify({ error: "profile required" }), {
         status: 400,
@@ -86,8 +98,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: GEMINI_FLASH_LITE,
         messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: `Profile:\n${JSON.stringify(snapshot, null, 2)}` },
+          { role: "system", content: SYSTEM + PROMPT_INJECTION_DEFENSE_CLAUSE },
+          { role: "user", content: wrapUntrustedContent("profile snapshot", JSON.stringify(snapshot, null, 2)) },
         ],
         response_format: { type: "json_object" },
         max_tokens: TOKENS_SHORT_LABEL,
@@ -128,11 +140,7 @@ serve(async (req) => {
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (e: any) {
-    console.error("[infer-passport-profession]", e);
-    return new Response(JSON.stringify({ error: e?.message || "unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (e) {
+    return safeError(e, req);
   }
 });

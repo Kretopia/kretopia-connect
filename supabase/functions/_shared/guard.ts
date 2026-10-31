@@ -34,7 +34,7 @@ export function corsFor(req: Request): Record<string, string> {
 }
 
 interface AuthAdmin {
-  auth: { getUser(token: string): Promise<{ data: { user: { id: string; [key: string]: unknown } | null }; error: unknown }> };
+  auth: { getUser(token: string): Promise<{ data: { user: { id: string } | null }; error: unknown }> };
 }
 interface RateAdmin {
   rpc(name: string, args: Record<string, unknown>): PromiseLike<{ data: unknown; error: unknown }>;

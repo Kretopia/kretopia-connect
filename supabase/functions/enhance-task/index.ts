@@ -4,25 +4,28 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
+import { z } from "npm:zod@4";
+import { corsFor, readJson, safeError } from "../_shared/guard.ts";
+import { requireAiCaller } from "../_shared/aiPerimeter.ts";
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
-
-interface Collaborator {
-  id: string;
-  full_name: string;
-  role?: string | null;
-}
+const BodySchema = z.object({
+  raw_title: z.string().trim().min(1).max(4000),
+  existing_description: z.string().max(16000).nullish(),
+  project_title: z.string().max(1000).nullish(),
+  project_description: z.string().max(16000).nullish(),
+  collaborators: z.array(z.object({ id: z.string().uuid(), full_name: z.string().max(255), role: z.string().max(255).nullish() })).max(100).default([]),
+  today_iso: z.iso.date().optional(),
+});
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    await requireAiCaller(req, "enhance-task");
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -33,14 +36,7 @@ serve(async (req) => {
       project_description,
       collaborators = [],
       today_iso,
-    }: {
-      raw_title: string;
-      existing_description?: string | null;
-      project_title?: string | null;
-      project_description?: string | null;
-      collaborators?: Collaborator[];
-      today_iso?: string;
-    } = await req.json();
+    } = await readJson(req, BodySchema);
 
     if (!raw_title || !raw_title.trim()) {
       return new Response(JSON.stringify({ error: "raw_title is required" }), {
@@ -57,11 +53,11 @@ serve(async (req) => {
     const systemPrompt = `You are a senior creative producer. A creative founder just typed a quick, rough task. Your job is to enhance it into a clear, actionable task without changing its meaning.
 
 Today is ${today}.
-${project_title ? `Project: "${project_title}"` : ""}
-${project_description ? `Project context: ${project_description}` : ""}
+${project_title ? wrapUntrustedContent("project title", project_title) : ""}
+${project_description ? wrapUntrustedContent("project context", project_description) : ""}
 
 Available collaborators (only use these exact ids for assignee_user_id):
-${collabList}
+${wrapUntrustedContent("collaborator records", collabList)}
 
 Rules:
 - title: concise, imperative, max 80 chars (e.g. "Send shot list to Maya"). Keep the user's intent. Don't include the assignee name in the title.
@@ -70,9 +66,9 @@ Rules:
 - priority: "low" | "normal" | "high" | "urgent". Infer from words like "urgent/asap/blocking" → urgent; "important/priority" → high; otherwise "normal". Default "normal".
 - assignee_user_id: match spoken names against the collaborator list (fuzzy, first-name OK). Null if no name said or no match.
 
-Always call the enhance_task tool. Never reply in plain text.`;
+Always call the enhance_task tool. Never reply in plain text.${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
-    const userMsg = `Raw task: "${raw_title.trim()}"${existing_description ? `\nExisting description: ${existing_description}` : ""}`;
+    const userMsg = wrapUntrustedContent("task input", `Raw task: "${raw_title.trim()}"${existing_description ? `\nExisting description: ${existing_description}` : ""}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -126,10 +122,7 @@ Always call the enhance_task tool. Never reply in plain text.`;
     if (!response.ok) {
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error", detail: t }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return safeError(new Error("AI gateway request failed"), req);
     }
 
     const data = await response.json();
@@ -147,10 +140,6 @@ Always call the enhance_task tool. Never reply in plain text.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("enhance-task error:", e);
-    return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    return safeError(e, req);
   }
 });

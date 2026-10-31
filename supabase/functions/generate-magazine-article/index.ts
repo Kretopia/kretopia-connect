@@ -1,16 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
+import { z } from "npm:zod@4";
+import { corsFor, readJson, safeError } from "../_shared/guard.ts";
+import { requireAiCaller } from "../_shared/aiPerimeter.ts";
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const BodySchema = z.object({ title: z.string().trim().min(1).max(500), category: z.string().max(100).nullish() });
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { title, category } = await req.json();
+    await requireAiCaller(req, "generate-magazine-article");
+    const { title, category } = await readJson(req, BodySchema);
     if (!title) {
       return new Response(JSON.stringify({ error: "Title is required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -45,11 +48,11 @@ Structure every article with:
 4. Practical tips, strategies, or steps the reader can apply immediately
 5. A strong closing that inspires action
 
-Articles should be 500-900 words. Write in markdown. Make every word count — no filler.`,
+Articles should be 500-900 words. Write in markdown. Make every word count — no filler.${PROMPT_INJECTION_DEFENSE_CLAUSE}`,
           },
           {
             role: "user",
-            content: `Write a ${category || "inspiration"} article titled: "${title}".
+            content: `Article brief: ${wrapUntrustedContent("article title and category", JSON.stringify({ title, category: category || "inspiration" }))}
 
 Requirements:
 - A compelling one-sentence subtitle
@@ -98,9 +101,8 @@ Requirements:
       return new Response(JSON.stringify(parsed), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ error: "Failed to generate" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return safeError(new Error("Failed to generate"), req);
   } catch (e) {
-    console.error("generate-magazine-article error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return safeError(e, req);
   }
 });
