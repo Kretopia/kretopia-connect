@@ -1,12 +1,12 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 
-const corsHeaders = adminGuardCorsHeaders;
 
 // Trinidad timezone for formatting
 const EVENT_TIMEZONE = 'America/Port_of_Spain'
 
 Deno.serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }

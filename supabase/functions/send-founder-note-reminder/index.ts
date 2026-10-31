@@ -5,7 +5,6 @@ import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guar
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const baseUrl = "https://www.kretopia.com";
 
@@ -13,6 +12,7 @@ const baseUrl = "https://www.kretopia.com";
 // Triggered by pg_cron Sundays at 18:00 UTC. Also callable by admins for preview.
 
 serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {

@@ -74,4 +74,4 @@ export async function requireAdminOrCron(req: Request): Promise<AdminGuardResult
   return { ok: true, userId, viaCron: false };
 }
 
-export const adminGuardCorsHeaders = corsHeaders;
+export function adminGuardCorsHeaders(req: Request): Record<string, string> { return corsFor(req); }

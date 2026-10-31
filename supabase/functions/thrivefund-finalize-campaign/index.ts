@@ -15,12 +15,12 @@ import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 import { summarizeFinalization, toCents, verifyPledgeAuthorization, type PledgeVerdict } from "../_shared/pledgeVerification.ts";
 
-const corsHeaders = adminGuardCorsHeaders;
 
 const log = (s: string, d?: any) =>
   console.log(`[THRIVEFUND-FINALIZE] ${s}${d ? ` - ${JSON.stringify(d)}` : ""}`);
 
 serve(async (req) => {
+  const corsHeaders = adminGuardCorsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
