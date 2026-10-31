@@ -57,6 +57,13 @@
       "when": 1793342575784,
       "tag": "0007_provider_usage_receipts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793473722398,
+      "tag": "0008_revoke_username_attempt_public_exec",
+      "breakpoints": true
     }
   ]
 }
