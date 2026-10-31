@@ -1,16 +1,19 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { z } from 'npm:zod@4';
+import { corsFor, readJson, safeError } from '../_shared/guard.ts';
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from '../_shared/promptIsolation.ts';
+const BodySchema = z.object({ brief: z.string().max(24000).nullish(), project_title: z.string().max(1000).nullish(), brand_name: z.string().max(1000).nullish(), objective: z.string().max(4000).nullish(), audience: z.string().max(4000).nullish(), tone: z.string().max(1000).nullish() });
 
 serve(async (req) => {
+  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { brief, project_title, brand_name, objective, audience, tone } = await req.json();
+    await requireAiCaller(req, 'gen-campaign-matrix');
+    const { brief, project_title, brand_name, objective, audience, tone } = await readJson(req, BodySchema);
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
@@ -30,8 +33,8 @@ ${brief || "(no brief)"}`;
       body: JSON.stringify({
         model: GEMINI_FLASH,
         messages: [
-          { role: "system", content: sys },
-          { role: "user", content: user },
+          { role: "system", content: sys + PROMPT_INJECTION_DEFENSE_CLAUSE },
+          { role: "user", content: wrapUntrustedContent("production input", user) },
         ],
         tools: [{
           type: "function",
@@ -79,10 +82,6 @@ ${brief || "(no brief)"}`;
     const args = call?.function?.arguments ? JSON.parse(call.function.arguments) : { assets: [] };
     return new Response(JSON.stringify(args), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
-    console.error("gen-campaign-matrix", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return safeError(e, req);
   }
 });
