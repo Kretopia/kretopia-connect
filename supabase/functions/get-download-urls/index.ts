@@ -7,9 +7,9 @@ import {
   ENTITLED_ORDER_STATUSES,
   decideLegacyPurchase,
   orderGrantsFiles,
-import { corsFor }
-import { publicPerimeter } from '../_shared/publicPerimeter.ts'; from '../_shared/guard.ts';
 } from "../_shared/purchaseEntitlement.ts";
+import { corsFor } from '../_shared/guard.ts';
+import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 
 
 serve(async (req) => {

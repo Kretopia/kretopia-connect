@@ -1,11 +1,10 @@
-// Background import { requireServiceRole } from "../_shared/guard.ts";
-import worker. Processes a bounded batch then re-invokes itself.
+// Background import worker. Processes a bounded batch then re-invokes itself.
 // Invoked with the service-role key only (never from the browser).
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { sortForWrite, writeObject } from "../_shared/import/writer.ts";
 import type { Mapping, SourceObject } from "../_shared/import/types.ts";
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireServiceRole } from '../_shared/guard.ts';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

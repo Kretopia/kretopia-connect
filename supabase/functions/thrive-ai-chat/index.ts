@@ -16,9 +16,8 @@ import {
   commitAiCredit,
   releaseAiCredit,
   type AiCreditFeature,
-import { corsFor }
-import { corsFor, constantTimeEqual, safeError } from '../_shared/guard.ts'; from '../_shared/guard.ts';
 } from "../_shared/aiRateLimit.ts";
+import { corsFor, constantTimeEqual, safeError } from '../_shared/guard.ts';
 
 // Anonymous callers share one bucket so unauthenticated chat still passes
 // through the same gate and the same global envelope.
