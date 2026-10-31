@@ -51,7 +51,7 @@ describe('public search provider boundary', () => {
   it('strips unknown fields before spending and provider work', async () => {
     world.fetch.mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
     const response = await world.handlers['public-digital-presence'](request({ query: 'Creator', admin: true, limit: 999, url: 'https://evil.test' }));
-    expect(response.status).toBe(200);
+    expect(response.status, JSON.stringify(vi.mocked(console.error).mock.calls.map(call => call.map(value => value instanceof Error ? value.message : value)))).toBe(200);
     expect(JSON.parse(world.fetch.mock.calls[0][1].body)).toEqual({ query: 'Creator', limit: 20 });
   });
 });
