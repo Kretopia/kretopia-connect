@@ -7,7 +7,8 @@ vi.mock("../../../../supabase/functions/_shared/embed.ts", () => ({ embedText: a
 const KEY = "service-key";
 const ENV: Record<string, string> = { SUPABASE_URL: "https://x.supabase.co", SUPABASE_SERVICE_ROLE_KEY: KEY, DAILY_API_KEY: "daily-key", LOVABLE_API_KEY: "ai-key" };
 beforeAll(async () => {
-  (globalThis as any).Deno = { env: { get: (k: string) => ENV[k] } };
+  (AbortSignal as any).timeout ??= () => new AbortController().signal;
+  (globalThis as any).Deno ={ env: { get: (k: string) => ENV[k] } };
   await import("../../../../supabase/functions/transcribe-call/index.ts");
 });
 it("repro too_large", async () => {
