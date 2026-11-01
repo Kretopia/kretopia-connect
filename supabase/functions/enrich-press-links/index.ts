@@ -1,8 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 
-import { corsFor } from '../_shared/guard.ts';
-import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { corsFor, GuardError } from '../_shared/guard.ts';
+import { resolveEnrichmentCaller } from '../_shared/enrichmentCaller.ts';
+import { decideEnrichmentTarget, isProfileId } from '../_shared/enrichmentAccess.ts';
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -10,17 +11,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await requireAiCaller(req, "enrich-press-links");
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
     const supabase = createClient(supabaseUrl, serviceKey);
+
+    // Who is asking: a member (their own profile; any profile for an admin) or the platform.
+    const caller = await resolveEnrichmentCaller(req, "enrich-press-links", supabase);
 
     const { user_id, scrape_website } = await req.json();
 
     if (!user_id) {
       return new Response(JSON.stringify({ error: 'user_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    // Whose profile it is is decided before any page is fetched (_shared/enrichmentAccess.ts).
+    const { data: target } = isProfileId(user_id)
+      ? await supabase.from('profiles').select('user_id').eq('user_id', user_id).maybeSingle()
+      : { data: null };
+    const access = decideEnrichmentTarget({ caller, targetUserId: user_id, profile: target });
+    if (!access.ok) {
+      return new Response(JSON.stringify({ error: access.error }), {
+        status: access.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -165,6 +178,8 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    // A refused session or an exceeded limit is a 401 or a 429, not an internal error.
+    if (error instanceof GuardError) return error.response(req);
     console.error('Error in enrich-press-links:', error);
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

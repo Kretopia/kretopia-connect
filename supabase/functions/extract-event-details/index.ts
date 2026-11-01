@@ -2,9 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH, GEMINI_FLASH_IMAGE } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
+import { FetchPolicyError, safeFetchBounded } from "../_shared/ssrf.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+// Reasons a member's link is refused outright: it names something this server must never fetch (or cannot fetch at all).
+const REFUSED_LINK = new Set(["bad_url", "scheme", "credentials", "port", "blocked_host", "blocked_address", "unresolvable"]);
+
 const json = (corsHeaders: Record<string, string>, body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -46,18 +50,27 @@ serve(async (req) => {
       return json(corsHeaders, { error: "Provide text, screenshot, or a URL" }, 400);
     }
 
+    if (source_url !== undefined && source_url !== null && (typeof source_url !== "string" || source_url.length > 2000)) {
+      return json(corsHeaders, { error: "source_url must be a link" }, 400);
+    }
+
     // 1. If URL provided, try to scrape its visible text (best-effort).
     let scrapedText = "";
     if (source_url) {
-      // 1a. Try a plain fetch first (fast, free).
+      // 1a. Try a plain fetch first (fast, free). The address is typed by the member and this server fetches it: https only, no
+      // credentials, no unusual port, nothing private, loopback or metadata, every redirect re-checked, a page-sized body
+      // (_shared/ssrf.ts). A link that fails the policy is refused here instead of being handed on to the scraper.
       try {
-        const r = await fetch(source_url, {
-          headers: { "User-Agent": "Mozilla/5.0 ThriveINBot/1.0" },
-          signal: AbortSignal.timeout(10000),
+        const page = await safeFetchBounded(source_url, {
+          httpsOnly: true,
+          allowedPorts: [443],
+          maxRedirects: 2,
+          timeoutMs: 10_000,
+          maxBytes: 600_000,
+          allowedMime: ["text/html", "application/xhtml+xml", "text/plain"],
         });
-        if (r.ok) {
-          const html = await r.text();
-          scrapedText = html
+        if (page.status >= 200 && page.status < 300) {
+          scrapedText = page.text
             .replace(/<script[\s\S]*?<\/script>/gi, " ")
             .replace(/<style[\s\S]*?<\/style>/gi, " ")
             .replace(/<[^>]+>/g, " ")
@@ -66,7 +79,10 @@ serve(async (req) => {
             .slice(0, 8000);
         }
       } catch (e) {
-        console.warn("Raw fetch failed (non-fatal):", e);
+        if (e instanceof FetchPolicyError && REFUSED_LINK.has(e.code)) {
+          return json(corsHeaders, { error: "That link cannot be read. Use a public https link to the event page." }, 400);
+        }
+        console.warn("Raw fetch failed (non-fatal):", e instanceof Error ? e.message : e);
       }
 
       // 1b. If the page is a JS SPA (sparse text or missing date/time signals), fall back to Firecrawl.

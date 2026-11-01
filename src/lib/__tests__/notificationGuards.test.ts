@@ -290,7 +290,11 @@ describe("function wiring", () => {
     const claim = s.indexOf(".or(`reminder_sent_at.is.null,reminder_sent_at.lt.${cutoff}`)");
     const sending = s.indexOf('status: "sending"');
     const smtp = s.indexOf("new SMTPClient(");
-    const release = s.indexOf("releaseInvoiceClaim?.()");
+    // The claim is also given back when the send could not be recorded (before the mail library is reached), so the release
+    // that matters here is the one that follows the mail library's failure.
+    const release = s.indexOf("releaseInvoiceClaim?.()", smtp);
+    expect(s.indexOf("releaseInvoiceClaim?.()")).toBeGreaterThan(claim);
+    expect(s.indexOf("releaseInvoiceClaim?.()")).toBeLessThan(smtp);
     expect(alreadySent).toBeGreaterThan(-1);
     expect(source).toBeGreaterThan(alreadySent);
     expect(owner).toBeGreaterThan(source);

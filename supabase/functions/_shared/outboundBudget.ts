@@ -16,6 +16,8 @@
 
 export const PROJECT_INVITE_TEMPLATE = "project-invitation-direct";
 export const OUTREACH_TEMPLATE = "outreach-direct";
+/** Outreach sent through the member's own Gmail (send-outreach-draft): its own rows, the same limits as OUTREACH_TEMPLATE. */
+export const OUTREACH_GMAIL_TEMPLATE = "outreach-gmail-direct";
 export const EVENT_INVITE_TEMPLATE = "event-invite-direct";
 
 export const PROJECT_INVITES_PER_ACTOR_PER_HOUR = 20;

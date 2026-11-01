@@ -1,17 +1,17 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
-
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
-function jsonResponse(data: Record<string, unknown>, status = 200): Response {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
-}
 
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function jsonResponse(data: Record<string, unknown>, status = 200): Response {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })

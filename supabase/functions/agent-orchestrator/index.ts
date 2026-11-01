@@ -25,6 +25,7 @@ import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
 import { z } from "npm:zod@^4.4.3";
 import { corsFor, constantTimeEqual, readJson } from '../_shared/guard.ts';
+import { editedArgsKeepTargets, stripReservedKeys } from '../_shared/approvalHardening.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -716,6 +717,16 @@ serve(async (req) => {
           });
         }
         tool = t as Tool;
+
+        // An approval may edit what a tool says, not what a destructive tool acts on: "remove Alice" approved with the person
+        // changed to Bob would run something nobody was shown. Checked before the claim, like the lookups above.
+        const edit = editedArgsKeepTargets(action.tool_name, action.tool_args, edited_args);
+        if (!edit.ok) {
+          return new Response(JSON.stringify({ error: `This action's ${edit.field} cannot be changed when approving it` }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       // The status check above is a fast, friendly early-out -- it isn't the
@@ -741,11 +752,13 @@ serve(async (req) => {
         });
       }
 
-      await admin.from("orch_approvals").insert({
+      // Edited arguments are data: no field in them carries authority downstream (_tool, _source, _agent_action_id).
+      const cleanEdited = edited_args ? stripReservedKeys(edited_args) : null;
+      const { error: approvalErr } = await admin.from("orch_approvals").insert({
         action_id,
         user_id: userId,
         decision,
-        edited_args: edited_args ?? null,
+        edited_args: cleanEdited,
         note: note ?? null,
       });
 
@@ -755,10 +768,20 @@ serve(async (req) => {
         });
       }
 
+      // The handlers of the irreversible tools re-check the approval RECORD. If it was not written, nothing may run on a
+      // status alone: put the action back so it can be approved again, instead of leaving it 'approved' with no record.
+      if (approvalErr) {
+        await admin.from("orch_actions").update({ status: "proposed", decided_at: null }).eq("id", action_id).eq("status", "approved");
+        return new Response(JSON.stringify({ error: "Could not record the approval; nothing was run" }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // Approved (possibly edited) — execute now. This request holds the
       // claim (status is 'approved', not 'proposed') so it's the only one
       // that will ever call executeAction for this action_id.
-      const argsToRun = edited_args ?? action.tool_args;
+      const argsToRun = cleanEdited ?? action.tool_args;
 
       const result = await executeAction(action_id, userId, tool as Tool, argsToRun, authHeader);
       await admin

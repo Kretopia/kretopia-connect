@@ -8,7 +8,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-
 import { corsFor } from '../_shared/guard.ts';
 const SYSTEM = `You are "Producer", Kretopia's clip-generation specialist for creators.
 Given a podcast/video transcript, propose 3-5 short, scroll-stopping clips for social.
@@ -43,6 +42,13 @@ No prose, no markdown, JSON only.`;
 
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function json(b: unknown, s = 200) {
+    return new Response(JSON.stringify(b), {
+      status: s,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const body = await req.json().catch(() => ({}));
@@ -147,9 +153,3 @@ ${transcript.slice(0, 18000)}`;
   }
 });
 
-function json(b: unknown, s = 200) {
-  return new Response(JSON.stringify(b), {
-    status: s,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}

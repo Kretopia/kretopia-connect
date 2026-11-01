@@ -5,6 +5,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { checkPlanStep, HANDLER_PATTERN, internalToolBody, stripReservedKeys, type RegistryTool } from '../_shared/approvalHardening.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -167,7 +168,9 @@ async function dispatchStep(
   projectId: string | null,
   userId: string,
 ): Promise<{ ok: boolean; result?: unknown; error?: string }> {
-  const args = normalizeStepArgs(step, resolvePlaceholders(step.args, completed) as Record<string, unknown>, projectId);
+  // Arguments come from a stored plan (model output). Fields that carry authority (_tool, _source, _agent_action_id) are set
+  // below by this function and nowhere else.
+  const args = normalizeStepArgs(step, stripReservedKeys(resolvePlaceholders(step.args, completed)), projectId);
 
   if (step.tool_name === "create_project") {
     return await createProjectForPlan(args, userId);
@@ -187,8 +190,6 @@ async function dispatchStep(
     args.target_project_id = projectId;
   }
 
-  // Pass tool name marker so multi-tool handlers route internally
-  (args as any)._tool = step.tool_name;
   if (step.handler === "scope-guardian" && !(args as any).action) {
     (args as any).action = step.tool_name;
   }
@@ -196,13 +197,18 @@ async function dispatchStep(
   if (!step.handler) {
     return { ok: false, error: `No handler registered for ${step.tool_name}` };
   }
+  // The handler is one path segment of our own functions (the run already checked it against the registry).
+  if (!HANDLER_PATTERN.test(step.handler)) {
+    return { ok: false, error: `Handler for ${step.tool_name} is not a valid function name` };
+  }
 
   try {
     const url = `${SUPABASE_URL}/functions/v1/${step.handler}`;
     const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: authHeader },
-      body: JSON.stringify(args),
+      // The tool name marker routes multi-tool handlers; the caller kind is the plan executor, written here and last.
+      body: JSON.stringify(internalToolBody({ tool: step.tool_name, args, source: "agent_orchestrator" })),
     });
     const text = await resp.text();
     let parsed: unknown = text;
@@ -245,9 +251,13 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const planId: string = body.plan_id;
-    const decision: "approved" | "rejected" = body.decision ?? "approved";
+    // A decision is a person's act: a request that does not state one runs nothing (it used to default to "approved").
+    const decision = body.decision;
     const skipIndices: number[] = Array.isArray(body.skip_indices) ? body.skip_indices.map((n: any) => Number(n)) : [];
     if (!planId) return json(corsHeaders, { error: "plan_id required" }, 400);
+    if (decision !== "approved" && decision !== "rejected") {
+      return json(corsHeaders, { error: "decision must be 'approved' or 'rejected'" }, 400);
+    }
 
     const { data: plan, error: planErr } = await admin
       .from("copilot_plans")
@@ -261,17 +271,49 @@ Deno.serve(async (req) => {
     }
 
     if (decision === "rejected") {
-      await admin
+      // Conditional, like the claim below: a plan another request already started is not cancelled underneath it.
+      const { data: cancelled, error: cancelErr } = await admin
         .from("copilot_plans")
         .update({ status: "cancelled", completed_at: new Date().toISOString() })
-        .eq("id", planId);
+        .eq("id", planId)
+        .eq("user_id", userId)
+        .in("status", ["proposed", "approved"])
+        .select("id");
+      if (cancelErr) return json(corsHeaders, { error: "Could not update the plan" }, 503);
+      if (!cancelled || cancelled.length === 0) return json(corsHeaders, { error: "Plan already decided or running" }, 409);
       return json(corsHeaders, { ok: true, status: "cancelled" });
     }
 
-    // Mark running
-    await admin.from("copilot_plans").update({ status: "running", current_step: 0 }).eq("id", planId);
-
     const steps: Step[] = (plan.steps as Step[]) ?? [];
+
+    // The plan row is data its owner can write; what each step may run is decided by the registry, not by the row.
+    // Checked before anything is claimed or run, so a refused plan changes nothing.
+    const toRun = steps.filter((s) => !skipIndices.includes(s.index));
+    const toolNames = [...new Set(toRun.map((s) => (typeof s.tool_name === "string" ? s.tool_name : "")))].filter(Boolean);
+    const { data: registryRows, error: registryErr } = toolNames.length
+      ? await admin.from("orch_tool_registry").select("tool_name, handler, risk_level, enabled").in("tool_name", toolNames)
+      : { data: [] as RegistryTool[], error: null };
+    // A failed lookup must not read as "nothing is locked": no execution.
+    if (registryErr) return json(corsHeaders, { error: "Could not verify the plan's tools" }, 503);
+    const registry = new Map<string, RegistryTool>((registryRows ?? []).map((r: RegistryTool) => [String(r.tool_name), r]));
+    for (const step of toRun) {
+      const verdict = checkPlanStep(step, registry);
+      if (!verdict.ok) {
+        return json(corsHeaders, { error: `Step ${Number(step.index) + 1} cannot run: ${verdict.reason}`, reason: verdict.reason }, 403);
+      }
+    }
+
+    // One plan, one run: claim it by compare-and-set before the first step. Two requests for the same plan (a double tap, a
+    // retry, a replay) used to both read "proposed" and both run every step; only the request whose UPDATE matches a row proceeds.
+    const { data: claimed, error: startErr } = await admin
+      .from("copilot_plans")
+      .update({ status: "running", current_step: 0 })
+      .eq("id", planId)
+      .eq("user_id", userId)
+      .in("status", ["proposed", "approved"])
+      .select("id");
+    if (startErr) return json(corsHeaders, { error: "Could not start the plan" }, 503);
+    if (!claimed || claimed.length === 0) return json(corsHeaders, { error: "Plan already decided or running" }, 409);
     const completed: Step[] = [];
     let currentProjectId: string | null = plan.project_id ?? null;
     let failed = false;

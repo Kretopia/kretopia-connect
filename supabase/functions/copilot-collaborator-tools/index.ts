@@ -285,6 +285,28 @@ async function addCollaborator(corsHeaders: Record<string, string>, userId: stri
     .maybeSingle();
   const inviteeName = invitee?.full_name ?? "New collaborator";
 
+  // Shared authority check -- see _shared/agentAuthority.ts and remove_collaborator below. Giving someone full access to a
+  // project (chat, files, tasks, calls) and notifying them is what an approval for add_collaborator covers, so it covers THIS
+  // person on THIS project, once. Before this the handler checked ownership only: an agent that reached it without the
+  // approval flow, or an approval used a second time after the person was removed, added them again.
+  const approvedByAction = typeof body._agent_action_id === "string" && body._agent_action_id.trim() !== "";
+  if (approvedByAction && resolvedUserId !== newUserId) {
+    // The name fallback above picked a different person than the one that was approved: nothing is added.
+    return json(corsHeaders, { ok: false, error: "The approved action names a different person than the one this request resolves to." }, 409);
+  }
+  const authz = await authorizeHighStakesAction({
+    admin,
+    userId,
+    toolName: "add_collaborator",
+    source: body._source,
+    agentActionId: body._agent_action_id,
+    targets: {
+      project: { request: projectId, approvedKeys: ["project_id", "target_project_id"] },
+      collaborator: { request: newUserId, approvedKeys: ["user_id_to_add", "user_id"] },
+    },
+  });
+  if (!authz.ok) return json(corsHeaders, { ok: false, error: authz.error }, authz.status);
+
   // Insert as ACCEPTED (Auto-Accept pattern from Projects Workspace memory)
   const { data: row, error: insErr } = await admin
     .from("project_collaborators")
@@ -298,7 +320,19 @@ async function addCollaborator(corsHeaders: Record<string, string>, userId: stri
     })
     .select("id, role, status")
     .single();
-  if (insErr) return json(corsHeaders, { ok: false, error: insErr.message }, 500);
+  if (insErr) {
+    await authz.release?.();
+    await recordExecutedAction({
+      admin, userId, toolName: "add_collaborator", toolArgs: body, source: authz.source,
+      ok: false, error: insErr.message, previewTitle: `Add ${inviteeName} to "${project.title}"`,
+    });
+    return json(corsHeaders, { ok: false, error: insErr.message }, 500);
+  }
+  await recordExecutedAction({
+    admin, userId, toolName: "add_collaborator", toolArgs: body, source: authz.source,
+    ok: true, result: { project_id: projectId, added_user_id: resolvedUserId },
+    previewTitle: `Add ${inviteeName} to "${project.title}"`,
+  });
 
   // Post a system message in project chat (best-effort; don't fail the add)
   try {

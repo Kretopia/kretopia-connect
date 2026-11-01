@@ -18,6 +18,20 @@ interface AssistBody {
 
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  async function passthroughError(r: Response) {
+    if (r.status === 429) return json({ error: "Rate limited. Please try again in a moment." }, 429);
+    if (r.status === 402) return json({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }, 402);
+    const t = await r.text();
+    console.error("AI gateway error", r.status, t);
+    return json({ error: "AI gateway error" }, 502);
+  }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
@@ -157,17 +171,3 @@ Deno.serve(async (req) => {
   }
 });
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
-
-async function passthroughError(r: Response) {
-  if (r.status === 429) return json({ error: "Rate limited. Please try again in a moment." }, 429);
-  if (r.status === 402) return json({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }, 402);
-  const t = await r.text();
-  console.error("AI gateway error", r.status, t);
-  return json({ error: "AI gateway error" }, 502);
-}

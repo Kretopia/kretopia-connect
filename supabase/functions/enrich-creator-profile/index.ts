@@ -3,8 +3,9 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
-import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { corsFor, GuardError } from '../_shared/guard.ts';
+import { resolveEnrichmentCaller } from '../_shared/enrichmentCaller.ts';
+import { decideEnrichmentTarget, isProfileId } from '../_shared/enrichmentAccess.ts';
 function decodeHtml(text: string): string {
   if (!text) return text;
   return text
@@ -77,17 +78,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await requireAiCaller(req, "enrich-creator-profile");
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
     const lovableKey = Deno.env.get('LOVABLE_API_KEY');
     const supabase = createClient(supabaseUrl, serviceKey);
 
+    // Who is asking: a member (their own profile; any profile for an admin) or the platform (batch-enrich-profiles).
+    const caller = await resolveEnrichmentCaller(req, "enrich-creator-profile", supabase);
+
     const { user_id, scrape_website, skip_credits } = await req.json();
     if (!user_id) {
       return new Response(JSON.stringify({ error: 'user_id required' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    // Whose profile it is is decided before any page is fetched or any model is called (_shared/enrichmentAccess.ts).
+    const { data: target } = isProfileId(user_id)
+      ? await supabase.from('profiles').select('user_id').eq('user_id', user_id).maybeSingle()
+      : { data: null };
+    const access = decideEnrichmentTarget({ caller, targetUserId: user_id, profile: target });
+    if (!access.ok) {
+      return new Response(JSON.stringify({ error: access.error }), {
+        status: access.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
 
@@ -527,6 +540,8 @@ CRITICAL RULES:
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   } catch (error) {
+    // A refused session or an exceeded limit is a 401 or a 429, not an internal error.
+    if (error instanceof GuardError) return error.response(req);
     console.error('Error in enrich-creator-profile:', error);
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }

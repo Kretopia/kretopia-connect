@@ -9,7 +9,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { bindApprovedAction } from "../_shared/agentActionBinding.ts";
 import { INVOICE_CHASE_COOLDOWN_MS, cooldownCutoffIso, decideInvoiceChase } from "../_shared/notificationGuards.ts";
-
+import { cleanRecipientEmail, escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
+import {
+  OUTREACH_GMAIL_TEMPLATE,
+  OUTREACH_PER_ACTOR_PER_HOUR,
+  OUTREACH_PER_RECIPIENT_PER_HOUR,
+  countActorSends,
+  countRecipientSends,
+  decideSendBudget,
+  recordActorSend,
+} from "../_shared/outboundBudget.ts";
 
 import { corsFor } from '../_shared/guard.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -18,6 +27,13 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
 serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function json(data: unknown, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -131,6 +147,16 @@ serve(async (req) => {
       return json({ error: "No recipient email on draft. Add one then retry." }, 400);
     }
 
+    // One plain address and a one-line subject, decided before anything is claimed or sent: the recipient was passed to the
+    // mail library as typed (a list, or a line break and a Bcc header), and so was the subject.
+    const cleanRecipient = cleanRecipientEmail(recipient);
+    if (!cleanRecipient) {
+      await admin.from("outreach_drafts").update({ status: "failed", send_error: "Invalid recipient email" }).eq("id", draftId);
+      return json({ error: "The recipient must be one valid email address." }, 400);
+    }
+    const subject = singleLine(draft.subject, 200);
+    if (!subject) return json({ error: "The draft has no subject." }, 400);
+
     const { data: settings } = await admin
       .from("user_email_settings")
       .select("provider, gmail_email, gmail_app_password, is_configured")
@@ -141,6 +167,20 @@ serve(async (req) => {
       await admin.from("outreach_drafts").update({ status: "failed", send_error: "Gmail not connected" }).eq("id", draftId);
       return json({ error: "Connect your Gmail in Outreach settings first." }, 400);
     }
+
+    // Volume: the same outreach limits as the other direct sender (per account and per address, per hour). The count is
+    // taken before the approval or the reminder is claimed; a count that cannot be read is not zero.
+    const [actorCount, recipientCount] = await Promise.all([
+      countActorSends(admin, userId, OUTREACH_GMAIL_TEMPLATE),
+      countRecipientSends(admin, cleanRecipient, OUTREACH_GMAIL_TEMPLATE),
+    ]);
+    const budget = decideSendBudget({
+      actorCount,
+      recipientCount,
+      actorLimit: OUTREACH_PER_ACTOR_PER_HOUR,
+      recipientLimit: OUTREACH_PER_RECIPIENT_PER_HOUR,
+    });
+    if (!budget.ok) return json({ error: budget.error }, budget.status);
 
     // An agent send is one approval, one send: claim the action (approved ->
     // executed, compare-and-set) before anything leaves; released below if the
@@ -196,10 +236,19 @@ serve(async (req) => {
       };
     }
 
+    // The send is written down before it leaves, so it counts even if the mail library answers late or not at all.
+    const recorded = await recordActorSend(admin, { template: OUTREACH_GMAIL_TEMPLATE, actorId: userId, recipientEmail: cleanRecipient, status: "sent" });
+    if (!recorded) {
+      await releaseClaim?.();
+      await releaseInvoiceClaim?.();
+      return json({ error: "Could not record the send, try again shortly" }, 503);
+    }
+
     await admin.from("outreach_drafts").update({ status: "sending" }).eq("id", draftId);
 
+    // The body may come from a model reading someone else's text: it is shown as text, never as markup.
     const html = `<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#222;font-size:14px;line-height:1.6;">${
-      String(draft.body).split("\n\n").map((p: string) => `<p style="margin:0 0 12px 0;">${p.replace(/\n/g, "<br>")}</p>`).join("")
+      String(draft.body).split("\n\n").map((p: string) => `<p style="margin:0 0 12px 0;">${escapeHtmlText(p).replace(/\n/g, "<br>")}</p>`).join("")
     }</div>`;
 
     try {
@@ -214,8 +263,8 @@ serve(async (req) => {
 
       await client.send({
         from: settings.gmail_email,
-        to: recipient,
-        subject: draft.subject,
+        to: cleanRecipient,
+        subject,
         content: draft.body,
         html,
       });
@@ -231,23 +280,17 @@ serve(async (req) => {
 
     await admin
       .from("outreach_drafts")
-      .update({ status: "sent", sent_at: new Date().toISOString(), recipient_email: recipient, send_error: null })
+      .update({ status: "sent", sent_at: new Date().toISOString(), recipient_email: cleanRecipient, send_error: null })
       .eq("id", draftId);
 
     if (draft.lead_id) {
       await admin.from("sponsor_leads").update({ status: "contacted" }).eq("id", draft.lead_id).eq("user_id", userId);
     }
 
-    return json({ ok: true, sent_to: recipient });
+    return json({ ok: true, sent_to: cleanRecipient });
   } catch (e) {
     console.error("send-outreach-draft error", e);
     return json({ error: e instanceof Error ? e.message : String(e) }, 500);
   }
 });
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}

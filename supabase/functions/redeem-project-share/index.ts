@@ -10,16 +10,8 @@ import {
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 
-
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
 
 async function hashIp(ip: string | null): Promise<string | null> {
   if (!ip) return null;
@@ -60,6 +52,13 @@ const clip = (v: unknown, max: number): string | null =>
 
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {

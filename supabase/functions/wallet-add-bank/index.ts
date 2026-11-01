@@ -4,7 +4,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { cleanBankRequest } from "../_shared/bankRequest.ts";
 
-
 import { corsFor } from '../_shared/guard.ts';
 const log = (s: string, d?: unknown) => console.log(`[wallet-add-bank] ${s}`, d ?? "");
 
@@ -80,6 +79,33 @@ function validateIban(country: string, rawIban: string): { ok: true; iban: strin
 
 serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function mapStripeError(err: unknown): Response {
+    const msg = err instanceof Error ? err.message : String(err);
+    log("STRIPE_ERROR", msg);
+
+    if (err && typeof err === "object" && "type" in err) {
+      const stripeErr = err as Stripe.errors.StripeError;
+      if (stripeErr.type === "StripeAuthenticationError" || stripeErr.type === "StripePermissionError") {
+        return errorResponse(corsHeaders, "stripe_configuration_error", "Payments aren't configured correctly. Contact support.", 500);
+      }
+      if (stripeErr.type === "StripeInvalidRequestError") {
+        const param = stripeErr.param ?? "";
+        const code = stripeErr.code ?? "";
+        if (code === "bank_account_exists" || /already.*(added|exists)/i.test(msg)) {
+          return errorResponse(corsHeaders, "bank_account_already_exists", "This bank account is already on file.", 409);
+        }
+        if (param === "country" || /country/i.test(msg)) {
+          return errorResponse(corsHeaders, "country_not_supported", "That country isn't supported for this payout account.", 400);
+        }
+        if (param.includes("account_number") || param.includes("routing_number") || code.includes("routing")) {
+          return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details were rejected — please double-check them.", 400);
+        }
+        return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details couldn't be validated — please double-check them.", 400);
+      }
+    }
+    return errorResponse(corsHeaders, "stripe_api_error", "Your bank couldn't be added right now. Try again in a moment.", 502);
+  }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -320,29 +346,3 @@ serve(async (req) => {
   }
 });
 
-function mapStripeError(err: unknown): Response {
-  const msg = err instanceof Error ? err.message : String(err);
-  log("STRIPE_ERROR", msg);
-
-  if (err && typeof err === "object" && "type" in err) {
-    const stripeErr = err as Stripe.errors.StripeError;
-    if (stripeErr.type === "StripeAuthenticationError" || stripeErr.type === "StripePermissionError") {
-      return errorResponse(corsHeaders, "stripe_configuration_error", "Payments aren't configured correctly. Contact support.", 500);
-    }
-    if (stripeErr.type === "StripeInvalidRequestError") {
-      const param = stripeErr.param ?? "";
-      const code = stripeErr.code ?? "";
-      if (code === "bank_account_exists" || /already.*(added|exists)/i.test(msg)) {
-        return errorResponse(corsHeaders, "bank_account_already_exists", "This bank account is already on file.", 409);
-      }
-      if (param === "country" || /country/i.test(msg)) {
-        return errorResponse(corsHeaders, "country_not_supported", "That country isn't supported for this payout account.", 400);
-      }
-      if (param.includes("account_number") || param.includes("routing_number") || code.includes("routing")) {
-        return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details were rejected — please double-check them.", 400);
-      }
-      return errorResponse(corsHeaders, "invalid_bank_details", "Those bank details couldn't be validated — please double-check them.", 400);
-    }
-  }
-  return errorResponse(corsHeaders, "stripe_api_error", "Your bank couldn't be added right now. Try again in a moment.", 502);
-}
