@@ -34,6 +34,9 @@ describe("matchKretoRoute", () => {
     ["I'm looking for a job as a UX Designer at Google", "UX Designer Google"],
     ["Please search a job opportunity as a Motion Designer.", "Motion Designer"],
     ["I need a gig for a 3D artist", "3D artist"],
+    ["UX designer jobs", "UX designer"],
+    ["opportunities in motion design", "motion design"],
+    ["emplois designer UX", "designer UX"],
   ])("extracts the term from %j", (text, query) => {
     expect(matchKretoRoute(text)?.path).toBe(scout(query));
   });
@@ -73,6 +76,7 @@ describe("matchKretoRoute", () => {
     "Help me plan my project",
     "Find a collaborator for my project",
     "I need a role model",
+    "Can you check why my jobs page is slow today when the list is empty for everyone",
     "Tell me about Scout's filters",
     "show me the match history of my project and explain how it was computed",
     "",
