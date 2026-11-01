@@ -1,0 +1,501 @@
+{
+ "schema_version": 1,
+ "generated": "2026-11-01",
+ "branch": "chore/security-lockdown-phase5",
+ "status": "INPUT_MISSING_FOR_THE_25_DASHBOARD_FINDINGS",
+ "intake": {
+  "what_is_missing": "The list of the 25 new findings from the dashboard. It is not in the repository, not in docs/security, and no tool of this session reads the dashboard (the connectors that could reach the project's database were not used: the brief forbids connecting to it).",
+  "how_to_give_it": "Paste or save the export (any of: JSON array, CSV, plain text). One row per finding with at least: its id or title, the surface (function, table, page), the severity the dashboard gave.",
+  "what_will_be_done_with_it": "Each finding is matched to the registry below by surface (function name, table name) and by its first sentence; a match is a DUPLICATE (and counts once), a new one gets one of the seven statuses with its evidence. A finding is never marked resolved without a test, a catalog result or a live call that proves it.",
+  "dedupe_keys": [
+   "function directory name",
+   "table name",
+   "policy name",
+   "migration file name"
+  ]
+ },
+ "statuses": [
+  "CONFIRMED_OPEN",
+  "FIXED_LOCAL_NOT_DEPLOYED",
+  "DUPLICATE",
+  "FALSE_POSITIVE_WITH_EVIDENCE",
+  "REQUIRES_SQL",
+  "REQUIRES_PRODUCT_DECISION",
+  "NEEDS_VERIFICATION"
+ ],
+ "proof_levels": {
+  "local": "a test of this repository passes against the real code with fakes",
+  "catalog": "a read-only catalog query run by the owner returned the expected rows",
+  "live": "a real call against production returned the expected answer"
+ },
+ "counts": {
+  "scope": "only the items listed in this file; the 25 dashboard findings, the 58 earlier alerts and phases 1-4 are not counted because their lists are not in the repository",
+  "unique_vulnerabilities": 24,
+  "fixed_locally_not_deployed": 6,
+  "partially_fixed": 3,
+  "false_positives_with_evidence": 0,
+  "open_or_needing_a_decision": 6,
+  "needing_sql": 6,
+  "needing_deployment": 9,
+  "needing_verification": 3,
+  "proved": {
+   "locally": 9,
+   "in_the_catalog": 0,
+   "live": 0
+  }
+ },
+ "registry": [
+  {
+   "id": "SEC-01",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "public.admin_set_profile_coords (anon could call it; body let auth.uid() IS NULL through)",
+   "severity": "HIGH",
+   "status": "NEEDS_VERIFICATION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "none yet (owner's statement)",
+   "evidence": [
+    "commit fd46ef688: docs/security/phase5/lot0_sec01_sec02_catalog_check.sql + lot0_sec01_sec02_verification.md",
+    "repo body: supabase/migrations/20260417183206 (the vulnerable original)"
+   ],
+   "notes": "Applied by the owner per their statement; the catalog query and REST calls 1-2 close it. Result rows not yet seen."
+  },
+  {
+   "id": "SEC-02",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "public.projects INSERT policy (WITH CHECK auth.uid() IS NOT NULL) and created_by on UPDATE",
+   "severity": "HIGH",
+   "status": "NEEDS_VERIFICATION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "none yet (owner's statement)",
+   "evidence": [
+    "commit fd46ef688: REST calls 3-4 cover INSERT with a foreign created_by and the owner change after insertion",
+    "repo: set_project_created_by_trigger rewrites created_by on INSERT; trg_guard_project_created_by is BEFORE UPDATE OF created_by"
+   ],
+   "notes": "Applied by the owner per their statement. Note: with the BEFORE INSERT trigger the policy is a second line (a foreign created_by is overwritten, not refused)."
+  },
+  {
+   "id": "SEC-26/27",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "destructive agent approvals: replay, retargeting, concurrent consumption, model-chosen tool, plan double execution",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": true,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 57e209258",
+    "src/lib/__tests__/approvalHardening.test.ts",
+    "src/lib/__tests__/edge/copilotExecutorApproval.test.ts",
+    "src/lib/__tests__/edge/collaboratorToolsApproval.test.ts"
+   ],
+   "notes": "Consumption stays the compare-and-set on orch_actions / copilot_plans (no in-memory map). OPEN, see the three entries below."
+  },
+  {
+   "id": "R-APPR-1",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "approvals: no content fingerprint (a draft's text can change between approval and send); only named targets are bound",
+   "severity": "MEDIUM",
+   "status": "CONFIRMED_OPEN",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "docs/roadmap/agent-handlers-approval-binding-security-evidence.md section 4"
+   ],
+   "notes": "Needs the proposer to store a hash: a code change in the orchestrator, no schema."
+  },
+  {
+   "id": "R-APPR-2",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "approvals: handlers with no handler-level check (publish_credit, send_message, apply_to_gig, forget_memory, send_payment_link ...)",
+   "severity": "MEDIUM",
+   "status": "CONFIRMED_OPEN",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "docs/roadmap/agent-handlers-approval-binding-security-evidence.md section 1"
+   ],
+   "notes": "Their approval is enforced at the orchestrator only; caller-asserted markers remain by design."
+  },
+  {
+   "id": "R-APPR-3",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "a plan approved as a whole covers its destructive steps (delete_project, remove_collaborator)",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_PRODUCT_DECISION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "src/components/agent/CopilotPlanCard.tsx sends one decision for the plan"
+   ],
+   "notes": "Per-step confirmation needs a UI change and a product choice."
+  },
+  {
+   "id": "R-SSRF-3",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "server-side fetch of a member-supplied address: extract-event-details, transcribe-voice-note, send-push-notification",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 075ed4883",
+    "src/lib/__tests__/edge/ssrfConsumers.test.ts"
+   ],
+   "notes": "DNS rebinding cannot be pinned from this runtime (stated, unchanged)."
+  },
+  {
+   "id": "R-TRANSCRIBE",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "transcribe-voice-note let any member write a transcript into any message by id (and name any audio URL)",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 075ed4883",
+    "src/lib/__tests__/edge/ssrfConsumers.test.ts"
+   ],
+   "notes": "Found while fixing the SSRF; same function."
+  },
+  {
+   "id": "R-ENRICH",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "enrich-creator-profile / enrich-press-links / enrich-credits could be aimed at another member (and enrich-credits at everyone)",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 53ed045c1",
+    "src/lib/__tests__/enrichmentAccess.test.ts",
+    "src/lib/__tests__/edge/enrichmentTargets.test.ts"
+   ],
+   "notes": "The platform batch (service role) had stopped working under the member perimeter; fixed in the same change."
+  },
+  {
+   "id": "R-MAIL-PAY",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "send-invoice-email: unescaped HTML under our sender, any recipient, no volume limit, settled invoices flipped back to sent",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 4f0002075",
+    "src/lib/__tests__/invoiceEmail.test.ts",
+    "src/lib/__tests__/edge/sendInvoiceEmail.test.ts"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "R-MAIL-PROSPECT",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "send-outreach-draft: recipient and subject passed to the mail library as typed, unescaped body, no volume bound",
+   "severity": "MEDIUM",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 4f0002075",
+    "src/lib/__tests__/edge/sendOutreachDraft.test.ts"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "R-MAIL-INVITE",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "invitations: invite-to-stage has no per-account volume bound; send-credit-invite no budget (project and event invitations were budgeted earlier)",
+   "severity": "MEDIUM",
+   "status": "CONFIRMED_OPEN",
+   "partial": true,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "supabase/functions/invite-to-stage/index.ts (100 per call, no registry)",
+    "supabase/functions/send-credit-invite/index.ts (20 per call)"
+   ],
+   "notes": "Both go through send-transactional-email, which has its own caller policy."
+  },
+  {
+   "id": "R-MAIL-CAMP",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "campaigns: send-broadcast-email, send-waitlist-invite, process-scheduled-campaigns, process-drip-campaign",
+   "severity": "LOW",
+   "status": "NEEDS_VERIFICATION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "all four are behind requireAdminOrCron (supabase/functions/_shared/admin-guard.ts); content is admin-authored by design"
+   ],
+   "notes": "Reviewed for authorization only, not for per-recipient volume. The dashboard finding is not known."
+  },
+  {
+   "id": "R-GUEST",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "guest web search: cost bounded on the server before the provider; provider errors were echoed to anonymous callers",
+   "severity": "MEDIUM",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": true,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit f00e4f5de",
+    "src/lib/__tests__/edge/publicDigitalPresence.test.ts"
+   ],
+   "notes": "The durable quota is consume_public_presence_search (drizzle/migrations/0000), on the backend that hosts the function (Cloud). Fails closed where it is missing."
+  },
+  {
+   "id": "R-CORS16",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "16 handlers answered every request with a platform 500: a module-level response helper read a corsHeaders declared inside the handler",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 4f0002075",
+    "src/lib/__tests__/edgeCorsScope.test.ts (fails on any such helper)"
+   ],
+   "notes": "A regression of the CORS allow-list change, not a vulnerability; it is an availability failure of security-relevant functions (meetings, guest links, unsubscribe, bank)."
+  },
+  {
+   "id": "R-DESK-TOOL",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "desk-agent: the model's arguments could override _tool, so a find_user call could run add_collaborator without approval",
+   "severity": "HIGH",
+   "status": "FIXED_LOCAL_NOT_DEPLOYED",
+   "partial": true,
+   "needs_sql": false,
+   "needs_deploy": true,
+   "proof_level": "local",
+   "evidence": [
+    "commit 57e209258",
+    "src/lib/__tests__/approvalHardening.test.ts"
+   ],
+   "notes": "desk-agent cannot be deployed to production (premiumSwitch.ts missing there): the hole stays open in production until it can."
+  },
+  {
+   "id": "R-PRIV-7",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "seven database privacy alerts",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_PRODUCT_DECISION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "docs/security/phase5/manual-sql/B_privacy/00_discovery.sql",
+    "docs/security/phase5/manual-sql/B_privacy/DECISIONS.md"
+   ],
+   "notes": "The list is the dashboard's. One table (waitlist) has a stated contract and a lot; the others are blocked on decisions."
+  },
+  {
+   "id": "R-WAITLIST",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "waitlist: a visitor can set the review state of their own row; no read/update/delete control in the repository",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_SQL",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/B_privacy (waitlist lot)"
+   ],
+   "notes": ""
+  },
+  {
+   "id": "R-BADGE",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "verification, subscription, badge and XP columns of profiles writable by their owner (repository carries the fix; production state unknown)",
+   "severity": "HIGH",
+   "status": "REQUIRES_SQL",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/C_verification_badge",
+    "supabase/migrations/20260904150000_lock_profiles_privileged_columns.sql"
+   ],
+   "notes": "Preflight shows what is exposed today."
+  },
+  {
+   "id": "R-PHONE",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "profiles.phone_otp / phone_otp_expires_at / phone_number writable by the member: a self-chosen code verifies any number; the badge survives a number change",
+   "severity": "HIGH",
+   "status": "REQUIRES_SQL",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/C_verification_badge (added to the lock list)",
+    "supabase/functions/_shared/phoneOtp.ts accepts a plain six-digit stored value"
+   ],
+   "notes": "The repository's own lock list misses these three columns."
+  },
+  {
+   "id": "R-APPR-RLS",
+   "kind": "vulnerability",
+   "origin": "found in phase 5",
+   "surface": "orch_approvals: a member can write an approval row (including a rejection) for another member's action id",
+   "severity": "LOW",
+   "status": "REQUIRES_SQL",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/E_approvals"
+   ],
+   "notes": "Needs the target's action id (a uuid): hard to guess."
+  },
+  {
+   "id": "R-TOPUP",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "wallet top-up: claim, credit and revert are three statements (a crash leaves a paid top-up never credited)",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_SQL",
+   "partial": true,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/D_topup_atomicity"
+   ],
+   "notes": "Never credited twice (the claim is compare-and-set). The code change waits for the concurrency test."
+  },
+  {
+   "id": "R-BUDGETS",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "no durable budget primitive on the production database (tables and functions absent)",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_SQL",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "commit 0556f2cac: manual-sql/A_durable_budgets",
+    "supabase/functions/_shared/durableBudget.ts (fail-closed client, unwired)"
+   ],
+   "notes": "Creation only; nothing calls it yet."
+  },
+  {
+   "id": "R-PLANS-RLS",
+   "kind": "vulnerability",
+   "origin": "brief",
+   "surface": "copilot_plans: a member may insert or update their own plan rows, steps included",
+   "severity": "LOW",
+   "status": "REQUIRES_PRODUCT_DECISION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "supabase/migrations/20260502152223 policies"
+   ],
+   "notes": "copilot-executor now checks every step against the registry and refuses locked tools and foreign handlers; the row stays writable by its owner."
+  },
+  {
+   "id": "R-PROMPTHERO",
+   "kind": "meta",
+   "origin": "found in phase 5",
+   "surface": "ThrivePromptHero sends audio_base64 to transcribe-voice-note, which has never accepted it (the home voice prompt answers 400)",
+   "severity": "LOW",
+   "status": "REQUIRES_PRODUCT_DECISION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "src/components/home/ThrivePromptHero.tsx:302"
+   ],
+   "notes": "A broken feature, not a vulnerability; needs a decision on the contract."
+  },
+  {
+   "id": "R-70FN",
+   "kind": "meta",
+   "origin": "brief",
+   "surface": "70 functions of the manifest, none activated; desk-agent blocked by the missing premiumSwitch.ts",
+   "severity": "-",
+   "status": "CONFIRMED_OPEN",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "docs/security/phase5/LOT4_ACTIVATION_BATCH1.md"
+   ],
+   "notes": "A first batch is prepared; nothing is extended to the 70."
+  },
+  {
+   "id": "R-DASH25",
+   "kind": "meta",
+   "origin": "brief",
+   "surface": "25 findings of the dashboard, not reconciled",
+   "severity": "-",
+   "status": "NEEDS_VERIFICATION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "local",
+   "evidence": [
+    "no export of the list exists in the repository or on this disk"
+   ],
+   "notes": "INPUT MISSING: see intake."
+  }
+ ]
+}
