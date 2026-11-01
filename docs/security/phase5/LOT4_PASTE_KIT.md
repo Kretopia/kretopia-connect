@@ -129,6 +129,20 @@ The files below must already exist in kretopia-app with these exports (check the
 | `_shared/premiumSwitch.ts` | unchanged | 38 | 1733 | `f4e372d193fb` |
 | `desk-agent/index.ts` | changed | 1111 | 52131 | `876d7a45239f` |
 
+## 5. When the project that reaches production has no copy of this repository
+
+The agent of the kretopia-app project cannot run `compare_clipboard.sh` (it reads baselines with `git show`). `paste-kit/make_bundle.py`
+builds `paste-kit/kretopia-app-bundle.tgz` (kept local): every file of the batch **and every file they import, transitively** (36 files: 20 batch,
+2 for `desk-agent`, 14 dependencies including `_shared/guard.ts`), each in two versions (`base/` = the repository at `c0da3818e`, `mine/` = main now),
+a manifest, and `compare.sh`, which needs no git repository. Run at the root of the project, it writes only to its own `out/` folder and prints
+one report: for each file MISSING, SAME_AS_MAIN, SAME_AS_BASE (safe to overwrite) or DIFFERENT (with a three-way merge candidate), plus the
+names the batch imports that the project's copy does not export. The report's header prints the project's `project_id`: production's is
+`kwmcocsitwssrtzkdojh`; if it differs, that is not the project that reaches production.
+
+On 2026-11-02 the agent of the project it was run in reported `_shared/guard.ts` missing. If that project is confirmed as production, the batch cannot
+be pasted as it stands: it would have to carry the missing dependencies (the report lists them) or be rewritten against production's own files.
+That is a decision for after the report.
+
 ## What this kit does and does not establish
 
 It makes the pre-checks mechanical and the order exact. It does not read kretopia-app, does not paste anything and does not prove a function

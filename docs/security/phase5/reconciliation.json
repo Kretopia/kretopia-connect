@@ -524,7 +524,7 @@
     "docs/security/phase5/LOT4_PASTE_KIT.md",
     "docs/security/phase5/paste-kit/compare_clipboard.sh"
    ],
-   "notes": "Overwriting production files with repository files would remove production's own hardening. The script now saves production's copy and a three-way merge candidate. Follow-up: port production's extra ranges into the repository's ssrf.ts once its full text is available."
+   "notes": "Overwriting production files with repository files would remove production's own hardening. The script now saves production's copy and a three-way merge candidate. Follow-up: port production's extra ranges into the repository's ssrf.ts once its full text is available. 2026-11-02: the agent of the project it inspected reports _shared/guard.ts missing (project identity unconfirmed; production's project_id is kwmcocsitwssrtzkdojh). A bundle with all 36 files and a repository-free comparison (make_bundle.py, bundle_compare.sh) was built to get one complete report."
   },
   {
    "id": "R-70FN",
