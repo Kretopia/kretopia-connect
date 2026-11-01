@@ -1,8 +1,8 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Immediate Kreto search navigation
-- [ ] Route “Search for UX Designers” directly to existing search results with the intact query, bypassing planning; cover floating, rail and inline chat with regression tests.
-- [ ] Verify the live navigation; authenticated verification requires an available legacy account session.
+- [x] Route “Search for UX Designers” directly to existing search results with the intact query, bypassing planning across floating, rail and inline chat; 39 regression tests pass and managed build OK. Browser verifies /search?q=UX%20Designers and the populated search field, with no runtime errors.
+- [ ] Verify signed-in submission through Kreto: unavailable legacy session; own-account session mint failed. No publication performed.
 
 ## Temporary transparent Halloween mascots
 - [x] Use supplied transparent pumpkin on Landing with the existing flight controller, timing and scroll movements unchanged; aligned wave layers retain the greeting.
