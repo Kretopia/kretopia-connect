@@ -7,8 +7,10 @@ leaves the top-up pending.
 
 ## 1. An isolated database and the minimum schema
 
-Use the same throwaway database and `stubs.sql` as lot A's test, then create the tables the function touches (copied from the repository's
-migrations, only the columns involved) and `wallet_credit` exactly as the migration `20260804103153` defines it:
+Use the same throwaway database and `stubs.sql` as lot A's test, **including its `PGOPTIONS` line** (`complete_wallet_topup` refuses any
+caller that is not the service role, `postgres` or `supabase_admin`, so on a plain Postgres every `pgbench` call would answer `42501`
+without it). Then create the tables the function touches (copied from the repository's migrations, only the columns involved) and
+`wallet_credit` exactly as the migration `20260804103153` defines it:
 
 ```sql
 CREATE TABLE public.profiles (user_id uuid PRIMARY KEY);
