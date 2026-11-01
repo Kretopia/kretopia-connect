@@ -5,6 +5,7 @@ import { loadCopilotContext, renderContextPreamble } from "../_shared/copilotCon
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
+import { internalToolBody, stripReservedKeys } from "../_shared/approvalHardening.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
 import { z } from "npm:zod@^4.4.3";
@@ -629,7 +630,10 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       const name = tc.function?.name as ToolName;
       let args: any = {};
       try {
-        args = JSON.parse(tc.function?.arguments || "{}");
+        // The model's arguments are data. A field that starts with "_" carries authority downstream (_tool, _source,
+        // _agent_action_id), so none of them is ever taken from here. Spreading these arguments after the tool name used to let
+        // the model pick the tool (a find_user call that ran add_collaborator) and skip the approval this door asks for.
+        args = stripReservedKeys(JSON.parse(tc.function?.arguments || "{}"));
       } catch {
         args = {};
       }
@@ -906,7 +910,7 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
 
             if (approvalProven) {
               const { data, error } = await admin.functions.invoke("copilot-collaborator-tools", {
-                body: { _tool: name, ...args, target_project_id: targetProjectId, _source: "desk_agent", _agent_action_id: agentActionId },
+                body: internalToolBody({ tool: name, args, extra: { target_project_id: targetProjectId }, source: "desk_agent", agentActionId }),
                 headers: { Authorization: authHeader },
               });
               if (error) throw error;
@@ -972,7 +976,7 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
           name === "list_my_projects"
         ) {
           // Delegate to copilot-collaborator-tools (runs under caller's JWT, RLS-safe)
-          const payload: Record<string, unknown> = { _tool: name, ...args, _source: "desk_agent" };
+          const payload: Record<string, unknown> = internalToolBody({ tool: name, args, source: "desk_agent" });
           const { data, error } = await admin.functions.invoke("copilot-collaborator-tools", {
             body: payload,
             headers: { Authorization: authHeader },

@@ -340,9 +340,10 @@ describe("send-outreach-draft: an approval covers one draft, for the send_outrea
 describe("copilot-collaborator-tools wiring", () => {
   const source = readFileSync(resolve(__dirname, "../../../supabase/functions/copilot-collaborator-tools/index.ts"), "utf8");
 
-  it("names its targets for both irreversible tools and releases the claim on failure", () => {
+  it("names its targets for the irreversible tools and releases the claim on failure", () => {
     expect(source).toContain('targets: {\n      project: { request: projectId, approvedKeys: ["project_id", "target_project_id"] },\n    },');
     expect(source).toContain('collaborator: { request: removeUserId, approvedKeys: ["user_id_to_remove", "user_id"] },');
-    expect(source.match(/await authz\.release\?\.\(\);/g)?.length).toBe(2);
+    // add_collaborator joined delete_project and remove_collaborator: three gated tools, each gives the claim back on failure.
+    expect(source.match(/await authz\.release\?\.\(\);/g)?.length).toBe(3);
   });
 });
