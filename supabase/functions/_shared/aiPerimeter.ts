@@ -4,7 +4,7 @@ import { requireUser, rateLimit } from './guard.ts';
 /** Validate against the backend that owns the account; meter on this deployment.
  * Never fall back after an auth failure or trust a client-selected backend URL.
  */
-export async function requireAiCaller(req: Request, feature: string): Promise<void> {
+export async function requireAiCaller(req: Request, feature: string): Promise<{ id: string }> {
   const deploymentUrl = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const legacyUrl = Deno.env.get('LEGACY_SUPABASE_URL');
@@ -20,4 +20,5 @@ export async function requireAiCaller(req: Request, feature: string): Promise<vo
   const user = await requireUser(req, accountClient);
   const admin = createClient(deploymentUrl, serviceKey, options);
   await rateLimit(admin, user.id, feature, 20);
+  return { id: user.id };
 }

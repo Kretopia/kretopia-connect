@@ -2,7 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
-import { requireAiCaller } from '../_shared/aiPerimeter.ts';
+import { resolveEnrichmentCaller } from '../_shared/enrichmentCaller.ts';
+import { decideEnrichmentBatch, decideEnrichmentTarget, isProfileId } from '../_shared/enrichmentAccess.ts';
 // Extract YouTube video ID from various URL formats
 function extractYouTubeId(url: string): string | null {
   const patterns = [
@@ -82,13 +83,28 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await requireAiCaller(req, "enrich-credits");
-    const { user_id, batch_size = 50 } = await req.json().catch(() => ({}));
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const firecrawlKey = Deno.env.get("FIRECRAWL_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Who is asking: a member (their own credits; any member's for an admin) or the platform. With no user_id this enriches a
+    // batch across every member, which only an admin or the platform may ask for (it was open to any signed-in member).
+    const caller = await resolveEnrichmentCaller(req, "enrich-credits", supabase);
+    const { user_id, batch_size: requestedBatch = 50 } = await req.json().catch(() => ({}));
+    const batch_size = Math.min(Math.max(Math.trunc(Number(requestedBatch)) || 50, 1), 100);
+    const denied = (status: number, error: string) =>
+      new Response(JSON.stringify({ error }), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (user_id === undefined || user_id === null) {
+      const batch = decideEnrichmentBatch(caller);
+      if (!batch.ok) return denied(batch.status, batch.error);
+    } else {
+      const { data: target } = isProfileId(user_id)
+        ? await supabase.from("profiles").select("user_id").eq("user_id", user_id).maybeSingle()
+        : { data: null };
+      const access = decideEnrichmentTarget({ caller, targetUserId: user_id, profile: target });
+      if (!access.ok) return denied(access.status, access.error);
+    }
 
     // Fetch credits that need enrichment
     let query = supabase
