@@ -25,8 +25,17 @@ if cmp -s "$tmp/prod" "$tmp/head"; then
 elif [ "$have_base" = 1 ] && cmp -s "$tmp/prod" "$tmp/base"; then
   echo "RESULT: identical to the baseline ($BASE), the version this branch started from. Production is not ahead of the repository: safe to overwrite."
 else
-  echo "RESULT: DIFFERENT from this branch$( [ "$have_base" = 1 ] && echo ' and from the baseline'). Do not overwrite yet: send the diff below."
-  if [ "$have_base" = 1 ]; then diff -u "$tmp/base" "$tmp/prod" | head -60 || true; else echo "(this file is new in the branch: production has a file of that name that the repository does not know)"; fi
+  echo "RESULT: DIFFERENT from this branch$( [ "$have_base" = 1 ] && echo ' and from the baseline'). Do NOT overwrite: production has changes this branch does not."
+  if [ "$have_base" = 1 ]; then
+    diff -u "$tmp/base" "$tmp/prod" | head -40 || true
+    # Never overwrite: keep what production added and apply what this branch changes (a three-way merge, baseline as the common ancestor).
+    out="docs/security/phase5/paste-kit"; mkdir -p "$out/production/$(dirname "$path")" "$out/merged/$(dirname "$path")"
+    cp "$tmp/prod" "$out/production/$path"; cp "$tmp/prod" "$tmp/cur"
+    set +e; git merge-file -p -L production -L baseline -L this-branch "$tmp/cur" "$tmp/base" "$tmp/head" > "$out/merged/$path"; rc=$?; set -e
+    if [ "$rc" -eq 0 ]; then echo "MERGE: clean. Production's own changes are kept and this branch's changes applied. Candidate: $out/merged/$path (production copy saved in $out/production/$path). Tell me; paste the candidate only after I have reviewed it."
+    elif [ "$rc" -gt 0 ]; then echo "MERGE: $rc conflict(s). Written with markers to $out/merged/$path. Tell me and do not paste anything."
+    else echo "MERGE: could not run (git merge-file failed). The production copy is saved in $out/production/$path; tell me."; fi
+  else echo "(this file is new in the branch: production has a file of that name that the repository does not know)"; fi
 fi
 needs="$(awk -F'|' -v p="$path" '$1 == p { print $2 }' <<'TABLE'
 supabase/functions/_shared/agentActionBinding.ts|bindApprovedAction

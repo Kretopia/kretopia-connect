@@ -2,7 +2,7 @@
 
 **Nothing here is done for you.** This is the checklist for pasting the batch into the Lovable project **kretopia-app** (the one that reaches
 production), by hand. Never into "Kretopia Connect": it deploys itself when the pull request is merged. The files are the ones of the branch
-`chore/security-lockdown-phase5` (PR 295); the sizes and hashes below are those of the commit this kit was generated from. The reasoning and the
+`chore/security-lockdown-phase5` (PRs 295 and 296, merged into main on 2026-11-01); the sizes and hashes below are those of the commit this kit was generated from. The reasoning and the
 list of what each function changes are in `LOT4_ACTIVATION_BATCH1.md`.
 
 ## 0. Before you paste: three read-only checks
@@ -25,23 +25,38 @@ imports it fail to start.
 | `_shared/outboundText.ts` | `cleanRecipientEmail`, `escapeHtmlText`, `singleLine` |
 | `_shared/promptIsolation.ts` | `PROMPT_INJECTION_DEFENSE_CLAUSE`, `wrapUntrustedContent` |
 
-**B. The three shared files this batch changes** (`_shared/ssrf.ts`, `_shared/aiPerimeter.ts`, `_shared/outboundBudget.ts`): run the same script on
-production's copy. "Identical to the baseline" means overwriting loses nothing. "DIFFERENT" means production has changes the repository does
-not: send me the diff it prints before you overwrite.
+**B. Every file this batch changes** (the three shared files `_shared/ssrf.ts`, `_shared/aiPerimeter.ts`, `_shared/outboundBudget.ts` first, then each function when its turn comes): run the same script on
+production's copy. "Identical to the baseline" means overwriting loses nothing. "DIFFERENT" means production has changes the repository does not, and
+**overwriting would remove them**. The script then saves production's copy and a **merge candidate** (production's changes kept, this branch's
+changes applied) under `paste-kit/production/` and `paste-kit/merged/`; both stay on your machine. Tell me which files you ran; I review the
+candidate, and only then is it pasted.
+
+*The first real comparison (2026-11-02): production's `_shared/ssrf.ts` has 307 lines and blocks address ranges that the repository's does not
+(documentation ranges, `ff00::/8`, `2001:db8::/32`, `64:ff9b:1::/48`). Pasting the repository's file over it would have removed those blocks.
+The two projects' shared files are edited by two different agents and have drifted: never paste a repository file over a production file that
+differs.*
 
 **C. The database.** In the SQL Editor of kretopia-app (read-only). It returns only what is missing, so an empty result is the good one. The
 function `consume_ai_feature_call` is the one the member perimeter and the per-address limits rely on:
 
 ```sql
 SELECT 'table or view' AS kind, t AS missing
-FROM unnest(ARRAY['ai_model_calls', 'awards', 'connections', 'copilot_plans', 'creative_jams', 'credits', 'deleted_credits', 'discovered_credits', 'discovery_scans', 'email_send_log', 'invoices', 'jam_participants', 'notifications', 'opportunities', 'orch_actions', 'orch_approvals', 'orch_runs', 'orch_settings', 'orch_tool_registry', 'outreach_drafts', 'press_links', 'profiles', 'project_collaborators', 'project_messages', 'projects', 'public_profiles_safe', 'push_subscriptions', 'sponsor_leads', 'user_email_settings', 'user_roles']) AS t
+FROM unnest(ARRAY['awards', 'connections', 'copilot_plans', 'creative_jams', 'credits', 'deleted_credits', 'discovered_credits', 'discovery_scans', 'email_send_log', 'invoices', 'jam_participants', 'notifications', 'opportunities', 'orch_actions', 'orch_approvals', 'orch_runs', 'orch_settings', 'orch_tool_registry', 'outreach_drafts', 'press_links', 'profiles', 'project_collaborators', 'project_messages', 'projects', 'public_profiles_safe', 'push_subscriptions', 'sponsor_leads', 'user_email_settings', 'user_roles']) AS t
 WHERE to_regclass('public.' || quote_ident(t)) IS NULL
 UNION ALL
 SELECT 'function', f
-FROM unnest(ARRAY['commit_ai_credit', 'consume_ai_feature_call', 'reconcile_stale_orch_runs', 'release_ai_credit', 'try_reserve_ai_credit']) AS f
+FROM unnest(ARRAY['consume_ai_feature_call']) AS f
 WHERE NOT EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = f)
 ORDER BY 1, 2;
 ```
+
+*Result on 2026-11-02, run on production's database by the kretopia-app agent with the earlier, wider version of this query:* `ai_model_calls`,
+`try_reserve_ai_credit`, `commit_ai_credit`, `release_ai_credit` and `reconcile_stale_orch_runs` missing; `consume_ai_feature_call` and the 29
+other tables present. **None of the five blocks the batch.** The first four are used only by `gateAiCall`, `commitAiCredit` and `releaseAiCredit`
+in `_shared/aiRateLimit.ts` and by `_shared/measuredModelFetch.ts`; no function of the batch imports those (the batch takes only
+`checkAiFeatureRateLimit` from that file, and that function calls `consume_ai_feature_call` alone). They belong to the Cloud backend's credit
+ledger and must not be created here. The orchestrator calls `reconcile_stale_orch_runs` without depending on it (a logged warning). The query
+above no longer lists them.
 
 ## 1. Paste order
 
