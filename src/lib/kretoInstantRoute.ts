@@ -109,7 +109,8 @@ export function matchKretoRoute(raw: string): KretoInstantRoute | null {
   // complete term (including two-letter specialties such as UX).
   const searchRequest = sentences.find((tokens) => {
     const verb = tokens.findIndex((t) => STRONG_VERB.has(t.fold));
-    return verb >= 0 && tokens.slice(0, verb).every((t) => FILLER.has(t.fold));
+    return verb >= 0 && !tokens.some((t) => words("project projects projet projets").has(t.fold))
+      && tokens.slice(0, verb).every((t) => FILLER.has(t.fold));
   });
   if (searchRequest) {
     const query = searchRequest.filter((t) => !FILLER.has(t.fold)).map((t) => t.text).join(" ");

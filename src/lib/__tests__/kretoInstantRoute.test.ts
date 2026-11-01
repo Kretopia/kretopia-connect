@@ -71,6 +71,7 @@ describe("matchKretoRoute", () => {
     "Comment trouver un emploi ?",
     "Write a bio for my passport",
     "Help me plan my project",
+    "Find a collaborator for my project",
     "I need a role model",
     "Tell me about Scout's filters",
     "show me the match history of my project and explain how it was computed",
