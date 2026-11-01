@@ -1,5 +1,8 @@
 import { priceProviderUsage } from './providerUsage.ts';
 
+// Deno provides this at runtime; browser-side test typechecks do not.
+declare const Deno: { env: { get(name: string): string | undefined } };
+
 // Cached workspace-catalog pricing (refreshed daily). Throws when the catalog
 // cannot price the model, so callers never record an invented zero cost.
 export async function loadModelPricing(admin: any, model: string): Promise<any> {
