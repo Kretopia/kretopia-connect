@@ -7,8 +7,13 @@ import type { EnrichmentCaller } from "./enrichmentAccess.ts";
 
 declare const Deno: { env: { get(name: string): string | undefined } };
 
+/** The one query this file makes, as a structural type so the module stays testable without the SDK. */
 interface RoleReader {
-  from(table: string): any;
+  from(table: string): {
+    select(columns: string): {
+      eq(column: string, value: string): { eq(column: string, value: string): { maybeSingle(): PromiseLike<{ data: unknown }> } };
+    };
+  };
 }
 
 export async function resolveEnrichmentCaller(req: Request, feature: string, db: RoleReader): Promise<EnrichmentCaller> {

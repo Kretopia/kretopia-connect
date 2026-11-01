@@ -174,7 +174,7 @@ describe("authorizeHighStakesAction: one approval is one execution, even when tw
     const db = seed();
     const results = await Promise.all(Array.from({ length: 8 }, () => call(db)));
     expect(results.filter((r) => r.ok)).toHaveLength(1);
-    expect(results.filter((r) => !r.ok).every((r) => !r.ok && r.status === 409)).toBe(true);
+    expect(results.filter((r) => r.ok === false).every((r) => r.ok === false && r.status === 409)).toBe(true);
     expect(db.rows("orch_actions")[0].status).toBe("executed");
   });
 

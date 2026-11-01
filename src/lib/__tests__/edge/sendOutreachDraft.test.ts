@@ -8,13 +8,13 @@ const world = vi.hoisted(() => ({
   handler: null as null | ((req: Request) => Promise<Response>),
   db: null as unknown,
   sub: "user-1" as string | null,
-  smtp: { sent: [] as Array<Record<string, any>>, fail: false },
+  smtp: { sent: [] as Array<{ from: string; to: string; subject: string; content: string; html: string }>, fail: false },
 }));
 
 vi.mock("https://deno.land/std@0.168.0/http/server.ts", () => ({ serve: (h: (req: Request) => Promise<Response>) => { world.handler = h; } }));
 vi.mock("https://deno.land/x/denomailer@1.6.0/mod.ts", () => ({
   SMTPClient: class {
-    async send(message: Record<string, any>) {
+    async send(message: { from: string; to: string; subject: string; content: string; html: string }) {
       if (world.smtp.fail) throw new Error("535 authentication failed");
       world.smtp.sent.push(message);
     }

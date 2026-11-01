@@ -72,7 +72,8 @@ export async function withBudget<T>(db: RpcClient, req: BudgetRequest, action: (
   { ok: true; value: T } | { ok: false; status: 429 | 503; reason: "exhausted" | "unavailable" }
 > {
   const reservation = await reserveBudget(db, req);
-  if (!reservation.ok) return reservation;
+  // `=== false`, not `!ok`: the app's tsconfig is not strict, where only an equality test narrows a union on a boolean.
+  if (reservation.ok === false) return reservation;
   let value: T;
   try {
     value = await action();
