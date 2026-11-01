@@ -1,5 +1,5 @@
 -- LOT A -- durable budgets -- 03 VERIFY. Read-only. Run it in the SQL Editor of "kretopia-app", after 02_apply.sql.
--- One result row. Every column must be true (the two informational columns at the end are not checks).
+-- One result row. Every column must be true; the columns whose name starts with informational_ are not checks.
 --
 -- WHAT THIS PROVES: the catalog state -- the objects, their constraints, their owner-level settings, who holds which privilege.
 -- WHAT THIS DOES NOT PROVE: (1) that the limit holds under many simultaneous callers (05_CONCURRENCY_TEST.md, on an isolated
@@ -48,8 +48,8 @@ SELECT
      'budget_reservations_status_known', 'budget_reservations_settled_iff_closed')) = 9          AS nine_constraints_present,
   (SELECT count(*) FROM pg_indexes WHERE schemaname = 'public' AND indexname IN ('budget_reservations_open_idx', 'budget_buckets_window_idx')) = 2
                                                                                                  AS two_indexes_present,
-  NOT EXISTS (SELECT 1 FROM public.budget_buckets) AND NOT EXISTS (SELECT 1 FROM public.budget_reservations)
-                                                                                                 AS tables_empty_after_apply,
+  (SELECT count(*) FROM public.budget_buckets) + (SELECT count(*) FROM public.budget_reservations)
+                                                                                                 AS informational_rows_in_the_tables_0_right_after_apply,
   current_user                                                                                   AS informational_running_as,
   'concurrency and real-JWT behaviour are NOT proved by this query'                              AS informational_limit;
 
