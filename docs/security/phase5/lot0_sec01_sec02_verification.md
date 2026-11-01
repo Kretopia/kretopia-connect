@@ -119,3 +119,12 @@ It says nothing about the other `public` functions or tables.
   `WITH CHECK (auth.uid() = created_by)`, and no other INSERT or ALL policy. A `BEFORE INSERT` trigger (`set_project_created_by_trigger`) and a
   `BEFORE UPDATE OF created_by` trigger (`trg_guard_project_created_by`) exist and are enabled, next to the owner-column and payer-column guards.
   Not seen yet: the bodies of those two trigger functions and the UPDATE policies. `lot0b_sec02_guard_and_counters.sql` (read-only) shows them.
+
+## Lot 0b results reported by the owner, 2026-11-01 (SEC-02 closed in the catalog)
+
+* `set_project_created_by()` (`SECURITY DEFINER`, `search_path = public`): a signed-in caller gets `created_by = auth.uid()` whatever they send; a caller
+  without a user (the service role) must supply one.
+* `guard_project_created_by()` (before UPDATE of `created_by`): raises `projects.created_by is immutable` when it changes and `auth.uid()` is not null,
+  so the service role can still change it and a member cannot.
+* The only UPDATE policy, `Users can update accessible projects`, requires `auth.uid() = created_by` or `user_has_project_access(id, auth.uid())`.
+* The HTTP answers (REST calls 3 and 4) were not seen; the catalog shows what enforces them.

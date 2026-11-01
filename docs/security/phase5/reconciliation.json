@@ -35,13 +35,13 @@
   "fixed_locally_not_deployed": 6,
   "partially_fixed": 3,
   "false_positives_with_evidence": 0,
-  "open_or_needing_a_decision": 7,
-  "needing_sql": 3,
+  "open_or_needing_a_decision": 6,
+  "needing_sql": 4,
   "needing_deployment": 9,
-  "needing_verification": 3,
+  "needing_verification": 2,
   "proved": {
    "locally": 9,
-   "in_the_catalog": 3,
+   "in_the_catalog": 4,
    "live": 0,
    "note": "R-BUDGETS (durable budgets) is verified in the catalog but nothing calls it, so it is not counted as a fixed vulnerability"
   }
@@ -70,16 +70,16 @@
    "origin": "brief",
    "surface": "public.projects INSERT policy (WITH CHECK auth.uid() IS NOT NULL) and created_by on UPDATE",
    "severity": "HIGH",
-   "status": "NEEDS_VERIFICATION",
+   "status": "VERIFIED_IN_CATALOG",
    "partial": false,
    "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "catalog, partial (owner's lot 0 query, 2026-11-01)",
+   "proof_level": "catalog (owner's lot 0 and lot 0b queries, 2026-11-01): the INSERT forces created_by and the UPDATE of created_by is refused for a signed-in user",
    "evidence": [
     "commit fd46ef688: REST calls 3-4 cover INSERT with a foreign created_by and the owner change after insertion",
     "repo: set_project_created_by_trigger rewrites created_by on INSERT; trg_guard_project_created_by is BEFORE UPDATE OF created_by"
    ],
-   "notes": "Seen: INSERT policy 'Authenticated users can create projects' WITH CHECK (auth.uid() = created_by) and no other INSERT or ALL policy; BEFORE INSERT set_project_created_by_trigger; BEFORE UPDATE OF created_by trg_guard_project_created_by; all enabled. Not seen: the bodies of those two trigger functions and the UPDATE policies (lot0b_sec02_guard_and_counters.sql), nor the REST calls 3-4."
+   "notes": "Seen: INSERT policy WITH CHECK (auth.uid() = created_by) and no other INSERT or ALL policy; set_project_created_by() overwrites created_by with auth.uid(); guard_project_created_by() raises 'projects.created_by is immutable' when it changes and auth.uid() is not null; the only UPDATE policy needs ownership or project access. The HTTP answers (REST calls 3-4) were not seen."
   },
   {
    "id": "SEC-26/27",
@@ -394,15 +394,35 @@
    "origin": "lot C preflight",
    "surface": "profiles columns members can write that look privileged: project_credits, invited_by, invite_code_used, referred_by_ambassador (preferred_currency is a display preference)",
    "severity": "MEDIUM",
-   "status": "REQUIRES_PRODUCT_DECISION",
+   "status": "REQUIRES_SQL",
    "partial": false,
-   "needs_sql": false,
+   "needs_sql": true,
    "needs_deploy": false,
    "proof_level": "catalog (lot C preflight review_candidates) plus a static scan of src/ and supabase/functions",
    "evidence": [
+    "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md",
+    "docs/security/phase5/manual-sql/C2_profile_entitlements/"
+   ],
+   "notes": "Decided 2026-11-01: lock project_credits, available_invites, invite_code_used and invited_by (set by the server at sign-up, no browser write found): lot C2, prepared, not run. Leave preferred_currency and referred_by_ambassador writable (the browser writes them); referred_by_ambassador only attributes the member's own row, the proper fix is to attribute at sign-up on the server."
+  },
+  {
+   "id": "R-BROKEN-WRITES",
+   "kind": "meta",
+   "origin": "lot 0b",
+   "surface": "browser writes members cannot make in production: profiles.current_streak (DailyCheckIn) and profiles.is_claimed (useProfileData and MatchedProfilesStep auto-provision)",
+   "severity": "LOW",
+   "status": "CONFIRMED_OPEN",
+   "partial": false,
+   "needs_sql": true,
+   "needs_deploy": false,
+   "proof_level": "catalog (lot0b: authenticated cannot update or insert either column) plus the code",
+   "evidence": [
+    "src/pages/DailyCheckIn.tsx",
+    "src/hooks/useProfileData.tsx",
+    "src/components/onboarding/MatchedProfilesStep.tsx",
     "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md"
    ],
-   "notes": "referred_by_ambassador is written from the browser (src/lib/ambassadorAttribution.ts), so any member can attribute themselves to any ambassador; the other three have no direct writer on profiles in the repository. Locking needs the owner's confirmation of what each holds."
+   "notes": "Both flows answer permission denied today, before and after lot C. Fix: a server-side daily check-in function that computes the streak; drop is_claimed from the two upserts or provision the row on the server."
   },
   {
    "id": "R-APPR-RLS",

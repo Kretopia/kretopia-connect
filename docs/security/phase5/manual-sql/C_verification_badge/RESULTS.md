@@ -39,4 +39,28 @@ None of these is locked here: locking a column the app writes would answer that 
 
 ## Status
 
-Lot C: **applied, catalog-verified, REST calls and click-through owed.**
+Lot C: **applied and catalog-verified.** Two browser flows (the daily check-in and the profile auto-provision) already failed before it and still do (see below); lot C2 locks four more columns. The REST calls and a click-through are optional now that the privileges are proved in the catalog.
+
+## Decisions taken on 2026-11-01 (delegated to the author by the owner)
+
+Facts from `lot0b` (production, `authenticated`): `project_credits`, `invite_code_used`, `invited_by`, `preferred_currency`,
+`referred_by_ambassador` and `daily_swipes` are writable; `current_streak` and `is_claimed` are **not** (neither update nor insert).
+
+| Column | Decision | Why |
+|---|---|---|
+| `preferred_currency` | leave writable | the browser writes it; a display preference |
+| `referred_by_ambassador` | leave writable, follow-up | the browser writes it (`ambassadorAttribution.ts`); a member can only attribute their own row, the same effect as using the referral link. The proper fix is to attribute at sign-up on the server |
+| `project_credits`, `invite_code_used`, `invited_by` | **lock (lot C2)** | set by the server at sign-up (migrations 20251002034653, 20251004052317, 20251208120723) and read by server functions; no browser write (66 writes to `profiles` scanned; `updateProfile`, which would pass anything through, has no caller); no migration updates them afterwards |
+| `available_invites` | locked with them (a no-op if already denied) | same family, an allowance granted at sign-up; no writer in `src/` or `supabase/functions` |
+
+## Two flows that already fail in production (not caused by lot C)
+
+`current_streak` and `is_claimed` cannot be written by members, while the app writes them: the daily check-in (`src/pages/DailyCheckIn.tsx`)
+updates `current_streak`, and the profile auto-provision (`src/hooks/useProfileData.tsx`, `src/components/onboarding/MatchedProfilesStep.tsx`)
+upserts `is_claimed: true`. Both answer permission denied today; lot C did not change either column. Not fixed here. The fixes are a
+server-side daily check-in function that computes the streak (the page calls it), and removing `is_claimed` from the two upserts or provisioning
+the row on the server.
+
+Also: the types list 178 `profiles` columns and 113 are updatable, so 65 are denied; lot C names 56 and the two above make 58. Seven more
+are denied and unnamed. `C2_profile_entitlements/01_preflight.sql` lists them (`unlisted_denied_columns`) so that every browser write can be
+checked against the real set rather than a guessed one.
