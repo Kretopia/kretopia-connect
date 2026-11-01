@@ -39,6 +39,8 @@ SELECT
                    AND NOT has_table_privilege('authenticated', oid, 'SELECT, INSERT, UPDATE, DELETE')) FROM tb)
                                                                                                  AS clients_have_no_table_privilege,
   (SELECT bool_and(has_table_privilege('service_role', oid, 'SELECT')) FROM tb)                  AS service_role_can_read_for_monitoring,
+  (SELECT bool_and(NOT has_table_privilege('service_role', oid, 'INSERT, UPDATE, DELETE, TRUNCATE')) FROM tb)
+                                                                                                 AS counters_move_only_through_the_functions,
   EXISTS (SELECT 1 FROM cons WHERE conname = 'budget_buckets_never_over_limit')                  AS overshoot_is_impossible_by_constraint,
   (SELECT count(*) FROM cons WHERE conname IN (
      'budget_buckets_pkey', 'budget_buckets_key_length', 'budget_buckets_limit_not_negative', 'budget_buckets_counts_not_negative',

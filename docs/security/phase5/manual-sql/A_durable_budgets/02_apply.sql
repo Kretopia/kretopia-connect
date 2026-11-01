@@ -62,10 +62,12 @@ CREATE TABLE public.budget_reservations (
 CREATE INDEX budget_reservations_open_idx ON public.budget_reservations (bucket_key, window_start, expires_at) WHERE status = 'reserved';
 CREATE INDEX budget_buckets_window_idx ON public.budget_buckets (window_start);
 
--- Clients have no access at all: RLS on with no policy, and no privilege for anon/authenticated.
+-- Clients have no access at all: RLS on with no policy, and no privilege for anon/authenticated. The service role may READ (to
+-- monitor the counters) but not write: the counters move only through the three functions below, which run as their owner.
+-- (Supabase grants every new table to anon, authenticated and service_role by default; the REVOKE removes all three.)
 ALTER TABLE public.budget_buckets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.budget_reservations ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.budget_buckets, public.budget_reservations FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE public.budget_buckets, public.budget_reservations FROM PUBLIC, anon, authenticated, service_role;
 GRANT SELECT ON TABLE public.budget_buckets, public.budget_reservations TO service_role;
 
 -- ---------------------------------------------------------------------------------------------------------------------
