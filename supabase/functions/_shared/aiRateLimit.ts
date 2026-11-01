@@ -27,6 +27,7 @@
 // @ts-ignore Deno resolves this remote type import; browser-only test typechecks do not.
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { corsFor } from "./guard.ts";
+import { reconcileReceiptedCalls } from "./measuredModelFetch.ts";
 
 // TODO product decision: real values per feature/tier. -1 = unlimited
 // (count-only) so wiring this in changes no current behavior.
@@ -121,7 +122,9 @@ export async function gateAiCall(
   units: number = 1,
   estCredits?: number,
 ): Promise<AiGateResult> {
-  const { count, error: receiptError } = await admin.from('ai_model_calls').select('id', { count: 'exact', head: true }).in('status', ['usage_missing', 'pending']).gte('created_at', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString());
+  const unsettled = () => admin.from('ai_model_calls').select('id', { count: 'exact', head: true }).in('status', ['usage_missing', 'pending']).gte('created_at', new Date(new Date().setUTCHours(0, 0, 0, 0)).toISOString());
+  let { count, error: receiptError } = await unsettled();
+  if (!receiptError && (count ?? 0) > 0) { await reconcileReceiptedCalls(admin); ({ count, error: receiptError } = await unsettled()); }
   if (receiptError || (count ?? 0) > 0) return { allowed: false, reason: 'budget', used: 0, cap: 0, response: json({ error: 'Provider usage is awaiting reconciliation. No further model calls can be verified.', code: 'AI_USAGE_UNVERIFIED' }, 503) };
   const { data, error } = await admin.rpc("try_reserve_ai_credit", {
     _user_id: userId,
