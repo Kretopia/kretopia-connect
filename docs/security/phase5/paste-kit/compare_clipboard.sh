@@ -11,6 +11,11 @@ norm() { python3 -c 'import sys; d = sys.stdin.buffer.read().replace(b"\r\n", b"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
 if [ -t 0 ]; then pbpaste | norm > "$tmp/prod"; else norm > "$tmp/prod"; fi
 [ -s "$tmp/prod" ] || { echo "The clipboard is empty: copy the file from kretopia-app first."; exit 2; }
+if ! grep -Eq '^[[:space:]]*(import|export|declare|const|let|function|async|type|interface|//|/\*)' "$tmp/prod" || grep -Eq '^(#+ |\| ---)' "$tmp/prod"; then
+  echo "The clipboard does not look like a TypeScript file. It starts with: $(head -n 1 "$tmp/prod" | cut -c1-80)"
+  echo "Open the file in the kretopia-app code view (not this repository, not the kit), click inside the editor, select all, copy, and run this again."
+  exit 2
+fi
 norm < "$path" > "$tmp/head"
 have_base=0; if git show "$BASE:$path" 2>/dev/null | norm > "$tmp/base" && [ -s "$tmp/base" ]; then have_base=1; fi
 echo "production copy: $(wc -l < "$tmp/prod" | tr -d ' ') lines, sha256 $(shasum -a 256 < "$tmp/prod" | cut -c1-12)"
