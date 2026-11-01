@@ -104,6 +104,30 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_feature_usage: {
+        Row: {
+          call_count: number
+          feature_key: string
+          updated_at: string
+          usage_date: string
+          user_id: string
+        }
+        Insert: {
+          call_count?: number
+          feature_key: string
+          updated_at?: string
+          usage_date?: string
+          user_id: string
+        }
+        Update: {
+          call_count?: number
+          feature_key?: string
+          updated_at?: string
+          usage_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_model_calls: {
         Row: {
           cached_input_tokens: number | null
@@ -279,6 +303,14 @@ export type Database = {
           _user_id: string
         }
         Returns: undefined
+      }
+      consume_ai_feature_call: {
+        Args: { _daily_cap: number; _feature_key: string; _user_id: string }
+        Returns: {
+          allowed: boolean
+          cap: number
+          used: number
+        }[]
       }
       consume_public_presence_search: { Args: never; Returns: boolean }
       consume_username_auth_attempt: {
