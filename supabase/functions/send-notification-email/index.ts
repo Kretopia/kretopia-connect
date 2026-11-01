@@ -3,7 +3,13 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { corsFor } from '../_shared/guard.ts';
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) throw new Error("Email service is not configured");
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
 
 
 // Input validation schema
@@ -550,7 +556,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending ${type} email to ${to}`);
 
-    const emailResponse = await resend.emails.send({
+    const emailResponse = await getResend().emails.send({
       from: "Kretopia <noreply@kretopia.com>",
       to: [to],
       subject,

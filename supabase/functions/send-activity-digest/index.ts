@@ -7,7 +7,13 @@ import { corsFor } from '../_shared/guard.ts';
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) throw new Error("Email service is not configured");
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
 
 
 const handler = async (req: Request): Promise<Response> => {
@@ -84,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
           ? `https://www.kretopia.com/unsubscribe?token=${prefs.unsubscribe_token}`
           : `https://www.kretopia.com/unsubscribe`;
 
-        const emailResult = await resend.emails.send({
+        const emailResult = await getResend().emails.send({
           from: "Kretopia <noreply@kretopia.com>",
           to: [email],
           subject: `📬 ${userName}, you have ${unreadCount} notifications waiting`,

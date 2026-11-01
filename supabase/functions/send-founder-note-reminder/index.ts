@@ -3,7 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) throw new Error("Email service is not configured");
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
 
 
 const baseUrl = "https://www.kretopia.com";
@@ -89,7 +95,7 @@ serve(async (req) => {
         </div>
       `;
 
-      const { error } = await resend.emails.send({
+      const { error } = await getResend().emails.send({
         from: "Kretopia <noreply@kretopia.com>",
         to: [email],
         subject: existingNote ? `📝 Reminder: Monday note ready (${mondayLabel})` : `⏰ Write your Monday note for ${mondayLabel}`,
