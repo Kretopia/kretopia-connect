@@ -510,6 +510,23 @@
    "notes": "A broken feature, not a vulnerability; needs a decision on the contract."
   },
   {
+   "id": "R-LINEAGE",
+   "kind": "meta",
+   "origin": "paste kit, first real comparison",
+   "surface": "shared files of the repository and of the production project (kretopia-app) have drifted: production's ssrf.ts (307 lines) blocks ranges the repository's does not",
+   "severity": "MEDIUM",
+   "status": "CONFIRMED_OPEN",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "owner's comparison relayed by the kretopia-app agent (file sha d722427adc0a, 307 lines) against the repository's 302 and 322 lines",
+   "evidence": [
+    "docs/security/phase5/LOT4_PASTE_KIT.md",
+    "docs/security/phase5/paste-kit/compare_clipboard.sh"
+   ],
+   "notes": "Overwriting production files with repository files would remove production's own hardening. The script now saves production's copy and a three-way merge candidate. Follow-up: port production's extra ranges into the repository's ssrf.ts once its full text is available."
+  },
+  {
    "id": "R-70FN",
    "kind": "meta",
    "origin": "brief",

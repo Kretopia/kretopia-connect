@@ -1,0 +1,3 @@
+# production copies and merge candidates stay on this machine
+production/
+merged/
