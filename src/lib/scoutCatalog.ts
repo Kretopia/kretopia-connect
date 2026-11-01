@@ -321,6 +321,43 @@ export function passes(item: CatalogItem, f: CatalogFilters, skip?: keyof Catalo
 
 export const filterCatalog = (items: CatalogItem[], f: CatalogFilters, now = Date.now()): CatalogItem[] => items.filter((i) => passes(i, f, undefined, now));
 
+export interface RequestFocus {
+  /** The words actually matched: the request, or the request with its last words dropped. */
+  term: string;
+  items: CatalogItem[];
+  /** False when no opportunity carried every word, so the term had to be shortened. */
+  exact: boolean;
+}
+
+const stem = (w: string) => (w.length > 3 && w.endsWith("s") ? w.slice(0, -1) : w);
+const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** A word of three letters or fewer ("ux", "ui", "3d") counts only as a whole word, so "ux" is not found in "luxury". */
+const hasWord = (hay: string, w: string) => (w.length > 3 ? hay.includes(w) : new RegExp(`(^|[^a-z0-9])${escapeRe(w)}([^a-z0-9]|$)`).test(hay));
+
+/**
+ * What a request to Kreto ("UX Designer Paris") should land on: the existing opportunities whose title carries every word, else those whose
+ * title, company or place do; if there are none, the same with the last word dropped (usually a place), down to one word. It never falls back
+ * to the whole catalog and never counts a posting that only mentions the words in its text. Null when not even the first word is in any
+ * title, company or place.
+ */
+export function focusRequest(items: CatalogItem[], term: string): RequestFocus | null {
+  const given = term.split(/\s+/).filter(Boolean);
+  const words = given.map((w) => stem(w.toLowerCase()));
+  for (let n = words.length; n >= 1; n--) {
+    const ws = words.slice(0, n);
+    const byTitle = items.filter((i) => ws.every((w) => hasWord(i.title.toLowerCase(), w)));
+    const hits =
+      byTitle.length > 0
+        ? byTitle
+        : items.filter((i) => {
+            const hay = `${i.title} ${i.company ?? ""} ${i.locationFull ?? ""}`.toLowerCase();
+            return ws.every((w) => hasWord(hay, w));
+          });
+    if (hits.length > 0) return { term: given.slice(0, n).join(" "), items: hits, exact: n === words.length };
+  }
+  return null;
+}
+
 export interface Facets {
   /** Items passing every filter. */
   total: number;

@@ -62,7 +62,7 @@ const has = (tokens: Token[], set: Set<string>) => tokens.some((t) => set.has(t.
 
 /** A job search: a searching verb with a job noun, or a weaker verb ("show", "need") only with an unambiguous noun ("job", "gig"). */
 function isJobSearch(tokens: Token[]): boolean {
-  return (has(tokens, STRONG_VERB) && (has(tokens, STRONG_JOB) || has(tokens, WEAK_JOB))) || (has(tokens, WEAK_VERB) && has(tokens, STRONG_JOB));
+  return (has(tokens, STRONG_VERB) && (has(tokens, STRONG_JOB) || has(tokens, WEAK_JOB))) || (has(tokens, WEAK_VERB) && has(tokens, STRONG_JOB) && tokens.length <= 10);
 }
 
 /**
@@ -89,7 +89,8 @@ export function matchKretoRoute(raw: string): KretoInstantRoute | null {
 
   // The sentence that carries the request, so a long message with background around it still routes.
   const sentences = raw.split(/[\n!?;]+|\.(?=\s|$)/).map(tokenize).filter((s) => s.length > 0);
-  const jobSearch = sentences.find(isJobSearch) ?? (isJobSearch(all) ? all : undefined);
+  // A short message that is only a job noun and a role ("UX designer jobs") is a search too.
+  const jobSearch = sentences.find(isJobSearch) ?? (isJobSearch(all) ? all : undefined) ?? (all.length <= 6 && has(all, STRONG_JOB) ? all : undefined);
   const onScout =
     all[0].fold === "scout" ||
     (has(all.slice(0, 3), NAV_VERB) && has(all, SCOUT)) ||

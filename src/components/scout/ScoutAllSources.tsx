@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useScoutCatalog } from "@/hooks/useScoutCatalog";
 import { CATEGORIES, LEVELS, categoryOf, type CategoryId, type Language, type Level, type WorkMode } from "@/lib/opportunityTaxonomy";
-import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
+import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, focusRequest, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
 import { cn } from "@/lib/utils";
 
 /** Outside the creative families a section shows this many until opened, unless the person is searching or filtering. */
@@ -184,15 +184,30 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
   const scan = useOptionalScoutScan();
   const items = useMemo(() => includeScoutedGigs(data?.items ?? [], scan?.gigs ?? []), [data, scan?.gigs]);
   const [f, setF] = useState<CatalogFilters>(() => ({ ...NO_FILTERS, q: initialQuery }));
+  // A request from Kreto lands on the existing opportunities that match it, not on the whole catalog; typing in the box or clearing hands the page back.
+  const [requested, setRequested] = useState(initialQuery !== "");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const scrolledFor = useRef("");
   // Kreto can open Scout again with another term while this tab is showing: the search follows the link, and typing is left alone.
   useEffect(() => {
     setF((cur) => (cur.q === initialQuery ? cur : { ...cur, q: initialQuery }));
+    setRequested(initialQuery !== "");
   }, [initialQuery]);
   const [opened, setOpened] = useState<Set<CategoryId>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const fa = useMemo(() => facets(items, f), [items, f]);
-  const shown = useMemo(() => filterCatalog(items, f), [items, f]);
+  const focus = useMemo(() => (requested ? focusRequest(items, initialQuery) : null), [requested, items, initialQuery]);
+  // While a request is shown the catalog is what it matched (nothing when it matched nothing) and the box only displays it; the other filters still narrow it.
+  const scope = useMemo(() => (requested ? (focus?.items ?? []) : items), [requested, focus, items]);
+  const scoped = useMemo(() => (requested ? { ...f, q: "" } : f), [requested, f]);
+  const fa = useMemo(() => facets(scope, scoped), [scope, scoped]);
+  const shown = useMemo(() => filterCatalog(scope, scoped), [scope, scoped]);
+  // Arrive on the results, not above them, once the list has loaded.
+  useEffect(() => {
+    if (!requested || items.length === 0 || scrolledFor.current === initialQuery) return;
+    scrolledFor.current = initialQuery;
+    rootRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+  }, [requested, items.length, initialQuery]);
   const sourceIds = useMemo(() => {
     const ids = new Map<string, string>();
     for (const i of items) ids.set(i.sourceId, i.sourceName);
@@ -211,6 +226,10 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
   }
 
   const set = (patch: Partial<CatalogFilters>) => setF((prev) => ({ ...prev, ...patch }));
+  const clearAll = () => {
+    setRequested(false);
+    setF(NO_FILTERS);
+  };
   const active = filtersActive(f);
   const grouped = f.category === "all" ? groupByCategory(shown) : [{ id: f.category, items: shown }];
   const sourcesShown = new Set(shown.map((i) => i.sourceId)).size;
@@ -247,10 +266,10 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
   const headings = grouped.map((g, i) => (f.category === "all" && (i === 0 || kind(g.id) !== kind(grouped[i - 1].id)) ? (kind(g.id) === "creative" ? "Creative fields" : "Other roles") : null));
 
   return (
-    <div className="space-y-4" data-testid="scout-all-sources">
+    <div ref={rootRef} className="scroll-mt-20 space-y-4" data-testid="scout-all-sources">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="text-sm font-bold text-foreground">Every opportunity, sorted</h2>
+          <h2 className="text-sm font-bold text-foreground">{requested && focus ? `Opportunities for “${focus.term}”` : "Every opportunity, sorted"}</h2>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Gigs from every source, newest first. Each one opens on the page that published it.
           </p>
@@ -262,13 +281,22 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
 
       {data?.partial && <p className="text-[11px] text-muted-foreground">Part of the list could not be loaded, so some opportunities may be missing.</p>}
 
+      {requested && focus && !focus.exact && (
+        <p className="text-[11px] text-muted-foreground" data-testid="catalog-focus-note">
+          Nothing carries every word of “{initialQuery}”, so these are the closest existing opportunities for “{focus.term}”.
+        </p>
+      )}
+
       <div className="flex min-w-0 items-start gap-2">
       <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
           value={f.q}
-          onChange={(e) => set({ q: e.target.value })}
+          onChange={(e) => {
+            setRequested(false);
+            set({ q: e.target.value });
+          }}
           placeholder="Search title, company or place"
           aria-label="Search opportunities"
           className="h-11 pl-9"
@@ -332,19 +360,21 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
           />
         )}
       </AccordionContent></AccordionItem></Accordion>}
-      <div className="mt-3 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" disabled={!active} onClick={() => setF(NO_FILTERS)}>Reset</Button><Button variant="secondary" size="sm" onClick={() => setFiltersOpen(false)}>Show {shown.length} results</Button></div>
+      <div className="mt-3 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" disabled={!active} onClick={clearAll}>Reset</Button><Button variant="secondary" size="sm" onClick={() => setFiltersOpen(false)}>Show {shown.length} results</Button></div>
       </PopoverContent></Popover>
       </div>
 
       {active && (
-        <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={() => setF(NO_FILTERS)}>
+        <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={clearAll}>
           <X className="h-3.5 w-3.5" aria-hidden /> Clear filters
         </Button>
       )}
 
       {shown.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground" data-testid="catalog-empty">
-          No opportunity matches these filters. Clear a filter or two to see more.
+          {requested && !focus
+            ? `No existing opportunity matches “${initialQuery}” yet. Clear the search to browse every opportunity.`
+            : "No opportunity matches these filters. Clear a filter or two to see more."}
         </div>
       ) : (
         <div className="space-y-6">
