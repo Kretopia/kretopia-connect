@@ -35,13 +35,14 @@
   "partially_fixed": 3,
   "false_positives_with_evidence": 0,
   "open_or_needing_a_decision": 6,
-  "needing_sql": 6,
+  "needing_sql": 5,
   "needing_deployment": 9,
-  "needing_verification": 3,
+  "needing_verification": 4,
   "proved": {
    "locally": 9,
    "in_the_catalog": 0,
-   "live": 0
+   "live": 0,
+   "note": "R-BUDGETS (durable budgets) is verified in the catalog but nothing calls it, so it is not counted as a fixed vulnerability"
   }
  },
  "registry": [
@@ -422,16 +423,17 @@
    "origin": "brief",
    "surface": "no durable budget primitive on the production database (tables and functions absent)",
    "severity": "MEDIUM",
-   "status": "REQUIRES_SQL",
+   "status": "NEEDS_VERIFICATION",
    "partial": false,
-   "needs_sql": true,
+   "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "local",
+   "proof_level": "catalog (owner's 03_verify, 16 of 16 true, 2026-11-01); concurrency and real-role behaviour not proved",
    "evidence": [
     "commit 0556f2cac: manual-sql/A_durable_budgets",
+    "commit 4314a991d: A_durable_budgets/RESULTS.md (the owner's results) and 03b_verify_as_roles.sql",
     "supabase/functions/_shared/durableBudget.ts (fail-closed client, unwired)"
    ],
-   "notes": "Creation only; nothing calls it yet."
+   "notes": "Applied by the owner on 2026-11-01. The primitive exists in production; nothing calls it, so no protection is in force because of it. Wiring waits for 05_CONCURRENCY_TEST.md."
   },
   {
    "id": "R-PLANS-RLS",

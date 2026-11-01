@@ -1,8 +1,16 @@
 # Manual SQL pack -- security lockdown, phase 5
 
-Nothing in this folder was executed. The session that wrote it had no database, and by rule no `psql`, `supabase db` or connector: every file
-below was written from the repository's migrations and read by eye. **No Postgres engine has parsed any of it.** That is why every apply
-script starts with assertions that stop the transaction on anything unexpected, and why every lot has a read-only preflight you run first.
+The session that wrote this folder had no database, and by rule no `psql`, `supabase db` or connector: every file below was written from the
+repository's migrations and read by eye. That is why every apply script starts with assertions that stop the transaction on anything
+unexpected, and why every lot has a read-only preflight you run first. Since then (2026-11-01):
+
+* **Syntax.** The grammar of PostgreSQL 17 itself (libpg_query, through `pglast` 8.7) parsed all 22 `.sql` files, the PL/pgSQL bodies of
+  every `DO` block and function included, plus `03b_verify_as_roles.sql`: 0 failures. The checker accepts the lot A files that Postgres
+  accepted in production and rejects two deliberately broken files. This proves **syntax only**: it does not show that a table, column or
+  role exists, nor what a statement does. Re-run it after any edit, from the repository root:
+  `python3 -m venv v && v/bin/pip install pglast && v/bin/python docs/security/phase5/tools/parse_sql_pack.py $(find docs/security/phase5 -name '*.sql')`.
+* **Lot A was run by the owner in production** and the results were reported (`A_durable_budgets/RESULTS.md`). Nothing else in this folder
+  has been reported as run.
 
 ## Where, how
 
@@ -21,10 +29,10 @@ script starts with assertions that stop the transaction on anything unexpected, 
 | C | `C_verification_badge` | A member can no longer set their own verification, badge, subscription, XP, nor the phone code and number; narrows UPDATE and INSERT on `profiles`, never widens | no | **READY_FOR_APPROVAL** after you read the preflight (SQL not executed by the author) |
 | E | `E_approvals` | A member can record an approval only for their own action; a decided action cannot be rewritten; one positive approval per action | yes | **WAITING_FOR_VALIDATION** (test in `05_CONCURRENCY_TEST.md`) |
 | B | `B_privacy` | Waitlist: visitors insert 11 named columns only, nobody but an admin reads or changes entries. The other privacy tables: a discovery query and a decision matrix, no guessed policy | no | **READY_FOR_APPROVAL** for the waitlist; the other tables are **BLOCKED** on your decisions (`DECISIONS.md`) |
-| A | `A_durable_budgets` | New: `budget_buckets`, `budget_reservations`, `reserve_budget` / `commit_budget` / `release_budget` (service role only, cannot overshoot) | yes | **WAITING_FOR_VALIDATION** (test in `05_CONCURRENCY_TEST.md`) |
+| A | `A_durable_budgets` | New: `budget_buckets`, `budget_reservations`, `reserve_budget` / `commit_budget` / `release_budget` (service role only, cannot overshoot) | yes | **APPLIED by the owner 2026-11-01, catalog-verified (16 of 16), unwired.** Concurrency: **WAITING_FOR_VALIDATION** (`05_CONCURRENCY_TEST.md`); optional `03b_verify_as_roles.sql` not run yet |
 | D | `D_topup_atomicity` | New function `complete_wallet_topup` (claim and credit in one transaction), one-payment-one-top-up index, status constraint | yes | **WAITING_FOR_VALIDATION**; the matching code change is NOT done and waits for the test |
 
-Recommended order: **C**, then **E**, then **B (waitlist)**, then **A**, then **D**. They are independent of each other: none needs another
+Recommended order: **C**, then **E**, then **B (waitlist)**, then **D** (**A** is done). They are independent of each other: none needs another
 to be applied first, and none needs an edge function to be deployed first or after. The only lot that ends in a code change is **D**.
 
 Before C, look at lot 0 (`../lot0_sec01_sec02_verification.md`): it closes the verification of SEC-01 and SEC-02 and shares the habit of reading
