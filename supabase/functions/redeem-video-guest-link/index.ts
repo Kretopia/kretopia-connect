@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { roomSessionExpiry } from "../_shared/roomSessionLimits.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
@@ -14,7 +14,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "redeem-video-guest-link", 10);
+    try {
+      await publicPerimeter(req, "redeem-video-guest-link", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const DAILY_API_KEY = Deno.env.get("DAILY_API_KEY");
     if (!DAILY_API_KEY) throw new Error("DAILY_API_KEY not configured");
 

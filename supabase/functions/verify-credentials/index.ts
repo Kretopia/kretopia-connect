@@ -4,7 +4,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 interface VerifiedCredential {
   type: 'award' | 'credit' | 'certification' | 'social' | 'streams' | 'press';
@@ -45,7 +45,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "verify-credentials", 10);
+    try {
+      await publicPerimeter(req, "verify-credentials", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""

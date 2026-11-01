@@ -6,7 +6,7 @@ import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { TOKENS_STRUCTURED_SMALL } from "../_shared/aiLimits.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 // Validation schema
 const ApplicationSchema = z.object({
@@ -39,7 +39,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "validate-waitlist-ai", 10);
+    try {
+      await publicPerimeter(req, "validate-waitlist-ai", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     // Rate limiting
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                req.headers.get('x-real-ip') || 'unknown';

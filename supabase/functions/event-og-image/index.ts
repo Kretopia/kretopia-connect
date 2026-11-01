@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
@@ -128,7 +128,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "event-og-image", 60);
+    try {
+      await publicPerimeter(req, "event-og-image", 60);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const url = new URL(req.url);
     const eventId = url.searchParams.get("event_id");
     if (!eventId) {

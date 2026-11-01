@@ -6,14 +6,18 @@ import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { cleanPaymentLinkRequest } from "../_shared/publicCheckoutInput.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "create-payment-link-checkout", 10);
+    try {
+      await publicPerimeter(req, "create-payment-link-checkout", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     // The caller is anonymous: the slug, the amount and the payer's details are checked, bounded and
     // cleaned before they reach Stripe metadata, the idempotency key or our table.
     const checked = cleanPaymentLinkRequest(await req.json().catch(() => null));

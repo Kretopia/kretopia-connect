@@ -9,7 +9,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { safeFetch } from '../_shared/ssrf.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
@@ -121,7 +121,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "epk-og-image", 60);
+    try {
+      await publicPerimeter(req, "epk-og-image", 60);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const url = new URL(req.url);
     const userId = url.searchParams.get("user_id");
     if (!userId) {

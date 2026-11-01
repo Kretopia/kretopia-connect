@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { encryptToken, verifyState } from "../_shared/import/crypto.ts";
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { safeError } from '../_shared/guard.ts';
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -64,7 +65,11 @@ Deno.serve(async (req) => {
   const back = (qs: string) => Response.redirect(`${APP_URL}/studio-import?${qs}`, 302);
 
   try {
-    await publicPerimeter(req, "integration-oauth-callback", 10);
+    try {
+      await publicPerimeter(req, "integration-oauth-callback", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     if (err) return back(`connect_error=${encodeURIComponent(err)}`);
     if (!code || !state) return back("connect_error=missing_code");
 

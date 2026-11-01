@@ -5,7 +5,7 @@ import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { claimOrderPaid } from "../_shared/orderConfirmation.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const log = (s: string, d?: any) =>
   console.log(`[verify-event-ticket] ${s}${d ? " " + JSON.stringify(d) : ""}`);
@@ -15,7 +15,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "verify-event-ticket", 10);
+    try {
+      await publicPerimeter(req, "verify-event-ticket", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const admin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""

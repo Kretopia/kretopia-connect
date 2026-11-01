@@ -3,7 +3,7 @@ import { decideGuestVerificationSend } from "../_shared/guestVerification.ts";
 import { escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
@@ -16,7 +16,11 @@ Deno.serve(async (req) => {
   const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
   try {
-    await publicPerimeter(req, "verify-guest-opportunity", 10);
+    try {
+      await publicPerimeter(req, "verify-guest-opportunity", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const { action, ...params } = await req.json();
 
     if (action === "send-verification") {

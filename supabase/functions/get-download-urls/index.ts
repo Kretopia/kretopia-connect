@@ -8,7 +8,7 @@ import {
   decideLegacyPurchase,
   orderGrantsFiles,
 } from "../_shared/purchaseEntitlement.ts";
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 
 
@@ -19,7 +19,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "get-download-urls", 10);
+    try {
+      await publicPerimeter(req, "get-download-urls", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     // Authenticate user
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {

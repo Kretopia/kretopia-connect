@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 function jsonResponse(data: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -51,7 +51,11 @@ Deno.serve(async (req) => {
     } else {
       // JSON body (from the app's unsubscribe page)
       try {
-    await publicPerimeter(req, "handle-email-unsubscribe", 10);
+    try {
+      await publicPerimeter(req, "handle-email-unsubscribe", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
         const body = await req.json()
         if (body.token) {
           token = body.token
