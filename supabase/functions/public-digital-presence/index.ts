@@ -14,12 +14,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 Deno.serve(async req => {
+  // A preflight carries no search. It is answered before the per-address budget, so a real search costs one request of that
+  // budget and not two.
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   try {
     await publicPerimeter(req, "public-digital-presence", 30);
   } catch (perimeterError) {
     return safeError(perimeterError, req);
   }
-  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return json({ available: false, error: 'Method not allowed' }, 405);
   // Server-only switch. Deploying code alone must never start paid anonymous consumption.
   if (Deno.env.get('PUBLIC_PRESENCE_SEARCH_ENABLED') !== 'true') return json({ available: false, results: [] }, 503);
@@ -49,9 +51,10 @@ Deno.serve(async req => {
       body: JSON.stringify({ query: search.query, limit: search.limit }),
     });
     if (!response.ok) {
-      const details = await response.text();
-      console.error(`Public search provider failed [${response.status}]: ${details}`);
-      return json({ available: false, error: 'Provider request failed', status: response.status, details }, response.status);
+      // The provider's answer can describe our account (plan, balance, key). It is logged, and an anonymous caller is told nothing
+      // more than that search is unavailable, whatever the provider said (a 402 would have announced that our credit ran out).
+      console.error(`Public search provider failed [${response.status}]`);
+      return json({ available: false, error: 'Search is temporarily unavailable' }, 502);
     }
     const payload = await response.json();
     const sources = sourcedPublicResults(Array.isArray(payload.data) ? payload.data : payload.data?.web ?? payload.web);
