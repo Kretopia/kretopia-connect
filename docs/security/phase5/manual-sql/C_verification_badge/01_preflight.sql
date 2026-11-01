@@ -31,16 +31,16 @@ WITH priv(col) AS (
     'email_verified', 'phone_verified', 'age_verified', 'payment_verified', 'discogs_verified', 'imdb_verified', 'instagram_verified',
     'mother_agency_verified', 'portfolio_verified', 'social_verified', 'spotify_verified', 'youtube_verified', 'verified_metrics',
     'verification_breakdown', 'verification_notes', 'verification_score', 'verification_status', 'verification_tier', 'verified_at',
-    'verified_credentials', 'is_claimed', 'claimed_at', 'claimed_by', 'claim_token', 'achievement_badges',
+    'verified_credentials', 'claimed_at', 'claimed_by', 'claim_token', 'achievement_badges',
     'subscription_tier', 'subscription_status', 'subscription_end_date', 'subscription_product_id',
     'stripe_account_id', 'stripe_account_status', 'stripe_customer_id', 'stripe_subscription_id',
-    'badge', 'level', 'xp', 'total_xp', 'credit_score', 'average_rating', 'current_streak', 'longest_streak', 'streak_count',
+    'badge', 'level', 'xp', 'total_xp', 'credit_score', 'average_rating', 'longest_streak', 'streak_count',
     'streak_freeze_count', 'double_xp_expires_at', 'total_reviews', 'total_engagement_rate', 'boost_expires_at',
     'og_promotion_expires_at', 'og_promotion_used',
     -- added by this lot (server-written only: send-phone-otp)
     'phone_otp', 'phone_otp_expires_at', 'phone_number',
     -- already revoked by the repository after the lock migration (swipe counters)
-    'daily_swipes', 'last_swipe_reset'
+    'last_swipe_reset'
   ])
 ),
 cols AS (

@@ -7,10 +7,16 @@
 -- the recorded columns only. Legitimate attribution is untouched: the service role (payment webhooks, edge functions) keeps full access,
 -- and SECURITY DEFINER functions such as admin_verify_profile_identity run as their owner, not as the member.
 --
--- Compatibility with the code deployed today: the app writes none of the privileged columns directly (the repository's own migration
+-- Compatibility with the code deployed today: the app writes none of the remaining privileged columns directly (the three it does write are NOT locked, see the update below) (the repository's own migration
 -- says so and checked it); phone_number, phone_otp and phone_otp_expires_at are written only by send-phone-otp with the service role.
 -- Order: SQL first, then nothing to deploy. Business risk: a front-end call that PATCHes one of the locked columns starts to fail with
 -- "permission denied for table profiles" (HTTP 403); the REST calls at the end of 03_verify.sql show the expected answers.
+
+-- UPDATE 2026-11-01: a scan of src/ (66 writes to profiles from the browser) found three privileged-looking columns the app writes
+-- itself, so they are NOT in the locked list: is_claimed (profile auto-provision on sign-in and in onboarding: INSERT and upsert),
+-- current_streak (daily check-in) and daily_swipes (undo swipe). Locking them would answer those flows with HTTP 403. They are counters
+-- and flags of the person's own row; moving them behind RPCs is a follow-up. No other browser write, and no edge function that uses
+-- the member's token, writes a locked column (the founder activation runs with the service role).
 
 BEGIN;
 
@@ -37,14 +43,14 @@ WHERE a.attrelid = 'public.profiles'::regclass
     'email_verified', 'phone_verified', 'age_verified', 'payment_verified', 'discogs_verified', 'imdb_verified', 'instagram_verified',
     'mother_agency_verified', 'portfolio_verified', 'social_verified', 'spotify_verified', 'youtube_verified', 'verified_metrics',
     'verification_breakdown', 'verification_notes', 'verification_score', 'verification_status', 'verification_tier', 'verified_at',
-    'verified_credentials', 'is_claimed', 'claimed_at', 'claimed_by', 'claim_token', 'achievement_badges',
+    'verified_credentials', 'claimed_at', 'claimed_by', 'claim_token', 'achievement_badges',
     'subscription_tier', 'subscription_status', 'subscription_end_date', 'subscription_product_id',
     'stripe_account_id', 'stripe_account_status', 'stripe_customer_id', 'stripe_subscription_id',
-    'badge', 'level', 'xp', 'total_xp', 'credit_score', 'average_rating', 'current_streak', 'longest_streak', 'streak_count',
+    'badge', 'level', 'xp', 'total_xp', 'credit_score', 'average_rating', 'longest_streak', 'streak_count',
     'streak_freeze_count', 'double_xp_expires_at', 'total_reviews', 'total_engagement_rate', 'boost_expires_at',
     'og_promotion_expires_at', 'og_promotion_used',
     'phone_otp', 'phone_otp_expires_at', 'phone_number',
-    'daily_swipes', 'last_swipe_reset'
+    'last_swipe_reset'
   ]);
 
 -- The same narrowing for INSERT: a member whose profile row does not exist yet could otherwise create it with a verification status
