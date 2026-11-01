@@ -55,3 +55,19 @@ the catalog first.
 * A table of approvals: the approvals already live in `orch_actions` / `orch_approvals`; a second place would only be a second place to disagree.
   What the database adds is lot E.
 * Anything that deletes data. The only DROPs are in the `04_rollback` files and in lot B's replacement of its own table's policies.
+
+## Vetting log: code writers checked against each lot before it was handed over
+
+A statement in this README that the code is compatible is only worth what was checked. Static scans of `src/` and `supabase/functions` (and
+the repository's migrations), with what each found:
+
+| Lot | Date | Result |
+|---|---|---|
+| C | 2026-11-01 | **The first claim was wrong.** 66 browser writes to `profiles`; three name a column the lot locked (`is_claimed`, `current_streak`, `daily_swipes`). They were taken out of the locked list before the lot ran. Edge functions that write locked columns use the service role |
+| C2 | 2026-11-01 | No browser or edge write to the four columns; the preflight found no database function writing them; the seven denied columns lot C does not name are written by no code |
+| E | 2026-11-01 | 11 UPDATEs of `orch_actions` in edge functions, all along transitions the guard allows (Telegram rejects only after reading `proposed`); approvals inserted only by the orchestrator with the service role; the preflight found no database function updating `orch_actions` |
+| B (waitlist) | 2026-11-01 | `WaitlistForm` inserts exactly the 11 granted columns, with `status` `review`, and does not read the row back; `WaitlistAdmin` (select, update) is covered by the admin policy; `validate-waitlist-ai` uses the service role |
+| D | 2026-11-01 | `wallet-topup` inserts `pending`, `wallet-topup-confirm` writes `completed` and, if the credit fails, restores the previous status and clears `gateway_payment_id`; the SQL function in the migrations writes `failed`: all inside the status constraint and compatible with the unique payment index. Nothing calls `complete_wallet_topup` yet |
+
+A scan reads the repository, not production: functions pasted by hand are invisible to it, which is why the C2 and E preflights list them.
+
