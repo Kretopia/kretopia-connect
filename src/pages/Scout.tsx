@@ -116,7 +116,7 @@ const Scout = () => {
           </div>
         )}
         {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
-        {tab === "all" && <ScoutAllSources />}
+        {tab === "all" && <ScoutAllSources initialQuery={contextQuery} />}
         {tab === "shortlist" && <div className="space-y-4">
           <div role="group" aria-label="Shortlist lists" className="flex items-center gap-2 border-b border-border pb-3">
             {([ ["saved", "Saved gigs"], ["open", "Open gigs"] ] as const).map(([id, label]) => <Button key={id} variant={shortlistView === id ? "secondary" : "ghost"} size="sm" aria-pressed={shortlistView === id} onClick={() => setShortlistView(id)}>{label}</Button>)}

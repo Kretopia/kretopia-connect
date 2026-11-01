@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { AgentResultCard } from "./AgentResultCard";
 import { deriveResultCards } from "@/lib/agentResultCards";
+import { matchKretoRoute } from "@/lib/kretoInstantRoute";
+import { useNavigate } from "react-router-dom";
 
 export interface PlanStep {
   index: number;
@@ -45,7 +47,23 @@ const statusIcon = (s: PlanStep["status"]) => {
   }
 };
 
+/** The server's own reason when it sent one: supabase-js hides it behind "Edge Function returned a non-2xx status code". */
+async function executorFailureReason(e: unknown): Promise<string> {
+  const response = (e as { context?: Response } | null)?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const body = await response.clone().json();
+      const reason = body?.error ?? body?.message;
+      if (typeof reason === "string" && reason.trim()) return reason;
+    } catch {
+      /* not JSON: fall through to the generic message */
+    }
+  }
+  return e instanceof Error ? e.message : "Try again";
+}
+
 export const CopilotPlanCard = ({ plan: initial, onResolved }: Props) => {
+  const navigate = useNavigate();
   const [plan, setPlan] = useState<CopilotPlan>(initial);
   const [busy, setBusy] = useState<"approve" | "reject" | null>(null);
   const [selected, setSelected] = useState<Set<number>>(
@@ -116,9 +134,17 @@ export const CopilotPlanCard = ({ plan: initial, onResolved }: Props) => {
         onResolved?.(data.status);
       }
     } catch (e) {
+      // The executor is a server round trip. When the goal is just "open a page" or "search a job", do that here instead of a failure.
+      const instant = decision === "approved" ? matchKretoRoute(plan.goal) : null;
+      if (instant) {
+        setPlan((p) => ({ ...p, status: "completed", summary: instant.reply }));
+        onResolved?.("completed");
+        navigate(instant.path);
+        return;
+      }
       toast({
         title: "Couldn't run plan",
-        description: e instanceof Error ? e.message : "Try again",
+        description: await executorFailureReason(e),
         variant: "destructive",
       });
       setPlan((p) => ({ ...p, status: "proposed" }));

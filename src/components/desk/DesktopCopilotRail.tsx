@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { Send, ChevronRight, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +85,7 @@ const visibleAssistantText = (raw: string) => {
 export function DesktopCopilotRail() {
   const { user } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const surface = inferSurface(pathname);
   const [collapsed, setCollapsed] = useState<boolean>(() => {
     try { return localStorage.getItem(STORAGE_KEY) === "1"; } catch { return false; }
@@ -166,6 +168,14 @@ export function DesktopCopilotRail() {
     const content = (text ?? input).trim();
     if (!content || streaming) return;
     setInput("");
+    // A job search or a page name opens right away: nothing to wait for, no plan to approve, no server call that can fail.
+    const instant = matchKretoRoute(content);
+    if (instant) {
+      setMessages((prev) => [...prev, { role: "user", content }, { role: "assistant", content: instant.reply }]);
+      if (fullscreen) persistFullscreen(false);
+      navigate(instant.path);
+      return;
+    }
     const next: CopilotMessage[] = [...messages, { role: "user", content }, { role: "assistant", content: "" }];
     const assistantIdx = next.length - 1;
     let assistantSoFar = "";
