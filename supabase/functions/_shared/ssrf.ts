@@ -167,6 +167,13 @@ export interface BoundedResult {
   text: string;
 }
 
+export interface BoundedBytes {
+  status: number;
+  finalUrl: string;
+  contentType: string;
+  bytes: Uint8Array;
+}
+
 const DEFAULT_MIME = ["text/html", "application/json", "application/xml", "text/xml", "application/rss+xml", "application/atom+xml", "text/plain"];
 
 export function hostMatches(host: string, patterns: string[]): boolean {
@@ -209,13 +216,13 @@ async function checkHop(url: URL, policy: FetchPolicy, deps: FetchDeps): Promise
   if (resolved.some((ip) => isBlockedIp(ip))) throw new FetchPolicyError("blocked_address", "Blocked address");
 }
 
-async function readBounded(res: Response, maxBytes: number): Promise<string> {
+async function readBoundedBytes(res: Response, maxBytes: number): Promise<Uint8Array> {
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) {
     await res.body?.cancel().catch(() => {});
     throw new FetchPolicyError("too_large", "Response too large");
   }
-  if (!res.body) return "";
+  if (!res.body) return new Uint8Array(0);
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -235,10 +242,10 @@ async function readBounded(res: Response, maxBytes: number): Promise<string> {
     all.set(c, at);
     at += c.byteLength;
   }
-  return new TextDecoder("utf-8", { fatal: false }).decode(all);
+  return all;
 }
 
-export async function safeFetchBounded(rawUrl: string | URL, policy: FetchPolicy = {}, deps: FetchDeps = {}): Promise<BoundedResult> {
+async function requestBounded(rawUrl: string | URL, policy: FetchPolicy, deps: FetchDeps): Promise<BoundedBytes> {
   const doFetch = deps.fetch ?? fetch;
   const maxRedirects = policy.maxRedirects ?? 2;
   const timeoutMs = policy.timeoutMs ?? 8000;
@@ -289,14 +296,27 @@ export async function safeFetchBounded(rawUrl: string | URL, policy: FetchPolicy
         await res.body?.cancel().catch(() => {});
         throw new FetchPolicyError("mime", `Content type not allowed: ${contentType || "unknown"}`);
       }
-      const text = await Promise.race([
-        readBounded(res, maxBytes),
+      const bytes = await Promise.race([
+        readBoundedBytes(res, maxBytes),
         new Promise<never>((_, reject) => ctrl.signal.addEventListener("abort", () => reject(new FetchPolicyError("timeout", "Request timed out")))),
       ]);
-      return { status: res.status, finalUrl: current.toString(), contentType, text };
+      return { status: res.status, finalUrl: current.toString(), contentType, bytes };
     } finally {
       clearTimeout(timer);
     }
   }
   throw new FetchPolicyError("redirects", "Too many redirects");
+}
+
+export async function safeFetchBounded(rawUrl: string | URL, policy: FetchPolicy = {}, deps: FetchDeps = {}): Promise<BoundedResult> {
+  const { status, finalUrl, contentType, bytes } = await requestBounded(rawUrl, policy, deps);
+  return { status, finalUrl, contentType, text: new TextDecoder("utf-8", { fatal: false }).decode(bytes) };
+}
+
+/**
+ * The same policy for a body that is not text (a voice note, an image): every hop is checked, the type must be one of
+ * `allowedMime` (set it: the default list is text), and the body is read to `maxBytes` at most.
+ */
+export async function safeFetchBytes(rawUrl: string | URL, policy: FetchPolicy = {}, deps: FetchDeps = {}): Promise<BoundedBytes> {
+  return requestBounded(rawUrl, policy, deps);
 }

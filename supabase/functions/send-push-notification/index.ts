@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 
+import { isAllowedPushEndpoint } from "../_shared/pushEndpoint.ts";
 import { corsFor } from '../_shared/guard.ts';
 interface PushNotificationPayload {
   userId: string;
@@ -338,6 +339,12 @@ serve(async (req) => {
     const results = await Promise.allSettled(
       subscriptions.map(async (sub) => {
         try {
+          // The endpoint was reported by the member's own browser and stored as typed: only a browser vendor's push service
+          // is ever called (_shared/pushEndpoint.ts). Anything else is skipped, not fetched.
+          if (!isAllowedPushEndpoint(sub.endpoint)) {
+            console.warn("[PUSH] Skipping a subscription whose endpoint is not a push service", sub.id);
+            return { success: false, reason: "endpoint_not_allowed" };
+          }
           const pushPayload = JSON.stringify({
             title: payload.title,
             body: payload.body,
@@ -367,6 +374,9 @@ serve(async (req) => {
               "Crypto-Key": `p256ecdsa=${vapidHeaders.cryptoKey}`,
             },
             body: pushPayload,
+            // A push service answers directly; a redirect would be the way to reach somewhere else.
+            redirect: "manual",
+            signal: AbortSignal.timeout(10_000),
           });
 
           console.log(`[PUSH] Response status: ${response.status}`);
