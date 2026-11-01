@@ -62,8 +62,9 @@
 - Render Community through LegalDocumentPage and structured legal content on the existing /community-guidelines route, because all legal surfaces must stay consistent without breaking existing links.
 - @username is the canonical handle: profiles.username is the single source for creator site handle AND sign-in. All validation goes through src/lib/username.ts (3–30, [a-z0-9_], no edge _, reserved list). Sign-in resolves username→email ONLY in the username-auth edge function on Lovable Cloud (legacy backend can't receive deployments); it returns session tokens, never the email, with one generic error and atomic rate limiting via consume_username_auth_attempt. The legacy DB constraint migration lives in docs/product/LEGACY_USERNAME_MIGRATION.sql until the legacy pipeline can apply it.
 
-- @username sign-in resolves emails from the private Cloud table username_login_links (service-role only), filled by the username-auth `link` action after verifying the user's own legacy session on sign-in; the legacy service key is an optional fallback, because no legacy service_role key is available.
+- @username login uses service-only Cloud username_login_links, populated by username-auth `link` after own legacy-session verification; legacy service key is optional because none is available.
 - Onboarding uses the shared feature header and Wrapped shell; verify the owner profile row returned by a save before navigating, and run optional enrichment after the handoff so secondary calls cannot strand a successfully saved user.
 - Subscription sync validates the user server-side before calling; the function returns 401 for invalid sessions before payment work, because cached or foreign tokens do not prove account existence.
 - Optional username linking validates the live app user and caches only success; failed links stay retryable.
 - Use guard.ts/aiPerimeter.ts: validate the account backend without auth fallback, meter on deployment; lockdown SQL stays unapplied.
+- Share instant Kreto search routing across all chats; jobs open Scout, other terms open /search, because navigation must not wait for planning.

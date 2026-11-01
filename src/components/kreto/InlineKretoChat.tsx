@@ -10,6 +10,8 @@ import {
 } from "@/lib/thriveCopilot";
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
 import { KretoQuotaIndicator } from "@/components/kreto/KretoQuotaIndicator";
+import { useNavigate } from "react-router-dom";
+import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 
 // Strip <action>/<plan> tags from the live-streaming buffer, same approach
 // already proven in ThriveAgentFab.tsx — remove fully-closed tags, then hide
@@ -85,6 +87,7 @@ interface InlineKretoChatProps {
  * instant, and keeps the composer pinned under the conversation.
  */
 export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConversationCreated, emptyState }: InlineKretoChatProps) {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
@@ -179,6 +182,16 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     window.clearTimeout(ghostTimerRef.current);
     setGhost("");
     setLastError(null);
+
+    // Navigation needs neither a model call nor a persisted conversation.
+    // Attachment-bearing requests remain on the normal grounded chat path.
+    const instant = attachments.length === 0 ? matchKretoRoute(text) : null;
+    if (instant) {
+      setInput("");
+      setMessages((m) => [...m, { role: "user", content: text }, { role: "assistant", content: instant.reply }]);
+      navigate(instant.path);
+      return;
+    }
 
     // Only fully parsed attachments travel with the message — a failed one
     // keeps its chip (with retry) and never blocks sending the text.
@@ -308,7 +321,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       }
       setStreaming(false);
     }
-  }, [streaming, conversationId, onConversationCreated, attachments]);
+  }, [streaming, conversationId, onConversationCreated, attachments, navigate]);
 
   // A quick-action click seeds the thread and sends immediately. Keyed on
   // seedNonce (not seedPrompt itself) so clicking the same quick action

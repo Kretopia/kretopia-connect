@@ -1,5 +1,5 @@
 /**
- * Instant routing for Kreto's input. A request that asks for a job search, or names a page, opens that page at once: no model call, no
+ * Instant routing for Kreto's input. A request that asks for a search, or names a page, opens that page at once: no model call, no
  * plan to approve and no server round trip that can be slow or fail. Anything that is not clearly such a command returns null and goes
  * to the model exactly as before. It reads the whole message whatever its length, and both Kreto surfaces share it.
  */
@@ -8,7 +8,7 @@ export interface KretoInstantRoute {
   path: string;
   /** What Kreto says while the page opens, in the language the person wrote in. */
   reply: string;
-  /** The search term handed to Scout, when the request carried one. */
+  /** The search term handed to the destination, when the request carried one. */
   query?: string;
 }
 
@@ -102,6 +102,19 @@ export function matchKretoRoute(raw: string): KretoInstantRoute | null {
   if (all.length <= 8 && has(all.slice(0, 3), NAV_VERB)) {
     const page = PAGES.find((p) => has(all, p.words));
     if (page) return { path: page.path, reply: reply(page.label, "", french) };
+  }
+
+  // An explicit search without a job noun belongs to the existing full
+  // results page, not a planner-generated search_creators step. Keep the
+  // complete term (including two-letter specialties such as UX).
+  const searchRequest = sentences.find((tokens) => {
+    const verb = tokens.findIndex((t) => STRONG_VERB.has(t.fold));
+    return verb >= 0 && !tokens.some((t) => words("project projects projet projets").has(t.fold))
+      && tokens.slice(0, verb).every((t) => FILLER.has(t.fold));
+  });
+  if (searchRequest) {
+    const query = searchRequest.filter((t) => !FILLER.has(t.fold)).map((t) => t.text).join(" ");
+    if (query) return { path: `/search?q=${encodeURIComponent(query)}`, reply: reply("Search", query, french), query };
   }
   return null;
 }
