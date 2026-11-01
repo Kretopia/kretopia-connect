@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
@@ -179,11 +179,15 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
  * the counts printed next to each filter and the whole list one click away. Nothing is capped: a section outside the creative families
  * shows its first few until it is opened, and any search or filter shows every match.
  */
-export function ScoutAllSources() {
+export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }) {
   const { data, isLoading, isError } = useScoutCatalog();
   const scan = useOptionalScoutScan();
   const items = useMemo(() => includeScoutedGigs(data?.items ?? [], scan?.gigs ?? []), [data, scan?.gigs]);
-  const [f, setF] = useState<CatalogFilters>(NO_FILTERS);
+  const [f, setF] = useState<CatalogFilters>(() => ({ ...NO_FILTERS, q: initialQuery }));
+  // Kreto can open Scout again with another term while this tab is showing: the search follows the link, and typing is left alone.
+  useEffect(() => {
+    setF((cur) => (cur.q === initialQuery ? cur : { ...cur, q: initialQuery }));
+  }, [initialQuery]);
   const [opened, setOpened] = useState<Set<CategoryId>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
 

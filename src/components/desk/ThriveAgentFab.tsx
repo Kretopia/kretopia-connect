@@ -18,6 +18,7 @@ const stripHtml = (t: string) =>
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { Badge } from "@/components/ui/badge";
 import { KretoMark } from "@/components/brand/KretoMark";
 import { useAuth } from "@/hooks/useAuth";
@@ -361,6 +362,15 @@ export const ThriveAgentFab = () => {
     async (msgText?: string): Promise<string> => {
       const content = (msgText ?? text).trim();
       if (!content || sending) return "";
+      // A job search or a page name opens right away: nothing to wait for, no plan to approve, no server call that can fail.
+      const instant = matchKretoRoute(content);
+      if (instant) {
+        setMessages([...messages, { role: "user", content }, { role: "assistant", content: instant.reply }]);
+        setText("");
+        setOpen(false);
+        navigate(instant.path);
+        return instant.reply;
+      }
       const userMsg: CopilotMessage = { role: "user", content };
       const next = [...messages, userMsg];
       setMessages(next);
@@ -609,7 +619,7 @@ export const ThriveAgentFab = () => {
       }
       return assistantSoFar;
     },
-    [text, sending, messages, surface, surfaceContext, conversationId],
+    [text, sending, messages, surface, surfaceContext, conversationId, navigate],
   );
 
   const clearHistory = useCallback(async () => {
