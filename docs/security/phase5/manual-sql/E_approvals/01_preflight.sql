@@ -70,4 +70,10 @@ SELECT 'action_status_counts', status::text, count(*)::text, NULL FROM public.or
 UNION ALL
 SELECT 'approvals_for_a_missing_or_foreign_action', 'rows', count(*)::text, 'approvals whose user is not the action owner (what E2 stops from now on)'
 FROM public.orch_approvals ap JOIN public.orch_actions a ON a.id = ap.action_id WHERE ap.user_id <> a.user_id
+UNION ALL
+SELECT 'functions_that_update_orch_actions', p.oid::regprocedure::text, CASE WHEN p.prosecdef THEN 'security definer' ELSE 'runs as the caller' END,
+       'its source UPDATEs orch_actions: check the status it sets against the paths named in 02_apply.sql (a writer pasted by hand is invisible to the repository)'
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') AND p.prokind = 'f'
+  AND p.prosrc ~* 'update\s+(public\.)?orch_actions\s+set'
 ORDER BY 1, 2;

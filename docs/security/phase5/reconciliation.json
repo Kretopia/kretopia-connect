@@ -36,12 +36,12 @@
   "partially_fixed": 3,
   "false_positives_with_evidence": 0,
   "open_or_needing_a_decision": 6,
-  "needing_sql": 4,
+  "needing_sql": 3,
   "needing_deployment": 9,
   "needing_verification": 2,
   "proved": {
    "locally": 9,
-   "in_the_catalog": 4,
+   "in_the_catalog": 5,
    "live": 0,
    "note": "R-BUDGETS (durable budgets) is verified in the catalog but nothing calls it, so it is not counted as a fixed vulnerability"
   }
@@ -394,16 +394,17 @@
    "origin": "lot C preflight",
    "surface": "profiles columns members can write that look privileged: project_credits, invited_by, invite_code_used, referred_by_ambassador (preferred_currency is a display preference)",
    "severity": "MEDIUM",
-   "status": "REQUIRES_SQL",
+   "status": "VERIFIED_IN_CATALOG",
    "partial": false,
-   "needs_sql": true,
+   "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "catalog (lot C preflight review_candidates) plus a static scan of src/ and supabase/functions",
+   "proof_level": "catalog (owner's lot C2 03_verify, 6 of 6 true, 2026-11-01)",
    "evidence": [
     "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md",
-    "docs/security/phase5/manual-sql/C2_profile_entitlements/"
+    "docs/security/phase5/manual-sql/C2_profile_entitlements/",
+    "docs/security/phase5/manual-sql/C2_profile_entitlements/RESULTS.md"
    ],
-   "notes": "Decided 2026-11-01: lock project_credits, available_invites, invite_code_used and invited_by (set by the server at sign-up, no browser write found): lot C2, prepared, not run. Leave preferred_currency and referred_by_ambassador writable (the browser writes them); referred_by_ambassador only attributes the member's own row, the proper fix is to attribute at sign-up on the server."
+   "notes": "project_credits, invite_code_used and invited_by (writable) are now denied to members; available_invites already was; no function writes them. preferred_currency and referred_by_ambassador stay writable on purpose (the browser writes them); referred_by_ambassador only attributes the member's own row, the proper fix is to attribute at sign-up on the server."
   },
   {
    "id": "R-BROKEN-WRITES",
