@@ -12,7 +12,10 @@ const mocks = vi.hoisted(() => ({
   stream: vi.fn(),
   load: vi.fn(),
   create: vi.fn(),
+  navigate: vi.fn(),
 }));
+
+vi.mock("react-router-dom", () => ({ useNavigate: () => mocks.navigate }));
 
 vi.mock("@/lib/thriveCopilot", () => ({
   streamCopilot: (args: StreamArgs) => mocks.stream(args),
@@ -50,10 +53,19 @@ beforeEach(() => {
   mocks.stream.mockReset();
   mocks.load.mockReset().mockResolvedValue([]);
   mocks.create.mockReset().mockResolvedValue("conv-1");
+  mocks.navigate.mockReset();
   Element.prototype.scrollTo = vi.fn() as unknown as typeof Element.prototype.scrollTo;
 });
 
 describe("InlineKretoChat", () => {
+  it("navigates Search for UX Designers without planning, chatting or creating a thread", async () => {
+    render(<Harness />);
+    send("Search for UX Designers");
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith("/search?q=UX%20Designers"));
+    expect(mocks.stream).not.toHaveBeenCalled();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
   it("streams one assistant bubble and ends with the complete text", async () => {
     mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => {
       "Hello there, creator".split(" ").forEach((w, i) => onDelta((i ? " " : "") + w));

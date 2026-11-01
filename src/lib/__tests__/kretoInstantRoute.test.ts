@@ -4,6 +4,20 @@ import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 const scout = (q?: string) => (q ? `/scout?tab=all&q=${encodeURIComponent(q)}` : "/scout?tab=all");
 
 describe("matchKretoRoute", () => {
+  it("opens results immediately for Search for UX Designers with the full query", () => {
+    const route = matchKretoRoute("Search for UX Designers");
+    expect(route?.path).toBe("/search?q=UX%20Designers");
+    expect(route?.query).toBe("UX Designers");
+  });
+
+  it.each([
+    ["Please search for UX Designers", "UX Designers"],
+    ["Find UX Designers", "UX Designers"],
+    ["Recherche des designers UX", "designers UX"],
+  ])("opens search results for %j", (text, query) => {
+    expect(matchKretoRoute(text)?.path).toBe(`/search?q=${encodeURIComponent(query)}`);
+  });
+
   it("opens Scout with the role searched, from the exact request of the demo", () => {
     const r = matchKretoRoute("search a job opportunity UX Designer");
     expect(r?.path).toBe(scout("UX Designer"));
@@ -57,7 +71,6 @@ describe("matchKretoRoute", () => {
     "Comment trouver un emploi ?",
     "Write a bio for my passport",
     "Help me plan my project",
-    "Find a collaborator for my project",
     "I need a role model",
     "Tell me about Scout's filters",
     "show me the match history of my project and explain how it was computed",

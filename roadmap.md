@@ -1,5 +1,9 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Immediate Kreto search navigation
+- [ ] Route “Search for UX Designers” directly to existing search results with the intact query, bypassing planning; cover floating, rail and inline chat with regression tests.
+- [ ] Verify the live navigation; authenticated verification requires an available legacy account session.
+
 ## Temporary transparent Halloween mascots
 - [x] Use supplied transparent pumpkin on Landing with the existing flight controller, timing and scroll movements unchanged; aligned wave layers retain the greeting.
 - [x] Repair witch cauldron and residual background; use it on the existing KretoAI launcher without cropping.
