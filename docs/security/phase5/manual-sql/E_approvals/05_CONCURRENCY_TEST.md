@@ -1,5 +1,7 @@
 # Lot E -- concurrency and transition test (run by you, on an ISOLATED database, never on production)
 
+Lot E was applied to production by the owner on 2026-11-01, before this test (`RESULTS.md`: the apply reported success; its verify result was not seen). The test now proves behaviour under concurrency rather than gating the application.
+
 Status until this test has been run and matches: **WAITING_FOR_VALIDATION**. Not run by the author (no database, and by rule no `psql`).
 
 What it must show: of many simultaneous consumers of one approved action exactly one wins; two positive approvals cannot coexist; the status

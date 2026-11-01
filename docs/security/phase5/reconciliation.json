@@ -36,9 +36,9 @@
   "partially_fixed": 3,
   "false_positives_with_evidence": 0,
   "open_or_needing_a_decision": 6,
-  "needing_sql": 3,
+  "needing_sql": 2,
   "needing_deployment": 9,
-  "needing_verification": 2,
+  "needing_verification": 3,
   "proved": {
    "locally": 9,
    "in_the_catalog": 5,
@@ -431,15 +431,16 @@
    "origin": "found in phase 5",
    "surface": "orch_approvals: a member can write an approval row (including a rejection) for another member's action id",
    "severity": "LOW",
-   "status": "REQUIRES_SQL",
+   "status": "NEEDS_VERIFICATION",
    "partial": false,
-   "needs_sql": true,
+   "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "local",
+   "proof_level": "none yet: the owner's 02 reported applied (2026-11-01), the 03_verify result row was not seen",
    "evidence": [
-    "commit 0556f2cac: manual-sql/E_approvals"
+    "commit 0556f2cac: manual-sql/E_approvals",
+    "docs/security/phase5/manual-sql/E_approvals/RESULTS.md"
    ],
-   "notes": "Needs the target's action id (a uuid): hard to guess."
+   "notes": "Lot E is in production (approvals insert policy replaced, transition guard, unique positive-approval index). Preflight: no pending action, no approval on a foreign action, no database function updating orch_actions. Owed: the 03_verify row, the concurrency test, the REST call."
   },
   {
    "id": "R-TOPUP",

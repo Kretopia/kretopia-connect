@@ -9,7 +9,7 @@ unexpected, and why every lot has a read-only preflight you run first. Since the
   accepted in production and rejects two deliberately broken files. This proves **syntax only**: it does not show that a table, column or
   role exists, nor what a statement does. Re-run it after any edit, from the repository root:
   `python3 -m venv v && v/bin/pip install pglast && v/bin/python docs/security/phase5/tools/parse_sql_pack.py $(find docs/security/phase5 -name '*.sql')`.
-* **Lots A, C and C2 were run by the owner in production** and the results were reported (`A_durable_budgets/RESULTS.md`, `C_verification_badge/RESULTS.md`, `C2_profile_entitlements/RESULTS.md`). Nothing else in this folder has been reported as run.
+* **Lots A, C, C2 and E were run by the owner in production** and the results were reported (`A_durable_budgets/RESULTS.md`, `C_verification_badge/RESULTS.md`, `C2_profile_entitlements/RESULTS.md`, `E_approvals/RESULTS.md`). Nothing else in this folder has been reported as run.
 
 ## Where, how
 
@@ -27,12 +27,12 @@ unexpected, and why every lot has a read-only preflight you run first. Since the
 |---|---|---|---|---|
 | C | `C_verification_badge` | A member can no longer set their own verification, badge, subscription, XP, nor the phone code and number; narrows UPDATE and INSERT on `profiles`, never widens | no | **APPLIED by the owner 2026-11-01, catalog-verified (9 of 9).** REST calls and a click-through of the profile editor, onboarding, daily check-in and undo swipe still owed; five review candidates await a decision (`C_verification_badge/RESULTS.md`) |
 | C2 | `C2_profile_entitlements` | Members can no longer write `project_credits`, `available_invites`, `invite_code_used`, `invited_by` on their own profile (column REVOKE, nothing else touched) | no | **APPLIED by the owner 2026-11-01, catalog-verified (6 of 6)**; its preflight found no function writing these columns |
-| E | `E_approvals` | A member can record an approval only for their own action; a decided action cannot be rewritten; one positive approval per action | yes | **WAITING_FOR_VALIDATION** (test in `05_CONCURRENCY_TEST.md`) |
+| E | `E_approvals` | A member can record an approval only for their own action; a decided action cannot be rewritten; one positive approval per action | yes | **APPLIED by the owner 2026-11-01** (02 reported applied; the 03 result was not seen). Concurrency: **WAITING_FOR_VALIDATION** (`05_CONCURRENCY_TEST.md`) |
 | B | `B_privacy` | Waitlist: visitors insert 11 named columns only, nobody but an admin reads or changes entries. The other privacy tables: a discovery query and a decision matrix, no guessed policy | no | **READY_FOR_APPROVAL** for the waitlist; the other tables are **BLOCKED** on your decisions (`DECISIONS.md`) |
 | A | `A_durable_budgets` | New: `budget_buckets`, `budget_reservations`, `reserve_budget` / `commit_budget` / `release_budget` (service role only, cannot overshoot) | yes | **APPLIED by the owner 2026-11-01, catalog-verified (16 of 16), unwired.** Concurrency: **WAITING_FOR_VALIDATION** (`05_CONCURRENCY_TEST.md`); optional `03b_verify_as_roles.sql` not run yet |
 | D | `D_topup_atomicity` | New function `complete_wallet_topup` (claim and credit in one transaction), one-payment-one-top-up index, status constraint | yes | **WAITING_FOR_VALIDATION**; the matching code change is NOT done and waits for the test |
 
-Recommended order: **E**, then **B (waitlist)**, then **D** (**A**, **C** and **C2** are done). They are independent of each other: none needs another
+Recommended order: **B (waitlist)**, then **D** (**A**, **C** and **C2** are done; **E** is applied, its verify result is owed). They are independent of each other: none needs another
 to be applied first, and none needs an edge function to be deployed first or after. The only lot that ends in a code change is **D**.
 
 Before C, look at lot 0 (`../lot0_sec01_sec02_verification.md`): it closes the verification of SEC-01 and SEC-02 and shares the habit of reading
