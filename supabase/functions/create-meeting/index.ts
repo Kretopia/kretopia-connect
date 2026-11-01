@@ -7,7 +7,6 @@ import { ProjectAccessError, isUuid, requireProjectAccess } from "../_shared/pro
 import { decideCircleContext } from "../_shared/meetingContextAccess.ts";
 import { hasExplicitRecordingConsent } from "../_shared/recordingConsent.ts";
 
-
 import { corsFor } from '../_shared/guard.ts';
 const DAILY_API = "https://api.daily.co/v1";
 
@@ -32,6 +31,13 @@ interface Body {
 
 serve(async (req) => {
   const corsHeaders = corsFor(req);
+  // Declared inside the handler on purpose: corsHeaders belongs to this request, a module-level helper cannot see it.
+  function json(body: unknown, status = 200) {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -214,9 +220,3 @@ serve(async (req) => {
   }
 });
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
