@@ -109,3 +109,13 @@ policy refuses, remove it from the app).
 
 A pass on all four is a proof for **these two surfaces and these two test accounts**, in production, at the time of the calls.
 It says nothing about the other `public` functions or tables.
+
+## Results reported by the owner, 2026-11-01 (the catalog query only, not the REST calls)
+
+* **SEC-01 is closed in the catalog.** `admin_set_profile_coords(jsonb)`: `anon` cannot execute it, `authenticated` and `service_role` can, it is
+  `SECURITY DEFINER` with `search_path = pg_catalog, public, pg_temp`, and its body refuses anyone who is neither the service role nor an admin
+  (and refuses arrays of more than 1000 records). REST calls 1 and 2 would show the HTTP answers; they were not reported.
+* **SEC-02 is half seen.** `public.projects` has RLS on (not forced) and one INSERT policy, `Authenticated users can create projects`, with
+  `WITH CHECK (auth.uid() = created_by)`, and no other INSERT or ALL policy. A `BEFORE INSERT` trigger (`set_project_created_by_trigger`) and a
+  `BEFORE UPDATE OF created_by` trigger (`trg_guard_project_created_by`) exist and are enabled, next to the owner-column and payer-column guards.
+  Not seen yet: the bodies of those two trigger functions and the UPDATE policies. `lot0b_sec02_guard_and_counters.sql` (read-only) shows them.

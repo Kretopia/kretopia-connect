@@ -21,7 +21,8 @@
   "FALSE_POSITIVE_WITH_EVIDENCE",
   "REQUIRES_SQL",
   "REQUIRES_PRODUCT_DECISION",
-  "NEEDS_VERIFICATION"
+  "NEEDS_VERIFICATION",
+  "VERIFIED_IN_CATALOG"
  ],
  "proof_levels": {
   "local": "a test of this repository passes against the real code with fakes",
@@ -30,17 +31,17 @@
  },
  "counts": {
   "scope": "only the items listed in this file; the 25 dashboard findings, the 58 earlier alerts and phases 1-4 are not counted because their lists are not in the repository",
-  "unique_vulnerabilities": 24,
+  "unique_vulnerabilities": 25,
   "fixed_locally_not_deployed": 6,
   "partially_fixed": 3,
   "false_positives_with_evidence": 0,
-  "open_or_needing_a_decision": 6,
-  "needing_sql": 5,
+  "open_or_needing_a_decision": 7,
+  "needing_sql": 3,
   "needing_deployment": 9,
-  "needing_verification": 4,
+  "needing_verification": 3,
   "proved": {
    "locally": 9,
-   "in_the_catalog": 0,
+   "in_the_catalog": 3,
    "live": 0,
    "note": "R-BUDGETS (durable budgets) is verified in the catalog but nothing calls it, so it is not counted as a fixed vulnerability"
   }
@@ -52,16 +53,16 @@
    "origin": "brief",
    "surface": "public.admin_set_profile_coords (anon could call it; body let auth.uid() IS NULL through)",
    "severity": "HIGH",
-   "status": "NEEDS_VERIFICATION",
+   "status": "VERIFIED_IN_CATALOG",
    "partial": false,
    "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "none yet (owner's statement)",
+   "proof_level": "catalog (owner's lot 0 query, 2026-11-01): anon cannot execute, the body requires an admin or the service role, search_path pinned",
    "evidence": [
     "commit fd46ef688: docs/security/phase5/lot0_sec01_sec02_catalog_check.sql + lot0_sec01_sec02_verification.md",
     "repo body: supabase/migrations/20260417183206 (the vulnerable original)"
    ],
-   "notes": "Applied by the owner per their statement; the catalog query and REST calls 1-2 close it. Result rows not yet seen."
+   "notes": "Seen in production: exec_anon false, exec_authenticated true, exec_service_role true, SECURITY DEFINER, search_path pg_catalog, public, pg_temp; the body refuses anyone who is neither service_role nor an admin and bounds the array at 1000. The HTTP answers (REST calls 1-2) were not seen."
   },
   {
    "id": "SEC-02",
@@ -73,12 +74,12 @@
    "partial": false,
    "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "none yet (owner's statement)",
+   "proof_level": "catalog, partial (owner's lot 0 query, 2026-11-01)",
    "evidence": [
     "commit fd46ef688: REST calls 3-4 cover INSERT with a foreign created_by and the owner change after insertion",
     "repo: set_project_created_by_trigger rewrites created_by on INSERT; trg_guard_project_created_by is BEFORE UPDATE OF created_by"
    ],
-   "notes": "Applied by the owner per their statement. Note: with the BEFORE INSERT trigger the policy is a second line (a foreign created_by is overwritten, not refused)."
+   "notes": "Seen: INSERT policy 'Authenticated users can create projects' WITH CHECK (auth.uid() = created_by) and no other INSERT or ALL policy; BEFORE INSERT set_project_created_by_trigger; BEFORE UPDATE OF created_by trg_guard_project_created_by; all enabled. Not seen: the bodies of those two trigger functions and the UPDATE policies (lot0b_sec02_guard_and_counters.sql), nor the REST calls 3-4."
   },
   {
    "id": "SEC-26/27",
@@ -357,16 +358,17 @@
    "origin": "brief",
    "surface": "verification, subscription, badge and XP columns of profiles writable by their owner (repository carries the fix; production state unknown)",
    "severity": "HIGH",
-   "status": "REQUIRES_SQL",
+   "status": "VERIFIED_IN_CATALOG",
    "partial": false,
-   "needs_sql": true,
+   "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "local",
+   "proof_level": "catalog (owner's lot C 03_verify, 9 of 9 true, 2026-11-01)",
    "evidence": [
     "commit 0556f2cac: manual-sql/C_verification_badge",
-    "supabase/migrations/20260904150000_lock_profiles_privileged_columns.sql"
+    "supabase/migrations/20260904150000_lock_profiles_privileged_columns.sql",
+    "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md (the owner's results)"
    ],
-   "notes": "Preflight shows what is exposed today."
+   "notes": "Production already denied members every listed column except four before lot C (preflight exposed_now); lot C leaves is_claimed, current_streak and daily_swipes unlocked because the app writes them. REST calls and a click-through of the profile editor, onboarding, daily check-in and undo swipe are owed."
   },
   {
    "id": "R-PHONE",
@@ -374,16 +376,33 @@
    "origin": "found in phase 5",
    "surface": "profiles.phone_otp / phone_otp_expires_at / phone_number writable by the member: a self-chosen code verifies any number; the badge survives a number change",
    "severity": "HIGH",
-   "status": "REQUIRES_SQL",
+   "status": "VERIFIED_IN_CATALOG",
    "partial": false,
-   "needs_sql": true,
+   "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "local",
+   "proof_level": "catalog (owner's lot C 03_verify, 9 of 9 true, 2026-11-01)",
    "evidence": [
     "commit 0556f2cac: manual-sql/C_verification_badge (added to the lock list)",
-    "supabase/functions/_shared/phoneOtp.ts accepts a plain six-digit stored value"
+    "supabase/functions/_shared/phoneOtp.ts accepts a plain six-digit stored value",
+    "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md (the owner's results)"
    ],
-   "notes": "The repository's own lock list misses these three columns."
+   "notes": "phone_number, phone_otp and phone_otp_expires_at were member-writable in production until lot C (preflight exposed_now), so a member could set their own SMS code; closed 2026-11-01 (03_verify: members can neither update nor insert them). REST calls not seen."
+  },
+  {
+   "id": "R-PROFILE-REVIEW",
+   "kind": "vulnerability",
+   "origin": "lot C preflight",
+   "surface": "profiles columns members can write that look privileged: project_credits, invited_by, invite_code_used, referred_by_ambassador (preferred_currency is a display preference)",
+   "severity": "MEDIUM",
+   "status": "REQUIRES_PRODUCT_DECISION",
+   "partial": false,
+   "needs_sql": false,
+   "needs_deploy": false,
+   "proof_level": "catalog (lot C preflight review_candidates) plus a static scan of src/ and supabase/functions",
+   "evidence": [
+    "docs/security/phase5/manual-sql/C_verification_badge/RESULTS.md"
+   ],
+   "notes": "referred_by_ambassador is written from the browser (src/lib/ambassadorAttribution.ts), so any member can attribute themselves to any ambassador; the other three have no direct writer on profiles in the repository. Locking needs the owner's confirmation of what each holds."
   },
   {
    "id": "R-APPR-RLS",
