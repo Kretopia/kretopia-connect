@@ -7,7 +7,7 @@ import {
   decideApprovalTarget,
   type ShareVisibleFile,
 } from "../_shared/shareLinkScope.ts";
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 
 
@@ -63,7 +63,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "redeem-project-share", 10);
+    try {
+      await publicPerimeter(req, "redeem-project-share", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const body = await req.json().catch(() => ({}));
     const { action, token, password } = body as {
       action: string;

@@ -3,6 +3,7 @@ import { authorizePublicSearch } from '../_shared/publicSearchPolicy.ts';
 import { sourcedPublicResults, rankPublicSources } from '../_shared/publicPresenceResults.ts';
 import { GEMINI_3_FLASH } from '../_shared/aiModels.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { safeError } from '../_shared/guard.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,11 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 Deno.serve(async req => {
-  await publicPerimeter(req, "public-digital-presence", 30);
+  try {
+    await publicPerimeter(req, "public-digital-presence", 30);
+  } catch (perimeterError) {
+    return safeError(perimeterError, req);
+  }
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
   if (req.method !== 'POST') return json({ available: false, error: 'Method not allowed' }, 405);
   // Server-only switch. Deploying code alone must never start paid anonymous consumption.

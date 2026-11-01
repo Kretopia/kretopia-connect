@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
@@ -11,7 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "sso-authorize", 10);
+    try {
+      await publicPerimeter(req, "sso-authorize", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const url = new URL(req.url);
     const clientId = url.searchParams.get("client_id");
     const redirectUri = url.searchParams.get("redirect_uri");

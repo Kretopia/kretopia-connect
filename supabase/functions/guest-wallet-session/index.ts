@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { z } from "https://esm.sh/zod@3.23.8";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const BodySchema = z.object({
   email: z.string().trim().email().max(255).transform((s) => s.toLowerCase()),
@@ -29,7 +29,11 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    await publicPerimeter(req, "guest-wallet-session", 10);
+    try {
+      await publicPerimeter(req, "guest-wallet-session", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const parsed = BodySchema.safeParse(await req.json());
     if (!parsed.success) return json({ error: "Invalid email or code" }, 400);
     const { email, code } = parsed.data;

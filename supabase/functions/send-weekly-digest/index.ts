@@ -3,7 +3,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { requireAdminOrCron, adminGuardCorsHeaders } from "../_shared/admin-guard.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) throw new Error("Email service is not configured");
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
 
 
 
@@ -305,7 +311,7 @@ const handler = async (req: Request): Promise<Response> => {
       // address (it is the admin looking at their own copy); the unsubscribe
       // link falls back to preferences if no token can be made.
       const previewToken = await getUnsubscribeToken(supabaseAdmin, recipient);
-      const { error } = await resend.emails.send({
+      const { error } = await getResend().emails.send({
         from: FROM,
         to: [recipient],
         subject: `[PREVIEW] ${subjectLine}`,
@@ -386,7 +392,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (!token) { skipped++; return; } // no working unsubscribe link -> no email
       const unsubscribeUrl = `${baseUrl}/unsubscribe?token=${token}`;
       try {
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
           from: FROM,
           to: [email],
           subject: subjectLine,

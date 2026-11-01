@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 // Records the real, server-computed result under service_role and returns
 // an opaque single-use token. claim-and-create-profile consumes that token
@@ -40,7 +40,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "verify-profile-claim", 10);
+    try {
+      await publicPerimeter(req, "verify-profile-claim", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const { profileId, profileImageUrl, selfieImage, profileName } = await req.json();
 
     if (!profileImageUrl || !selfieImage) {

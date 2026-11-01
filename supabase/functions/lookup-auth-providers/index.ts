@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 /**
  * Public pre-flight lookup so the sign-in form can guide users to the right
@@ -16,7 +16,11 @@ Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    await publicPerimeter(req, "lookup-auth-providers", 10);
+    try {
+      await publicPerimeter(req, "lookup-auth-providers", 10);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 

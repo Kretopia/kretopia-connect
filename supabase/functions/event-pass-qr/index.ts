@@ -1,4 +1,5 @@
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { safeError } from '../_shared/guard.ts';
 // event-pass-qr: the Kretopia-branded event pass QR as a PNG, for emails.
 //
 // An email can't run the app's qr-code-styling (no JS, and Gmail blocks data: images), so the
@@ -285,7 +286,11 @@ function loadLogo(): Promise<Logo | null> {
 const TOKEN_RE = /^[A-Za-z0-9_-]{32,64}$/
 
 export async function handle(req: Request): Promise<Response> {
-  await publicPerimeter(req, "event-pass-qr", 60);
+  try {
+    await publicPerimeter(req, "event-pass-qr", 60);
+  } catch (perimeterError) {
+    return safeError(perimeterError, req);
+  }
   if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405 })
   const token = new URL(req.url).searchParams.get('t') ?? ''
   if (!TOKEN_RE.test(token)) return new Response('Invalid token', { status: 400 })

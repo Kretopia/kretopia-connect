@@ -15,7 +15,13 @@ import {
   recordActorSend,
 } from "../_shared/outboundBudget.ts";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+let resendClient: Resend | null = null;
+function getResend(): Resend {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) throw new Error("Email service is not configured");
+  if (!resendClient) resendClient = new Resend(key);
+  return resendClient;
+}
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -272,7 +278,7 @@ const handler = async (req: Request): Promise<Response> => {
     let emailError: string | null = null;
 
     try {
-      const emailResponse = await resend.emails.send({
+      const emailResponse = await getResend().emails.send({
         from: "Kretopia <noreply@kretopia.com>",
         to: email ? [email] : [],
         subject: `${inviterName} invited you to "${projectTitle}" on Kretopia`,

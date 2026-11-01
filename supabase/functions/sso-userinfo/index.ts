@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
@@ -18,7 +18,11 @@ serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "sso-userinfo", 30);
+    try {
+      await publicPerimeter(req, "sso-userinfo", 30);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     // Extract the ThriveIN SSO access token from Authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {

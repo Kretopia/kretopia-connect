@@ -8,7 +8,7 @@ import { Resvg, initWasm } from "https://esm.sh/@resvg/resvg-wasm@2.6.2";
 import { projectHasExplicitShare, requireProjectAccess } from "../_shared/projectAccess.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 let wasmInitialized = false;
 async function ensureWasm() {
@@ -151,7 +151,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    await publicPerimeter(req, "project-og-image", 60);
+    try {
+      await publicPerimeter(req, "project-og-image", 60);
+    } catch (perimeterError) {
+      return safeError(perimeterError, req);
+    }
     const url = new URL(req.url);
     const projectId = url.searchParams.get("project_id");
     if (!projectId) {
