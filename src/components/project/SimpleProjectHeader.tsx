@@ -8,7 +8,7 @@ import { KretoMark } from "@/components/brand/KretoMark";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { InviteCollaboratorDialog } from "./InviteCollaboratorDialog";
-import { VideoCallSheet } from "./VideoCallSheet";
+import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 import { StartCallSheet, type StartCallPerson } from "./StartCallSheet";
 import { StartMeetingDialog } from "@/components/calls/StartMeetingDialog";
 import { CallStartChooser } from "@/components/calls/CallStartChooser";

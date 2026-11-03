@@ -610,5 +610,5 @@ export const PersistentStudioCall = ({
 
 function StudioCallSurface({ live, open, onOpenChange, ...props }: React.ComponentProps<typeof PersistentCallWindow> & { live: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (live) return <PersistentCallWindow {...props} />;
-  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="k-call-surface h-[100dvh] sm:h-[92dvh] max-h-[100dvh] p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden">{props.children}</SheetContent></Sheet>;
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="k-call-surface k-call-sheet p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden">{props.children}</SheetContent></Sheet>;
 }

@@ -183,7 +183,7 @@ export const Greenroom = ({
 
       {/* Controls */}
       <div
-        className="k-call-footer space-y-2 max-h-[60dvh] overflow-y-auto"
+        className="k-call-footer space-y-2 k-call-max-60vh overflow-y-auto"
       >
         {needsName && (
           <Input
