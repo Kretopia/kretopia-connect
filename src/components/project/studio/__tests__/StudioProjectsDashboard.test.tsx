@@ -108,12 +108,14 @@ describe("StudioProjectsDashboard", () => {
       expect(screen.queryByRole("button", { name: /^Ask$/ })).not.toBeInTheDocument();
     });
 
-    it("keeps one \"Move to…\" per card, docked bottom-right and outside the card's own button", () => {
+    it("keeps one \"Move to…\" per card, as the card's one secondary action in its footer and outside the card's own button", () => {
       renderDash({ folders, onMoveToFolder: vi.fn() });
       const moves = screen.getAllByRole("button", { name: /Move .* to a folder/ });
       expect(moves).toHaveLength(2);
       expect(moves[0]).toHaveTextContent("Move to…");
-      expect(moves[0]).toHaveClass("absolute", "bottom-2.5", "right-2.5");
+      // The card shell puts its one secondary action in the footer (it used to be a control docked bottom-right by this card alone).
+      expect(moves[0]).toHaveAttribute("data-card-part", "secondary");
+      expect(moves[0].closest('[data-card-part="footer"]')).not.toBeNull();
       // not nested inside the card's navigation button (no button-in-button)
       expect(moves[0].parentElement?.closest("button")).toBeNull();
     });

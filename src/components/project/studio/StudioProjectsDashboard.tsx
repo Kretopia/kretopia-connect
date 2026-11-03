@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { formatDistanceToNowStrict, format } from "date-fns";
+import { format } from "date-fns";
 import {
   Search,
   AlertTriangle,
   FolderInput,
   Plus,
-  Calendar,
-  Users,
   Video,
   Sparkles,
   CheckCircle2,
   Clock,
-  ArrowRight,
   MoreVertical,
   Zap,
   FileText,
@@ -49,7 +46,7 @@ import { moodAccent, monogram, STATUS_PILL, PAY_DOT, PAY_LABEL, type StudioProje
 import { MoveToFolderSheet } from "./MoveToFolderSheet";
 import { prioritizeProjects } from "./studioHome.selectors";
 import type { StudioFolder } from "./studioHome.types";
-import { HoloCard } from "@/components/passport/HoloCard";
+import { ProjectCard } from "./ProjectCard";
 import { WORKSPACE_CONFIGS, type WorkspaceType } from "@/lib/workspaceConfigs";
 
 type PayState = "paid" | "invoiced" | "unsent";
@@ -889,7 +886,6 @@ export const StudioProjectsDashboard = ({
             const workspaceLabel = p.workspace_type
               ? WORKSPACE_CONFIGS[p.workspace_type as WorkspaceType]?.label
               : null;
-            const participants = participantsByProject[p.id] ?? 0;
             const projProgress = isDelivered(p.status)
               ? 100
               : p.status === "wrapping"
@@ -899,122 +895,22 @@ export const StudioProjectsDashboard = ({
                   : 50;
 
             return (
-              <li key={p.id} className="group relative w-[min(82vw,300px)] shrink-0 snap-start sm:w-[300px]">
-                <HoloCard className="h-full overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/desk/${p.id}`)}
-                    className="block w-full bg-card text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
-                  >
-                    {/* Cover */}
-                    <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
-                      {p.cover_url ? (
-                        <img
-                          src={p.cover_url}
-                          alt=""
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        />
-                      ) : (
-                        <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
-                          <KretoScene scene="workspace" size="thumb" className="absolute inset-0 h-full w-full opacity-70" />
-                          <div
-                            aria-hidden
-                            className="absolute inset-0"
-                            style={{ background: `linear-gradient(135deg, ${accent}55, transparent 70%)` }}
-                          />
-                          <span
-                            className="relative rounded-xl bg-card/85 px-3 py-1 text-2xl font-black tracking-tight"
-                            style={{ color: accent }}
-                          >
-                            {monogram(p.title)}
-                          </span>
-                        </div>
-                      )}
-                      <span
-                        className={cn(
-                          "absolute left-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm",
-                          pill.tone,
-                        )}
-                      >
-                        {pill.label}
-                      </span>
-                    </div>
-
-                    {/* Body */}
-                    <div className="space-y-2 p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="truncate text-sm font-bold">{p.title}</span>
-                        {workspaceLabel && (
-                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            {workspaceLabel}
-                          </span>
-                        )}
-                      </div>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {p.client_name || p.description || "No client set"}
-                      </p>
-                      <div className="space-y-1">
-                        <Progress value={projProgress} className="h-1" />
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                          <span>{projProgress}% complete</span>
-                          <span className="inline-flex items-center gap-1">
-                            <Clock className="h-2.5 w-2.5" />
-                            Updated {formatDistanceToNowStrict(new Date(p.updated_at))} ago
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 rounded-lg bg-muted/40 p-2">
-                        <ArrowRight className="h-3.5 w-3.5 text-primary" />
-                        <p className="text-[11px] font-semibold text-foreground/80">{nextAction(p)}</p>
-                      </div>
-                      <div
-                        className={cn(
-                          "flex min-h-7 flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground",
-                          canMove && "pr-24",
-                        )}
-                      >
-                        {p.deadline && (
-                          <span className="inline-flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(new Date(p.deadline), "MMM d")}
-                          </span>
-                        )}
-                        {participants > 0 && (
-                          <span className="inline-flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {participants}
-                          </span>
-                        )}
-                        {moneyVisible(p.id) && (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span className={cn("h-1.5 w-1.5 rounded-full", PAY_DOT[state])} />
-                            {PAY_LABEL[state]}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-
-                  {/* "Move to…": the only action left on a card. Open is the card itself;
-                      Call / Ask live in the Room, where they have context. Sits bottom-right,
-                      outside the card's own <button> (no nested buttons). */}
-                  {canMove && (
-                    <button
-                      type="button"
-                      onClick={() => setMoveTarget(p)}
-                      aria-label={`Move ${p.title} to a folder`}
-                      className={cn(
-                        "absolute bottom-2.5 right-2.5 z-10 inline-flex items-center gap-1.5 rounded-full",
-                        "border border-border bg-card px-2.5 py-1 text-[11px] font-semibold text-muted-foreground shadow-sm",
-                        "transition-colors hover:border-[hsl(var(--energy)/0.6)] hover:text-[hsl(var(--energy))]",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                      )}
-                    >
-                      <FolderInput className="h-3 w-3" aria-hidden />
-                      Move to…
-                    </button>
-                  )}
-                </HoloCard>
+              <li key={p.id} className="w-[min(82vw,300px)] shrink-0 snap-start sm:w-[300px]">
+                <ProjectCard
+                  title={p.title}
+                  coverUrl={p.cover_url}
+                  accent={accent}
+                  monogram={monogram(p.title)}
+                  status={pill}
+                  workspaceLabel={workspaceLabel}
+                  client={p.client_name || p.description || "No client set"}
+                  nextAction={nextAction(p)}
+                  progress={projProgress}
+                  deadline={p.deadline ? format(new Date(p.deadline), "MMM d") : null}
+                  pay={moneyVisible(p.id) ? { label: PAY_LABEL[state], dot: PAY_DOT[state] } : null}
+                  onOpen={() => navigate(`/desk/${p.id}`)}
+                  onMove={canMove ? () => setMoveTarget(p) : undefined}
+                />
               </li>
             );
           })}

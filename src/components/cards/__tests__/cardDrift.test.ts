@@ -12,6 +12,7 @@ const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
 /** Every card of the app, the family it belongs to, and the file that fills the shell's slots for it. */
 export const VARIANTS = [
   { name: "opportunity", file: "src/components/scout/ScoutGigCard.tsx" },
+  { name: "project", file: "src/components/project/studio/ProjectCard.tsx" },
 ];
 
 /** Bespoke cards that existed before the shell. They are gone, and a file of that name must not come back. */
