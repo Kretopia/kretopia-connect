@@ -202,16 +202,29 @@ describe("ScoutAllSources: a card", () => {
       ext("Illustrator", { source_provider: "remoteok", apply_url: "https://remoteok.com/remote-jobs/x-1" }),
       ext("Copywriter", { source_provider: "jobicy", apply_url: "https://jobicy.com/jobs/9-z" }),
     ]);
-    const him = screen.getByRole("link", { name: "Apply at source: Art Director" });
+    const card = cards().find((c) => c.textContent?.includes("Art Director"))!;
+    expect(
+      within(card).getByRole("link", { name: "Art Director" }).getAttribute("href")
+    ).toMatch(/^\/listing\/e\d+$/);
+
+    expect(
+      within(card).queryByRole("link", { name: "Apply at source: Art Director" })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
+    const him = within(card).getByRole("link", { name: "Apply at source: Art Director" });
     expect(him).toHaveAttribute("href", "https://himalayas.app/companies/a/jobs/b?utm_source=api");
     expect(him).toHaveAttribute("target", "_blank");
     expect(him.getAttribute("rel")).toBe("noopener noreferrer nofollow");
-    expect(screen.getByRole("link", { name: "Apply at source: Illustrator" }).getAttribute("rel")).toBe("noopener noreferrer"); // Remote OK asks for a followed link
-    const card = cards().find((c) => c.textContent?.includes("Art Director"))!;
+    const illustrator = cards().find((c) => c.textContent?.includes("Illustrator"))!;
+    fireEvent.click(within(illustrator).getByRole("button", { name: "Quick look" }));
+    expect(
+      within(illustrator).getByRole("link", { name: "Apply at source: Illustrator" }).getAttribute("rel")
+    ).toBe("noopener noreferrer"); // Remote OK asks for a followed link
     expect(within(card).getByTestId("listing-labels")).toHaveTextContent("via Himalayas");
     expect(within(card).getByTestId("listing-labels")).toHaveTextContent("Unclaimed");
     // the title goes to Kretopia's own page for the listing
-    expect(within(card).getByRole("link", { name: "Art Director" }).getAttribute("href")).toMatch(/^\/listing\/e\d+$/);
+
   });
 
   it("a card shows the family, the level, where, the working mode and the pay or that none is listed", () => {
@@ -230,6 +243,7 @@ describe("ScoutAllSources: a card", () => {
     const card = cards()[0];
     const more = within(card).getByText("Also posted for 2 more places");
     expect(more.closest("details")).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
     const links = within(card).getAllByRole("link", { name: /^Apply at source for / });
     expect(links.map((a) => a.getAttribute("aria-label"))).toEqual(["Apply at source for Estonia: Creative Design Team Lead", "Apply at source for Italy: Creative Design Team Lead"]);
     expect(links[0]).toHaveAttribute("href", "https://jobicy.com/jobs/1-cap");
@@ -244,6 +258,7 @@ describe("ScoutAllSources: a card", () => {
     const card = cards()[0];
     expect(card).toHaveTextContent("Kretopia");
     expect(card).toHaveTextContent("$800");
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
     expect(within(card).getByRole("link", { name: "View gig" })).toHaveAttribute("href", "/opportunity/k1");
     expect(within(card).queryByText(/Apply at source/)).not.toBeInTheDocument();
     expect(within(card).queryByTestId("listing-labels")).not.toBeInTheDocument();
