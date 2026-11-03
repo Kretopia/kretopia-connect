@@ -15,12 +15,14 @@ export const VARIANTS = [
   { name: "project", file: "src/components/project/studio/ProjectCard.tsx" },
   { name: "credit", file: "src/components/profile/AchievementCard.tsx" },
   { name: "profile", file: "src/components/passport/ProfileCard.tsx" },
+  { name: "event", file: "src/components/circle/EventCard.tsx" },
 ];
 
 /** Cards that are a variant under the name a surface knows: they map its data onto the variant and decide no shape either. */
 export const ADAPTERS = [
   { name: "creator", file: "src/components/discover/CreatorPassportCard.tsx", variant: "ProfileCard" },
   { name: "directory", file: "src/components/passport/PassportDirectoryCard.tsx", variant: "ProfileCard" },
+  { name: "stage", file: "src/components/circle/StageCard.tsx", variant: "EventCard" },
 ];
 
 /** Bespoke cards that existed before the shell. They are gone, and a file of that name must not come back. */
@@ -30,6 +32,8 @@ export const DELETED: string[] = [
   "src/components/feed/AwardActivityCard.tsx",
   "src/components/feed/PressActivityCard.tsx",
   "src/components/feed/PortfolioItemCard.tsx",
+  // The curated Stages rail, replaced by the Stage grid, with a stage card of its own shape that nothing rendered any more.
+  "src/components/circle/CuratedStagesRail.tsx",
 ];
 
 // What a card file may not declare. Small radii (buttons, chips, avatars) are not a card's shape, so `rounded-full`, `rounded-md` and
