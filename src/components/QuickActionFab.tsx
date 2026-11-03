@@ -1,3 +1,4 @@
+import { BRAND_GRADIENT, FAB_BOTTOM, FAB_SIZE_PX } from "@/components/nav/bottomNavMetrics";
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Plus, X, CalendarPlus, Briefcase, FolderPlus, Compass, LayoutDashboard, UserSearch, Wallet, Scan } from "lucide-react";
@@ -282,10 +283,9 @@ const QuickActionFab = () => {
 
   const actions = (isCompany ? companyActions : creatorActions).filter((a) => !a.hide);
 
-  // Center ＋ — float ABOVE the bottom nav (nav ≈ 66px tall incl. safe area).
-  // Sit just above the bottom nav (~66px tall), centered in the spacer slot,
-  // so it doesn't overlap the Thrive composer bar that floats above the nav.
-  const fabBottom = "calc(env(safe-area-inset-bottom, 0px) + 14px)";
+  // Center ＋ — floats over the middle of the bottom nav, in the slot the nav reserves for it (bottomNavMetrics),
+  // on the row of entries and lifted a little, so it never covers an entry or a label.
+  const fabBottom = FAB_BOTTOM;
 
   return (
     <>
@@ -371,20 +371,26 @@ const QuickActionFab = () => {
         )}
         style={{ bottom: fabBottom }}
       >
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-label={open ? "Close quick actions" : "Open quick actions"}
-          aria-expanded={open}
-          className={cn(
-            "btn-glass btn-glass-primary h-14 w-14 rounded-full flex items-center justify-center",
-            "text-energy-foreground",
-            "border-4 border-background",
-            open && "rotate-45"
-          )}
+        {/* Kretopia's gradient as a ring: the button's total size is FAB_SIZE_PX, the nav's slot is derived from it. */}
+        <span
+          className="block rounded-full p-[2px] shadow-[0_8px_22px_-8px_rgba(246,36,137,0.55)]"
+          style={{ background: BRAND_GRADIENT, width: FAB_SIZE_PX, height: FAB_SIZE_PX }}
         >
-          <Plus className="h-7 w-7" strokeWidth={2.5} />
-        </button>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close quick actions" : "Open quick actions"}
+            aria-expanded={open}
+            className={cn(
+              "btn-glass btn-glass-primary h-full w-full rounded-full flex items-center justify-center",
+              "text-energy-foreground",
+              "border-[3px] border-background",
+              open && "rotate-45"
+            )}
+          >
+            <Plus className="h-6 w-6" strokeWidth={2.5} />
+          </button>
+        </span>
       </div>
 
       {/* Mounted dialogs — lazy, and only once each has actually been

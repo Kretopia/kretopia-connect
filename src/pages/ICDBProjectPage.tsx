@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
+import { BackToPassport } from "@/components/nav/BackToPassport";
 
 interface ProjectRole {
   id: string;
@@ -168,11 +169,10 @@ const ICDBProjectPage = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background pb-24">
+        <BackToPassport />
         {/* Header */}
         <div className="bg-gradient-to-b from-primary/8 to-background border-b">
           <div className="container mx-auto px-4 py-4">
-            
-
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { HOLO_FOIL, foilGradient } from "./holoFoil";
 
 interface HoloCardProps {
   children: ReactNode;
@@ -74,7 +75,7 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
             className="ai-ambient-breathe pointer-events-none absolute -inset-2 rounded-[26px] blur-2xl"
             style={{
               background:
-                "linear-gradient(135deg, hsl(var(--signal-teal)/0.35), transparent 45%, hsl(var(--signal-pink,320 100% 60%)/0.14))",
+                "linear-gradient(135deg, hsl(var(--signal-teal)/0.22), transparent 45%, hsl(var(--signal-pink,320 100% 60%)/0.09))",
               transform: "translateZ(-24px)",
               animationPlayState: inView ? "running" : "paused",
             }}
@@ -89,7 +90,7 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
             className="pointer-events-none absolute inset-0 z-[1]"
             style={{
               background:
-                "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 8%, transparent 22%)",
+                "linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.02) 8%, transparent 22%)",
             }}
           />
 
@@ -110,8 +111,8 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
             aria-hidden
             className="pointer-events-none absolute inset-0 mix-blend-soft-light transition-opacity duration-300"
             style={{
-              opacity: glare.on ? 0.6 : 0.28,
-              background: `radial-gradient(120% 90% at ${glare.x}% ${glare.y}%, hsl(var(--foreground)/0.55), hsl(var(--foreground)/0.08) 35%, transparent 65%)`,
+              opacity: glare.on ? HOLO_FOIL.activeOpacity : HOLO_FOIL.idleOpacity,
+              background: foilGradient(glare.x, glare.y),
             }}
           />
           {/* Prismatic edge */}

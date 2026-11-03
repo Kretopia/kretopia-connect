@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useNavigateWithReturn, useRestoreReturnScroll } from "@/hooks/usePassportReturn";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -153,6 +154,8 @@ const decodeHtmlEntities = (text: string): string => {
 const CreatorEPK = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const openWithReturn = useNavigateWithReturn();
+  useRestoreReturnScroll();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([]);
   const [pressLinks, setPressLinks] = useState<any[]>([]);
@@ -764,7 +767,7 @@ const CreatorEPK = () => {
                         <div className="rounded-xl overflow-hidden border border-primary/10 hover:border-primary/30 transition-all h-[195px] flex flex-col relative group cursor-pointer"
                           onClick={() => {
                             const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                            navigate(`/production?name=${name}`);
+                            openWithReturn(`/production?name=${name}`);
                           }}
                         >
                           {/* Thumbnail or gradient fallback */}
@@ -827,13 +830,13 @@ const CreatorEPK = () => {
                     )}
                     onClick={() => {
                       const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                      navigate(`/production?name=${name}`);
+                      openWithReturn(`/production?name=${name}`);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                        navigate(`/production?name=${name}`);
+                        openWithReturn(`/production?name=${name}`);
                       }
                     }}
                   >

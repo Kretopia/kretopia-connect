@@ -1,3 +1,4 @@
+import { strongestTrust } from "@/lib/trustBadge";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useNavigateWithReturn } from "@/hooks/usePassportReturn";
 import {
   Film, Tv, Music, Disc3, Video, Mic2, CalendarDays, Sparkles, Crown,
   Shirt, Megaphone, Briefcase, ShieldCheck,
@@ -226,6 +228,7 @@ function CategoryRow({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const navigate = useNavigate();
+  const openWithReturn = useNavigateWithReturn();
 
   const meta = CATEGORY_META[category] || CATEGORY_META.other;
   const CatIcon = meta.icon;
@@ -269,7 +272,9 @@ function CategoryRow({
   };
 
   const getVerificationBadge = (credit: ICDBCredit) => {
-    if (credit.verification_status === 'verified') {
+    // Verified and vouched are decided by one rule (lib/trustBadge): the strongest the credit holds, never both.
+    const trust = strongestTrust({ verified: credit.verification_status === 'verified', vouchCount: credit.endorsement_count });
+    if (trust?.state === 'verified') {
       return (
         <Badge variant="outline" className="text-[9px] gap-0.5 border-green-500/30 text-green-600 dark:text-green-400 bg-green-500/5 h-4 px-1">
           <ShieldCheck className="h-2.5 w-2.5" />
@@ -291,10 +296,10 @@ function CategoryRow({
         </Badge>
       );
     }
-    if (credit.endorsement_count > 0) {
+    if (trust?.state === 'vouched') {
       return (
         <Badge variant="outline" className="text-[9px] gap-0.5 border-accent/40 text-accent-foreground bg-accent/10 h-4 px-1">
-          {credit.endorsement_count} vouched
+          {trust.vouchCount} vouched
         </Badge>
       );
     }
@@ -352,7 +357,7 @@ function CategoryRow({
                   onToggleSelect(credit.id);
                 } else {
                   if (playableUrl) onPlay(credit);
-                  else navigate(`/production?name=${encodeURIComponent(credit.project_name)}`);
+                  else openWithReturn(`/production?name=${encodeURIComponent(credit.project_name)}`);
                 }
               }}
             >
@@ -486,6 +491,7 @@ interface ICDBTimelineProps {
 
 export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelineProps) {
   const navigate = useNavigate();
+  const openWithReturn = useNavigateWithReturn();
   const [credits, setCredits] = useState<ICDBCredit[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -796,7 +802,7 @@ export function ICDBTimeline({ userId, isOwnProfile, onRefresh }: ICDBTimelinePr
                           key={credit.id}
                           className="group relative rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.03] hover:shadow-xl shrink-0"
                           style={{ width: "160px", aspectRatio: "2/3" }}
-                          onClick={() => playableUrl ? setActiveMedia(credit) : navigate(`/production?name=${encodeURIComponent(credit.project_name)}`)}
+                          onClick={() => playableUrl ? setActiveMedia(credit) : openWithReturn(`/production?name=${encodeURIComponent(credit.project_name)}`)}
                         >
                           {thumbnail ? (
                             <img src={thumbnail} alt={credit.project_name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />

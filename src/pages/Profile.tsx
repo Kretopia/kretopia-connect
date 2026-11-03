@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRestoreReturnScroll } from "@/hooks/usePassportReturn";
 import jsPDF from 'jspdf';
 import { SkeletonProfile } from "@/components/ui/skeleton-card";
 import { PageTransition } from "@/components/PageTransition";
@@ -101,6 +102,7 @@ const ProfileContent = () => {
   // it shortly after, but every component reading the un-stripped param on its
   // own first render still sees "true" regardless of strip order.
   const [searchParams] = useSearchParams();
+  useRestoreReturnScroll();
   const [justClaimed] = useState(() => searchParams.get("claimed") === "true");
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
   const [isCreatorCardOpen, setIsCreatorCardOpen] = useState(false);

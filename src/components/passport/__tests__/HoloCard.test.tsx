@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HoloCard } from "../HoloCard";
+import { HOLO_FOIL, foilGradient } from "../holoFoil";
 
 // jsdom has no PointerEvent, and without it clientX/clientY are dropped from the events below.
 class TestPointerEvent extends MouseEvent {}
@@ -119,5 +120,29 @@ describe("HoloCard", () => {
     expect(wrapper.className).toContain("h-full w-44");
     expect(tilted.querySelector(".ai-ambient-breathe")).toBeNull();
     expect(screen.getByText("card body")).toBeTruthy();
+  });
+
+  // The sheen lies over the card's content: it washed out the name, role and key figures of a Passport.
+  it("keeps the sheen light enough to read through, at rest and under the pointer", () => {
+    expect(HOLO_FOIL.idleOpacity).toBeGreaterThan(0.2);
+    expect(HOLO_FOIL.activeOpacity).toBeLessThanOrEqual(0.4);
+    expect(HOLO_FOIL.coreAlpha).toBeLessThanOrEqual(0.3);
+    // The strongest the foil ever gets, as a share of the content under it: it was 0.6 x 0.55 = 0.33.
+    expect(HOLO_FOIL.activeOpacity * HOLO_FOIL.coreAlpha).toBeLessThan(0.15);
+  });
+
+  it("uses that strength: the foil's opacity is the soft one before and during a hover", () => {
+    const { wrapper, tilted } = setup();
+    const foil = tilted.querySelector<HTMLElement>(".mix-blend-soft-light")!;
+    expect(Number(foil.style.opacity)).toBe(HOLO_FOIL.idleOpacity);
+    move(wrapper, 100, 50);
+    expect(Number(foil.style.opacity)).toBe(HOLO_FOIL.activeOpacity);
+  });
+
+  it("builds the sheen under the pointer from the soft core, never the old 0.55", () => {
+    const g = foilGradient(30, 70);
+    expect(g).toContain("at 30% 70%");
+    expect(g).toContain(`/${HOLO_FOIL.coreAlpha})`);
+    expect(g).not.toContain("0.55");
   });
 });

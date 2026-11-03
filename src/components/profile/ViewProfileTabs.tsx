@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { useSessionState } from "@/hooks/useSessionState";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Briefcase, Star, Award, Zap, Handshake, DollarSign } from "lucide-react";
@@ -85,7 +87,8 @@ export const ViewProfileTabs = ({
   onRefresh,
 }: ViewProfileTabsProps) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TabId>("work");
+  const { pathname: passportPath } = useLocation();
+  const [activeTab, setActiveTab] = useSessionState<TabId>(`passport-tab:${passportPath}`, "work");
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isTabBarSticky, setIsTabBarSticky] = useState(false);
   const tabBarSentinelRef = useRef<HTMLDivElement>(null);
