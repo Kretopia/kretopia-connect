@@ -1,72 +1,102 @@
-// /meet/:meetingId — universal entry point for hosts, members, and guests.
-// Guests must include ?t=<share_token>.
+// /meet/:meetingId — the entry point for hosts, members and guests. A guest's link carries ?t=<share_token>.
 //
-// CEO hotfix (24/09/2026): the actual live call surface (Daily iframe +
-// controls) is no longer owned by this route component -- it lives in
-// VideoCallContext + GlobalVideoCallHost, mounted once at the app shell
-// level, so navigating away no longer ends the call (it floats in a PiP
-// widget instead; see those two files for the how/why). This page still
-// owns the pre-join flow (token fetch, Greenroom lobby, error/ended
-// screens), since those are inherently full-page, not floating-widget
-// content.
-import { useEffect } from "react";
-import { Link, useLocation, useParams, useSearchParams, useNavigate } from "react-router-dom";
+// This page owns no call. It settles who is coming in (sign in or continue as a guest, then a name for a guest), fetches that person's access
+// to the room, and hands it to the one call the app shell owns (VideoCallSheet -> PersistentStudioCall): the same lobby, frame and toolbar as
+// a Studio or a Messages call. Opening the page again while that call is still live finds it and takes it over instead of fetching access
+// a second time. (It used to carry a call of its own, with its own frame, header and controls; see VideoCallContext.)
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Copy } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { useToast } from "@/hooks/use-toast";
-import { CallPreflightGate } from "@/components/calls/CallPreflightGate";
-import { Greenroom } from "@/components/calls/Greenroom";
-import { useVideoCall } from "@/contexts/VideoCallContext";
 import { GuestEntryChoice } from "@/components/auth/GuestEntryChoice";
+import { CallEntryScreen } from "@/components/calls/CallEntryScreen";
+import { GuestNameStep } from "@/components/calls/GuestNameStep";
+import { VideoCallSheet } from "@/components/project/VideoCallSheet";
+import { CALL_BUSY_DESCRIPTION, CALL_BUSY_TITLE, useVideoCall } from "@/contexts/VideoCallContext";
 import { useEntryChoice } from "@/hooks/useEntryChoice";
+import { mintMeetingCredentials, type CallCredentials } from "@/lib/callCredentials";
 import { signInHref } from "@/lib/entryChoice";
+
+type Stage = "idle" | "resolving" | "calling" | "ended" | "error";
+interface StartedCall {
+  creds: CallCredentials;
+  userName: string;
+}
 
 export default function CallPage() {
   const { meetingId = "" } = useParams();
   const [searchParams] = useSearchParams();
   const shareToken = searchParams.get("t") ?? undefined;
   const { user } = useAuth();
-  const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const returnPath = `${location.pathname}${location.search}`;
   // Someone who is not signed in picks "sign in" or "continue as guest" before anything else is shown.
   const entry = useEntryChoice(`meet:${meetingId}`);
+  const { studioCall } = useVideoCall();
+  const sourceId = `meet:${meetingId}`;
 
-  const {
-    phase,
-    error,
-    title,
-    isHost,
-    guestName,
-    setGuestName,
-    openMeeting,
-    joinLive,
-    reset,
-  } = useVideoCall();
+  const [stage, setStage] = useState<Stage>("idle");
+  const [started, setStarted] = useState<StartedCall | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const wanted = useRef<string | null>(null);
 
+  // This meeting's call, still live from before (the page was left and is open again); or a different call that is live.
+  const ownLive = studioCall?.sourceId === sourceId && studioCall.roomUrl ? studioCall : null;
+  const otherLive = !!studioCall && !ownLive;
+  const memberName: string | undefined = user ? user.user_metadata?.full_name || user.email?.split("@")[0] || undefined : undefined;
+  const readyToFetch = !!user || (entry.isGuest && !!guestName);
+
+  // Back on the page while its call is live: take that call over.
   useEffect(() => {
-    const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
-    void openMeeting(meetingId, shareToken, userName || undefined);
-    // Intentionally not re-running on every user/openMeeting identity change --
-    // openMeeting itself no-ops if this meetingId is already the active one
-    // (e.g. navigating back here while the call is live/floating).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [meetingId, shareToken]);
+    if (!ownLive || stage === "calling") return;
+    setStarted({ creds: { roomUrl: ownLive.roomUrl ?? "", token: ownLive.token ?? "", title: ownLive.projectName, isHost: !!ownLive.isHost }, userName: ownLive.userName });
+    setStage("calling");
+  }, [ownLive, stage]);
 
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    toast({ title: "Invite link copied" });
-  };
+  // Another call is live: say so once, and do not fetch anything.
+  useEffect(() => {
+    if (!otherLive || stage === "calling" || stage === "error") return;
+    toast(CALL_BUSY_TITLE, { description: CALL_BUSY_DESCRIPTION });
+    setError(`${CALL_BUSY_TITLE}. ${CALL_BUSY_DESCRIPTION}`);
+    setStage("error");
+  }, [otherLive, stage]);
 
-  // ---------- Renders ----------
+  // Fetch the person's access once they are settled in. A result that arrives after the page or the person changed is ignored.
+  useEffect(() => {
+    if (stage !== "idle" || otherLive || ownLive || entry.pending || entry.needsChoice || !readyToFetch) return;
+    const key = `${meetingId}|${shareToken ?? ""}|${user?.id ?? guestName}`;
+    wanted.current = key;
+    setStage("resolving");
+    const userName = memberName ?? (guestName || undefined);
+    mintMeetingCredentials(meetingId, shareToken, userName)
+      .then((creds) => {
+        if (wanted.current !== key) return;
+        setStarted({ creds, userName: userName ?? "Guest" });
+        setStage("calling");
+      })
+      .catch((e: Error) => {
+        if (wanted.current !== key) return;
+        setError(e.message);
+        setStage("error");
+      });
+  }, [stage, otherLive, ownLive, entry.pending, entry.needsChoice, readyToFetch, meetingId, shareToken, user?.id, guestName, memberName]);
+  useEffect(() => () => { wanted.current = null; }, []);
+
+  // The call closed: left, or cancelled in the lobby.
+  const handleCallOpenChange = useCallback((open: boolean) => {
+    if (open) return;
+    setStarted(null);
+    setStage("ended");
+  }, []);
+
   if (entry.needsChoice) {
     return (
       <GuestEntryChoice
         title="You're invited to a live call"
-        context={title || undefined}
         signInTo={returnPath}
         signInHint="Join with your Kretopia account."
         guestHint="Join with just your name."
@@ -75,19 +105,14 @@ export default function CallPage() {
     );
   }
 
-  if (entry.pending || phase === "idle" || phase === "loading") {
-    return (
-      <FullScreen>
-        <KretopiaSpinner className="h-8 w-8 text-primary" />
-        <p className="mt-3 text-sm text-muted-foreground">Loading meeting…</p>
-      </FullScreen>
-    );
+  if (entry.isGuest && !user && !guestName && !ownLive && stage === "idle") {
+    return <GuestNameStep title="Join this meeting" hint="This is the name the others will see." cta="Continue" onSubmit={setGuestName} />;
   }
 
-  if (phase === "error") {
+  if (stage === "error") {
     return (
-      <FullScreen>
-        <div className="max-w-sm text-center space-y-4">
+      <CallEntryScreen>
+        <div className="max-w-sm space-y-4 text-center">
           <h1 className="text-xl font-semibold">Can't open this meeting</h1>
           <p className="text-sm text-muted-foreground">{error}</p>
           <div className="flex flex-wrap justify-center gap-2">
@@ -96,86 +121,49 @@ export default function CallPage() {
                 <Link to={signInHref(returnPath)}>Sign in</Link>
               </Button>
             )}
-            <Button onClick={() => { reset(); navigate("/"); }}>Back to home</Button>
+            <Button onClick={() => navigate("/")}>Back to home</Button>
           </div>
         </div>
-      </FullScreen>
+      </CallEntryScreen>
     );
   }
 
-  if (phase === "ended") {
+  if (stage === "ended") {
     return (
-      <FullScreen>
-        <div className="max-w-sm text-center space-y-4">
-          <h1 className="text-xl font-semibold">You left the call</h1>
-          <p className="text-sm text-muted-foreground">
-            Recording and transcript (if enabled) will appear shortly.
-          </p>
-          <div className="flex gap-2 justify-center">
-            <Button
-              variant="outline"
-              onClick={() => {
-                const userName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "";
-                void openMeeting(meetingId, shareToken, userName || undefined);
-              }}
-            >
-              Rejoin
-            </Button>
-            <Button onClick={() => { reset(); navigate("/"); }}>Done</Button>
+      <CallEntryScreen>
+        <div className="max-w-sm space-y-4 text-center">
+          <h1 className="text-xl font-semibold">You're not in the call</h1>
+          <p className="text-sm text-muted-foreground">If it was recorded, the recording shows up in Recordings a few minutes after the call ends.</p>
+          <div className="flex justify-center gap-2">
+            <Button variant="outline" onClick={() => { setError(null); setStage("idle"); }}>Rejoin</Button>
+            <Button onClick={() => navigate("/")}>Done</Button>
           </div>
         </div>
-      </FullScreen>
+      </CallEntryScreen>
     );
   }
 
-  // LOBBY (Greenroom)
-  if (phase === "lobby") {
-    const ctaLabel = isHost ? "Start call" : "Knock to join";
-    return (
-      <div className="k-call-surface k-call-vh">
-        <div className="relative k-call-vh">
-          <CallPreflightGate
-            shareUrl={typeof window !== "undefined" ? window.location.href : null}
-            onCancel={() => { reset(); navigate("/"); }}
-          >
-            <Greenroom
-              title={title}
-              needsName={!user}
-              guestName={guestName}
-              onGuestNameChange={setGuestName}
-              ctaLabel={ctaLabel}
-              onJoin={(prefs) => {
-                const userName = guestName || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Guest";
-                joinLive(prefs, userName);
-              }}
-              secondary={
-                <Button
-                  variant="ghost"
-                  onClick={copyLink}
-                  className="w-full min-h-11 text-foreground hover:bg-accent"
-                >
-                  <Copy className="h-4 w-4" />
-                  Copy invite link
-                </Button>
-              }
-            />
-          </CallPreflightGate>
-        </div>
-      </div>
-    );
-  }
-
-  // LIVE — the actual call surface is rendered by GlobalVideoCallHost
-  // (mounted once at the app shell level), fixed-position and docked to
-  // full-screen because the current route matches this meeting. Nothing to
-  // render here.
-  return null;
-}
-
-function FullScreen({ children }: { children: React.ReactNode }) {
+  // Opening, or in the call's own lobby: the call is drawn by the app shell, over this page.
   return (
-    <div className="k-call-min-vh bg-background flex flex-col items-center justify-center p-6">
-      {children}
-    </div>
+    <CallEntryScreen>
+      <KretopiaSpinner className="h-8 w-8 text-primary" />
+      <p className="mt-3 text-sm text-muted-foreground">{started ? `Joining ${started.creds.title}…` : "Opening the meeting…"}</p>
+      {started && (
+        <VideoCallSheet
+          open={stage === "calling"}
+          onOpenChange={handleCallOpenChange}
+          projectName={started.creds.title}
+          roomUrl={started.creds.roomUrl}
+          token={started.creds.token}
+          callId={null}
+          userName={started.userName}
+          isHost={started.creds.isHost}
+          admitKnockers={started.creds.isHost}
+          lobbyCta={started.creds.isHost ? "Start call" : "Knock to join"}
+          meetingShareUrl={typeof window !== "undefined" ? window.location.href : null}
+          sourceId={sourceId}
+        />
+      )}
+    </CallEntryScreen>
   );
 }

@@ -1,24 +1,39 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 
+type SheetProps = Record<string, unknown> & { open: boolean; onOpenChange: (open: boolean) => void };
 const state = vi.hoisted(() => ({
   auth: { user: null as null | { id: string; email?: string; user_metadata?: Record<string, unknown> }, loading: false },
-  call: {} as Record<string, unknown>,
+  studioCall: null as null | Record<string, unknown>,
+  sheet: null as null | SheetProps,
   row: null as unknown,
   mint: vi.fn(),
+  mintMeeting: vi.fn(),
+  redeem: vi.fn(),
+  toast: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
-vi.mock("sonner", () => ({ toast: Object.assign(vi.fn(), { error: vi.fn(), success: vi.fn() }) }));
+vi.mock("sonner", () => ({ toast: Object.assign((...a: unknown[]) => state.toast(...a), { error: vi.fn(), success: vi.fn() }) }));
 vi.mock("@/components/SEO", () => ({ SEO: () => null }));
-vi.mock("@/contexts/VideoCallContext", () => ({ useVideoCall: () => state.call }));
-vi.mock("@/components/calls/CallPreflightGate", () => ({ CallPreflightGate: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
-vi.mock("@/components/calls/Greenroom", () => ({ Greenroom: () => <div>greenroom lobby</div> }));
-vi.mock("@/components/calls/CallMediaControls", () => ({ CallBrand: () => null, CallMediaControls: () => null }));
-vi.mock("@/components/project/VideoCallSheet", () => ({ VideoCallSheet: () => null }));
-vi.mock("@/lib/dailyFrame", () => ({ createDailyFrameAsync: vi.fn(), teardownDailyCall: vi.fn() }));
+vi.mock("@/contexts/VideoCallContext", () => ({
+  useVideoCall: () => ({ studioCall: state.studioCall }),
+  CALL_BUSY_TITLE: "You're already in a call",
+  CALL_BUSY_DESCRIPTION: "Leave it before starting another.",
+}));
+// The one call, replaced by something that records what the pages hand it.
+vi.mock("@/components/project/VideoCallSheet", () => ({
+  VideoCallSheet: (props: SheetProps) => {
+    state.sheet = props;
+    return <div data-testid="call-sheet" data-open={String(props.open)} />;
+  },
+}));
+vi.mock("@/lib/callCredentials", () => ({
+  mintMeetingCredentials: (...a: unknown[]) => state.mintMeeting(...a),
+  redeemGuestLink: (...a: unknown[]) => state.redeem(...a),
+}));
 vi.mock("@/lib/guestInviteToken", () => ({ mintGuestInviteToken: (...args: unknown[]) => state.mint(...args) }));
 vi.mock("@/lib/acceptInvitation", () => ({ acceptInvitation: vi.fn() }));
 vi.mock("@/integrations/supabase/client", () => {
@@ -54,50 +69,117 @@ beforeEach(() => {
   state.auth = { user: null, loading: false };
   state.row = null;
   state.mint.mockReset();
-  state.call = {
-    phase: "lobby",
-    error: null,
-    title: "Friday casting call",
-    isHost: false,
-    guestName: "",
-    setGuestName: vi.fn(),
-    openMeeting: vi.fn(),
-    joinLive: vi.fn(),
-    reset: vi.fn(),
-  };
+  state.studioCall = null;
+  state.sheet = null;
+  state.toast.mockReset();
+  state.mintMeeting.mockReset().mockResolvedValue({ roomUrl: "https://example.test/room", token: "daily-token", title: "Friday casting call", isHost: false });
+  state.redeem.mockReset().mockResolvedValue({ roomUrl: "https://example.test/guest-room", token: "guest-token", title: "Live call", isHost: false });
 });
+
+const typeName = (name: string) => {
+  fireEvent.change(screen.getByLabelText("Your name"), { target: { value: name } });
+  fireEvent.click(screen.getByRole("button", { name: /^(Continue|Join call)$/ }));
+};
 
 describe("/meet/:meetingId", () => {
   const open = () => renderAt("/meet/m1?t=tok", "/meet/:meetingId", <CallPage />);
 
-  it("opens on the sign-in-or-guest choice, with the lobby behind it", () => {
+  it("opens on the sign-in-or-guest choice, and fetches nothing before it is made", () => {
     open();
     expect(screen.getByTestId("guest-entry-choice")).toBeInTheDocument();
-    expect(screen.getByText("Friday casting call")).toBeInTheDocument();
-    expect(screen.queryByText("greenroom lobby")).toBeNull();
+    expect(state.mintMeeting).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("call-sheet")).toBeNull();
     expect(screen.getByTestId("entry-sign-in")).toHaveAttribute("href", "/auth?redirect=%2Fmeet%2Fm1%3Ft%3Dtok");
   });
 
-  it("goes on to the lobby once the guest option is taken, without asking again", () => {
+  it("asks a guest for a name, puts it into their access, then starts the one call with it", async () => {
     open();
     fireEvent.click(screen.getByTestId("entry-guest"));
-    expect(screen.getByText("greenroom lobby")).toBeInTheDocument();
+    expect(screen.getByTestId("guest-name-step")).toBeInTheDocument();
+    expect(state.mintMeeting).not.toHaveBeenCalled();
+    typeName("Ada Guest");
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(state.mintMeeting).toHaveBeenCalledWith("m1", "tok", "Ada Guest");
+    expect(state.sheet).toMatchObject({
+      open: true,
+      projectName: "Friday casting call",
+      roomUrl: "https://example.test/room",
+      token: "daily-token",
+      userName: "Ada Guest",
+      callId: null,
+      isHost: false,
+      admitKnockers: false,
+      lobbyCta: "Knock to join",
+      sourceId: "meet:m1",
+    });
     expect(screen.queryByTestId("guest-entry-choice")).toBeNull();
   });
 
-  it("does not ask a signed-in person", () => {
+  it("does not ask a signed-in person anything: it starts the call under their own name", async () => {
     state.auth = { user: signedIn, loading: false };
     open();
+    await waitFor(() => expect(state.sheet).not.toBeNull());
     expect(screen.queryByTestId("guest-entry-choice")).toBeNull();
-    expect(screen.getByText("greenroom lobby")).toBeInTheDocument();
+    expect(screen.queryByTestId("guest-name-step")).toBeNull();
+    expect(state.mintMeeting).toHaveBeenCalledWith("m1", "tok", "Ada Lovelace");
+    expect(state.sheet?.userName).toBe("Ada Lovelace");
   });
 
-  it("offers a guest who hits a closed meeting a way to sign in, not a dead end", () => {
-    state.call = { ...state.call, phase: "error", error: "This meeting is for members." };
+  it("gives the host the host's controls, and the host's own button", async () => {
+    state.auth = { user: signedIn, loading: false };
+    state.mintMeeting.mockResolvedValue({ roomUrl: "https://example.test/room", token: "t", title: "Standup", isHost: true });
+    open();
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(state.sheet).toMatchObject({ isHost: true, admitKnockers: true, lobbyCta: "Start call" });
+  });
+
+  it("offers a guest who hits a closed meeting a way to sign in, not a dead end", async () => {
+    state.mintMeeting.mockRejectedValue(new Error("This meeting is for members."));
     open();
     fireEvent.click(screen.getByTestId("entry-guest"));
-    expect(screen.getByText("This meeting is for members.")).toBeInTheDocument();
+    typeName("Ada Guest");
+    expect(await screen.findByText("This meeting is for members.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/auth?redirect=%2Fmeet%2Fm1%3Ft%3Dtok");
+    expect(state.sheet).toBeNull();
+  });
+
+  it("tells the user, and does not fetch anything, when another call is already live", async () => {
+    state.auth = { user: signedIn, loading: false };
+    state.studioCall = { roomUrl: "https://example.test/other", projectName: "Other", userName: "Ada", sourceId: null };
+    open();
+    expect(await screen.findByText(/already in a call/)).toBeInTheDocument();
+    expect(state.toast).toHaveBeenCalledWith("You're already in a call", expect.anything());
+    expect(state.mintMeeting).not.toHaveBeenCalled();
+    expect(state.sheet).toBeNull();
+  });
+
+  it("takes over its own call when the page is opened again while it is live, without fetching access again", async () => {
+    state.auth = { user: signedIn, loading: false };
+    state.studioCall = { roomUrl: "https://example.test/room", token: "daily-token", projectName: "Friday casting call", userName: "Ada Lovelace", isHost: false, sourceId: "meet:m1" };
+    open();
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(state.mintMeeting).not.toHaveBeenCalled();
+    expect(state.sheet).toMatchObject({ open: true, roomUrl: "https://example.test/room", token: "daily-token", sourceId: "meet:m1", userName: "Ada Lovelace" });
+    expect(state.toast).not.toHaveBeenCalled();
+  });
+
+  it("when the call closes says so, and Rejoin fetches access again", async () => {
+    state.auth = { user: signedIn, loading: false };
+    open();
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    act(() => state.sheet!.onOpenChange(false));
+    expect(await screen.findByText("You're not in the call")).toBeInTheDocument();
+    expect(screen.queryByTestId("call-sheet")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Rejoin" }));
+    await waitFor(() => expect(state.mintMeeting).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.getByTestId("call-sheet")).toBeInTheDocument());
+  });
+
+  it("owns no call of its own: no frame, no toolbar", async () => {
+    state.auth = { user: signedIn, loading: false };
+    const { container } = open();
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(container.querySelector("iframe, [role=toolbar], .k-call-header, .k-call-footer")).toBeNull();
   });
 });
 
@@ -107,16 +189,63 @@ describe("/call/:token", () => {
   it("asks before the name step, and the name step follows the guest option", () => {
     open();
     expect(screen.getByTestId("guest-entry-choice")).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Your name")).toBeNull();
+    expect(screen.queryByLabelText("Your name")).toBeNull();
     fireEvent.click(screen.getByTestId("entry-guest"));
-    expect(screen.getByPlaceholderText("Your name")).toBeInTheDocument();
+    expect(screen.getByLabelText("Your name")).toBeInTheDocument();
   });
 
   it("starts a signed-in person at the name step with their name filled in", () => {
     state.auth = { user: signedIn, loading: false };
     open();
     expect(screen.queryByTestId("guest-entry-choice")).toBeNull();
-    expect(screen.getByPlaceholderText("Your name")).toHaveValue("Ada Lovelace");
+    expect(screen.getByLabelText("Your name")).toHaveValue("Ada Lovelace");
+  });
+
+  it("redeems the link for the typed name, then starts the one call with it", async () => {
+    open();
+    fireEvent.click(screen.getByTestId("entry-guest"));
+    typeName("Grace Hopper");
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(state.redeem).toHaveBeenCalledWith("abc", "Grace Hopper");
+    expect(state.sheet).toMatchObject({ open: true, roomUrl: "https://example.test/guest-room", token: "guest-token", userName: "Grace Hopper", lobbyCta: "Join call", sourceId: "guest:abc" });
+  });
+
+  it("says plainly when the link cannot be used, and lets the person try again", async () => {
+    state.redeem.mockRejectedValueOnce(new Error("Link expired"));
+    open();
+    fireEvent.click(screen.getByTestId("entry-guest"));
+    typeName("Grace Hopper");
+    expect(await screen.findByText("Link expired")).toBeInTheDocument();
+    expect(state.sheet).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(screen.getByLabelText("Your name")).toBeInTheDocument();
+  });
+
+  it("after the call: you left, and it is safe to close the tab", async () => {
+    open();
+    fireEvent.click(screen.getByTestId("entry-guest"));
+    typeName("Grace Hopper");
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    act(() => state.sheet!.onOpenChange(false));
+    expect(await screen.findByText("You left the call")).toBeInTheDocument();
+    expect(screen.getByText("It's safe to close this tab.")).toBeInTheDocument();
+  });
+
+  it("does not redeem anything, and says so, when another call is already live", async () => {
+    state.studioCall = { roomUrl: "https://example.test/other", projectName: "Other", userName: "Ada", sourceId: null };
+    state.auth = { user: signedIn, loading: false };
+    open();
+    expect(await screen.findByText(/already in a call/)).toBeInTheDocument();
+    expect(state.toast).toHaveBeenCalledWith("You're already in a call", expect.anything());
+    expect(state.redeem).not.toHaveBeenCalled();
+  });
+
+  it("owns no call of its own: no frame, no toolbar, no second row of controls", async () => {
+    const { container } = open();
+    fireEvent.click(screen.getByTestId("entry-guest"));
+    typeName("Grace Hopper");
+    await waitFor(() => expect(state.sheet).not.toBeNull());
+    expect(container.querySelector("iframe, [role=toolbar], .k-call-header, .k-call-footer, .k-call-controls")).toBeNull();
   });
 });
 

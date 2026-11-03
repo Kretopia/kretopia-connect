@@ -1,9 +1,11 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { VideoCallProvider, useVideoCall } from "../VideoCallContext";
 import { GlobalVideoCallHost } from "@/components/calls/GlobalVideoCallHost";
 
+// A meeting opened from /meet, a guest link opened from /call, a Studio call and a Messages call are all the same call now: one entry in
+// this context, one frame. These are the rules that hold for every one of them.
 const fake = vi.hoisted(() => {
   const events = new Map<string, (...args: any[]) => void>();
   const call: any = {
@@ -21,97 +23,108 @@ vi.mock("@/lib/dailyFrame", () => ({ createDailyFrameAsync: fake.create, destroy
 vi.mock("@/integrations/supabase/client", () => ({ supabase: { functions: { invoke: (...a: unknown[]) => invoke(...a) } } }));
 vi.mock("@/components/media/PersonAvatar", () => ({ PersonAvatar: () => null }));
 vi.mock("@/components/calls/CallPreflightGate", () => ({ CallPreflightGate: ({ children }: any) => children }));
-vi.mock("@/components/project/PreCallLobby", () => ({ PreCallLobby: () => null }));
+vi.mock("@/components/project/PreCallLobby", () => ({ PreCallLobby: ({ onJoin }: { onJoin: (prefs: { mic: boolean; cam: boolean }) => void }) => <button onClick={() => onJoin({ mic: true, cam: true })}>Join call</button> }));
 vi.mock("@/components/project/CallInviteSheet", () => ({ CallInviteSheet: () => null }));
 
 beforeEach(() => {
   fake.events.clear();
   for (const f of Object.values(fake.call) as any[]) f.mockClear?.();
   fake.create.mockClear(); invoke.mockReset(); sonner.toast.mockClear();
-  invoke.mockImplementation(async (name: string) => name === "mint-meeting-token"
-    ? { data: { token: "t", room_url: "https://example.test/room", title: "Meet", role: "host" }, error: null }
-    : { data: { results: [], since_ts: null }, error: null });
+  invoke.mockImplementation(async () => ({ data: { results: [], since_ts: null }, error: null }));
 });
 afterEach(cleanup);
+
+const meeting = { open: true, onOpenChange: vi.fn(), projectName: "Meet", roomUrl: "https://example.test/room", token: "t", callId: null, userName: "Me", isHost: true, sourceId: "meet:m1" };
 
 function Probe() {
   const s = useVideoCall();
   return <>
-    <span data-testid="rec">{s.recordingPhase}</span><span data-testid="phase">{s.phase}</span><span data-testid="reminder">{String(s.recordingReminder)}</span><span data-testid="error">{s.error ?? ""}</span><span data-testid="studio">{s.studioCall ? "yes" : "no"}</span>
-    <button onClick={() => void s.openMeeting("m1", undefined, "Me")}>open</button>
-    <button onClick={() => s.joinLive({ mic: true, cam: true }, "Me")}>join</button>
-    <button onClick={() => void s.leave()}>leave</button>
-    <button onClick={() => void s.openMeeting("m2", undefined, "Me")}>open other</button>
-    <button onClick={() => s.openStudioCall({ open: true, onOpenChange: vi.fn(), projectName: "S", roomUrl: "https://example.test/s", token: null, callId: null, userName: "Me" }, "owner")}>open studio</button>
+    <span data-testid="studio">{s.studioCall ? "yes" : "no"}</span>
+    <span data-testid="source">{s.studioCall?.sourceId ?? ""}</span>
+    <button onClick={() => s.openStudioCall(meeting, "owner")}>open</button>
+    <button onClick={() => s.openStudioCall({ ...meeting, roomUrl: "https://example.test/other", sourceId: null }, "someone-else")}>open another room</button>
+    <button onClick={() => s.openStudioCall(meeting, "returning-page")}>open same room from the page that is back</button>
     <button onClick={() => s.closeStudioCall("someone-else")}>close as someone else</button>
     <button onClick={() => s.closeStudioCall("owner")}>close as owner</button>
     <button onClick={() => s.closeStudioCall()}>close unscoped</button>
   </>;
 }
 const shell = () => render(<MemoryRouter><VideoCallProvider><Probe /><GlobalVideoCallHost /></VideoCallProvider></MemoryRouter>);
-const startMeeting = async () => {
-  fireEvent.click(screen.getByText("open"));
-  await waitFor(() => expect(screen.getByTestId("phase").textContent).toBe("lobby"));
-  fireEvent.click(screen.getByText("join"));
-  await waitFor(() => expect(fake.call.join).toHaveBeenCalled());
-};
+const joined = async () => { fireEvent.click(await screen.findByText("Join call")); await waitFor(() => expect(fake.call.join).toHaveBeenCalled()); };
 const emit = (event: string, payload?: unknown) => act(async () => { fake.events.get(event)?.(payload); });
+const studio = () => screen.getByTestId("studio").textContent;
 
-describe("/meet call: recording state belongs to one call", () => {
-  it("leaving mid-recording leaves nothing behind", async () => {
+describe("a call's recording state belongs to that call", () => {
+  it("leaving mid-recording leaves nothing behind: the next call opens with no recording", async () => {
     shell();
-    await startMeeting();
+    fireEvent.click(screen.getByText("open"));
+    await joined();
     await emit("recording-started", { recordingId: "r1", local: true });
-    expect(screen.getByTestId("rec").textContent).toBe("recording");
-    fireEvent.click(screen.getByText("leave"));
-    await waitFor(() => expect(screen.getByTestId("phase").textContent).toBe("ended"));
-    expect(screen.getByTestId("rec").textContent).toBe("idle");
-    expect(screen.getByTestId("reminder").textContent).toBe("false");
+    expect(await screen.findByText("Recording")).toBeTruthy();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Leave call" })[0]);
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Leave call" }));
+    await waitFor(() => expect(studio()).toBe("no"));
+    expect(screen.queryByText("Recording")).toBeNull();
+
+    fireEvent.click(screen.getByText("open"));
+    await joined();
+    expect(screen.queryByText("Recording")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Stop recording/ })).toBeNull(); // the Record button is idle, not "Stop"
   });
 
   it("the next call starts idle even if the previous one never reported its recording ending", async () => {
     shell();
-    await startMeeting();
-    await emit("recording-started", { recordingId: "r1", local: true });
-    // a call that ended without a left-meeting (the host tab reconnected): the new join must still start clean
-    fireEvent.click(screen.getByText("join"));
-    expect(screen.getByTestId("rec").textContent).toBe("idle");
-  });
-});
-
-describe("a call while another one is live", () => {
-  it("tells the user, and does not leave the page waiting on 'Loading meeting…'", async () => {
-    shell();
-    fireEvent.click(screen.getByText("open studio"));
-    await waitFor(() => expect(screen.getByTestId("studio").textContent).toBe("yes"));
     fireEvent.click(screen.getByText("open"));
-    await waitFor(() => expect(sonner.toast).toHaveBeenCalledWith("You're already in a call", expect.anything()));
-    expect(screen.getByTestId("phase").textContent).toBe("error");
-    expect(screen.getByTestId("error").textContent).toMatch(/already in a call/);
-    expect(invoke).not.toHaveBeenCalledWith("mint-meeting-token", expect.anything());
-  });
+    await joined();
+    await emit("recording-started", { recordingId: "r1", local: true });
+    expect(await screen.findByText("Recording")).toBeTruthy();
+    // the call is ended from outside, with no recording-stopped event (the host's tab reconnected, or the caller closed it)
+    fireEvent.click(screen.getByText("close unscoped"));
+    await waitFor(() => expect(studio()).toBe("no"));
 
-  it("a live meeting refuses a Studio call with a message", async () => {
-    shell();
-    await startMeeting();
-    fireEvent.click(screen.getByText("open studio"));
-    expect(sonner.toast).toHaveBeenCalledWith("You're already in a call", expect.anything());
-    expect(fake.create).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByText("open"));
+    await joined();
+    expect(screen.queryByText("Recording")).toBeNull();
   });
 });
 
-describe("who may end the Studio call", () => {
-  const open = async () => { shell(); fireEvent.click(screen.getByText("open studio")); await waitFor(() => expect(screen.getByTestId("studio").textContent).toBe("yes")); };
+describe("a second call while one is live", () => {
+  it("is refused with a message, whatever started the first one (a meeting here)", async () => {
+    shell();
+    fireEvent.click(screen.getByText("open"));
+    await joined();
+    fireEvent.click(screen.getByText("open another room"));
+    expect(sonner.toast).toHaveBeenCalledWith("You're already in a call", expect.objectContaining({ description: expect.stringMatching(/Leave it/) }));
+    expect(fake.create).toHaveBeenCalledTimes(1);
+    expect(fake.call.leave).not.toHaveBeenCalled();
+    expect(screen.getByTestId("source").textContent).toBe("meet:m1");
+  });
+
+  it("the page that started it, opened again for the same room, takes it over: no message, no second frame", async () => {
+    shell();
+    fireEvent.click(screen.getByText("open"));
+    await joined();
+    fireEvent.click(screen.getByText("open same room from the page that is back"));
+    expect(sonner.toast).not.toHaveBeenCalled();
+    expect(fake.create).toHaveBeenCalledTimes(1);
+    expect(fake.call.leave).not.toHaveBeenCalled();
+    expect(studio()).toBe("yes");
+  });
+});
+
+describe("who may end the call", () => {
+  const open = async () => { shell(); fireEvent.click(screen.getByText("open")); await waitFor(() => expect(studio()).toBe("yes")); };
   it("only the caller that started it, or the user leaving from inside it (unscoped)", async () => {
     await open();
     fireEvent.click(screen.getByText("close as someone else"));
-    expect(screen.getByTestId("studio").textContent).toBe("yes");
+    expect(studio()).toBe("yes");
     fireEvent.click(screen.getByText("close as owner"));
-    expect(screen.getByTestId("studio").textContent).toBe("no");
+    expect(studio()).toBe("no");
   });
   it("an unscoped close (the Leave button) always ends it", async () => {
     await open();
     fireEvent.click(screen.getByText("close unscoped"));
-    expect(screen.getByTestId("studio").textContent).toBe("no");
+    expect(studio()).toBe("no");
   });
 });

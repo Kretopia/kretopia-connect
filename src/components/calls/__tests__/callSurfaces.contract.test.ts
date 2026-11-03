@@ -18,9 +18,10 @@ describe("every call screen is sized the same way", () => {
   const CALL_SCREENS = [
     "src/components/project/VideoCallSheet.tsx",
     "src/components/project/StartCallSheet.tsx",
-    "src/components/calls/Greenroom.tsx",
     "src/components/calls/PersistentCallWindow.tsx",
     "src/components/calls/GlobalVideoCallHost.tsx",
+    "src/components/calls/GuestNameStep.tsx",
+    "src/components/calls/CallEntryScreen.tsx",
     "src/pages/CallPage.tsx",
     "src/pages/GuestCall.tsx",
     "src/components/auth/GuestEntryChoice.tsx",
@@ -69,17 +70,34 @@ describe("Messages and Studio start the same call", () => {
   });
 });
 
-describe("no second call implementation appears unnoticed", () => {
-  // The files that create a Daily frame or call object: the Studio/Messages call, the meeting surface, the guest link, and the audio-only Sound Stage.
-  const KNOWN = [
-    "src/components/circle/SoundStageRoom.tsx",
-    "src/components/project/VideoCallSheet.tsx",
-    "src/contexts/VideoCallContext.tsx",
-    "src/pages/GuestCall.tsx",
-  ];
+describe("there is one call", () => {
+  // Only two files create a Daily frame or call object: the one call (Studio, Messages, /meet and /call all start it) and the audio-only Sound Stage.
+  const KNOWN = ["src/components/circle/SoundStageRoom.tsx", "src/components/project/VideoCallSheet.tsx"];
 
   it("only the known files create one", () => {
     const creators = SOURCES.filter((file) => file !== "src/lib/dailyFrame.ts").filter((file) => /createDailyFrameAsync\(|createCallObject\(|\.createFrame\(/.test(read(file)));
     expect(creators.sort()).toEqual(KNOWN);
+  });
+
+  it("/meet and /call start that call and own no frame, toolbar or controls", () => {
+    for (const file of ["src/pages/CallPage.tsx", "src/pages/GuestCall.tsx"]) {
+      const source = read(file);
+      expect(source, file).toContain("<VideoCallSheet");
+      expect(source, file).not.toMatch(/@daily-co|dailyFrame|CallMediaControls|PersistentCallWindow|k-call-header|k-call-footer|k-call-controls/);
+    }
+  });
+
+  it("the meeting lobby and the meeting's own header, controls and context are gone", () => {
+    expect(SOURCES.filter((file) => /from\s+["'][^"']*Greenroom["']/.test(read(file)))).toEqual([]);
+    expect(SOURCES.some((file) => file.endsWith("/Greenroom.tsx"))).toBe(false);
+    const context = read("src/contexts/VideoCallContext.tsx");
+    expect(context).not.toMatch(/openMeeting|joinLive|mint-meeting-token|createDailyFrameAsync|startFrame/);
+    expect(read("src/components/calls/GlobalVideoCallHost.tsx")).not.toMatch(/CallMediaControls|AdmitQueue|Copy invite link/);
+  });
+
+  it("every call has the same lobby and the same toolbar, because there is one of each", () => {
+    expect(SOURCES.filter((file) => /export (?:const|function) PreCallLobby\b/.test(read(file)))).toEqual(["src/components/project/PreCallLobby.tsx"]);
+    const toolbars = SOURCES.filter((file) => /<CallMediaControls[^>]*\btoolbar\b/.test(read(file)));
+    expect(toolbars).toEqual(["src/components/project/VideoCallSheet.tsx"]);
   });
 });

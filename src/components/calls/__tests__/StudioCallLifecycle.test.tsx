@@ -25,6 +25,7 @@ vi.mock("@/components/calls/CallPreflightGate", () => ({ CallPreflightGate: ({ c
 vi.mock("@/components/project/PreCallLobby", () => ({ PreCallLobby: ({ onJoin }: any) => <button onClick={() => onJoin({ mic: true, cam: true })}>Join Studio</button> }));
 vi.mock("@/components/project/CallInviteSheet", () => ({ CallInviteSheet: () => null }));
 vi.mock("@/components/media/PersonAvatar", () => ({ PersonAvatar: () => null }));
+vi.mock("@/components/calls/AdmitQueue", () => ({ AdmitQueue: ({ isHost }: { isHost: boolean }) => <div data-testid="admit-queue" data-host={String(isHost)} /> }));
 
 beforeEach(() => {
   fake.events.clear();
@@ -147,6 +148,11 @@ describe("a second call while one is live", () => {
 });
 
 describe("the lobby", () => {
+  it("is a named dialog, whichever entry started the call", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    expect(await screen.findByRole("dialog", { name: "Ready to join Studio" })).toBeTruthy();
+  });
+
   it("keeps 'Invite people' out of the flow: Button's own position class would otherwise win over `absolute` and push it off-screen", async () => {
     shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
     const invite = await screen.findByRole("button", { name: /Invite people/ });
@@ -199,5 +205,52 @@ describe("one call toolbar", () => {
     expect(document.querySelector("iframe")).toBe(iframe);
     expect(fake.call.leave).not.toHaveBeenCalled();
     expect(screen.queryByRole("button", { name: "Minimize call" })).toBeNull();
+  });
+});
+
+describe("a meeting or a guest link starts this same call", () => {
+  // /meet/:id and /call/:token fetch the person's access and open the call through the sheet, so what they get is the Studio call: the host
+  // keeps the list of people knocking at the door, and a recording left behind by a call never outlives it.
+  it("shows the host the people knocking, while the call fills the page", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} isHost admitKnockers />);
+    await joined();
+    expect(screen.getByTestId("admit-queue")).toHaveAttribute("data-host", "true");
+  });
+
+  it("hides that list in the miniature, where it would cover the picture", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} isHost admitKnockers />);
+    await joined();
+    fireEvent.click(screen.getByRole("button", { name: "Minimize call" }));
+    expect(screen.queryByTestId("admit-queue")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Return to full call" }));
+    expect(screen.getByTestId("admit-queue")).toBeTruthy();
+  });
+
+  it("shows it to nobody else, and to no call that did not ask for it", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} admitKnockers />); // not the host
+    await joined();
+    expect(screen.queryByTestId("admit-queue")).toBeNull();
+  });
+
+  it("does not show it on a host's call that is not a meeting with a waiting room (a Studio or Stage call)", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} isHost />);
+    await joined();
+    expect(screen.queryByTestId("admit-queue")).toBeNull();
+  });
+
+  it("leaving mid-recording clears the recording even when the caller keeps the call mounted", async () => {
+    shell(<VideoCallSheet open onOpenChange={() => {}} {...baseProps} />);
+    await joined();
+    await act(async () => { fake.events.get("recording-started")?.({ recordingId: "r1", local: true }); });
+    expect(await screen.findByText("Recording")).toBeTruthy();
+    await act(async () => { fake.events.get("left-meeting")?.(); });
+    expect(screen.queryByText("Recording")).toBeNull();
+  });
+
+  it("carries what started it, so the page that did can recognise its own call", async () => {
+    function Peek() { const { studioCall } = useVideoCall(); return <span data-testid="source">{studioCall?.sourceId ?? "none"}</span>; }
+    shell(<><VideoCallSheet open onOpenChange={() => {}} {...baseProps} sourceId="meet:m1" /><Peek /></>);
+    await joined();
+    expect(screen.getByTestId("source").textContent).toBe("meet:m1");
   });
 });

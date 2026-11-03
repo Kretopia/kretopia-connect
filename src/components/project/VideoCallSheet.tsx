@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { useVideoCall } from "@/contexts/VideoCallContext";
-import { PersistentCallWindow, ConfirmCallLeave } from "@/components/calls/PersistentCallWindow";
+import { PersistentCallWindow, ConfirmCallLeave, useCallWindow } from "@/components/calls/PersistentCallWindow";
+import { AdmitQueue } from "@/components/calls/AdmitQueue";
 import { toast as sonnerToast } from "sonner";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   PhoneOff,
@@ -66,6 +67,14 @@ export interface VideoCallSheetProps {
   autoStartRecording?: boolean;
   /** When true, render a "Backstage" badge in the header instead of "Live call". */
   backstage?: boolean;
+  /**
+   * What started this call when it was not a page that rendered the sheet itself: "meet:<id>" for a meeting opened from /meet/:id,
+   * "guest:<token>" for a guest link opened from /call/:token. The page uses it to recognise its own call when it is opened again
+   * while the call is still live, instead of fetching access a second time.
+   */
+  sourceId?: string | null;
+  /** Host only: show the list of people knocking at a meeting's waiting room, so the host can admit them. */
+  admitKnockers?: boolean;
 }
 
 type Phase = "lobby" | "live";
@@ -99,7 +108,7 @@ export function VideoCallSheet(props: VideoCallSheetProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, props.projectName, props.roomUrl, props.token, props.callId, props.userName, props.userAvatar, props.projectId, props.directCallId,
     props.roomName, props.lobbyCta, props.meetingShareUrl, props.peerUserId, props.peerName, props.onPeerBlocked, props.overlayActions,
-    props.isHost, props.autoStartRecording, props.backstage, forward, openStudioCall, updateStudioCall]);
+    props.isHost, props.autoStartRecording, props.backstage, props.sourceId, props.admitKnockers, forward, openStudioCall, updateStudioCall]);
 
   useEffect(() => {
     if (active || !started.current) return;
@@ -130,6 +139,7 @@ export const PersistentStudioCall = ({
   isHost = false,
   autoStartRecording = false,
   backstage = false,
+  admitKnockers = false,
 }: VideoCallSheetProps) => {
   const { toast } = useToast();
   const routeNavigate = useNavigate();
@@ -173,6 +183,9 @@ export const PersistentStudioCall = ({
     const container = containerRef.current;
     setJoining(true);
     startedAtRef.current = Date.now();
+    // A new call starts with a clean recording: nothing of a previous one carries over.
+    dispatchRecording({ type: "reset" });
+    didRecordRef.current = false;
 
     // Track network-quality fallback state outside the async block so the
     // event handler closes over the right variables.
@@ -207,7 +220,11 @@ export const PersistentStudioCall = ({
       setMediaCall(frame);
       frame.on("network-connection", event => setConnectionStatus(event.event === "connected" ? "Live" : "Reconnecting"));
 
-      frame.on("left-meeting", () => onOpenChange(false));
+      frame.on("left-meeting", () => {
+        // Leaving mid-recording sends no "stopped" event: without this the stop-or-save reminder would outlive a call that is over.
+        dispatchRecording({ type: "reset" });
+        onOpenChange(false);
+      });
       frame.on("recording-started", (ev: any) => {
         recordingControlsRef.current.onStarted(ev);
         didRecordRef.current = true;
@@ -552,6 +569,7 @@ export const PersistentStudioCall = ({
               {/* Video area */}
               <div className="k-call-video relative flex-1 min-h-0">
                 <div ref={containerRef} className="absolute inset-0" />
+                {admitKnockers && isHost && <DockedAdmitQueue call={mediaCall} />}
                 {!backstage && <RecordingReminder visible={recordingControls.reminder} onStop={recordingControls.stopRecording} onSave={recordingControls.saveRecording} onDismiss={recordingControls.dismissReminder} segment={recordingControls.segment} onClearSegment={recordingControls.clearSegment} />}
                 {joining && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background text-foreground gap-3 z-10">
@@ -608,7 +626,18 @@ export const PersistentStudioCall = ({
   , document.body);
 };
 
+/** The host's list of knockers, only while the call fills the page: in the miniature it would cover the picture. */
+function DockedAdmitQueue({ call }: { call: DailyCall | null }) {
+  const win = useCallWindow();
+  return win?.mode === "full" ? <AdmitQueue call={call} isHost /> : null;
+}
+
 function StudioCallSurface({ live, open, onOpenChange, ...props }: React.ComponentProps<typeof PersistentCallWindow> & { live: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
   if (live) return <PersistentCallWindow {...props} />;
-  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="k-call-surface k-call-sheet p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden">{props.children}</SheetContent></Sheet>;
+  // The lobby is a dialog: it is named for screen readers (and Radix asks for it), though the lobby draws its own heading.
+  return <Sheet open={open} onOpenChange={onOpenChange}><SheetContent side="bottom" className="k-call-surface k-call-sheet p-0 flex flex-col bg-background border-t-0 gap-0 [&>button.absolute]:hidden">
+    <SheetTitle className="sr-only">Ready to join {props.title}</SheetTitle>
+    <SheetDescription className="sr-only">Check your camera and microphone, then join the call.</SheetDescription>
+    {props.children}
+  </SheetContent></Sheet>;
 }

@@ -22,6 +22,19 @@ describe("appChrome", () => {
     }
   });
 
+  it("a join link to a call is a standalone surface too: no site navbar or bottom nav around its screens", () => {
+    for (const path of ["/meet/abc-123", "/call/abc-123"]) {
+      expect(appChrome(path, true)).toEqual({ showNavbar: false, showBottomNav: false });
+      expect(appChrome(path, false)).toEqual({ showNavbar: false, showBottomNav: false });
+    }
+  });
+
+  it("is not fooled by a longer path under /meet or /call", () => {
+    expect(appChrome("/meet/abc/extra", true)).toEqual({ showNavbar: true, showBottomNav: true });
+    expect(appChrome("/call", true)).toEqual({ showNavbar: true, showBottomNav: true });
+    expect(appChrome("/meetup", true)).toEqual({ showNavbar: true, showBottomNav: true });
+  });
+
   it("is not fooled by a longer path under /epk", () => {
     expect(appChrome("/epk/abc/edit", true)).toEqual({ showNavbar: true, showBottomNav: true });
   });
