@@ -7,6 +7,8 @@ interface ScoutEvidenceProps {
   gig: ScoutEvidenceInput;
   /** Card use: at most three lines of text, the dialog shows it whole. */
   compact?: boolean;
+  /** The card's description slot: one paragraph, what the listing does not say first, so a two-line cut never hides it. */
+  inline?: boolean;
   className?: string;
 }
 
@@ -16,10 +18,22 @@ interface ScoutEvidenceProps {
  * and without a score. Under it, in plain words, what the listing did not say.
  * Renders nothing when there is neither.
  */
-export function ScoutEvidence({ gig, compact = false, className }: ScoutEvidenceProps) {
+export function ScoutEvidence({ gig, compact = false, inline = false, className }: ScoutEvidenceProps) {
   const evidence = scoutEvidence(gig);
   const unknowns = scoutUnknowns(gig);
   if (!evidence && unknowns.length === 0) return null;
+
+  if (inline) {
+    // Labels first and the evidence last: a two-line cut takes the tail, so it must never be what the listing does not say.
+    return (
+      <p className={className}>
+        {evidence ? <span className="font-semibold text-foreground/70">Relevant evidence</span> : null}
+        {evidence?.summarised ? <span> · Summarised from the listing</span> : null}
+        {unknowns.length > 0 ? <>{evidence ? " · " : ""}<span className="font-semibold text-foreground/70">Not stated:</span> {unknowns.join(", ")}</> : null}
+        {evidence ? <> · {evidence.lines.join(" · ")}</> : null}
+      </p>
+    );
+  }
 
   return (
     <div className={cn("rounded-lg border border-border bg-muted/30 px-2.5 py-2", className)}>

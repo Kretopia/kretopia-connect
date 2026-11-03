@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ScoutEvidence } from "./ScoutEvidence";
 import { useOptionalScoutScan } from "@/components/scout/scoutScanContext";
 import { ScoutGigCard, ScoutPill, compactDetails } from "@/components/scout/ScoutGigCard";
+import { CardIconButton } from "@/components/cards/CardShell";
 import { hasRealCompensation } from "@/lib/scoutPay";
 import { gigStatesById } from "@/components/scout/gigState";
 
@@ -143,9 +144,9 @@ export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } 
               pay={g.compensation}
               location={g.location ?? (g.remote ? "Remote" : null)}
               tags={g.remote && g.location ? <ScoutPill>Remote</ScoutPill> : null}
-              evidence={<ScoutEvidence gig={g} compact />}
-              trust={<span className="text-[10px] text-muted-foreground">{savedLine}</span>}
-              utility={<Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => unsave(g.id)} title="Remove from shortlist" aria-label={`Remove ${g.title} from shortlist`}><X className="h-4 w-4" /></Button>}
+              evidence={<ScoutEvidence gig={g} inline />}
+              trust={savedLine}
+              utility={<CardIconButton action={{ icon: <X className="h-4 w-4" aria-hidden />, label: `Remove ${g.title} from shortlist`, onClick: () => unsave(g.id) }} />}
               apply={{ label: "Apply", href: g.apply_url || g.source_url }}
               brief={{ text: g.description, originalUrl: g.source_url }}
               details={details}
