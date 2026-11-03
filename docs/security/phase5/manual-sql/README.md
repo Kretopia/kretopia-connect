@@ -5,11 +5,12 @@ repository's migrations and read by eye. That is why every apply script starts w
 unexpected, and why every lot has a read-only preflight you run first. Since then (2026-11-01):
 
 * **Syntax.** The grammar of PostgreSQL 17 itself (libpg_query, through `pglast` 8.7) parsed all 22 `.sql` files, the PL/pgSQL bodies of
-  every `DO` block and function included, plus `03b_verify_as_roles.sql`: 0 failures. The checker accepts the lot A files that Postgres
+  every `DO` block and function included, plus `03b_verify_as_roles.sql`: 0 failures. (Lots A-E only: F-I were added on 2026-11-03 and were
+  not part of that run.) The checker accepts the lot A files that Postgres
   accepted in production and rejects two deliberately broken files. This proves **syntax only**: it does not show that a table, column or
   role exists, nor what a statement does. Re-run it after any edit, from the repository root:
   `python3 -m venv v && v/bin/pip install pglast && v/bin/python docs/security/phase5/tools/parse_sql_pack.py $(find docs/security/phase5 -name '*.sql')`.
-* **Lots A, C, C2, D and E were run by the owner in production** and the results were reported (`A_durable_budgets/RESULTS.md`, `C_verification_badge/RESULTS.md`, `C2_profile_entitlements/RESULTS.md`, `E_approvals/RESULTS.md`, `D_topup_atomicity/RESULTS.md`). Nothing else in this folder has been reported as run.
+* **Lots A, C, C2, D and E were run by the owner in production** and the results were reported (`A_durable_budgets/RESULTS.md`, `C_verification_badge/RESULTS.md`, `C2_profile_entitlements/RESULTS.md`, `E_approvals/RESULTS.md`, `D_topup_atomicity/RESULTS.md`). Nothing else among lots A-E has been reported as run, and lots F-I (below) carry no run report of their own.
 
 ## Where, how
 
@@ -37,6 +38,36 @@ to be applied first, and none needs an edge function to be deployed first or aft
 
 Before C, look at lot 0 (`../lot0_sec01_sec02_verification.md`): it closes the verification of SEC-01 and SEC-02 and shares the habit of reading
 the catalog first.
+
+## Lots F-I: eighteen scripts moved here from the root `security/` folder (2026-11-03)
+
+These are the paste scripts of the October work (atomic AI quota, credit trust guard, external discovery, scouted claims). They had been
+kept **untracked** in `security/` on purpose, and an automated "open a PR" run pushed all 18 of them straight to `main` (commit `e649182dc`,
+taken back by PR 299). They now live in one folder per lot, so that a production script has one home. What did **not** change:
+
+* **The bytes.** Each file is identical to the pushed one (`git show e649182dc:security/<name>`), and `MOVED_FROM_SECURITY.sha256` proves it:
+  `cd docs/security/phase5/manual-sql && shasum -a 256 -c MOVED_FROM_SECURITY.sha256` must print 18 `OK` lines before you paste anything.
+  Do not edit a script to "fix a path": the comments and `RAISE` messages inside still say `security/<name>` or just `<name>`. The name is
+  the same, only the folder changed. If a script really must change, change it, regenerate the manifest, and say why in the commit.
+* **The rules above.** Only in the SQL Editor of the Lovable project **kretopia-app**; one script at a time; paste the result back before the
+  next step; stop at the first error. These lots keep their original file names (they cite each other by name) instead of the
+  `01_preflight` ... `04_rollback` numbering of lots A-E; each apply script carries its own preflight and smoke test in one transaction.
+* **The tracked verify scripts stay put.** `security/verify-atomic-ai-quota-2026-10-28.sql` and `security/verify-credit-trust-guard-2026-10-28.sql`
+  were tracked before the incident and are cited by `KREPAY_LIVE_RELEASE_GATE.md`; they are the read-only checks for lots F and G.
+
+**Nothing below says a script was run.** Whether, when, and in full or in part, each one was applied to production is not recorded in git
+for most of them. Where the repository does record something, the cell quotes it; everywhere else the status is **unknown**: read the SQL
+Editor history of kretopia-app or ask the owner before assuming either way. None of them was run from the session that moved them.
+
+| Lot | Folder | Files (apply / rollback / other) | What it does | Order | What the repository records |
+|---|---|---|---|---|---|
+| F | `F_atomic_ai_quota` | `apply-atomic-ai-quota-2026-10-28.sql`, `rollback-atomic-ai-quota-2026-10-28.sql` | replaces the three AI counters (`consume_copilot_message`, `consume_studio_ai_generation`, `consume_ai_feature_call`) with atomic ones | after the preflight inside the script; verify with `security/verify-atomic-ai-quota-2026-10-28.sql` | **unknown.** `KREPAY_LIVE_RELEASE_GATE.md` lists it as waiting for approval when that gate was written |
+| G | `G_credit_trust_guard` | `apply-credit-trust-guard-2026-10-28.sql`, `rollback-credit-trust-guard-2026-10-28.sql` | `guard_credit_verification_escalation`: an unauthorized caller can no longer insert a credit already marked `peer` | after the preflight inside the script; verify with `security/verify-credit-trust-guard-2026-10-28.sql` | **unknown.** Same gate document, same state |
+| H | `H_external_discovery` | `apply-external-discovery-2026-10-29.sql`, `rollback-external-discovery-2026-10-29.sql`, `apply-discovery-on-2026-10-29.sql`, `rollback-discovery-on-2026-10-29.sql`, `apply-open-feeds-2026-10-29.sql`, `rollback-open-feeds-2026-10-29.sql`, `apply-open-himalayas-2026-10-29.sql`, `rollback-open-himalayas-2026-10-29.sql`, `close-weworkremotely-arbeitnow-2026-10-29.sql`, `verify-swipes-opportunity-2026-10-29.sql` | the external-discovery tables, view and functions (fresh install only); the kill switch on with Jobicy as the one free source; three more free feeds; Himalayas; an optional close of two sources; a read-only check of `swipes.target_type` | `apply-external-discovery` -> `apply-discovery-on` -> `apply-open-feeds` (refuses otherwise) -> `apply-open-himalayas` (refuses otherwise, and only once the frontend carrying its credit is published); `close-weworkremotely-arbeitnow` is optional | `docs/release/EXTERNAL_DISCOVERY.md`: "Opening the other three feeds (applied 2026-10-29)"; Himalayas "prepared 2026-10-29, not applied" (a later state is not recorded there); the optional close "rehearsed 9/9". The first two scripts: **unknown** from git |
+| I | `I_scouted_claims` | `apply-scouted-claim-requests-2026-10-29.sql`, `rollback-scouted-claim-requests-2026-10-29.sql`, `apply-scouted-claim-close-token-ownership-2026-10-29.sql`, `rollback-scouted-claim-close-token-ownership-2026-10-29.sql` | a request table and three functions for claims, then the replacement of the two old token-claim functions so that holding a link no longer makes anyone the owner | (1) requests script, (2) publish the frontend, (3) close-token-ownership script: publishing first makes `/claim-gig` and `/claim-event` answer "Request failed" | **unknown.** `EXTERNAL_DISCOVERY.md` says the second migration is "APPLY ONLY AFTER the frontend is published" |
+
+The repository is public, and the incident put these files in its history: they contain no credential (a pattern scan of all 18 on
+2026-11-03 found none), but they do name tables, functions and the production project reference. Moving them does not change that.
 
 ## Compatibility with what is deployed today, lot by lot
 

@@ -27,6 +27,11 @@ dist-ssr
 # Local contractor docs (not committed)
 docs/
 
+# Production SQL never enters git by accident. A new *.sql in the root security/ folder is ignored (18 were swept into main by a bulk add on
+# 2026-11-03); the files already tracked there stay tracked. A script that belongs in git goes in docs/security/ (git add -f) or in
+# supabase/migrations/. scripts/git-hooks/pre-commit enforces the same rule for anything this pattern does not cover.
+/security/**/*.sql
+
 # Local environment secrets
 .env
 .env.*

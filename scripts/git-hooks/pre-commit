@@ -1,0 +1,45 @@
+#!/bin/sh
+# Kretopia pre-commit guard. Installed by scripts/install-git-hooks.sh; the rules are explained in scripts/git-hooks/README.md.
+#
+#   1. No commit on main or master: work happens on a branch and reaches main through a pull request.
+#   2. No new *.sql outside the folders a production script may live in. Editing or deleting a tracked one is fine.
+#
+# It reads the index and the branch name and changes nothing. `git commit --no-verify` skips it: it is a safety net, not a lock.
+
+status=0
+say() { printf '%s\n' "$*" >&2; }
+
+branch=$(git symbolic-ref --short -q HEAD 2>/dev/null)
+case "$branch" in
+  main|master)
+    say "pre-commit: refusing to commit on '$branch'."
+    say "  Branch from it without tracking it, commit there, and push the branch:"
+    say "    git switch -c <name> --no-track origin/main"
+    say "    git push -u origin <name>"
+    status=1
+    ;;
+esac
+
+# Reads paths, prints those that are SQL outside the allowed folders. A function, not an inline `case` inside $( ): the bash 3.2 that macOS
+# ships as /bin/sh cannot parse that.
+sql_outside_allowed() {
+  while IFS= read -r path; do
+    case $(printf '%s' "$path" | tr '[:upper:]' '[:lower:]') in
+      supabase/migrations/*.sql | drizzle/migrations/*.sql | docs/security/*.sql) ;;
+      *.sql) printf '%s\n' "$path" ;;
+    esac
+  done
+}
+
+# Added, copied or renamed files only: a rename into a bad folder is an add, deleting or editing an existing script is not.
+outside=$(git -c core.quotepath=off diff --cached --name-only --diff-filter=ACR | sql_outside_allowed)
+
+if [ -n "$outside" ]; then
+  say "pre-commit: refusing to add SQL outside the places a production script may live:"
+  printf '%s\n' "$outside" | sed 's/^/    /' >&2
+  say "  Allowed: supabase/migrations/, drizzle/migrations/, and docs/security/ (a reviewed paste script: git add -f -- <path>)."
+  say "  Anything else stays out of git. To commit it anyway, on purpose: git commit --no-verify."
+  status=1
+fi
+
+exit $status
