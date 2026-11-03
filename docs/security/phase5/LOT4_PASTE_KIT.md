@@ -1,7 +1,10 @@
 # Lot 4 -- paste kit for batch 1
 
 **Nothing here is done for you.** This is the checklist for pasting the batch into the Lovable project **kretopia-app** (the one that reaches
-production), by hand. Never into "Kretopia Connect": it deploys itself when the pull request is merged. The files are the ones of the branch
+production), by hand. Never into "Kretopia Connect": it deploys itself when the pull request is merged. **kretopia-app is an editor project, not
+a GitHub repository**: the repository of the same name, `Kretopia/kretopia-app`, is archived and read-only, so nothing in this kit is cloned from
+it, pushed to it or opened as a pull request there. The code and its pull requests live in `Kretopia/kretopia-connect`
+(`docs/platform/DEPLOYMENT_RUNBOOK.md`, "Where things live"). The files are the ones of the branch
 `chore/security-lockdown-phase5` (PRs 295 and 296, merged into main on 2026-11-01); the sizes and hashes below are those of the commit this kit was generated from. The reasoning and the
 list of what each function changes are in `LOT4_ACTIVATION_BATCH1.md`.
 

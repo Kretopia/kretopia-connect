@@ -34,8 +34,9 @@ git push -u origin <name>                      # never `git push origin HEAD:mai
 gh pr create --repo Kretopia/kretopia-connect
 ```
 
-`gh` resolves the repository from `remote.origin.gh-resolved`, which in this clone points at the archived `Kretopia/kretopia-app`: always
-pass `--repo`, or run `gh repo set-default Kretopia/kretopia-connect` once.
+`gh` takes its default repository from `remote.origin.gh-resolved`, which in this clone pointed at the archived `Kretopia/kretopia-app` until
+2026-11-03 (every `gh pr create` then failed with "Repository was archived"). Check with `gh repo set-default --view`; fix once with
+`gh repo set-default Kretopia/kretopia-connect`, or pass `--repo` every time.
 
 ## What these hooks are not
 

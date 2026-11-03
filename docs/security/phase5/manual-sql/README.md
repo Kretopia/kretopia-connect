@@ -15,7 +15,8 @@ unexpected, and why every lot has a read-only preflight you run first. Since the
 ## Where, how
 
 * Only in the SQL Editor of the Lovable project **kretopia-app** (the one that reaches production). Never in "Kretopia Connect": its database
-  is a different one and the preflights refuse to go on there.
+  is a different one and the preflights refuse to go on there. kretopia-app is an editor project, not a GitHub repository: the repository
+  `Kretopia/kretopia-app` is archived and read-only and plays no part in running these scripts.
 * One lot at a time, files in numeric order: `01_preflight` (read-only) -> `02_apply` (one transaction) -> `03_verify` (read-only) ->
   `04_rollback` (only if needed). Stop at the first error; an error in an apply script means nothing was changed.
 * Paste each result back before the next step. The verify scripts say, in their first lines, **what they prove and what they do not**: the
