@@ -1,11 +1,7 @@
-import { Suspense, lazy } from "react";
+import { KretopiaLanding } from "@/components/landing/KretopiaLanding";
 
-// Same lazy split UnifiedHome already uses for guests -- logged-in users
-// landing here (via the Navbar logo) shouldn't pay for this chunk on
-// every other route either.
-const KretopiaLanding = lazy(
-  () => import("@/components/landing/KretopiaLanding").then((m) => ({ default: m.KretopiaLanding })),
-);
+// Welcome is already a lazy route: its first visible content must not wait
+// for an additional import waterfall. Chapters retain their separate split.
 
 /**
  * The real marketing landing page, reachable at /landing regardless of
@@ -17,13 +13,7 @@ const KretopiaLanding = lazy(
  * page itself doesn't need to know or care which.
  */
 const Welcome = () => (
-  <Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: "#05070D" }} aria-busy="true" />}>
-    {/* onSearchSubmit is a required prop KretopiaLanding forwards to
-        KretopiaHero, which no longer calls it (see that component's own
-        header comment) -- kept required there for other callers, so this
-        is a no-op, not dead functionality this page is skipping. */}
-    <KretopiaLanding onSearchSubmit={() => {}} />
-  </Suspense>
+  <KretopiaLanding onSearchSubmit={() => {}} />
 );
 
 export default Welcome;

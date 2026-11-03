@@ -18,10 +18,10 @@
 - Connected passes its accepted profiles into the lazy Three.js KretoNetworkScene and uses one progressively disclosed network workspace, because duplicate connection fetches and independent panels obscure the real relationships. No scene interaction writes or auto-accepts relationships.
 - Keep Studio project cards in one scrollable, keyboard-accessible row with all filtered results mounted, because a capped grid hides projects and creates excessive page height.
 - Keep Passport's action, trust and record in one compact overview, and read Reach only from connected-platform syncs, because separate panels and stale profile counters misrepresent the creator's status.
-- Embed Passport intelligence inside the identity surface; keep EPK drafts in user-keyed device storage and preserve original PDFs separately from page-edited copies. Publish only after explicit confirmation to the existing owner-scoped portfolio EPK path and render it on owner/public Passports without profile or schema changes, because imports must remain intact and private until approved.
+- Embed Passport intelligence in identity; keep user-keyed local EPK drafts and separate original PDFs. Explicit confirmation publishes to the existing owner-scoped EPK path, without schema changes, because imports remain private and intact until approved.
 - Render EPK Live Preview from the actual generated or uploaded PDF with a lazy PDF.js viewer; use pdf-lib for explicit page edits, because a separate HTML mockup diverges from exported documents.
 - Use KretopiaQRCode for Passport previews/exports so branded codes stay consistent and scannable.
-- Today uses three TodayCard shells in TodayDeck: Passport/Kreto, one real next action, supporting live activity. Use 3D roulette for fine pointers, native touch swipe and flat reduced motion; each card gets its own KretoScene, never cut-outs or Holo. Place one TodayRadar after them with next event, people, nearby events, gigs, live Stages and proposals. Keep deeper metrics in Passport and next event/Discover Creatives in Radar; every line needs a real field to prevent duplicate dashboards and invented signals.
+- TodayDeck has three TodayCards (Passport/Kreto, next action, live activity), each with KretoScene. Use fine-pointer roulette, touch swipe and flat reduced motion. One TodayRadar owns events, people, gigs, Stages and proposals; Passport owns deeper metrics. Real fields only, because duplicate dashboards invent signals.
 - Keep legacy backend schema types and the client adapter in separate authored files mapped by exact import aliases, because Cloud regenerates its empty schema files and production still uses the legacy backend.
 - Search people through the public-safe profile view for guests and rank accepted viewer connections before other name matches for signed-in users, because discovery must work without login while relationship priority stays private.
 - Use shared theme tokens for Landing's editorial shell; keep photographic overlays separate so Daylight/Midnight themes the whole page without losing caption contrast.
@@ -40,7 +40,7 @@
 - Use FeaturePageHeader and WrappedShell/StudioFeatureShell for Spotlight, About and Hire Talent; group optional content in tabs/disclosures.
 - Omit back rows; keep step navigation, reader close and sidebar dismissal.
 - Call reminders reuse live sync/Daily IDs. The shell owns Studio calls; route/minimize changes resize one iframe, never rejoin. Safe-area chrome reads Daily state; refresh starts idle and exit requires confirmation.
-- `/meet/:id` and `/call/:token` only settle who comes in, fetch that person's access and start the one shell-owned call through `VideoCallSheet`; they own no Daily frame, header or controls, because separate call surfaces drifted apart and a second control row sat under Daily's own tray.
+- `/meet/:id` and `/call/:token` resolve access and start the shell-owned VideoCallSheet only; no separate Daily frame or controls, because duplicated call surfaces drift.
 - Key Match cards by profile; HoloCard tilts only for a fine pointer, tracked on its stable wrapper (never the tilted face) and flat for touch and reduced motion, because tracking the face made corners tremble.
 - Page discovery before exclusions; deduplicate quiet top-ups and retain consumed IDs to prevent suggestion starvation.
 - Let Workbox own HTTP-cache expiration and defer local housekeeping, because deleting unrelated caches forces repeat downloads.
@@ -54,11 +54,11 @@
 - Stream sourced Web results before AI ranking through the shared search endpoint, with bounded public-only memory caching and request coalescing, because ranking must not block usable sources or duplicate paid requests across search surfaces.
 - Run the read-only public-search GitHub preflight against the existing app target before deployment; never print provider secrets or apply unrelated migrations, because GitHub secrets may target a different backend.
 - Ship the large Kreto cutouts as lossless WebP (PNGs stay in src/assets/brand/kreto as source of truth), because the PNG set cost 4.2MB per fresh load and the WebP copies are pixel-identical.
-- Keep vendor splitting through plugins/vendor-chunks.ts (react-vendor, supabase-vendor, motion-vendor, i18n-vendor, sentry-vendor), with CommonJS helpers in react-vendor, because assigning React's interop helper to a consuming chunk creates a startup cycle and leaves the boot loader stuck.
+- Use plugins/vendor-chunks.ts for vendor splitting; CommonJS helpers belong to react-vendor, because assigning React interop to consumers creates startup cycles and stuck loaders.
 - Add new lazy routes to src/lib/routePrefetch.ts when adding them to App.tsx, because hover/focus prefetch is what makes navigation feel instant.
 - Load webfonts with preload+onload swap (never render-blocking stylesheet links), because font CSS delayed first paint on every cold visit.
 - Keep the guest email-list popup unmounted from the app shell, because it read as the sign-up path and interrupted the flow; email capture stays inline in Landing forms.
-- Fuse a feature header's Kreto scene banner into its FeatureWrapped panel head via featureSceneStore (header draws it only when no panel is mounted), and wrap feature bodies identically in Creator and Company mode, because separate banners duplicated the Kretopia mark and mode-specific layouts drifted from Studio.
+- Fuse header scenes into FeatureWrapped via featureSceneStore; headers draw only without a panel. Both account modes share body wrappers, because duplicate banners and layouts drift.
 - Keep AuthGate a pass-through (no "Sign up to unlock" overlay), because the blocking card interrupted the guest flow; sign-up lives in the navbar CTAs.
 - Render Community through LegalDocumentPage and structured legal content on the existing /community-guidelines route, because all legal surfaces must stay consistent without breaking existing links.
 - @username is the canonical handle: profiles.username is the single source for creator site handle AND sign-in. All validation goes through src/lib/username.ts (3–30, [a-z0-9_], no edge _, reserved list). Sign-in resolves username→email ONLY in the username-auth edge function on Lovable Cloud (legacy backend can't receive deployments); it returns session tokens, never the email, with one generic error and atomic rate limiting via consume_username_auth_attempt. The legacy DB constraint migration lives in docs/product/LEGACY_USERNAME_MIGRATION.sql until the legacy pipeline can apply it.
@@ -69,3 +69,5 @@
 - Optional username linking validates the live app user and caches only success; failed links stay retryable.
 - Use guard.ts/aiPerimeter.ts: validate the account backend without auth fallback, meter on deployment; lockdown SQL stays unapplied.
 - Share instant Kreto search routing across all chats; jobs open Scout, other terms open /search, because navigation must not wait for planning.
+- HomeEntry isolates public home from the signed-in dashboard and paints while onboarding loads; confirmed results still redirect, because slow profile requests must not block first content.
+- Bound lazy imports and stale-chunk cleanup; failures reach the error boundary, never an unresolved promise, because recovery must not leave a permanent loader.

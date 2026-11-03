@@ -10,7 +10,6 @@ import { HelmetProvider } from 'react-helmet-async';
 
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
-import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
@@ -29,7 +28,7 @@ import { useActivityPing } from "./hooks/useActivityPing";
 import { AuthGate } from "./components/AuthGate";
 import { RoutePrefetcher } from "./lib/routePrefetch";
 // OnboardingTour removed — real /onboarding page is the single source of truth.
-const UnifiedHome = lazy(() => import("./components/home/UnifiedHome"));
+const HomeEntry = lazy(() => import("./components/home/HomeEntry"));
 import { GlobalIncomingCall } from "./components/calls/GlobalIncomingCall";
 import { GlobalVideoCallHost } from "./components/calls/GlobalVideoCallHost";
 import { VideoCallProvider } from "./contexts/VideoCallContext";
@@ -207,26 +206,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-// Unified home: same layout for guests & authenticated users
-const DefaultRoute = () => {
-  const { user } = useAuth();
-  const { isComplete, loading: onboardingLoading } = useOnboarding();
-  
-  if (user) {
-    if (onboardingLoading) return <LoadingFallback />;
-    if (!isComplete) return <Navigate to="/onboarding" replace />;
-    
-    // Check for pending event join (from OAuth redirect)
-    const pendingEvent = sessionStorage.getItem('pending_event_join');
-    if (pendingEvent) {
-      sessionStorage.removeItem('pending_event_join');
-      return <Navigate to={`/event/${pendingEvent}`} replace />;
-    }
-  }
-  
-  return <UnifiedHome />;
-};
-
 // Catch-all: authenticated users go to mode-aware home
 const CatchAllRedirect = () => {
   const { user } = useAuth();
@@ -303,7 +282,7 @@ const AppContent = () => {
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Active MVP Routes */}
-            <Route path="/" element={<DefaultRoute />} />
+            <Route path="/" element={<HomeEntry />} />
             <Route path="/landing" element={<Welcome />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
