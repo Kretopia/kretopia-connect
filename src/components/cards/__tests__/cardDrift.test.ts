@@ -14,6 +14,13 @@ export const VARIANTS = [
   { name: "opportunity", file: "src/components/scout/ScoutGigCard.tsx" },
   { name: "project", file: "src/components/project/studio/ProjectCard.tsx" },
   { name: "credit", file: "src/components/profile/AchievementCard.tsx" },
+  { name: "profile", file: "src/components/passport/ProfileCard.tsx" },
+];
+
+/** Cards that are a variant under the name a surface knows: they map its data onto the variant and decide no shape either. */
+export const ADAPTERS = [
+  { name: "creator", file: "src/components/discover/CreatorPassportCard.tsx", variant: "ProfileCard" },
+  { name: "directory", file: "src/components/passport/PassportDirectoryCard.tsx", variant: "ProfileCard" },
 ];
 
 /** Bespoke cards that existed before the shell. They are gone, and a file of that name must not come back. */
@@ -52,7 +59,7 @@ describe("the shape of a card is decided once", () => {
     expect(holo).not.toMatch(/\brounded-2xl\b/);
   });
 
-  it.each([...VARIANTS.map((v) => v.file), ...SHELL_FILES])("%s declares no shape of its own", (file) => {
+  it.each([...VARIANTS.map((v) => v.file), ...ADAPTERS.map((a) => a.file), ...SHELL_FILES])("%s declares no shape of its own", (file) => {
     const source = read(file);
     for (const [what, pattern] of FORBIDDEN) {
       const hit = source.match(pattern);
@@ -75,6 +82,12 @@ describe("the shape of a card is decided once", () => {
     for (const fine of ['className="rounded-full"', 'className="rounded-md"', 'className="rounded-lg"', 'className="rounded-[9px]"', 'className="rounded-[10px]"', 'className="h-11 w-11"']) {
       expect(caught(fine), fine).toBe(false);
     }
+  });
+
+  it.each(ADAPTERS)("the $name card goes through $variant and builds no card of its own", ({ file, variant }) => {
+    const source = read(file);
+    expect(source).toMatch(new RegExp(`<${variant}\\b`));
+    expect(source).not.toMatch(/<(HoloCard|Card|article)\b/);
   });
 
   it("no bespoke card that the shell replaced has come back", () => {

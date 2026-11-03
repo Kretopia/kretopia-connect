@@ -4,7 +4,6 @@ import { Heart, Sparkles } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
 import { CreatorPassportCard } from "@/components/discover/CreatorPassportCard";
@@ -124,12 +123,7 @@ export function LikesYouGrid() {
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {likers.map(p => <CreatorPassportCard key={p.user_id} profile={p} onOpen={() => navigate(`/profile/${p.user_id}`)} footer={
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" className="min-h-11 flex-1" disabled={busyId === p.user_id} onClick={() => respond(p.user_id, "left")}>Pass</Button>
-          <Button size="sm" variant="secondary" className="min-h-11 flex-1 gap-1" disabled={busyId === p.user_id} onClick={() => respond(p.user_id, "right")}><Heart className="h-3 w-3" />Match</Button>
-        </div>
-      } />)}
+      {likers.map(p => <CreatorPassportCard key={p.user_id} profile={p} onOpen={() => navigate(`/profile/${p.user_id}`)} reply={{ onMatch: () => respond(p.user_id, "right"), onPass: () => respond(p.user_id, "left"), busy: busyId === p.user_id }} />)}
     </div>
   );
 }

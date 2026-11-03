@@ -73,6 +73,10 @@ const renderGrid = () =>
     </MemoryRouter>,
   );
 
+// A card is an <article>. Its title is a button named for the person; the reasons and the next action are inside the article (they used to be
+// inside one big button), so a card is found by that title and then looked into as a whole.
+const cardOf = (name: string) => screen.getByRole("button", { name }).closest("article") as HTMLElement;
+
 describe("Match grid: concrete reasons, no percentage", () => {
   it("shows why each person is suggested, never '% match', and keeps the strongest first", async () => {
     db.rows = [
@@ -89,7 +93,8 @@ describe("Match grid: concrete reasons, no percentage", () => {
     ];
     renderGrid();
 
-    const best = await screen.findByRole("button", { name: /Ava Chen/ });
+    await screen.findByRole("button", { name: "Ava Chen" });
+    const best = cardOf("Ava Chen");
     const reasons = within(best).getByRole("list", { name: "Why Ava Chen is suggested" });
     // two reasons per card, strongest first: same craft, then the skills they share
     expect(within(reasons).getAllByRole("listitem").map((li) => li.textContent)).toEqual([
@@ -98,7 +103,7 @@ describe("Match grid: concrete reasons, no percentage", () => {
     ]);
 
     // nothing in common: no list at all, not an invented reason
-    const none = screen.getByRole("button", { name: /Zed Nothing-in-common/ });
+    const none = cardOf("Zed Nothing-in-common");
     expect(within(none).queryByRole("list")).toBeNull();
 
     // the order is unchanged by hiding the number: the person with signals comes first
@@ -113,7 +118,8 @@ describe("Match grid: concrete reasons, no percentage", () => {
   it("asks the profile table for the collaboration intent it uses for the 'open to collaborating' reason", async () => {
     db.rows = [row({ user_id: "open", full_name: "Open Person", role: "Photographer", collab_intent: "seeking_collaborators", professional_skills: [] })];
     renderGrid();
-    const card = await screen.findByRole("button", { name: /Open Person/ });
+    await screen.findByRole("button", { name: "Open Person" });
+    const card = cardOf("Open Person");
     await waitFor(() => expect(within(card).getByRole("list")).toBeInTheDocument());
     expect(within(card).getByText("Shared craft · Photographer")).toBeInTheDocument();
     expect(within(card).getByText("Open to collaborating")).toBeInTheDocument();
@@ -127,14 +133,15 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
       row({ user_id: "chef", full_name: "Chet Chef", role: "Chef" }),
     ];
     renderGrid();
-    const card = await screen.findByRole("button", { name: /Sam Stylist/ });
+    await screen.findByRole("button", { name: "Sam Stylist" });
+    const card = cardOf("Sam Stylist");
     const items = within(within(card).getByRole("list", { name: "Why Sam Stylist is suggested" })).getAllByRole("listitem");
     expect(items.map((li) => li.textContent)).toEqual([
       "Complements your craft · Fashion stylist",
       "Brings skills you don't list: Wardrobe, Set styling",
     ]);
     // a craft that is neither the same nor a complement says nothing
-    expect(within(screen.getByRole("button", { name: /Chet Chef/ })).queryByRole("list")).toBeNull();
+    expect(within(cardOf("Chet Chef")).queryByRole("list")).toBeNull();
     // and the complement is ranked above the stranger
     const order = screen.getAllByRole("button").map((b) => b.textContent ?? "").filter((t) => /Sam Stylist|Chet Chef/.test(t));
     expect(order[0]).toMatch(/Sam Stylist/);
@@ -143,8 +150,8 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
   it("shows the next action on every card: View Passport", async () => {
     db.rows = [row({ user_id: "a", full_name: "Aa Person" }), row({ user_id: "b", full_name: "Bb Person" })];
     renderGrid();
-    await screen.findByRole("button", { name: /Aa Person/ });
-    for (const name of [/Aa Person/, /Bb Person/]) expect(within(screen.getByRole("button", { name })).getByText(/View Passport/)).toBeInTheDocument();
+    await screen.findByRole("button", { name: "Aa Person" });
+    for (const name of ["Aa Person", "Bb Person"]) expect(within(cardOf(name)).getByText(/View Passport/)).toBeInTheDocument();
   });
 
   it("retains every ranked creator in the correct craft rail", async () => {
@@ -155,7 +162,7 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
       row({ user_id: "s1", full_name: "Sam Stylist", role: "Fashion stylist", professional_skills: ["wardrobe"] }),
     ];
     renderGrid();
-    await screen.findByRole("button", { name: /Sam Stylist/ });
+    await screen.findByRole("button", { name: "Sam Stylist" });
     const roles = screen
       .getAllByRole("button")
       .map((b) => b.textContent ?? "")
@@ -166,21 +173,21 @@ describe("Match grid: complementary collaborators, a clear next action, and neve
     expect(roles.filter(role => role === "stylist")).toHaveLength(1);
     const photoRail = screen.getAllByRole("region", { name: "Photo & Video creators" }).find(element => element.tagName === "UL");
     if (!photoRail) throw new Error("Missing photo carousel");
-    expect(within(photoRail).getByRole("button", { name: /Photo One/ })).toBeInTheDocument();
+    expect(within(photoRail).getByRole("button", { name: "Photo One" })).toBeInTheDocument();
     expect(within(photoRail).queryByRole("button", { name: /Sam Stylist/ })).toBeNull();
   });
 
   it("when a search matches nobody it shows other real members and says so, instead of an empty feed", async () => {
     db.rows = [row({ user_id: "real", full_name: "Real Member", role: "Photographer" })];
     renderGrid();
-    await screen.findByRole("button", { name: /Real Member/ });
+    await screen.findByRole("button", { name: "Real Member" });
     expect(screen.queryByRole("status")).toBeNull();
 
     fireEvent.change(screen.getByPlaceholderText("Search by name, role, bio…"), { target: { value: "zzzz nobody" } });
     fireEvent.keyDown(screen.getByPlaceholderText("Search by name, role, bio…"), { key: "Enter" });
 
     await screen.findByText("Nobody matches that search exactly. Here are other real members you may want to meet.");
-    expect(screen.getByRole("button", { name: /Real Member/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Real Member" })).toBeInTheDocument();
     expect(screen.queryByText(/No creators match those filters/)).toBeNull();
   });
 

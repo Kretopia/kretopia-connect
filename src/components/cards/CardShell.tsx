@@ -17,6 +17,8 @@ export interface CardTarget {
   rel?: string;
   onClick?: (event: MouseEvent) => void;
   ariaLabel?: string;
+  /** A button that is waiting for an answer cannot be pressed again. */
+  disabled?: boolean;
 }
 
 /** The card's one primary action. */
@@ -84,7 +86,7 @@ function Target({ target, className, style, children, testId, title, pressed, pa
   const common = { className, style, "aria-label": target.ariaLabel, "data-testid": testId, "data-card-part": part, title };
   if (target.to) return <Link to={target.to} onClick={target.onClick} {...common}>{children}</Link>;
   if (target.href) return <a href={target.href} target="_blank" rel={target.rel ?? "noopener noreferrer"} onClick={target.onClick} {...common}>{children}</a>;
-  return <button type="button" onClick={target.onClick} aria-pressed={pressed} {...common}>{children}</button>;
+  return <button type="button" onClick={target.onClick} aria-pressed={pressed} disabled={target.disabled} {...common}>{children}</button>;
 }
 
 /** The primary action: a link in the app, a new-tab link to another site, or a button. */
