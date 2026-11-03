@@ -13,10 +13,17 @@ const read = (path: string) => readFileSync(resolve(ROOT, path), "utf8");
 export const VARIANTS = [
   { name: "opportunity", file: "src/components/scout/ScoutGigCard.tsx" },
   { name: "project", file: "src/components/project/studio/ProjectCard.tsx" },
+  { name: "credit", file: "src/components/profile/AchievementCard.tsx" },
 ];
 
 /** Bespoke cards that existed before the shell. They are gone, and a file of that name must not come back. */
-export const DELETED: string[] = [];
+export const DELETED: string[] = [
+  // The feed's cards (credit, award, press, portfolio): each had its own shape, and nothing imported any of them.
+  "src/components/feed/CreditActivityCard.tsx",
+  "src/components/feed/AwardActivityCard.tsx",
+  "src/components/feed/PressActivityCard.tsx",
+  "src/components/feed/PortfolioItemCard.tsx",
+];
 
 // What a card file may not declare. Small radii (buttons, chips, avatars) are not a card's shape, so `rounded-full`, `rounded-md` and
 // `rounded-[9px]` are fine; a card-level radius, any shadow, a cover ratio or an inline shape style is not.
