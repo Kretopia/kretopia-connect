@@ -1,9 +1,11 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Startup recovery and fast first content
-- [ ] Isolate the public home from authenticated dashboard dependencies; render home while the optional onboarding lookup finishes, preserving confirmed redirects.
-- [ ] Bound lazy-module recovery so stalled imports/cache cleanup cannot leave a permanent loader; align home and Landing prefetch with their actual entry points.
-- [ ] Run regression tests and cold-start/navigation browser checks. Publication requires explicit authorization; authenticated production verification needs a real legacy session.
+- [x] Isolate public home from authenticated dashboard dependencies; show public content during session restoration and signed-in home while onboarding loads, retaining confirmed redirects.
+- [x] Bound lazy-module recovery and cleanup; remove the never-resolving fallback, preserve unrelated caches, align home/Landing/Studio prefetch with actual entry points.
+- [x] 32 regression tests pass; managed build OK. Browser: public home 1.65 s, 1.60 s with backend unavailable; Landing/Scout/Search/About headers in 0.87–1.68 s, no runtime errors. Public production guest home also opens (2.47 s); its reported signed-in stall was not reproduced with a real session. These timings are observations, not universal instant-loading guarantees.
+- [ ] Apply the correction to www.kretopia.com: blocked pending explicit publication authorization.
+- [ ] Verify the reported startup with the real signed-in legacy account: session unavailable here; account restoration and onboarding failure paths covered by regression tests, not a real authenticated browser check.
 
 ## Immediate Kreto search navigation
 - [x] Route “Search for UX Designers” directly to existing search results with the intact query, bypassing planning across floating, rail and inline chat; 39 regression tests pass and managed build OK. Browser verifies /search?q=UX%20Designers and the populated search field, with no runtime errors.
