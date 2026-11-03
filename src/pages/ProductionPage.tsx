@@ -23,6 +23,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { extractThumbnailForStorage } from "@/lib/thumbnailExtractor";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { BackToPassport } from "@/components/nav/BackToPassport";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -676,6 +677,7 @@ const ProductionPage = () => {
       </Helmet>
 
       <div className="min-h-screen bg-background">
+        <BackToPassport />
         <EditorialPageHero
           kicker="The Production"
           oneLine

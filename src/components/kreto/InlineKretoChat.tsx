@@ -9,7 +9,8 @@ import {
   openKretoAttachment, deleteKretoAttachment, type CopilotMessage,
 } from "@/lib/thriveCopilot";
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
-import { KretoQuotaIndicator } from "@/components/kreto/KretoQuotaIndicator";
+import { KretoQuotaIndicator, KRETO_ALLOWANCE_NOTICE_ID } from "@/components/kreto/KretoQuotaIndicator";
+import { useAiAllowance } from "@/hooks/useAiAllowance";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 
@@ -111,6 +112,9 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   const [lastError, setLastError] = useState<{ message: string; draft: string } | null>(null);
   const [ghost, setGhost] = useState("");
   const [quotaRefresh, setQuotaRefresh] = useState(0);
+  // The server's count of what is left today. When the next message would be refused, the composer says so and waits for the reset.
+  const { allowance, now: allowanceNow } = useAiAllowance(quotaRefresh + (streaming ? 1 : 0) + attachments.filter((a) => a.status === "ready").length);
+  const blocked = allowance?.blocked ?? null;
   const ghostTimerRef = useRef<number | undefined>(undefined);
   const ghostAbortRef = useRef<AbortController | null>(null);
 
@@ -192,6 +196,9 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       navigate(instant.path);
       return;
     }
+
+    // Navigation above needs no model; everything below does, and the server would refuse it. Say so here rather than send it.
+    if (blocked) return;
 
     // Only fully parsed attachments travel with the message — a failed one
     // keeps its chip (with retry) and never blocks sending the text.
@@ -321,7 +328,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       }
       setStreaming(false);
     }
-  }, [streaming, conversationId, onConversationCreated, attachments, navigate]);
+  }, [streaming, conversationId, onConversationCreated, attachments, navigate, blocked]);
 
   // A quick-action click seeds the thread and sends immediately. Keyed on
   // seedNonce (not seedPrompt itself) so clicking the same quick action
@@ -406,7 +413,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
         <div className="flex items-center justify-between gap-2 px-3 pt-2">
           <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
-          <KretoQuotaIndicator refreshKey={quotaRefresh + (streaming ? 1 : 0) + attachments.filter(a => a.status === "ready").length} />
+          <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />
         </div>
 
         {lastError && (
@@ -442,7 +449,8 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
                 }
               }}
               rows={1}
-              placeholder={`Ask ${BRAND.agentName} anything…`}
+              placeholder={blocked ? `${BRAND.agentName} is paused until the allowance resets` : `Ask ${BRAND.agentName} anything…`}
+              aria-describedby={blocked ? KRETO_ALLOWANCE_NOTICE_ID : undefined}
               className="relative z-10 w-full resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
             />
             {ghost && (
@@ -468,7 +476,8 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
           ) : (
             <button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || !!blocked}
+              aria-describedby={blocked ? KRETO_ALLOWANCE_NOTICE_ID : undefined}
               className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
               aria-label="Send"
             >

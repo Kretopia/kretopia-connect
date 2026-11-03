@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { notifyUser } from "@/lib/notifyUser";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useRestoreReturnScroll } from "@/hooks/usePassportReturn";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { maskCreatorName } from "@/lib/guestUtils";
@@ -104,6 +105,7 @@ interface Profile {
 const ViewProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const [searchParams] = useSearchParams();
+  useRestoreReturnScroll();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   

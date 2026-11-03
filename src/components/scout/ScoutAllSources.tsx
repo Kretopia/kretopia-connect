@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PILL_ITEM, PILL_ITEM_ACTIVE } from "@/components/discover/DiscoverSwitch";
-import { ScoutGigCard } from "./ScoutGigCard";
+import { ScoutGigCard, compactDetails } from "./ScoutGigCard";
 import { ScoutFieldCarousel } from "./ScoutFieldCarousel";
 import { useOptionalScoutScan } from "./scoutScanContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -17,6 +16,7 @@ import { useScoutCatalog } from "@/hooks/useScoutCatalog";
 import { CATEGORIES, LEVELS, categoryOf, type CategoryId, type Language, type Level, type WorkMode } from "@/lib/opportunityTaxonomy";
 import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, focusRequest, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
 import { cn } from "@/lib/utils";
+import { hasRealCompensation } from "@/lib/scoutPay";
 
 /** Outside the creative families a section shows this many until opened, unless the person is searching or filtering. */
 const COLLAPSED_MAX = 6;
@@ -102,34 +102,71 @@ function FamilyPill({ id, primary }: { id: CategoryId; primary?: boolean }) {
 }
 
 function OpportunityCard({ item }: { item: CatalogItem }) {
-  const place = [item.company, item.location].filter(Boolean).join(" · ");
   const posted = when(item);
   const levelLabel = item.level ? LEVELS.find((l) => l.id === item.level)?.label : null;
+  const external = item.origin === "external";
+  const familyLabels = [categoryOf(item.category).label, ...item.alsoIn.map((c) => categoryOf(c).label)];
+  // Only the fields this listing really has: a missing one is left out, never filled in.
+  const details = compactDetails([
+    item.company && { label: "Company", value: item.company },
+    (item.locationFull ?? item.location) && { label: "Location", value: item.locationFull ?? item.location },
+    item.workMode !== "unknown" && { label: "Work", value: WORK_LABEL[item.workMode] },
+    levelLabel && { label: "Level", value: levelLabel },
+    { label: "Field", value: familyLabels.join(" · ") },
+    hasRealCompensation(item.pay) && { label: "Pay", value: item.pay },
+    posted && { label: "Posted", value: posted.replace(/^Posted /, "") },
+    { label: "Source", value: external ? item.sourceName : "Kretopia" },
+    external && item.seenAt && { label: "Last checked", value: formatDistanceToNow(new Date(item.seenAt), { addSuffix: true }).replace("about ", "") },
+    item.more.length > 0 && { label: "Also posted", value: `${item.more.length} more ${item.more.length === 1 ? "place" : "places"}` },
+  ]);
   return (
     // content-visibility keeps a few hundred cards cheap: the ones off screen are not laid out until they are near.
-    <li className="[contain-intrinsic-size:auto_168px] [content-visibility:auto]">
-      <ScoutGigCard title={item.title} image={item.image} href={item.detailTo} pay={item.pay} testId="catalog-card" badges={<FamilyPill id={item.category} primary />}>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {item.alsoIn.map((c) => (
-            <FamilyPill key={c} id={c} />
-          ))}
-          {levelLabel && <span className={SMALL_PILL}>{levelLabel}</span>}
-        </div>
-
-
-        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
-          {place && (
-            <span className="inline-flex items-center gap-1" title={item.locationFull ?? undefined}>
-              {item.location && <MapPin className="h-3 w-3 shrink-0" aria-hidden />}
-              {place}
-            </span>
-          )}
-          {item.workMode !== "unknown" && <span className={SMALL_PILL}>{WORK_LABEL[item.workMode]}</span>}
-        </p>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {posted && <span className="text-[11px] text-muted-foreground">{posted}</span>}
-        </div>
+    <li className="[contain-intrinsic-size:auto_420px] [content-visibility:auto]">
+      <ScoutGigCard
+        testId="catalog-card"
+        title={item.title}
+        company={item.company}
+        art={{ category: item.category, title: item.title, excerpt: item.excerpt }}
+        href={item.detailTo}
+        pills={<FamilyPill id={item.category} primary />}
+        pay={item.pay}
+        location={item.location ? <span title={item.locationFull ?? undefined}>{item.location}</span> : null}
+        tags={
+          <>
+            {item.alsoIn.map((c) => (
+              <FamilyPill key={c} id={c} />
+            ))}
+            {levelLabel && <span className={SMALL_PILL}>{levelLabel}</span>}
+            {item.workMode !== "unknown" && <span className={SMALL_PILL}>{WORK_LABEL[item.workMode]}</span>}
+          </>
+        }
+        trust={
+          external ? (
+            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceName} />
+          ) : (
+            <span className={SMALL_PILL}>Kretopia</span>
+          )
+        }
+        apply={
+          external
+            ? { label: "Apply at source", href: item.openUrl ?? undefined, rel: item.openRel, ariaLabel: `Apply at source: ${item.title}` }
+            : { label: "View gig", to: item.detailTo }
+        }
+        brief={{ text: item.excerpt, originalUrl: external ? item.openUrl : null }}
+        details={details}
+        opportunity={{
+          title: item.title,
+          company: item.company,
+          location: item.locationFull ?? item.location,
+          workMode: item.workMode !== "unknown" ? WORK_LABEL[item.workMode] : null,
+          level: levelLabel,
+          category: familyLabels.join(", "),
+          pay: hasRealCompensation(item.pay) ? item.pay : null,
+          source: external ? item.sourceName : "Kretopia",
+          description: item.excerpt,
+        }}
+      >
+        {posted && <span className="text-[11px] text-muted-foreground">{posted}</span>}
 
         {item.more.length > 0 && (
           <details className="text-xs text-muted-foreground">
@@ -148,27 +185,6 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
             </ul>
           </details>
         )}
-
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-1">
-          {item.origin === "external" ? (
-            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceName} />
-          ) : (
-            <span className={SMALL_PILL}>Kretopia</span>
-          )}
-          {item.origin === "external" ? (
-            item.openUrl && (
-              <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-0">
-                <a href={item.openUrl} target="_blank" rel={item.openRel} aria-label={`Apply at source: ${item.title}`}>
-                  Apply at source <ExternalLink className="ml-1 h-3 w-3" aria-hidden />
-                </a>
-              </Button>
-            )
-          ) : (
-            <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-0">
-              <Link to={item.detailTo}>View gig</Link>
-            </Button>
-          )}
-        </div>
       </ScoutGigCard>
     </li>
   );

@@ -10,7 +10,7 @@
 // screens), since those are inherently full-page, not floating-widget
 // content.
 import { useEffect } from "react";
-import { useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Copy } from "lucide-react";
@@ -19,6 +19,9 @@ import { useToast } from "@/hooks/use-toast";
 import { CallPreflightGate } from "@/components/calls/CallPreflightGate";
 import { Greenroom } from "@/components/calls/Greenroom";
 import { useVideoCall } from "@/contexts/VideoCallContext";
+import { GuestEntryChoice } from "@/components/auth/GuestEntryChoice";
+import { useEntryChoice } from "@/hooks/useEntryChoice";
+import { signInHref } from "@/lib/entryChoice";
 
 export default function CallPage() {
   const { meetingId = "" } = useParams();
@@ -27,6 +30,10 @@ export default function CallPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnPath = `${location.pathname}${location.search}`;
+  // Someone who is not signed in picks "sign in" or "continue as guest" before anything else is shown.
+  const entry = useEntryChoice(`meet:${meetingId}`);
 
   const {
     phase,
@@ -55,7 +62,20 @@ export default function CallPage() {
   };
 
   // ---------- Renders ----------
-  if (phase === "idle" || phase === "loading") {
+  if (entry.needsChoice) {
+    return (
+      <GuestEntryChoice
+        title="You're invited to a live call"
+        context={title || undefined}
+        signInTo={returnPath}
+        signInHint="Join with your Kretopia account."
+        guestHint="Join with just your name."
+        onContinueAsGuest={entry.continueAsGuest}
+      />
+    );
+  }
+
+  if (entry.pending || phase === "idle" || phase === "loading") {
     return (
       <FullScreen>
         <KretopiaSpinner className="h-8 w-8 text-primary" />
@@ -70,7 +90,14 @@ export default function CallPage() {
         <div className="max-w-sm text-center space-y-4">
           <h1 className="text-xl font-semibold">Can't open this meeting</h1>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button onClick={() => { reset(); navigate("/"); }}>Back to home</Button>
+          <div className="flex flex-wrap justify-center gap-2">
+            {!user && (
+              <Button asChild variant="outline">
+                <Link to={signInHref(returnPath)}>Sign in</Link>
+              </Button>
+            )}
+            <Button onClick={() => { reset(); navigate("/"); }}>Back to home</Button>
+          </div>
         </div>
       </FullScreen>
     );
@@ -105,8 +132,8 @@ export default function CallPage() {
   if (phase === "lobby") {
     const ctaLabel = isHost ? "Start call" : "Knock to join";
     return (
-      <div className="k-call-surface h-[100dvh]">
-        <div className="relative h-[100dvh]">
+      <div className="k-call-surface k-call-vh">
+        <div className="relative k-call-vh">
           <CallPreflightGate
             shareUrl={typeof window !== "undefined" ? window.location.href : null}
             onCancel={() => { reset(); navigate("/"); }}
@@ -147,7 +174,7 @@ export default function CallPage() {
 
 function FullScreen({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-[100dvh] bg-background flex flex-col items-center justify-center p-6">
+    <div className="k-call-min-vh bg-background flex flex-col items-center justify-center p-6">
       {children}
     </div>
   );

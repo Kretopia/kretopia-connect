@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PostOpportunityDialog } from "@/components/PostOpportunityDialog";
 import { SavedOpportunitiesDialog } from "@/components/opportunity/SavedOpportunitiesDialog";
 import { ScoutGigDialog } from "@/components/opportunity/ScoutGigDialog";
-import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
+import { ScoutGigCard, ScoutPill, compactDetails } from "@/components/scout/ScoutGigCard";
+import { hasRealCompensation } from "@/lib/scoutPay";
 import GigCard, { type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { computeOpportunityMatch, type ViewerProfileForMatch } from "@/lib/opportunityMatch";
 import { 
@@ -509,10 +510,40 @@ export const OpportunitiesFeed = ({ onOpenForYou, scoutCards = false }: { onOpen
 
             return (
               <DiscoveryGate key={opp.id} totalItems={opportunities.length} freePreviewCount={4} index={index} itemLabel="gigs">
-                {scoutCards ? <ScoutGigCard title={opp.title} image={opp.image_url} pay={opp.compensation} href={`/opportunity/${opp.id}`} badges={<Badge variant="outline" className="bg-background/90 text-[10px]">Kretopia</Badge>} footer={<Button asChild size="sm" variant="outline"><Link to={`/opportunity/${opp.id}`}>View gig</Link></Button>}>
-                  <p className="text-xs text-muted-foreground">{creator?.full_name}{opp.location && ` · ${opp.location}`}</p>
-                  {opp.description && <p className="line-clamp-3 text-xs text-muted-foreground">{opp.description}</p>}
-                </ScoutGigCard> : <GigCard opportunity={opp} creator={creator} matchScore={computeOpportunityMatch(opp, viewerProfile)} />}
+                {scoutCards ? (
+                  <ScoutGigCard
+                    title={opp.title}
+                    company={creator?.full_name ?? null}
+                    art={{ title: opp.title, excerpt: opp.description }}
+                    href={`/opportunity/${opp.id}`}
+                    pills={<ScoutPill tone="origin">Kretopia</ScoutPill>}
+                    pay={opp.compensation}
+                    location={opp.location}
+                    tags={<>{opp.type && <ScoutPill tone="type">{opp.type}</ScoutPill>}{(opp.skills ?? []).slice(0, 3).map((skill) => <ScoutPill key={skill}>{skill}</ScoutPill>)}</>}
+                    trust={<ScoutPill tone="origin">Kretopia listing</ScoutPill>}
+                    apply={{ label: "View gig", to: `/opportunity/${opp.id}` }}
+                    brief={{ text: opp.description }}
+                    details={compactDetails([
+                      creator?.full_name && { label: "Posted by", value: creator.full_name },
+                      opp.location && { label: "Location", value: opp.location },
+                      hasRealCompensation(opp.compensation) && { label: "Pay", value: opp.compensation },
+                      opp.type && { label: "Type", value: opp.type },
+                      opp.duration && { label: "Duration", value: opp.duration },
+                      (opp.skills ?? []).length > 0 && { label: "Skills", value: (opp.skills ?? []).join(" · ") },
+                      opp.barter_offering && { label: "Offering", value: opp.barter_offering },
+                      opp.barter_requesting && { label: "Looking for", value: opp.barter_requesting },
+                    ])}
+                    opportunity={{
+                      title: opp.title,
+                      company: creator?.full_name ?? null,
+                      location: opp.location,
+                      pay: hasRealCompensation(opp.compensation) ? opp.compensation : null,
+                      category: opp.type,
+                      source: "Kretopia",
+                      description: opp.description,
+                    }}
+                  />
+                ) : <GigCard opportunity={opp} creator={creator} matchScore={computeOpportunityMatch(opp, viewerProfile)} />}
               </DiscoveryGate>
             );
           })}

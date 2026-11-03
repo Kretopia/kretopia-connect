@@ -4,6 +4,7 @@ import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { ProjectAccessError, requireProjectAccess, type ProjectRole } from "../_shared/projectAccess.ts";
 import { cleanRecipientEmail } from "../_shared/outboundText.ts";
+import { validateCollabBrief, type CollabBrief } from "../_shared/collabBrief.ts";
 import { hashInviteSecret, INVITE_PREVIEW_TOKEN_DAYS, newInviteSecret } from "../_shared/inviteSecret.ts";
 import {
   PROJECT_INVITES_PER_ACTOR_PER_HOUR,
@@ -48,6 +49,9 @@ interface InvitationRequest {
   email: string;
   projectId: string;
   inviteeUserId?: string; // Optional, for existing users
+  /** "collaboration_request" is a request sent from someone's Passport: it must carry a written brief. */
+  kind?: string;
+  brief?: { summary?: unknown; reason?: unknown };
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -79,7 +83,21 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { email: rawEmail, projectId, inviteeUserId }: InvitationRequest = await req.json();
+    const { email: rawEmail, projectId, inviteeUserId, kind, brief: rawBrief }: InvitationRequest = await req.json();
+
+    // A collaboration request from a Passport carries a real brief (what the project is, why this collaboration makes sense). The same
+    // rules run in the browser; this is the check that holds when a request does not come from the app's form.
+    let brief: CollabBrief | null = null;
+    if (kind === "collaboration_request" || rawBrief !== undefined) {
+      const checked = validateCollabBrief(rawBrief);
+      if (!checked.ok) {
+        return new Response(
+          JSON.stringify({ error: "A written brief is required: what the project is and why this collaboration makes sense.", fields: checked.errors }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      brief = checked.brief;
+    }
 
     // One plain address: it ends up in a mail header, a sign-in link request and
     // a stored label.
@@ -305,6 +323,14 @@ const handler = async (req: Request): Promise<Response> => {
         <p style="margin:0 0 24px 0;color:#94A3B8;font-size:14px;line-height:1.5;">
           Open the workspace to see the brief, drop files, leave notes, and chat with the team. One tap signs you in — no password required.
         </p>
+${brief ? `
+        <div style="margin:0 0 24px 0;padding:16px;border-radius:12px;background:#0F172A;border:1px solid #334155;">
+          <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:6px;">The project</div>
+          <p style="margin:0 0 14px 0;color:#F8FAFC;font-size:14px;line-height:1.5;">${escapeHtml(brief.summary)}</p>
+          <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;margin-bottom:6px;">Why working together</div>
+          <p style="margin:0;color:#F8FAFC;font-size:14px;line-height:1.5;">${escapeHtml(brief.reason)}</p>
+        </div>
+` : ""}
 
         <div style="text-align:center;margin:24px 0;">
           <a href="${projectUrl}" style="display:inline-block;padding:14px 28px;background:#5B6BF5;color:#FFFFFF;text-decoration:none;border-radius:10px;font-weight:700;font-size:15px;">

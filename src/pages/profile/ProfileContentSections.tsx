@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Briefcase, Star, Zap, DollarSign, Shield, ShieldCheck } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useSessionState } from "@/hooks/useSessionState";
 import { cn } from "@/lib/utils";
 import { CreditVerificationPanel } from "@/components/profile/CreditVerificationPanel";
 
@@ -56,7 +57,8 @@ export const ProfileContentSections = ({
   onRefresh,
 }: ProfileContentSectionsProps) => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabId>("stamps");
+  const { pathname: passportPath } = useLocation();
+  const [activeTab, setActiveTab] = useSessionState<TabId>(`passport-tab:${passportPath}`, "stamps");
   const tabsRef = useRef<HTMLDivElement>(null);
   const [isTabBarSticky, setIsTabBarSticky] = useState(false);
   const tabBarSentinelRef = useRef<HTMLDivElement>(null);
