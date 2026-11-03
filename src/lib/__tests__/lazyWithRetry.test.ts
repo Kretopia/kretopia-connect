@@ -12,9 +12,10 @@ describe("finite page-module recovery", () => {
   });
 
   it("returns ready modules immediately without leaving a timer", async () => {
+    const existingTimers = vi.getTimerCount();
     const module = { default: () => null };
     await expect(loadLazyModule(async () => module)).resolves.toBe(module);
-    expect(vi.getTimerCount()).toBe(0);
+    expect(vi.getTimerCount()).toBe(existingTimers);
   });
 
   it("recovers a transient chunk failure", async () => {
