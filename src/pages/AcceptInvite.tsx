@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Users, Sparkles } from "lucide-react";
@@ -9,6 +9,10 @@ import { SEO } from "@/components/SEO";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { acceptInvitation } from "@/lib/acceptInvitation";
 import { mintGuestInviteToken } from "@/lib/guestInviteToken";
+import { Button } from "@/components/ui/button";
+import { GuestEntryChoice } from "@/components/auth/GuestEntryChoice";
+import { useEntryChoice } from "@/hooks/useEntryChoice";
+import { signInHref } from "@/lib/entryChoice";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -26,6 +30,10 @@ const AcceptInvite = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading } = useAuth();
+  const location = useLocation();
+  // An invitation that can be previewed as a guest opens on the sign-in-or-guest choice for someone who is not signed in.
+  const entry = useEntryChoice(`invite:${projectId ?? ""}`);
+  const [guestUnavailable, setGuestUnavailable] = useState(false);
   const [processing, setProcessing] = useState(true);
   const [preview, setPreview] = useState<ProjectPreview | null>(null);
   const email = searchParams.get("email");
@@ -76,15 +84,18 @@ const AcceptInvite = () => {
 
     const processInvitation = async () => {
       try {
-        // If not authenticated: try to mint/look-up a guest preview token so the
-        // user can open the workspace immediately without signing up.
+        // If not authenticated: once the person has chosen to continue as a guest, mint/look-up a guest
+        // preview token so they can open the workspace immediately without signing up.
         if (!user) {
           if (email && projectId) {
+            if (!entry.isGuest) return; // the sign-in-or-guest choice is on screen
             const token = await mintGuestInviteToken(supabase, projectId, email, inviteSecret);
             if (token) {
               navigate(`/guest/${encodeURIComponent(token)}`, { replace: true });
               return;
             }
+            setGuestUnavailable(true); // explained on screen, with a way to sign in
+            return;
           }
           const qs = email ? `?email=${encodeURIComponent(email)}` : '';
           const currentUrl = `/accept-invite/${projectId}${qs}`;
@@ -247,7 +258,21 @@ const AcceptInvite = () => {
       });
       navigate("/circle");
     }
-  }, [user, loading, projectId, email, inviteSecret, navigate, toast]);
+  }, [user, loading, projectId, email, inviteSecret, navigate, toast, entry.isGuest]);
+
+  const returnPath = `${location.pathname}${location.search}`;
+  if (email && projectId && entry.needsChoice) {
+    return (
+      <GuestEntryChoice
+        title={preview?.inviter_name ? `${preview.inviter_name} invited you to collaborate` : "You're invited to collaborate"}
+        context={preview?.title}
+        signInTo={returnPath}
+        signInHint="Open the project with your account."
+        guestHint="Preview the project without an account."
+        onContinueAsGuest={entry.continueAsGuest}
+      />
+    );
+  }
 
   const ogImage = projectId
     ? `${SUPABASE_URL}/functions/v1/project-og-image?project_id=${projectId}`
@@ -305,11 +330,23 @@ const AcceptInvite = () => {
             </div>
           ) : null}
 
-          <div className="text-center">
-            <KretopiaSpinner className="h-8 w-8 mx-auto mb-3 text-primary" />
-            <h2 className="text-lg font-bold mb-1">Setting up your access…</h2>
-            <p className="text-sm text-muted-foreground">Hang tight, we're opening the workspace.</p>
-          </div>
+          {guestUnavailable ? (
+            <div className="text-center space-y-3">
+              <h2 className="text-lg font-bold">We couldn't open a guest preview</h2>
+              <p className="text-sm text-muted-foreground">
+                This invitation may have expired or already been used. Sign in to open it with your account.
+              </p>
+              <Button asChild>
+                <Link to={signInHref(returnPath)}>Sign in</Link>
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <KretopiaSpinner className="h-8 w-8 mx-auto mb-3 text-primary" />
+              <h2 className="text-lg font-bold mb-1">Setting up your access…</h2>
+              <p className="text-sm text-muted-foreground">Hang tight, we're opening the workspace.</p>
+            </div>
+          )}
         </div>
       </div>
     </>

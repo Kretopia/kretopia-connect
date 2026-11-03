@@ -2,7 +2,7 @@
 // Owner: opens an instant room lobby + shows shareable canonical URL.
 // Guest: knocks; polls for accept; auto-routes to /meet/:id?t=… on accept.
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { SEO } from "@/components/SEO";
@@ -17,6 +17,8 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { APP_URL } from "@/lib/constants";
 import { toast } from "sonner";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
+import { GuestEntryChoice } from "@/components/auth/GuestEntryChoice";
+import { useEntryChoice } from "@/hooks/useEntryChoice";
 
 interface Owner {
   user_id: string;
@@ -28,8 +30,11 @@ interface Owner {
 export default function PersonalRoom() {
   const { handle: rawHandle } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const handle = (rawHandle || "").replace(/^@/, "").toLowerCase();
+  // Someone who is not signed in picks "sign in" or "continue as guest" before the knock form.
+  const entry = useEntryChoice(`room:${handle}`);
 
   const [owner, setOwner] = useState<Owner | null>(null);
   const [loading, setLoading] = useState(true);
@@ -170,7 +175,19 @@ export default function PersonalRoom() {
     } catch { /* dismissed */ }
   };
 
-  if (loading) {
+  if (entry.needsChoice) {
+    return (
+      <GuestEntryChoice
+        title="You're invited to a room"
+        context={owner ? `${owner.full_name || `@${handle}`}'s room` : undefined}
+        signInTo={`${location.pathname}${location.search}`}
+        signInHint="Knock with your Kretopia account."
+        guestHint="Knock with just your name."
+        onContinueAsGuest={entry.continueAsGuest}
+      />
+    );
+  }
+  if (loading || entry.pending) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><BrandLoader /></div>;
   }
   if (notFound || !owner) {

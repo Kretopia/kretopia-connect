@@ -1,6 +1,6 @@
 import { CallBrand, CallMediaControls } from "@/components/calls/CallMediaControls";
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { type DailyCall } from "@daily-co/daily-js";
 import { createDailyFrameAsync, teardownDailyCall } from "@/lib/dailyFrame";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,6 +20,8 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
 import { toast } from "sonner";
 import { extractInvokeError } from "@/lib/extractInvokeError";
+import { GuestEntryChoice } from "@/components/auth/GuestEntryChoice";
+import { useEntryChoice } from "@/hooks/useEntryChoice";
 
 /**
  * Public guest join page. Mirrors the in-app VideoCallSheet experience:
@@ -31,6 +33,9 @@ type Phase = "name" | "live" | "ended" | "error";
 
 export default function GuestCall() {
   const { token } = useParams<{ token: string }>();
+  const location = useLocation();
+  // Someone who is not signed in picks "sign in" or "continue as guest" before the name step.
+  const entry = useEntryChoice(`call:${token ?? ""}`);
   const [name, setName] = useState("");
   const [phase, setPhase] = useState<Phase>("name");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -145,6 +150,32 @@ export default function GuestCall() {
       try { callRef.current?.destroy(); } catch {}
     };
   }, []);
+
+  // A signed-in person arrives with their name already filled in.
+  useEffect(() => {
+    const known = (entry.user?.user_metadata as { full_name?: string } | undefined)?.full_name;
+    if (known) setName((current) => current || known);
+  }, [entry.user]);
+
+  if (entry.needsChoice) {
+    return (
+      <GuestEntryChoice
+        title="You're invited to a live call"
+        signInTo={`${location.pathname}${location.search}`}
+        signInHint="Join with your Kretopia account."
+        guestHint="Join with just your name."
+        onContinueAsGuest={entry.continueAsGuest}
+      />
+    );
+  }
+
+  if (entry.pending) {
+    return (
+      <div className="k-call-surface fixed inset-0 flex items-center justify-center">
+        <KretopiaSpinner className="h-8 w-8 text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="k-call-surface fixed inset-0 flex flex-col">
