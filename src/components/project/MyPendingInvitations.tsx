@@ -5,16 +5,31 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { UserCheck, UserX, Clock, Inbox, ChevronLeft, ChevronRight } from "lucide-react";
+import { UserCheck, UserX, Clock, Inbox, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { loadInviteBriefs } from "@/lib/inviteBriefs";
+import type { CollabBrief } from "@/lib/collabBrief";
+
+/** The request's brief, as the recipient reads it: what the project is, then why this collaboration. */
+function BriefText({ brief, className, id }: { brief: CollabBrief; className?: string; id?: string }) {
+  return (
+    <div id={id} className={className} data-testid="invitation-brief">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">The project</p>
+      <p className="mb-2 text-sm text-foreground">{brief.summary}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Why this collaboration</p>
+      <p className="text-sm text-foreground">{brief.reason}</p>
+    </div>
+  );
+}
 
 export const MyPendingInvitations = ({ compact = false }: { compact?: boolean }) => {
   const [invitations, setInvitations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [briefOpen, setBriefOpen] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -74,7 +89,9 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
         })
       );
 
-      setInvitations(enrichedData);
+      // The brief that came with each request (older requests have none).
+      const briefs = await loadInviteBriefs(user.id, enrichedData.map((inv) => inv.project_id));
+      setInvitations(enrichedData.map((inv) => ({ ...inv, brief: briefs.get(inv.project_id) ?? null })));
     } catch (error: any) {
       console.error('Error fetching my invitations:', error);
     } finally {
@@ -155,7 +172,8 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
     const index = Math.min(currentIndex, invitations.length - 1);
     const invitation = invitations[index];
     return (
-      <div className="flex min-w-0 items-center gap-2 py-2 text-sm" aria-label="Project Invitations">
+      <div className="min-w-0" aria-label="Project Invitations">
+      <div className="flex min-w-0 items-center gap-2 py-2 text-sm">
         <Inbox className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <span className="shrink-0 font-semibold">Invitations <span className="text-primary tabular-nums">{invitations.length}</span></span>
         <span className="min-w-0 flex-1 truncate text-muted-foreground" title={`${invitation.projects?.title || "Project"} · ${invitation.inviter?.full_name || "Someone"}`}>
@@ -163,13 +181,20 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
         </span>
         {invitations.length > 1 && (
           <div className="flex shrink-0 items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Previous invitation" disabled={index === 0} onClick={() => setCurrentIndex(index - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Previous invitation" disabled={index === 0} onClick={() => { setBriefOpen(false); setCurrentIndex(index - 1); }}><ChevronLeft className="h-4 w-4" /></Button>
             <span className="text-xs tabular-nums text-muted-foreground">{index + 1}/{invitations.length}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Next invitation" disabled={index === invitations.length - 1} onClick={() => setCurrentIndex(index + 1)}><ChevronRight className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Next invitation" disabled={index === invitations.length - 1} onClick={() => { setBriefOpen(false); setCurrentIndex(index + 1); }}><ChevronRight className="h-4 w-4" /></Button>
           </div>
         )}
+        {invitation.brief ? (
+          <Button variant="ghost" size="sm" className="h-7 shrink-0 gap-1 px-2" aria-expanded={briefOpen} aria-controls="invitation-brief-panel" onClick={() => setBriefOpen((open) => !open)}>
+            Brief<ChevronDown className={`h-3.5 w-3.5 transition-transform ${briefOpen ? "rotate-180" : ""}`} aria-hidden />
+          </Button>
+        ) : null}
         <Button variant="outline" size="sm" className="h-7 shrink-0 px-2" disabled={processingId === invitation.id} onClick={() => handleDecline(invitation.id)} aria-label={`Decline invitation to ${invitation.projects?.title || "project"}`}><UserX className="h-3.5 w-3.5" /></Button>
         <Button size="sm" className="h-7 shrink-0 gap-1 px-2" disabled={processingId === invitation.id} onClick={() => handleAccept(invitation.id, invitation.project_id)}><UserCheck className="h-3.5 w-3.5" /><span className="hidden sm:inline">Accept</span><span className="sr-only sm:hidden">Accept invitation</span></Button>
+      </div>
+      {invitation.brief && briefOpen ? <BriefText id="invitation-brief-panel" brief={invitation.brief} className="mb-2 rounded-lg border border-border bg-muted/40 p-3" /> : null}
       </div>
     );
   }
@@ -207,11 +232,13 @@ export const MyPendingInvitations = ({ compact = false }: { compact?: boolean })
                     Role: {invitation.agent_role === 'member' ? 'Collaborator' : invitation.agent_role}
                   </Badge>
                 )}
-                {invitation.projects?.description && (
+                {invitation.brief ? (
+                  <BriefText brief={invitation.brief} className="mt-1 rounded-lg border border-border bg-muted/40 p-3" />
+                ) : invitation.projects?.description ? (
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {invitation.projects.description}
                   </p>
-                )}
+                ) : null}
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3 w-3" />
                   {formatDistanceToNow(new Date(invitation.invited_at), { addSuffix: true })}

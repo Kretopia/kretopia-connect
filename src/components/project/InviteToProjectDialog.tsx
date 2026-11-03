@@ -10,6 +10,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { storedRoleFor } from "@/lib/projectInvites";
+import { CollabBriefFields } from "@/components/collab/CollabBriefFields";
+import { EMPTY_BRIEF, composeBriefMessage, validateCollabBrief, type BriefValue } from "@/lib/collabBrief";
+import { notifyUser } from "@/lib/notifyUser";
 
 interface InviteToProjectDialogProps {
   open: boolean;
@@ -40,6 +43,9 @@ export const InviteToProjectDialog = ({
   const [selectedRole, setSelectedRole] = useState<InviteRole>("creative");
   const [sending, setSending] = useState(false);
   const [existingProjectIds, setExistingProjectIds] = useState<Set<string>>(new Set());
+  // The brief the recipient will read: what the project is, and why this collaboration makes sense.
+  const [brief, setBrief] = useState<BriefValue>(EMPTY_BRIEF);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     if (!open || !user) return;
@@ -51,7 +57,7 @@ export const InviteToProjectDialog = ({
         const sb = supabase as any;
         const ownedRes: any = await sb
           .from("projects")
-          .select("id, title, status, created_at")
+          .select("id, title, status, description, created_at")
           .eq("created_by", user.id)
           .order("created_at", { ascending: false });
         const collabRes: any = await sb
@@ -70,7 +76,7 @@ export const InviteToProjectDialog = ({
         if (collabIds.length > 0) {
           const cp: any = await sb
             .from("projects")
-            .select("id, title, status, created_at")
+            .select("id, title, status, description, created_at")
             .in("id", collabIds);
           collabProjects = cp.data || [];
         }
@@ -106,8 +112,25 @@ export const InviteToProjectDialog = ({
     [projects, existingProjectIds]
   );
 
+  // Choosing a project offers its own description as the first line of the brief, if the sender has not written one yet.
+  const chooseProject = (project: { id: string; description?: string | null }) => {
+    setSelectedProjectId(project.id);
+    setBrief((current) => (current.summary.trim() ? current : { ...current, summary: (project.description ?? "").trim() }));
+  };
+
   const handleSend = async () => {
     if (!user || !selectedProjectId) return;
+    // Nothing is sent until the brief is real.
+    const checkedBrief = validateCollabBrief(brief);
+    if (!checkedBrief.ok) {
+      setSubmitted(true);
+      toast({
+        title: "Add your brief first",
+        description: `Say what the project is and why working with ${recipientName} makes sense.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setSending(true);
     try {
       const project = projects.find((p) => p.id === selectedProjectId);
@@ -130,6 +153,19 @@ export const InviteToProjectDialog = ({
 
       if (error) throw error;
 
+      // The request as the recipient reads it in their notifications and in their pending invitations: who is asking, then the brief.
+      await notifyUser({
+        userId: recipientUserId,
+        title: "New Project Invitation",
+        message: composeBriefMessage(`${profile?.full_name || "Someone"} invited you to collaborate on ${project?.title || "a project"}.`, checkedBrief.brief),
+        type: "project_invite",
+        category: "collaboration",
+        priority: "high",
+        link: `/desk/${selectedProjectId}`,
+        actionUrl: `/desk/${selectedProjectId}`,
+        actionText: "Review invitation",
+      });
+
       await supabase.functions
         .invoke("send-project-invitation", {
           body: {
@@ -137,6 +173,8 @@ export const InviteToProjectDialog = ({
             projectId: selectedProjectId,
             inviterName: profile?.full_name || "A Kretopia user",
             inviteeUserId: recipientUserId,
+            kind: "collaboration_request",
+            brief: checkedBrief.brief,
           },
         })
         .catch((e) => console.warn("Invitation function failed (non-fatal)", e));
@@ -148,6 +186,8 @@ export const InviteToProjectDialog = ({
       onOpenChange(false);
       setSelectedProjectId(null);
       setSelectedRole("creative");
+      setBrief(EMPTY_BRIEF);
+      setSubmitted(false);
     } catch (e: any) {
       toast({
         title: "Couldn't send invite",
@@ -161,7 +201,7 @@ export const InviteToProjectDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-h-[90vh] max-w-md overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Invite {recipientName} to a project</DialogTitle>
           <DialogDescription>
@@ -222,7 +262,7 @@ export const InviteToProjectDialog = ({
                       <button
                         key={p.id}
                         type="button"
-                        onClick={() => setSelectedProjectId(p.id)}
+                        onClick={() => chooseProject(p)}
                         className={cn(
                           "w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left",
                           active ? "bg-primary/10 border border-primary" : "hover:bg-accent border border-transparent"
@@ -243,6 +283,20 @@ export const InviteToProjectDialog = ({
               )}
             </ScrollArea>
           </div>
+
+          {selectedProjectId ? (
+            <CollabBriefFields
+              value={brief}
+              onChange={setBrief}
+              recipient={{ name: recipientName }}
+              project={(() => {
+                const chosen = projects.find((p) => p.id === selectedProjectId);
+                return chosen ? { title: chosen.title || "Untitled", description: chosen.description } : null;
+              })()}
+              showErrors={submitted}
+              disabled={sending}
+            />
+          ) : null}
 
           <div className="flex gap-2 pt-2">
             <Button

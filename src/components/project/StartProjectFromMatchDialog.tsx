@@ -3,7 +3,6 @@ import { notifyUser } from "@/lib/notifyUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +14,11 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { trackEvent, EventCategory } from "@/lib/analytics";
 import { z } from "zod";
 import { useProjectLimit } from "@/hooks/useProjectLimit";
+import { CollabBriefFields } from "@/components/collab/CollabBriefFields";
+import { EMPTY_BRIEF, composeBriefMessage, validateCollabBrief, type BriefValue } from "@/lib/collabBrief";
 
 const projectSchema = z.object({
   title: z.string().trim().min(1, "Project name is required").max(100),
-  description: z.string().trim().max(500).optional(),
   template: z.string().optional(),
 });
 
@@ -56,10 +56,10 @@ export function StartProjectFromMatchDialog({
   const { canCreateProject, limit, isPro } = useProjectLimit();
   const [creating, setCreating] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-  });
+  const [formData, setFormData] = useState({ title: "" });
+  // The brief the recipient will read: what the project is, and why this collaboration makes sense.
+  const [brief, setBrief] = useState<BriefValue>(EMPTY_BRIEF);
+  const [submitted, setSubmitted] = useState(false);
 
   // Generate smart templates based on roles
   const generateTemplates = (): ProjectTemplate[] => {
@@ -182,17 +182,25 @@ export function StartProjectFromMatchDialog({
 
   const templates = generateTemplates();
 
+  // A template names the project; it does not write the brief. The brief is the sender's own words.
   const handleTemplateSelect = (template: ProjectTemplate) => {
     setSelectedTemplate(template);
-    if (template.id !== "custom") {
-      setFormData({
-        title: template.title,
-        description: template.description
-      });
-    }
+    if (template.id !== "custom") setFormData({ title: template.title });
   };
 
   const handleCreate = async () => {
+    // Nothing is created until the brief is real: the project, the invitation and the notification all carry it.
+    const checkedBrief = validateCollabBrief(brief);
+    if (!checkedBrief.ok) {
+      setSubmitted(true);
+      toast({
+        title: "Add your brief first",
+        description: "Say what the project is and why working with " + matchedUser.name + " makes sense.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setCreating(true);
 
@@ -243,7 +251,7 @@ export function StartProjectFromMatchDialog({
         .from('projects')
         .insert({
           title: validationResult.data.title,
-          description: validationResult.data.description || null,
+          description: checkedBrief.brief.summary,
           created_by: user.id,
           status: 'active' as const,
           match_id: matchId || null, // Link to match if exists
@@ -296,7 +304,8 @@ export function StartProjectFromMatchDialog({
         await notifyUser({
           userId: matchedUser.id,
           title: "New Project Invitation",
-          message: `${userProfile?.full_name || 'Someone'} invited you to collaborate on ${validationResult.data.title}`,
+          // The request as the recipient reads it: who is asking, then the brief.
+          message: composeBriefMessage(`${userProfile?.full_name || 'Someone'} invited you to collaborate on ${validationResult.data.title}.`, checkedBrief.brief),
           type: 'project_invite',
           category: 'collaboration',
           priority: 'high',
@@ -314,6 +323,8 @@ export function StartProjectFromMatchDialog({
               projectId: project.id,
               inviterName: userProfile?.full_name || 'A Kretopia user',
               inviteeUserId: matchedUser.id,
+              kind: 'collaboration_request',
+              brief: checkedBrief.brief,
             }
           }).catch(err => console.error('[StartProject] Invitation email failed:', err));
         }
@@ -445,19 +456,14 @@ export function StartProjectFromMatchDialog({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-base font-semibold">
-                  Description
-                </Label>
-                <Textarea
-                  id="description"
-                  placeholder="What will you create together?"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  className="text-base resize-none"
-                />
-              </div>
+              <CollabBriefFields
+                value={brief}
+                onChange={setBrief}
+                recipient={{ name: matchedUser.name, role: matchedUser.role }}
+                project={formData.title.trim() ? { title: formData.title.trim() } : null}
+                showErrors={submitted}
+                disabled={creating}
+              />
 
               <div className="p-4 bg-accent/50 rounded-lg border border-border">
                 <p className="text-sm text-muted-foreground">
