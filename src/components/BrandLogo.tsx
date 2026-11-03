@@ -1,3 +1,4 @@
+/* KRETOPIA_LEGAL_IDENTITY_V3 */
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
@@ -19,6 +20,8 @@ interface BrandLogoProps {
   iconOnly?: boolean;
   /** Use the full official lockup PNG (K + kretopia together). Overrides icon/textOnly. */
   lockup?: boolean;
+  /** Official local identity, used on institutional pages only. */
+  institutional?: boolean;
   /** Kept for API back-compat; the official assets read correctly on light + dark. */
   onDark?: boolean;
 }
@@ -37,6 +40,7 @@ export function BrandLogo({
   textOnly = false,
   iconOnly = false,
   lockup = false,
+  institutional = false,
 }: BrandLogoProps) {
   const cfg = sizeConfig[size];
 
@@ -47,19 +51,40 @@ export function BrandLogo({
     <span className={cn("flex items-center shrink-0", cfg.gap, className)}>
       {showMark && (
         <img
-          src={kMarkAsset.url}
+          src={
+            institutional
+              ? "/brand/kretopia-identity/mark/kretopia-mark-transparent.webp"
+              : kMarkAsset.url
+          }
           alt="Kretopia"
           className={cn(cfg.mark, "select-none object-contain")}
           draggable={false}
         />
       )}
       {showWord && (
-        <img
-          src={wordmarkAsset.url}
-          alt="kretopia"
-          className={cn(cfg.text, "brand-wordmark w-auto select-none object-contain")}
-          draggable={false}
-        />
+        institutional ? (
+          <>
+            <img
+              src="/brand/kretopia-identity/wordmark/kretopia-wordmark-white-transparent.webp"
+              alt="kretopia"
+              className={cn(cfg.text, "brand-wordmark w-auto select-none object-contain hidden dark:block")}
+              draggable={false}
+            />
+            <img
+              src="/brand/kretopia-identity/wordmark/kretopia-wordmark-black-transparent.webp"
+              alt="kretopia"
+              className={cn(cfg.text, "brand-wordmark w-auto select-none object-contain block dark:hidden")}
+              draggable={false}
+            />
+          </>
+        ) : (
+          <img
+            src={wordmarkAsset.url}
+            alt="kretopia"
+            className={cn(cfg.text, "brand-wordmark w-auto select-none object-contain")}
+            draggable={false}
+          />
+        )
       )}
       {showBeta && (
         <span className="hidden sm:inline-flex items-center border border-border text-muted-foreground text-[9px] uppercase tracking-[0.18em] font-semibold px-1.5 py-0.5 rounded-md leading-none">

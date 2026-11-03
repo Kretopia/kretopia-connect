@@ -282,7 +282,9 @@ const AppContent = () => {
       {user && <Suspense fallback={null}><ThriveAgentFab /></Suspense>}
       {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
           a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
-      {user && location.pathname !== "/landing" && (
+      {user &&
+        location.pathname !== "/landing" &&
+        !["/terms", "/privacy", "/community-guidelines"].includes(location.pathname) && (
         <Suspense fallback={null}>
           <KretoLauncher showOnMobile={showKretoMascotOnMobile(location.pathname, !!user)} />
         </Suspense>

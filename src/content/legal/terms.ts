@@ -376,10 +376,10 @@ export const TERMS: LegalDocument = {
     },
   ],
   closing: {
-    eyebrow: "Everything about Kretopia",
+    eyebrow: "Terms and responsibilities",
     heading: {
-      before: "Everything about  starts with clarity.",
-      accent: "Kretopia",
+      before: "Clarity should come before ",
+      accent: "commitment.",
     },
   },
 };

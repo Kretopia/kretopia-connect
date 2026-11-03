@@ -347,7 +347,7 @@ export const PRIVACY: LegalDocument = {
     },
   ],
   closing: {
-    eyebrow: "Everything about Kretopia",
+    eyebrow: "Privacy and trust",
     heading: {
       before: "Privacy should follow the ",
       accent: "relationship.",

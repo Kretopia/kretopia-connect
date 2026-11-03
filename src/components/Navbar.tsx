@@ -99,6 +99,11 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // renders literally everywhere else, "/" included (which is their Today
   // dashboard, a different page from this one despite the shared name).
   const isLandingPage = location.pathname === "/landing";
+  const isInstitutionalPage = [
+    "/terms",
+    "/privacy",
+    "/community-guidelines",
+  ].includes(location.pathname);
   // Landing chrome follows the active theme, just like the feature pages.
   const isDarkChromeRoute = false;
   const isPro = subscriptionInfo.subscribed;
@@ -278,8 +283,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
       <div className="mx-auto grid w-full max-w-[1440px] grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_5.5rem] px-4 py-2 sm:px-[clamp(20px,4vw,64px)] lg:min-h-20 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-[clamp(30px,4vw,64px)] lg:gap-y-0">
         {/* Row 1 on a phone: the lockup. The designer's is 166 px wide from the sm breakpoint, the smaller mark below it. */}
         <div className="col-start-1 row-start-1 shrink-0">
-          <span className="sm:hidden"><BrandLogo size="md" showBeta linkToHome="/landing" /></span>
-          <span className="hidden sm:block"><BrandLogo size="lg" showBeta linkToHome="/landing" /></span>
+          <span className="sm:hidden"><BrandLogo size="md" showBeta institutional={isInstitutionalPage} linkToHome="/landing" /></span>
+          <span className="hidden sm:block"><BrandLogo size="lg" showBeta institutional={isInstitutionalPage} linkToHome="/landing" /></span>
         </div>
 
         {/* The rubrics: row 2 on a phone and tablet (a row that scrolls sideways if it ever outgrows the screen, as the
@@ -314,7 +319,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
       ) : (
       <div className="container mx-auto flex items-center justify-between gap-1 px-2 py-2.5 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-x-[clamp(24px,3vw,48px)]">
         <div className="shrink-0">
-          <BrandLogo size="md" showBeta linkToHome="/landing" onDark={isDarkChromeRoute} />
+          <BrandLogo size="md" showBeta institutional={isInstitutionalPage} linkToHome="/landing" onDark={isDarkChromeRoute} />
         </div>
 
         {/* Desktop Navigation - Authenticated users: visible on every route, including /landing */}
@@ -411,7 +416,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
                 <SheetHeader className="shrink-0 pr-8 text-left">
-                  <BrandLogo size="sm" showBeta />
+                  <BrandLogo size="sm" showBeta institutional={isInstitutionalPage} />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
                   {isCompany && <CompanyModeBadge className="w-fit" />}
                 </SheetHeader>
