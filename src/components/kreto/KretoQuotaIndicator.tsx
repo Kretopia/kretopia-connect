@@ -1,46 +1,39 @@
-import { useEffect, useState } from "react";
-import { loadAiCreditOverview, type AiCreditOverview } from "@/lib/thriveCopilot";
+import { blockedExplanation, describeReset, type Allowance } from "@/lib/aiAllowance";
 
 interface KretoQuotaIndicatorProps {
-  /** Bump to re-read after a send completes. */
-  refreshKey?: number;
+  /** From useAiAllowance. Null (signed out, or the overview is unavailable) renders nothing: never an empty box or an error in the composer. */
+  allowance: Allowance | null;
+  now: Date;
 }
 
+/** Id of the blocked notice, so the composer can point to it. */
+export const KRETO_ALLOWANCE_NOTICE_ID = "kreto-allowance-notice";
+
 /**
- * Compact read-out of what's left today: Kreto messages and tokens for the
- * signed-in user, against the global envelope. Renders nothing when signed
- * out or when the overview is unavailable — never an empty box, never an
- * error state in the composer.
+ * What is left of Kreto today, and when it comes back. Normally one quiet line (messages left, tokens, the service's own ceiling, the
+ * reset); when the next message would be refused, a plain notice that says so and says when it resets. Numbers are the server's.
  */
-export function KretoQuotaIndicator({ refreshKey }: KretoQuotaIndicatorProps) {
-  const [overview, setOverview] = useState<AiCreditOverview | null>(null);
+export function KretoQuotaIndicator({ allowance, now }: KretoQuotaIndicatorProps) {
+  if (!allowance) return null;
 
-  useEffect(() => {
-    let cancelled = false;
-    loadAiCreditOverview()
-      .then((o) => { if (!cancelled) setOverview(o); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [refreshKey]);
+  if (allowance.blocked) {
+    return (
+      <p id={KRETO_ALLOWANCE_NOTICE_ID} role="status" aria-live="polite" data-testid="kreto-allowance-blocked" className="w-full rounded-lg border border-white/15 bg-white/[0.04] px-3 py-2 text-xs leading-relaxed text-foreground/90">
+        {blockedExplanation(allowance, now)}
+      </p>
+    );
+  }
 
-  if (!overview) return null;
-
-  const messages = overview.mine.find((m) => m.feature === "kreto_message");
-  const tokens = overview.mine.find((m) => m.feature === "kreto_tokens");
-  const env = overview.envelope;
-
-  const msgLeft = messages && messages.cap >= 0 ? Math.max(0, messages.cap - messages.used - messages.reserved) : null;
-  const tokLeft = tokens && tokens.cap >= 0 ? Math.max(0, tokens.cap - tokens.used - tokens.reserved) : null;
-  const envLeft = Math.max(0, env.credits_cap - env.credits_used - env.credits_reserved);
-  const envPct = env.credits_cap > 0 ? Math.round((envLeft / env.credits_cap) * 100) : 0;
-
+  const { messages, tokens, ceiling } = allowance;
+  const reset = describeReset(allowance.resetsAt, now);
   const parts: string[] = [];
-  if (msgLeft !== null) parts.push(`${msgLeft} messages left today`);
-  if (tokLeft !== null) parts.push(`${Math.round(tokLeft / 1000)}k tokens`);
-  parts.push(`This backend's ceiling ${envPct}% remaining`);
+  if (messages) parts.push(`${messages.left} of ${messages.cap} messages left today`);
+  if (tokens) parts.push(`${Math.round(tokens.left / 1000)}k tokens left`);
+  parts.push(`resets in ${reset.wait} (midnight UTC)`);
+  parts.push(`This backend's ceiling ${ceiling.pct}% remaining`);
 
   return (
-    <p className="text-[10px] uppercase tracking-[0.15em] text-foreground/35 font-semibold" aria-live="polite">
+    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-foreground/60" aria-live="polite" data-testid="kreto-allowance">
       {parts.join(" · ")}
     </p>
   );

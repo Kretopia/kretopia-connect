@@ -54,6 +54,7 @@
 //    browser's own default happens to be.
 
 import { supabase } from "@/integrations/supabase/client";
+import { splitSpeech, toSpeech } from "@/lib/speechText";
 
 const VOICE_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/thrive-voice-turn`;
 const TTS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/thrive-voice-tts`;
@@ -237,21 +238,19 @@ export async function stopAndSend(): Promise<VoiceTurnResult | VoiceTurnError> {
   return { ok: true, transcript: data.transcript, usage: data.usage };
 }
 
-/** Synthesize the agent's reply via ElevenLabs; falls back to browser TTS.
- *  Also open to guests — no session required, same reasoning as
- *  stopAndSend(). Without a session, playback falls straight to the
- *  browser's own SpeechSynthesis (that path never needed a token). */
-export async function synthesizeReply(text: string): Promise<{ audioUrl: string | null }> {
-  const trimmed = (text || "").trim();
-  if (!trimmed) return { audioUrl: null };
+/**
+ * How Kreto sounds, asked of the voice model and sent with every piece. The speech model (gpt-4o-mini-tts) takes its pacing and tone from
+ * instructions, not from a speed setting.
+ */
+export const VOICE_INSTRUCTIONS =
+  "Speak as Kreto, a calm, warm creative producer: natural and unhurried, with a short pause between sentences and a lower, softer " +
+  "voice for asides. Say numbers, prices, dates and names the way a person would. Never spell out symbols, links or punctuation.";
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  if (!token) {
-    speakBrowser(trimmed);
-    return { audioUrl: null };
-  }
+/** A reply being spoken, or the one before it: a piece that finishes for an older run is dropped, so stopping really stops. */
+let playbackRun = 0;
+let releaseCurrent: (() => void) | null = null;
 
+async function fetchSpeech(text: string, token: string): Promise<string | null> {
   try {
     const resp = await fetch(TTS_URL, {
       method: "POST",
@@ -260,40 +259,115 @@ export async function synthesizeReply(text: string): Promise<{ audioUrl: string 
         Authorization: `Bearer ${token}`,
         apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
       },
-      body: JSON.stringify({ text: trimmed }),
+      body: JSON.stringify({ text, instructions: VOICE_INSTRUCTIONS }),
     });
     const data = await resp.json().catch(() => ({}));
-    if (data?.audio_base64) {
-      const url = `data:${data.audio_mime || "audio/mpeg"};base64,${data.audio_base64}`;
-      playAudio(url);
-      return { audioUrl: url };
-    }
-    // Fallback (no key, free-tier blocked, network error, etc.)
-    speakBrowser(trimmed);
-    return { audioUrl: null };
+    return data?.audio_base64 ? `data:${data.audio_mime || "audio/mpeg"};base64,${data.audio_base64}` : null;
   } catch (e) {
-    console.warn("TTS request failed, falling back to browser TTS", e);
-    speakBrowser(trimmed);
-    return { audioUrl: null };
+    console.warn("TTS request failed", e);
+    return null;
   }
 }
 
-/** Speak via browser SpeechSynthesis — fallback when ElevenLabs is unavailable. */
+function playUntilEnd(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    try {
+      currentAudio?.pause();
+    } catch { /* ignore */ }
+    const audio = new Audio(url);
+    currentAudio = audio;
+    const finish = () => {
+      if (releaseCurrent === finish) releaseCurrent = null;
+      resolve();
+    };
+    releaseCurrent = finish;
+    audio.addEventListener("ended", finish);
+    audio.addEventListener("error", finish);
+    audio.play().catch((e) => {
+      console.warn("voice playback failed", e);
+      finish();
+    });
+  });
+}
+
+/** Plays the pieces in order, asking for the next one while the current one is still playing. */
+async function playPieces(pieces: string[], firstUrl: string, token: string, run: number): Promise<void> {
+  let next: Promise<string | null> | null = pieces.length > 1 ? fetchSpeech(pieces[1], token) : null;
+  let current: string | null = firstUrl;
+  for (let i = 0; i < pieces.length && current; i++) {
+    await playUntilEnd(current);
+    if (run !== playbackRun) return;
+    if (i === pieces.length - 1) return;
+    current = await next;
+    if (run !== playbackRun) return;
+    if (!current) {
+      // One piece could not be made: the browser's own voice finishes the reply rather than leaving it half said.
+      speakBrowser(pieces.slice(i + 1).join(" "));
+      return;
+    }
+    next = i + 2 < pieces.length ? fetchSpeech(pieces[i + 2], token) : null;
+  }
+}
+
+/**
+ * Speaks the agent's reply. The reply is first turned into what a person would say (no markdown, links, emoji or symbols read out; money,
+ * percentages, ranges and dates said in words), cut at sentence ends, and made piece by piece: the first piece is short so playback starts
+ * sooner, and each next piece is requested while the last one plays. Falls back to the browser's voice when there is no session or a
+ * piece cannot be made. Also open to guests, which then get the browser voice (that path never needed a token).
+ * Resolves once the first piece is playing.
+ */
+export async function synthesizeReply(text: string): Promise<{ audioUrl: string | null }> {
+  const spoken = toSpeech(text);
+  if (!spoken) return { audioUrl: null };
+  stopPlayback();
+  const run = playbackRun;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) {
+    speakBrowser(spoken);
+    return { audioUrl: null };
+  }
+
+  const pieces = splitSpeech(spoken);
+  const first = await fetchSpeech(pieces[0], token);
+  if (run !== playbackRun) return { audioUrl: null }; // stopped, or replaced by a newer reply, while waiting
+  if (!first) {
+    // Fallback (no key, free-tier blocked, network error, etc.)
+    speakBrowser(spoken);
+    return { audioUrl: null };
+  }
+  void playPieces(pieces, first, token, run);
+  return { audioUrl: first };
+}
+
+/** The most natural voice the browser has: named neural/premium voices first, then any English one. */
+export function pickBrowserVoice<T extends { name: string; lang: string }>(voices: T[]): T | undefined {
+  const english = voices.filter((v) => /^en[-_]/i.test(v.lang));
+  return (
+    english.find((v) => /natural|neural|premium|enhanced|siri/i.test(v.name)) ||
+    english.find((v) => /samantha|google (us|uk) english|karen|daniel/i.test(v.name)) ||
+    english.find((v) => /^en[-_](US|GB)/i.test(v.lang)) ||
+    english[0] ||
+    voices[0]
+  );
+}
+
+/** Speak via the browser's SpeechSynthesis: the fallback when the server voice is unavailable. One utterance per sentence group, which
+ *  also avoids the long-utterance cut-off some browsers have. */
 function speakBrowser(text: string) {
   try {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 1.02;
-    u.pitch = 1.0;
-    u.volume = 1.0;
-    const voices = window.speechSynthesis.getVoices();
-    const preferred =
-      voices.find((v) => /en[-_]US/i.test(v.lang) && /female|samantha|google.*us/i.test(v.name)) ||
-      voices.find((v) => /en[-_](US|GB)/i.test(v.lang)) ||
-      voices[0];
-    if (preferred) u.voice = preferred;
-    window.speechSynthesis.speak(u);
+    const voice = pickBrowserVoice(window.speechSynthesis.getVoices());
+    for (const piece of splitSpeech(text, 220, 220)) {
+      const u = new SpeechSynthesisUtterance(piece);
+      u.rate = 0.98;
+      u.pitch = 1.0;
+      u.volume = 1.0;
+      if (voice) u.voice = voice;
+      window.speechSynthesis.speak(u);
+    }
   } catch (e) {
     console.warn("browser TTS failed", e);
   }
@@ -308,6 +382,8 @@ export function playAudio(url: string): HTMLAudioElement {
 }
 
 export function stopPlayback() {
+  playbackRun += 1;
+  releaseCurrent?.();
   try {
     currentAudio?.pause();
     currentAudio = null;

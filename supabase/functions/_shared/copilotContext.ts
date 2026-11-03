@@ -28,6 +28,21 @@ export interface CopilotEvent {
   venue_name: string | null;
 }
 
+/** A credit on the person's Passport, with how much evidence stands behind it. */
+export interface CopilotCredit {
+  project_name: string;
+  role: string | null;
+  year: number | null;
+  client: string | null;
+  project_type: string | null;
+  evidence: "verified" | "co-signed" | "claimed";
+}
+
+export function creditEvidence(row: { verification_status?: string | null; endorsement_count?: number | null }): CopilotCredit["evidence"] {
+  if (row.verification_status === "verified") return "verified";
+  return (row.endorsement_count ?? 0) > 0 ? "co-signed" : "claimed";
+}
+
 export interface CopilotContext {
   user_id: string;
   // Identity
@@ -39,6 +54,10 @@ export interface CopilotContext {
   location: string | null;
   account_type: string | null;
   bio: string | null;
+  /** Professional and passion skills from the Passport, deduplicated. */
+  skills: string[];
+  /** The Passport's best credits (featured first, then newest), so drafts and advice can cite real work. */
+  top_credits: CopilotCredit[];
   // Live state
   active_projects: CopilotProject[];
   unpaid_invoices_count: number; // sent/viewed/overdue — money owed TO user
@@ -93,6 +112,8 @@ export async function loadCopilotContext(
     location: null,
     account_type: null,
     bio: null,
+    skills: [],
+    top_credits: [],
     active_projects: [],
     unpaid_invoices_count: 0,
     unpaid_invoices_total: 0,
@@ -135,11 +156,12 @@ export async function loadCopilotContext(
     invoicesSentRes,
     notifUnreadRes,
     notifRecentRes,
+    topCreditsRes,
   ] = await Promise.all([
     withTimeout(
       admin
         .from("profiles")
-        .select("full_name, username, role, sub_roles, location, account_type, bio")
+        .select("full_name, username, role, sub_roles, location, account_type, bio, professional_skills, passion_skills")
         .eq("user_id", userId)
         .maybeSingle(),
     ),
@@ -268,6 +290,16 @@ export async function loadCopilotContext(
         .order("created_at", { ascending: false })
         .limit(5),
     ),
+    // the Passport's best credits: featured first, then newest
+    withTimeout(
+      admin
+        .from("credits")
+        .select("project_name, role, year, client_brand, project_type, verification_status, endorsement_count")
+        .eq("user_id", userId)
+        .order("is_featured", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false })
+        .limit(6),
+    ),
   ]);
 
   const profile = (profileRes as any)?.data ?? null;
@@ -302,6 +334,16 @@ export async function loadCopilotContext(
 
   const fullName = profile?.full_name ?? null;
   const firstName = (fullName ?? "").trim().split(/\s+/)[0] || "there";
+
+  const skills: string[] = [];
+  for (const raw of [...((profile?.professional_skills as string[] | null) ?? []), ...((profile?.passion_skills as string[] | null) ?? [])]) {
+    const skill = typeof raw === "string" ? raw.trim() : "";
+    if (skill && !skills.some((s) => s.toLowerCase() === skill.toLowerCase())) skills.push(skill);
+    if (skills.length >= 12) break;
+  }
+  const topCredits: CopilotCredit[] = (((topCreditsRes as any)?.data ?? []) as Array<{ project_name: string | null; role: string | null; year: number | null; client_brand: string | null; project_type: string | null; verification_status: string | null; endorsement_count: number | null }>)
+    .filter((c) => (c.project_name ?? "").trim())
+    .map((c) => ({ project_name: c.project_name!.trim(), role: c.role, year: c.year, client: c.client_brand, project_type: c.project_type, evidence: creditEvidence(c) }));
 
   // Split into "owed to user" (sent/viewed/overdue) vs "drafts" (not sent yet)
   const owedRows = invoiceRows.filter((r) => r.status !== "draft");
@@ -348,6 +390,8 @@ export async function loadCopilotContext(
     location: profile?.location ?? null,
     account_type: profile?.account_type ?? null,
     bio: profile?.bio ?? null,
+    skills,
+    top_credits: topCredits,
     active_projects: projects,
     unpaid_invoices_count: owedRows.length,
     unpaid_invoices_total: owed.total,
@@ -398,6 +442,16 @@ export function renderContextPreamble(
   if (ctx.sub_roles?.length) parts.push(`Also: ${ctx.sub_roles.slice(0, 4).join(", ")}`);
   if (ctx.location) parts.push(`Location: ${ctx.location}`);
   if (ctx.account_type === "company") parts.push(`Account type: Company / brand account`);
+  // The Passport itself: what the person says about themselves, what they can do, and the work behind it. Drafts and advice should cite
+  // these specifics, and must not claim more evidence than a credit has.
+  if (ctx.bio?.trim()) parts.push(`Bio (written by the user, not verified): ${ctx.bio.replace(/\s+/g, " ").trim().slice(0, 500)}`);
+  if (ctx.skills?.length) parts.push(`Skills: ${ctx.skills.join(", ")}`);
+  if (ctx.top_credits?.length) {
+    const lines = ctx.top_credits
+      .map((c) => `- ${c.project_name}${c.role ? `, ${c.role}` : ""}${c.year ? ` (${c.year})` : ""}${c.client ? ` for ${c.client}` : ""}${c.project_type ? ` — ${c.project_type}` : ""} [${c.evidence}]`)
+      .join("\n");
+    parts.push(`Credits on their Passport (evidence level in brackets; never present a claimed credit as verified):\n${lines}`);
+  }
 
   // ---- Live state (only include sections that have data) ----
   if (ctx.active_projects.length) {
