@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { CARD_RADIUS, CARD_SHADOW } from "@/components/cards/cardTokens";
 import { HOLO_FOIL, foilGradient } from "./holoFoil";
 
 interface HoloCardProps {
@@ -65,7 +66,7 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
   return (
     <div ref={ref} onPointerMove={onMove} onPointerLeave={onLeave} className={cn("[perspective:1200px]", className)}>
       <div
-        className="relative h-full rounded-2xl transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] motion-reduce:transition-none"
+        className={cn("relative h-full transition-transform duration-300 ease-out will-change-transform [transform-style:preserve-3d] motion-reduce:transition-none", CARD_RADIUS)}
         style={{ transform: `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateZ(0)` }}
       >
         {/* Depth glow behind the card — slow ambient breathe reads as "AI-aware" presence */}
@@ -83,7 +84,7 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
         )}
 
         {/* Card body */}
-        <div className="relative h-full overflow-hidden rounded-2xl shadow-[0_18px_44px_-20px_rgba(0,0,0,0.65),0_2px_0_0_rgba(255,255,255,0.06)_inset]">
+        <div className={cn("relative h-full overflow-hidden", CARD_RADIUS, CARD_SHADOW)}>
           {/* Material gloss — soft top-edge light catch, laminated-stock feel */}
           <div
             aria-hidden
@@ -118,7 +119,7 @@ export function HoloCard({ children, className, maxTilt = 5, glow = true }: Holo
           {/* Prismatic edge */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-0 rounded-2xl"
+            className={cn("pointer-events-none absolute inset-0", CARD_RADIUS)}
             style={{
               padding: 1,
               background:

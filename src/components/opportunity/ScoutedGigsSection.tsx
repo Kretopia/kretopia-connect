@@ -33,6 +33,7 @@ import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "
 import { SmartWidget } from "@/components/ui/smart-widget";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { ScoutGigCard, ScoutPill, ScoutSaveButton, compactDetails } from "@/components/scout/ScoutGigCard";
+import { CardIconButton } from "@/components/cards/CardShell";
 import { buildApplicationPrompt, draftWithKreto, loadPassportContext, type OpportunityFacts } from "@/lib/kretoDraft";
 
 const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -341,11 +342,11 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
         pay={g.compensation}
         location={g.location ?? (g.remote ? "Remote" : null)}
         tags={g.remote && g.location ? <ScoutPill>Remote</ScoutPill> : null}
-        evidence={<ScoutEvidence gig={g} compact />}
+        evidence={<ScoutEvidence gig={g} inline />}
         trust={<SourceLine gig={g} />}
         utility={<>
-          <Button asChild size="icon" variant="ghost" className="h-11 w-11"><a href={g.source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${g.title}`} title="Open source"><ExternalLink className="h-4 w-4" /></a></Button>
-          <Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => dismiss(g.id)} title="Dismiss" aria-label={`Dismiss ${g.title}`}><X className="h-4 w-4" /></Button>
+          <CardIconButton action={{ icon: <ExternalLink className="h-4 w-4" aria-hidden />, label: `Open source for ${g.title}`, href: g.source_url }} />
+          <CardIconButton action={{ icon: <X className="h-4 w-4" aria-hidden />, label: `Dismiss ${g.title}`, onClick: () => dismiss(g.id) }} />
         </>}
         apply={{ label: "Apply", onClick: () => void openDetail(g) }}
         brief={{ text: brief, node: g.full_description ? <MiniMarkdown md={g.full_description} /> : undefined, loading: briefLoading.has(g.id), originalUrl: g.source_url }}

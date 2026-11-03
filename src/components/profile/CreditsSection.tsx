@@ -11,6 +11,7 @@ import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { AchievementCard } from "./AchievementCard";
+import { CARD_RADIUS } from "@/components/cards/cardTokens";
 import { CreditEndorsementDialog } from "./CreditEndorsementDialog";
 import { MediaPlayerModal } from "./MediaPlayerModal";
 import { getBestPlayableMediaUrl, getModalMediaType } from "@/lib/mediaUtils";
@@ -363,7 +364,7 @@ export const CreditsSection = ({ userId, isOwnProfile, onRefresh }: CreditsSecti
                     <div
                       id={`credit-${credit.id}`}
                       className={cn(
-                        "w-72 scroll-mt-24 rounded-xl transition-shadow",
+                        "w-72 scroll-mt-24 transition-shadow", CARD_RADIUS,
                         highlightId === credit.id && "ring-2 ring-[hsl(var(--signal-teal))] ring-offset-2 ring-offset-background",
                       )}
                     >

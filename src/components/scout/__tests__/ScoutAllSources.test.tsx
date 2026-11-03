@@ -228,6 +228,8 @@ describe("ScoutAllSources: a card", () => {
     show(["Armenia", "Estonia", "Italy"].map((l, i) => ext("Creative Design Team Lead", { original_publisher: "CapsLock", location: l, apply_url: `https://jobicy.com/jobs/${i}-cap`, source_published_at: ago(i + 1) })));
     expect(cards()).toHaveLength(1);
     const card = cards()[0];
+    // The other places are on the back of the card (the front carries one action): turn it first.
+    fireEvent.click(within(card).getByTestId("quick-look"));
     const more = within(card).getByText("Also posted for 2 more places");
     expect(more.closest("details")).toBeInTheDocument();
     const links = within(card).getAllByRole("link", { name: /^Apply at source for / });

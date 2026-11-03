@@ -196,7 +196,11 @@ describe("the Scout card: quick look, in place", () => {
 });
 
 describe("the Scout card: apply with Kreto", () => {
-  const open = () => fireEvent.click(screen.getByTestId("apply-with-kreto-open"));
+  // "Apply with Kreto" is on the back of the card (the front carries one primary action and Quick look), so the card is turned first.
+  const open = () => {
+    fireEvent.click(screen.getByTestId("quick-look"));
+    fireEvent.click(screen.getByTestId("apply-with-kreto-open"));
+  };
 
   it("opens Kreto's panel on the back, with an editable field", () => {
     renderCard();
