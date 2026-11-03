@@ -2,6 +2,22 @@
 
 Scope: Edge Functions only. No migrations, no frontend, no secrets. Workflow: `.github/workflows/deploy-edge-functions.yml` (manual, environment `production`).
 
+## Where things live (checked 2026-11-03)
+
+Two things are called `kretopia-app`, and only one of them is a place you can paste into. Read this before following any "kretopia-app" instruction.
+
+| What | Where it is | What changes it |
+|---|---|---|
+| The code, and every pull request | GitHub **`Kretopia/kretopia-connect`**: public, default branch `main`, not archived. Pass `--repo Kretopia/kretopia-connect` to `gh` (or run `gh repo set-default Kretopia/kretopia-connect` once per clone) | a merged pull request |
+| Kretopia Connect's own Cloud backend (`project_id` in `supabase/config.toml`: `czpucbhnmcudggydwxlg`) | this repository's `supabase/` folder | Lovable, when the pull request is merged (per `LOT4_PASTE_KIT.md`; not re-checked) |
+| **Production's legacy backend** (database `kwmcocsitwssrtzkdojh` and the edge functions that run on it) | the **Lovable project `kretopia-app`**: an editor project, not a GitHub repository. No GitHub repository that I can see is connected to it | a person pasting code or SQL into that project. Merging to `main` deploys nothing there, and `deploy-edge-functions.yml` is manual (`workflow_dispatch`) and stays blocked by the 403 in step 4 below |
+| The GitHub repository `Kretopia/kretopia-app` | **archived and read-only** (last push 2026-09-20). Not a deploy source, not a pull-request target, not a paste target | nothing: it cannot be pushed to |
+
+What this means in practice: production's code is a hand-pasted copy that can drift from `main` (see "Pending pastes" below for the last comparison),
+and `main` is only the source of truth for what Kretopia Connect itself runs. Checked read-only on 2026-11-03: `main` has **no branch protection
+and no ruleset**; of the four workflows in `.github/workflows/`, `ci.yml` runs typecheck, lint, tests and build on pull requests and on pushes
+to `main`, and the other three are manual (`workflow_dispatch`), so nothing deploys because of a push.
+
 ## One-time setup
 1. GitHub > Settings > Environments > `production`: add required reviewers and restrict to `main`.
 2. Environment secrets (names only): `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID`.

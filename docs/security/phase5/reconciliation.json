@@ -513,18 +513,18 @@
    "id": "R-LINEAGE",
    "kind": "meta",
    "origin": "paste kit, first real comparison",
-   "surface": "shared files of the repository and of the production project (kretopia-app) have drifted: production's ssrf.ts (307 lines) blocks ranges the repository's does not",
+   "surface": "shared files of the repository and of the production project (kretopia-app) have drifted: production's ssrf.ts (306 lines by wc -l, 307 in the first report) blocks ranges the repository's does not",
    "severity": "MEDIUM",
    "status": "CONFIRMED_OPEN",
    "partial": false,
    "needs_sql": false,
    "needs_deploy": false,
-   "proof_level": "owner's comparison relayed by the kretopia-app agent (file sha d722427adc0a, 307 lines) against the repository's 302 and 322 lines",
+   "proof_level": "full text of production's ssrf.ts read from the kretopia-app project on 2026-11-03 through the Lovable connector (read-only) and compared by the corrected script: sha d722427adc0a, the same hash as the owner's earlier comparison relayed by the kretopia-app agent, against the repository's 302 (baseline) and 322 (this branch) lines",
    "evidence": [
     "docs/security/phase5/LOT4_PASTE_KIT.md",
     "docs/security/phase5/paste-kit/compare_clipboard.sh"
    ],
-   "notes": "Overwriting production files with repository files would remove production's own hardening. The script now saves production's copy and a three-way merge candidate. Follow-up: port production's extra ranges into the repository's ssrf.ts once its full text is available."
+   "notes": "Overwriting production files with repository files would remove production's own hardening. The script now saves production's copy and a three-way merge candidate. Follow-up: port production's extra ranges into the repository's ssrf.ts. The full text is now available and the merge candidate passes the repository's 159 SSRF-related tests (docs/security/phase5/LOT4_LINEAGE_CHECK.md). In the same check, outboundBudget.ts is identical to the baseline (safe to overwrite) and aiPerimeter.ts is absent from production."
   },
   {
    "id": "R-70FN",

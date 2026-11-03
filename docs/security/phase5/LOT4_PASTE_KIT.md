@@ -1,16 +1,23 @@
 # Lot 4 -- paste kit for batch 1
 
 **Nothing here is done for you.** This is the checklist for pasting the batch into the Lovable project **kretopia-app** (the one that reaches
-production), by hand. Never into "Kretopia Connect": it deploys itself when the pull request is merged. The files are the ones of the branch
+production), by hand. Never into "Kretopia Connect": it deploys itself when the pull request is merged. **kretopia-app is an editor project, not
+a GitHub repository**: the repository of the same name, `Kretopia/kretopia-app`, is archived and read-only, so nothing in this kit is cloned from
+it, pushed to it or opened as a pull request there. The code and its pull requests live in `Kretopia/kretopia-connect`
+(`docs/platform/DEPLOYMENT_RUNBOOK.md`, "Where things live"). The files are the ones of the branch
 `chore/security-lockdown-phase5` (PRs 295 and 296, merged into main on 2026-11-01); the sizes and hashes below are those of the commit this kit was generated from. The reasoning and the
 list of what each function changes are in `LOT4_ACTIVATION_BATCH1.md`.
 
 ## 0. Before you paste: three read-only checks
 
 **A. What must already exist in kretopia-app.** The batch imports these names from files it does not change. For each, open the file in
-kretopia-app, select all, copy, and run `bash docs/security/phase5/paste-kit/compare_clipboard.sh <path under supabase/functions>`. It says
-whether the file is the one the branch started from and whether the exported names are present. A missing name makes every function that
-imports it fail to start.
+kretopia-app, select all, copy, and run `bash docs/security/phase5/paste-kit/compare_clipboard.sh <path under supabase/functions>`. It first
+checks that what you copied is that file (an import, an export or the file's own first line, and most of its lines in common with the
+repository's version). If not it prints `REFUSED`, exits with 2 and compares nothing: copy again, and never read a refusal as a result. Only
+then does it say one of three things: identical to this branch (already pasted); identical to the baseline (production is not ahead, safe to
+overwrite); or `DIFFERENT` (production has changes the repository lacks: do not overwrite, it saves production's copy and a merge candidate
+on this machine). It also says whether the exported names are present. A missing name makes every function that imports it fail to start.
+The first real results are in `LOT4_LINEAGE_CHECK.md`.
 
 | File (already in production) | Names the batch imports |
 |---|---|
