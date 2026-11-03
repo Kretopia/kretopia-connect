@@ -10,6 +10,7 @@ import { useEffect } from "react";
  * longest pathname prefix; "/" is exact-only so it doesn't swallow everything.
  */
 const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
+  ["/landing", () => import("../pages/Welcome")],
   ["/auth", () => import("../pages/Auth")],
   ["/match", () => import("../pages/Match")],
   ["/scout", () => import("../pages/Scout")],
@@ -18,7 +19,7 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/passport", () => import("../pages/Profile")],
   ["/profile", () => import("../pages/Profile")],
   ["/credits", () => import("../pages/CreditsDashboard")],
-  ["/desk", () => import("../pages/ThriveDesk")],
+  ["/desk", () => import("../pages/WorkHome")],
   ["/circles", () => import("../pages/Circles")],
   ["/circle", () => import("../pages/Stages")],
   ["/crews", () => import("../pages/Circles")],
@@ -45,7 +46,7 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/onboarding", () => import("../pages/Onboarding")],
 ];
 
-const HOME_IMPORT = () => import("../components/home/UnifiedHome");
+const HOME_IMPORT = () => import("../components/home/HomeEntry");
 
 /** Module paths already requested this session — never fetch twice. */
 const prefetched = new Set<string>();

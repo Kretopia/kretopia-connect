@@ -1,5 +1,10 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Startup recovery and fast first content
+- [ ] Isolate the public home from authenticated dashboard dependencies; render home while the optional onboarding lookup finishes, preserving confirmed redirects.
+- [ ] Bound lazy-module recovery so stalled imports/cache cleanup cannot leave a permanent loader; align home and Landing prefetch with their actual entry points.
+- [ ] Run regression tests and cold-start/navigation browser checks. Publication requires explicit authorization; authenticated production verification needs a real legacy session.
+
 ## Immediate Kreto search navigation
 - [x] Route “Search for UX Designers” directly to existing search results with the intact query, bypassing planning across floating, rail and inline chat; 39 regression tests pass and managed build OK. Browser verifies /search?q=UX%20Designers and the populated search field, with no runtime errors.
 - [ ] Verify signed-in submission through Kreto: unavailable legacy session; own-account session mint failed. No publication performed.
