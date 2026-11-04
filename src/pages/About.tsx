@@ -27,19 +27,19 @@ const FOUNDERS: {
 }[] = [
   {
     name: "Ethan Auguste",
-    role: "CEO",
+    role: "Founder & Chief Executive Officer",
     kretoVariant: "scout",
     body: "Spent a decade building the room before building the product — showcases, listening sessions and introductions across Dubai, Los Angeles, Trinidad, Geneva and Bali. He didn't guess what creatives needed; he was already in the room when they said it out loud.",
   },
   {
-    name: "Jefferson Lenox Gordon",
-    role: "CDO",
+    name: "Jefferson Gordon-Lennox",
+    role: "Co-founder & Chief Product Officer",
     kretoVariant: "connector",
     body: "Design and creative direction — really, the culture's own taste made legible in a product. Every screen answers one question: would this feel out of place next to the work it represents? Sharp, editorial, unmistakably built by creatives, not for them.",
   },
   {
     name: "Noé Plantier",
-    role: "CTO",
+    role: "Co-founder & Chief Technology Officer",
     kretoVariant: "producer",
     body: "Engineering and AI — the unglamorous machinery underneath the whole promise. Verification, Scout, Kreto: turning a scattered, screenshot-and-DM creative history into something that's actually searchable, provable, and useful the moment someone needs it.",
   },
