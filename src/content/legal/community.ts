@@ -266,7 +266,7 @@ export const COMMUNITY: LegalDocument = {
     }
   ],
   "closing": {
-    "eyebrow": "Everything about Kretopia",
+    "eyebrow": "Our shared standard",
     "heading": {
       "before": "Good work needs a ",
       "accent": "good record."
