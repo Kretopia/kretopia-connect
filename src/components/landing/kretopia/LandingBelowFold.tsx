@@ -12,6 +12,8 @@
  * or reordering a chapter here never requires hand-patching a number
  * anywhere else.
  */
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { ChapterSection } from "@/components/landing/kretopia/ChapterSection";
 import { ProductLoopSection } from "@/components/landing/kretopia/ProductLoopSection";
 import { MeetKretoSection } from "@/components/landing/kretopia/MeetKretoSection";
@@ -52,6 +54,20 @@ const matchVideo = matchMp4.url;
 const matchPoster = "/videos/kreto-vertical-poster.jpg";
 
 export const LandingBelowFold = () => {
+  const { hash } = useLocation();
+
+  useEffect(() => {
+    if (!hash) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(hash.slice(1))?.scrollIntoView({
+        block: "start",
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [hash]);
+
   return (
     <>
       {/* Kretopia loop — Landing Final Conversion Overhaul: replaces the old
@@ -130,7 +146,7 @@ export const LandingBelowFold = () => {
         video={scoutVideo}
         videoWebm={scoutWebm.url}
         accent="hsl(var(--energy))"
-        href="/auth?next=/scout"
+        href="/opportunities"
         ctaLabel="Explore Opportunities"
         reverse
         tutorialSteps={SCOUT_TUTORIAL}
@@ -159,7 +175,7 @@ export const LandingBelowFold = () => {
         video={matchVideo}
         videoWebm={matchWebm.url}
         accent="hsl(var(--energy))"
-        href="/auth?next=/match"
+        href="/match"
         ctaLabel="Find Collaborators"
         tutorialSteps={MATCH_TUTORIAL}
         discreetTutorial
@@ -216,8 +232,8 @@ export const LandingBelowFold = () => {
         video={soundstagesVideo}
         videoWebm={communityWebm.url}
         accent="hsl(var(--energy))"
-        href={`/auth?next=${encodeURIComponent("/circle?tab=live")}`}
-        ctaLabel="Join a SoundStage"
+        href="/soundstages"
+        ctaLabel="Explore SoundStages"
         tutorialSteps={SOUNDSTAGES_TUTORIAL}
         discreetTutorial
       />

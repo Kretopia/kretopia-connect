@@ -4,9 +4,7 @@
  * with the hero. Both CTAs route to real, existing flows:
  *   - "Hire Through Kretopia" -> /post-opportunity (same route the Navbar's
  *     "Hire Talent" button already uses)
- *   - "Partner With Us" -> /auth?tab=signup, where a real "company" account
- *     type already exists (src/pages/Auth.tsx) with its own onboarding
- *     (/company-onboarding) — not a fabricated partner flow.
+ *   - "Partner With Us" -> /contact, the existing public contact route.
  *
  * v2 (gap + branding + CTA power pass):
  * - Dropped the plain `border-t` hard-cut at the top — ClosingCTASection
@@ -106,14 +104,14 @@ export const ForOrganisationsSection = () => {
             Hire Through Kretopia
           </GlassCta>
           <OutlineCta
-            to="/auth?tab=signup&src=for_organisations"
+            to="/contact"
             className="w-full"
             onClick={() =>
               trackLandingCtaClick({
                 ctaId: "partner_with_us",
                 section: "for_organisations",
                 label: "Partner With Us",
-                destinationType: "auth",
+                destinationType: "internal",
               })
             }
           >

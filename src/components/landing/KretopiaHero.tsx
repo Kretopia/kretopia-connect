@@ -453,17 +453,17 @@ export const KretopiaHero = () => {
               data-cta="primary"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
-                  label: "Create Passport",
+                  label: "Explore Passports",
                   variant: "signal_field",
                 })
               }
               className="hero-passport-cta k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
-              Create Passport
+              Explore Passports
             </GlassCta>
 
             <OutlineCta
-              to="/auth?next=/scout&src=hero_explore"
+              to="/opportunities"
               size="md"
               data-cta="secondary"
               onClick={() =>

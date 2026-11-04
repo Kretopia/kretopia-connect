@@ -149,16 +149,20 @@ export const MeetKretoSection = () => {
             {/* Equal grid tracks, like the hero pair: one column on a phone, two equal columns from `sm`. */}
             <div className="mt-9 grid w-full max-w-[26rem] grid-cols-1 gap-3 sm:grid-cols-2">
               <GlassCta
-                to="/auth?next=/circle&tab=signup&src=meet_kreto"
+                to="#kreto-how-it-works"
                 className="w-full"
-                onClick={() =>
+                onClick={() => {
+                  document.getElementById("kreto-how-it-works")?.scrollIntoView({
+                    behavior: reducedMotion ? "auto" : "smooth",
+                    block: "center",
+                  });
                   trackLandingCtaClick({
                     ctaId: "meet_kreto",
                     section: "meet_kreto",
                     label: "Meet Kreto",
-                    destinationType: "auth",
-                  })
-                }
+                    destinationType: "internal",
+                  });
+                }}
               >
                 Meet Kreto
               </GlassCta>
@@ -249,13 +253,13 @@ export const MeetKretoSection = () => {
                   className="text-[10px] uppercase tracking-[0.24em] text-white/30 mb-3"
                   style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                 >
-                  Try asking
+                  Try asking (sign-in required)
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {PROMPTS.map((p) => (
                     <Link
                       key={p}
-                      to={`/auth?next=${encodeURIComponent("/circle")}`}
+                      to={`/auth?next=${encodeURIComponent("/kreto")}&tab=signup&src=kreto_prompt`}
                       onClick={() =>
                         trackLandingCtaClick({
                           ctaId: "meet_kreto_try_asking",

@@ -201,10 +201,15 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // search moved to Thrive bar — keep state stub removed
 
   // Guest navigation items: words only, as in the designer's KretopiaHero header.
+  // KRETOPIA_PUBLIC_NAV_DROPDOWNS_V3
+  // Public navigation only. Header chrome and authenticated nav unchanged.
+  // KRETOPIA_PUBLIC_NAV_FOUR_LINKS_V5
+  // Four direct links. No dropdowns.
   const guestNavItems = [
-    { path: "/credits", label: "Credits" },
-    { path: "/spotlight", label: "Spotlight" },
-    { path: "/about", label: "About Us" },
+    { path: "/about", label: "Platform" },
+    { path: "/passport", label: "For Creatives" },
+    { path: "/post-opportunity", label: "For Companies" },
+    { path: "/discover", label: "Discover" },
   ];
   // The signed-out bar is the designer's: always visible and never dimmed, unlike the signed-in bar below.
   const guestBar = !user;
@@ -286,7 +291,15 @@ const Navbar = memo(({ user }: NavbarProps) => {
             designer's does), the middle of the bar from lg, centred on the screen. */}
         <div className="k-site-nav col-start-1 row-start-2 flex lg:col-start-2 lg:row-start-1">
           {guestNavItems.map(({ path, label }) => (
-            <Link key={path} to={path} aria-current={location.pathname === path ? "page" : undefined}>
+            <Link
+              key={label}
+              to={path}
+              aria-current={
+                location.pathname === path
+                  ? "page"
+                  : undefined
+              }
+            >
               {label}
             </Link>
           ))}
