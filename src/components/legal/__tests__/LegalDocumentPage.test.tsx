@@ -4,6 +4,9 @@ import { MemoryRouter } from "react-router-dom";
 
 import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
+import CommunityGuidelines from "@/pages/CommunityGuidelines";
+import { COMMUNITY } from "@/content/legal/community";
+import { toRoman } from "@/lib/toRoman";
 import { TERMS } from "@/content/legal/terms";
 import { PRIVACY } from "@/content/legal/privacy";
 import type { LegalBlock, LegalDocument, LegalPart } from "@/content/legal/types";
@@ -27,12 +30,20 @@ const plain = (parts: LegalPart[]) => parts.map((p) => (typeof p === "string" ? 
 const textOf = (block: LegalBlock) => (block.type === "p" ? plain(block.content) : block.type === "ul" ? block.items.map(plain).join(" ") : `${block.cap} ${block.text}`);
 const everyWord = (doc: LegalDocument) => JSON.stringify(doc);
 
-const renderPage = (page: "terms" | "privacy", entry = `/${page}`) =>
-  render(<MemoryRouter initialEntries={[entry]}>{page === "terms" ? <Terms /> : <Privacy />}</MemoryRouter>);
+const renderPage = (
+  page: "terms" | "privacy" | "community",
+  entry = page === "community" ? "/community-guidelines" : `/${page}`,
+) =>
+  render(
+    <MemoryRouter initialEntries={[entry]}>
+      {page === "terms" ? <Terms /> : page === "privacy" ? <Privacy /> : <CommunityGuidelines />}
+    </MemoryRouter>,
+  );
 
 describe.each([
   { page: "terms" as const, doc: TERMS, sections: 15, h1: "Terms for creative work." },
   { page: "privacy" as const, doc: PRIVACY, sections: 16, h1: "Your work. Your data. Your context." },
+  { page: "community" as const, doc: COMMUNITY, sections: 8, h1: "Respect the work. Respect the people." },
 ])("$page document", ({ page, doc, sections, h1 }) => {
   beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn();
@@ -63,7 +74,7 @@ describe.each([
       const row = document.getElementById(s.id);
       expect(row, s.id).not.toBeNull();
       expect(within(row as HTMLElement).getByRole("heading", { level: 3, name: s.title })).toBeInTheDocument();
-      expect(row).toHaveTextContent(s.num);
+      expect(within(row as HTMLElement).getByText(toRoman(Number(s.num)))).toBeInTheDocument();
       const firstText = s.blocks.map(textOf).find(Boolean)!.slice(0, 40);
       expect(row?.textContent).toContain(firstText);
     }
@@ -73,7 +84,12 @@ describe.each([
     renderPage(page);
     const index = screen.getByRole("navigation", { name: new RegExp(`${doc.name}: sections`, "i") });
     const links = within(index).getAllByRole("link");
-    expect(links.map((l) => l.textContent)).toEqual(doc.sections.map((s) => s.title));
+    expect(links).toHaveLength(doc.sections.length);
+    links.forEach((link, i) => {
+      expect(link).toHaveAttribute("href", `#${doc.sections[i].id}`);
+      expect(within(link).getByText(doc.sections[i].title)).toBeInTheDocument();
+      expect(within(link).getByText(toRoman(i + 1))).toBeInTheDocument();
+    });
 
     fireEvent.click(links[4]);
     const target = document.getElementById(doc.sections[4].id) as HTMLElement;
@@ -91,7 +107,7 @@ describe.each([
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/terms", "/privacy", "/community-guidelines"]);
     const here = links.filter((l) => l.getAttribute("aria-current") === "page");
     expect(here).toHaveLength(1);
-    expect(here[0]).toHaveTextContent(page === "terms" ? "Terms" : "Privacy");
+    expect(here[0]).toHaveTextContent(page === "terms" ? "Terms" : page === "privacy" ? "Privacy" : "Community");
   });
 });
 
@@ -100,5 +116,17 @@ describe("contact lines", () => {
     const all = (doc: LegalDocument) => doc.sections.flatMap((s) => s.blocks.map(textOf)).join(" ");
     expect(all(PRIVACY)).toContain("privacy@kretopia.com");
     expect(all(TERMS)).toMatch(/@kretopia\.com/);
+  });
+});
+
+
+describe("institutional V3 closing text", () => {
+  it("renders the corrected Terms closing without changing its legal sections", () => {
+    renderPage("terms");
+    expect(
+      screen.getByRole("heading", {
+        name: "Clarity should come before commitment.",
+      })
+    ).toBeInTheDocument();
   });
 });
