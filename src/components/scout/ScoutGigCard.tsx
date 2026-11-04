@@ -1,182 +1,522 @@
-import { Children, Fragment, isValidElement, useState, type MouseEvent, type ReactNode } from "react";
-import { Banknote, Bookmark, Eye, MapPin, Zap } from "lucide-react";
-import { KretoScene } from "@/components/brand/KretoScene";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { CardActionButton, CardIconButton, CardPill, CardShell, CardTextButton } from "@/components/cards/CardShell";
-import { CARD_LABEL } from "@/components/cards/cardTokens";
-import { hasRealCompensation } from "@/lib/scoutPay";
-import { roleArtFor, type RoleArtInput } from "@/lib/scoutRoleArt";
-import type { OpportunityFacts } from "@/lib/kretoDraft";
-import { cn } from "@/lib/utils";
+/* SCOUT_V4_STRUCTURE_MATCH */
+/* SCOUT_FRONT_RESTRUCTURED */
+import {
+  useEffect, useId, useRef, useState,
+  type KeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
+  type CSSProperties, type ReactNode,
+} from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Eye, MapPin } from "lucide-react";
+import { BookmarkButton } from "@/components/opportunity/BookmarkButton";
+import { EasyApplyButton } from "@/components/opportunity/EasyApplyButton";
 import { ApplyWithKreto } from "./ApplyWithKreto";
+import type { OpportunityFacts } from "@/lib/kretoDraft";
+import { hasRealCompensation } from "@/lib/scoutPay";
+import "./ScoutGigCard.hybrid.css";
 
-export function ScoutPayChip({ compensation }: { compensation?: string | null }) {
+export function ScoutPayChip({
+  compensation,
+}: {
+  compensation?: string | null;
+}) {
   return hasRealCompensation(compensation) ? (
-    <span title={compensation ?? undefined} className="inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-[7px] py-[3px] text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-      <Banknote className="h-3 w-3 shrink-0" aria-hidden /><span className="truncate">{compensation}</span>
-    </span>
-  ) : <span className="rounded-full border border-dashed border-border px-[7px] py-[3px] text-[11px] font-medium text-muted-foreground">Pay not listed</span>;
+    <span className="pay">{compensation}</span>
+  ) : (
+    <span className="pay missing">Pay not listed</span>
+  );
 }
 
-/** The small rounded labels on the cover and in the tags. */
-export const ScoutPill = CardPill;
-
-/** The bookmark on the cover. Pressed means saved. */
-export function ScoutSaveButton({ saved, label, onToggle }: { saved: boolean; label: string; onToggle: (event: MouseEvent) => void }) {
-  return <CardIconButton action={{ icon: <Bookmark className={cn("h-[15px] w-[15px]", saved && "fill-current")} aria-hidden />, label, pressed: saved, onClick: onToggle }} />;
-}
-
-export interface ScoutCardApply {
-  label: string;
-  /** In-app address. */
-  to?: string;
-  /** Another site: opens in a new tab. */
-  href?: string;
-  rel?: string;
-  onClick?: () => void;
-  ariaLabel?: string;
-}
-
-export interface ScoutCardDetail {
-  label: string;
-  value: ReactNode;
-}
-
-/** Keeps the fields a listing really has: a missing one is `false`, `null` or empty in the list and is dropped, never printed as a blank. */
-export function compactDetails(items: Array<ScoutCardDetail | false | "" | null | undefined>): ScoutCardDetail[] {
-  return items.filter((item): item is ScoutCardDetail => Boolean(item));
-}
-
-export interface ScoutGigCardProps {
+type Props = {
   title: string;
-  company?: string | null;
-  /** What the cover illustration is chosen from: the listing's family when known, its title otherwise. */
-  art: RoleArtInput;
-  /** Where the title goes: an in-app path, another site, or (onOpen) the caller's own detail view. */
+  image?: string | null;
   href?: string;
   onOpen?: () => void;
-  /** Top left of the cover: where the listing comes from, and what kind it is. */
-  pills?: ReactNode;
-  /** Top right of the cover. */
-  save?: ReactNode;
-  pay?: string | null;
-  location?: ReactNode;
-  /** After the pay chip, which always comes first. Three tags are drawn in all; the rest stay on the listing. */
-  tags?: ReactNode;
-  /** Two lines on the front: what the listing says it needs, and what it does not say. */
-  evidence?: ReactNode;
-  /** What the listing is and who stands behind it. Two lines, always on the front. */
-  trust?: ReactNode;
-  /** Anything else about the listing (other places a job is posted, for one): on the back, never the front. */
+  badges?: ReactNode;
   children?: ReactNode;
-  /** Icon-only controls over the cover, beside Save (open the source, dismiss). */
-  utility?: ReactNode;
-  /** What "Apply" does for this source. */
-  apply: ScoutCardApply;
-  /** The listing's own text, shown on the back of the card without leaving Kretopia. */
-  brief: { text?: string | null; node?: ReactNode; loading?: boolean; originalUrl?: string | null };
-  /** The fields the listing really has, and no others. */
-  details?: ScoutCardDetail[];
-  /** What Kreto is given to draft an application from. */
-  opportunity: OpportunityFacts;
-  /** Called each time the back is opened, so a caller can fetch the full text. */
-  onQuickLook?: () => void;
-  /** When the caller keeps the draft (so it follows the person to a fuller apply flow). */
-  draft?: { value: string; onChange: (next: string) => void };
+  footer?: ReactNode;
+  pay?: string | null;
   testId?: string;
-}
+  company?: string | null;
+  location?: string | null;
+  workMode?: string;
+  origin?: "external" | "kretopia";
+  sourceName?: string | null;
+  excerpt?: string | null;
+  evidence?: ReactNode;
+  internalOpportunityId?: string;
+  familyLabel?: string;
+  opportunity?: OpportunityFacts;
+  draft?: {
+    value: string;
+    onChange: (next: string) => void;
+  };
+  loadOpportunityDescription?: () => Promise<string | null>;
+};
 
-type BackMode = "look" | "apply";
+export function ScoutGigCard({
+  title, image, href, onOpen, badges, children,
+  footer, pay, testId, company, location, workMode,
+  origin, sourceName, excerpt, evidence, internalOpportunityId, familyLabel,
+  opportunity, draft, loadOpportunityDescription,
+}: Props) {
+  const [flipped, setFlipped] = useState(false);
+  const [broken, setBroken] = useState(false);
+  const [backMode, setBackMode] = useState<"look" | "apply">("look");
+  const [applicationDraft, setApplicationDraft] = useState("");
+  const [retrievedDescription, setRetrievedDescription] = useState<string | null>(null);
+  const [preparingDescription, setPreparingDescription] = useState(false);
+  const loadAttempted = useRef(false);
+  const activeRequest = useRef(0);
 
-/** Surfaces pass tags as a fragment of pills; the shell counts them one by one. */
-function flattenTags(node: ReactNode): ReactNode[] {
-  return Children.toArray(node).flatMap((child) => (isValidElement(child) && child.type === Fragment ? flattenTags((child.props as { children?: ReactNode }).children) : [child]));
-}
+  const tiltRef = useRef<HTMLDivElement>(null);
+  const frontRef = useRef<HTMLDivElement>(null);
+  const backRef = useRef<HTMLDivElement>(null);
+  const quickRef = useRef<HTMLButtonElement>(null);
+  const returnRef = useRef<HTMLButtonElement>(null);
+  const initialized = useRef(false);
+  const backId = useId();
 
-/**
- * The Scout card, on every surface (For You, All sources, the shortlist, the marketplace feed): the opportunity variant of CardShell.
- *
- * Front: the role's Kretopia illustration with where the listing comes from, the headline, company and place, what it says it needs (and does
- * not say), pay and tags, what the listing is, and one action. Back (Quick look): the listing's own brief and the fields it really has, or
- * Kreto drafting an application, all in place. Which parts a surface fills in is up to that surface: this component maps them onto the
- * shell's slots and never invents a field a listing does not have.
- */
-export function ScoutGigCard({ title, company, art, href, onOpen, pills, save, pay, location, tags, evidence, trust, children, utility, apply, brief, details = [], opportunity, onQuickLook, draft, testId }: ScoutGigCardProps) {
-  const { scene } = roleArtFor(art);
-  const [mode, setMode] = useState<BackMode>("look");
+  useEffect(() => {
+    activeRequest.current += 1;
+    loadAttempted.current = false;
+    setRetrievedDescription(null);
+    setPreparingDescription(false);
+    setFlipped(false);
+    setBroken(false);
+    setBackMode("look");
+    setApplicationDraft("");
 
-  const open = onOpen ? { onClick: onOpen, ariaLabel: `View brief for ${title}` } : href?.startsWith("/") ? { to: href } : href ? { href } : undefined;
-  const meta = (
+    return () => {
+      activeRequest.current += 1;
+    };
+  }, [image, href, title]);
+
+  useEffect(() => {
+    frontRef.current?.toggleAttribute("inert", flipped);
+    backRef.current?.toggleAttribute("inert", !flipped);
+
+    if (initialized.current) {
+      (flipped ? returnRef.current : quickRef.current)
+        ?.focus({ preventScroll: true });
+    }
+    initialized.current = true;
+  }, [flipped]);
+
+  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (
+      event.pointerType !== "mouse" ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    const x = Math.max(0, Math.min(1,
+      (event.clientX - rect.left) / rect.width));
+    const y = Math.max(0, Math.min(1,
+      (event.clientY - rect.top) / rect.height));
+
+    event.currentTarget.style.setProperty("--mx", `${x * 100}%`);
+    event.currentTarget.style.setProperty("--my", `${y * 100}%`);
+
+    if (tiltRef.current) {
+      tiltRef.current.style.transform =
+        `rotateX(${(0.5 - y) * 10}deg) rotateY(${(x - 0.5) * 10}deg)`;
+    }
+  };
+
+  const resetTilt = () => {
+    if (tiltRef.current) {
+      tiltRef.current.style.transform = "rotateX(0deg) rotateY(0deg)";
+    }
+  };
+
+  const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape" && flipped) {
+      event.stopPropagation();
+      setFlipped(false);
+    }
+  };
+
+  const openDetail = (label: string) => {
+    const content = (
+      <>
+        {label}
+        <ArrowRight size={14} aria-hidden="true" />
+      </>
+    );
+
+    if (onOpen) {
+      return (
+        <button className="btn primary" type="button" onClick={onOpen}>
+          {content}
+        </button>
+      );
+    }
+
+    if (href?.startsWith("/")) {
+      return <Link className="btn primary" to={href}>{content}</Link>;
+    }
+
+    if (href) {
+      return (
+        <a className="btn primary" href={href}
+          target="_blank" rel="noopener noreferrer">
+          {content}
+        </a>
+      );
+    }
+
+    return null;
+  };
+
+  const titleAction = onOpen ? (
+    <button type="button" onClick={onOpen}>{title}</button>
+  ) : href?.startsWith("/") ? (
+    <Link to={href}>{title}</Link>
+  ) : href ? (
+    <a href={href} target="_blank" rel="noopener noreferrer">{title}</a>
+  ) : title;
+
+  const place = [location, workMode].filter(Boolean).join(" · ");
+
+  // SCOUT_COMPACT_SAFE_V3
+  const isCollaboration =
+    /\b(collab|collaboration|co-creation|co-production)\b/i.test(title);
+
+  const explicitlyUnpaid =
+    /\b(unpaid|volunteer|voluntary|pro bono|non-remunerated)\b/i
+      .test(`${title} ${pay ?? ""}`);
+
+  const paid = hasRealCompensation(pay);
+
+  const compactStatus = explicitlyUnpaid
+    ? (isCollaboration ? "Unpaid collaboration" : "Unpaid")
+    : isCollaboration
+      ? (paid ? "Paid collaboration" : "Collaboration")
+      : paid
+        ? "Paid opportunity"
+        : "Pay not listed";
+
+
+  const material = (
     <>
-      {company ? <>{company} · </> : null}
-      <MapPin className="mr-1 inline h-3 w-3 align-[-1px]" aria-hidden />
-      {location ? location : "Not listed"}
+      <div className="material" aria-hidden="true" />
+      <div className="foil-light" aria-hidden="true" />
+      <div className="prismatic-edge" aria-hidden="true" />
     </>
   );
 
   return (
-    <CardShell
-      testId={testId}
-      title={title}
-      open={open}
-      cover={<KretoScene scene={scene} size="thumb" className="h-full w-full" />}
-      coverStart={pills}
-      coverControls={<>{utility}{save}</>}
-      meta={meta}
-      description={evidence}
-      tags={[<ScoutPayChip key="pay" compensation={pay} />, ...flattenTags(tags)]}
-      trust={trust}
-      primary={apply}
-      back={{
-        label: mode === "apply" ? "apply with Kreto" : "quick look",
-        eyebrow: mode === "apply" ? <><Zap className="h-3.5 w-3.5" aria-hidden />Apply with Kreto</> : <><Eye className="h-3.5 w-3.5" aria-hidden />Quick look</>,
-        onOpen: () => {
-          setMode("look");
-          onQuickLook?.();
-        },
-        actions: (
-          <>
-            {mode === "apply" ? (
-              <CardTextButton onClick={() => setMode("look")}><Eye className="h-3.5 w-3.5" aria-hidden />Brief</CardTextButton>
-            ) : (
-              <CardTextButton onClick={() => setMode("apply")} data-testid="apply-with-kreto-open"><Zap className="h-3.5 w-3.5" aria-hidden />Apply with Kreto</CardTextButton>
-            )}
-            <CardActionButton action={apply} />
-          </>
-        ),
-        children:
-          mode === "apply" ? (
-            <ApplyWithKreto opportunity={opportunity} value={draft?.value} onChange={draft?.onChange} />
-          ) : (
-            <>
-              <section aria-label="Brief" tabIndex={0} className="max-h-[18rem] overflow-y-auto pr-1 text-[13px] leading-[1.7] text-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-testid="quick-look-brief">
-                {brief.loading ? (
-                  <p className="flex items-center gap-2 text-xs text-muted-foreground"><KretopiaSpinner className="h-3.5 w-3.5" />Loading the full listing…</p>
-                ) : brief.node ? (
-                  brief.node
-                ) : brief.text?.trim() ? (
-                  brief.text.trim().split(/\n{2,}/).map((paragraph, index) => <p key={index} className={cn(index > 0 && "mt-2.5", "whitespace-pre-line")}>{paragraph}</p>)
-                ) : (
-                  <p className="text-xs text-muted-foreground">
-                    This listing did not include a description.
-                    {brief.originalUrl ? <> <a href={brief.originalUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground underline underline-offset-2">Read the original listing</a>.</> : null}
-                  </p>
-                )}
-              </section>
-              {details.length > 0 ? (
-                <dl className="grid gap-3.5">
-                  {details.map((detail) => (
-                    <div key={detail.label}>
-                      <dt className={cn(CARD_LABEL, "mb-[5px]")}>{detail.label}</dt>
-                      <dd className="m-0 text-xs leading-[1.55] text-foreground/85">{detail.value}</dd>
+    <div className="scout-v4" data-testid={testId}>
+      <div className="scene">
+        <div className="holo"
+          onPointerMove={onPointerMove}
+          onPointerLeave={resetTilt}
+        >
+          <div className="tilt-shell" ref={tiltRef}>
+            <article
+              className={`flip-card${flipped ? " is-flipped" : ""}`}
+              aria-label={title}
+              onKeyDown={onKeyDown}
+            >
+              <div className="flip-inner">
+                <div
+                  ref={frontRef}
+                  className="flip-face flip-front"
+                  aria-hidden={flipped}
+                >
+                  <div className="cover">
+                    {image && !broken ? (
+                      <img
+                        src={image}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        onError={() => setBroken(true)}
+                      />
+                    ) : (
+                      <div className="scout-v4__fallback" aria-hidden="true"
+                        style={{
+                          "--scout-fallback": [
+                            "#4012F8", "#A516C5", "#F62489", "#FFA722"
+                          ][Array.from(familyLabel || title)
+                            .reduce((n, ch) => n + ch.charCodeAt(0), 0) % 4],
+                        } as CSSProperties}>
+                        <span className="scout-v4__fallback-label">{familyLabel || "SCOUT"}</span>
+                        <span className="scout-v4__fallback-source">
+                          {sourceName || (origin === "kretopia"
+                            ? "Kretopia opportunity"
+                            : "Creative opportunity")}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="cover-top">
+                      <div className="origin">
+                        {origin === "kretopia" && (
+                          <span className="pill internal">Kretopia</span>
+                        )}
+                        {origin === "external" && (
+                          <span className="pill type">External source</span>
+                        )}
+                        {badges}
+                      </div>
+
+                      {internalOpportunityId && (
+                        <BookmarkButton
+                          opportunityId={internalOpportunityId}
+                          variant="ghost"
+                          size="icon"
+                          className="save"
+                        />
+                      )}
                     </div>
-                  ))}
-                </dl>
-              ) : null}
-              {children}
-            </>
-          ),
-      }}
-    />
+                  </div>
+
+                  <div className="content">
+                    <div className="headline">
+                      <h4>{titleAction}</h4>
+                      <span className="scout-v4__compact-status">
+                        {compactStatus}
+                      </span>
+                      {company && (
+                        <p className="organisation">{company}</p>
+                      )}
+                    </div>
+
+                    <dl className="facts">
+                      {place && (
+                        <div className="fact">
+                          <dt>Location</dt>
+                          <dd>
+                            <MapPin size={13} aria-hidden="true" />
+                            {place}
+                          </dd>
+                        </div>
+                      )}
+                    </dl>
+
+                    <footer className="card-foot">
+                      <button
+                        type="button"
+                        className="card-action"
+                        ref={quickRef}
+                        aria-controls={backId}
+                        aria-expanded={flipped}
+                        onClick={() => {
+                          setBackMode("look");
+                          setFlipped(true);
+                        }}
+                      >
+                        <Eye size={14} aria-hidden="true" />
+                        Quick look
+                      </button>
+
+                      <div className="apply-actions">
+                        {internalOpportunityId && (
+                          <EasyApplyButton
+                            opportunityId={internalOpportunityId}
+                            opportunityTitle={title}
+                          />
+                        )}
+
+                      </div>
+                    </footer>
+                  </div>
+                  {material}
+                </div>
+
+                <div
+                  id={backId}
+                  ref={backRef}
+                  className="flip-face flip-back"
+                  aria-hidden={!flipped}
+                >
+                  <div className="content">
+                    {backMode === "apply" ? (
+                      <>
+                        <p className="back-label">Apply with Kreto</p>
+                        {preparingDescription ? (
+                          <p role="status" className="text-xs text-muted-foreground">
+                            Checking the stored listing details…
+                          </p>
+                        ) : (
+                          <ApplyWithKreto
+                          opportunity={{
+                            ...(opportunity ?? {
+                            title,
+                            company,
+                            location,
+                            workMode,
+                            pay,
+                            source: sourceName,
+                            category: familyLabel,
+                            description: excerpt,
+                            }),
+                            description: retrievedDescription ??
+                              opportunity?.description ?? excerpt,
+                          }}
+                          value={draft?.value ?? applicationDraft}
+                          onChange={draft?.onChange ?? setApplicationDraft}
+                        />
+                        )}
+                        {!preparingDescription &&
+                          loadAttempted.current &&
+                          !retrievedDescription && (
+                            <p className="text-xs text-muted-foreground">
+                              Full listing text is not available here.
+                              Kreto will use the available summary.
+                            </p>
+                          )}
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="back-label">
+                            <Eye size={14} aria-hidden="true" />
+                            Quick preview
+                          </p>
+                          <button
+                            type="button"
+                            className="card-action"
+                            data-testid="apply-with-kreto-open"
+                            onClick={() => {
+                              setBackMode("apply");
+
+                              if (!loadOpportunityDescription || loadAttempted.current) {
+                                return;
+                              }
+
+                              loadAttempted.current = true;
+                              setPreparingDescription(true);
+                              const request = activeRequest.current;
+
+                              void Promise.resolve()
+                                .then(loadOpportunityDescription)
+                                .then((description) => {
+                                  if (activeRequest.current === request) {
+                                    setRetrievedDescription(
+                                      description?.trim() || null
+                                    );
+                                  }
+                                })
+                                .catch(() => {
+                                  if (activeRequest.current === request) {
+                                    setRetrievedDescription(null);
+                                  }
+                                })
+                                .finally(() => {
+                                  if (activeRequest.current === request) {
+                                    setPreparingDescription(false);
+                                  }
+                                });
+                            }}
+                          >
+                            Apply with Kreto
+                          </button>
+                        </div>
+
+                    <div className="headline">
+                      <h4>{title}</h4>
+                      {company && (
+                        <p className="organisation">{company}</p>
+                      )}
+                    </div>
+
+                    {excerpt && (
+                      <p className="description">{excerpt}</p>
+                    )}
+
+                    <div className="detail-list">
+                      <div className="detail-item">
+                        <span>Budget</span>
+                        <p><ScoutPayChip compensation={pay} /></p>
+                      </div>
+
+                      {place && (
+                        <div className="detail-item">
+                          <span>Location</span>
+                          <p>{place}</p>
+                        </div>
+                      )}
+
+                      {sourceName && (
+                        <div className="detail-item">
+                          <span>Source</span>
+                          <p>{sourceName}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {evidence && (
+                      <div className="evidence">
+                        <p className="evidence-label">Relevant evidence</p>
+                        <div className="evidence-copy">{evidence}</div>
+                      </div>
+                    )}
+
+                    {/* Additional listing information — Quick look */}
+                    {children && (
+                      <div className="scout-v4__quick-details">
+                        {children}
+                      </div>
+                    )}
+
+                    {/* SCOUT_ACTIONS_ON_QUICKLOOK_V9 */}
+                    {footer && (
+                      <div
+                        className="scout-v4__quick-details"
+                        aria-label="Opportunity source and actions"
+                      >
+                        {footer}
+                      </div>
+                    )}
+
+                      </>
+                    )}
+
+                    <footer className="card-foot">
+                      <button
+                        ref={returnRef}
+                        type="button"
+                        className="card-action"
+                        onClick={() => {
+                          if (backMode === "apply") {
+                            setBackMode("look");
+                          } else {
+                            setFlipped(false);
+                          }
+                        }}
+                      >
+                        <ArrowLeft size={14} aria-hidden="true" />
+                        {backMode === "apply" ? "Brief" : "Flip back"}
+                      </button>
+
+                      <div className="apply-actions">
+                        {backMode === "apply" ? (
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => {
+                              setBackMode("look");
+                              setFlipped(false);
+                            }}
+                          >
+                            Flip back
+                          </button>
+                        ) : openDetail("View full brief")}
+                      </div>
+                    </footer>
+                  </div>
+                  {material}
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

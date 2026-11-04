@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { ExternalLink, MapPin, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { PILL_ITEM, PILL_ITEM_ACTIVE } from "@/components/discover/DiscoverSwitch";
-import { ScoutGigCard, compactDetails } from "./ScoutGigCard";
+import { ScoutGigCard } from "./ScoutGigCard";
 import { ScoutFieldCarousel } from "./ScoutFieldCarousel";
 import { useOptionalScoutScan } from "./scoutScanContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -14,9 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { useScoutCatalog } from "@/hooks/useScoutCatalog";
 import { CATEGORIES, LEVELS, categoryOf, type CategoryId, type Language, type Level, type WorkMode } from "@/lib/opportunityTaxonomy";
-import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, focusRequest, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
+import { KRETOPIA_SOURCE, NO_FILTERS, facets, filterCatalog, filtersActive, groupByCategory, includeScoutedGigs, type CatalogFilters, type CatalogItem } from "@/lib/scoutCatalog";
 import { cn } from "@/lib/utils";
-import { hasRealCompensation } from "@/lib/scoutPay";
+import { supabase } from "@/integrations/supabase/client";
 
 /** Outside the creative families a section shows this many until opened, unless the person is searching or filtering. */
 const COLLAPSED_MAX = 6;
@@ -102,71 +103,123 @@ function FamilyPill({ id, primary }: { id: CategoryId; primary?: boolean }) {
 }
 
 function OpportunityCard({ item }: { item: CatalogItem }) {
+  const place = [item.company, item.location].filter(Boolean).join(" · ");
   const posted = when(item);
   const levelLabel = item.level ? LEVELS.find((l) => l.id === item.level)?.label : null;
-  const external = item.origin === "external";
-  const familyLabels = [categoryOf(item.category).label, ...item.alsoIn.map((c) => categoryOf(c).label)];
-  // Only the fields this listing really has: a missing one is left out, never filled in.
-  const details = compactDetails([
-    item.company && { label: "Company", value: item.company },
-    (item.locationFull ?? item.location) && { label: "Location", value: item.locationFull ?? item.location },
-    item.workMode !== "unknown" && { label: "Work", value: WORK_LABEL[item.workMode] },
-    levelLabel && { label: "Level", value: levelLabel },
-    { label: "Field", value: familyLabels.join(" · ") },
-    hasRealCompensation(item.pay) && { label: "Pay", value: item.pay },
-    posted && { label: "Posted", value: posted.replace(/^Posted /, "") },
-    { label: "Source", value: external ? item.sourceName : "Kretopia" },
-    external && item.seenAt && { label: "Last checked", value: formatDistanceToNow(new Date(item.seenAt), { addSuffix: true }).replace("about ", "") },
-    item.more.length > 0 && { label: "Also posted", value: `${item.more.length} more ${item.more.length === 1 ? "place" : "places"}` },
-  ]);
+  const internalOpportunityId = item.origin === "kretopia"
+    ? (
+        /\/opportunity\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(?:[/?#]|$)/i.exec(item.detailTo)?.[1]
+        ?? (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.id) ? item.id : undefined)
+      )
+    : undefined;
   return (
     // content-visibility keeps a few hundred cards cheap: the ones off screen are not laid out until they are near.
-    <li className="[contain-intrinsic-size:auto_420px] [content-visibility:auto]">
+    <li className="[contain-intrinsic-size:auto_380px] [content-visibility:auto]">
       <ScoutGigCard
-        testId="catalog-card"
         title={item.title}
-        company={item.company}
-        art={{ category: item.category, title: item.title, excerpt: item.excerpt }}
+        image={item.image}
         href={item.detailTo}
-        pills={<FamilyPill id={item.category} primary />}
         pay={item.pay}
-        location={item.location ? <span title={item.locationFull ?? undefined}>{item.location}</span> : null}
-        tags={
-          <>
-            {item.alsoIn.map((c) => (
-              <FamilyPill key={c} id={c} />
-            ))}
-            {levelLabel && <span className={SMALL_PILL}>{levelLabel}</span>}
-            {item.workMode !== "unknown" && <span className={SMALL_PILL}>{WORK_LABEL[item.workMode]}</span>}
-          </>
+        testId="catalog-card"
+        badges={<FamilyPill id={item.category} primary />}
+        familyLabel={categoryOf(item.category).label}
+        company={item.company}
+        location={item.location}
+        workMode={item.workMode !== "unknown" ? WORK_LABEL[item.workMode] : undefined}
+        origin={item.origin}
+        sourceName={item.sourceName}
+        excerpt={item.excerpt}
+        loadOpportunityDescription={
+          item.origin === "external" &&
+          /^\/listing\/[A-Za-z0-9_-]+$/.test(item.detailTo)
+            ? async () => {
+                const id = item.detailTo.slice("/listing/".length);
+                const controller = new AbortController();
+                const timeout = window.setTimeout(
+                  () => controller.abort(), 7000
+                );
+
+                try {
+                  // Reads Kretopia's public listing view only.
+                  // No request is made to the external publisher.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const { data, error } = await (
+                    supabase.from("public_external_listings" as any) as any
+                  )
+                    .select("description_full")
+                    .eq("id", id)
+                    .abortSignal(controller.signal)
+                    .maybeSingle();
+
+                  if (error) throw error;
+
+                  return typeof data?.description_full === "string"
+                    ? data.description_full.trim() || null
+                    : null;
+                } finally {
+                  window.clearTimeout(timeout);
+                }
+              }
+            : undefined
         }
-        trust={
-          external ? (
-            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceName} />
-          ) : (
-            <span className={SMALL_PILL}>Kretopia</span>
-          )
-        }
-        apply={
-          external
-            ? { label: "Apply at source", href: item.openUrl ?? undefined, rel: item.openRel, ariaLabel: `Apply at source: ${item.title}` }
-            : { label: "View gig", to: item.detailTo }
-        }
-        brief={{ text: item.excerpt, originalUrl: external ? item.openUrl : null }}
-        details={details}
         opportunity={{
           title: item.title,
           company: item.company,
           location: item.locationFull ?? item.location,
           workMode: item.workMode !== "unknown" ? WORK_LABEL[item.workMode] : null,
           level: levelLabel,
-          category: familyLabels.join(", "),
-          pay: hasRealCompensation(item.pay) ? item.pay : null,
-          source: external ? item.sourceName : "Kretopia",
-          description: item.excerpt,
+          category: categoryOf(item.category).label,
+          pay: item.pay,
+          source: item.sourceName,
+          description: item.origin === "kretopia"
+            ? (item.fullDescription ?? item.excerpt)
+            : item.excerpt,
         }}
+        internalOpportunityId={internalOpportunityId}
+        footer={
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-2 pt-1">
+          {item.origin === "external" ? (
+            <ListingLabels claimed={item.claimed} lastCheckedAt={item.seenAt} sourceName={item.sourceName} />
+          ) : (
+            <span className={SMALL_PILL}>Kretopia</span>
+          )}
+          {item.origin === "external" ? (
+            item.openUrl && (
+              <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-0">
+                <a href={item.openUrl} target="_blank" rel={item.openRel} aria-label={`Apply at source: ${item.title}`}>
+                  Apply at source <ExternalLink className="ml-1 h-3 w-3" aria-hidden />
+                </a>
+              </Button>
+            )
+          ) : (
+            <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-0">
+              <Link to={item.detailTo}>View gig</Link>
+            </Button>
+          )}
+        </div>
+        }
       >
-        {posted && <span className="text-[11px] text-muted-foreground">{posted}</span>}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {item.alsoIn.map((c) => (
+            <FamilyPill key={c} id={c} />
+          ))}
+          {levelLabel && <span className={SMALL_PILL}>{levelLabel}</span>}
+        </div>
+
+
+        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+          {place && (
+            <span className="inline-flex items-center gap-1" title={item.locationFull ?? undefined}>
+              {item.location && <MapPin className="h-3 w-3 shrink-0" aria-hidden />}
+              {place}
+            </span>
+          )}
+          {item.workMode !== "unknown" && <span className={SMALL_PILL}>{WORK_LABEL[item.workMode]}</span>}
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {posted && <span className="text-[11px] text-muted-foreground">{posted}</span>}
+        </div>
 
         {item.more.length > 0 && (
           <details className="text-xs text-muted-foreground">
@@ -185,6 +238,8 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
             </ul>
           </details>
         )}
+
+
       </ScoutGigCard>
     </li>
   );
@@ -195,35 +250,26 @@ function OpportunityCard({ item }: { item: CatalogItem }) {
  * the counts printed next to each filter and the whole list one click away. Nothing is capped: a section outside the creative families
  * shows its first few until it is opened, and any search or filter shows every match.
  */
-export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }) {
+export function ScoutAllSources() {
+  // SCOUT_V23_REAL_WORKSPACE
+  const [v23Sort, setV23Sort] =
+    useState<"newest" | "source" | "title">("newest");
+
+  // SCOUT_GLOBAL_NAV_V1
+  const [scoutView, setScoutView] =
+    useState<"carousel" | "grid" | "list">("carousel");
+  const [scoutPageSize, setScoutPageSize] = useState(24);
+  const [scoutPage, setScoutPage] = useState(0);
+
   const { data, isLoading, isError } = useScoutCatalog();
   const scan = useOptionalScoutScan();
   const items = useMemo(() => includeScoutedGigs(data?.items ?? [], scan?.gigs ?? []), [data, scan?.gigs]);
-  const [f, setF] = useState<CatalogFilters>(() => ({ ...NO_FILTERS, q: initialQuery }));
-  // A request from Kreto lands on the existing opportunities that match it, not on the whole catalog; typing in the box or clearing hands the page back.
-  const [requested, setRequested] = useState(initialQuery !== "");
-  const rootRef = useRef<HTMLDivElement>(null);
-  const scrolledFor = useRef("");
-  // Kreto can open Scout again with another term while this tab is showing: the search follows the link, and typing is left alone.
-  useEffect(() => {
-    setF((cur) => (cur.q === initialQuery ? cur : { ...cur, q: initialQuery }));
-    setRequested(initialQuery !== "");
-  }, [initialQuery]);
+  const [f, setF] = useState<CatalogFilters>(NO_FILTERS);
   const [opened, setOpened] = useState<Set<CategoryId>>(new Set());
   const [filtersOpen, setFiltersOpen] = useState(false);
 
-  const focus = useMemo(() => (requested ? focusRequest(items, initialQuery) : null), [requested, items, initialQuery]);
-  // While a request is shown the catalog is what it matched (nothing when it matched nothing) and the box only displays it; the other filters still narrow it.
-  const scope = useMemo(() => (requested ? (focus?.items ?? []) : items), [requested, focus, items]);
-  const scoped = useMemo(() => (requested ? { ...f, q: "" } : f), [requested, f]);
-  const fa = useMemo(() => facets(scope, scoped), [scope, scoped]);
-  const shown = useMemo(() => filterCatalog(scope, scoped), [scope, scoped]);
-  // Arrive on the results, not above them, once the list has loaded.
-  useEffect(() => {
-    if (!requested || items.length === 0 || scrolledFor.current === initialQuery) return;
-    scrolledFor.current = initialQuery;
-    rootRef.current?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-  }, [requested, items.length, initialQuery]);
+  const fa = useMemo(() => facets(items, f), [items, f]);
+  const shown = useMemo(() => filterCatalog(items, f), [items, f]);
   const sourceIds = useMemo(() => {
     const ids = new Map<string, string>();
     for (const i of items) ids.set(i.sourceId, i.sourceName);
@@ -241,13 +287,34 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
     );
   }
 
-  const set = (patch: Partial<CatalogFilters>) => setF((prev) => ({ ...prev, ...patch }));
-  const clearAll = () => {
-    setRequested(false);
-    setF(NO_FILTERS);
+  const set = (patch: Partial<CatalogFilters>) => {
+    setScoutPage(0);
+    setF((prev) => ({ ...prev, ...patch }));
   };
   const active = filtersActive(f);
-  const grouped = f.category === "all" ? groupByCategory(shown) : [{ id: f.category, items: shown }];
+
+  const v23Sorted = v23Sort === "newest"
+    ? shown
+    : [...shown].sort((left, right) =>
+        (v23Sort === "source" ? left.sourceName || "" : left.title)
+          .localeCompare(
+            v23Sort === "source" ? right.sourceName || "" : right.title
+          )
+      );
+  const totalScoutPages = Math.max(
+    1, Math.ceil(shown.length / scoutPageSize)
+  );
+  const currentScoutPage = Math.min(scoutPage, totalScoutPages - 1);
+  const scoutStart = currentScoutPage * scoutPageSize;
+  const pageItems = v23Sorted.slice(scoutStart, scoutStart + scoutPageSize);
+
+  const categoryTotals = new Map(
+    groupByCategory(shown).map((g) => [g.id, g.items.length] as const)
+  );
+
+  const grouped = f.category === "all"
+    ? groupByCategory(pageItems)
+    : [{ id: f.category, items: pageItems }];
   const sourcesShown = new Set(shown.map((i) => i.sourceId)).size;
 
   const families: PillOption<CategoryId | "all">[] = [
@@ -282,10 +349,10 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
   const headings = grouped.map((g, i) => (f.category === "all" && (i === 0 || kind(g.id) !== kind(grouped[i - 1].id)) ? (kind(g.id) === "creative" ? "Creative fields" : "Other roles") : null));
 
   return (
-    <div ref={rootRef} className="scroll-mt-20 space-y-4" data-testid="scout-all-sources">
+    <div className="scout-v23 space-y-4" data-testid="scout-all-sources">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="text-sm font-bold text-foreground">{requested && focus ? `Opportunities for “${focus.term}”` : "Every opportunity, sorted"}</h2>
+          <h2 className="text-sm font-bold text-foreground">Every opportunity, sorted</h2>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             Gigs from every source, newest first. Each one opens on the page that published it.
           </p>
@@ -297,22 +364,13 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
 
       {data?.partial && <p className="text-[11px] text-muted-foreground">Part of the list could not be loaded, so some opportunities may be missing.</p>}
 
-      {requested && focus && !focus.exact && (
-        <p className="text-[11px] text-muted-foreground" data-testid="catalog-focus-note">
-          Nothing carries every word of “{initialQuery}”, so these are the closest existing opportunities for “{focus.term}”.
-        </p>
-      )}
-
       <div className="flex min-w-0 items-start gap-2">
       <div className="relative min-w-0 flex-1">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
           type="search"
           value={f.q}
-          onChange={(e) => {
-            setRequested(false);
-            set({ q: e.target.value });
-          }}
+          onChange={(e) => set({ q: e.target.value })}
           placeholder="Search title, company or place"
           aria-label="Search opportunities"
           className="h-11 pl-9"
@@ -376,37 +434,191 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
           />
         )}
       </AccordionContent></AccordionItem></Accordion>}
-      <div className="mt-3 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" disabled={!active} onClick={clearAll}>Reset</Button><Button variant="secondary" size="sm" onClick={() => setFiltersOpen(false)}>Show {shown.length} results</Button></div>
+      <div className="mt-3 flex items-center justify-between gap-2"><Button variant="ghost" size="sm" disabled={!active} onClick={() => setF(NO_FILTERS)}>Reset</Button><Button variant="secondary" size="sm" onClick={() => setFiltersOpen(false)}>Show {shown.length} results</Button></div>
       </PopoverContent></Popover>
       </div>
 
       {active && (
-        <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={clearAll}>
+        <Button type="button" variant="ghost" size="sm" className="min-h-11 gap-1.5 sm:min-h-0" onClick={() => setF(NO_FILTERS)}>
           <X className="h-3.5 w-3.5" aria-hidden /> Clear filters
         </Button>
       )}
 
+
+
+      <div className="scout-v23__toolbar rounded-xl border border-border/80 bg-card/80 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+
+          <div role="group" aria-label="Results view"
+            className="flex flex-wrap gap-1">
+            {(["carousel", "grid", "list"] as const).map((mode) => (
+              <Button key={mode} type="button" size="sm"
+                aria-pressed={scoutView === mode}
+                variant={scoutView === mode ? "secondary" : "ghost"}
+                onClick={() => setScoutView(mode)}
+              >
+                {mode === "carousel" ? "Carousel"
+                  : mode === "grid" ? "Grid" : "List"}
+              </Button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Sort
+              <select aria-label="Sort opportunities"
+                value={v23Sort}
+                onChange={(e) => {
+                  setV23Sort(e.target.value as typeof v23Sort);
+                  setScoutPage(0);
+                }}
+                className="h-9 rounded-lg border border-border bg-background px-2 text-foreground"
+              >
+                <option value="newest">Newest</option>
+                <option value="source">Source A–Z</option>
+                <option value="title">Title A–Z</option>
+              </select>
+            </label>
+
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              Show
+              <select aria-label="Results per page"
+                value={scoutPageSize}
+                onChange={(e) => {
+                  setScoutPageSize(Number(e.target.value));
+                  setScoutPage(0);
+                }}
+                className="h-9 rounded-lg border border-border bg-background px-2 text-foreground"
+              >
+                {[6, 12, 24, 48].map((n) => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3">
+
+          <span className="text-xs tabular-nums text-muted-foreground"
+            aria-live="polite">
+            {shown.length ? scoutStart + 1 : 0}–
+            {Math.min(scoutStart + scoutPageSize, shown.length)}
+            {" of "}{shown.length}
+          </span>
+
+          <nav aria-label="Scout pages"
+            className="flex flex-wrap items-center gap-2">
+
+            <Button size="sm" variant="outline" type="button"
+              disabled={currentScoutPage === 0}
+              onClick={() => setScoutPage(
+                Math.max(0, currentScoutPage - 1)
+              )}
+            >
+              Previous
+            </Button>
+
+            {Array.from(
+              { length: Math.min(5, totalScoutPages) },
+              (_, i) =>
+                Math.max(
+                  0,
+                  Math.min(currentScoutPage - 2, totalScoutPages - 5)
+                ) + i
+            ).map((number) => (
+              <Button key={number} size="sm" type="button"
+                aria-label={`Page ${number + 1}`}
+                aria-current={
+                  number === currentScoutPage ? "page" : undefined
+                }
+                variant={
+                  number === currentScoutPage ? "secondary" : "ghost"
+                }
+                onClick={() => setScoutPage(number)}
+              >
+                {number + 1}
+              </Button>
+            ))}
+
+            <Button size="sm" variant="outline" type="button"
+              disabled={currentScoutPage >= totalScoutPages - 1}
+              onClick={() => setScoutPage(
+                Math.min(totalScoutPages - 1, currentScoutPage + 1)
+              )}
+            >
+              Next
+            </Button>
+
+          </nav>
+        </div>
+      </div>
+
+      {shown.length > 24 && scoutView === "carousel" && (
+        <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+
+          <section className="scout-v23__feature min-w-0 rounded-xl border border-border/70 bg-card/60 p-3">
+            <ScoutFieldCarousel
+              label="Latest across sources"
+              heading={
+                <span className="text-sm font-semibold text-foreground">
+                  Latest from sources
+                </span>
+              }
+            >
+              {shown
+                .filter((item) => item.origin === "external")
+                .slice(0, 4)
+                .map((item) => (
+                  <OpportunityCard key={item.id} item={item} />
+                ))}
+            </ScoutFieldCarousel>
+          </section>
+
+          {shown.some((item) => item.origin === "kretopia") && (
+            <section className="scout-v23__feature min-w-0 rounded-xl border border-border/70 bg-card/60 p-3">
+              <ScoutFieldCarousel
+                label="Kretopia opportunities"
+                heading={
+                  <span className="text-sm font-semibold text-foreground">
+                    Kretopia gigs
+                  </span>
+                }
+              >
+                {shown
+                  .filter((item) => item.origin === "kretopia")
+                  .slice(0, 4)
+                  .map((item) => (
+                    <OpportunityCard key={item.id} item={item} />
+                  ))}
+              </ScoutFieldCarousel>
+            </section>
+          )}
+
+        </div>
+      )}
+
       {shown.length === 0 ? (
         <div className="rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground" data-testid="catalog-empty">
-          {requested && !focus
-            ? `No existing opportunity matches “${initialQuery}” yet. Clear the search to browse every opportunity.`
-            : "No opportunity matches these filters. Clear a filter or two to see more."}
+          No opportunity matches these filters. Clear a filter or two to see more.
         </div>
       ) : (
         <div className="space-y-6">
-          {grouped.map((g, gi) => {
+          {scoutView === "carousel" ? grouped.map((g, gi) => {
             const def = categoryOf(g.id);
             const heading = headings[gi];
-            const collapsible = def.group !== "creative" && !active && g.items.length > COLLAPSED_MAX;
+            const collapsible = shown.length <= scoutPageSize && def.group !== "creative" && !active && g.items.length > COLLAPSED_MAX;
             const open = !collapsible || opened.has(g.id);
             const list = open ? g.items : g.items.slice(0, COLLAPSED_MAX);
             return (
               <div key={g.id} className="space-y-3">
                 {heading && <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{heading}</p>}
                 <section aria-labelledby={`family-${g.id}`} className="space-y-2">
-                  <ScoutFieldCarousel label={def.label} heading={<h3 id={`family-${g.id}`} className="flex items-baseline gap-2 text-sm font-bold text-foreground">
+                  <ScoutFieldCarousel label={def.label} view={scoutView} heading={<h3 id={`family-${g.id}`} className="flex items-baseline gap-2 text-sm font-bold text-foreground">
                     {def.label}
-                    <span className="text-xs font-medium tabular-nums text-muted-foreground">{g.items.length}</span>
+                    <span className="text-xs font-medium tabular-nums text-muted-foreground">{categoryTotals.get(g.id) ?? g.items.length}</span>
                   </h3>}>
                     {list.map((it) => (
                       <OpportunityCard key={it.id} item={it} />
@@ -420,7 +632,21 @@ export function ScoutAllSources({ initialQuery = "" }: { initialQuery?: string }
                 </section>
               </div>
             );
-          })}
+          }) : (
+            <ScoutFieldCarousel
+              view={scoutView}
+              label="All results"
+              heading={
+                <h3 className="text-sm font-bold text-foreground">
+                  Results · {shown.length}
+                </h3>
+              }
+            >
+              {pageItems.map((item) => (
+                <OpportunityCard key={item.id} item={item} />
+              ))}
+            </ScoutFieldCarousel>
+          )}
         </div>
       )}
     </div>

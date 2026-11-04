@@ -6,14 +6,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Bookmark, X } from "lucide-react";
+import { Bookmark, MapPin, ExternalLink, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ScoutEvidence } from "./ScoutEvidence";
 import { useOptionalScoutScan } from "@/components/scout/scoutScanContext";
-import { ScoutGigCard, ScoutPill, compactDetails } from "@/components/scout/ScoutGigCard";
-import { CardIconButton } from "@/components/cards/CardShell";
-import { hasRealCompensation } from "@/lib/scoutPay";
+import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 import { gigStatesById } from "@/components/scout/gigState";
 
 interface ScoutedGig {
@@ -123,45 +121,26 @@ export function ShortlistedGigs({ onOpenForYou }: { onOpenForYou?: () => void } 
         {gigs.length} gig{gigs.length === 1 ? "" : "s"} saved — apply when you're ready.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {gigs.map((g) => {
-          const state = gigStates.get(g.id);
-          const savedLine = g.saved_at ? `Saved ${formatDistanceToNow(new Date(g.saved_at), { addSuffix: true })}` : `Found ${formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}`;
-          const details = compactDetails([
-            g.company && { label: "Company", value: g.company },
-            (g.location || g.remote) && { label: "Location", value: [g.location, g.remote ? "Remote" : null].filter(Boolean).join(" · ") },
-            hasRealCompensation(g.compensation) && { label: "Pay", value: g.compensation },
-            { label: "Source", value: `${g.source} (external, unclaimed)` },
-            { label: g.saved_at ? "Saved" : "Found by Scout", value: formatDistanceToNow(new Date(g.saved_at ?? g.scouted_at), { addSuffix: true }) },
-          ]);
-          return (
-            <ScoutGigCard
-              key={g.id}
-              title={g.title}
-              company={g.company}
-              art={{ title: g.title, excerpt: g.description }}
-              href={g.apply_url || g.source_url}
-              pills={<><ScoutPill tone="origin"><Bookmark className="h-3 w-3" aria-hidden />Saved</ScoutPill>{state && <Badge variant="outline" title={state.hint} className="bg-background/90 text-[10px]">{state.label}</Badge>}</>}
-              pay={g.compensation}
-              location={g.location ?? (g.remote ? "Remote" : null)}
-              tags={g.remote && g.location ? <ScoutPill>Remote</ScoutPill> : null}
-              evidence={<ScoutEvidence gig={g} inline />}
-              trust={savedLine}
-              utility={<CardIconButton action={{ icon: <X className="h-4 w-4" aria-hidden />, label: `Remove ${g.title} from shortlist`, onClick: () => unsave(g.id) }} />}
-              apply={{ label: "Apply", href: g.apply_url || g.source_url }}
-              brief={{ text: g.description, originalUrl: g.source_url }}
-              details={details}
-              opportunity={{
-                title: g.title,
-                company: g.company,
-                location: [g.location, g.remote ? "Remote" : null].filter(Boolean).join(" · ") || null,
-                pay: hasRealCompensation(g.compensation) ? g.compensation : null,
-                source: g.source,
-                description: g.description,
-                whyShown: g.fit_reason,
-              }}
-            />
-          );
-        })}
+        {gigs.map((g) => (
+          <ScoutGigCard key={g.id} title={g.title} image={g.image_url} href={g.apply_url || g.source_url} pay={g.compensation}
+            opportunity={{
+              title: g.title,
+              company: g.company,
+              location: g.location,
+              workMode: g.remote ? "Remote" : null,
+              pay: g.compensation,
+              source: g.source,
+              description: g.description,
+            }}
+            badges={gigStates.get(g.id) && <Badge variant="outline" title={gigStates.get(g.id)?.hint} className="bg-background/90 text-[10px]">{gigStates.get(g.id)?.label}</Badge>}
+            footer={<div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-[10px] text-muted-foreground">{g.saved_at ? `Saved ${formatDistanceToNow(new Date(g.saved_at), { addSuffix: true })}` : `Found ${formatDistanceToNow(new Date(g.scouted_at), { addSuffix: true })}`}</span>
+              <div className="flex items-center gap-1"><Button asChild size="sm" variant="outline" className="min-h-11"><a href={g.apply_url || g.source_url} target="_blank" rel="noopener noreferrer">Apply <ExternalLink className="ml-1 h-3 w-3" /></a></Button><Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => unsave(g.id)} title="Remove from shortlist" aria-label={`Remove ${g.title} from shortlist`}><X className="h-4 w-4" /></Button></div>
+            </div>}>
+            {(g.company || g.location) && <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{g.company}{g.location && <><MapPin className="h-3 w-3" />{g.location}</>}{g.remote && <Badge variant="outline">Remote</Badge>}</p>}
+            <ScoutEvidence gig={g} compact />
+          </ScoutGigCard>
+        ))}
       </div>
     </div>
   );

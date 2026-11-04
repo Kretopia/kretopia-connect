@@ -85,6 +85,8 @@ export interface CatalogItem {
   /** Newest first: the posting date, else the last look. */
   sortAt: number;
   excerpt: string | null;
+  /** Full stored description for native Kretopia opportunities only. */
+  fullDescription?: string | null;
   claimed: boolean;
   /** Kretopia's own page for it. */
   detailTo: string;
@@ -209,6 +211,7 @@ export function kretopiaToItem(r: KretopiaRow): CatalogItem {
     seenAt: null,
     sortAt: time(posted) ?? 0,
     excerpt,
+    fullDescription: r.description?.trim() || null,
     claimed: false,
     detailTo: `/opportunity/${r.id}`,
     openUrl: null,

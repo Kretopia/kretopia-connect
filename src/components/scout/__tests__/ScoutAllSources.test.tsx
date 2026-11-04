@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildCatalog, type ExternalRow, type KretopiaRow, type CatalogItem } from "@/lib/scoutCatalog";
+import type { OpportunityFacts } from "@/lib/kretoDraft";
 
 type State = { data?: { items: CatalogItem[]; partial: boolean }; isLoading: boolean; isError: boolean };
 let state: State = { isLoading: false, isError: false };
@@ -10,6 +11,29 @@ vi.mock("@/hooks/useScoutCatalog", () => ({ useScoutCatalog: () => state, SCOUT_
 
 vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => null }));
 vi.mock("../ScoutFieldCarousel", () => ({ ScoutFieldCarousel: ({ children, heading }: { children: React.ReactNode; heading?: React.ReactNode }) => <div>{heading}<ul>{children}</ul></div> }));
+
+// SCOUT_KRETO_CONTEXT_5C2
+// Observe the real card props while retaining its full rendering.
+const kretoCapture = vi.hoisted(() => ({
+  enabled: false,
+  opportunities: [] as Array<OpportunityFacts | undefined>,
+}));
+
+vi.mock("../ScoutGigCard", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../ScoutGigCard")>();
+
+  return {
+    ...actual,
+    ScoutGigCard: (
+      props: React.ComponentProps<typeof actual.ScoutGigCard>
+    ) => {
+      if (kretoCapture.enabled) {
+        kretoCapture.opportunities.push(props.opportunity);
+      }
+      return <actual.ScoutGigCard {...props} />;
+    },
+  };
+});
 
 import { ScoutAllSources } from "../ScoutAllSources";
 
@@ -54,6 +78,8 @@ const family = (name: string) => { openFilter("Creative field"); return within(s
 beforeEach(() => {
   n = 0;
   state = { isLoading: false, isError: false };
+  kretoCapture.enabled = false;
+  kretoCapture.opportunities = [];
 });
 
 describe("ScoutAllSources: the states", () => {
@@ -202,16 +228,29 @@ describe("ScoutAllSources: a card", () => {
       ext("Illustrator", { source_provider: "remoteok", apply_url: "https://remoteok.com/remote-jobs/x-1" }),
       ext("Copywriter", { source_provider: "jobicy", apply_url: "https://jobicy.com/jobs/9-z" }),
     ]);
-    const him = screen.getByRole("link", { name: "Apply at source: Art Director" });
+    const card = cards().find((c) => c.textContent?.includes("Art Director"))!;
+    expect(
+      within(card).getByRole("link", { name: "Art Director" }).getAttribute("href")
+    ).toMatch(/^\/listing\/e\d+$/);
+
+    expect(
+      within(card).queryByRole("link", { name: "Apply at source: Art Director" })
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
+    const him = within(card).getByRole("link", { name: "Apply at source: Art Director" });
     expect(him).toHaveAttribute("href", "https://himalayas.app/companies/a/jobs/b?utm_source=api");
     expect(him).toHaveAttribute("target", "_blank");
     expect(him.getAttribute("rel")).toBe("noopener noreferrer nofollow");
-    expect(screen.getByRole("link", { name: "Apply at source: Illustrator" }).getAttribute("rel")).toBe("noopener noreferrer"); // Remote OK asks for a followed link
-    const card = cards().find((c) => c.textContent?.includes("Art Director"))!;
+    const illustrator = cards().find((c) => c.textContent?.includes("Illustrator"))!;
+    fireEvent.click(within(illustrator).getByRole("button", { name: "Quick look" }));
+    expect(
+      within(illustrator).getByRole("link", { name: "Apply at source: Illustrator" }).getAttribute("rel")
+    ).toBe("noopener noreferrer"); // Remote OK asks for a followed link
     expect(within(card).getByTestId("listing-labels")).toHaveTextContent("via Himalayas");
     expect(within(card).getByTestId("listing-labels")).toHaveTextContent("Unclaimed");
     // the title goes to Kretopia's own page for the listing
-    expect(within(card).getByRole("link", { name: "Art Director" }).getAttribute("href")).toMatch(/^\/listing\/e\d+$/);
+
   });
 
   it("a card shows the family, the level, where, the working mode and the pay or that none is listed", () => {
@@ -228,10 +267,9 @@ describe("ScoutAllSources: a card", () => {
     show(["Armenia", "Estonia", "Italy"].map((l, i) => ext("Creative Design Team Lead", { original_publisher: "CapsLock", location: l, apply_url: `https://jobicy.com/jobs/${i}-cap`, source_published_at: ago(i + 1) })));
     expect(cards()).toHaveLength(1);
     const card = cards()[0];
-    // The other places are on the back of the card (the front carries one action): turn it first.
-    fireEvent.click(within(card).getByTestId("quick-look"));
     const more = within(card).getByText("Also posted for 2 more places");
     expect(more.closest("details")).toBeInTheDocument();
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
     const links = within(card).getAllByRole("link", { name: /^Apply at source for / });
     expect(links.map((a) => a.getAttribute("aria-label"))).toEqual(["Apply at source for Estonia: Creative Design Team Lead", "Apply at source for Italy: Creative Design Team Lead"]);
     expect(links[0]).toHaveAttribute("href", "https://jobicy.com/jobs/1-cap");
@@ -246,8 +284,121 @@ describe("ScoutAllSources: a card", () => {
     const card = cards()[0];
     expect(card).toHaveTextContent("Kretopia");
     expect(card).toHaveTextContent("$800");
+    fireEvent.click(within(card).getByRole("button", { name: "Quick look" }));
     expect(within(card).getByRole("link", { name: "View gig" })).toHaveAttribute("href", "/opportunity/k1");
     expect(within(card).queryByText(/Apply at source/)).not.toBeInTheDocument();
     expect(within(card).queryByTestId("listing-labels")).not.toBeInTheDocument();
+  });
+});
+
+
+describe("Scout All Sources — Kreto context fidelity", () => {
+  it("passes actual external listing facts without changing them", () => {
+    const row = ext("Senior Product Designer", {
+      original_publisher: "Northline",
+      location: "Lisbon",
+      remote_scope: "remote",
+      excerpt: "Maintain design systems across products.",
+      budget: {
+        min: 90000,
+        max: 120000,
+        currency: "USD",
+        period: "year",
+      },
+    });
+
+    const item = buildCatalog([row], [])[0];
+
+    kretoCapture.enabled = true;
+    show([row]);
+
+    expect(kretoCapture.opportunities).toHaveLength(1);
+
+    const opportunity = kretoCapture.opportunities[0];
+
+    expect(opportunity).toMatchObject({
+      title: item.title,
+      company: item.company,
+      location: item.locationFull ?? item.location,
+      pay: item.pay,
+      source: item.sourceName,
+      description: item.excerpt,
+    });
+
+    expect(opportunity?.workMode).toBe("Remote");
+    expect(opportunity?.description).toBe(row.excerpt);
+  });
+
+  it("passes the full stored Kretopia description while keeping the preview short", () => {
+    const description = (
+      "Film a documentary across several locations. "
+    ).repeat(20);
+
+    const row = kre({ description });
+    const item = buildCatalog([], [row])[0];
+
+    kretoCapture.enabled = true;
+    show([], [row]);
+
+    expect(kretoCapture.opportunities).toHaveLength(1);
+
+    const opportunity = kretoCapture.opportunities[0];
+
+    expect(opportunity).toMatchObject({
+      title: item.title,
+      source: "Kretopia",
+      pay: "$800",
+      description: description.trim(),
+    });
+
+    expect(item.excerpt!.length).toBeLessThanOrEqual(280);
+    expect(item.fullDescription).toBe(description.trim());
+    expect(opportunity?.description).toBe(description.trim());
+    expect(item.excerpt).not.toBe(description.trim());
+
+    const card = cards()[0];
+    fireEvent.click(
+      within(card).getByRole("button", { name: "Quick look" })
+    );
+    expect(card).toHaveTextContent(item.excerpt!);
+    expect(card).not.toHaveTextContent(description.trim());
+  });
+
+  it("does not fabricate company, pay, place or listing text", () => {
+    const row = ext("Graphic Designer", {
+      original_publisher: null,
+      location: null,
+      excerpt: null,
+      budget: null,
+    });
+
+    kretoCapture.enabled = true;
+    show([row]);
+
+    expect(kretoCapture.opportunities).toHaveLength(1);
+
+    expect(kretoCapture.opportunities[0]).toMatchObject({
+      title: "Graphic Designer",
+      company: null,
+      location: null,
+      pay: null,
+      description: null,
+    });
+  });
+});
+
+
+describe("Scout All Sources — native full-description absence", () => {
+  it("keeps missing Kretopia descriptions missing", () => {
+    const row = kre({ description: null });
+    const item = buildCatalog([], [row])[0];
+
+    kretoCapture.enabled = true;
+    show([], [row]);
+
+    expect(item.excerpt).toBeNull();
+    expect(item.fullDescription).toBeNull();
+    expect(kretoCapture.opportunities).toHaveLength(1);
+    expect(kretoCapture.opportunities[0]?.description).toBeNull();
   });
 });

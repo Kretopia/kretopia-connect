@@ -31,26 +31,36 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { applyPayFilter, countPaid, hasRealCompensation, type PayFilter } from "@/lib/scoutPay";
 import { SmartWidget } from "@/components/ui/smart-widget";
+import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoScene } from "@/components/brand/KretoScene";
-import { ScoutGigCard, ScoutPill, ScoutSaveButton, compactDetails } from "@/components/scout/ScoutGigCard";
-import { CardIconButton } from "@/components/cards/CardShell";
-import { buildApplicationPrompt, draftWithKreto, loadPassportContext, type OpportunityFacts } from "@/lib/kretoDraft";
+import { ScoutGigCard } from "@/components/scout/ScoutGigCard";
 
 const SOURCE_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   web: Globe, linkedin: Linkedin, instagram: Instagram, ats: Briefcase, gigboard: Briefcase,
 };
 
-/** What Kreto is given about a scouted gig: only what the listing really has. */
-function factsFor(g: ScoutedGig): OpportunityFacts {
-  return {
-    title: g.title,
-    company: g.company,
-    location: [g.location, g.remote ? "Remote" : null].filter(Boolean).join(" · ") || null,
-    pay: hasRealCompensation(g.compensation) ? g.compensation : null,
-    source: g.source_name || g.source,
-    description: g.full_description ?? g.description,
-    whyShown: g.fit_reason,
-  };
+// Pay chip -- the survey's #1 ask is "find suitable paid work", so what a gig
+// pays (or that it doesn't say) is the first thing on every card.
+function PayChip({ compensation, className }: { compensation: string | null; className?: string }) {
+  if (hasRealCompensation(compensation)) {
+    return (
+      <span
+        className={cn(
+          "inline-flex max-w-full items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400",
+          className,
+        )}
+        title={compensation}
+      >
+        <Banknote className="h-3 w-3 shrink-0" />
+        <span className="truncate">{compensation}</span>
+      </span>
+    );
+  }
+  return (
+    <span className={cn("inline-flex items-center rounded-full border border-dashed border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground", className)}>
+      Pay not listed
+    </span>
+  );
 }
 
 // Where a gig came from and how old that fact is, computed now: the date on
@@ -168,13 +178,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
   const visibleGigs = applyPayFilter(gigs, payFilter);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [enriching, setEnriching] = useState(false);
-  // One draft per gig, shared by the card's "Apply with Kreto" and this dialog's cover letter.
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
-  const coverLetter = openGig ? drafts[openGig.id] ?? "" : "";
-  const setCoverLetter = (next: string) => {
-    if (openGig) setDrafts((d) => ({ ...d, [openGig.id]: next }));
-  };
-  const [briefLoading, setBriefLoading] = useState<Set<string>>(new Set());
+  const [coverLetter, setCoverLetter] = useState("");
   const [drafting, setDrafting] = useState(false);
   const [carouselApi, setCarouselApi] = useState<CarouselApi>();
   const reducedMotion = useReducedMotion();
@@ -230,6 +234,7 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
   const openDetail = async (gig: ScoutedGig) => {
     if (!user) return;
     setOpenGig(gig);
+    setCoverLetter("");
     await supabase.from("scouted_gig_actions").upsert({
       user_id: user.id, scouted_gig_id: gig.id, action: "opened",
     }).then(() => {}, () => {});
@@ -250,41 +255,22 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
     }
   };
 
-  // The same engine as the card's "Apply with Kreto": the listing plus the person's Passport, drafted by Kreto.
   const draftLetter = async () => {
     if (!openGig || !user) return;
     setDrafting(true);
-    try {
-      const passport = await loadPassportContext(user.id);
-      const text = await draftWithKreto({
-        prompt: buildApplicationPrompt({ opportunity: factsFor(openGig), passport }),
-        surface: "gigs",
-        surfaceContext: { intent: "application_draft", opportunity_title: openGig.title, scouted_gig_id: openGig.id },
-      });
-      setCoverLetter(text);
-      supabase.from("scouted_gig_actions").upsert({
-        user_id: user.id, scouted_gig_id: openGig.id, action: "drafted",
-      }).then(() => queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] }), () => {});
-    } catch (e) {
-      toast({ title: "Couldn't draft letter", description: e instanceof Error ? e.message : undefined, variant: "destructive" });
-    } finally {
-      setDrafting(false);
-    }
-  };
-
-  // Quick look on a card: fetch the full listing the first time it is wanted.
-  const loadFullBrief = async (gig: ScoutedGig) => {
-    if (!user || gig.full_description || briefLoading.has(gig.id)) return;
-    setBriefLoading((prev) => new Set(prev).add(gig.id));
-    const { data, error } = await supabase.functions.invoke("scout-gig-detail", { body: { scouted_gig_id: gig.id } });
-    setBriefLoading((prev) => {
-      const next = new Set(prev);
-      next.delete(gig.id);
-      return next;
+    const { data, error } = await supabase.functions.invoke("draft-gig-application", {
+      body: { scouted_gig_id: openGig.id },
     });
-    if (!error && data?.gig) {
-      queryClient.setQueryData<ScoutedGig[]>(queryKey, (prev) => (prev ?? []).map((g) => (g.id === gig.id ? (data.gig as ScoutedGig) : g)));
+    queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] });
+    setDrafting(false);
+    if (error || !data?.cover_letter) {
+      toast({ title: "Couldn't draft letter", variant: "destructive" });
+      return;
     }
+    setCoverLetter(data.cover_letter);
+    supabase.from("scouted_gig_actions").upsert({
+      user_id: user.id, scouted_gig_id: openGig.id, action: "drafted",
+    }).then(() => queryClient.invalidateQueries({ queryKey: ["scout-progress", user.id] }), () => {});
   };
 
   const trackApplyClick = () => {
@@ -318,45 +304,27 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
     setOpenGig(null);
   };
 
-  const renderGigCard = (g: ScoutedGig) => {
-    const saved = savedIds.has(g.id);
-    const brief = g.full_description ?? g.description;
-    const found = formatDistanceToNow(new Date(g.posted_at || g.scouted_at), { addSuffix: true }).replace("about ", "");
-    // Only the fields this gig really has.
-    const details = compactDetails([
-      g.company && { label: "Company", value: g.company },
-      (g.location || g.remote) && { label: "Location", value: [g.location, g.remote ? "Remote" : null].filter(Boolean).join(" · ") },
-      hasRealCompensation(g.compensation) && { label: "Pay", value: g.compensation },
-      { label: "Source", value: `${g.source_name || g.source} (external, unclaimed)` },
-      { label: g.posted_at ? "Posted" : "Found by Scout", value: found },
-      g.deadline && { label: "Closes", value: g.deadline },
-    ]);
-    return (
-      <ScoutGigCard
-        title={g.title}
-        company={g.company}
-        art={{ title: g.title, excerpt: g.description }}
-        onOpen={() => void openDetail(g)}
-        pills={<><ScoutPill tone="origin"><Sparkles className="h-3 w-3" aria-hidden />Scouted</ScoutPill><StateChip state={gigStates.get(g.id)} /></>}
-        save={<ScoutSaveButton saved={saved} label={saved ? `${g.title} is saved` : `Save ${g.title}`} onToggle={(e) => save(g.id, e)} />}
-        pay={g.compensation}
-        location={g.location ?? (g.remote ? "Remote" : null)}
-        tags={g.remote && g.location ? <ScoutPill>Remote</ScoutPill> : null}
-        evidence={<ScoutEvidence gig={g} inline />}
-        trust={<SourceLine gig={g} />}
-        utility={<>
-          <CardIconButton action={{ icon: <ExternalLink className="h-4 w-4" aria-hidden />, label: `Open source for ${g.title}`, href: g.source_url }} />
-          <CardIconButton action={{ icon: <X className="h-4 w-4" aria-hidden />, label: `Dismiss ${g.title}`, onClick: () => dismiss(g.id) }} />
-        </>}
-        apply={{ label: "Apply", onClick: () => void openDetail(g) }}
-        brief={{ text: brief, node: g.full_description ? <MiniMarkdown md={g.full_description} /> : undefined, loading: briefLoading.has(g.id), originalUrl: g.source_url }}
-        details={details}
-        opportunity={factsFor(g)}
-        onQuickLook={() => void loadFullBrief(g)}
-        draft={{ value: drafts[g.id] ?? "", onChange: (next) => setDrafts((d) => ({ ...d, [g.id]: next })) }}
-      />
-    );
-  };
+  const renderGigCard = (g: ScoutedGig) => (
+    <ScoutGigCard title={g.title} image={g.image_url} pay={g.compensation} onOpen={() => void openDetail(g)}
+      opportunity={{
+        title: g.title,
+        company: g.company,
+        location: g.location,
+        workMode: g.remote ? "Remote" : null,
+        pay: g.compensation,
+        source: g.source_name || g.source,
+        description: g.description,
+      }}
+      badges={<><Badge variant="outline" className="bg-background/90 text-[10px]"><Sparkles className="mr-1 h-3 w-3 text-energy" />Scouted</Badge><StateChip state={gigStates.get(g.id)} /></>}
+      footer={<><SourceLine gig={g} /><div className="flex justify-end">
+        <Button asChild size="icon" variant="ghost" className="h-11 w-11"><a href={g.source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${g.title}`} title="Open source"><ExternalLink className="h-4 w-4" /></a></Button>
+        <Button size="icon" variant="ghost" className="h-11 w-11" onClick={(e) => save(g.id, e)} title="Save" aria-label={savedIds.has(g.id) ? `${g.title} is saved` : `Save ${g.title}`}><Bookmark className={cn("h-4 w-4", savedIds.has(g.id) && "fill-current text-energy")} /></Button>
+        <Button size="icon" variant="ghost" className="h-11 w-11" onClick={() => dismiss(g.id)} title="Dismiss" aria-label={`Dismiss ${g.title}`}><X className="h-4 w-4" /></Button>
+      </div></>}>
+      {(g.company || g.location) && <p className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">{g.company}{g.location && <><MapPin className="h-3 w-3" />{g.location}</>}{g.remote && <Badge variant="outline">Remote</Badge>}</p>}
+      <ScoutEvidence gig={g} compact />
+    </ScoutGigCard>
+  );
 
   if (loading) {
     return (
@@ -572,12 +540,81 @@ function ScoutedGigsBody({ limit, scanSurface = "inline" }: ScoutedGigsSectionPr
         </Card>
       ) : (
         <>
-        {/* Every gig, one card each, in a carousel rather than a card wall. */}
-        {visibleGigs.length > 0 && (
+        {/* First in the list gets the larger layout. It is simply the first the existing
+            ordering returns (fit_score desc, then newest): no badge claims more than that. */}
+        {visibleGigs[0] && (
+          <HoloCard glow={false}>
+          <div
+            onClick={() => openDetail(visibleGigs[0])}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDetail(visibleGigs[0]); } }}
+            aria-label={`View brief for ${visibleGigs[0].title}`}
+            className="group relative rounded-2xl overflow-hidden bg-card cursor-pointer transition-all hover:shadow-2xl hover:shadow-energy/10 sm:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy"
+          >
+            <div className="relative aspect-[16/9] sm:aspect-auto sm:w-64 shrink-0 overflow-hidden">
+              {visibleGigs[0].image_url && !brokenImageIds.has(visibleGigs[0].id) ? (
+                <img
+                  src={visibleGigs[0].image_url}
+                  alt={visibleGigs[0].title}
+                  loading="lazy"
+              decoding="async"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={() => markImageBroken(visibleGigs[0].id)}
+                />
+              ) : (
+                <KretoScene scene="scout" size="thumb" className="h-full w-full" />
+              )}
+              <div className="absolute top-2.5 left-2.5">
+                <Badge variant="outline" className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 bg-background/90 border-border">
+                  <Sparkles className="h-2.5 w-2.5 mr-1 text-energy" />
+                  Scouted
+                </Badge>
+              </div>
+            </div>
+            <div className="p-4 flex flex-col gap-2.5 flex-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-bold text-lg leading-tight text-foreground">{visibleGigs[0].title}</h3>
+                <StateChip state={gigStates.get(visibleGigs[0].id)} />
+              </div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                <PayChip compensation={visibleGigs[0].compensation} />
+                {visibleGigs[0].company && <span className="font-medium text-foreground/90">{visibleGigs[0].company}</span>}
+                {visibleGigs[0].location && <><span>·</span><MapPin className="h-3 w-3" />{visibleGigs[0].location}</>}
+                {visibleGigs[0].remote && <Badge variant="outline" className="h-4 text-[9px] px-1">Remote</Badge>}
+              </div>
+              <ScoutEvidence gig={visibleGigs[0]} />
+              <SourceLine gig={visibleGigs[0]} />
+              <div className="mt-auto flex flex-wrap items-center gap-2 pt-1" onClick={(e) => e.stopPropagation()}>
+                <Button size="sm" onClick={() => openDetail(visibleGigs[0])} className="min-h-11 gap-1.5">
+                  View full brief
+                </Button>
+                <Button asChild size="sm" variant="outline" className="min-h-11 gap-1.5">
+                  <a href={visibleGigs[0].source_url} target="_blank" rel="noopener noreferrer" aria-label={`Open source for ${visibleGigs[0].title}`}>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                    Open source
+                  </a>
+                </Button>
+                <Button size="sm" variant="outline" onClick={(e) => save(visibleGigs[0].id, e)} className="min-h-11 gap-1.5">
+                  <Bookmark className="h-3.5 w-3.5" />
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); dismiss(visibleGigs[0].id); }} className="min-h-11 gap-1.5 text-muted-foreground">
+                  <X className="h-3.5 w-3.5" />
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+          </HoloCard>
+        )}
+
+        {/* Everything else — carousel, not a card wall. */}
+        {visibleGigs.length > 1 && (
           <div className="relative">
             <Carousel setApi={setCarouselApi} opts={{ align: "start", dragFree: true, duration: reducedMotion ? 0 : 20 }} className="w-full" aria-label="More scouted gigs">
               <CarouselContent className="-ml-3">
-                {visibleGigs.map((g) => (
+                {visibleGigs.slice(1).map((g) => (
                   <CarouselItem key={g.id} className="pl-3 basis-[85%] sm:basis-[46%] lg:basis-[31%]">
                     {renderGigCard(g)}
                   </CarouselItem>

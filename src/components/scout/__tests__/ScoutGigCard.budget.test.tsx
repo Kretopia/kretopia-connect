@@ -1,87 +1,277 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { ExternalLink, X } from "lucide-react";
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: "u1" }, loading: false }) }));
-vi.mock("@/integrations/supabase/client", () => ({ supabase: {} }));
-vi.mock("@/lib/profile/profileService", () => ({ getProfile: vi.fn() }));
-vi.mock("@/lib/thriveCopilot", () => ({ streamCopilot: vi.fn() }));
+vi.mock("@/components/opportunity/BookmarkButton", () => ({
+  BookmarkButton: () => <button type="button">Save opportunity</button>,
+}));
 
-import { expectWithinBudget } from "@/test/cardBudget";
-import { CardIconButton } from "@/components/cards/CardShell";
-import { ScoutGigCard, ScoutPill, ScoutSaveButton } from "../ScoutGigCard";
+vi.mock("@/components/opportunity/EasyApplyButton", () => ({
+  EasyApplyButton: () => <button type="button">Easy Apply</button>,
+}));
 
-const LONG = "Senior motion designer for a very large, very long-running, multi-territory broadcast identity programme ".repeat(5);
+import { ScoutGigCard } from "../ScoutGigCard";
 
-// The opportunity variant, given far more than a card can hold: a huge title, seven tags, a long description and provenance, two cover
-// controls beside Save, and an "also posted" block. The budget is the shell's, so the variant only has to hand everything over.
-const stuffed = () => (
-  <MemoryRouter>
-    <ScoutGigCard
-      testId="card"
-      title={LONG}
-      company="Northline Records"
-      art={{ title: "Motion designer" }}
-      href="/opportunity/1"
-      pills={<><ScoutPill tone="origin">Scouted</ScoutPill><ScoutPill>External · Unclaimed</ScoutPill></>}
-      save={<ScoutSaveButton saved={false} label="Save it" onToggle={vi.fn()} />}
-      utility={<>
-        <CardIconButton action={{ icon: <ExternalLink aria-hidden />, label: "Open source", href: "https://jobs.example/1" }} />
-        <CardIconButton action={{ icon: <X aria-hidden />, label: "Dismiss", onClick: vi.fn() }} />
-      </>}
-      pay="$800"
-      location="Porto"
-      tags={<>{["a", "b", "c", "d", "e", "f", "g"].map((t) => <ScoutPill key={t}>{`tag ${t}`}</ScoutPill>)}</>}
-      evidence={<p>{LONG}</p>}
-      trust={<span>{LONG}</span>}
-      apply={{ label: "Apply", to: "/opportunity/1" }}
-      brief={{ text: LONG }}
-      details={[{ label: "Company", value: "Northline Records" }]}
-      opportunity={{ title: "Motion designer", company: "Northline Records", description: LONG }}
-    >
-      <p>Also posted for 2 more places</p>
-    </ScoutGigCard>
-  </MemoryRouter>
+const LONG = (
+  "Senior motion designer for a very large, long-running " +
+  "multi-territory broadcast identity programme. "
+).repeat(5);
+
+const css = readFileSync(
+  `${process.cwd()}/src/components/scout/ScoutGigCard.hybrid.css`,
+  "utf8"
 );
 
-describe("the opportunity card keeps to the card budget", () => {
-  it("whatever a surface hands it", () => {
-    render(stuffed());
-    expectWithinBudget(screen.getByTestId("card"));
+/*
+ * Reads an exact CSS selector, including grouped declarations.
+ * A parent selector such as ".scout-v23 ... .scout-v4 .flip-inner"
+ * must not be mistaken for ".scout-v4 .flip-inner".
+ */
+function cssRule(selector: string): string {
+  const withoutComments = css.replace(
+    /\/\*[\s\S]*?\*\//g,
+    ""
+  );
+
+  const rules = Array.from(
+    withoutComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)
+  );
+
+  const match = rules.find((rule) =>
+    rule[1]
+      .split(",")
+      .some((part) => part.trim() === selector)
+  );
+
+  return match?.[2] ?? "";
+}
+
+function renderCard({
+  internal = false,
+  pay = "$800" as string | null,
+}: {
+  internal?: boolean;
+  pay?: string | null;
+} = {}) {
+  return render(
+    <MemoryRouter>
+      <ScoutGigCard
+        testId="budget-card"
+        title={LONG}
+        company="Northline Records"
+        image="/local-cover.webp"
+        href="/opportunity/1"
+        pay={pay}
+        location="Porto"
+        origin={internal ? "kretopia" : "external"}
+        internalOpportunityId={
+          internal ? "opportunity-1" : undefined
+        }
+        sourceName="Creative Jobs"
+        excerpt={LONG}
+        badges={<span>Scouted</span>}
+        evidence={<p>{LONG}</p>}
+        footer={
+          <button type="button">
+            Apply at source
+          </button>
+        }
+      >
+        <p>Also posted for 2 more places</p>
+      </ScoutGigCard>
+    </MemoryRouter>
+  );
+}
+
+const card = () => screen.getByTestId("budget-card");
+
+const front = () =>
+  card().querySelector<HTMLElement>(".flip-front")!;
+
+const back = () =>
+  card().querySelector<HTMLElement>(".flip-back")!;
+
+const openBack = () =>
+  fireEvent.click(
+    screen.getByRole("button", { name: "Quick look" })
+  );
+
+describe("Scout Hybrid V4 — visual budget", () => {
+  it("conserve la structure V4 avec un titre très long", () => {
+    renderCard();
+
+    expect(card()).toHaveClass("scout-v4");
+    expect(card().querySelector(".scene")).not.toBeNull();
+    expect(card().querySelector(".holo")).not.toBeNull();
+    expect(card().querySelector(".tilt-shell")).not.toBeNull();
+    expect(card().querySelector(".flip-inner")).not.toBeNull();
   });
 
-  it("draws the pay chip first and three tags in all", () => {
-    render(stuffed());
-    const tags = screen.getByTestId("card").querySelector<HTMLElement>('[data-card-part="tags"]')!;
-    expect(tags.children).toHaveLength(3);
-    expect(tags.children[0]).toHaveTextContent("$800");
-    expect(tags).toHaveTextContent("tag a");
-    expect(tags).toHaveTextContent("tag b");
-    expect(tags).not.toHaveTextContent("tag c");
+  it("vérifie les dimensions exactes de la carte et de sa couverture", () => {
+    const flip = cssRule(".scout-v4 .flip-inner");
+    const cover = cssRule(".scout-v4 .cover");
+
+    expect(flip).not.toBe("");
+    expect(cover).not.toBe("");
+
+    expect(flip).toMatch(/(?:^|;)\s*height:\s*368px\s*;/);
+    expect(flip).toMatch(/min-height:\s*368px\s*;/);
+
+    expect(cover).toMatch(/height:\s*122px\s*;/);
+    expect(cover).toMatch(/flex:\s*0\s+0\s+122px\s*;/);
   });
 
-  it("keeps the controls over the picture and Quick look the only secondary action in the footer", () => {
-    render(stuffed());
-    const cardEl = screen.getByTestId("card");
-    const footer = cardEl.querySelector<HTMLElement>('[data-card-part="footer"]')!;
-    const cover = cardEl.querySelector<HTMLElement>('[data-card-part="cover"]')!;
-    expect(within(cover).getByRole("button", { name: "Save it" })).toBeInTheDocument();
-    expect(within(cover).getByRole("link", { name: "Open source" })).toBeInTheDocument();
-    expect(within(cover).getByRole("button", { name: "Dismiss" })).toBeInTheDocument();
-    expect(within(footer).getByTestId("quick-look")).toBeInTheDocument();
-    expect(within(footer).getByRole("link", { name: /Apply/ })).toBeInTheDocument();
-    expect(within(footer).queryByText("Apply with Kreto")).toBeNull();
+  it("limite les titres longs à deux lignes", () => {
+    const headline = cssRule(
+      ".scout-v4 .flip-front .headline h4"
+    );
+
+    expect(headline).toMatch(/-webkit-line-clamp:\s*2/);
+    expect(headline).toMatch(/overflow:\s*hidden/);
   });
 
-  it("puts the long text, Kreto and the extra places on the back, never on the front", () => {
-    render(stuffed());
-    expect(screen.queryByText("Also posted for 2 more places")).toBeNull();
-    expect(screen.queryByTestId("apply-with-kreto-open")).toBeNull();
-    fireEvent.click(screen.getByTestId("quick-look"));
-    const back = screen.getByRole("group", { name: /quick look/ });
-    expect(within(back).getByText("Also posted for 2 more places")).toBeInTheDocument();
-    expect(within(back).getByTestId("apply-with-kreto-open")).toBeInTheDocument();
-    expect(within(back).getByTestId("quick-look-brief")).toBeInTheDocument();
+  it("conserve les informations essentielles sur le recto", () => {
+    renderCard();
+
+    expect(front()).toHaveTextContent("Northline Records");
+    expect(front()).toHaveTextContent("Porto");
+    expect(front()).toHaveTextContent("Paid opportunity");
+    expect(front()).toHaveTextContent("Scouted");
+
+    expect(front()).not.toHaveTextContent("$800");
+    expect(front()).not.toHaveTextContent(
+      "Also posted for 2 more places"
+    );
+  });
+
+  it("place le budget et les informations longues au verso", () => {
+    renderCard();
+    openBack();
+
+    expect(back()).toHaveTextContent("$800");
+    expect(back()).toHaveTextContent(LONG);
+    expect(back()).toHaveTextContent(
+      "Also posted for 2 more places"
+    );
+  });
+
+  it("conserve les actions internes sur le recto", () => {
+    renderCard({ internal: true });
+
+    const cover = front().querySelector<HTMLElement>(
+      ".cover-top"
+    )!;
+
+    expect(
+      within(cover).getByRole("button", {
+        name: "Save opportunity",
+      })
+    ).toBeInTheDocument();
+
+    expect(
+      within(front()).getByRole("button", {
+        name: "Easy Apply",
+      })
+    ).toBeInTheDocument();
+  });
+
+  it("place les actions externes au verso", () => {
+    renderCard();
+
+    expect(front()).not.toHaveTextContent("Apply at source");
+
+    openBack();
+
+    expect(
+      within(back()).getByRole("button", {
+        name: "Apply at source",
+      })
+    ).toBeInTheDocument();
+  });
+
+  it("vérifie les effets holographiques non interactifs", () => {
+    renderCard();
+
+    for (const selector of [
+      ".scout-v4 .material",
+      ".scout-v4 .foil-light",
+      ".scout-v4 .prismatic-edge",
+    ]) {
+      const rule = cssRule(selector);
+
+      expect(rule).not.toBe("");
+      expect(rule).toMatch(/pointer-events:\s*none/);
+    }
+
+    expect(
+      card().querySelector(".foil-light")
+    ).toHaveAttribute("aria-hidden", "true");
+
+    expect(
+      card().querySelector(".prismatic-edge")
+    ).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("préserve la gestion du débordement des deux faces", () => {
+    const face = cssRule(".scout-v4 .flip-face");
+    const reverse = cssRule(
+      ".scout-v4 .flip-back > .content"
+    );
+
+    expect(face).toMatch(/overflow:\s*hidden/);
+    expect(reverse).toMatch(/overflow-y:\s*auto/);
+  });
+
+  it("préserve la réduction des animations", () => {
+    const reducedMotion = css.match(
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{([\s\S]*?)^\}/m
+    )?.[1];
+
+    expect(reducedMotion).toBeDefined();
+    expect(reducedMotion).toContain(".scout-v4 .flip-inner");
+    expect(reducedMotion).toMatch(
+      /transition:\s*none\s*!important/
+    );
+  });
+
+  it("conserve Quick Look au pied du recto", () => {
+    renderCard({ internal: true });
+
+    const footer = front().querySelector<HTMLElement>(
+      ".card-foot"
+    )!;
+
+    expect(
+      within(footer).getByRole("button", {
+        name: "Quick look",
+      })
+    ).toBeInTheDocument();
+
+    expect(
+      within(footer).getByRole("button", {
+        name: "Easy Apply",
+      })
+    ).toBeInTheDocument();
+  });
+
+  it("garde Apply with Kreto exclusivement au verso", () => {
+    renderCard();
+
+    expect(front()).not.toHaveTextContent("Apply with Kreto");
+
+    openBack();
+
+    expect(
+      within(back()).getByTestId("apply-with-kreto-open")
+    ).toBeInTheDocument();
+  });
+
+  it("n'invente pas de rémunération absente", () => {
+    renderCard({ pay: null });
+    openBack();
+
+    expect(back()).toHaveTextContent("Pay not listed");
+    expect(back()).not.toHaveTextContent("$800");
   });
 });
