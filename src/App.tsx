@@ -103,6 +103,7 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const EmailUnsubscribe = lazy(() => import("./pages/EmailUnsubscribe"));
 const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const About = lazy(() => import("./pages/About"));
+const Guide = lazy(() => import("./pages/Guide"));
 const ClaimProfile = lazy(() => import("./pages/ClaimProfile"));
 const Claim = lazy(() => import("./pages/Claim"));
 const ExternalListing = lazy(() => import("./pages/ExternalListing"));
@@ -344,7 +345,7 @@ const AppContent = () => {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/copilot-memory" element={<ProtectedRoute><CopilotMemory /></ProtectedRoute>} />
             <Route path="/my-analytics" element={<Navigate to="/profile" replace />} />
-            <Route path="/guide" element={<Navigate to="/" replace />} />
+            <Route path="/guide" element={<Guide />} />
             
             {/* ThriveDesk - Lightweight Project Workspace */}
             <Route path="/desk" element={<ProtectedRoute><WorkHome /></ProtectedRoute>} />
