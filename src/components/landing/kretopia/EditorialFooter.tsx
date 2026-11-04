@@ -47,7 +47,7 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: "For creatives", to: "/auth?tab=signup&src=footer" },
       { label: "For companies", to: "/post-opportunity" },
-      { label: "Pricing", to: "/pricing" },
+      { label: "Pricing", to: "/subscription" },
     ],
   },
   {
@@ -63,7 +63,7 @@ const COLUMNS: FooterColumn[] = [
     heading: "Legal",
     links: [
       { label: "About", to: "/about" },
-      { label: "Contact", to: "mailto:support@kretopia.com", external: true },
+      { label: "Contact", to: "/contact" },
       { label: "Terms of Service", to: "/terms" },
       { label: "Privacy Policy", to: "/privacy" },
       { label: "Community", to: "/community-guidelines" },
