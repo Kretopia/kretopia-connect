@@ -43,7 +43,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         emoji: "",
         title: "Add a profile photo",
-        description: "Profiles with photos get 14x more views. Use a clear, professional headshot or creative portrait."
+        description: "Choose a clear portrait that helps other people recognize your creative identity."
       },
       {
         emoji: "✍",
@@ -53,7 +53,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         emoji: "",
         title: "Add your skills",
-        description: "Select skills that match your expertise. These power the matching algorithm — the more accurate, the better matches you get."
+        description: "Describe your actual skills and areas of expertise so others can understand your work."
       },
       {
         emoji: "",
@@ -66,7 +66,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
         description: "Worked on a music video? Released an album? Won a competition? Credits build trust and credibility."
       }
     ],
-    proTip: "A 100% complete profile gets 5x more match requests than a half-filled one."
+    proTip: "Keep your profile accurate, complete, and up to date."
   },
   {
     id: "circle",
@@ -75,12 +75,12 @@ const GUIDE_SECTIONS: GuideSection[] = [
     subtitle: "Discover and connect with creators who complement your skills",
     icon: <Users className="h-6 w-6" />,
     color: "from-primary/20 to-primary/20",
-    route: "/circle",
+    route: "/discover",
     steps: [
       {
         emoji: "👆",
-        title: "Swipe through creators",
-        description: "Like Tinder but for creative collabs. Swipe right on people you'd want to work with, left to pass."
+        title: "Explore creative profiles",
+        description: "Browse creative profiles and review their work, experience, and interests."
       },
       {
         emoji: "",
@@ -89,8 +89,8 @@ const GUIDE_SECTIONS: GuideSection[] = [
       },
       {
         emoji: "",
-        title: "Match = mutual interest",
-        description: "When both of you swipe right, it's a match! You can now message each other and start collaborating."
+        title: "Identify potential collaborators",
+        description: "Explore relevant profiles and use the available connection options to build professional relationships."
       },
       {
         emoji: "",
@@ -98,7 +98,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
         description: "Don't just say \"hey.\" Mention something specific from their profile — \"Love your Afrobeats production on [project]!\""
       }
     ],
-    proTip: "Check Circle daily — new creators join every day and the algorithm learns your preferences over time."
+    proTip: "Use Discover to explore people and creative opportunities."
   },
   {
     id: "gigs",
@@ -112,7 +112,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         emoji: "🔍",
         title: "Browse gigs",
-        description: "Swipe through available gigs that match your skills — paid work, collaborations, or barter opportunities."
+        description: "Review available opportunities, including their scope, requirements, and conditions."
       },
       {
         emoji: "",
@@ -130,13 +130,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
         description: "Manage incoming applications, review portfolios, and connect with the best candidates."
       }
     ],
-    proTip: "Gigs with clear budgets and deadlines get 3x more quality applications."
+    proTip: "A clear brief helps candidates understand the work before responding."
   },
   {
     id: "messages",
     number: 4,
     title: "Message & Connect",
-    subtitle: "Turn matches into real relationships and collaborations",
+    subtitle: "Build professional conversations and creative relationships.",
     icon: <MessageCircle className="h-6 w-6" />,
     color: "from-green-500/20 to-emerald-500/20",
     route: "/messages",
@@ -144,7 +144,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         emoji: "",
         title: "Start conversations",
-        description: "After matching, send a thoughtful first message. Reference their work or shared interests."
+        description: "When messaging is available, introduce yourself with a relevant reference to the other person's work."
       },
       {
         emoji: "📎",
@@ -186,24 +186,24 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         emoji: "",
         title: "Use milestone payments",
-        description: "For paid work, set up milestone payments through KrePay. Both parties are protected."
+        description: "Agree on deliverables, timelines, payment conditions, and approval steps before beginning paid work."
       }
     ],
-    proTip: "Projects with clear milestones and deadlines have an 80% higher completion rate."
+    proTip: "Define milestones and responsibilities clearly before starting a collaboration."
   },
   {
     id: "thrivepay",
     number: 6,
-    title: "Get Paid with KrePay",
-    subtitle: "Secure payments with escrow protection for both sides",
+    title: "Understand Payments",
+    subtitle: "Review payment workflows and their applicable conditions.",
     icon: <DollarSign className="h-6 w-6" />,
     color: "from-emerald-500/20 to-teal-500/20",
     route: "/thrivepay",
     steps: [
       {
         emoji: "",
-        title: "Escrow protection",
-        description: "Payments are held in escrow until milestones are completed and approved. No more getting ghosted after delivering work."
+        title: "Review payment conditions",
+        description: "Before committing funds or delivering work, confirm the applicable payment terms and approval process."
       },
       {
         emoji: "",
@@ -216,13 +216,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
         description: "Get paid via bank transfer, WiPay, or other supported methods. Fast and reliable."
       }
     ],
-    proTip: "Always use KrePay for paid work — it protects both you and your collaborator."
+    proTip: "Review the available payment workflow and its conditions before committing funds or work."
   },
   {
     id: "credits",
     number: 7,
     title: "Build Your Credits",
-    subtitle: "Create a verified professional track record — your creative IMDB",
+    subtitle: "Document your contributions and professional experience through credits.",
     icon: <Award className="h-6 w-6" />,
     color: "from-yellow-500/20 to-amber-500/20",
     route: "/profile",
@@ -234,7 +234,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       },
       {
         emoji: "",
-        title: "Get verified",
+        title: "Request credit confirmation",
         description: "Collaborators can verify your credits, adding trust and credibility to your profile."
       },
       {

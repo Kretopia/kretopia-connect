@@ -36,6 +36,7 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/thrivepay", () => import("../pages/ThrivePay")],
   ["/wallet", () => import("../pages/ThrivePay")],
   ["/about", () => import("../pages/About")],
+  ["/guide", () => import("../pages/Guide")],
   ["/spotlight", () => import("../pages/Spotlight")],
   ["/magazine", () => import("../pages/Magazine")],
   ["/meetup", () => import("../pages/Meetup")],
