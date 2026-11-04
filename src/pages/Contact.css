@@ -693,31 +693,18 @@
   text-decoration: underline;
 }
 
-/* Footer */
-
-
-
-
-
-
-
-
-
-.k-contact__footer-links a:hover,
-
-
-
 /* Responsive */
 
 @media (max-width: 900px) {
   .k-contact__hero-grid,
-  .k-contact__columns,
+  .k-contact__columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
   .k-contact__direct,
   .k-contact__aside {
     padding-top: 8px;
   }
-
 }
 
 @media (max-width: 640px) {

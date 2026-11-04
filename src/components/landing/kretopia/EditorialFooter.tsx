@@ -1,21 +1,11 @@
 /**
- * EditorialFooter — Landing overhaul (24/09/2026), rebuilt to match the
- * "kretopianewfooter" reference: a real 4-column link footer (Product /
- * For / Explore / Legal) instead of the previous 3-column masthead
- * strip. Every link below points at a route that already exists in
- * App.tsx (grep-verified) -- "Pricing" reuses the same /pricing path
- * every other CTA in the app already links to (StorageMeter,
- * QuotaExceededDialog, GroupChatPanel), and "Contact" is a mailto to
- * support@kretopia.com (the real address used across Terms/Privacy)
- * since there's no dedicated /contact route to link to instead.
+ * EditorialFooter — shared Kretopia editorial footer.
  *
- * v2: dropped the small per-column underline accent (the 3px gradient
- * bar under each heading) — that also retired the `accent` field on
- * FooterColumn/COLUMNS entirely, since the underline was its only use.
- * The full-width brand-gradient seam near the bottom is toned down
- * (opacity 0.45) — six fully-saturated stops side by side on a dark
- * background was reading as a bright glowing band rather than a quiet
- * seam; same gradient, just dialed back.
+ * Contact opens the public /contact page.
+ * Pricing currently opens the protected /subscription page.
+ * A dedicated public pricing route remains a separate decision.
+ *
+ * The established footer layout and gradient seam are preserved.
  */
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
