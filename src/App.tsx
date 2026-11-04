@@ -103,6 +103,7 @@ const Unsubscribe = lazy(() => import("./pages/Unsubscribe"));
 const EmailUnsubscribe = lazy(() => import("./pages/EmailUnsubscribe"));
 const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
 const Guide = lazy(() => import("./pages/Guide"));
 const ClaimProfile = lazy(() => import("./pages/ClaimProfile"));
 const Claim = lazy(() => import("./pages/Claim"));
@@ -452,6 +453,7 @@ const AppContent = () => {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/community-guidelines" element={<CommunityGuidelines />} />
             <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/email-unsubscribe" element={<Suspense fallback={null}><EmailUnsubscribe /></Suspense>} />
             
