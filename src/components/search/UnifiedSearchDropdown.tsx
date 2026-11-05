@@ -12,6 +12,8 @@ import { useVoiceSearch } from "@/hooks/useVoiceSearch";
 import { VoiceWaveform } from "@/components/search/VoiceWaveform";
 import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { PublicWebSearchResults } from "./PublicWebSearchResults";
+import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
+import { Button } from "@/components/ui/button";
 
 interface SearchResult {
   type: "creator" | "credit" | "gig";
@@ -46,6 +48,9 @@ interface UnifiedSearchDropdownProps {
   /** Instant roles / skills / locations / work-type suggestions from one
    *  letter. Defaults to true for the hero variant. */
   showCatalog?: boolean;
+  /** Member picker: first-letter, paged users only; no AI, web or voice calls. */
+  usersOnly?: boolean;
+  disabled?: boolean;
 }
 
 const CATALOG_ICON: Record<CatalogKind, typeof User> = {
@@ -83,17 +88,21 @@ export function UnifiedSearchDropdown({
   onQuerySubmit,
   showEmptyState = true,
   showCatalog,
+  usersOnly = false,
+  disabled = false,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const catalogEnabled = showCatalog ?? variant === "hero";
-  const minChars = catalogEnabled ? 1 : 2;
+  const catalogEnabled = !usersOnly && (showCatalog ?? variant === "hero");
+  const minChars = usersOnly || catalogEnabled ? 1 : 2;
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [highlightedCreator, setHighlightedCreator] = useState<SearchResult | null>(null);
   const [error, setError] = useState(false);
+  const [hasMoreUsers, setHasMoreUsers] = useState(false);
+  const usersOffsetRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -124,6 +133,8 @@ export function UnifiedSearchDropdown({
 
   // Debounced search
   useEffect(() => {
+    abortRef.current?.abort();
+    setLoading(false);
     const trimmedQuery = query.trim();
     if (trimmedQuery.length < minChars) {
       setOpen(false);
@@ -135,11 +146,16 @@ export function UnifiedSearchDropdown({
     }
     setOpen(true);
     onOpenChange?.(true);
-    const timer = setTimeout(() => doSearch(trimmedQuery), 350);
-    return () => clearTimeout(timer);
-  }, [query]);
+    if (usersOnly) {
+      setResults([]);
+      setHasMoreUsers(false);
+      setLoading(true);
+    }
+    const timer = setTimeout(() => doSearch(trimmedQuery), usersOnly ? 150 : 350);
+    return () => { clearTimeout(timer); abortRef.current?.abort(); };
+  }, [query, usersOnly, user?.id]);
 
-  const doSearch = useCallback(async (q: string) => {
+  const doSearch = useCallback(async (q: string, appendUsers = false) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -149,6 +165,23 @@ export function UnifiedSearchDropdown({
     setHighlightedCreator(null);
 
     try {
+      if (usersOnly) {
+        const offset = appendUsers ? usersOffsetRef.current : 0;
+        const page = await searchVerificationUsers(q, user?.id, offset, controller.signal);
+        if (controller.signal.aborted) return;
+        const userResults: SearchResult[] = page.users.map(p => ({
+          type: "creator",
+          id: p.user_id,
+          title: p.full_name || ("username" in p ? String(p.username || "Kretopia user") : "Kretopia user"),
+          subtitle: ["username" in p && p.username ? `@${p.username}` : null, p.role].filter(Boolean).join(" · "),
+          avatar: p.avatar_url,
+        }));
+        setResults(previous => appendUsers ? [...previous, ...userResults.filter(r => !previous.some(p => p.id === r.id))] : userResults);
+        usersOffsetRef.current = offset + VERIFICATION_SEARCH_PAGE_SIZE;
+        setHasMoreUsers(page.hasMore);
+        setLoading(false);
+        return;
+      }
       const likeQ = `%${q}%`;
       const likeQEscaped = escapePostgrestValue(likeQ);
 
@@ -282,7 +315,7 @@ export function UnifiedSearchDropdown({
         setLoading(false);
       }
     }
-  }, [user?.id]);
+  }, [user?.id, usersOnly]);
 
   const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
 
@@ -306,6 +339,7 @@ export function UnifiedSearchDropdown({
   };
 
   const handleSelect = (r: SearchResult) => {
+    if (disabled) return;
     if (catalogEnabled && !onSelect) {
       const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
       if (requireAuthFor(target)) return;
@@ -329,6 +363,10 @@ export function UnifiedSearchDropdown({
   const submitQuery = useCallback((rawQuery: string) => {
     const trimmedQuery = rawQuery.trim();
     if (!trimmedQuery) return;
+    if (usersOnly) {
+      setOpen(true);
+      return;
+    }
 
     setOpen(false);
     onOpenChange?.(false);
@@ -340,7 +378,7 @@ export function UnifiedSearchDropdown({
 
     setQuery("");
     navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery]);
+  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -452,9 +490,10 @@ export function UnifiedSearchDropdown({
             placeholder={placeholder}
             autoFocus={autoFocus}
             autoComplete="off"
+            disabled={disabled}
             enterKeyHint="search"
             role="combobox"
-            aria-label="Search a name, project or opportunity"
+            aria-label={usersOnly ? "Search Kretopia users" : "Search a name, project or opportunity"}
             aria-expanded={open}
             aria-controls={listboxId}
             className={cn(
@@ -518,7 +557,7 @@ export function UnifiedSearchDropdown({
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-              ) : voice.supported ? (
+              ) : !usersOnly && voice.supported ? (
                 <button
                   type="button"
                   onClick={voice.start}
@@ -643,7 +682,7 @@ export function UnifiedSearchDropdown({
               <KretopiaLoader
                 size="sm"
                 label="Searching Kretopia"
-                hint="Checking creators, credits & gigs…"
+                hint={usersOnly ? undefined : "Checking creators, credits & gigs…"}
                 className="order-4 px-4"
               />
             )}
@@ -814,6 +853,8 @@ export function UnifiedSearchDropdown({
                     return (
                       <button
                         key={`${r.type}-${r.id}-${i}`}
+                        type="button"
+                        disabled={disabled}
                         data-search-result
                         onKeyDown={handleResultKeyDown}
                         onClick={() => handleSelect(r)}
@@ -837,7 +878,9 @@ export function UnifiedSearchDropdown({
                             <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
                           )}
                         </div>
-                        {r.type === "creator" && r.is_connected ? (
+                        {usersOnly ? (
+                          <SendUserAction />
+                        ) : r.type === "creator" && r.is_connected ? (
                           <span className="shrink-0 text-[10px] font-semibold text-energy">Connected · View Passport</span>
                         ) : r.type === "creator" && r.is_claimed === false ? (
                           <div className="flex items-center gap-1.5 shrink-0">
@@ -876,7 +919,12 @@ export function UnifiedSearchDropdown({
               );
             })}
 
-            <PublicWebSearchResults query={query} />
+            {usersOnly && hasMoreUsers && (
+              <Button variant="ghost" className="order-3 w-full shrink-0" disabled={loading || disabled} onClick={() => doSearch(query.trim(), true)}>
+                {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Show more users"}
+              </Button>
+            )}
+            {!usersOnly && <PublicWebSearchResults query={query} />}
 
             {/* Error state — distinct from "no results" so a failed search
                 isn't mistaken for a genuinely empty result set. */}
@@ -898,12 +946,12 @@ export function UnifiedSearchDropdown({
 
             {/* Empty state — no fallback suggestions, no navigation anywhere.
                 If nothing real matches, we say so and stop. */}
-            {showEmptyState && !loading && !error && results.length === 0 && catalogMatches.length === 0 && query.trim().length >= 2 && (
+            {showEmptyState && !loading && !error && results.length === 0 && catalogMatches.length === 0 && query.trim().length >= minChars && (
               <div className="order-5 px-4 py-4 text-center">
                 <Sparkles className="h-5 w-5 text-primary/50 mx-auto mb-1.5" />
                 <p className="text-sm text-muted-foreground">No Kretopia results found</p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Try a different name or project
+                  {usersOnly ? "Try a different name or @username" : "Try a different name or project"}
                 </p>
               </div>
             )}
@@ -912,4 +960,8 @@ export function UnifiedSearchDropdown({
       )}
     </div>
   );
+}
+
+function SendUserAction() {
+  return <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />;
 }
