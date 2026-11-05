@@ -6,11 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Send, Search, ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
+import { ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
-import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { notifyUser } from "@/lib/notifyUser";
+import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 
 interface Credit {
   id: string;
@@ -38,8 +38,6 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
   const [email, setEmail] = useState('');
   const [relationship, setRelationship] = useState('collaborator');
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
   const [sending, setSending] = useState(false);
   const [verifyLink, setVerifyLink] = useState('');
   const [copied, setCopied] = useState(false);
@@ -50,29 +48,6 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
       setName(reminder.name || '');
     }
   }, [open, reminder?.link, reminder?.name]);
-
-  const searchUsers = async (query: string) => {
-    setSearchQuery(query);
-    if (query.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-    setSearching(true);
-    try {
-      const likeQ = escapePostgrestValue(`%${query}%`);
-      const { data } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, avatar_url, primary_role, username')
-        .or(`full_name.ilike.${likeQ},username.ilike.${likeQ}`)
-        .neq('user_id', userId)
-        .limit(4);
-      setSearchResults(data || []);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSearching(false);
-    }
-  };
 
   const createLink = async (endorserId?: string, endorserEmail?: string, endorserName?: string) => {
     setSending(true);
@@ -127,7 +102,6 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
 
   const resetForm = () => {
     setSearchQuery('');
-    setSearchResults([]);
     setEmail('');
     setName('');
     setRelationship('collaborator');
@@ -217,45 +191,15 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
             {/* Quick search — existing Kretopia users */}
             <div className="space-y-2">
               <Label className="text-xs">Search Kretopia users</Label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-9 h-10"
-                  placeholder="Name or @username"
-                  value={searchQuery}
-                  onChange={(e) => searchUsers(e.target.value)}
-                />
-              </div>
-              {searching && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-                  <KretopiaSpinner className="h-3 w-3" /> Searching...
-                </div>
-              )}
-              {searchResults.length > 0 && (
-                <div className="space-y-1 max-h-40 overflow-y-auto rounded-lg border border-border/60 p-1">
-                  {searchResults.map((u) => (
-                    <button
-                      key={u.user_id}
-                      className="w-full flex items-center gap-2 p-2 rounded hover:bg-muted/60 text-left"
-                      onClick={() => createLink(u.user_id, undefined, u.full_name)}
-                      disabled={sending}
-                    >
-                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center overflow-hidden shrink-0">
-                        {u.avatar_url ? (
-                          <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-[10px] font-medium">{u.full_name?.[0]}</span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate">{u.full_name}</p>
-                        <p className="text-[10px] text-muted-foreground truncate">{u.primary_role || u.username}</p>
-                      </div>
-                      <Send className="h-3 w-3 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              )}
+              <UnifiedSearchDropdown
+                variant="inline"
+                usersOnly
+                placeholder="Name or @username"
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                disabled={sending}
+                onSelect={(result) => createLink(result.id, undefined, result.title)}
+              />
             </div>
 
             <div className="relative">
