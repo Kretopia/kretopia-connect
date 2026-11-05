@@ -1,5 +1,9 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Signup username conflict
+- [ ] Prevent duplicate-handle saves and handle the confirmed `profiles_username_key` conflict without losing the draft; preserve account uniqueness and use no AI for checks.
+- [ ] Run collision/retry and onboarding regression tests; production end-to-end verification requires an available legacy session. No publication authorized.
+
 ## Verification user search
 - [x] Reuse Hero's unified dropdown for first-letter name/@username search, with paged matching users reachable and no AI/web/credit calls; existing endorsement action unchanged.
 - [x] 22 focused regression tests pass, including first-letter search, @username, pagination and modal selection. Managed build OK; shared search renders on desktop/mobile with no runtime errors.
