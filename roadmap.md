@@ -1,8 +1,9 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Signup username conflict
-- [ ] Prevent duplicate-handle saves and handle the confirmed `profiles_username_key` conflict without losing the draft; preserve account uniqueness and use no AI for checks.
-- [ ] Run collision/retry and onboarding regression tests; production end-to-end verification requires an available legacy session. No publication authorized.
+- [x] Prevent duplicate-handle saves with public-safe, case-insensitive checks, canonical validation and owner-row confirmation; handle the confirmed `profiles_username_key` conflict without losing the draft or bypassing uniqueness. No AI calls for handle checks.
+- [x] 40 focused tests pass, including confirmed unique violation, collision → new handle → manual setup → Passport; managed build OK.
+- [ ] Verify signup/onboarding with a real production legacy session: unavailable here. No publication authorized; authenticated regression tests use mocked data, not a live account.
 
 ## Verification user search
 - [x] Reuse Hero's unified dropdown for first-letter name/@username search, with paged matching users reachable and no AI/web/credit calls; existing endorsement action unchanged.
