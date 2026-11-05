@@ -104,7 +104,6 @@ const EmailUnsubscribe = lazy(() => import("./pages/EmailUnsubscribe"));
 const CommunityGuidelines = lazy(() => import("./pages/CommunityGuidelines"));
 const About = lazy(() => import("./pages/About"));
 const Contact = lazy(() => import("./pages/Contact"));
-const Guide = lazy(() => import("./pages/Guide"));
 const ClaimProfile = lazy(() => import("./pages/ClaimProfile"));
 const Claim = lazy(() => import("./pages/Claim"));
 const ExternalListing = lazy(() => import("./pages/ExternalListing"));
@@ -346,7 +345,9 @@ const AppContent = () => {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/copilot-memory" element={<ProtectedRoute><CopilotMemory /></ProtectedRoute>} />
             <Route path="/my-analytics" element={<Navigate to="/profile" replace />} />
-            <Route path="/guide" element={<Guide />} />
+            {/* The Guide page is gone. The welcome email (send-user-email, sent by useOnboarding) still links to /guide, and production's copy of that
+                function only changes by a manual paste, so the path redirects instead of ending on a catch-all. */}
+            <Route path="/guide" element={<Navigate to="/" replace />} />
             
             {/* ThriveDesk - Lightweight Project Workspace */}
             <Route path="/desk" element={<ProtectedRoute><WorkHome /></ProtectedRoute>} />
