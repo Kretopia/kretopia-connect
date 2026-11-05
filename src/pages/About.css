@@ -1,0 +1,930 @@
+/* About V4 — page-scoped composition matching the approved screenshot.
+   Only the official typography/gradient/CTAs are shared with the landing.
+   All illustration files are cropped from the user's approved reference. */
+.k-about {
+  --background: 253 32% 4%;
+  --foreground: 0 0% 98%;
+  --card: 256 22% 8%;
+  --border: 253 18% 19%;
+  --muted-foreground: 248 8% 72%;
+  min-height: 100vh;
+  overflow-x: clip;
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: var(--font-family-brand);
+  -webkit-font-smoothing: antialiased;
+}
+.k-about *, .k-about *::before, .k-about *::after { box-sizing: border-box; }
+.k-about__container {
+  width: min(100%, 1320px);
+  margin-inline: auto;
+  padding-inline: clamp(22px, 6.5vw, 70px);
+}
+.k-about__section { border-top: 1px solid hsl(var(--border) / .72); }
+.k-about__eyebrow, .k-about__section-label {
+  margin: 0;
+  color: hsl(var(--foreground) / .73);
+  font-weight: 700;
+  letter-spacing: .2em;
+  font-size: 10px;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+.k-about__number { margin-right: 10px; font-variant-numeric: tabular-nums; }
+.k-about__h1,
+.k-about__heading.landing-h2,
+.k-about__founder-name {
+  font-family: var(--font-family-brand);
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  text-wrap: balance;
+}
+.k-about__heading.landing-h2 {
+  margin: 7px 0 0;
+  font-size: clamp(27px, 3.5vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+}
+.k-about .k-gradient-text { background-image: var(--k-text-gradient); }
+.k-about a:focus-visible { outline: 2px solid hsl(var(--foreground)); outline-offset: 4px; }
+.k-about__hero {
+  position: relative;
+  overflow: hidden;
+  min-height: clamp(325px, 35vw, 495px);
+  display: flex;
+  align-items: center;
+}
+.k-about__hero-layout {
+  position: relative;
+  min-height: inherit;
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
+  gap: 2%;
+}
+.k-about__hero-copy { position: relative; z-index: 2; padding-block: 40px; }
+.k-about__h1 {
+  margin: 16px 0 0;
+  font-size: clamp(42px, 5.9vw, 80px);
+  line-height: 1.07;
+  letter-spacing: -.057em;
+  white-space: nowrap;
+}
+.k-about__lead {
+  margin: 15px 0 0;
+  max-width: 630px;
+  font-size: clamp(17px, 2vw, 25px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -.02em;
+}
+.k-about__intro.landing-sub {
+  max-width: 485px;
+  margin: 11px 0 0;
+  font-size: clamp(13px, 1.5vw, 17px);
+  line-height: 1.6;
+  color: hsl(var(--foreground) / .72);
+}
+.k-about__jump {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+  margin-top: 15px;
+  font-size: 13px;
+  font-weight: 650;
+  color: hsl(var(--foreground));
+  border-bottom: 2px solid transparent;
+  border-image: var(--k-text-gradient) 1;
+  text-decoration: none;
+  transition: gap .2s;
+}
+.k-about__jump:hover { gap: 17px; }
+.k-about__hero-art {
+  height: 100%;
+  min-height: 285px;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: end;
+  justify-content: end;
+  margin-right: -34px;
+}
+.k-about__hero-art img {
+  display: block;
+  width: min(117%, 625px);
+  max-width: none;
+  height: auto;
+  object-fit: contain;
+  mix-blend-mode: screen;
+  -webkit-user-select: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 01 — origin: illustration left, real narrative right. */
+.k-about__story {
+  display: grid;
+  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr);
+  gap: clamp(22px, 4vw, 72px);
+  align-items: center;
+  min-height: clamp(265px, 29vw, 397px);
+}
+.k-about__story-art { display: grid; align-items: end; justify-items: center; align-self: end; }
+.k-about__story-art img {
+  width: min(100%, 440px);
+  height: auto;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+.k-about__story-copy { padding-block: 42px; }
+.k-about__body {
+  margin: 13px 0 0;
+  max-width: 590px;
+  color: hsl(var(--foreground) / .76);
+  font-size: clamp(13px, 1.47vw, 17px);
+  line-height: 1.65;
+}
+
+/* 02 — portraits and founders remain the focus, not the effects. */
+.k-about__founders { scroll-margin-top: 80px; }
+.k-about__founders > .k-about__container { padding-block: clamp(33px, 4vw, 66px) clamp(26px, 3vw, 42px); }
+.k-about__founder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 1.8vw, 24px);
+  margin-top: 8px;
+  align-items: stretch;
+}
+.k-about__founder-slot {
+  position: relative;
+  min-width: 0;
+  padding-top: clamp(92px, 10vw, 126px);
+  isolation: isolate;
+}
+.k-about__founder-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: 100%;
+  padding: clamp(20px, 2.4vw, 31px);
+  border-radius: 16px;
+  border: 1.5px solid transparent;
+  /* Kretopia spectrum, but restrained until hover. */
+  background: linear-gradient(155deg, #191329, #0d0a17 85%) padding-box,
+              var(--k-text-gradient) border-box;
+  box-shadow: 0 12px 36px rgba(0,0,0,.13), 0 0 22px rgba(231,25,140,.08);
+  transition: transform .24s ease, box-shadow .24s ease;
+}
+.k-about__founder-card:hover,
+.k-about__founder-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 17px 40px rgba(0,0,0,.22), 0 0 26px rgba(231,25,140,.16);
+}
+.k-about__founder-kreto {
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+  display: block;
+}
+.k-about__founder-kreto img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: screen;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Noé: laptop rests directly on the top lip of the left card. */
+.k-about__founder-kreto--noe {
+  width: min(74%, 237px);
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* Ethan: original pose and centered placement retained, now middle card. */
+.k-about__founder-kreto--ethan {
+  width: min(90%, 277px);
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+/* Jefferson: tablet-bearing Kreto leans on the right card edge. */
+.k-about__founder-kreto--jefferson {
+  width: min(68%, 209px);
+  top: 43px;
+  right: -28px;
+  transform: rotate(-7deg);
+  transform-origin: 80% 80%;
+}
+.k-about__portrait {
+  width: clamp(81px, 8.1vw, 102px);
+  height: clamp(81px, 8.1vw, 102px);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #231c31;
+  border: 1px solid rgba(255,255,255,.17);
+}
+.k-about__portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 24%; }
+.k-about__initials { font-size: 22px; font-weight: 650; color: #dad5e5; }
+.k-about__founder-label {
+  margin: 14px 0 0;
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: .17em;
+  color: hsl(var(--foreground) / .68);
+}
+.k-about__founder-name {
+  margin: 3px 0 0;
+  font-size: clamp(17px, 1.8vw, 23px);
+  line-height: 1.16;
+  letter-spacing: -.035em;
+  overflow-wrap: anywhere;
+}
+.k-about__founder-role {
+  margin: 3px 0 0;
+  font-size: clamp(12px, 1.18vw, 15px);
+  line-height: 1.5;
+  color: hsl(var(--foreground) / .92);
+}
+.k-about__founder-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.k-about__founder-fields li {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  min-height: 21px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.085);
+  color: rgba(255,255,255,.82);
+  font-size: 10px;
+  line-height: 1.2;
+  white-space: normal;
+}
+.k-about__founder-description {
+  margin: 13px 0 0;
+  color: hsl(var(--foreground) / .78);
+  font-size: clamp(12.5px, 1.27vw, 15px);
+  line-height: 1.55;
+}
+.k-about__founder-closing {
+  max-width: 1030px;
+  margin: 19px 0 0;
+  color: hsl(var(--foreground) / .7);
+  font-size: clamp(12.5px, 1.35vw, 15px);
+  line-height: 1.65;
+}
+
+/* 03 — one matching Kreto scene; shared CTAs, no additional product pitch. */
+.k-about__future {
+  display: grid;
+  align-items: center;
+  grid-template-columns: minmax(0,.95fr) minmax(0,1.05fr);
+  gap: clamp(22px, 4vw, 75px);
+  min-height: clamp(250px, 27vw, 370px);
+}
+.k-about__future-art { display: flex; justify-content: center; align-self: end; }
+.k-about__future-art img { width: min(100%, 395px); height: auto; mix-blend-mode: screen; pointer-events: none; }
+.k-about__future-copy { padding-block: 43px; }
+.k-about__future-copy .k-about__heading { white-space: nowrap; }
+.k-about__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; margin-top: 17px; }
+.k-about__outline-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 22px;
+  border: 1px solid hsl(var(--foreground) / .25);
+  border-radius: 999px;
+  font-family: var(--font-family-brand);
+  font-size: 14px;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+  background: rgba(255,255,255,.012);
+  text-decoration: none;
+  transition: border-color .2s, transform .2s;
+}
+.k-about__outline-cta:hover { border-color: hsl(var(--foreground) / .55); transform: translateY(-2px); }
+
+@media (max-width: 899px) {
+  .k-about__founder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; }
+  .k-about__founder-slot { padding-top: 117px; }
+  .k-about__future-copy .k-about__heading { white-space: normal; }
+  .k-about__h1 { white-space: normal; }
+}
+@media (max-width: 639px) {
+  .k-about__container { padding-inline: 22px; }
+  .k-about__hero { min-height: 0; }
+  .k-about__hero-layout { grid-template-columns: 1fr; gap: 0; }
+  .k-about__hero-copy { padding-block: 66px 7px; }
+  .k-about__h1 { font-size: clamp(43px, 11vw, 65px); }
+  .k-about__hero-art { justify-content: center; margin: 0; min-height: 0; }
+  .k-about__hero-art img { width: min(100%, 450px); }
+  .k-about__story, .k-about__future { grid-template-columns: 1fr; gap: 0; }
+  .k-about__story-art { order: 2; }
+  .k-about__story-copy { order: 1; padding-block: 52px 10px; }
+  .k-about__story-art img { width: min(85%, 340px); }
+  .k-about__founders > .k-about__container { padding-block: 44px 38px; }
+  .k-about__founder-grid { grid-template-columns: 1fr; gap: 23px; margin-top: 11px; }
+  .k-about__founder-slot { padding-top: 110px; }
+  .k-about__founder-kreto--noe { width: min(70%, 240px); }
+  .k-about__founder-kreto--ethan { width: min(77%, 260px); }
+  .k-about__founder-kreto--jefferson { width: min(63%, 205px); top: 42px; right: -14px; }
+  .k-about__founder-card { padding: 26px; }
+  .k-about__portrait { width: 92px; height: 92px; }
+  .k-about__founder-name { font-size: 20px; }
+  .k-about__founder-role, .k-about__founder-description { font-size: 14px; }
+  .k-about__founder-fields li { font-size: 11px; }
+  .k-about__future-art { order: 2; }
+  .k-about__future-art img { width: min(87%, 360px); }
+  .k-about__future-copy { order: 1; padding-block: 50px 14px; }
+  .k-about__future-copy .k-about__heading { white-space: normal; }
+  .k-about__actions { align-items: stretch; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-about__jump, .k-about__outline-cta, .k-about__founder-card { transition: none; }
+  .k-about__founder-card:hover, .k-about__outline-cta:hover { transform: none; }
+}
+
+
+/* ABOUT_KRETOPIA_VISUAL_SYSTEM_V5 */
+
+/* BRAND FOUNDATION */
+.k-about {
+  color: hsl(var(--foreground));
+  background: hsl(var(--background));
+  font-family: var(--font-family-brand);
+  overflow-x: clip;
+}
+
+.k-about .k-about__hero,
+.k-about .k-about__section {
+  position: relative;
+  isolation: isolate;
+  border-color: hsl(var(--border) / .55);
+}
+
+/* HERO */
+.k-about .k-about__hero {
+  padding: 0;
+  min-height: clamp(365px, 43vw, 560px);
+  text-align: left;
+  display: grid;
+  align-items: center;
+  background:
+    radial-gradient(
+      ellipse 44% 75% at 78% 48%,
+      color-mix(in srgb, var(--k-g-2) 14%, transparent),
+      transparent 80%
+    ),
+    radial-gradient(
+      ellipse 30% 48% at 98% 83%,
+      color-mix(in srgb, var(--k-g-3) 8%, transparent),
+      transparent 84%
+    ),
+    hsl(var(--background));
+}
+
+.k-about .k-about__hero-layout {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+  gap: clamp(14px, 3vw, 46px);
+  align-items: center;
+}
+
+.k-about .k-about__hero-copy {
+  min-width: 0;
+  position: relative;
+  z-index: 2;
+  padding-block: 44px;
+}
+
+.k-about .k-about__h1 {
+  font-size: clamp(40px, 5.8vw, 78px);
+  letter-spacing: -.052em;
+  line-height: 1.06;
+}
+
+.k-about .k-about__lead {
+  margin: 17px 0 0;
+  font-size: clamp(18px, 2.1vw, 26px);
+}
+
+.k-about .k-about__intro {
+  margin: 12px 0 0;
+  max-width: 510px;
+}
+
+.k-about .k-about__jump {
+  margin-top: 19px;
+  border-bottom: 2px solid transparent;
+  border-image: var(--k-text-gradient) 1;
+}
+
+.k-about .k-about__jump .k-about__arrow {
+  transition: transform .25s ease;
+}
+
+.k-about .k-about__jump:hover .k-about__arrow {
+  transform: translateY(4px);
+}
+
+/* KRETO SCENES */
+.k-about .k-about__hero-art,
+.k-about .k-about__story-art,
+.k-about .k-about__future-art {
+  min-width: 0;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+  background: transparent;
+}
+
+.k-about .k-about__hero-art {
+  align-self: stretch;
+}
+
+.k-about :is(
+  .k-about__hero-art,
+  .k-about__story-art,
+  .k-about__future-art
+)::before {
+  content: "";
+  position: absolute;
+  inset: 16% 9%;
+  z-index: -1;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--k-g-2) 24%, transparent),
+    color-mix(in srgb, var(--k-g-3) 9%, transparent) 46%,
+    transparent 76%
+  );
+  filter: blur(22px);
+  animation: about-v5-halo 9s ease-in-out infinite alternate;
+}
+
+.k-about :is(
+  .k-about__hero-art,
+  .k-about__story-art,
+  .k-about__future-art
+) img {
+  width: min(100%, 485px);
+  max-width: none;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  background: transparent;
+  box-shadow: none;
+  animation: about-v5-float 10s ease-in-out infinite;
+  filter: drop-shadow(
+    0 14px 23px
+    color-mix(in srgb, var(--k-g-2) 16%, transparent)
+  );
+}
+
+.k-about .k-about__hero-art img {
+  width: min(110%, 575px);
+}
+
+.k-about .k-about__story-art img {
+  animation-delay: -2s;
+}
+
+.k-about .k-about__future-art img {
+  animation-delay: -4s;
+}
+
+/* Remove visible rectangular edges from legacy WebP artwork. */
+.k-about :is(
+  .k-about__hero-art,
+  .k-about__story-art,
+  .k-about__future-art
+) img[src$=".webp"] {
+  -webkit-mask-image: radial-gradient(
+    ellipse 76% 75%,
+    #000 59%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 76% 75%,
+    #000 59%,
+    transparent 100%
+  );
+}
+
+.k-about :is(
+  .k-about__hero-art,
+  .k-about__story-art,
+  .k-about__future-art
+) img[src$=".png"] {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* STORY & FUTURE */
+.k-about .k-about__section > .k-about__container.k-about__story,
+.k-about .k-about__section > .k-about__container.k-about__future {
+  padding-block: clamp(39px, 4.9vw, 76px);
+  display: grid;
+  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr);
+  gap: clamp(22px, 4.6vw, 72px);
+  align-items: center;
+}
+
+.k-about .k-about__story-copy,
+.k-about .k-about__future-copy {
+  min-width: 0;
+}
+
+.k-about .k-about__heading.landing-h2 {
+  font-size: clamp(30px, 3.7vw, 50px);
+  line-height: 1.1;
+}
+
+.k-about .k-about__story-text,
+.k-about .k-about__future-body {
+  margin: 17px 0 0;
+  max-width: 585px;
+  color: hsl(var(--muted-foreground));
+  font-size: clamp(14px, 1.3vw, 16px);
+  line-height: 1.75;
+}
+
+.k-about .k-about__section-label {
+  margin-bottom: 19px;
+}
+
+/* FOUNDERS SECTION */
+.k-about .k-about__founders {
+  background:
+    radial-gradient(
+      ellipse 64% 65% at 50% 24%,
+      color-mix(in srgb, var(--k-g-2) 8%, transparent),
+      transparent 78%
+    ),
+    hsl(var(--background));
+}
+
+.k-about .k-about__founders > .k-about__container {
+  padding-block: 45px 48px;
+}
+
+.k-about .k-about__founder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(14px, 2vw, 24px);
+  margin-top: 6px;
+  align-items: stretch;
+}
+
+.k-about .k-about__founder-slot {
+  position: relative;
+  min-width: 0;
+  height: auto;
+  isolation: isolate;
+  padding-top: clamp(145px, 16vw, 182px);
+  overflow: visible;
+}
+
+/* TRANSPARENT FOUNDER KRETO */
+.k-about .k-about__founder-kreto {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+  background: transparent;
+}
+
+.k-about .k-about__founder-kreto img {
+  width: 100%;
+  height: auto;
+  display: block;
+  max-width: none;
+  background: transparent;
+  -webkit-mask-image: none;
+  mask-image: none;
+  box-shadow: none;
+
+  filter: drop-shadow(
+    0 12px 18px
+    color-mix(in srgb, var(--k-g-2) 23%, transparent)
+  );
+
+  transition:
+    transform .4s cubic-bezier(.2, .65, .3, 1),
+    filter .4s ease;
+}
+
+.k-about .k-about__founder-kreto--noe {
+  top: -44px;
+  left: 50%;
+  right: auto;
+  width: min(94%, 270px);
+  transform: translateX(-50%);
+}
+
+.k-about .k-about__founder-kreto--ethan {
+  top: -54px;
+  left: 50%;
+  right: auto;
+  width: min(99%, 284px);
+  transform: translateX(-50%);
+}
+
+.k-about .k-about__founder-kreto--jefferson {
+  top: -7px;
+  right: -12px;
+  left: auto;
+  width: min(90%, 255px);
+  transform: rotate(-5deg);
+  transform-origin: 80% 80%;
+}
+
+.k-about .k-about__founder-slot:hover
+.k-about__founder-kreto img {
+  transform: translateY(-5px) scale(1.025);
+  filter: drop-shadow(
+    0 16px 22px
+    color-mix(in srgb, var(--k-g-3) 28%, transparent)
+  );
+}
+
+/* CARDS — KRETOPIA GRADIENT BORDER */
+.k-about .k-about__founder-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  height: 100%;
+  min-width: 0;
+
+  border: 1px solid hsl(var(--border) / .7);
+  border-radius: var(--radius-panel, 16px);
+
+  background: linear-gradient(
+    160deg,
+    hsl(var(--card)),
+    hsl(var(--background))
+  );
+
+  box-shadow:
+    0 16px 32px -27px
+    color-mix(in srgb, var(--k-g-2) 44%, transparent);
+
+  transition:
+    transform .35s cubic-bezier(.2, .65, .3, 1),
+    box-shadow .35s ease;
+}
+
+.k-about .k-about__founder-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  opacity: .45;
+
+  background: var(--k-text-gradient);
+
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+
+  transition: opacity .35s ease;
+}
+
+.k-about .k-about__founder-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+
+  background: radial-gradient(
+    ellipse 100% 68% at 50% 0%,
+    color-mix(in srgb, var(--k-g-2) 10%, transparent),
+    transparent 80%
+  );
+
+  opacity: .45;
+  transition: opacity .35s ease;
+}
+
+.k-about .k-about__founder-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.k-about .k-about__founder-card:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 22px 38px -22px
+    color-mix(in srgb, var(--k-g-2) 40%, transparent);
+}
+
+.k-about .k-about__founder-card:hover::before {
+  opacity: .9;
+}
+
+.k-about .k-about__founder-card:hover::after {
+  opacity: 1;
+}
+
+.k-about .k-about__portrait {
+  width: clamp(90px, 8vw, 110px);
+  height: clamp(90px, 8vw, 110px);
+  border-radius: 13px;
+}
+
+.k-about .k-about__founder-label {
+  margin-top: 16px;
+}
+
+.k-about .k-about__founder-name {
+  margin-top: 6px;
+}
+
+.k-about .k-about__founder-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 13px 0 0;
+  list-style: none;
+}
+
+.k-about .k-about__founder-fields li {
+  padding: 5px 9px;
+  border: 1px solid hsl(var(--border) / .55);
+  border-radius: 999px;
+  background: hsl(var(--foreground) / .065);
+  color: hsl(var(--foreground) / .8);
+  font-size: 11px;
+}
+
+.k-about .k-about__founder-description {
+  margin-top: 14px;
+  font-size: clamp(13px, 1.2vw, 15px);
+  line-height: 1.72;
+}
+
+.k-about .k-about__founder-closing {
+  padding-top: 0;
+  margin-top: 24px;
+  border-top: 0;
+  max-width: 980px;
+}
+
+/* CTAs — SHARED KRETOPIA COMPONENT */
+.k-about .k-about__section > .k-about__container.k-about__future {
+  text-align: left;
+  max-width: 1320px;
+}
+
+.k-about .k-about__future .k-about__heading {
+  margin: 0;
+}
+
+.k-about .k-about__actions {
+  justify-content: flex-start;
+  flex-direction: row;
+  flex-wrap: wrap;
+  margin-top: 24px;
+  gap: 12px;
+}
+
+/* Keep the real GlassCta colors from Kretopia. */
+.k-about .k-about__actions .glass-cta {
+  transition:
+    transform .25s ease,
+    box-shadow .25s ease;
+}
+
+.k-about .k-about__actions .glass-cta:hover {
+  transform: translateY(-2px);
+}
+
+.k-about .k-about__outline-cta {
+  background: transparent;
+  color: hsl(var(--foreground));
+  border: 1px solid hsl(var(--border));
+
+  transition:
+    transform .22s ease,
+    background-color .22s ease,
+    border-color .22s ease;
+}
+
+.k-about .k-about__outline-cta:hover {
+  transform: translateY(-2px);
+  background: hsl(var(--foreground) / .045);
+  border-color: hsl(var(--foreground) / .38);
+}
+
+/* Hide the unrelated Halloween launcher only on About. */
+body:has(.k-about) button[aria-label="Open Kreto"] {
+  display: none !important;
+}
+
+/* ANIMATIONS */
+@keyframes about-v5-halo {
+  from {
+    transform: scale(.94);
+    opacity: .55;
+  }
+  to {
+    transform: scale(1.07);
+    opacity: 1;
+  }
+}
+
+@keyframes about-v5-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+/* RESPONSIVE */
+@media (max-width: 1023px) {
+  .k-about .k-about__founder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 30px;
+  }
+  .k-about .k-about__founder-slot {
+    padding-top: 158px;
+  }
+}
+
+@media (max-width: 679px) {
+  .k-about .k-about__hero-layout,
+  .k-about .k-about__section > .k-about__container.k-about__story,
+  .k-about .k-about__section > .k-about__container.k-about__future {
+    grid-template-columns: 1fr;
+  }
+
+  .k-about .k-about__hero-copy {
+    padding-block: 54px 0;
+  }
+
+  .k-about .k-about__hero-art img {
+    width: min(93%, 420px);
+  }
+
+  .k-about .k-about__story-copy,
+  .k-about .k-about__future-copy {
+    order: 1;
+  }
+
+  .k-about .k-about__story-art,
+  .k-about .k-about__future-art {
+    order: 2;
+  }
+
+  .k-about .k-about__founder-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .k-about .k-about__founder-slot {
+    padding-top: 155px;
+  }
+
+  .k-about .k-about__founder-kreto--jefferson {
+    right: -3px;
+  }
+
+  .k-about .k-about__actions > * {
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-about *,
+  .k-about *::before,
+  .k-about *::after {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+
+  .k-about .k-about__founder-card:hover {
+    transform: none;
+  }
+}
