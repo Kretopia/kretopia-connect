@@ -1,8 +1,9 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
 ## Verification user search
-- [ ] Reuse Hero's unified dropdown for first-letter name/@username search, with all matching users reachable and no AI/web/credit calls.
-- [ ] Run focused regression checks and verify the modal where a real legacy session is available.
+- [x] Reuse Hero's unified dropdown for first-letter name/@username search, with paged matching users reachable and no AI/web/credit calls; existing endorsement action unchanged.
+- [x] 22 focused regression tests pass, including first-letter search, @username, pagination and modal selection. Managed build OK; shared search renders on desktop/mobile with no runtime errors.
+- [ ] Verify the modal with a real signed-in legacy account: no available session; own-account session mint failed. Not published.
 
 ## Startup recovery and fast first content
 - [x] Isolate public home from authenticated dashboard dependencies; show public content during session restoration and signed-in home while onboarding loads, retaining confirmed redirects.
