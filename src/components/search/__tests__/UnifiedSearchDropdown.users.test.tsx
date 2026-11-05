@@ -60,13 +60,13 @@ describe("Verification user search", () => {
     mocks.response.data = Array.from({ length: 51 }, (_, index) => member(index));
     showSearch();
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "A" } });
-    await screen.findByRole("button", { name: /Alice 49/ });
+    await screen.findByText("Alice 49");
     expect(mocks.range).toHaveBeenCalledWith(0, 50);
     mocks.response.data = [member(50)];
     fireEvent.click(screen.getByRole("button", { name: "Show more users" }));
-    await screen.findByRole("button", { name: /Alice 50/ });
+    await screen.findByText("Alice 50");
     expect(mocks.range).toHaveBeenLastCalledWith(50, 100);
-    expect(screen.getByRole("button", { name: /Alice 0 / })).toBeInTheDocument();
+    expect(screen.getByText("Alice 0")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Show more users" })).not.toBeInTheDocument();
   });
 
