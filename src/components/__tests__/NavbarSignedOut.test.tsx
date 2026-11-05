@@ -42,14 +42,15 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     autoHide.idle = true;
   });
 
-  it("keeps the same rubrics, as words only: Credits, Spotlight, About Us, with no icon", () => {
+  it("keeps four public navigation links, as words only, with no icon", () => {
     renderBar();
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
     const links = within(rubrics).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
-      ["Credits", "/credits"],
-      ["Spotlight", "/spotlight"],
-      ["About Us", "/about"],
+      ["Platform", "/about"],
+      ["For Creatives", "/passport"],
+      ["For Companies", "/post-opportunity"],
+      ["Discover", "/discover"],
     ]);
     expect(rubrics.querySelector("svg")).toBeNull();
   });
@@ -57,8 +58,8 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
   it("marks the page you are on, which draws the gradient underline", () => {
     renderBar("/about");
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
-    expect(within(rubrics).getByRole("link", { name: "About Us" })).toHaveAttribute("aria-current", "page");
-    expect(within(rubrics).getByRole("link", { name: "Credits" })).not.toHaveAttribute("aria-current");
+    expect(within(rubrics).getByRole("link", { name: "Platform" })).toHaveAttribute("aria-current", "page");
+    expect(within(rubrics).getByRole("link", { name: "Discover" })).not.toHaveAttribute("aria-current");
   });
 
   it("wears the designer's Sign in and Join Kretopia buttons, without icons", () => {

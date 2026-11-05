@@ -15,7 +15,7 @@ describe("EditorialFooter legal column", () => {
     const links = within(legal).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
       ["About", "/about"],
-      ["Contact", "mailto:support@kretopia.com"],
+      ["Contact", "/contact"],
       ["Terms of Service", "/terms"],
       ["Privacy Policy", "/privacy"],
       ["Community", "/community-guidelines"],

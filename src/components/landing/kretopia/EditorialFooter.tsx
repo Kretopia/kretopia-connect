@@ -1,11 +1,14 @@
 /**
- * EditorialFooter — shared Kretopia editorial footer.
+ * Kretopia EditorialFooter — public navigation.
  *
- * Contact opens the public /contact page.
- * Pricing currently opens the protected /subscription page.
- * A dedicated public pricing route remains a separate decision.
+ * Four columns: Product, For, Explore, Legal.
+ * Contact: /contact
+ * Pricing: /subscription (protected)
+ * Events: /meetup
+ * SoundStages: /soundstages
+ * Logo: /landing
  *
- * The established footer layout and gradient seam are preserved.
+ * Established design and gradient preserved.
  */
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -26,18 +29,18 @@ const COLUMNS: FooterColumn[] = [
     heading: "Product",
     links: [
       { label: "Creative Passport", to: "/passport" },
-      { label: "Scout", to: "/scout" },
-      { label: "Studio", to: "/desk" },
-      { label: "Kreto", to: "/kreto" },
-      { label: "KrePay", to: "/thrivepay" },
+      { label: "Scout", to: "/opportunities" },
+      { label: "Studio", to: "/landing#chapter-studio" },
+      { label: "Kreto", to: "/landing#chapter-kreto" },
+      { label: "KrePay", to: "/landing#chapter-studio" },
     ],
   },
   {
     heading: "For",
     links: [
-      { label: "For creatives", to: "/auth?tab=signup&src=footer" },
+      { label: "For creatives", to: "/landing#chapter-passport" },
       { label: "For companies", to: "/post-opportunity" },
-      { label: "Pricing", to: "/subscription" },
+      { label: "Pricing enquiries", to: "/contact" },
     ],
   },
   {
@@ -45,8 +48,8 @@ const COLUMNS: FooterColumn[] = [
     links: [
       { label: "Talent Search", to: "/search" },
       { label: "Match", to: "/match" },
-      { label: "Events", to: "/events" },
-      { label: "SoundStages", to: "/circle?tab=live" },
+      { label: "Events", to: "/meetup" },
+      { label: "SoundStages", to: "/soundstages" },
     ],
   },
   {
@@ -69,7 +72,7 @@ export const EditorialFooter = () => {
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-8">
         <div className="grid gap-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,auto))] lg:gap-x-16">
           <div className="max-w-xs">
-            <BrandLogo size="md" showBeta linkToHome />
+            <BrandLogo size="md" showBeta linkToHome="/landing" />
             <p
               className="mt-6 text-xl sm:text-2xl font-semibold text-white leading-snug"
               style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}

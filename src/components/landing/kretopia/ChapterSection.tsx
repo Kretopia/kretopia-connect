@@ -332,13 +332,13 @@ export const ChapterSection = ({
             <div className="mt-9 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
               <GlassCta
                 className="h-12 w-full py-0"
-                to={`${href}${href.includes("?") ? "&" : "?"}tab=signup&src=${sectionId}`}
+                to={href.startsWith("/auth") ? `${href}${href.includes("?") ? "&" : "?"}tab=signup&src=${sectionId}` : href}
                 onClick={() =>
                   trackLandingCtaClick({
                     ctaId: `${kicker.toLowerCase()}_chapter_cta`,
                     section: sectionId,
                     label: ctaLabel ?? `Enter ${kicker}`,
-                    destinationType: "auth",
+                    destinationType: href.startsWith("/auth") ? "auth" : "internal",
                   })
                 }
               >
