@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download, X, Share } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { isSamsungInternet } from '@/lib/pwaInstall';
 
 const STORAGE_KEY = 'thrivein-pwa-prompt-dismissed';
 
@@ -34,6 +35,9 @@ export function PWAInstallPrompt() {
 
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+    // Samsung Internet's installer makes a package Google Play Protect blocks: never offer it there (see src/lib/pwaInstall.ts).
+    if (isSamsungInternet()) return;
 
     const ua = navigator.userAgent;
     const isiOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;

@@ -34,6 +34,8 @@ import { WrappedShell } from "@/components/wrapped/WrappedShell";
 import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { getTierDisplayName, type SubscriptionTier } from "@/lib/subscriptionConfig";
+import { isSamsungInternet } from "@/lib/pwaInstall";
+import { OpenInChrome } from "@/components/OpenInChrome";
 
 interface NotificationPreferences {
   email_matches: boolean;
@@ -128,7 +130,8 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [activeDomain, setActiveDomain] = useState(SETTINGS_DOMAINS[0].id);
   
-  // PWA Install
+  // PWA Install (Samsung Internet is sent to Chrome: its installer makes a package Google Play Protect blocks, see src/lib/pwaInstall.ts)
+  const samsung = isSamsungInternet();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -824,7 +827,9 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                 </div>
               ) : (
                 <>
-                  {deferredPrompt && (
+                  {samsung && <OpenInChrome />}
+
+                  {!samsung && deferredPrompt && (
                     <Button onClick={handleInstallApp} className="w-full" size="lg">
                       <Download className="mr-2 h-5 w-5" />
                       Install App Now
@@ -859,7 +864,7 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
                     </div>
                   )}
 
-                  {!isIOS && !deferredPrompt && (
+                  {!isIOS && !samsung && !deferredPrompt && (
                     <div className="text-center py-2">
                       <p className="text-sm text-muted-foreground">
                         On Android Chrome, look for "Install app" or "Add to Home screen" in the browser menu (⋮)

@@ -198,6 +198,16 @@
         </span>
       </div>
     </div>
+    <script>
+      // Samsung Internet packages an installed web app with its own tooling, and Google Play Protect blocks that package on Android ("Unsafe
+      // app blocked: this app was built for an older version of Android"). Without a manifest it can only make a plain shortcut; Kretopia is
+      // installed from Chrome instead (src/lib/pwaInstall.ts, the /install page). The manifest link is injected at build time, after this
+      // point in the source but before this script runs.
+      if (/SamsungBrowser/i.test(navigator.userAgent)) {
+        var manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink && manifestLink.parentNode) manifestLink.parentNode.removeChild(manifestLink);
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
