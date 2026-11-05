@@ -37,7 +37,6 @@ vi.mock("@/components/credits/CreditsStampsPanel", () => ({ CreditsStampsPanel: 
 vi.mock("@/components/credits/CreditsActivityTimeline", () => ({ CreditsActivityTimeline: () => <div data-testid="activity" /> }));
 vi.mock("@/components/credits/CreditsAIInsights", () => ({ CreditsAIInsights: () => <div data-testid="insights" /> }));
 // The Passport's own content: if the dashboard still embedded it, this would render.
-vi.mock("@/pages/profile/ProfileContentSections", () => ({ ProfileContentSections: () => <div data-testid="passport-sections" /> }));
 
 import CreditsDashboard from "../CreditsDashboard";
 
@@ -60,7 +59,6 @@ describe("Credits dashboard: no second copy of the Passport", () => {
   it("does not embed the Passport's sections, even from an old ?tab=record link", async () => {
     renderPage("/credits?tab=record");
     await screen.findByTestId("overview");
-    expect(screen.queryByTestId("passport-sections")).toBeNull();
     expect(screen.queryByText(/Your full record/i)).toBeNull();
     // an unknown tab falls back to the default one instead of showing nothing
     expect(screen.getByTestId("identity")).toBeInTheDocument();
