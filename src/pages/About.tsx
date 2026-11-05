@@ -1,80 +1,212 @@
-import { useState } from "react";
-import { Fingerprint, ShieldCheck, Compass, LayoutGrid, Sparkles, Globe, ChevronRight } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { Link } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
-import { aboutTutorial } from "@/components/features/publicFeatureTutorials";
-import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
-import { WrappedShell } from "@/components/wrapped/WrappedShell";
-import { KretoScene } from "@/components/brand/KretoScene";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
+import { GlassCta } from "@/components/ui/glass-cta";
+import "./About.css";
 
-const PILLARS = [
-  { icon: Fingerprint, title: "Creative Passport", body: "Your whole career on one link — credits, collaborators, co-signs." },
-  { icon: ShieldCheck, title: "Verified Credits", body: "Every claim backed by evidence or the people who were there." },
-  { icon: Compass, title: "Scout", body: "Gigs, briefs and casting calls matched to what you actually do." },
-  { icon: LayoutGrid, title: "Studio", body: "One room per project — brief, files, chat, deliverables, payment." },
-  { icon: Sparkles, title: "Kreto", body: "Your Executive Producer: reads your Passport, turns talk into action." },
-  { icon: Globe, title: "One record, worldwide", body: "A creative in Port of Spain, Lagos or Paris is one search away." },
-];
-
-const LOOP_STEPS = ["Search", "Passport", "Trust", "Opportunity", "Studio", "Payment", "Stronger Passport"];
-
-const FOUNDERS: {
-  name: string;
-  role: string;
-  kretoVariant: "scout" | "connector" | "producer";
-  body: string;
-}[] = [
+/**
+ * About V4 — the user's approved visual reference, not a landing-page remake.
+ * Exactly three editorial sections, with a visual opening and footer.
+ * The reference artwork is cropped from the approved screenshot and lives only
+ * in public/about-reference; original real founder photos stay in place.
+ */
+const FOUNDERS = [
   {
-    name: "Ethan Auguste",
-    role: "Founder & Chief Executive Officer",
-    kretoVariant: "scout",
-    body: "Spent a decade building the room before building the product — showcases, listening sessions and introductions across Dubai, Los Angeles, Trinidad, Geneva and Bali. He didn't guess what creatives needed; he was already in the room when they said it out loud.",
-  },
-  {
-    name: "Jefferson Gordon-Lennox",
-    role: "Co-founder & Chief Product Officer",
-    kretoVariant: "connector",
-    body: "Design and creative direction — really, the culture's own taste made legible in a product. Every screen answers one question: would this feel out of place next to the work it represents? Sharp, editorial, unmistakably built by creatives, not for them.",
-  },
-  {
+    id: "noe",
     name: "Noé Plantier",
     role: "Co-founder & Chief Technology Officer",
-    kretoVariant: "producer",
-    body: "Engineering and AI — the unglamorous machinery underneath the whole promise. Verification, Scout, Kreto: turning a scattered, screenshot-and-DM creative history into something that's actually searchable, provable, and useful the moment someone needs it.",
+    fields: ["Engineering", "Architecture", "Technology"],
+    photo: "/about-founders/noe.jpg",
+    initials: "NP",
+    kreto: "/about-reference/kreto-noe.png",
+    description:
+      "Noé turns ideas into reliable technology. He leads Kretopia's technical architecture and engineering, making complex systems work together without making them difficult to use.",
   },
-];
+  {
+    id: "ethan",
+    name: "Ethan Auguste",
+    role: "Founder & Chief Executive Officer",
+    fields: ["Creative business", "Partnerships", "Community"],
+    photo: "/about-founders/ethan.jpg",
+    initials: "EA",
+    kreto: "/about-reference/kreto-ethan.png",
+    description:
+      "Ethan brings experience across creative industries and international communities. He leads Kretopia's vision, business direction and partnerships, connecting the work to the people behind it.",
+  },
+  {
+    id: "jefferson",
+    name: "Jefferson Gordon-Lennox",
+    role: "Co-founder & Chief Product Officer",
+    fields: ["Product", "Creative practice", "Experience"],
+    photo: "/about-founders/jefferson.jpg",
+    initials: "JG",
+    kreto: "/about-reference/kreto-jefferson.png",
+    description:
+      "An artist, writer and publisher, Jefferson brings the perspective of a working creative. He leads product direction and user experience, grounding Kretopia in how people actually create and collaborate.",
+  },
+] as const;
 
-const About = () => {
-  const [tab, setTab] = useState("system");
+function Reveal({ children, className = "", delay = 0 }: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  const reduced = useReducedMotion();
   return (
-    <div className="min-h-screen bg-background">
-      <SEO title="About Kretopia — The Creative Record, Built by Creatives" description="Kretopia turns creative history into trusted opportunity — verified credits, a Creative Passport, and one room per project, connecting artists worldwide." />
-      <FeaturePageHeader compact eyebrow="About Kretopia" title="Built for" accentTitle="creatives, everywhere" subtitle="Talent is everywhere. Opportunity isn't. We close the gap." tutorial={{ featureKey: "about", label: "How Kretopia works", steps: aboutTutorial }} />
-      <StudioFeatureShell>
-        <WrappedShell titleId="about-overview" eyebrow="Kretopia" title={<>The creative <span className="k-gradient-text">record</span></>} aside={<KretoScene scene="studio" size="thumb" className="hidden h-16 w-32 rounded-xl border border-border sm:block" />}>
-          <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid h-11 w-full grid-cols-3">
-              <TabsTrigger value="system">The system</TabsTrigger>
-              <TabsTrigger value="loop">The loop</TabsTrigger>
-              <TabsTrigger value="team">The team</TabsTrigger>
-            </TabsList>
-            <TabsContent value="system" className="mt-4">
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {PILLARS.map((p) => <div key={p.title} className="flex items-start gap-3 border-b border-border pb-4"><p.icon className="mt-1 h-5 w-5 shrink-0 text-muted-foreground" /><div><h3 className="text-sm font-semibold text-foreground">{p.title}</h3><p className="mt-1 text-sm leading-relaxed text-muted-foreground">{p.body}</p></div></div>)}
-              </div>
-            </TabsContent>
-            <TabsContent value="loop" className="mt-4 space-y-4">
-              <ol className="flex flex-wrap items-center gap-3">{LOOP_STEPS.map((step, i) => <li key={step} className="flex items-center gap-3 text-sm font-medium text-foreground"><span>{step}</span>{i < LOOP_STEPS.length - 1 && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden />}</li>)}</ol>
-              <p className="text-sm leading-relaxed text-muted-foreground">Every finished project makes the next one easier to win. That is the whole product — proof in, opportunity out.</p>
-            </TabsContent>
-            <TabsContent value="team" className="mt-4">
-              <div className="grid gap-5 md:grid-cols-3">{FOUNDERS.map((f) => <article key={f.name} className="space-y-2"><h3 className="font-semibold text-foreground">{f.name}</h3><p className="text-xs font-semibold text-muted-foreground">{f.role}</p><p className="text-sm leading-relaxed text-muted-foreground">{f.body}</p></article>)}</div>
-            </TabsContent>
-          </Tabs>
-        </WrappedShell>
-      </StudioFeatureShell>
+    <motion.div
+      className={className}
+      initial={reduced ? false : { opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.08 }}
+      transition={{ duration: reduced ? 0 : 0.32, ease: "easeOut", delay: reduced ? 0 : delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Portrait({ name, src, initials }: { name: string; src: string; initials: string }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="k-about__portrait">
+      {failed ? (
+        <span aria-label={name} className="k-about__initials">{initials}</span>
+      ) : (
+        <img
+          alt={name}
+          src={src}
+          width={100}
+          height={100}
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
+      )}
     </div>
   );
-};
+}
+
+function SectionLabel({ number, children }: { number: string; children: ReactNode }) {
+  return (
+    <p className="landing-eyebrow k-about__section-label">
+      <span className="k-about__number">{number}</span>
+      {children}
+    </p>
+  );
+}
+
+const About = () => (
+  <div className="k-about">
+    <SEO
+      title="Behind Kretopia — Meet the Founders"
+      description="Meet Noé, Ethan and Jefferson: three perspectives shaping the team behind Kretopia."
+    />
+
+    <header className="k-about__hero" aria-labelledby="about-title">
+      <div className="k-about__container k-about__hero-layout">
+        <Reveal className="k-about__hero-copy">
+          <p className="landing-eyebrow k-about__eyebrow">Our story / The people behind the work</p>
+          <h1 id="about-title" className="k-about__h1">
+            Behind <span className="k-gradient-text">Kretopia.</span>
+          </h1>
+          <p className="k-about__lead">Three different paths. One shared purpose.</p>
+          <p className="landing-sub k-about__intro">
+            Kretopia is shaped by the people building it and the experiences they bring together.
+          </p>
+          <a href="#founders" className="k-about__jump">
+            Meet the founders <ArrowDown size={17} aria-hidden="true" />
+          </a>
+        </Reveal>
+        <div className="k-about__hero-art" aria-hidden="true">
+          <img src="/about-reference/kreto-hero.webp" alt="" width="419" height="311" decoding="async" />
+        </div>
+      </div>
+    </header>
+
+    <section className="k-about__section k-about__story-section" aria-labelledby="story-title">
+      <div className="k-about__container k-about__story">
+        <div className="k-about__story-art" aria-hidden="true">
+          <img src="/about-reference/kreto-story.webp" alt="" loading="lazy" width="355" height="254" decoding="async" />
+        </div>
+        <Reveal className="k-about__story-copy">
+          <SectionLabel number="01">How we came together</SectionLabel>
+          <h2 id="story-title" className="landing-h2 k-about__heading">
+            Different backgrounds.<br />
+            <span className="k-gradient-text">A shared perspective.</span>
+          </h2>
+          <p className="k-about__body">
+            Creative business. Engineering. Artistic practice. Each of us came to Kretopia with a different understanding of the creative world. Together, those perspectives help us question assumptions, solve problems and build something more grounded in real experience.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+
+    <section id="founders" className="k-about__section k-about__founders" aria-labelledby="founders-title">
+      <div className="k-about__container">
+        <Reveal className="k-about__founder-heading">
+          <SectionLabel number="02">The people behind Kretopia</SectionLabel>
+          <h2 id="founders-title" className="landing-h2 k-about__heading">
+            Meet the <span className="k-gradient-text">founders.</span>
+          </h2>
+        </Reveal>
+        <div className="k-about__founder-grid">
+          {FOUNDERS.map((founder, index) => (
+            <Reveal
+              key={founder.id}
+              className={`k-about__founder-slot k-about__founder-slot--${founder.id}`}
+              delay={index * 0.06}
+            >
+              {/* Each Kreto belongs to its own card. Only its position changes. */}
+              <div className={`k-about__founder-kreto k-about__founder-kreto--${founder.id}`} aria-hidden="true">
+                <img src={founder.kreto} alt="" width={238} height={116} loading="lazy" decoding="async" />
+              </div>
+              <article className="k-about__founder-card">
+                <Portrait name={founder.name} src={founder.photo} initials={founder.initials} />
+                <p className="k-about__founder-label">Founding team</p>
+                <h3 className="k-about__founder-name">{founder.name}</h3>
+                <p className="k-about__founder-role">{founder.role}</p>
+                <ul className="k-about__founder-fields" aria-label={`${founder.name} areas of expertise`}>
+                  {founder.fields.map((field) => <li key={field}>{field}</li>)}
+                </ul>
+                <p className="k-about__founder-description">{founder.description}</p>
+              </article>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal className="k-about__founder-closing">
+          Three disciplines. A common commitment to building thoughtfully, and to keeping the creative people behind the work in focus.
+        </Reveal>
+      </div>
+    </section>
+
+    <section className="k-about__section k-about__future-section" aria-labelledby="future-title">
+      <div className="k-about__container k-about__future">
+        <div className="k-about__future-art" aria-hidden="true">
+          <img src="/about-reference/kreto-future.webp" alt="" width="344" height="239" loading="lazy" decoding="async" />
+        </div>
+        <Reveal className="k-about__future-copy">
+          <SectionLabel number="03">What comes next</SectionLabel>
+          <h2 id="future-title" className="landing-h2 k-about__heading">
+            Still building. <span className="k-gradient-text">Still learning.</span>
+          </h2>
+          <p className="k-about__body">
+            Kretopia is a work in progress. We'll keep refining it through experience, conversations and the people who make creative work possible.
+          </p>
+          <div className="k-about__actions">
+            <GlassCta to="/auth?tab=signup" size="md">Join Kretopia</GlassCta>
+            <Link className="k-about__outline-cta" to="/contact">
+              Get in touch <ArrowUpRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+
+    <EditorialFooter />
+  </div>
+);
+
 export default About;
