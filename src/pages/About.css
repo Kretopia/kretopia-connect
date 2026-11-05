@@ -48,42 +48,37 @@
 .k-about .k-gradient-text { background-image: var(--k-text-gradient); }
 .k-about a:focus-visible { outline: 2px solid hsl(var(--foreground)); outline-offset: 4px; }
 .k-about__hero {
-  position: relative;
   overflow: hidden;
-  min-height: clamp(325px, 35vw, 495px);
-  display: flex;
-  align-items: center;
+  text-align: center;
 }
-.k-about__hero-layout {
+.k-about__hero-copy {
   position: relative;
-  min-height: inherit;
+  z-index: 2;
+  min-width: 0;
+}
+.k-about__hero-copy .k-about__eyebrow {
   display: grid;
-  align-items: center;
-  grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
-  gap: 2%;
+  place-items: center;
+  min-height: 30px;
+  margin-bottom: 24px;
 }
-.k-about__hero-copy { position: relative; z-index: 2; padding-block: 40px; }
-.k-about__h1 {
-  margin: 16px 0 0;
-  font-size: clamp(42px, 5.9vw, 80px);
-  line-height: 1.07;
-  letter-spacing: -.057em;
-  white-space: nowrap;
+.k-about .k-about__h1 {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding-block: 8px;
+  font-size: clamp(1.5rem, 3.6vw, 3rem);
 }
-.k-about__lead {
-  margin: 15px 0 0;
-  max-width: 630px;
-  font-size: clamp(17px, 2vw, 25px);
+.k-about .k-about__lead {
+  max-width: 36rem;
+  margin: 20px auto 0;
+  font-size: clamp(17px, 1.7vw, 21px);
   font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -.02em;
+  line-height: 1.5;
 }
-.k-about__intro.landing-sub {
-  max-width: 485px;
-  margin: 11px 0 0;
-  font-size: clamp(13px, 1.5vw, 17px);
-  line-height: 1.6;
-  color: hsl(var(--foreground) / .72);
+.k-about .k-about__intro.landing-sub {
+  max-width: 36rem;
+  margin: 12px auto 0;
+  color: hsl(var(--muted-foreground));
 }
 .k-about__jump {
   display: inline-flex;
@@ -100,28 +95,6 @@
   transition: gap .2s;
 }
 .k-about__jump:hover { gap: 17px; }
-.k-about__hero-art {
-  height: 100%;
-  min-height: 285px;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: end;
-  justify-content: end;
-  margin-right: -34px;
-}
-.k-about__hero-art img {
-  display: block;
-  width: min(117%, 625px);
-  max-width: none;
-  height: auto;
-  object-fit: contain;
-  mix-blend-mode: screen;
-  -webkit-user-select: none;
-  user-select: none;
-  pointer-events: none;
-}
-
 /* 01 — origin: illustration left, real narrative right. */
 .k-about__story {
   display: grid;
@@ -147,7 +120,7 @@
 }
 
 /* 02 — portraits and founders remain the focus, not the effects. */
-.k-about__founders { scroll-margin-top: 80px; }
+.k-about__founders { scroll-margin-top: 112px; }
 .k-about__founders > .k-about__container { padding-block: clamp(33px, 4vw, 66px) clamp(26px, 3vw, 42px); }
 .k-about__founder-grid {
   display: grid;
@@ -195,28 +168,6 @@
   mix-blend-mode: screen;
   -webkit-user-select: none;
   user-select: none;
-}
-/* Noé: laptop rests directly on the top lip of the left card. */
-.k-about__founder-kreto--noe {
-  width: min(74%, 237px);
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-/* Ethan: original pose and centered placement retained, now middle card. */
-.k-about__founder-kreto--ethan {
-  width: min(90%, 277px);
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-/* Jefferson: tablet-bearing Kreto leans on the right card edge. */
-.k-about__founder-kreto--jefferson {
-  width: min(68%, 209px);
-  top: 43px;
-  right: -28px;
-  transform: rotate(-7deg);
-  transform-origin: 80% 80%;
 }
 .k-about__portrait {
   width: clamp(81px, 8.1vw, 102px);
@@ -321,30 +272,17 @@
 
 @media (max-width: 899px) {
   .k-about__founder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; }
-  .k-about__founder-slot { padding-top: 117px; }
   .k-about__future-copy .k-about__heading { white-space: normal; }
-  .k-about__h1 { white-space: normal; }
 }
 @media (max-width: 639px) {
   .k-about__container { padding-inline: 22px; }
-  .k-about__hero { min-height: 0; }
-  .k-about__hero-layout { grid-template-columns: 1fr; gap: 0; }
-  .k-about__hero-copy { padding-block: 66px 7px; }
-  .k-about__h1 { font-size: clamp(43px, 11vw, 65px); }
-  .k-about__hero-art { justify-content: center; margin: 0; min-height: 0; }
-  .k-about__hero-art img { width: min(100%, 450px); }
   .k-about__story, .k-about__future { grid-template-columns: 1fr; gap: 0; }
   .k-about__story-art { order: 2; }
   .k-about__story-copy { order: 1; padding-block: 52px 10px; }
   .k-about__story-art img { width: min(85%, 340px); }
   .k-about__founders > .k-about__container { padding-block: 44px 38px; }
   .k-about__founder-grid { grid-template-columns: 1fr; gap: 23px; margin-top: 11px; }
-  .k-about__founder-slot { padding-top: 110px; }
-  .k-about__founder-kreto--noe { width: min(70%, 240px); }
-  .k-about__founder-kreto--ethan { width: min(77%, 260px); }
-  .k-about__founder-kreto--jefferson { width: min(63%, 205px); top: 42px; right: -14px; }
   .k-about__founder-card { padding: 26px; }
-  .k-about__portrait { width: 92px; height: 92px; }
   .k-about__founder-name { font-size: 20px; }
   .k-about__founder-role, .k-about__founder-description { font-size: 14px; }
   .k-about__founder-fields li { font-size: 11px; }
@@ -379,11 +317,6 @@
 
 /* HERO */
 .k-about .k-about__hero {
-  padding: 0;
-  min-height: clamp(365px, 43vw, 560px);
-  text-align: left;
-  display: grid;
-  align-items: center;
   background:
     radial-gradient(
       ellipse 44% 75% at 78% 48%,
@@ -396,37 +329,6 @@
       transparent 84%
     ),
     hsl(var(--background));
-}
-
-.k-about .k-about__hero-layout {
-  width: 100%;
-  display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
-  gap: clamp(14px, 3vw, 46px);
-  align-items: center;
-}
-
-.k-about .k-about__hero-copy {
-  min-width: 0;
-  position: relative;
-  z-index: 2;
-  padding-block: 44px;
-}
-
-.k-about .k-about__h1 {
-  font-size: clamp(40px, 5.8vw, 78px);
-  letter-spacing: -.052em;
-  line-height: 1.06;
-}
-
-.k-about .k-about__lead {
-  margin: 17px 0 0;
-  font-size: clamp(18px, 2.1vw, 26px);
-}
-
-.k-about .k-about__intro {
-  margin: 12px 0 0;
-  max-width: 510px;
 }
 
 .k-about .k-about__jump {
@@ -457,7 +359,7 @@
 }
 
 .k-about .k-about__hero-art {
-  align-self: stretch;
+  margin-top: 20px;
 }
 
 .k-about :is(
@@ -501,7 +403,10 @@
 }
 
 .k-about .k-about__hero-art img {
-  width: min(110%, 575px);
+  width: min(100%, 320px);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  user-select: none;
 }
 
 .k-about .k-about__story-art img {
@@ -591,17 +496,16 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(14px, 2vw, 24px);
-  margin-top: 6px;
+  margin-top: clamp(18px, 2vw, 28px);
   align-items: stretch;
 }
 
 .k-about .k-about__founder-slot {
   position: relative;
   min-width: 0;
-  height: auto;
+  --founder-art-size: clamp(170px, 19vw, 235px);
+  padding-top: calc(var(--founder-art-size) + 4px);
   isolation: isolate;
-  padding-top: clamp(145px, 16vw, 182px);
-  overflow: visible;
 }
 
 /* TRANSPARENT FOUNDER KRETO */
@@ -609,6 +513,7 @@
   position: absolute;
   z-index: 4;
   pointer-events: none;
+  width: min(100%, var(--founder-art-size));
   overflow: visible;
   background: transparent;
 }
@@ -634,26 +539,23 @@
 }
 
 .k-about .k-about__founder-kreto--noe {
-  top: -44px;
+  top: 18px;
   left: 50%;
   right: auto;
-  width: min(94%, 270px);
   transform: translateX(-50%);
 }
 
 .k-about .k-about__founder-kreto--ethan {
-  top: -54px;
+  top: 0;
   left: 50%;
   right: auto;
-  width: min(99%, 284px);
   transform: translateX(-50%);
 }
 
 .k-about .k-about__founder-kreto--jefferson {
-  top: -7px;
-  right: -12px;
+  top: 25px;
+  right: 0;
   left: auto;
-  width: min(90%, 255px);
   transform: rotate(-5deg);
   transform-origin: 80% 80%;
 }
@@ -750,8 +652,8 @@
 }
 
 .k-about .k-about__portrait {
-  width: clamp(90px, 8vw, 110px);
-  height: clamp(90px, 8vw, 110px);
+  width: 96px;
+  height: 96px;
   border-radius: 13px;
 }
 
@@ -868,24 +770,12 @@ body:has(.k-about) button[aria-label="Open Kreto"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     row-gap: 30px;
   }
-  .k-about .k-about__founder-slot {
-    padding-top: 158px;
-  }
 }
 
 @media (max-width: 679px) {
-  .k-about .k-about__hero-layout,
   .k-about .k-about__section > .k-about__container.k-about__story,
   .k-about .k-about__section > .k-about__container.k-about__future {
     grid-template-columns: 1fr;
-  }
-
-  .k-about .k-about__hero-copy {
-    padding-block: 54px 0;
-  }
-
-  .k-about .k-about__hero-art img {
-    width: min(93%, 420px);
   }
 
   .k-about .k-about__story-copy,
@@ -901,14 +791,6 @@ body:has(.k-about) button[aria-label="Open Kreto"] {
   .k-about .k-about__founder-grid {
     grid-template-columns: 1fr;
     gap: 22px;
-  }
-
-  .k-about .k-about__founder-slot {
-    padding-top: 155px;
-  }
-
-  .k-about .k-about__founder-kreto--jefferson {
-    right: -3px;
   }
 
   .k-about .k-about__actions > * {
