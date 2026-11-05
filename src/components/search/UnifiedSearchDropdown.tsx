@@ -626,7 +626,7 @@ export function UnifiedSearchDropdown({
             // same token every other dropdown/popover in this codebase
             // already uses (command.tsx, context-menu.tsx, hover-card.tsx).
             "absolute left-0 right-0 mt-2 rounded-xl border border-border bg-popover text-popover-foreground shadow-xl z-[100] overflow-hidden",
-            isNavbar ? "max-h-[70vh]" : "max-h-[60vh]"
+            usersOnly ? "max-h-[min(40vh,20rem)]" : isNavbar ? "max-h-[70vh]" : "max-h-[60vh]"
           )}
         >
           <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
@@ -879,7 +879,7 @@ export function UnifiedSearchDropdown({
                           )}
                         </div>
                         {usersOnly ? (
-                          <SendUserAction />
+                          <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
                         ) : r.type === "creator" && r.is_connected ? (
                           <span className="shrink-0 text-[10px] font-semibold text-energy">Connected · View Passport</span>
                         ) : r.type === "creator" && r.is_claimed === false ? (
@@ -960,8 +960,4 @@ export function UnifiedSearchDropdown({
       )}
     </div>
   );
-}
-
-function SendUserAction() {
-  return <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />;
 }
