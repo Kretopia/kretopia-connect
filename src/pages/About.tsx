@@ -10,8 +10,8 @@ import "./About.css";
 /**
  * About V4 — the user's approved visual reference, not a landing-page remake.
  * Exactly three editorial sections, with a visual opening and footer.
- * The reference artwork is cropped from the approved screenshot and lives only
- * in public/about-reference; original real founder photos stay in place.
+ * The hero and chapter art keep their approved composition. Founder portraits
+ * use the named photo exports from the local About asset set.
  */
 const FOUNDERS = [
   {
@@ -19,7 +19,7 @@ const FOUNDERS = [
     name: "Noé Plantier",
     role: "Co-founder & Chief Technology Officer",
     fields: ["Engineering", "Architecture", "Technology"],
-    photo: "/about-founders/noe.jpg",
+    photo: "/about/founders/noe-plantier.webp",
     initials: "NP",
     kreto: "/about-reference/kreto-noe.png",
     description:
@@ -30,7 +30,7 @@ const FOUNDERS = [
     name: "Ethan Auguste",
     role: "Founder & Chief Executive Officer",
     fields: ["Creative business", "Partnerships", "Community"],
-    photo: "/about-founders/ethan.jpg",
+    photo: "/about/founders/ethan-auguste.webp",
     initials: "EA",
     kreto: "/about-reference/kreto-ethan.png",
     description:
@@ -41,7 +41,7 @@ const FOUNDERS = [
     name: "Jefferson Gordon-Lennox",
     role: "Co-founder & Chief Product Officer",
     fields: ["Product", "Creative practice", "Experience"],
-    photo: "/about-founders/jefferson.jpg",
+    photo: "/about/founders/jefferson-gordon-lennox.webp",
     initials: "JG",
     kreto: "/about-reference/kreto-jefferson.png",
     description:
@@ -78,8 +78,8 @@ function Portrait({ name, src, initials }: { name: string; src: string; initials
         <img
           alt={name}
           src={src}
-          width={100}
-          height={100}
+          width={96}
+          height={96}
           loading="lazy"
           decoding="async"
           onError={() => setFailed(true)}
@@ -106,10 +106,10 @@ const About = () => (
     />
 
     <header className="k-about__hero" aria-labelledby="about-title">
-      <div className="k-about__container k-about__hero-layout">
+      <div className="container relative mx-auto max-w-5xl px-4 pt-10 pb-8 sm:pt-14 sm:pb-12">
         <Reveal className="k-about__hero-copy">
           <p className="landing-eyebrow k-about__eyebrow">Our story / The people behind the work</p>
-          <h1 id="about-title" className="k-about__h1">
+          <h1 id="about-title" className="landing-h1 k-about__h1">
             Behind <span className="k-gradient-text">Kretopia.</span>
           </h1>
           <p className="k-about__lead">Three different paths. One shared purpose.</p>
@@ -161,7 +161,7 @@ const About = () => (
             >
               {/* Each Kreto belongs to its own card. Only its position changes. */}
               <div className={`k-about__founder-kreto k-about__founder-kreto--${founder.id}`} aria-hidden="true">
-                <img src={founder.kreto} alt="" width={238} height={116} loading="lazy" decoding="async" />
+                <img src={founder.kreto} alt="" width={1254} height={1254} loading="lazy" decoding="async" />
               </div>
               <article className="k-about__founder-card">
                 <Portrait name={founder.name} src={founder.photo} initials={founder.initials} />
