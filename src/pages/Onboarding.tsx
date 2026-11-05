@@ -27,6 +27,8 @@ import { FunnelStepper, type StepKey } from "@/components/onboarding/FunnelStepp
 import { BRAND } from "@/lib/brandLexicon";
 import { getPostSignupUrl } from "@/lib/authRedirect";
 import { canJoinDirectly } from "@/lib/eventEntry";
+import { normalizeUsername, validateUsername, USERNAME_MAX } from "@/lib/username";
+import { claimOnboardingUsername, isOnboardingUsernameTaken, UsernameTakenError } from "@/lib/onboardingUsername";
 
 // Wave 1 reframe: Find your work → Confirm credits → Launch profile
 // (internal phase ids unchanged for analytics continuity)
@@ -92,6 +94,7 @@ export default function Onboarding() {
   const [username, setUsername] = useState("");
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid" | "yours">("idle");
+  const savedUsernameRef = useRef("");
 
   useEffect(() => {
     if (user) checkOnboardingStatus();
@@ -133,6 +136,7 @@ export default function Onboarding() {
       .single();
 
     if (profileData?.username) {
+      savedUsernameRef.current = profileData.username;
       setUsername(profileData.username);
       setUsernameStatus("yours");
     }
@@ -444,50 +448,53 @@ export default function Onboarding() {
   };
 
   // ─── USERNAME / @HANDLE ───
-  const normalizeHandle = (raw: string) =>
-    raw.toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 24);
-
-  const isHandleValid = (h: string) => /^[a-z0-9_]{3,24}$/.test(h);
+  const normalizeHandle = normalizeUsername;
+  const isHandleValid = (h: string) => validateUsername(h) === "ok";
 
   // Suggest a handle from the full name once, when name is set and user hasn't typed one
   useEffect(() => {
     if (usernameTouched || username || !fullName?.trim()) return;
-    const suggestion = normalizeHandle(fullName.trim().replace(/\s+/g, ""));
-    if (suggestion.length >= 3) setUsername(suggestion);
+    const suggestion = normalizeHandle(fullName.trim().replace(/\s+/g, "")).replace(/[^a-z0-9_]/g, "").slice(0, USERNAME_MAX);
+    if (isHandleValid(suggestion)) setUsername(suggestion);
   }, [fullName, username, usernameTouched]);
 
   // Debounced availability check
   useEffect(() => {
     if (!username) { setUsernameStatus("idle"); return; }
     if (!isHandleValid(username)) { setUsernameStatus("invalid"); return; }
+    if (username === savedUsernameRef.current) { setUsernameStatus("yours"); return; }
+    if (!user) return;
+    let cancelled = false;
     setUsernameStatus("checking");
     const t = setTimeout(async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("username", username)
-        .maybeSingle();
-      if (error) { setUsernameStatus("idle"); return; }
-      if (!data) setUsernameStatus("available");
-      else if (data.user_id === user?.id) setUsernameStatus("yours");
-      else setUsernameStatus("taken");
+      try {
+        const taken = await isOnboardingUsernameTaken(username, user.id);
+        if (!cancelled) setUsernameStatus(taken ? "taken" : "available");
+      } catch {
+        if (!cancelled) setUsernameStatus("idle");
+      }
     }, 400);
-    return () => clearTimeout(t);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [username, user?.id]);
 
   const saveUsernameIfReady = async () => {
-    if (!user || !isHandleValid(username) || usernameStatus === "taken" || usernameStatus === "invalid") return false;
-    if (usernameStatus === "yours") return true;
-    const { error } = await supabase
-      .from("profiles")
-      .update({ username })
-      .eq("user_id", user.id);
-    if (error) {
-      toast({ title: "Handle not saved yet", description: "Try again before continuing.", variant: "destructive" });
+    if (!user) return false;
+    if (!isHandleValid(username) || usernameStatus === "taken") {
+      toast({ title: "Choose another @handle", description: usernameStatus === "taken" ? "That @handle is already taken." : "Use 3–30 letters, numbers or inner underscores; reserved handles are unavailable.", variant: "destructive" });
+      document.getElementById("discover-handle")?.focus();
       return false;
     }
-    setUsernameStatus("yours");
-    return true;
+    if (username === savedUsernameRef.current) return true;
+    try {
+      savedUsernameRef.current = await claimOnboardingUsername(user.id, username);
+      setUsernameStatus("yours");
+      return true;
+    } catch (error) {
+      if (error instanceof UsernameTakenError) setUsernameStatus("taken");
+      toast({ title: error instanceof UsernameTakenError ? "Choose another @handle" : "Handle not saved yet", description: error instanceof UsernameTakenError ? error.message : "Please retry. Your details are still here.", variant: "destructive" });
+      document.getElementById("discover-handle")?.focus();
+      return false;
+    }
   };
 
   // ─── AVATAR ───
@@ -848,12 +855,15 @@ export default function Onboarding() {
                   <Input
                     id="discover-handle"
                     value={username}
-                    onChange={e => { setUsername(normalizeHandle(e.target.value)); setUsernameTouched(true); }}
+                    onChange={e => { setUsername(normalizeHandle(e.target.value)); setUsernameTouched(true); setUsernameStatus("idle"); }}
                     placeholder="your-handle"
                     className="h-12 text-base pl-7 font-mono"
                     autoCapitalize="off"
                     autoCorrect="off"
                     spellCheck={false}
+                    maxLength={USERNAME_MAX}
+                    aria-invalid={usernameStatus === "taken" || usernameStatus === "invalid"}
+                    aria-describedby="handle-feedback"
                   />
                   {username && (
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold">
@@ -861,10 +871,12 @@ export default function Onboarding() {
                       {usernameStatus === "available" && <span className="text-[hsl(var(--signal-teal))]">✓ available</span>}
                       {usernameStatus === "yours" && <span className="text-[hsl(var(--signal-teal))]">✓ yours</span>}
                       {usernameStatus === "taken" && <span className="text-destructive">taken</span>}
-                      {usernameStatus === "invalid" && <span className="text-destructive">3–24 chars · a–z · 0–9 · _</span>}
                     </span>
                   )}
                 </div>
+                <p id="handle-feedback" role="status" className="text-xs text-destructive">
+                  {usernameStatus === "taken" ? "That @handle is already taken. Choose another to continue." : usernameStatus === "invalid" ? "3–30 letters, numbers or inner underscores. Reserved handles are unavailable." : ""}
+                </p>
                 <p className="text-[11px] text-muted-foreground leading-snug">
                   Your permanent Passport URL: <span className="font-mono text-foreground">kretopia.com/{username || "your-handle"}</span>
                 </p>
