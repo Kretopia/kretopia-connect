@@ -55,7 +55,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
 
   it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
     renderHero();
-    const primary = screen.getByRole("link", { name: /create passport/i });
+    const primary = screen.getByRole("link", { name: /explore passports/i });
     expect(primary).toHaveAttribute("href", "/passport");
     // CtaButton = the same btn-glass-primary as "Explore Verified Credits".
     expect(primary.className).toMatch(/\bbtn-glass\b/);
@@ -68,7 +68,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
     // field > form > the dropdown's own root > the hero's search column
     const searchColumn = field.closest("form")!.parentElement!.parentElement as HTMLElement;
     expect(searchColumn.className).toContain("max-w-[calc(34rem+2cm)]");
-    const ctaColumn = screen.getByRole("link", { name: /create passport/i }).parentElement as HTMLElement;
+    const ctaColumn = screen.getByRole("link", { name: /explore passports/i }).parentElement as HTMLElement;
     expect(ctaColumn.className).toContain("max-w-[34rem]");
   });
 
@@ -86,7 +86,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
 
   it("gives the search field and both CTAs the same corner, and the CTAs a medium size", () => {
     renderHero();
-    const ctas = [screen.getByRole("link", { name: /create passport/i }), screen.getByRole("link", { name: /explore opportunities/i })];
+    const ctas = [screen.getByRole("link", { name: /explore passports/i }), screen.getByRole("link", { name: /explore opportunities/i })];
     for (const cta of ctas) {
       expect(cta.className).toContain("rounded-[var(--k-hero-radius)]");
       expect(cta.className).not.toMatch(/\brounded-full\b/);
@@ -100,19 +100,19 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
     renderHero();
     const secondary = screen.getByRole("link", { name: /explore opportunities/i });
-    expect(secondary).toHaveAttribute("href", "/auth?next=/scout&src=hero_explore");
+    expect(secondary).toHaveAttribute("href", "/opportunities");
     // Restrained plain outline (CDO audit: no gradient on a default secondary control).
     expect(secondary.className).not.toMatch(/\bbtn-glass\b/);
   });
 
   it("clicking the primary CTA fires exactly one analytics event with the signal_field variant", () => {
     renderHero();
-    fireEvent.click(screen.getByRole("link", { name: /create passport/i }));
+    fireEvent.click(screen.getByRole("link", { name: /explore passports/i }));
     expect(trackLandingCta).toHaveBeenCalledTimes(1);
     expect(trackLandingCta).toHaveBeenCalledWith(
       "hero_build_passport",
       "hero",
-      { label: "Create Passport", variant: "signal_field" },
+      { label: "Explore Passports", variant: "signal_field" },
     );
   });
 
@@ -138,7 +138,7 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("does not throw and still renders the field under prefers-reduced-motion", () => {
     reducedMotion = true;
     renderHero();
-    expect(screen.getByRole("link", { name: /create passport/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /explore passports/i })).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
     const section = screen.getByRole("heading", { level: 1 }).closest("section");
     if (!section) throw new Error("Hero section missing");
