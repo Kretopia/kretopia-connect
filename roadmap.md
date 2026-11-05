@@ -1,5 +1,9 @@
 # Roadmap — Kreto + Credit Control (one pass)
 
+## Verification user search
+- [ ] Reuse Hero's unified dropdown for first-letter name/@username search, with all matching users reachable and no AI/web/credit calls.
+- [ ] Run focused regression checks and verify the modal where a real legacy session is available.
+
 ## Startup recovery and fast first content
 - [x] Isolate public home from authenticated dashboard dependencies; show public content during session restoration and signed-in home while onboarding loads, retaining confirmed redirects.
 - [x] Bound lazy-module recovery and cleanup; remove the never-resolving fallback, preserve unrelated caches, align home/Landing/Studio prefetch with actual entry points.
