@@ -49,4 +49,20 @@ describe("PWAInstallPrompt", () => {
     await offerInstall();
     expect(screen.getByText("Get Kretopia App")).toBeInTheDocument();
   });
+
+  it("is never offered in Samsung Internet, whose installer makes a package Google Play Protect blocks", async () => {
+    const original = navigator.userAgent;
+    Object.defineProperty(navigator, "userAgent", {
+      configurable: true,
+      value: "Mozilla/5.0 (Linux; Android 14; SAMSUNG SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36",
+    });
+    try {
+      stubViewport(true);
+      render(<PWAInstallPrompt />);
+      await offerInstall();
+      expect(screen.queryByText("Get Kretopia App")).not.toBeInTheDocument();
+    } finally {
+      Object.defineProperty(navigator, "userAgent", { configurable: true, value: original });
+    }
+  });
 });

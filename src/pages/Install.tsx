@@ -5,6 +5,8 @@ import { Download, Smartphone, Share, Plus, CheckCircle2, ArrowRight, QrCode } f
 import { useNavigate } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
 import { useToast } from "@/hooks/use-toast";
+import { isSamsungInternet } from "@/lib/pwaInstall";
+import { OpenInChrome } from "@/components/OpenInChrome";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -12,6 +14,8 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 const Install = () => {
+  // Samsung Internet is sent to Chrome: its installer makes a package Google Play Protect blocks (src/lib/pwaInstall.ts).
+  const samsung = isSamsungInternet();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -189,7 +193,14 @@ const Install = () => {
             </p>
           </div>
 
-          {deferredPrompt ? (
+          {samsung ? (
+            <div className="space-y-4">
+              <OpenInChrome />
+              <Button variant="outline" onClick={() => navigate("/auth")} className="w-full">
+                Already installed? Sign Up
+              </Button>
+            </div>
+          ) : deferredPrompt ? (
             <Button onClick={handleInstall} className="w-full" size="lg">
               <Download className="mr-2 h-5 w-5" />
               Install App
