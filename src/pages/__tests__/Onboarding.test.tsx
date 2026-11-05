@@ -5,7 +5,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   navigate: vi.fn(),
   save: vi.fn(),
+  claim: vi.fn(),
+  toast: vi.fn(),
   auth: { user: { id: "creator-1", email: "", user_metadata: {}, app_metadata: {} } },
+}));
+vi.mock("@/lib/onboardingUsername", async original => ({
+  ...(await original<typeof import("@/lib/onboardingUsername")>()),
+  claimOnboardingUsername: (...args: unknown[]) => state.claim(...args),
+  isOnboardingUsernameTaken: async () => false,
 }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => state.auth }));
 vi.mock("react-router-dom", async orig => ({ ...(await orig<typeof import("react-router-dom")>()), useNavigate: () => state.navigate }));
@@ -32,15 +39,17 @@ vi.mock("@/components/SEO", () => ({ SEO: () => null }));
 vi.mock("@/components/ImageCropDialog", () => ({ ImageCropDialog: () => null }));
 vi.mock("@/components/onboarding/FirstStampReveal", () => ({ FirstStampReveal: () => null }));
 vi.mock("@/components/intent/IntentPicker", () => ({ IntentPicker: () => null }));
-vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
+vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: state.toast }) }));
 
 import Onboarding from "../Onboarding";
+import { UsernameTakenError } from "@/lib/onboardingUsername";
 
 beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
   localStorage.clear();
   state.save.mockResolvedValue({ user_id: "creator-1", onboarding_completed: true });
+  state.claim.mockResolvedValue("fresh_handle");
 });
 
 async function launch() {
@@ -51,6 +60,21 @@ async function launch() {
 }
 
 describe("creator onboarding completion", () => {
+  it("keeps entered details after 409 and allows a different handle through manual setup", async () => {
+    state.claim.mockRejectedValueOnce(new UsernameTakenError());
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
+    await screen.findByDisplayValue("Creator Test");
+    fireEvent.change(screen.getByLabelText("Claim your @handle"), { target: { value: "taken_handle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
+    await waitFor(() => expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Choose another @handle" })));
+    expect(screen.getByDisplayValue("Creator Test")).toBeInTheDocument();
+    expect(state.navigate).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText("Claim your @handle"), { target: { value: "fresh_handle" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Launch my .*Passport/ }));
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true }));
+    expect(state.claim).toHaveBeenLastCalledWith("creator-1", "fresh_handle");
+  });
   it("opens Passport immediately after a real save, without waiting for enrichment", async () => {
     await launch();
     await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true }));
