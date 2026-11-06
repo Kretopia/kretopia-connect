@@ -62,12 +62,22 @@ export function VibeThemeSync() {
     let cancelled = false;
     supabase
       .from("profiles")
-      .select("ui_vibe")
+      .select("ui_vibe, onboarding_completed")
       .eq("user_id", user.id)
       .maybeSingle()
       .then(
         ({ data }) => {
-          if (cancelled || !data?.ui_vibe) return;
+          if (cancelled || !data) return;
+          // A profile that is still being set up has not had a chance to choose a look: its column holds the database default
+          // (Daylight), not a preference. Signing up must not flip the theme the person has been looking at, so the look on this
+          // device stays and becomes the profile's value. Once onboarding is done the profile is the source of truth again
+          // (a look picked on another device still wins).
+          if (!data.onboarding_completed) {
+            const local = getStoredVibe();
+            if (normalizeVibe(data.ui_vibe) !== local) void saveVibe(local, setTheme);
+            return;
+          }
+          if (!data.ui_vibe) return;
           const remote = normalizeVibe(data.ui_vibe);
           if (remote !== getStoredVibe()) applyVibe(remote, setTheme);
         },

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useRestoreReturnScroll } from "@/hooks/usePassportReturn";
 import jsPDF from 'jspdf';
 import { SkeletonProfile } from "@/components/ui/skeleton-card";
@@ -21,6 +21,8 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { PASSPORT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
+import { FeatureTutorialDialogContent } from "@/components/features/FeatureTutorialDialogContent";
+import { PassportWelcomeCard } from "@/components/passport/PassportWelcomeCard";
 import { CompanyProfileView } from "@/components/profile/CompanyProfileView";
 import { CompanyProfileEditDialog } from "@/components/profile/CompanyProfileEditDialog";
 import { ShareProfileDialog } from "@/components/profile/ShareProfileDialog";
@@ -54,6 +56,7 @@ import { getTierLimits, SubscriptionTier } from "@/lib/subscriptionLimits";
 
 const ProfileContent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     profile,
     portfolioItems,
@@ -98,6 +101,16 @@ const ProfileContent = () => {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [builderCredits, setBuilderCredits] = useState<{ project_name: string; role: string; year?: number | null }[] | null>(null);
   const [justRevealed, setJustRevealed] = useState<{ bioDrafted: boolean } | null>(null);
+  // Arriving from the end of onboarding (see Onboarding.tsx): one congratulations, then the state is cleared so a refresh or a later
+  // visit never shows it again.
+  const [showWelcome, setShowWelcome] = useState(() => (location.state as { passportWelcome?: boolean } | null)?.passportWelcome === true);
+  const [welcomeTourOpen, setWelcomeTourOpen] = useState(false);
+  useEffect(() => {
+    if ((location.state as { passportWelcome?: boolean } | null)?.passportWelcome) {
+      navigate(location.pathname + location.search, { replace: true, state: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Read once on mount: ClaimedProfileGlow also reads ?claimed=true and strips
   // it shortly after, but every component reading the un-stripped param on its
   // own first render still sees "true" regardless of strip order.
@@ -461,6 +474,17 @@ const ProfileContent = () => {
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
         {/* New members land here right after confirming their email. */}
         {!onboardingLoading && !onboardingComplete && <FinishProfileBanner />}
+
+        {showWelcome && profile && (
+          <PassportWelcomeCard
+            firstName={(profile as { full_name?: string | null }).full_name?.split(" ")[0]}
+            onTour={() => setWelcomeTourOpen(true)}
+            onDismiss={() => setShowWelcome(false)}
+          />
+        )}
+        <Dialog open={welcomeTourOpen} onOpenChange={setWelcomeTourOpen}>
+          <FeatureTutorialDialogContent label="How Passport works" steps={PASSPORT_TUTORIAL} onDismiss={() => setWelcomeTourOpen(false)} />
+        </Dialog>
 
         {/* Passport reveal — the reward moment right after Kreto builds the
             Passport. Uses the real Passport UI below it, doesn't replace it. */}

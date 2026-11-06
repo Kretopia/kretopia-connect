@@ -585,8 +585,9 @@ export default function Onboarding() {
       try { sessionStorage.removeItem(`onboarding_draft:${user.id}`); } catch (e) { console.error("Clear onboarding draft:", e); }
 
       // Passport opens as soon as the owner row is confirmed. All remaining
-      // work is optional and must never hold the welcome screen open.
-      navigate(ONBOARDING_PASSPORT_PATH, { replace: true });
+      // work is optional and must never hold the welcome screen open. The
+      // state asks the Passport for its one-time congratulations.
+      navigate(ONBOARDING_PASSPORT_PATH, { replace: true, state: { passportWelcome: true } });
 
       void (async () => {
 

@@ -72,12 +72,12 @@ describe("creator onboarding completion", () => {
     fireEvent.change(screen.getByLabelText("Claim your @handle"), { target: { value: "fresh_handle" } });
     fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
     fireEvent.click(await screen.findByRole("button", { name: /Launch my .*Passport/ }));
-    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true }));
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true, state: { passportWelcome: true } }));
     expect(state.claim).toHaveBeenLastCalledWith("creator-1", "fresh_handle");
   });
   it("opens Passport immediately after a real save, without waiting for enrichment", async () => {
     await launch();
-    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true }));
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true, state: { passportWelcome: true } }));
     expect(state.save).toHaveBeenCalledWith("creator-1", expect.objectContaining({ full_name: "Creator Test", onboarding_completed: true }));
   });
   it("stays in onboarding when profile creation fails", async () => {

@@ -152,7 +152,7 @@ export function MatchModal({
           .single();
         if (senderProfile) {
           const { notifyMessage } = await import('@/lib/pushNotifications');
-          notifyMessage(matchedProfile.user_id, senderProfile.full_name || 'Someone', text).catch(() => {});
+          notifyMessage(matchedProfile.user_id, senderProfile.full_name || 'Someone', text, user.id).catch(() => {});
           supabase.functions
             .invoke('send-user-email', {
               body: { type: 'message', recipientId: matchedProfile.user_id, data: { messagePreview: text } },

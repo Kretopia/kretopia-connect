@@ -29,6 +29,7 @@ import { trackPlatformPageview, attachPlatformAnalyticsListeners } from "@/lib/p
 import { NetworkStatus } from "./components/NetworkStatus";
 import { useNativeCapacitor } from "./hooks/useNativeCapacitor";
 import { useActivityPing } from "./hooks/useActivityPing";
+import { usePushSubscriptionSync } from "./hooks/usePushSubscriptionSync";
 import { AuthGate } from "./components/AuthGate";
 import { RoutePrefetcher } from "./lib/routePrefetch";
 // OnboardingTour removed — real /onboarding page is the single source of truth.

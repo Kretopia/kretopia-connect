@@ -2,19 +2,31 @@ import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Bell, BellOff } from "lucide-react";
+import { Link } from "react-router-dom";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { describePushAvailability } from "@/lib/pushSubscription";
 import { PushNotificationsInfo } from "@/components/profile/PushNotificationsInfo";
 
 export function NotificationSettings() {
-  const { isSupported, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
+  const { availability, isSubscribed, loading, subscribe, unsubscribe } = usePushNotifications();
 
-  if (!isSupported) {
+  // Say why notifications cannot be turned on here (not installed, blocked, not set up) instead of one vague "not supported".
+  if (availability !== "ready") {
+    const { title, description } = describePushAvailability(availability);
     return (
       <div className="space-y-4">
         <Card className="p-6">
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <BellOff className="w-5 h-5" />
-            <p className="text-sm">Push notifications are not supported on this device. Try Chrome, Edge, or install the app to your home screen on iOS/Android.</p>
+          <div className="flex items-start gap-3 text-muted-foreground">
+            <BellOff className="mt-0.5 h-5 w-5 shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-foreground">{title}</p>
+              <p className="text-sm">{description}</p>
+              {(availability === "install" || availability === "ios-install") && (
+                <Link to="/install" className="inline-block text-sm font-medium text-primary underline underline-offset-4">
+                  How to install the app
+                </Link>
+              )}
+            </div>
           </div>
         </Card>
         <PushNotificationsInfo />

@@ -128,6 +128,37 @@ export const DirectMessageDialog = ({
     };
   };
 
+  // Best-effort and detached from the send: the message is already stored, and the recipient also sees it in their inbox.
+  const notifyRecipient = async (messageContent: string) => {
+    try {
+      // Send push notification to receiver
+      const { data: senderProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', currentUserId)
+        .single();
+
+      const { notifyMessage } = await import("@/lib/pushNotifications");
+      await notifyMessage(
+        recipientId,
+        senderProfile?.full_name || 'Someone',
+        messageContent,
+        currentUserId ?? undefined
+      );
+
+      // Send email notification (fire-and-forget)
+      supabase.functions.invoke('send-user-email', {
+        body: {
+          type: 'message',
+          recipientId,
+          data: { messagePreview: messageContent.substring(0, 100) }
+        }
+      }).catch(err => console.error('[DM] Email notification failed:', err));
+    } catch (err) {
+      console.error('[DM] Notification failed:', err);
+    }
+  };
+
   const sendMessage = async () => {
     if (!input.trim() || !currentUserId || isLoading) return;
 
@@ -150,28 +181,10 @@ export const DirectMessageDialog = ({
       // Track message sent
       analytics.messageSent(recipientId);
 
-      // Send push notification to receiver
-      const { data: senderProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', currentUserId)
-        .single();
-
-      const { notifyMessage } = await import("@/lib/pushNotifications");
-      await notifyMessage(
-        recipientId,
-        senderProfile?.full_name || 'Someone',
-        messageContent
-      );
-
-      // Send email notification (fire-and-forget)
-      supabase.functions.invoke('send-user-email', {
-        body: {
-          type: 'message',
-          recipientId,
-          data: { messagePreview: messageContent.substring(0, 100) }
-        }
-      }).catch(err => console.error('[DM] Email notification failed:', err));
+      // The message is saved: acknowledge it now. Telling the recipient (a profile read, a push through an edge function, an
+      // email) used to be awaited here, so the composer stayed locked for as long as those took, and a failure in any of them
+      // reported "Failed to send message" for a message that had already gone through.
+      void notifyRecipient(messageContent);
 
     } catch (error) {
       console.error('Error sending message:', error);

@@ -81,7 +81,8 @@ export default defineConfig(({ mode }) => {
           enabled: false,
         },
         includeAssets: ["favicon.png", "apple-touch-icon.png"],
-        // Inject push notification handlers from public/sw.js
+        // Push handlers live in public/push-handlers.js and are imported below. Never name that file sw.js: the generated worker
+        // is written to /sw.js and overwrites it, which is how push never reached production.
         injectManifest: undefined,
         workbox: {
           // Force immediate update - critical for PWA freshness
@@ -102,7 +103,7 @@ export default defineConfig(({ mode }) => {
           // module" black-screen errors).
           navigateFallback: null,
           // Import push notification scripts
-          importScripts: ['/sw.js'],
+          importScripts: ['/push-handlers.js'],
           // Cache strategy
           runtimeCaching: [
             {
@@ -117,21 +118,14 @@ export default defineConfig(({ mode }) => {
                 expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 },
               },
             },
+            // NOTE: nothing from the backend (supabase.co) is cached here. A cache entry is keyed by URL alone, not by who asked, so
+            // a stored answer to an authenticated request (profile, messages, co-sign requests, the session itself) outlived the
+            // sign-out and could be served to the next person to sign in on the same device when the network failed. Requests
+            // the worker does not handle simply go to the network.
             {
-              // API calls: always network first
-              urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
-              handler: 'NetworkFirst',
-              options: {
-                cacheName: 'supabase-api',
-                expiration: {
-                  maxEntries: 50,
-                  maxAgeSeconds: 60 * 5,
-                },
-              },
-            },
-            {
-              // Static assets: cache but revalidate quickly
-              urlPattern: /\.(png|jpg|jpeg|svg|gif|woff|woff2)$/,
+              // Static assets: cache but revalidate quickly. Same-origin only (as the plain pattern behaved before): a cross-origin
+              // image is an opaque response that browsers pad to several MB each, and private storage URLs live on the backend.
+              urlPattern: ({ url, sameOrigin }) => sameOrigin && /\.(png|jpg|jpeg|svg|gif|woff|woff2)$/.test(url.href),
               handler: 'StaleWhileRevalidate',
               options: {
                 cacheName: 'static-assets',
@@ -154,25 +148,19 @@ export default defineConfig(({ mode }) => {
           background_color: "#0a0a0a",
           display: "standalone",
           orientation: "portrait",
+          // A stable identity: the same value the browser derived from start_url, now stated, so a later change of start_url or
+          // scope cannot make the browser treat an installed app as a different one.
+          id: "/",
           scope: "/",
           start_url: "/",
+          // The "any" icons keep the rounded tile. The maskable ones are full-bleed (no transparent corners) with the K inside the
+          // 80% safe circle, so Android can apply its own mask without cutting the mark or adding a white frame around the tile.
+          // They were one file reused for both purposes, which is why the installed icon looked framed and soft.
           icons: [
-            {
-              src: "/pwa-192x192.png",
-              sizes: "192x192",
-              type: "image/png",
-            },
-            {
-              src: "/pwa-512x512.png",
-              sizes: "512x512",
-              type: "image/png",
-            },
-            {
-              src: "/pwa-512x512.png",
-              sizes: "512x512",
-              type: "image/png",
-              purpose: "maskable",
-            },
+            { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+            { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+            { src: "/pwa-maskable-192x192.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
+            { src: "/pwa-maskable-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
           ],
         },
       }),

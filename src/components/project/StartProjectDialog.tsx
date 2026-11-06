@@ -222,6 +222,12 @@ export function StartProjectDialog({
         }
       });
 
+      // The inviter's name is only read for the notification below and needs just the member, so it is fetched while the
+      // project is created instead of after the collaborator has been added.
+      const inviterProfile = Promise.resolve(
+        supabase.from('profiles').select('full_name').eq('user_id', user.id).single(),
+      );
+
       // Create project
       const { data: project, error: projectError } = await supabase
         .from('projects')
@@ -246,13 +252,6 @@ export function StartProjectDialog({
         created_by: user.id,
       });
       if (engagementError) console.error('[StartProjectDialog] engagement insert failed', engagementError);
-
-      // Get user profile for inviter name
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('user_id', user.id)
-        .single();
 
       // Add collaborator to project then auto-accept (since they're matched/connected)
       const { data: collabData, error: collabError } = await supabase
@@ -281,33 +280,38 @@ export function StartProjectDialog({
         }
       }
 
-      // Create in-app notification for the collaborator
-      await notifyUser({
-        userId: collaborator.id,
-        title: "New Project Created",
-        message: `${userProfile?.full_name || 'Someone'} started a project with you: ${validationResult.data.title}`,
-        type: 'project_invite',
-        category: 'collaboration',
-        priority: 'high',
-        link: `/desk/${project.id}`,
-        actionUrl: `/desk/${project.id}`,
-        actionText: 'Open Project',
-      });
+      // Telling the collaborator (an in-app notification, then an invitation email through an edge function) used to be awaited
+      // here, one after the other, before the member was taken to their new project: the project and its collaborator are
+      // already saved, so the member goes straight in and the collaborator is told in the background.
+      void (async () => {
+        try {
+          const { data: userProfile } = await inviterProfile;
+          await notifyUser({
+            userId: collaborator.id,
+            title: "New Project Created",
+            message: `${userProfile?.full_name || 'Someone'} started a project with you: ${validationResult.data.title}`,
+            type: 'project_invite',
+            category: 'collaboration',
+            priority: 'high',
+            link: `/desk/${project.id}`,
+            actionUrl: `/desk/${project.id}`,
+            actionText: 'Open Project',
+          });
 
-      // Try to send email notification
-      try {
-        await supabase.functions.invoke('send-project-invitation', {
-          body: {
-            projectTitle: validationResult.data.title,
-            projectId: project.id,
-            inviterName: userProfile?.full_name || 'A Kretopia creator',
-            inviteeUserId: collaborator.id,
-          }
-        });
-      } catch (emailError) {
-        console.error('Email notification failed:', emailError);
-        // Continue anyway - in-app notification is sent
-      }
+          // Try to send email notification
+          await supabase.functions.invoke('send-project-invitation', {
+            body: {
+              projectTitle: validationResult.data.title,
+              projectId: project.id,
+              inviterName: userProfile?.full_name || 'A Kretopia creator',
+              inviteeUserId: collaborator.id,
+            }
+          });
+        } catch (notifyError) {
+          // Continue anyway: the project exists, and the collaborator also finds it in their own list.
+          console.error('Collaborator notification failed:', notifyError);
+        }
+      })();
 
       toast({
         title: "Project created!",

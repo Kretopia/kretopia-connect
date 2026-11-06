@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { ShieldCheck, Mail, MessageCircle, Copy, Check, UserPlus } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { getShareUrl } from "@/lib/constants";
-import { notifyUser } from "@/lib/notifyUser";
+import { notifyCosignRequest } from "@/lib/cosignNotifications";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 
 interface Credit {
@@ -75,14 +75,13 @@ export function CreditEndorsementDialog({ open, onOpenChange, credit, userId, re
 
       if (endorserId && !endorserEmail) {
         // The DB only notifies on acceptance, so tell the member now, or "in their inbox" is untrue.
-        void notifyUser({
-          userId: endorserId,
-          type: 'credit_confirmation_request',
-          title: 'Can you confirm a credit?',
-          message: `${requesterName || 'Someone'} says you worked together on ${credit.project_name}. One tap to confirm.`,
-          actionUrl: '/profile',
-          actionText: 'Review request',
-          category: 'credits',
+        // Both the in-app notification and the push open this exact request, not the member's profile.
+        void notifyCosignRequest({
+          endorserId,
+          requesterId: userId,
+          requesterName,
+          projectName: credit.project_name,
+          token: data?.token,
         });
         toast.success('Request sent!', { description: `${endorserName || 'They'} will see it in their notifications.` });
         onOpenChange(false);
