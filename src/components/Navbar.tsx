@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import { GlassCta } from "@/components/ui/glass-cta";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles, DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet, MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, UserPlus, UserCircle2, Building2, Inbox, MessageSquare, Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Gift, Star, RefreshCw, Theater, Database, Heart, Video } from "lucide-react";
+import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles, DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet, MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, UserPlus, UserCircle2, Building2, Inbox, Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Gift, Star, RefreshCw, Theater, Database, Heart, Video } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
-import { KretoDestinationIcon, ScoutDestinationIcon, StudioDestinationIcon } from "@/components/brand/DestinationIcons";
+import { KretoDestinationIcon, ScoutDestinationIcon } from "@/components/brand/DestinationIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { releasePushForSignOut } from "@/lib/pushSubscription";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -448,12 +448,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       </div>
                       <Separator className="my-3" />
                       <MenuGrid>
+                        {/* Messages (top bar) and Studios / Gigs / Talent / KrePay (the nav) are not repeated here; their routes are unchanged. */}
                         {[
-                          { icon: MessageSquare, label: "Messages", path: "/messages" },
-                          { icon: StudioDestinationIcon, label: "Studios", path: "/desk" },
-                          { icon: Briefcase, label: "Gigs", path: "/opportunities" },
-                          { icon: Search, label: "Talent", path: "/talent-finder" },
-                          { icon: Wallet, label: "KrePay", path: "/thrivepay" },
                           { icon: Plus, label: "Post a Gig", path: "/post-opportunity" },
                           { icon: Building2, label: "Clients", path: "/clients" },
                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
@@ -533,6 +529,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         onSwitch={() => setIsOpen(false)}
                         onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
                       />
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
+                        </div>
+                        <ThemeToggle />
+                      </div>
 
                       <Separator className="my-3" />
 
