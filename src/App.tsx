@@ -267,6 +267,7 @@ const AppContent = () => {
   const { user } = useAuth();
   useNativeCapacitor();
   useActivityPing();
+  usePushSubscriptionSync();
 
   // Which parts of the frame this route wears (see lib/appChrome).
   const { showNavbar, showBottomNav } = appChrome(location.pathname, !!user);
@@ -374,6 +375,9 @@ const AppContent = () => {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/copilot-memory" element={<ProtectedRoute><CopilotMemory /></ProtectedRoute>} />
             <Route path="/my-analytics" element={<Navigate to="/profile" replace />} />
+            {/* The Guide page is gone. The welcome email (send-user-email, sent by useOnboarding) still links to /guide, and production's copy of that
+                function only changes by a manual paste, so the path redirects instead of ending on a catch-all. */}
+            <Route path="/guide" element={<Navigate to="/" replace />} />
 
             {/* ThriveDesk - Lightweight Project Workspace */}
             <Route path="/desk" element={<ProtectedRoute><WorkHome /></ProtectedRoute>} />
