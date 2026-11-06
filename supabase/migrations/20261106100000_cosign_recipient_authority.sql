@@ -19,6 +19,12 @@
 --     * adds addressed_to_member and can_respond so the page can say "this request is for another account" before the
 --       person fills anything in. They are hints for the UI; the submit function above is the enforcement.
 --
+-- CORRECTION (2026-11-06, same day): the first committed version of this file re-declared submit_credit_endorsement_by_token
+-- without the line that authorizes it to the credits guard (see the comment inside the function), so after it every ACCEPTED answer
+-- failed with "verification_status cannot be escalated". Declines and refusals were unaffected. This file is the corrected one. If
+-- the earlier version was already applied, apply 20261106130000_cosign_submit_raises_guard_flag.sql at once: until then accepted
+-- co-signs fail. Found by running the migration on a real PostgreSQL engine on top of the guards that are in force.
+--
 -- Preflight (read-only):
 --   SELECT count(*) FILTER (WHERE endorser_id IS NOT NULL AND status = 'pending') AS pending_targeted,
 --          count(*) FILTER (WHERE endorser_id IS NULL     AND status = 'pending') AS pending_guest
@@ -140,6 +146,11 @@ BEGIN
   WHERE id = _endorsement.id;
 
   IF _accepted THEN
+    -- The credits table refuses any write of 'peer' or 'verified' that does not come from an authorized function
+    -- (guard_credit_verification_escalation, 20260812071205 and 20261028130000). This flag, local to the transaction, is how this
+    -- function is authorized. Without it every accepted answer fails, whoever gives it.
+    PERFORM set_config('app.credit_verification_authorized', 'true', true);
+
     UPDATE public.credits
     SET
       endorsement_count = COALESCE(endorsement_count, 0) + 1,
