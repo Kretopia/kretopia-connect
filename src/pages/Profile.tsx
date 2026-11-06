@@ -19,7 +19,8 @@ import { useProfileData } from "@/hooks/useProfileData";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 
 // Components
-import { PassportHero } from "@/components/passport/PassportHero";
+import { PublicPassportView } from "@/components/passport/PublicPassportView";
+import { PressLinksSection } from "@/components/profile/PressLinksSection";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -76,6 +77,13 @@ const ProfileContent = () => {
     isLoading,
   } = useProfileContext();
 
+  // A reload of the owner's own data (after a save, an import or a confirmed credit) reloads the shared Passport as well.
+  const firstProfileLoad = useRef(true);
+  useEffect(() => {
+    if (firstProfileLoad.current) { firstProfileLoad.current = false; return; }
+    setPassportRev((r) => r + 1);
+  }, [profile, credits, awards, pressLinks]);
+
   useEffect(() => {
     window.scrollTo(0, 0);
     const trackView = async () => {
@@ -91,6 +99,8 @@ const ProfileContent = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  // Bumped whenever the owner's data reloads, so the shared Passport document below reloads with it.
+  const [passportRev, setPassportRev] = useState(0);
   const { isComplete: onboardingComplete, loading: onboardingLoading } = useOnboarding();
   const { fetchData } = useProfileData();
   const { uploadAvatar, isUploading: isUploadingAvatar } = useAvatarUpload();
@@ -566,8 +576,8 @@ const ProfileContent = () => {
         {/* Identity section — who you are */}
         <section id="identity" className="scroll-mt-20">
 
-        {/* The one dominant Passport surface — merges the old ProfileHero +
-            PassportClaimHero pair into a single 3D HoloCard-wrapped hero. */}
+        {/* Owner controls and the private overview. The Passport itself is the shared document drawn below, the same one
+            everybody else sees, so the two can never look different. */}
         {profile && (() => {
           const verifiedCreditsList = credits?.filter((c: any) => c.verification_status === 'verified') || [];
           const verified = verifiedCreditsList.length;
@@ -596,15 +606,8 @@ const ProfileContent = () => {
           });
           return (
             <>
-              <PassportHero
-                profile={profile}
-                standing={standing}
-                credits={credits || []}
-                verifiedCredits={verified}
-                totalCredits={credits?.length || 0}
-                cosigns={cosigns}
-                taggedCount={taggedCount}
-                onEdit={() => {
+              <div className="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Your Passport">
+                <Button size="sm" onClick={() => {
                   setEditForm({
                     full_name: profile.full_name || "",
                     role: profile.role || "",
@@ -617,39 +620,42 @@ const ProfileContent = () => {
                     cover_image_url: "",
                   });
                   setIsEditOpen(true);
-                }}
-                onShare={handleShare}
-                onAvatarClick={() => fileInputRef.current?.click()}
-                isUploadingAvatar={isUploadingAvatar}
-                onShowQR={() => setIsQRDialogOpen(true)}
-                onDownloadEPK={() => setIsEPKEditorOpen(true)}
-                intelligence={<PassportOverview
-                embedded
-                userId={profile.user_id}
-                credits={credits || []}
-                verified={verified}
-                cosigns={cosigns}
-                standing={standing}
-                onReviewCredits={() => navigate('/credits')}
-              />}
-              />
+                }}>Edit Passport</Button>
+                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploadingAvatar}>
+                  {isUploadingAvatar ? "Uploading…" : "Change photo"}
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleShare}>Share</Button>
+                <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)}>QR code</Button>
+                <Button size="sm" variant="outline" onClick={() => setIsEPKEditorOpen(true)}>Download EPK</Button>
+              </div>
+
+              <section aria-label="Only you see this" className="mb-6 rounded-2xl border border-dashed border-border bg-card/60 p-4">
+                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Only you see this</p>
+                <PassportOverview
+                  embedded
+                  userId={profile.user_id}
+                  credits={credits || []}
+                  verified={verified}
+                  cosigns={cosigns}
+                  standing={standing}
+                  onReviewCredits={() => navigate('/credits')}
+                />
+                <div className="mt-4 border-t border-border pt-4">
+                  <PressLinksSection userId={profile.user_id} isOwnProfile onRefresh={() => setPassportRev((r) => r + 1)} />
+                </div>
+              </section>
             </>
           );
         })()}
 
-        {/* The old "Preview public Passport" / "Private dashboard" exit
-            buttons are gone -- Passport stays focused on identity,
-            verification, stamps, QR and share (see FeaturePageHeader/
-            PassportHero above); all of what "Private dashboard" used to
-            show now lives in one unified dashboard on Today
-            (TodayMetricsDashboard), reachable from the home screen. */}
-
-        {profile && <PassportCollaborationCta firstName={profile.full_name?.split(' ')[0] || 'you'} isOwner onPreview={() => navigate(`/epk/${profile.user_id}`)} />}
         {profile && <PassportOriginalEPK userId={profile.user_id} />}
         </section>
         {/* /Identity */}
       </div>
 
+
+      {/* The Passport itself: the very document visitors see, with the owner's controls above it. */}
+      {profile?.user_id && <PublicPassportView userId={profile.user_id} embedded refreshKey={passportRev} />}
 
       {/* Kreto builds the Passport — shown right after a batch credit confirm */}
       <Dialog open={!!builderCredits} onOpenChange={(open) => !open && setBuilderCredits(null)}>
