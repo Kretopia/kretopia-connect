@@ -264,6 +264,8 @@ const CreatorEPK = () => {
             .from('press_links')
             .select('id, title, publication, url, image_url')
             .eq('user_id', userId)
+            // Only what the owner confirmed. If this column does not exist yet the read fails and the list stays empty: closed, not open.
+            .not('owner_confirmed_at', 'is', null)
             .limit(4),
           
           // Awards

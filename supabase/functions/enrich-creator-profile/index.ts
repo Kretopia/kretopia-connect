@@ -6,6 +6,7 @@ import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_share
 import { corsFor, GuardError } from '../_shared/guard.ts';
 import { resolveEnrichmentCaller } from '../_shared/enrichmentCaller.ts';
 import { decideEnrichmentTarget, isProfileId } from '../_shared/enrichmentAccess.ts';
+import { assessPressCandidate } from '../_shared/pressCandidate.ts';
 function decodeHtml(text: string): string {
   if (!text) return text;
   return text
@@ -110,7 +111,7 @@ Deno.serve(async (req) => {
 
     // Load profile + existing data
     const [profileRes, pressRes, awardsRes, creditsRes] = await Promise.all([
-      supabase.from('profiles').select('full_name, website, linkedin_url, imdb_url, bio, professional_skills, passion_skills, job_title, industry, role, avatar_url').eq('user_id', user_id).maybeSingle(),
+      supabase.from('profiles').select('full_name, website, linkedin_url, imdb_url, bio, professional_skills, passion_skills, job_title, industry, role, avatar_url, location').eq('user_id', user_id).maybeSingle(),
       supabase.from('press_links').select('id, url, title, publication, image_url, excerpt, og_data').eq('user_id', user_id),
       supabase.from('awards').select('id, title').eq('user_id', user_id),
       supabase.from('credits').select('project_name, role, year, credit_category, platform').eq('user_id', user_id).order('year', { ascending: false }).limit(50),
@@ -192,6 +193,23 @@ Deno.serve(async (req) => {
       }
     }
 
+    // What ties a web page to THIS person and not to everyone with the same name: their role, their projects, people who
+    // co-signed their work, their own site, their city. A page that only shares the name is not offered at all.
+    const { data: acceptedCosigns } = await supabase
+      .from('credit_endorsements')
+      .select('endorser_name')
+      .eq('requested_by', user_id)
+      .eq('status', 'accepted')
+      .limit(50);
+    const identity = {
+      fullName: profile.full_name,
+      role: profile.role || profile.job_title,
+      location: profile.location,
+      website: profile.website,
+      projectNames: (creditsRes.data || []).map((c: any) => c.project_name).filter(Boolean),
+      collaboratorNames: (acceptedCosigns || []).map((e: any) => e.endorser_name).filter(Boolean),
+    };
+
     // ═══════════════════════════════════════════════════
     // 2. DISCOVER PRESS FROM WEB SEARCH
     //    SAFE: Only adds URLs that actually exist on the web
@@ -210,6 +228,16 @@ Deno.serve(async (req) => {
           let hostname = '';
           try { hostname = new URL(result.url).hostname.replace('www.', ''); } catch { continue; }
 
+          const fit = assessPressCandidate(identity, {
+            url: result.url,
+            title: result.title,
+            description: result.description,
+            siteName: result.metadata?.ogSiteName,
+          });
+          if (!fit.accept) continue;
+
+          // Saved as a candidate only: owner_confirmed_at stays empty, so it is hidden from the public Passport until the
+          // member confirms it. og_data records why it was suggested.
           await supabase.from('press_links').insert({
             user_id,
             title: decodeHtml(result.title || 'Press Mention'),
@@ -218,6 +246,7 @@ Deno.serve(async (req) => {
             image_url: result.metadata?.ogImage || null,
             excerpt: result.description || null,
             verification_status: 'auto_discovered',
+            og_data: { suggested_because: fit.matchedOn, found_by: 'name search' },
           });
           results.new_press++;
           existingPressUrls.add(result.url);
@@ -388,7 +417,7 @@ Return ONLY the bio text, no quotes or labels.`,
       if (allCreditSnippets.length > 50) {
         try {
           const creditsRaw = await aiExtract(
-            `Creator: ${profile.full_name}\nRole: ${profile.role || profile.job_title || 'Creative'}\n\n${wrapUntrustedContent('scraped web data', allCreditSnippets.slice(0, 8000))}`,
+            `Creator: ${profile.full_name}\nRole: ${profile.role || profile.job_title || 'Creative'}\nCity: ${profile.location || 'unknown'}\nKnown projects: ${(creditsRes.data || []).map((c: any) => c.project_name).filter(Boolean).slice(0, 15).join('; ') || 'none'}\nPeople who co-signed their work: ${identity.collaboratorNames.slice(0, 15).join('; ') || 'none'}\n\n${wrapUntrustedContent('scraped web data', allCreditSnippets.slice(0, 8000))}`,
             `You extract professional credits/work history from web data for a creative professional.
 Return a JSON array of credits. Each credit:
 - "project_name": Name of the project/film/song/album/show/campaign (string, required)
@@ -403,6 +432,8 @@ CRITICAL RULES:
 - The project name MUST appear verbatim in the provided text
 - Do NOT fabricate, guess, or infer credits not present in the data
 - If a credit seems plausible but isn't clearly stated, DO NOT include it
+- The same name belongs to many people. Include a credit ONLY if the text ties it to THIS creator: their role, city, a known project, or a person who co-signed their work. If the text is about someone else with the same name, or you cannot tell, skip it
+- Set "confidence" to 0.9 when a known project or co-signer is named next to the credit, 0.6 when only role or city matches, and never above 0.5 for a name match alone
 - Max 20 credits
 - Return raw JSON array, no markdown${PROMPT_INJECTION_DEFENSE_CLAUSE}`,
             lovableKey

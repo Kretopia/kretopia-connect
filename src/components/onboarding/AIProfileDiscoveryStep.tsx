@@ -234,8 +234,8 @@ export const AIProfileDiscoveryStep = ({
             role: c.role,
             year: c.year,
             platform: c.platform,
-            url: c.url,
-            verification_status: c.verification_status
+            url: c.url
+            // The other profile's verification is not this member's: the copy starts as their own, unverified claim.
           }));
           const { error } = await supabase.from("credits").insert(creditsToInsert);
           if (!error) creditsImported = creditsToInsert.length;
@@ -249,8 +249,8 @@ export const AIProfileDiscoveryStep = ({
             organization: a.organization,
             year: a.year,
             category: a.category,
-            description: a.description,
-            verification_status: a.verification_status
+            description: a.description
+            // Not copied: another profile's verification does not carry over to this member.
           }));
           const { error } = await supabase.from("awards").insert(awardsToInsert);
           if (!error) awardsImported = awardsToInsert.length;
@@ -264,6 +264,7 @@ export const AIProfileDiscoveryStep = ({
             url: p.url,
             publication: p.publication,
             published_date: p.published_date
+            // owner_confirmed_at is left empty: the member confirms each link on their Passport before anyone else sees it.
           }));
           await supabase.from("press_links").insert(pressToInsert);
         }
