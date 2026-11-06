@@ -31,7 +31,7 @@ export const PushNotificationPrompt = ({
   trigger = "default",
   className,
 }: PushNotificationPromptProps) => {
-  const { isSupported, isSubscribed, loading, subscribe } = usePushNotifications();
+  const { isSupported, isSubscribed, loading, subscribe } = usePushNotifications(); // isSupported: this device can turn them on now
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {

@@ -1,139 +1,97 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { ensureAppServiceWorkerRegistered } from '@/lib/serviceWorker';
+import {
+  describePushFailure,
+  disablePush,
+  enablePush,
+  getPushAvailability,
+  syncPushSubscription,
+  type PushAvailability,
+} from '@/lib/pushSubscription';
 
-const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY || '';
-
+/**
+ * Notifications for the signed-in member on this device. `isSubscribed` is true only when the browser holds a subscription and the
+ * server stored it for this member (see lib/pushSubscription.ts): a toggle never says "on" for a device that would receive nothing.
+ * `availability` says why notifications cannot be turned on here, when they cannot.
+ */
 export function usePushNotifications() {
-  const [isSupported, setIsSupported] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
+  const userId = user?.id;
+  const [availability, setAvailability] = useState<PushAvailability>(() => getPushAvailability());
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true);
-      checkSubscription();
-    } else {
+  const refresh = useCallback(async () => {
+    setAvailability(getPushAvailability());
+    if (!userId) {
+      setIsSubscribed(false);
       setLoading(false);
+      return;
     }
-  }, []);
-
-  const checkSubscription = async () => {
     try {
-      const registration = await ensureAppServiceWorkerRegistered();
-      if (!registration) return;
-      const subscription = await (registration as any).pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error('Error checking subscription:', error);
+      const state = await syncPushSubscription(userId);
+      // "unknown": the server could not be asked. Keep what is shown rather than claim a state nobody checked.
+      if (state !== 'unknown') setIsSubscribed(state === 'on');
+    } catch {
+      // keep what is shown
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  // The push service replaced this device's subscription (see public/push-handlers.js): look again.
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'PUSH_SUBSCRIPTION_CHANGED') void refresh();
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [refresh]);
 
   const subscribe = async () => {
-    if (!isSupported || !vapidPublicKey) {
-      toast({
-        title: "Not Available",
-        description: "Push notifications are not supported on this device.",
-        variant: "destructive"
-      });
+    if (!userId) {
+      toast({ title: 'Sign in first', description: 'Notifications are tied to your account.', variant: 'destructive' });
       return;
     }
-
+    setLoading(true);
     try {
-      setLoading(true);
-      const registration = await ensureAppServiceWorkerRegistered();
-      if (!registration) throw new Error('Service worker unavailable');
-      
-      const subscription = await (registration as any).pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource
-      });
-
-      if (!user) throw new Error('User not authenticated');
-
-      // Save subscription to database
-      const { error } = await supabase.from('push_subscriptions').upsert({
-        user_id: user.id,
-        endpoint: subscription.endpoint,
-        p256dh: arrayBufferToBase64(subscription.getKey('p256dh')!),
-        auth: arrayBufferToBase64(subscription.getKey('auth')!)
-      });
-
-      if (error) throw error;
-
-      setIsSubscribed(true);
-      toast({
-        title: "Notifications Enabled",
-        description: "You'll now receive push notifications!"
-      });
-    } catch (error) {
-      console.error('Error subscribing:', error);
-      toast({
-        title: "Subscription Failed",
-        description: "Could not enable push notifications.",
-        variant: "destructive"
-      });
+      // enablePush asks for the permission before anything else, so this must be called straight from the tap.
+      const result = await enablePush(userId);
+      setAvailability(getPushAvailability());
+      if (result.ok) {
+        setIsSubscribed(true);
+        toast({ title: 'Notifications enabled', description: "You'll be notified on this device." });
+      } else {
+        setIsSubscribed(false);
+        const reason = result.reason ?? 'failed';
+        toast({ ...describePushFailure(reason), variant: reason === 'dismissed' ? 'default' : 'destructive' });
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const unsubscribe = async () => {
+    if (!userId) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const registration = await ensureAppServiceWorkerRegistered();
-      if (!registration) return;
-      const subscription = await (registration as any).pushManager.getSubscription();
-      
-      if (subscription) {
-        await subscription.unsubscribe();
-        
-        if (user) {
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('endpoint', subscription.endpoint);
-        }
+      if (await disablePush(userId)) {
+        setIsSubscribed(false);
+        toast({ title: 'Notifications disabled', description: 'This device will no longer receive notifications.' });
+      } else {
+        toast({ title: 'Could not turn notifications off', description: 'Check your connection and try again.', variant: 'destructive' });
       }
-
-      setIsSubscribed(false);
-      toast({
-        title: "Notifications Disabled",
-        description: "Push notifications have been turned off."
-      });
-    } catch (error) {
-      console.error('Error unsubscribing:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  return { isSupported, isSubscribed, loading, subscribe, unsubscribe };
-}
-
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
+  return { isSupported: availability === 'ready', availability, isSubscribed, loading, subscribe, unsubscribe };
 }

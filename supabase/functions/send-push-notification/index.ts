@@ -3,11 +3,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 
 import { isAllowedPushEndpoint } from "../_shared/pushEndpoint.ts";
-import { corsFor } from '../_shared/guard.ts';
+// constantTimeEqual was called below but never imported, so every request failed with a ReferenceError (a 500) before it was
+// authenticated: no caller, internal or member, could ever send a push.
+import { constantTimeEqual, corsFor } from '../_shared/guard.ts';
+import {
+  buildPushMessage,
+  classifyPushStatus,
+  createVapidAuthHeader,
+  encryptWebPushPayload,
+  pushTopic,
+} from "../_shared/webPush.ts";
+
+// What a caller may ask for. A device only ever receives what buildPushMessage keeps of it (a title, a short body, a deep
+// link into the app, a tag and a type): `data` is read for its link and type, never forwarded, and icon/badge are ignored
+// because the service worker owns how a notification looks.
 interface PushNotificationPayload {
   userId: string;
   title: string;
   body: string;
+  url?: string;
   icon?: string;
   badge?: string;
   data?: Record<string, any>;
@@ -155,99 +169,6 @@ async function hasRealRelationship(admin: ReturnType<typeof createClient>, calle
   return !!conn.data || proj || evt || app;
 }
 
-// VAPID helper functions
-function base64UrlToUint8Array(base64Url: string): Uint8Array {
-  const padding = '='.repeat((4 - base64Url.length % 4) % 4);
-  const base64 = (base64Url + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function uint8ArrayToBase64Url(uint8Array: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < uint8Array.length; i++) {
-    binary += String.fromCharCode(uint8Array[i]);
-  }
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-async function createVapidAuthHeader(
-  endpoint: string,
-  vapidPublicKey: string,
-  vapidPrivateKey: string,
-  subject: string
-): Promise<{ authorization: string; cryptoKey: string }> {
-  const audience = new URL(endpoint).origin;
-  
-  // Create JWT header
-  const header = {
-    typ: 'JWT',
-    alg: 'ES256'
-  };
-  
-  // Create JWT payload
-  const now = Math.floor(Date.now() / 1000);
-  const payload = {
-    aud: audience,
-    exp: now + 12 * 60 * 60, // 12 hours
-    sub: subject
-  };
-
-  // Encode header and payload
-  const encodedHeader = uint8ArrayToBase64Url(new TextEncoder().encode(JSON.stringify(header)));
-  const encodedPayload = uint8ArrayToBase64Url(new TextEncoder().encode(JSON.stringify(payload)));
-  const unsignedToken = `${encodedHeader}.${encodedPayload}`;
-
-  // Import private key for signing
-  const privateKeyBytes = base64UrlToUint8Array(vapidPrivateKey);
-  
-  // Create JWK for private key
-  const privateKeyJwk = {
-    kty: 'EC',
-    crv: 'P-256',
-    x: vapidPublicKey.slice(0, 43), // First 32 bytes of public key after 0x04
-    y: vapidPublicKey.slice(43), // Last 32 bytes
-    d: vapidPrivateKey
-  };
-
-  // For proper VAPID, we need to extract x and y from the full public key
-  const publicKeyBytes = base64UrlToUint8Array(vapidPublicKey);
-  if (publicKeyBytes.length === 65 && publicKeyBytes[0] === 0x04) {
-    privateKeyJwk.x = uint8ArrayToBase64Url(publicKeyBytes.slice(1, 33));
-    privateKeyJwk.y = uint8ArrayToBase64Url(publicKeyBytes.slice(33, 65));
-  }
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'jwk',
-    privateKeyJwk,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
-
-  // Sign the token
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    cryptoKey,
-    new TextEncoder().encode(unsignedToken)
-  );
-
-  // Convert signature from DER to raw format if needed
-  const signatureBytes = new Uint8Array(signature);
-  const encodedSignature = uint8ArrayToBase64Url(signatureBytes);
-  
-  const jwt = `${unsignedToken}.${encodedSignature}`;
-
-  return {
-    authorization: `vapid t=${jwt}, k=${vapidPublicKey}`,
-    cryptoKey: vapidPublicKey
-  };
-}
-
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
@@ -263,8 +184,16 @@ serve(async (req) => {
       );
     }
 
-    const payload: PushNotificationPayload = await req.json();
-    if (!payload.userId) {
+    let payload: PushNotificationPayload;
+    try {
+      payload = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid JSON body" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (!payload || typeof payload.userId !== "string" || !payload.userId) {
       return new Response(
         JSON.stringify({ success: false, error: "userId required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -314,10 +243,10 @@ serve(async (req) => {
 
     console.log("[PUSH] Sending push notification to user:", payload.userId);
 
-    // Get user's push subscriptions
+    // Get the user's push subscriptions: only the columns a send needs.
     const { data: subscriptions, error: subError } = await supabaseClient
       .from("push_subscriptions")
-      .select("*")
+      .select("id, endpoint, p256dh, auth")
       .eq("user_id", payload.userId);
 
     if (subError) {
@@ -325,7 +254,11 @@ serve(async (req) => {
       throw subError;
     }
 
-    if (!subscriptions || subscriptions.length === 0) {
+    // One device can be registered twice (an older subscription, a retried sign-up): each endpoint is sent to once.
+    const seenEndpoints = new Set<string>();
+    const targets = (subscriptions ?? []).filter((sub) => !seenEndpoints.has(sub.endpoint) && !!seenEndpoints.add(sub.endpoint));
+
+    if (targets.length === 0) {
       console.log("[PUSH] No push subscriptions found for user");
       return new Response(
         JSON.stringify({ success: false, message: "No subscriptions" }),
@@ -333,11 +266,19 @@ serve(async (req) => {
       );
     }
 
-    console.log(`[PUSH] Found ${subscriptions.length} subscription(s)`);
+    console.log(`[PUSH] Found ${targets.length} subscription(s)`);
+
+    // The same message for every device of the member, encrypted separately for each one below.
+    const message = buildPushMessage({ title: payload.title, body: payload.body, tag: payload.tag, url: payload.url, data: payload.data });
+    const plaintext = new TextEncoder().encode(JSON.stringify(message));
+    // The push service keeps one undelivered message per topic, so the same request sent twice reaches a phone once.
+    const topic = await pushTopic(message.tag);
+    // Messages and co-sign requests are worth waking a phone for; everything else can wait for its next wake-up.
+    const urgency = message.type === "message" || message.type === "cosign_request" ? "high" : "normal";
 
     // Send to all user's devices
     const results = await Promise.allSettled(
-      subscriptions.map(async (sub) => {
+      targets.map(async (sub) => {
         try {
           // The endpoint was reported by the member's own browser and stored as typed: only a browser vendor's push service
           // is ever called (_shared/pushEndpoint.ts). Anything else is skipped, not fetched.
@@ -345,14 +286,6 @@ serve(async (req) => {
             console.warn("[PUSH] Skipping a subscription whose endpoint is not a push service", sub.id);
             return { success: false, reason: "endpoint_not_allowed" };
           }
-          const pushPayload = JSON.stringify({
-            title: payload.title,
-            body: payload.body,
-            icon: payload.icon || "/favicon.png",
-            badge: payload.badge || "/favicon.png",
-            data: payload.data || {},
-            tag: payload.tag,
-          });
 
           // Create VAPID authorization header
           const vapidHeaders = await createVapidAuthHeader(
@@ -362,7 +295,9 @@ serve(async (req) => {
             vapidSubject
           );
 
-          console.log(`[PUSH] Sending to endpoint: ${sub.endpoint.substring(0, 50)}...`);
+          // The body is encrypted to this subscription's own keys (RFC 8291): the push service only relays it, and only this
+          // browser can read it. Sent as plain JSON it can never be displayed.
+          const body = await encryptWebPushPayload(plaintext, { p256dh: sub.p256dh, auth: sub.auth });
 
           const response = await fetch(sub.endpoint, {
             method: "POST",
@@ -370,33 +305,35 @@ serve(async (req) => {
               "Content-Type": "application/octet-stream",
               "Content-Encoding": "aes128gcm",
               "TTL": "86400",
+              "Urgency": urgency,
+              ...(topic ? { "Topic": topic } : {}),
               "Authorization": vapidHeaders.authorization,
-              "Crypto-Key": `p256ecdsa=${vapidHeaders.cryptoKey}`,
             },
-            body: pushPayload,
+            body,
             // A push service answers directly; a redirect would be the way to reach somewhere else.
             redirect: "manual",
             signal: AbortSignal.timeout(10_000),
           });
 
-          console.log(`[PUSH] Response status: ${response.status}`);
+          const outcome = classifyPushStatus(response.status);
+          if (outcome !== "delivered") {
+            const errorText = (await response.text()).slice(0, 200);
+            console.error(`[PUSH] Not delivered (${outcome}): ${response.status} - ${errorText}`, sub.id);
 
-          if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`[PUSH] Failed to send: ${response.status} - ${errorText}`);
-            
-            // If subscription is invalid (410 Gone), remove it
-            if (response.status === 410 || response.status === 404) {
-              console.log("[PUSH] Removing invalid subscription");
+            // 404/410: the browser no longer has this subscription, so it is dropped. A 401/403 is the sender being refused
+            // (a VAPID key that does not match what the browser subscribed with): that must never delete subscriptions.
+            if (outcome === "gone") {
+              console.log("[PUSH] Removing invalid subscription", sub.id);
               await supabaseClient
                 .from("push_subscriptions")
                 .delete()
                 .eq("id", sub.id);
+              return { success: false, status: response.status, removed: true };
             }
-            return { success: false, endpoint: sub.endpoint, status: response.status };
+            return { success: false, status: response.status };
           }
 
-          return { success: true, endpoint: sub.endpoint };
+          return { success: true };
         } catch (error) {
           console.error("[PUSH] Error sending push:", error);
           return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -407,14 +344,18 @@ serve(async (req) => {
     const successCount = results.filter(
       (r) => r.status === "fulfilled" && r.value.success
     ).length;
+    const removedCount = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as { removed?: boolean }).removed
+    ).length;
 
-    console.log(`[PUSH] Successfully sent: ${successCount}/${subscriptions.length}`);
+    console.log(`[PUSH] Successfully sent: ${successCount}/${targets.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         sent: successCount,
-        total: subscriptions.length,
+        total: targets.length,
+        removed: removedCount,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );

@@ -55,6 +55,7 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
+import { releasePushForSignOut } from "@/lib/pushSubscription";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -150,6 +151,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
   const handleSignOut = async () => {
     try {
       setIsOpen(false);
+      // Stop this device receiving the member's notifications while the session can still remove its subscription (bounded, never throws).
+      await releasePushForSignOut();
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error("[Navbar] Sign out error:", error);
