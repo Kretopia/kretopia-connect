@@ -223,6 +223,15 @@ export default defineConfig(({ mode }) => {
         gzipSize: true,
         brotliSize: true,
       }),
+      // The first thing every page asks the backend for (the session, analytics, a profile) used to pay for DNS, TCP and TLS at that
+      // moment. Opening the connection while the page's own scripts download hides that cost. The origin is the one compiled into the
+      // app (see `supabaseUrl` above), so the hint can never point somewhere the app does not talk to.
+      {
+        name: "preconnect-backend",
+        transformIndexHtml: () => [
+          { tag: "link", attrs: { rel: "preconnect", href: supabaseUrl, crossorigin: "" }, injectTo: "head-prepend" as const },
+        ],
+      },
     ].filter(Boolean),
     build: {
       target: "es2020",
@@ -232,6 +241,13 @@ export default defineConfig(({ mode }) => {
           // downloads them in parallel and keeps them cached across deploys,
           // so repeat visits and route changes feel instant.
           manualChunks: vendorChunk,
+          // Each shared lucide icon and other tiny module became a file of its own (230 of 487 scripts were under 3 KB), and a page such as
+          // /auth waited for ~25 of them after its own code arrived. Rollup merges chunks smaller than this when it can do so without
+          // changing execution order. Measured on a production build, five interleaved cold loads per page (mobile emulation: 1.6 Mbit/s,
+          // 150 ms, CPU x4): 9-15% fewer requests, and on /auth and a public Passport the mobile LCP fell 5-8% and main-thread blocking
+          // 11-13%, for 3-4% more JavaScript. The home page did not change (+1%, inside the noise). Do NOT raise it to 10 KB: that merged
+          // more code into the pages that do not need it and made the home page slower on every run (+5% LCP, +12% JavaScript).
+          experimentalMinChunkSize: 3_000,
         },
       },
     },

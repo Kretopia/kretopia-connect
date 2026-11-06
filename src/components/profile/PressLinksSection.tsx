@@ -18,6 +18,8 @@ interface PressLink {
   excerpt?: string;
   verification_status?: "unverified" | "pending" | "verified";
   is_featured?: boolean;
+  /** Set when the owner confirms the link is really about them. Other people only ever see confirmed links. */
+  owner_confirmed_at?: string | null;
 }
 
 interface PressLinksSectionProps {
@@ -116,6 +118,8 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
       if (newLink.published_date) insertData.published_date = newLink.published_date;
       if (newLink.image_url) insertData.thumbnail_url = newLink.image_url;
       if (newLink.excerpt) insertData.excerpt = newLink.excerpt;
+      // The member adds this one themselves, so it is confirmed from the start.
+      insertData.owner_confirmed_at = new Date().toISOString();
 
       console.log("Inserting press link:", insertData);
 
@@ -141,6 +145,25 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
     }
   };
 
+  const confirmLink = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("press_links")
+        .update({ owner_confirmed_at: new Date().toISOString() } as never)
+        .eq("id", id)
+        .eq("user_id", userId)
+        .select("id")
+        .maybeSingle();
+      if (error || !data) throw error ?? new Error("not saved");
+      toast.success("Confirmed. It now shows on your Passport.");
+      fetchPressLinks();
+      onRefresh();
+    } catch (error) {
+      console.error("Error confirming press link:", error);
+      toast.error("Couldn't confirm that link. Try again.");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase.from("press_links").delete().eq("id", id);
@@ -159,7 +182,10 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
     return <KretopiaLoader size="sm" label="Loading press links..." className="py-8" />;
   }
 
-  if (pressLinks.length === 0 && !isOwnProfile) {
+  // Visitors only see what the owner confirmed. The owner sees everything, with what still needs their word marked.
+  const visibleLinks = isOwnProfile ? pressLinks : pressLinks.filter((link) => !!link.owner_confirmed_at);
+
+  if (visibleLinks.length === 0 && !isOwnProfile) {
     return null;
   }
 
@@ -281,7 +307,7 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
         )}
       </div>
 
-      {pressLinks.length === 0 ? (
+      {visibleLinks.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center">
           <Newspaper className="mx-auto mb-3 h-12 w-12 text-muted-foreground" />
           <h3 className="mb-2 text-lg font-semibold">No press coverage yet</h3>
@@ -291,7 +317,7 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
         </div>
       ) : (
         <div className="space-y-4">
-          {pressLinks.map((link) => (
+          {visibleLinks.map((link) => (
             <a
               key={link.id}
               href={link.url}
@@ -326,6 +352,25 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
                         })}</time>
                       )}
                     </div>
+                    {isOwnProfile && !link.owner_confirmed_at && (
+                      <span className="flex shrink-0 items-center gap-1">
+                        <Button
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); void confirmLink(link.id); }}
+                          aria-label={`Confirm this is about me: ${link.title}`}
+                        >
+                          This is me
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => { e.preventDefault(); void handleDelete(link.id); }}
+                          aria-label={`Not me, remove: ${link.title}`}
+                        >
+                          Not me
+                        </Button>
+                      </span>
+                    )}
                     {isOwnProfile && (
                       <Button
                         variant="ghost"

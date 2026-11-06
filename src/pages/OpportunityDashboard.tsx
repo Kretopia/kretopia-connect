@@ -24,6 +24,8 @@ import { CompBoard } from "@/components/opportunity/CompBoard";
 import { OpportunityAnalytics } from "@/components/opportunity/OpportunityAnalytics";
 import { hasProAccess } from "@/lib/subscriptionConfig";
 import { cn } from "@/lib/utils";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 
 interface Applicant {
   id: string;
@@ -508,22 +510,15 @@ Return ONLY valid JSON array:
   const selectedOpp = opportunities.find(o => o.id === selectedOppId);
 
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-5xl">
-      
+    <div>
+      <FeaturePageHeader
+        compact
+        eyebrow="Applicant Review"
+        title="Applicants"
+        subtitle="Review and manage applications for this opportunity"
+      />
 
-      <div className="mb-4 space-y-1">
-        <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-          Applicant Review
-        </p>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">
-          Applicants
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Review and manage applications for this opportunity
-        </p>
-      </div>
-      <div className="mb-6 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
+      <StudioFeatureShell className="max-w-5xl">
       <div className="mb-6 flex flex-col sm:flex-row gap-2">
         <Select value={selectedOppId || undefined} onValueChange={handleOpportunityChange}>
           <SelectTrigger className="w-full md:w-96">
@@ -772,6 +767,7 @@ Return ONLY valid JSON array:
           }}
         />
       )}
+      </StudioFeatureShell>
     </div>
   );
 };

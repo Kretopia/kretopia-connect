@@ -53,6 +53,8 @@ const ICDBProjectPage = () => {
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [claiming, setClaiming] = useState<string | null>(null);
+  // Roles this member asked to claim in this visit: a claim is a request until a reviewer decides it.
+  const [requested, setRequested] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data?.user?.id || null));
@@ -115,7 +117,8 @@ const ICDBProjectPage = () => {
       const extractedThumb = extractThumbnailForStorage(project!.external_url || null);
       const { error } = await supabase.rpc("claim_icdb_role", { p_role_id: role.id, p_thumbnail_url: extractedThumb });
       if (error) throw error;
-      toast.success("Credit claimed! It's pending review before it shows as verified.");
+      setRequested((current) => new Set(current).add(role.id));
+      toast.success("Claim request sent. A reviewer checks it before the credit appears on your Passport.");
       fetchProject();
     } catch {
       toast.error("Failed to claim");
@@ -288,11 +291,11 @@ const ICDBProjectPage = () => {
                           variant="outline"
                           size="sm"
                           className="h-7 text-[11px] gap-1 shrink-0"
-                          disabled={claiming === role.id}
+                          disabled={claiming === role.id || requested.has(role.id)}
                           onClick={() => handleClaim(role)}
                         >
                           {claiming === role.id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />}
-                          Claim
+                          {requested.has(role.id) ? "Requested" : "Claim"}
                         </Button>
                       )}
                       {!role.is_claimed && !currentUserId && (

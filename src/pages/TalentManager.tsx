@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { Copy, Users, DollarSign, Link2, TrendingUp, Briefcase, ShieldCheck, ArrowRight, Plus } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { SEO } from "@/components/SEO";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 
 interface ManagerData {
   id: string;
@@ -159,23 +161,17 @@ export default function TalentManager() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl pb-24 md:pb-6">
+    <div>
       <SEO title="Talent Manager | Kretopia" description="Manage your talent network, post jobs for clients, and earn commissions on bookings." />
 
-      <div className="mb-6 space-y-3">
-        <div className="flex items-center gap-2">
+      <FeaturePageHeader
+        compact
+        eyebrow="Referral network"
+        title="Talent Manager"
+        subtitle={`Manage your roster, post jobs for clients, and earn ${manager?.commission_rate || 10}% on every booking.`}
+      />
 
-          <p className="text-[10px] font-bold tracking-[0.22em] text-[hsl(var(--energy))] uppercase">
-            Referral network
-          </p>
-        </div>
-        <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.03em] leading-[1.05]">Talent Manager</h1>
-        <p className="text-sm text-muted-foreground max-w-md">
-          Manage your roster, post jobs for clients, and earn {manager?.commission_rate || 10}% on every booking.
-        </p>
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-      </div>
-
+      <StudioFeatureShell className="max-w-4xl">
       {!manager ? (
         <div className="space-y-6">
           {/* Revenue Protection Messaging */}
@@ -392,6 +388,7 @@ export default function TalentManager() {
           </Card>
         </div>
       )}
+      </StudioFeatureShell>
     </div>
   );
 }

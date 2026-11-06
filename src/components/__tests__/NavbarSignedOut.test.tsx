@@ -133,12 +133,12 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       expect(grid.className).toContain("sm:grid-cols-[minmax(0,1fr)_5.5rem]");
     });
 
-    it("drops the search panel below the taller two-row bar, and below the one-row bar from lg", () => {
+    it("opens the search in the middle of the screen, not under whichever bar is showing", () => {
       renderBar();
       fireEvent.click(screen.getByRole("button", { name: "Search" }));
       const dialog = screen.getByRole("dialog");
-      expect(dialog.className).toContain("top-[calc(6.75rem+env(safe-area-inset-top,0px))]");
-      expect(dialog.className).toContain("lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
+      expect(dialog.className).not.toMatch(/top-\[calc\(/);
+      expect(dialog.style.top).not.toBe("");
     });
   });
 
@@ -169,25 +169,35 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       return screen.getByRole("dialog");
     };
 
-    it("is the hero field in a quick floating panel: fades over 100 ms, no slide, no panel chrome, no corner button", () => {
+    it("is the hero field in a quick floating panel: fades and settles in, no slide, no panel chrome, no corner button", () => {
       const dialog = openSearch();
-      expect(dialog).toHaveClass("data-[state=open]:duration-100", "data-[state=open]:fade-in-0");
+      expect(dialog).toHaveClass("data-[state=open]:duration-150", "data-[state=open]:fade-in-0");
       expect(dialog.className).not.toMatch(/slide-in|duration-500|backdrop-blur|bg-background\b|shadow-lg|p-6/);
       expect(within(dialog).getByRole("combobox")).toBeInTheDocument();
       expect(within(dialog).queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
     });
 
-    it("is as wide as the hero field (34rem plus 1 cm each side) and sits below the taller signed-out bar", () => {
+    it("is as wide as the hero field (34rem plus 1 cm each side) and centred across the screen", () => {
       const dialog = openSearch();
       expect(dialog.className).toContain("w-[min(calc(34rem+2cm),calc(100vw-2rem))]");
-      expect(dialog.className).toContain("lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]");
+      // Centred with auto margins: a translate would be knocked off centre by the open animation.
+      expect(dialog.className).toContain("inset-x-0");
+      expect(dialog.className).toContain("mx-auto");
+      expect(dialog.className).not.toMatch(/-translate-x-1\/2/);
     });
 
-    it("dims the page lightly, without blurring it", () => {
+    it("sits in the vertical middle of the visible screen and hands the results the room left under it", () => {
+      const dialog = openSearch();
+      // jsdom: 1024 x 768 and no visual viewport. A 64 px field centred on 768 starts at 352.
+      expect(dialog.style.top).toBe("352px");
+      expect(dialog.style.getPropertyValue("--k-search-room")).toBe("328px"); // 384 - 32 - 8 - 16
+      expect(dialog).toHaveAttribute("data-search-stage", "center");
+    });
+
+    it("blurs and dims the page around it, strongly", () => {
       openSearch();
       const overlay = document.querySelector('[data-state="open"].fixed.inset-0') as HTMLElement;
-      expect(overlay.className).toContain("bg-background/40");
-      expect(overlay.className).not.toMatch(/backdrop-blur/);
+      expect(overlay).toHaveClass("k-search-scrim");
     });
 
     it("is still named for screen readers", () => {
