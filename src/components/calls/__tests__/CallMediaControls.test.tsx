@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DailyCall } from "@daily-co/daily-js";
 import { CallMediaControls } from "../CallMediaControls";
@@ -74,5 +74,33 @@ describe("Daily-backed call controls", () => {
     const { call, unmount } = setup(); unmount();
     expect(call.off.mock.calls.map(([event]) => event)).toEqual(["participant-updated", "joined-meeting"]);
     expect(call.leave).not.toHaveBeenCalled();
+  });
+  describe("Daily's own bars follow the app's theme", () => {
+    // Daily accepts #RRGGBB only: given hsl(...) it logged a warning and kept its white tray under the app's dark header.
+    const TOKENS = { "--primary": "0 0% 100%", "--primary-foreground": "225 44% 4%", "--background": "225 44.4444% 3.5294%", "--secondary": "222 22% 13%", "--foreground": "0 0% 100%", "--border": "222 22% 13%", "--card": "222 24% 9%", "--muted-foreground": "222 16% 71%" };
+    const style = () => document.documentElement.style;
+    afterEach(() => { for (const token of Object.keys(TOKENS)) style().removeProperty(token); document.documentElement.removeAttribute("data-theme"); });
+
+    it("sends hex colours only, and sends them again when the theme changes during the call", async () => {
+      for (const [token, value] of Object.entries(TOKENS)) style().setProperty(token, value);
+      const { call } = setup();
+      expect(call.setTheme).toHaveBeenCalledOnce();
+      const sent = (call.setTheme.mock.calls[0] as unknown as [{ colors: Record<string, string> }])[0].colors;
+      expect(Object.keys(sent).sort()).toEqual(["accent", "accentText", "background", "backgroundAccent", "baseText", "border", "mainAreaBg", "mainAreaBgAccent", "mainAreaText", "supportiveText"]);
+      for (const color of Object.values(sent)) expect(color).toMatch(/^#[0-9a-f]{6}$/);
+      expect(sent.background).toBe("#05070d");
+
+      style().setProperty("--background", "36 27% 97%");
+      document.documentElement.setAttribute("data-theme", "daylight");
+      await waitFor(() => expect(call.setTheme).toHaveBeenCalledTimes(2));
+      const next = (call.setTheme.mock.calls[1] as unknown as [{ colors: Record<string, string> }])[0].colors;
+      expect(next.background).toMatch(/^#f/);
+      expect(next.mainAreaBg).toBe(next.background);
+    });
+
+    it("sends nothing when the document has no theme to read, rather than values Daily rejects", () => {
+      const { call } = setup();
+      expect(call.setTheme).not.toHaveBeenCalled();
+    });
   });
 });
