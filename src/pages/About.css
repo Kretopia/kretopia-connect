@@ -1,812 +1,584 @@
-/* About V4 — page-scoped composition matching the approved screenshot.
-   Only the official typography/gradient/CTAs are shared with the landing.
-   All illustration files are cropped from the user's approved reference. */
+/* About inherits Kretopia's typography, palette and theme tokens. */
 .k-about {
-  --background: 253 32% 4%;
-  --foreground: 0 0% 98%;
-  --card: 256 22% 8%;
-  --border: 253 18% 19%;
-  --muted-foreground: 248 8% 72%;
   min-height: 100vh;
   overflow-x: clip;
   color: hsl(var(--foreground));
   background: hsl(var(--background));
-  font-family: var(--font-family-brand);
-  -webkit-font-smoothing: antialiased;
 }
-.k-about *, .k-about *::before, .k-about *::after { box-sizing: border-box; }
-.k-about__container {
-  width: min(100%, 1320px);
-  margin-inline: auto;
-  padding-inline: clamp(22px, 6.5vw, 70px);
+
+.k-about__hero,
+.k-about__section {
+  position: relative;
+  isolation: isolate;
 }
-.k-about__section { border-top: 1px solid hsl(var(--border) / .72); }
-.k-about__eyebrow, .k-about__section-label {
-  margin: 0;
-  color: hsl(var(--foreground) / .73);
-  font-weight: 700;
-  letter-spacing: .2em;
-  font-size: 10px;
-  line-height: 1.6;
-  text-transform: uppercase;
+
+.k-about__section {
+  border-top: 1px solid hsl(var(--border) / .55);
 }
-.k-about__number { margin-right: 10px; font-variant-numeric: tabular-nums; }
+
+.k-about__hero-layout,
+.k-about__text-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(22px, 4.6vw, 72px);
+  align-items: start;
+}
+
+.k-about__hero-layout {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+}
+
+.k-about__text-layout { padding-block: clamp(36px, 4vw, 64px); }
+.k-about__text-layout .k-about__body { margin-top: 0; }
+
+.k-about__hero-copy,
+.k-about__copy,
+.k-about__art {
+  min-width: 0;
+}
+
 .k-about__h1,
-.k-about__heading.landing-h2,
-.k-about__founder-name {
-  font-family: var(--font-family-brand);
+.k-about__heading.landing-h2 {
   color: hsl(var(--foreground));
   font-weight: 600;
   text-wrap: balance;
 }
-.k-about__heading.landing-h2 {
-  margin: 7px 0 0;
-  font-size: clamp(27px, 3.5vw, 46px);
-  line-height: 1.12;
-  letter-spacing: -.045em;
-}
-.k-about .k-gradient-text { background-image: var(--k-text-gradient); }
-.k-about a:focus-visible { outline: 2px solid hsl(var(--foreground)); outline-offset: 4px; }
-.k-about__hero {
-  overflow: hidden;
-  text-align: center;
-}
-.k-about__hero-copy {
-  position: relative;
-  z-index: 2;
-  min-width: 0;
-}
-.k-about__hero-copy .k-about__eyebrow {
-  display: grid;
-  place-items: center;
-  min-height: 30px;
-  margin-bottom: 24px;
-}
-.k-about .k-about__h1 {
-  max-width: 56rem;
-  margin: 0 auto;
+
+.k-about__h1 {
+  margin: 24px 0 0;
   padding-block: 8px;
   font-size: clamp(1.5rem, 3.6vw, 3rem);
 }
-.k-about .k-about__lead {
-  max-width: 36rem;
-  margin: 20px auto 0;
-  font-size: clamp(17px, 1.7vw, 21px);
+
+.k-about__h1 .k-gradient-text,
+.k-about__heading .k-gradient-text {
+  margin-inline: -.16em;
+}
+
+.k-about__heading.landing-h2 {
+  margin: 14px 0 0;
+}
+
+.k-about__lead {
+  margin: 20px 0 0;
+  font-size: clamp(.9375rem, 1.4vw, 1.0625rem);
+  line-height: 1.4;
   font-weight: 600;
-  line-height: 1.5;
+  letter-spacing: -.02em;
 }
-.k-about .k-about__intro.landing-sub {
-  max-width: 36rem;
-  margin: 12px auto 0;
+
+.k-about__body {
+  max-width: 590px;
+  margin-top: 20px;
   color: hsl(var(--muted-foreground));
+  font-size: clamp(.9375rem, 1.4vw, 1.0625rem);
+  line-height: 1.7;
 }
+
+.k-about__body p {
+  margin: 0;
+}
+
+.k-about__hero-copy .k-about__intro { max-width: 36rem; }
+
+.k-about__body p + p {
+  margin-top: 1em;
+}
+
 .k-about__jump {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  min-height: 38px;
-  margin-top: 15px;
-  font-size: 13px;
-  font-weight: 650;
+  min-height: 44px;
+  margin-top: 20px;
   color: hsl(var(--foreground));
+  font-size: .9375rem;
+  font-weight: 600;
+  text-decoration: none;
   border-bottom: 2px solid transparent;
   border-image: var(--k-text-gradient) 1;
-  text-decoration: none;
-  transition: gap .2s;
-}
-.k-about__jump:hover { gap: 17px; }
-/* 01 — origin: illustration left, real narrative right. */
-.k-about__story {
-  display: grid;
-  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr);
-  gap: clamp(22px, 4vw, 72px);
-  align-items: center;
-  min-height: clamp(265px, 29vw, 397px);
-}
-.k-about__story-art { display: grid; align-items: end; justify-items: center; align-self: end; }
-.k-about__story-art img {
-  width: min(100%, 440px);
-  height: auto;
-  mix-blend-mode: screen;
-  pointer-events: none;
-}
-.k-about__story-copy { padding-block: 42px; }
-.k-about__body {
-  margin: 13px 0 0;
-  max-width: 590px;
-  color: hsl(var(--foreground) / .76);
-  font-size: clamp(13px, 1.47vw, 17px);
-  line-height: 1.65;
+  transition: gap .2s ease;
 }
 
-/* 02 — portraits and founders remain the focus, not the effects. */
-.k-about__founders { scroll-margin-top: 112px; }
-.k-about__founders > .k-about__container { padding-block: clamp(33px, 4vw, 66px) clamp(26px, 3vw, 42px); }
-.k-about__founder-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(14px, 1.8vw, 24px);
-  margin-top: 8px;
-  align-items: stretch;
+.k-about__jump:hover { gap: 17px; }
+.k-about__jump:focus-visible {
+  outline: 2px solid hsl(var(--foreground));
+  outline-offset: 4px;
 }
-.k-about__founder-slot {
+
+.k-about__section-label { margin: 0; }
+.k-about__number { font-variant-numeric: tabular-nums; }
+
+.k-about__art {
   position: relative;
-  min-width: 0;
-  padding-top: clamp(92px, 10vw, 126px);
   isolation: isolate;
-}
-.k-about__founder-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  height: 100%;
-  padding: clamp(20px, 2.4vw, 31px);
-  border-radius: 16px;
-  border: 1.5px solid transparent;
-  /* Kretopia spectrum, but restrained until hover. */
-  background: linear-gradient(155deg, #191329, #0d0a17 85%) padding-box,
-              var(--k-text-gradient) border-box;
-  box-shadow: 0 12px 36px rgba(0,0,0,.13), 0 0 22px rgba(231,25,140,.08);
-  transition: transform .24s ease, box-shadow .24s ease;
-}
-.k-about__founder-card:hover,
-.k-about__founder-card:focus-within {
-  transform: translateY(-3px);
-  box-shadow: 0 17px 40px rgba(0,0,0,.22), 0 0 26px rgba(231,25,140,.16);
-}
-.k-about__founder-kreto {
-  position: absolute;
-  z-index: 3;
-  pointer-events: none;
-  display: block;
-}
-.k-about__founder-kreto img {
-  display: block;
-  width: 100%;
-  height: auto;
-  mix-blend-mode: screen;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.k-about__portrait {
-  width: clamp(81px, 8.1vw, 102px);
-  height: clamp(81px, 8.1vw, 102px);
-  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  overflow: hidden;
-  border-radius: 11px;
-  background: #231c31;
-  border: 1px solid rgba(255,255,255,.17);
-}
-.k-about__portrait img { width: 100%; height: 100%; object-fit: cover; object-position: center 24%; }
-.k-about__initials { font-size: 22px; font-weight: 650; color: #dad5e5; }
-.k-about__founder-label {
-  margin: 14px 0 0;
-  font-size: 10px;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: .17em;
-  color: hsl(var(--foreground) / .68);
-}
-.k-about__founder-name {
-  margin: 3px 0 0;
-  font-size: clamp(17px, 1.8vw, 23px);
-  line-height: 1.16;
-  letter-spacing: -.035em;
-  overflow-wrap: anywhere;
-}
-.k-about__founder-role {
-  margin: 3px 0 0;
-  font-size: clamp(12px, 1.18vw, 15px);
-  line-height: 1.5;
-  color: hsl(var(--foreground) / .92);
-}
-.k-about__founder-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  list-style: none;
-  margin: 12px 0 0;
-  padding: 0;
-}
-.k-about__founder-fields li {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  min-height: 21px;
-  padding: 3px 8px;
-  border-radius: 999px;
-  background: rgba(255,255,255,.085);
-  color: rgba(255,255,255,.82);
-  font-size: 10px;
-  line-height: 1.2;
-  white-space: normal;
-}
-.k-about__founder-description {
-  margin: 13px 0 0;
-  color: hsl(var(--foreground) / .78);
-  font-size: clamp(12.5px, 1.27vw, 15px);
-  line-height: 1.55;
-}
-.k-about__founder-closing {
-  max-width: 1030px;
-  margin: 19px 0 0;
-  color: hsl(var(--foreground) / .7);
-  font-size: clamp(12.5px, 1.35vw, 15px);
-  line-height: 1.65;
 }
 
-/* 03 — one matching Kreto scene; shared CTAs, no additional product pitch. */
-.k-about__future {
-  display: grid;
-  align-items: center;
-  grid-template-columns: minmax(0,.95fr) minmax(0,1.05fr);
-  gap: clamp(22px, 4vw, 75px);
-  min-height: clamp(250px, 27vw, 370px);
+.k-about__art::before {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse,
+    color-mix(in srgb, var(--k-g-2) 13%, transparent),
+    color-mix(in srgb, var(--k-g-3) 5%, transparent) 48%,
+    transparent 76%
+  );
+  animation: k-about-halo 9s ease-in-out infinite alternate;
+  pointer-events: none;
 }
-.k-about__future-art { display: flex; justify-content: center; align-self: end; }
-.k-about__future-art img { width: min(100%, 395px); height: auto; mix-blend-mode: screen; pointer-events: none; }
-.k-about__future-copy { padding-block: 43px; }
-.k-about__future-copy .k-about__heading { white-space: nowrap; }
-.k-about__actions { display: flex; align-items: center; flex-wrap: wrap; gap: 13px; margin-top: 17px; }
-.k-about__outline-cta {
+
+.k-about__art img {
+  display: block;
+  width: 100%;
+  max-width: 450px;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.k-about__hero-art img { max-width: 575px; }
+
+.k-about__founders { scroll-margin-top: 90px; }
+.k-about__founders > .k-about__container {
+  padding-block: clamp(44px, 6vw, 80px);
+}
+
+/* Each contact point is anchored to its own card and moves with it. */
+
+/* The seat crosses the card lip; the legs hang in front of the surface. */
+
+/* The approved bent arm meets the top-right card border. */
+
+.k-about__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+@keyframes k-about-halo {
+  from { transform: scale(.96); opacity: .6; }
+  to { transform: scale(1.04); opacity: 1; }
+}
+
+@media (max-width: 1023px) {
+}
+
+@media (max-width: 679px) {
+  .k-about__hero-layout,
+  .k-about__text-layout { grid-template-columns: minmax(0, 1fr); }
+  .k-about__hero-copy { text-align: center; }
+  .k-about__hero-copy .k-about__intro { margin-inline: auto; }
+  .k-about__art img { max-width: 420px; }
+  .k-about__actions { align-items: stretch; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-about__art::before { animation: none; }
+  .k-about__jump { transition: none; }
+}
+
+/* HERO — centered, text-led, no mascot */
+
+.k-about .k-about__hero {
+  min-height: 0;
+  border-bottom: 1px solid hsl(var(--border) / .65);
+}
+
+.k-about .k-about__hero > .container,
+.k-about .k-about__hero .k-about__hero-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: min(calc(100% - 40px), 1024px);
+  max-width: 1024px;
+  min-height: 0;
+  margin-inline: auto;
+  padding-top: clamp(44px, 5vw, 72px);
+  padding-bottom: clamp(46px, 5vw, 72px);
+  gap: 0;
+  text-align: center;
+}
+
+.k-about .k-about__hero-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 800px;
+  margin-inline: auto;
+  text-align: center;
+}
+
+.k-about .k-about__hero .landing-eyebrow {
+  margin-bottom: 22px;
+  letter-spacing: .2em;
+}
+
+.k-about .k-about__hero h1 {
+  width: 100%;
+  max-width: 850px;
+  margin: 0 auto;
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.12;
+  letter-spacing: -.045em;
+  text-wrap: balance;
+}
+
+.k-about .k-about__hero .k-about__lead {
+  max-width: 620px;
+  margin: 22px auto 0;
+  font-size: clamp(16px, 1.6vw, 19px);
+  line-height: 1.55;
+  text-align: center;
+}
+
+.k-about .k-about__hero .k-about__intro {
+  max-width: 640px;
+  margin: 15px auto 0;
+  line-height: 1.7;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+}
+
+.k-about .k-about__hero .k-about__jump,
+.k-about .k-about__hero a[href="#founders"] {
+  align-self: center;
+  margin-top: 27px;
+}
+
+.k-about .k-about__hero-art,
+.k-about .k-about__hero [class*="mascot"] {
+  display: none;
+}
+
+/* SECTION 01 — preserve editorial copy, remove decorative art */
+
+.k-about .k-about__story-section [class*="kreto"],
+.k-about .k-about__story-section [class*="mascot"] {
+  display: none;
+}
+
+.k-about .k-about__story-section {
+  padding-block: clamp(44px, 5vw, 72px);
+}
+
+.k-about .k-about__story {
+  align-items: start;
+}
+
+/* SECTION 02 — founder cards */
+
+.k-about #founders {
+  padding-block: clamp(48px, 5.5vw, 80px);
+}
+
+.k-about #founders [class*="kreto"],
+.k-about #founders [class*="mascot"] {
+  display: none;
+}
+
+/* Real photographs — dominant rather than thumbnail-sized */
+
+.k-about #founders img[src*="/founders/"] {
+  display: block;
+  width: clamp(128px, 13vw, 170px);
+  height: clamp(128px, 13vw, 170px);
+  max-width: none;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: center 25%;
+  border-radius: 17px;
+}
+
+.k-about #founders h3 {
+  margin-top: 16px;
+  font-size: clamp(19px, 1.9vw, 23px);
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -.025em;
+}
+
+.k-about #founders article p {
+  line-height: 1.7;
+}
+
+/* SECTION 03 — consistent concluding rhythm */
+
+.k-about .k-about__closing,
+.k-about .k-about__next-section {
+  padding-block: clamp(48px, 5.5vw, 76px);
+}
+
+@media (max-width: 767px) {
+  .k-about .k-about__hero > .container,
+  .k-about .k-about__hero .k-about__hero-inner {
+    width: min(calc(100% - 32px), 1024px);
+    padding-top: 38px;
+    padding-bottom: 48px;
+  }
+
+  .k-about .k-about__hero h1 {
+    font-size: clamp(36px, 8vw, 48px);
+  }
+
+  .k-about #founders img[src*="/founders/"] {
+    width: 144px;
+    height: 144px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+}
+.k-about .feature-reference-header .k-about__jump {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-inline: auto;
+  padding: 10px 3px;
+  border-bottom: 1px solid var(--k-g-3);
+  color: hsl(var(--foreground));
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.k-about .feature-reference-header .k-about__jump:hover {
+  border-bottom-color: var(--k-g-4);
+}
+
+.k-about .feature-reference-header .k-about__jump:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 4px;
+}
+
+/* Portrait: same image-first reading order as Discover cards. */
+
+@media (max-width: 950px) {
+}
+
+@media (max-width: 640px) {
+}
+
+@media (prefers-reduced-motion: reduce) {
+}
+
+
+/* KRETOPIA_ABOUT_FOUNDERS_CANONICAL
+   Canonical founder cards — shared HoloCard shell.
+   Portraits preserved in full; no decorative Kreto.
+*/
+
+.k-about #founders .k-about__founder-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 24px);
+  align-items: stretch;
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.k-about #founders .k-about__founder-slot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.k-about #founders .k-about__founder-card {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid hsl(var(--border));
+  border-radius: 12px;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: none;
+  transform: none;
+}
+
+.k-about #founders .k-about__portrait {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+  aspect-ratio: 4 / 3;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: hsl(var(--muted));
+}
+
+.k-about #founders .k-about__portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 0;
+}
+
+.k-about #founders .k-about__initials {
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 600;
+}
+
+.k-about #founders .k-about__founder-label,
+.k-about #founders .k-about__founder-name,
+.k-about #founders .k-about__founder-role,
+.k-about #founders .k-about__founder-fields,
+.k-about #founders .k-about__founder-description {
+  margin-left: clamp(18px, 2vw, 28px);
+  margin-right: clamp(18px, 2vw, 28px);
+}
+
+.k-about #founders .k-about__founder-label {
+  margin-top: 22px;
+  margin-bottom: 0;
+  color: hsl(var(--muted-foreground));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+}
+
+.k-about #founders .k-about__founder-name {
+  margin-top: 8px;
+  margin-bottom: 0;
+  color: hsl(var(--foreground));
+  font-size: clamp(20px, 1.7vw, 25px);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -.025em;
+  overflow-wrap: anywhere;
+}
+
+.k-about #founders .k-about__founder-role {
+  margin-top: 7px;
+  margin-bottom: 0;
+  color: hsl(var(--foreground) / .82);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.k-about #founders .k-about__founder-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 18px;
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.k-about #founders .k-about__founder-fields li {
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid hsl(var(--border));
+  border-radius: 999px;
+  background: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+  font-size: 11px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.k-about #founders .k-about__founder-description {
+  flex: 1;
+  margin-top: 20px;
+  margin-bottom: 28px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.k-about #founders .k-about__founder-description p {
+  margin: 0;
+}
+
+.k-about #founders .k-about__founder-description p + p {
+  margin-top: 14px;
+}
+
+@media (min-width: 641px) and (max-width: 950px) {
+  .k-about #founders .k-about__founder-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .k-about #founders .k-about__founder-slot:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    width: min(100%, 480px);
+    justify-self: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .k-about #founders .k-about__founder-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .k-about #founders .k-about__founder-slot:last-child:nth-child(odd) {
+    grid-column: auto;
+    width: 100%;
+  }
+}
+
+
+/* ABOUT_MICRO_INTERACTIONS_FINAL */
+.k-about .k-about__founders-jump {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   min-height: 44px;
-  padding: 10px 22px;
-  border: 1px solid hsl(var(--foreground) / .25);
+  padding: 10px 18px;
+  border: 1px solid hsl(var(--border));
   border-radius: 999px;
-  font-family: var(--font-family-brand);
+  background: hsl(var(--card));
+  color: hsl(var(--foreground));
   font-size: 14px;
   font-weight: 600;
-  color: hsl(var(--foreground));
-  background: rgba(255,255,255,.012);
   text-decoration: none;
-  transition: border-color .2s, transform .2s;
+  transition: transform .2s ease, border-color .2s ease;
 }
-.k-about__outline-cta:hover { border-color: hsl(var(--foreground) / .55); transform: translateY(-2px); }
-
-@media (max-width: 899px) {
-  .k-about__founder-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 26px; }
-  .k-about__future-copy .k-about__heading { white-space: normal; }
+.k-about .k-about__founders-jump:hover {
+  transform: translateY(-2px);
+  border-color: hsl(var(--foreground) / .35);
 }
-@media (max-width: 639px) {
-  .k-about__container { padding-inline: 22px; }
-  .k-about__story, .k-about__future { grid-template-columns: 1fr; gap: 0; }
-  .k-about__story-art { order: 2; }
-  .k-about__story-copy { order: 1; padding-block: 52px 10px; }
-  .k-about__story-art img { width: min(85%, 340px); }
-  .k-about__founders > .k-about__container { padding-block: 44px 38px; }
-  .k-about__founder-grid { grid-template-columns: 1fr; gap: 23px; margin-top: 11px; }
-  .k-about__founder-card { padding: 26px; }
-  .k-about__founder-name { font-size: 20px; }
-  .k-about__founder-role, .k-about__founder-description { font-size: 14px; }
-  .k-about__founder-fields li { font-size: 11px; }
-  .k-about__future-art { order: 2; }
-  .k-about__future-art img { width: min(87%, 360px); }
-  .k-about__future-copy { order: 1; padding-block: 50px 14px; }
-  .k-about__future-copy .k-about__heading { white-space: normal; }
-  .k-about__actions { align-items: stretch; }
+.k-about .k-about__founders-jump:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 3px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .k-about__jump, .k-about__outline-cta, .k-about__founder-card { transition: none; }
-  .k-about__founder-card:hover, .k-about__outline-cta:hover { transform: none; }
-}
-
-
-/* ABOUT_KRETOPIA_VISUAL_SYSTEM_V5 */
-
-/* BRAND FOUNDATION */
-.k-about {
-  color: hsl(var(--foreground));
-  background: hsl(var(--background));
-  font-family: var(--font-family-brand);
-  overflow-x: clip;
-}
-
-.k-about .k-about__hero,
-.k-about .k-about__section {
-  position: relative;
-  isolation: isolate;
-  border-color: hsl(var(--border) / .55);
-}
-
-/* HERO */
-.k-about .k-about__hero {
-  background:
-    radial-gradient(
-      ellipse 44% 75% at 78% 48%,
-      color-mix(in srgb, var(--k-g-2) 14%, transparent),
-      transparent 80%
-    ),
-    radial-gradient(
-      ellipse 30% 48% at 98% 83%,
-      color-mix(in srgb, var(--k-g-3) 8%, transparent),
-      transparent 84%
-    ),
-    hsl(var(--background));
-}
-
-.k-about .k-about__jump {
-  margin-top: 19px;
-  border-bottom: 2px solid transparent;
-  border-image: var(--k-text-gradient) 1;
-}
-
-.k-about .k-about__jump .k-about__arrow {
-  transition: transform .25s ease;
-}
-
-.k-about .k-about__jump:hover .k-about__arrow {
-  transform: translateY(4px);
-}
-
-/* KRETO SCENES */
-.k-about .k-about__hero-art,
-.k-about .k-about__story-art,
-.k-about .k-about__future-art {
-  min-width: 0;
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  align-items: end;
-  justify-content: center;
-  background: transparent;
-}
-
-.k-about .k-about__hero-art {
-  margin-top: 20px;
-}
-
-.k-about :is(
-  .k-about__hero-art,
-  .k-about__story-art,
-  .k-about__future-art
-)::before {
-  content: "";
-  position: absolute;
-  inset: 16% 9%;
-  z-index: -1;
-  border-radius: 50%;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse,
-    color-mix(in srgb, var(--k-g-2) 24%, transparent),
-    color-mix(in srgb, var(--k-g-3) 9%, transparent) 46%,
-    transparent 76%
-  );
-  filter: blur(22px);
-  animation: about-v5-halo 9s ease-in-out infinite alternate;
-}
-
-.k-about :is(
-  .k-about__hero-art,
-  .k-about__story-art,
-  .k-about__future-art
-) img {
-  width: min(100%, 485px);
-  max-width: none;
-  height: auto;
-  display: block;
-  object-fit: contain;
-  background: transparent;
-  box-shadow: none;
-  animation: about-v5-float 10s ease-in-out infinite;
-  filter: drop-shadow(
-    0 14px 23px
-    color-mix(in srgb, var(--k-g-2) 16%, transparent)
-  );
-}
-
-.k-about .k-about__hero-art img {
-  width: min(100%, 320px);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  user-select: none;
-}
-
-.k-about .k-about__story-art img {
-  animation-delay: -2s;
-}
-
-.k-about .k-about__future-art img {
-  animation-delay: -4s;
-}
-
-/* Remove visible rectangular edges from legacy WebP artwork. */
-.k-about :is(
-  .k-about__hero-art,
-  .k-about__story-art,
-  .k-about__future-art
-) img[src$=".webp"] {
-  -webkit-mask-image: radial-gradient(
-    ellipse 76% 75%,
-    #000 59%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 76% 75%,
-    #000 59%,
-    transparent 100%
-  );
-}
-
-.k-about :is(
-  .k-about__hero-art,
-  .k-about__story-art,
-  .k-about__future-art
-) img[src$=".png"] {
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-
-/* STORY & FUTURE */
-.k-about .k-about__section > .k-about__container.k-about__story,
-.k-about .k-about__section > .k-about__container.k-about__future {
-  padding-block: clamp(39px, 4.9vw, 76px);
-  display: grid;
-  grid-template-columns: minmax(0, .94fr) minmax(0, 1.06fr);
-  gap: clamp(22px, 4.6vw, 72px);
-  align-items: center;
-}
-
-.k-about .k-about__story-copy,
-.k-about .k-about__future-copy {
-  min-width: 0;
-}
-
-.k-about .k-about__heading.landing-h2 {
-  font-size: clamp(30px, 3.7vw, 50px);
-  line-height: 1.1;
-}
-
-.k-about .k-about__story-text,
-.k-about .k-about__future-body {
-  margin: 17px 0 0;
-  max-width: 585px;
-  color: hsl(var(--muted-foreground));
-  font-size: clamp(14px, 1.3vw, 16px);
-  line-height: 1.75;
-}
-
-.k-about .k-about__section-label {
-  margin-bottom: 19px;
-}
-
-/* FOUNDERS SECTION */
-.k-about .k-about__founders {
-  background:
-    radial-gradient(
-      ellipse 64% 65% at 50% 24%,
-      color-mix(in srgb, var(--k-g-2) 8%, transparent),
-      transparent 78%
-    ),
-    hsl(var(--background));
-}
-
-.k-about .k-about__founders > .k-about__container {
-  padding-block: 45px 48px;
-}
-
-.k-about .k-about__founder-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: clamp(14px, 2vw, 24px);
-  margin-top: clamp(18px, 2vw, 28px);
-  align-items: stretch;
-}
-
-.k-about .k-about__founder-slot {
-  position: relative;
-  min-width: 0;
-  --founder-art-size: clamp(170px, 19vw, 235px);
-  padding-top: calc(var(--founder-art-size) + 4px);
-  isolation: isolate;
-}
-
-/* TRANSPARENT FOUNDER KRETO */
-.k-about .k-about__founder-kreto {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  width: min(100%, var(--founder-art-size));
-  overflow: visible;
-  background: transparent;
-}
-
-.k-about .k-about__founder-kreto img {
-  width: 100%;
-  height: auto;
-  display: block;
-  max-width: none;
-  background: transparent;
-  -webkit-mask-image: none;
-  mask-image: none;
-  box-shadow: none;
-
-  filter: drop-shadow(
-    0 12px 18px
-    color-mix(in srgb, var(--k-g-2) 23%, transparent)
-  );
-
-  transition:
-    transform .4s cubic-bezier(.2, .65, .3, 1),
-    filter .4s ease;
-}
-
-.k-about .k-about__founder-kreto--noe {
-  top: 18px;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-}
-
-.k-about .k-about__founder-kreto--ethan {
-  top: 0;
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-}
-
-.k-about .k-about__founder-kreto--jefferson {
-  top: 25px;
-  right: 0;
-  left: auto;
-  transform: rotate(-5deg);
-  transform-origin: 80% 80%;
-}
-
-.k-about .k-about__founder-slot:hover
-.k-about__founder-kreto img {
-  transform: translateY(-5px) scale(1.025);
-  filter: drop-shadow(
-    0 16px 22px
-    color-mix(in srgb, var(--k-g-3) 28%, transparent)
-  );
-}
-
-/* CARDS — KRETOPIA GRADIENT BORDER */
-.k-about .k-about__founder-card {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  height: 100%;
-  min-width: 0;
-
-  border: 1px solid hsl(var(--border) / .7);
-  border-radius: var(--radius-panel, 16px);
-
-  background: linear-gradient(
-    160deg,
-    hsl(var(--card)),
-    hsl(var(--background))
-  );
-
-  box-shadow:
-    0 16px 32px -27px
-    color-mix(in srgb, var(--k-g-2) 44%, transparent);
-
-  transition:
-    transform .35s cubic-bezier(.2, .65, .3, 1),
-    box-shadow .35s ease;
-}
-
-.k-about .k-about__founder-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  pointer-events: none;
-  opacity: .45;
-
-  background: var(--k-text-gradient);
-
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-
-  transition: opacity .35s ease;
-}
-
-.k-about .k-about__founder-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-
-  background: radial-gradient(
-    ellipse 100% 68% at 50% 0%,
-    color-mix(in srgb, var(--k-g-2) 10%, transparent),
-    transparent 80%
-  );
-
-  opacity: .45;
-  transition: opacity .35s ease;
-}
-
-.k-about .k-about__founder-card > * {
-  position: relative;
-  z-index: 1;
-}
-
-.k-about .k-about__founder-card:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 22px 38px -22px
-    color-mix(in srgb, var(--k-g-2) 40%, transparent);
-}
-
-.k-about .k-about__founder-card:hover::before {
-  opacity: .9;
-}
-
-.k-about .k-about__founder-card:hover::after {
-  opacity: 1;
-}
-
-.k-about .k-about__portrait {
-  width: 96px;
-  height: 96px;
-  border-radius: 13px;
-}
-
-.k-about .k-about__founder-label {
-  margin-top: 16px;
-}
-
-.k-about .k-about__founder-name {
-  margin-top: 6px;
-}
-
-.k-about .k-about__founder-fields {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 0;
-  margin: 13px 0 0;
-  list-style: none;
-}
-
-.k-about .k-about__founder-fields li {
-  padding: 5px 9px;
-  border: 1px solid hsl(var(--border) / .55);
-  border-radius: 999px;
-  background: hsl(var(--foreground) / .065);
-  color: hsl(var(--foreground) / .8);
-  font-size: 11px;
-}
-
-.k-about .k-about__founder-description {
-  margin-top: 14px;
-  font-size: clamp(13px, 1.2vw, 15px);
-  line-height: 1.72;
-}
-
-.k-about .k-about__founder-closing {
-  padding-top: 0;
-  margin-top: 24px;
-  border-top: 0;
-  max-width: 980px;
-}
-
-/* CTAs — SHARED KRETOPIA COMPONENT */
-.k-about .k-about__section > .k-about__container.k-about__future {
-  text-align: left;
-  max-width: 1320px;
-}
-
-.k-about .k-about__future .k-about__heading {
-  margin: 0;
-}
-
-.k-about .k-about__actions {
-  justify-content: flex-start;
-  flex-direction: row;
-  flex-wrap: wrap;
-  margin-top: 24px;
-  gap: 12px;
-}
-
-/* Keep the real GlassCta colors from Kretopia. */
-.k-about .k-about__actions .glass-cta {
-  transition:
-    transform .25s ease,
-    box-shadow .25s ease;
-}
-
-.k-about .k-about__actions .glass-cta:hover {
-  transform: translateY(-2px);
-}
-
-.k-about .k-about__outline-cta {
-  background: transparent;
-  color: hsl(var(--foreground));
-  border: 1px solid hsl(var(--border));
-
-  transition:
-    transform .22s ease,
-    background-color .22s ease,
-    border-color .22s ease;
-}
-
-.k-about .k-about__outline-cta:hover {
-  transform: translateY(-2px);
-  background: hsl(var(--foreground) / .045);
-  border-color: hsl(var(--foreground) / .38);
-}
-
-/* Hide the unrelated Halloween launcher only on About. */
-body:has(.k-about) button[aria-label="Open Kreto"] {
-  display: none !important;
-}
-
-/* ANIMATIONS */
-@keyframes about-v5-halo {
-  from {
-    transform: scale(.94);
-    opacity: .55;
+  .k-about .k-about__founders-jump {
+    transition: none;
   }
-  to {
-    transform: scale(1.07);
-    opacity: 1;
-  }
-}
-
-@keyframes about-v5-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-9px); }
-}
-
-/* RESPONSIVE */
-@media (max-width: 1023px) {
-  .k-about .k-about__founder-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 30px;
-  }
-}
-
-@media (max-width: 679px) {
-  .k-about .k-about__section > .k-about__container.k-about__story,
-  .k-about .k-about__section > .k-about__container.k-about__future {
-    grid-template-columns: 1fr;
-  }
-
-  .k-about .k-about__story-copy,
-  .k-about .k-about__future-copy {
-    order: 1;
-  }
-
-  .k-about .k-about__story-art,
-  .k-about .k-about__future-art {
-    order: 2;
-  }
-
-  .k-about .k-about__founder-grid {
-    grid-template-columns: 1fr;
-    gap: 22px;
-  }
-
-  .k-about .k-about__actions > * {
-    width: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .k-about *,
-  .k-about *::before,
-  .k-about *::after {
-    animation: none !important;
-    transition-duration: .01ms !important;
-  }
-
-  .k-about .k-about__founder-card:hover {
+  .k-about .k-about__founders-jump:hover {
     transform: none;
   }
 }

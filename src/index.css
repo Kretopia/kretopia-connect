@@ -2,14 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One viewport height for every call screen. `dvh` follows the browser's moving toolbars; an engine that does not know it keeps the
-   `vh` line above it, instead of dropping the whole height (which collapses the screen and lets the page's own bars show through). */
-.k-call-vh { height: 100vh; height: 100dvh; }
-.k-call-min-vh { min-height: 100vh; min-height: 100dvh; }
-.k-call-max-60vh { max-height: 60vh; max-height: 60dvh; }
-.k-sheet-92 { height: 92vh; height: 92dvh; }
-.k-call-sheet { height: 100vh; height: 100dvh; max-height: 100vh; max-height: 100dvh; }
-@media (min-width: 640px) { .k-call-sheet { height: 92vh; height: 92dvh; } }
 /* Studio call chrome shares the product palette; media/provider state stays untouched. */
 .k-call-surface { background: hsl(var(--background)); color: hsl(var(--foreground)); font-family: var(--font-family-brand); min-width: 0; overflow-x: clip; }
 .k-call-header { padding: calc(env(safe-area-inset-top, 0px) + 8px) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); background: hsl(var(--background)); border-color: hsl(var(--border)); gap: 8px; }
@@ -33,7 +25,7 @@
 .k-call-video > aside .grid > button { white-space: normal; min-height: 44px; height: auto; padding-block: 8px; }
 .k-call-surface .k-call-preview { height: 100%; max-height: 100%; width: auto; max-width: 100%; aspect-ratio: 3 / 4; border-radius: 8px; background: hsl(var(--muted)); }
 .k-call-floating { width: min(280px, calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))); height: 210px; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
-.k-call-mini { width: min(320px, calc(100vw - 24px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - 180px); max-height: calc(100dvh - 180px); overflow: hidden; }
+.k-call-mini { width: min(320px, calc(100vw - 24px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(96px + env(safe-area-inset-bottom, 0px)); max-height: calc(100dvh - 180px); overflow: hidden; }
 .k-call-mini-header { display: flex; align-items: center; gap: 4px; padding: 8px; background: hsl(var(--background)); border-bottom: 1px solid hsl(var(--border)); }
 .k-call-mini-header[hidden] { display: none; }
 .k-call-surface .k-call-mini-header .k-call-icon { width: 36px; height: 36px; }
@@ -41,14 +33,14 @@
 /* The miniature follows the shape of what is shown in it: a 16:9 screen share fits without being cropped or letterboxed,
    instead of a fixed 160px strip. It is capped so it can never grow past the page. */
 .k-call-mini { width: min(360px, calc(100vw - 24px)); }
-.k-call-mini .k-call-persistent-content { height: auto; aspect-ratio: 16 / 9; max-height: calc(100vh - 240px); max-height: calc(100dvh - 240px); flex: none; }
+.k-call-mini .k-call-persistent-content { height: auto; aspect-ratio: 16 / 9; max-height: calc(100dvh - 240px); flex: none; }
 .k-call-mini .k-call-persistent-content > .k-call-header, .k-call-mini .k-call-persistent-content > .k-call-footer { display: none; }
 /* Phones: the miniature is a small card on the LEFT above the bottom navigation, so it never sits in the bottom-right corner
    where the Kreto launcher and Studio dock live. Kretopia mark, status, the video thumbnail and three controls: mute, the one
    arrow back to the full call, and leave. */
 @media (max-width: 767px) {
   .k-call-mini { left: max(12px, env(safe-area-inset-left, 0px)); right: auto; width: min(calc(100vw - 84px), 240px); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
-  .k-call-mini .k-call-persistent-content { aspect-ratio: 4 / 3; max-height: calc(100vh - 300px); max-height: calc(100dvh - 300px); }
+  .k-call-mini .k-call-persistent-content { aspect-ratio: 4 / 3; max-height: calc(100dvh - 300px); }
   .k-call-mini-header { padding: 6px 6px 6px 10px; }
   .k-call-mini-info { display: flex; align-items: center; gap: 8px; min-width: 0; }
   .k-call-mini-info > p { margin-top: 0; }
@@ -61,7 +53,7 @@
 @media (min-width: 640px) { .k-call-floating { width: 280px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); } .k-call-surface .k-call-preview { aspect-ratio: 16 / 9; } }
 @media (prefers-reduced-motion: reduce) { .k-call-surface button { transition: none; transform: none; } }
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
 */
 
@@ -2309,4 +2301,13 @@ svg.k-gradient-icon {
 @media (prefers-reduced-motion: reduce) {
   .k-menu-tile, .k-menu-tile-icon { transition: none; }
   .k-menu-tile:hover, .k-menu-tile:hover .k-menu-tile-icon { transform: none; }
+}
+
+
+/* PUBLIC_NO_UNDERLINES_FINAL */
+.k-public-no-underline :is(a, button),
+.k-public-no-underline :is(a, button):hover,
+.k-public-no-underline :is(a, button):focus-visible {
+  text-decoration: none;
+  text-decoration-line: none;
 }

@@ -1,6 +1,7 @@
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Briefcase, Calendar, Globe, Handshake, LayoutGrid, Map, Plus, Radar, Radio, Search, Sparkles, Store, UserSearch, Users } from "lucide-react";
+import { Briefcase, Calendar, Globe, Handshake, LayoutGrid, Map, Plus, Radar, Radio, Sparkles, Store, UserSearch, Users } from "lucide-react";
 
 import { SEO } from "@/components/SEO";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,7 +69,7 @@ const OPPS_MODES = [
   { id: "leads", label: "Leads", icon: Handshake },
 ] as const;
 
-// Browse reads the profiles table, so it is only fetched once someone opens it.
+// Load Browse only when the People lane actually shows it.
 const BrowseCreators = lazy(() => import("@/components/discover/BrowseCreators").then((m) => ({ default: m.BrowseCreators })));
 
 const BrowseCreatorsLazy = () => (
@@ -98,7 +99,7 @@ const LeadCard = ({ icon, title, body, to, cta }: { icon: ReactNode; title: stri
  */
 export default function Discover() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [params, setParams] = useSearchParams();
   const requested = params.get("tab") ?? "";
   const tab: Tab = useMemo(() => {
@@ -109,11 +110,12 @@ export default function Discover() {
 
   // Company mode only: the Sourced creatives and Sourced events lanes. A creator's Discover is exactly what it was.
   const { isBusiness } = useAccountTone();
-  const [peopleMode, setPeopleMode] = useState<Exclude<PeopleMode, "talent">>("swipe");
+  const [peopleMode, setPeopleMode] = useState<Exclude<PeopleMode, "talent">>();
   const [oppsMode, setOppsMode] = useState<OppsMode>("scouted");
   const [eventsMode, setEventsMode] = useState<EventsMode>("kretopia");
   const [postOpen, setPostOpen] = useState(false);
-  const shownPeopleMode = peopleMode === "sourced" && !isBusiness ? "swipe" : peopleMode;
+  const defaultPeopleMode = user ? "swipe" : "browse";
+  const shownPeopleMode = peopleMode === "sourced" && !isBusiness ? defaultPeopleMode : peopleMode ?? defaultPeopleMode;
   const shownEventsMode = eventsMode === "sourced" && !isBusiness ? "kretopia" : eventsMode;
   const peopleItems = isBusiness ? [...PEOPLE_MODES.slice(0, 3), PEOPLE_SOURCED, PEOPLE_MODES[3]] : PEOPLE_MODES;
 
@@ -192,7 +194,9 @@ export default function Discover() {
                   <MatchDeck />
                 </div>
               )}
-              {shownPeopleMode === "browse" && <BrowseCreatorsLazy />}
+              {shownPeopleMode === "browse" && (
+                authLoading ? <KretopiaLoader label="Loading creators" size="sm" /> : <BrowseCreatorsLazy />
+              )}
               {shownPeopleMode === "nearby" && <NearbyInline />}
               {shownPeopleMode === "sourced" && (
                 <>
@@ -224,7 +228,7 @@ export default function Discover() {
               {oppsMode === "leads" && (
                 <div className="grid gap-3 md:grid-cols-2">
                   <LeadCard
-                    icon={<Search className="h-4 w-4" aria-hidden />}
+                    icon={<KretopiaIcon name="search" className="h-4 w-4" aria-hidden />}
                     title="Sponsor & client leads"
                     body="Brands and clients that fit your work, surfaced by Kreto. No Studio required."
                     to="/intel"
