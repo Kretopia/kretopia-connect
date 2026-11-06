@@ -34,6 +34,18 @@ describe("the build wires the push handlers into the generated worker", () => {
   });
 });
 
+describe("the app shell keeps the push subscription sync mounted", () => {
+  // A merge once left the import and dropped the call, so a subscription the push service rotated was never registered again.
+  it("calls usePushSubscriptionSync once, in AppContent, before it renders", () => {
+    const app = read("src/App.tsx");
+    const start = app.indexOf("const AppContent = () => {");
+    expect(start).toBeGreaterThan(-1);
+    const body = app.slice(start, app.indexOf("return (", start));
+    expect(body.match(/usePushSubscriptionSync\(\);/g)).toHaveLength(1);
+    expect(app).toMatch(/import \{ usePushSubscriptionSync \} from "\.\/hooks\/usePushSubscriptionSync";/);
+  });
+});
+
 // A PNG's header says its size and colour type without a decoder: IHDR starts at byte 16.
 function png(path: string) {
   const bytes = readFileSync(resolve(root, "public", path));
