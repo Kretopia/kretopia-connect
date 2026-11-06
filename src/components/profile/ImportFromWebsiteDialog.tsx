@@ -77,8 +77,8 @@ export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: Import
       ...extractedData,
       portfolio_items: (extractedData.portfolio_items || []).filter((_: any, i: number) => selectedPortfolioIdx.has(i)),
     };
-    onImport(filtered);
-    toast({ title: "Imported", description: `${filtered.portfolio_items.length} items + profile fields applied` });
+    onImport({ ...filtered, source_url: url.trim() || null });
+    toast({ title: "Imported for review", description: `${filtered.portfolio_items.length} selected items added as self-declared. Profile fields wait in the editor until you save.` });
     onOpenChange(false);
     setUrl("");
     setExtractedData(null);

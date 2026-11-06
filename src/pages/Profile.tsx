@@ -3,6 +3,7 @@ import { PageTip } from "@/components/PageTip";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { updateOwnProfile } from "@/lib/ownProfileWrite";
+import { planProfileImport } from "@/lib/importMerge";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -221,12 +222,14 @@ const ProfileContent = () => {
   const handleImportData = async (data: any) => {
     if (!user) return;
     
-    const updates: any = {};
-    if (data.full_name) updates.full_name = data.full_name;
-    if (data.role) updates.role = data.role;
-    if (data.bio) updates.bio = data.bio;
-    if (data.location) updates.location = data.location;
-    
+    // An import fills what is empty and never replaces what the member already wrote. The values go into the edit form,
+    // not the database: nothing is saved until the member presses Save.
+    // A field counts as written when either the edit form or the saved profile holds text for it.
+    const written = (field: string) => String((editForm as Record<string, unknown>)[field] ?? "").trim() || String((profile as Record<string, unknown> | null)?.[field] ?? "").trim();
+    const current = Object.fromEntries(["full_name", "role", "bio", "location"].map((f) => [f, written(f)]));
+    const { fill: updates, kept } = planProfileImport(current, data);
+    const keptFields: string[] = kept;
+
     setEditForm(prev => ({ ...prev, ...updates }));
 
     let importedCount = 0;
@@ -244,6 +247,8 @@ const ProfileContent = () => {
           thumbnail_url: item.thumbnail_url || null,
           tags: item.tags || null,
           credit_category: 'imported',
+          // Where it came from; the row's created_at is the import date. Imported items stay self-declared.
+          source_url: typeof data.source_url === 'string' ? data.source_url : null,
         }));
 
       if (portfolioInserts.length > 0) {
@@ -282,13 +287,14 @@ const ProfileContent = () => {
     await fetchData();
     
     const parts = [];
-    if (Object.keys(updates).length > 0) parts.push("profile info updated");
-    if (importedCount > 0) parts.push(`${importedCount} portfolio items imported`);
+    if (Object.keys(updates).length > 0) parts.push(`${Object.keys(updates).length} empty field(s) filled in the editor, not saved yet`);
+    if (keptFields.length > 0) parts.push(`${keptFields.length} existing field(s) kept as you wrote them`);
+    if (importedCount > 0) parts.push(`${importedCount} portfolio items added as self-declared`);
     if (data.skills?.length > 0) parts.push(`${data.skills.length} skills added`);
     
     toast({
       title: "Import Complete",
-      description: parts.length > 0 ? parts.join(", ") + ". Review and save profile when ready." : "No data to import.",
+      description: parts.length > 0 ? parts.join(", ") + ". Review, then save your profile." : "No data to import.",
     });
   };
 
