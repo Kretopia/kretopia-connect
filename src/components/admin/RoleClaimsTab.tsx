@@ -39,7 +39,7 @@ const memberName = (claim: RoleClaimView) => claim.requester?.full_name?.trim() 
  * request; this is where an admin decides it. The decision, the admin check and "a role can be claimed once" are enforced by the
  * database function, not by this screen: it shows the facts a reviewer needs and calls that function.
  */
-export const RoleClaimsTab = () => {
+export const RoleClaimsTab = ({ onDecided }: { /** Called after a decision was saved, so the admin overview can recount. */ onDecided?: () => void } = {}) => {
   const { toast } = useToast();
   const [result, setResult] = useState<LoadResult | null>(null);
   const [view, setView] = useState<"pending" | "decided">("pending");
@@ -99,6 +99,7 @@ export const RoleClaimsTab = () => {
       // Tell the member only about a decision this click actually made.
       if (outcome.kind !== "already-decided") void notifyRoleClaimDecision(claim, outcome, note);
       await load();
+      onDecided?.();
     } else if (outcome.kind === "forbidden" || outcome.kind === "not-set-up") {
       setPending(null);
     }

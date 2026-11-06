@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ import { ProductDashboardTab } from "@/components/admin/ProductDashboardTab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { loadAiCreditOverview } from "@/lib/thriveCopilot";
+import { countPendingRoleClaims, type PendingCount } from "@/lib/roleClaims";
 
 interface OdosImportResult {
   name: string;
@@ -122,6 +123,47 @@ interface AdminOverview {
   pendingVerifications: number;
   unclaimedProfiles: number;
   pendingTransfers: number;
+}
+
+type StatState = "loading" | "unavailable" | number;
+
+/** One overview card: an icon, a number (or a placeholder while it loads or when it could not be read) and a label. */
+function OverviewStat({
+  icon: Icon,
+  label,
+  onClick,
+  state,
+  disabled = false,
+  title,
+  className = "",
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  state: StatState;
+  disabled?: boolean;
+  title?: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`text-left rounded-2xl border border-border/60 bg-card px-3.5 py-3 transition-colors hover:border-energy/40 hover:bg-energy/[0.03] disabled:cursor-default disabled:hover:border-border/60 disabled:hover:bg-card ${className}`}
+    >
+      <Icon className="h-4 w-4 text-energy mb-2" />
+      {state === "loading" ? (
+        <div className="h-6 w-10 rounded bg-muted animate-pulse" aria-hidden />
+      ) : state === "unavailable" ? (
+        <p className="text-sm text-muted-foreground">—</p>
+      ) : (
+        <p className="text-xl font-black tracking-tight">{state}</p>
+      )}
+      <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">{label}</p>
+    </button>
+  );
 }
 
 /**
@@ -222,6 +264,11 @@ export default function Admin() {
   const [overview, setOverview] = useState<AdminOverview | null>(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [overviewError, setOverviewError] = useState(false);
+  // The role-claims count is read on its own: a backend without the claims table must not blank the four counts above it.
+  const [claimsCount, setClaimsCount] = useState<PendingCount | null>(null);
+  const refreshClaimsCount = useCallback(async () => {
+    setClaimsCount(await countPendingRoleClaims());
+  }, []);
   const [sendingBroadcast, setSendingBroadcast] = useState(false);
   const [broadcastSubject, setBroadcastSubject] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
@@ -247,6 +294,10 @@ export default function Admin() {
   useEffect(() => {
     if (!isAdmin) return;
     let cancelled = false;
+
+    void countPendingRoleClaims().then((result) => {
+      if (!cancelled) setClaimsCount(result);
+    });
 
     (async () => {
       setOverviewLoading(true);
@@ -469,28 +520,32 @@ export default function Admin() {
       />
 
       <div className="container mx-auto max-w-5xl px-3 sm:px-4 pt-4 sm:pt-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-5 sm:mb-6">
-          {overviewCards.map(({ key, label, icon: Icon, jumpTo }) => (
-            <button
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5 mb-5 sm:mb-6">
+          {overviewCards.map(({ key, label, icon, jumpTo }) => (
+            <OverviewStat
               key={key}
-              type="button"
+              icon={icon}
+              label={label}
               onClick={() => setActiveTab(jumpTo)}
               disabled={overviewError}
-              className="text-left rounded-2xl border border-border/60 bg-card px-3.5 py-3 transition-colors hover:border-energy/40 hover:bg-energy/[0.03] disabled:cursor-default disabled:hover:border-border/60 disabled:hover:bg-card"
-            >
-              <Icon className="h-4 w-4 text-energy mb-2" />
-              {overviewLoading ? (
-                <div className="h-6 w-10 rounded bg-muted animate-pulse" aria-hidden />
-              ) : overviewError ? (
-                <p className="text-sm text-muted-foreground">—</p>
-              ) : (
-                <p className="text-xl font-black tracking-tight">{overview?.[key] ?? 0}</p>
-              )}
-              <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
-                {label}
-              </p>
-            </button>
+              state={overviewLoading ? "loading" : overviewError ? "unavailable" : (overview?.[key] ?? 0)}
+            />
           ))}
+          <OverviewStat
+            icon={BadgeCheck}
+            label="Role claims waiting"
+            onClick={() => setActiveTab("role-claims")}
+            // Never disabled: its tab says what is wrong when the count cannot be read.
+            className="col-span-2 lg:col-span-1"
+            state={claimsCount === null ? "loading" : claimsCount.kind === "ok" ? claimsCount.count : "unavailable"}
+            title={
+              claimsCount?.kind === "not-set-up"
+                ? "Role claim review isn't set up on this backend yet"
+                : claimsCount?.kind === "error"
+                  ? "Couldn't load this count"
+                  : undefined
+            }
+          />
         </div>
         {overviewError && (
           <p className="text-xs text-muted-foreground mb-4 flex items-center gap-1.5">
@@ -542,7 +597,7 @@ export default function Admin() {
         </TabsContent>
 
         <TabsContent value="role-claims" className="mt-4 sm:mt-6">
-          <RoleClaimsTab />
+          <RoleClaimsTab onDecided={() => void refreshClaimsCount()} />
         </TabsContent>
 
         <TabsContent value="drip" className="mt-4 sm:mt-6">

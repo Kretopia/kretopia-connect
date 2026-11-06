@@ -218,3 +218,27 @@ describe("helpers", () => {
     expect(safeHttpUrl(null)).toBeNull();
   });
 });
+
+describe("countPendingRoleClaims: the number on the admin overview", () => {
+  it("is the count the database returned, zero included", async () => {
+    const { countPendingRoleClaims } = await import("../roleClaims");
+    tables.icdb_role_claim_requests = { data: null, error: null, count: 4 } as never;
+    await expect(countPendingRoleClaims()).resolves.toEqual({ kind: "ok", count: 4 });
+    tables.icdb_role_claim_requests = { data: null, error: null, count: 0 } as never;
+    await expect(countPendingRoleClaims()).resolves.toEqual({ kind: "ok", count: 0 });
+  });
+
+  it("tells a table that does not exist yet from a failure", async () => {
+    const { countPendingRoleClaims } = await import("../roleClaims");
+    tables.icdb_role_claim_requests = { data: null, error: { code: "42P01", message: 'relation "public.icdb_role_claim_requests" does not exist' } };
+    await expect(countPendingRoleClaims()).resolves.toEqual({ kind: "not-set-up" });
+    tables.icdb_role_claim_requests = { data: null, error: { code: "XX000", message: "internal error" } };
+    await expect(countPendingRoleClaims()).resolves.toEqual({ kind: "error" });
+  });
+
+  it("never turns a missing count into zero", async () => {
+    const { countPendingRoleClaims } = await import("../roleClaims");
+    tables.icdb_role_claim_requests = { data: null, error: null } as never;
+    await expect(countPendingRoleClaims()).resolves.toEqual({ kind: "error" });
+  });
+});

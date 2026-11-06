@@ -138,6 +138,27 @@ export async function loadRoleClaims(): Promise<LoadResult> {
   }
 }
 
+export type PendingCount = { kind: "ok"; count: number } | { kind: "not-set-up" } | { kind: "error" };
+
+/**
+ * How many role claims are waiting for a decision (the admin overview card). It is a call of its own, never part of the other
+ * overview counts, so a backend where the claims table does not exist yet cannot blank the counts that do exist.
+ */
+export async function countPendingRoleClaims(): Promise<PendingCount> {
+  try {
+    const res = await supabase
+      .from("icdb_role_claim_requests" as never)
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    const error = res.error as Failure;
+    if (error) return isMissingOnBackend(error) ? { kind: "not-set-up" } : { kind: "error" };
+    // A count that did not come back is not zero: nobody should read "nothing waiting" from a missing answer.
+    return typeof res.count === "number" ? { kind: "ok", count: res.count } : { kind: "error" };
+  } catch {
+    return { kind: "error" };
+  }
+}
+
 export type DecisionOutcome =
   | { kind: "approved"; creditId: string | null }
   | { kind: "rejected" }

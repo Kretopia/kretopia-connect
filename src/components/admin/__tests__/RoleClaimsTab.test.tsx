@@ -199,6 +199,6 @@ describe("the admin page carries the tab", () => {
     const source = readFileSync(join(process.cwd(), "src/pages/Admin.tsx"), "utf8");
     expect(source).toContain('value: "role-claims", label: "Role claims"');
     expect(source).toContain('<TabsContent value="role-claims"');
-    expect(source).toContain("<RoleClaimsTab />");
+    expect(source).toMatch(/<RoleClaimsTab[\s/>]/);
   });
 });
