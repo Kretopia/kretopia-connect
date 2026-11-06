@@ -10,6 +10,9 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
+import { PassportRecognition } from "@/components/passport/PassportRecognition";
+import { PassportPrivateBand } from "@/components/passport/PassportPrivateBand";
+import { useEpkPdfDownload } from "@/hooks/useEpkPdfDownload";
 import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
@@ -216,6 +219,23 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
   const [collaborateOpen, setCollaborateOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
+  // What the PDF is made of. Built here, above the early returns, because the download hook that uses it runs on every render.
+  const epkPdfData = useMemo(
+    () => profile ? {
+      profile,
+      credits,
+      awards,
+      pressLinks,
+      industryStats,
+      reviews: reviews.map((r: any) => ({
+        reviewer_name: r.reviewer_name || r.reviewer?.full_name,
+        rating: r.rating,
+        review_text: r.review_text,
+      })),
+    } : null,
+    [profile, credits, awards, pressLinks, industryStats, reviews],
+  );
+  const pdf = useEpkPdfDownload(userId, epkPdfData);
 
   // Check if current user is the profile owner
   useEffect(() => {
@@ -501,6 +521,10 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
 
   const verificationBadge = getVerificationBadge();
   const isOwner = currentUserId === userId;
+  // The card's controls come from the owner's page; the PDF is made here, where the data is, so it joins them here.
+  const heroOwner: PublicPassportOwner | undefined = isOwner && owner
+    ? { ...owner, pdf: { onDownload: () => void pdf.download(), busy: pdf.generating, locked: !pdf.isPro } }
+    : undefined;
   const firstName = profile.full_name?.split(' ')[0] || 'this creator';
   const allSkills = [
     ...(Array.isArray(profile.professional_skills) 
@@ -545,7 +569,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           passport={
           <PublicPassportHero
             profile={profile}
-            owner={isOwner ? owner : undefined}
+            owner={heroOwner}
             bookingPath={bookable && profile.username ? `/@${profile.username}/book` : null}
             glance={
               <div className="space-y-3">
@@ -613,65 +637,13 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           );
         })() : <div className="rounded-md border border-border bg-secondary p-5"><h3 className="text-sm font-semibold uppercase text-energy">Why work with me</h3><p className="mt-2 text-sm text-muted-foreground">This creator has not added an introduction yet.</p></div>}
 
-        {/* Press & Awards Combined */}
-        {(pressLinks.length > 0 || awards.length > 0) && (
-          <div className="space-y-5">
-            {pressLinks.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Featured In
-                </h3>
-                <div className="space-y-2">
-                  {pressLinks.slice(0, 4).map((press) => (
-                    <a
-                      key={press.id}
-                      href={press.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                    >
-                      {press.image_url ? (
-                        <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
-                          <img src={press.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      ) : (
-                        <ExternalLink className="h-4 w-4 text-muted-foreground shrink-0" />
-                      )}
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(press.title)}</p>
-                        <p className="text-xs text-muted-foreground">{press.publication}</p>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {awards.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
-                  Awards
-                </h3>
-                <div className="space-y-2">
-                  {awards.slice(0, 3).map((award) => (
-                    <div
-                      key={award.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/60"
-                    >
-                      <Award className="h-4 w-4 text-energy shrink-0" />
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm truncate">{award.title}</p>
-                        <p className="text-xs text-muted-foreground">{award.organization} • {award.year}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
           </PublicPassportHero>
+          }
+          below={
+            <>
+              <PassportRecognition press={pressLinks.map((press) => ({ ...press, title: decodeHtmlEntities(press.title) }))} awards={awards} />
+              {isOwner && owner?.privateBand && <PassportPrivateBand>{owner.privateBand}</PassportPrivateBand>}
+            </>
           }
         >
           {allSkills.length > 0 && (
@@ -968,25 +940,14 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           </div>
         )}
 
-        {/* Owner Share Toolbar */}
-        {isOwner && (
+        {/* Owner PDF toolbar: only where the Passport card has no controls of its own. With them, the PDF is a button on the card. */}
+        {isOwner && !owner && (
           <div ref={shareRef}>
             <EPKShareToolbar
               profileName={profile.full_name}
               profileRole={profile.role || 'Creator'}
               userId={userId || ''}
-              epkPdfData={{
-                profile,
-                credits,
-                awards,
-                pressLinks,
-                industryStats,
-                reviews: reviews.map((r: any) => ({
-                  reviewer_name: r.reviewer_name || r.reviewer?.full_name,
-                  rating: r.rating,
-                  review_text: r.review_text,
-                })),
-              }}
+              epkPdfData={epkPdfData}
             />
           </div>
         )}

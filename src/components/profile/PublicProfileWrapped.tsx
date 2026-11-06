@@ -29,6 +29,8 @@ interface PublicProfileWrappedProps {
   passport: ReactNode;
   /** The rest of the creator's record. */
   children: ReactNode;
+  /** Full-width bands under the Passport and the record: what reads better side by side, at the width of the page, than stacked in a column. */
+  below?: ReactNode;
 }
 
 /**
@@ -37,7 +39,7 @@ interface PublicProfileWrappedProps {
  * next to it, and everything lives on one surface under the Kretopia
  * navbar. No outbound social links anywhere on it.
  */
-export function PublicProfileWrapped({ userId, fullName, verified, stats, passport, children }: PublicProfileWrappedProps) {
+export function PublicProfileWrapped({ userId, fullName, verified, stats, passport, children, below }: PublicProfileWrappedProps) {
   const firstName = fullName?.trim().split(/\s+/)[0] || "this creator";
   const passportId = useMemo(() => (userId ? `KRT-${userId.replace(/-/g, "").slice(0, 5).toUpperCase()}` : null), [userId]);
 
@@ -82,6 +84,8 @@ export function PublicProfileWrapped({ userId, fullName, verified, stats, passpo
         <div className="min-w-0">{passport}</div>
         <div className="min-w-0 space-y-7">{children}</div>
       </div>
+
+      {below && <div className="space-y-8 pt-2 sm:space-y-10">{below}</div>}
     </WrappedShell>
   );
 }
