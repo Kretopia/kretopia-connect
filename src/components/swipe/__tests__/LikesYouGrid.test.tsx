@@ -62,3 +62,31 @@ describe("LikesYouGrid answers", () => {
     expect(screen.getByText("Priya Rao")).toBeInTheDocument();
   });
 });
+
+describe("LikesYouGrid rows", () => {
+  const manyProfiles = (n: number, role: string, from = 0) =>
+    Array.from({ length: n }, (_, i) => ({ user_id: `${role}-${from + i}`, full_name: `${role} ${from + i}`, role, location: "Paris", avatar_url: null }));
+
+  it("groups the people who liked you into one horizontal row per craft, and keeps every row keyboard reachable", async () => {
+    const people = [...manyProfiles(2, "Editor"), ...manyProfiles(2, "Singer")];
+    results["swipes:incoming"] = { data: people.map((p) => ({ user_id: p.user_id, created_at: "2026-10-01" })) };
+    results.profiles = { data: people };
+    renderGrid();
+    await screen.findByText("Editor 0");
+    const rows = Array.from(document.querySelectorAll('[aria-roledescription="carousel"]'));
+    expect(rows.length).toBe(2);
+    rows.forEach((row) => expect(row).toHaveAttribute("tabindex", "0"));
+  });
+
+  it("mounts a bounded number of cards per row, then shows all on request without dropping anyone", async () => {
+    const people = manyProfiles(30, "Editor");
+    results["swipes:incoming"] = { data: people.map((p) => ({ user_id: p.user_id, created_at: "2026-10-01" })) };
+    results.profiles = { data: people };
+    renderGrid();
+    await screen.findByText("Editor 0");
+    expect(screen.queryByText("Editor 29")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Show all 30/ }));
+    expect(await screen.findByText("Editor 29")).toBeInTheDocument();
+  });
+});
+
