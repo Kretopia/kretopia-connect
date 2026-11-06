@@ -80,6 +80,17 @@ export function creditEvidenceLabel(status: CreditEvidenceStatus): string {
 }
 
 /**
+ * The badge a visitor sees on a credit. Only the two states that rest on someone other than the owner are shown:
+ * Verified and Co-signed, using the same words as the owner's own Passport. Self-declared, pending and publicly
+ * sourced credits carry no badge here, so nothing the owner merely claimed can read like a confirmation.
+ */
+export function publicCreditBadge(status: CreditEvidenceStatus): { label: string; className: string } | null {
+  if (status === "verified") return { label: EVIDENCE_LABEL.verified, className: "bg-primary/10 text-primary border-primary/30" };
+  if (status === "co_signed") return { label: EVIDENCE_LABEL.co_signed, className: "bg-green-500/10 text-green-600 border-green-500/30" };
+  return null;
+}
+
+/**
  * What the owner can do next to strengthen a credit, from its status and whether it has evidence attached
  * (a link or a file). null when there is nothing for them to do: verified, or co-signed and in good standing.
  */

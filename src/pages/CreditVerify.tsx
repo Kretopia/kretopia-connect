@@ -24,6 +24,9 @@ type CreditRequest = {
   year: number | null;
   requester_name: string | null;
   requester_avatar_url: string | null;
+  /** Only present once the Co-Sign authority migration is applied; the server enforces the rule either way. */
+  addressed_to_member?: boolean;
+  can_respond?: boolean;
 };
 
 type Step = "decide" | "claim-role" | "done";
@@ -61,6 +64,57 @@ export default function CreditVerify() {
   const [note, setNote] = useState("");
   const [outcome, setOutcome] = useState<"accepted" | "declined" | null>(null);
   const [wantsClaim, setWantsClaim] = useState(false);
+  // True when the request was sent to one specific member and this visitor is not signed in as them.
+  const [notRecipient, setNotRecipient] = useState(false);
+
+  /** Reads the request as the database holds it. Throws on a failed read, returns null for an unknown token. */
+  const fetchRequest = async (): Promise<CreditRequest | null> => {
+    const { data, error } = await supabase.rpc("get_credit_endorsement_by_token" as any, { _token: token });
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    return row ? (row as CreditRequest) : null;
+  };
+
+  const showRecordedAnswer = (row: CreditRequest) => {
+    setRequest(row);
+    setOutcome(row.status === "accepted" ? "accepted" : "declined");
+    setStep("done");
+  };
+
+  /**
+   * "Saved" is only announced once a fresh read shows the answer in the database; the RPC's own reply is not proof.
+   * Returns false (after telling the person) when the stored state does not match what they chose.
+   */
+  const confirmPersisted = async (expected: "accepted" | "declined"): Promise<boolean> => {
+    try {
+      const fresh = await fetchRequest();
+      if (fresh?.status === expected) return true;
+    } catch {
+      // Falls through to the same message: an unverified save is not announced as a saved one.
+    }
+    toast.error("We couldn't confirm your answer was saved. Reload this page to check before trying again.");
+    return false;
+  };
+
+  /** Maps the server's refusal onto the right screen instead of a generic toast. Returns true when it handled it. */
+  const handleRefusal = async (result: { code?: string; error?: string } | null | undefined): Promise<boolean> => {
+    if (result?.code === "not_recipient" || result?.code === "sign_in_required") {
+      setNotRecipient(true);
+      return true;
+    }
+    if (result?.code === "already_answered" || result?.code === "expired") {
+      try {
+        const fresh = await fetchRequest();
+        if (fresh && fresh.status !== "pending") {
+          showRecordedAnswer(fresh);
+          return true;
+        }
+      } catch {
+        // The toast below still tells them what the server said.
+      }
+    }
+    return false;
+  };
 
   const loadRequest = async () => {
     setLoading(true);
@@ -70,12 +124,11 @@ export default function CreditVerify() {
       return;
     }
     try {
-      const { data, error } = await supabase.rpc("get_credit_endorsement_by_token" as any, { _token: token });
-      if (error) throw error;
-      const row = Array.isArray(data) ? data[0] : data;
+      const row = await fetchRequest();
       if (row) {
-        setRequest(row as CreditRequest);
+        setRequest(row);
         setName(row.endorser_name || "");
+        setNotRecipient(row.status === "pending" && row.can_respond === false && row.addressed_to_member === true);
         if (row.status !== "pending") {
           setOutcome(row.status === "accepted" ? "accepted" : "declined");
           setStep("done");
@@ -107,8 +160,10 @@ export default function CreditVerify() {
       });
       if (error) throw error;
       if (data && typeof data === "object" && "success" in data && !data.success) {
+        if (await handleRefusal(data as { code?: string; error?: string })) return;
         throw new Error(String(data.error || "Unable to submit"));
       }
+      if (!(await confirmPersisted("accepted"))) return;
       setOutcome("accepted");
       // If they wanted to claim their own credit too, stash it for after signup
       if (wantsClaim && request && myRole.trim()) {
@@ -150,8 +205,10 @@ export default function CreditVerify() {
       });
       if (error) throw error;
       if (data && typeof data === "object" && "success" in data && !data.success) {
+        if (await handleRefusal(data as { code?: string; error?: string })) return;
         throw new Error(String(data.error || "Unable to submit"));
       }
+      if (!(await confirmPersisted("declined"))) return;
       setOutcome("declined");
       setStep("done");
     } catch (e: any) {
@@ -206,6 +263,32 @@ export default function CreditVerify() {
   }
 
   const requesterName = request.requester_name || "this creator";
+
+  if (notRecipient && step !== "done") {
+    return (
+      <Shell centered>
+        <Card className="text-center">
+          <CardContent className="p-6 space-y-4">
+            <ShieldCheck className="h-12 w-12 mx-auto text-muted-foreground" />
+            <h1 className="text-lg font-bold">This request is for another account</h1>
+            <p className="text-sm text-muted-foreground">
+              {requesterName} sent it to a specific Kretopia member. Only that member can confirm or decline it, so nothing
+              here has been changed. If that is you, sign in with that account to answer.
+            </p>
+            <Button
+              className="w-full"
+              onClick={() => navigate(`/auth?next=${encodeURIComponent(`/credit-verify?token=${encodeURIComponent(token)}`)}`)}
+            >
+              Sign in
+            </Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate("/")}>
+              Go to Kretopia
+            </Button>
+          </CardContent>
+        </Card>
+      </Shell>
+    );
+  }
 
   if (step === "done") {
     const accepted = outcome === "accepted";

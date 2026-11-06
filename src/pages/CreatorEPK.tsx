@@ -17,7 +17,7 @@ import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
 import { PassportHiringGlance } from "@/components/passport/PassportHiringGlance";
 import { HireMeTrustBar } from "@/components/passport/HireMeTrustBar";
-import { classifyCreditEvidence, creditEvidenceBasis, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { classifyCreditEvidence, creditEvidenceBasis, publicCreditBadge, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
 import { buildHiringGlance, type GlanceCounts } from "@/lib/passport/hiringGlance";
 import { ModelStrip } from "@/components/passport/model/ModelStrip";
 import { VideoIntroSection } from "@/components/profile/VideoIntroSection";
@@ -127,7 +127,6 @@ interface Credit {
   evidence?: CreditEvidenceStatus;
   basis?: string;
   isVerified?: boolean;
-  verificationTier?: 'icdb' | 'ai' | 'peer' | 'payment' | 'manual';
 }
 
 interface IndustryStat {
@@ -346,13 +345,11 @@ const CreatorEPK = () => {
           // AI-confidence score or an imported source is NOT confirmation; those
           // read as publicly sourced / self-declared, never as verified.
           const evidence = classifyCreditEvidence(c);
-          const tier: Credit['verificationTier'] = evidence === 'verified' ? ((c.endorsement_count || 0) > 0 ? 'peer' : 'icdb') : 'manual';
           return {
             ...c,
             evidence,
             basis: creditEvidenceBasis(c),
             isVerified: evidence === 'verified',
-            verificationTier: tier,
           };
         });
 
@@ -365,7 +362,6 @@ const CreatorEPK = () => {
           evidence: 'publicly_sourced' as const,
           basis: 'Claimed from a project record',
           isVerified: false,
-          verificationTier: 'manual' as const,
         }));
         
         // Combine and sort by year
@@ -754,13 +750,7 @@ const CreatorEPK = () => {
               <div className="mb-4">
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
                   {credits.filter(c => c.isVerified).slice(0, 8).map((credit) => {
-                    const tierConfig = {
-                      icdb: { label: 'Verified', className: 'bg-primary/10 text-primary border-primary/30' },
-                      peer: { label: 'Peer', className: 'bg-green-500/10 text-green-600 border-green-500/30' },
-                      ai: { label: 'AI', className: 'bg-primary/10 text-primary border-primary/30' },
-                      payment: { label: 'Paid', className: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
-                      manual: { label: '', className: '' },
-                    }[credit.verificationTier || 'manual'];
+                    const tierConfig = (credit.evidence && publicCreditBadge(credit.evidence)) || { label: '', className: '' };
 
                     return (
                       <div key={credit.id} className="flex-shrink-0 w-[130px]">
@@ -809,13 +799,7 @@ const CreatorEPK = () => {
             {/* Full credit list */}
             <div className="space-y-1.5">
               {credits.map((credit) => {
-                const tierConfig = {
-                  icdb: { label: 'Verified', className: 'bg-primary/10 text-primary border-primary/30' },
-                  peer: { label: 'Peer', className: 'bg-green-500/10 text-green-600 border-green-500/30' },
-                  ai: { label: 'AI', className: 'bg-primary/10 text-primary border-primary/30' },
-                  payment: { label: 'Paid', className: 'bg-amber-500/10 text-amber-600 border-amber-500/30' },
-                  manual: { label: '', className: '' },
-                }[credit.verificationTier || 'manual'];
+                const tierConfig = (credit.evidence && publicCreditBadge(credit.evidence)) || { label: '', className: '' };
 
                 return (
                   <div
@@ -849,7 +833,7 @@ const CreatorEPK = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm truncate">{decodeHtmlEntities(credit.project_name || credit.title || '')}</p>
-                        {credit.isVerified && tierConfig.label && (
+                        {tierConfig.label && (
                           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 gap-0.5", tierConfig.className)}>
                             <CheckCircle2 className="h-2.5 w-2.5" />
                             {tierConfig.label}

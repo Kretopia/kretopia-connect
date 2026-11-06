@@ -6,6 +6,7 @@ import {
   creditEvidenceLabel,
   creditEvidenceMeaning,
   creditNextStep,
+  publicCreditBadge,
   VERIFICATION_LEGEND,
   type CreditEvidenceStatus,
 } from "../creditEvidence";
@@ -120,5 +121,23 @@ describe("the legend", () => {
     const verified = VERIFICATION_LEGEND.find((l) => l.key === "verified")!;
     expect(verified.meaning.startsWith("Verified means the contribution was confirmed by the relevant collaborator or client.")).toBe(true);
     expect(VERIFICATION_LEGEND.find((l) => l.key === "ai_checked")!.meaning).toMatch(/never proof and never 100% certain/);
+  });
+});
+
+describe("publicCreditBadge: what a visitor is told about a credit", () => {
+  it("shows Verified and Co-signed with the owner's own words", () => {
+    expect(publicCreditBadge("verified")?.label).toBe(creditEvidenceLabel("verified"));
+    expect(publicCreditBadge("co_signed")?.label).toBe(creditEvidenceLabel("co_signed"));
+  });
+
+  it("shows nothing for states that rest on the owner's word or an unfinished review", () => {
+    expect(publicCreditBadge("self_claimed")).toBeNull();
+    expect(publicCreditBadge("publicly_sourced")).toBeNull();
+    expect(publicCreditBadge("pending")).toBeNull();
+  });
+
+  it("a credit with one accepted co-sign (status 'peer') reads Co-signed publicly, never Verified", () => {
+    const status = classifyCreditEvidence({ verification_status: "peer", endorsement_count: 1 });
+    expect(publicCreditBadge(status)?.label).toBe("Co-signed");
   });
 });
