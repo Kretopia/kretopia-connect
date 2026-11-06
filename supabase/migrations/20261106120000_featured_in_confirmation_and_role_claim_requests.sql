@@ -155,6 +155,8 @@ BEGIN
 
   SELECT * INTO v_project FROM public.icdb_projects WHERE id = v_role.project_id;
 
+  -- The same flag the claim function in force raises (20260910140000), so the role-rewrite trigger knows this write is the claim.
+  PERFORM set_config('app.icdb_claim_authorized', 'true', true);
   UPDATE public.icdb_project_roles SET claimed_by = v_req.requester_id, is_claimed = true WHERE id = v_role.id;
 
   -- An approved claim is the member's own claim to the role: it is not verification of the work.

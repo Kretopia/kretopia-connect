@@ -3,6 +3,7 @@ import type { DailyCall } from "@daily-co/daily-js";
 import { Mic, MicOff, Video, VideoOff, Users, MessageSquare, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCallWindow } from "./callWindowContext";
+import { dailyThemeFromTokens } from "@/lib/callTheme";
 import kMark from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 export function CallBrand() {
@@ -29,15 +30,10 @@ export function CallMediaControls({ call, toolbar = false, children }: { call: D
     call.on("joined-meeting", read);
     call.setActiveSpeakerMode(true);
     const updateTheme = () => {
+      // Daily takes hex only (see callTheme.ts): with hsl(...) it kept its own white tray under the app's dark header.
       const css = getComputedStyle(document.documentElement);
-      const color = (token: string) => `hsl(${css.getPropertyValue(token).trim()})`;
-      void call.setTheme({ colors: {
-        accent: color("--primary"), accentText: color("--primary-foreground"),
-        background: color("--background"), backgroundAccent: color("--secondary"),
-        baseText: color("--foreground"), border: color("--border"),
-        mainAreaBg: color("--background"), mainAreaBgAccent: color("--card"),
-        mainAreaText: color("--foreground"), supportiveText: color("--muted-foreground"),
-      } }).catch(() => {});
+      const theme = dailyThemeFromTokens((token) => css.getPropertyValue(token));
+      if (theme) void call.setTheme(theme).catch(() => {});
     };
     updateTheme();
     const observer = new MutationObserver(updateTheme);

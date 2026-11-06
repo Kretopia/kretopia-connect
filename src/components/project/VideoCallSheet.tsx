@@ -288,7 +288,9 @@ export const PersistentStudioCall = ({
       try {
         await frame.join({
           url: roomUrl,
-          token: token || undefined,
+          // Only sent when there is one: Daily rejects a `token` property that is present but undefined ("token should be a string"),
+          // which made every call without a token fail to join.
+          ...(token ? { token } : {}),
           userName,
           startVideoOff: !joinPrefs.cam,
           startAudioOff: !joinPrefs.mic,
@@ -471,7 +473,7 @@ export const PersistentStudioCall = ({
           ) : (
             <>
               {/* Header */}
-              <header className="k-call-header flex items-center justify-between border-b shrink-0">
+              <header className="k-call-header k-call-header--live flex items-center justify-between border-b shrink-0">
                 <div className="flex items-center gap-2 min-w-0">
                   <CallBrand />
                   <div className="min-w-0">

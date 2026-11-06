@@ -7,7 +7,7 @@ import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 
 const fake = vi.hoisted(() => {
   const events = new Map<string, (...args: unknown[]) => void>();
-  const call = { on: vi.fn((event, fn) => { events.set(event, fn); return call; }), off: vi.fn(), join: vi.fn(async () => {}), leave: vi.fn(async () => { events.get("left-meeting")?.(); }), destroy: vi.fn(async () => {}), participants: vi.fn(() => ({local:{local:true,audio:true,video:true}})), setLocalAudio: vi.fn(), setActiveSpeakerMode: vi.fn(), setTheme: vi.fn(async () => ({})) };
+  const call = { on: vi.fn((event, fn) => { events.set(event, fn); return call; }), off: vi.fn(), join: vi.fn(async (_options?: Record<string, unknown>) => {}), leave: vi.fn(async () => { events.get("left-meeting")?.(); }), destroy: vi.fn(async () => {}), participants: vi.fn(() => ({local:{local:true,audio:true,video:true}})), setLocalAudio: vi.fn(), setActiveSpeakerMode: vi.fn(), setTheme: vi.fn(async () => ({})) };
   return {call, events, create: vi.fn(async (container: HTMLElement) => { container.appendChild(document.createElement("iframe")); return call; })};
 });
 vi.mock("@/lib/dailyFrame", () => ({ createDailyFrameAsync: fake.create, destroyExistingDailyFrameAsync: vi.fn() }));
@@ -45,5 +45,30 @@ describe("Studio single-frame lifetime", () => {
     fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", {name:"Leave call"}));
     await waitFor(() => expect(document.querySelector("iframe")).toBeNull());
     expect(fake.call.destroy).toHaveBeenCalled();
+  });
+});
+
+describe("what the call sends to Daily when it joins", () => {
+  async function joinWith(token: string | null) {
+    fake.create.mockClear(); fake.call.join.mockClear();
+    render(<MemoryRouter initialEntries={["/studio"]}><VideoCallProvider>
+      <VideoCallSheet open onOpenChange={vi.fn()} projectName="Studio" roomUrl="https://example.test/room" token={token} callId={null} userName="Creator" />
+      <GlobalVideoCallHost />
+    </VideoCallProvider></MemoryRouter>);
+    fireEvent.click(await screen.findByText("Join Studio"));
+    await waitFor(() => expect(fake.call.join).toHaveBeenCalledOnce());
+    return fake.call.join.mock.calls[0][0] as Record<string, unknown>;
+  }
+
+  it("leaves `token` out when there is none: Daily rejects a token property that is present but undefined", async () => {
+    const options = await joinWith(null);
+    expect(options).toMatchObject({ url: "https://example.test/room", userName: "Creator" });
+    // `toEqual` would treat { token: undefined } as equal to {}; Daily does not, so the key itself must be absent.
+    expect(Object.prototype.hasOwnProperty.call(options, "token")).toBe(false);
+  });
+
+  it("sends the token when there is one", async () => {
+    const options = await joinWith("meeting-token");
+    expect(options.token).toBe("meeting-token");
   });
 });
