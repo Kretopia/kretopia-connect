@@ -367,7 +367,7 @@ export default function Subscription({ publicPricing = false }: { publicPricing?
           <GlassCta className="mt-6 min-h-11" to={company ? "/contact" : publicPricing ? publicPlanDestination : PRICING_SIGNUP} icon={externalIcon}>{company ? "Discuss Team Requirements" : publicPricing && user && session ? "View Subscription" : "Get Started Free"}</GlassCta>
         </section>
       </StudioFeatureShell>
-      <EditorialFooter />
+      <EditorialFooter variant="balanced" />
 
 
       <Dialog open={founderOpen} onOpenChange={setFounderOpen}>

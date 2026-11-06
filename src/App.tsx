@@ -575,7 +575,7 @@ const AppContent = () => {
           </Routes>
         </Suspense>
       </main>
-      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter />}
+      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter variant={LEGAL_FOOTER_ROUTES.has(location.pathname) ? "balanced" : "default"} />}
       <ScrollToTopButton />
     </div>
   );
@@ -590,6 +590,9 @@ const PUBLIC_FOOTER_ROUTES = new Set([
   "/privacy",
   "/community-guidelines"
 ]);
+
+// Legal pages are not owned by the audience pages above, so they get the evened-out footer; the others keep the default.
+const LEGAL_FOOTER_ROUTES = new Set(["/terms", "/privacy", "/community-guidelines"]);
 
 const PUBLIC_NO_UNDERLINE_ROUTES = new Set([
   ...PUBLIC_FOOTER_ROUTES,
