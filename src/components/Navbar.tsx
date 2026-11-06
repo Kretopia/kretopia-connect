@@ -23,7 +23,6 @@ import { AccountSwitcher } from "@/components/AccountSwitcher";
 import { StorageMeter } from "@/components/storage/StorageMeter";
 import { useCrewUnread } from "@/hooks/useCrewUnread";
 import { MessagesDrawer } from "@/components/messages/MessagesDrawer";
-import { SettingsDrawer } from "@/components/SettingsDrawer";
 import { useAccountTone } from "@/hooks/useAccountTone";
 import { CompanyModeBadge } from "@/components/company/CompanyModeBadge";
 
@@ -336,12 +335,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
               triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
             />
           )}
-          {!isLandingPage && user && (
-            <SettingsDrawer
-              triggerClassName={isDarkChromeRoute ? "text-white hover:text-white hover:bg-white/10" : undefined}
-            />
-          )}
-          <ThemeToggle />
+          {/* Signed-in app bar keeps four icons: search, messages, notifications, menu. Settings and the theme switch live in the menu. */}
+          {!(user && !isLandingPage) && <ThemeToggle />}
 
           {user ? (
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -445,7 +440,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         onSwitch={() => setIsOpen(false)}
                         onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
                       />
-                      <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1">
+                          <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
+                        </div>
+                        <ThemeToggle />
+                      </div>
                       <Separator className="my-3" />
                       <MenuGrid>
                         {[

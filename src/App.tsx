@@ -17,7 +17,6 @@ import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
-import QuickActionFab from "./components/QuickActionFab";
 import { BrandLoader } from "./components/brand/BrandDots";
 
 import { ModeThemeSync } from "./components/ModeThemeSync";
@@ -286,7 +285,6 @@ const AppContent = () => {
       <PageViewTracker />
       {showNavbar && <Navbar user={user} />}
       {showBottomNav && <KretopiaBottomNav />}
-      {showBottomNav && <QuickActionFab />}
       {user && <Suspense fallback={null}><ThriveAgentFab /></Suspense>}
       {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
           a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
