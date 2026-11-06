@@ -176,7 +176,7 @@ export default function Contact() {
           </aside>
         </div>
       </section>
-      <EditorialFooter />
+      <EditorialFooter variant="balanced" />
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent aria-describedby="contact-preview-description" onCloseAutoFocus={event => { event.preventDefault(); submitRef.current?.focus(); }}>

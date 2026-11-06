@@ -70,14 +70,34 @@ const COLUMNS: FooterColumn[] = [
   },
 ];
 
-export const EditorialFooter = () => {
+/**
+ * "balanced" regroups the same links (none added or removed) so the four columns hold 4 / 4 / 4 / 5 instead of 5 / 3 / 4 / 5,
+ * and lets them sit two by two on a phone. It is opt-in: the default footer is shared with pages owned elsewhere (About,
+ * Discover, For Creatives, For Companies) and keeps its layout exactly.
+ */
+const BALANCED_COLUMNS: FooterColumn[] = [
+  { heading: "Product", links: COLUMNS[0].links.filter((l) => l.label !== "KrePay") },
+  { heading: "Explore", links: COLUMNS[2].links },
+  { heading: "For", links: [...COLUMNS[1].links, COLUMNS[0].links.find((l) => l.label === "KrePay")!] },
+  { heading: "Legal", links: COLUMNS[3].links },
+];
+
+export const EditorialFooter = ({ variant = "default" }: { variant?: "default" | "balanced" }) => {
+  const balanced = variant === "balanced";
+  const columns = balanced ? BALANCED_COLUMNS : COLUMNS;
   return (
     <footer
       className="relative border-t border-white/[0.08]"
     >
       <div className="mx-auto max-w-[1320px] px-5 sm:px-8 lg:px-12 pt-16 sm:pt-20 pb-8">
-        <div className="grid gap-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,auto))] lg:gap-x-16">
-          <div className="max-w-xs">
+        <div
+          className={
+            balanced
+              ? "grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4 sm:gap-x-8 lg:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))] lg:gap-x-12"
+              : "grid gap-10 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_repeat(4,minmax(0,auto))] lg:gap-x-16"
+          }
+        >
+          <div className={balanced ? "col-span-2 max-w-xs sm:col-span-4 lg:col-span-1" : "max-w-xs"}>
             <BrandLogo size="md" showBeta linkToHome="/landing" />
             <p
               className="mt-6 text-xl sm:text-2xl font-semibold text-white leading-snug"
@@ -93,7 +113,7 @@ export const EditorialFooter = () => {
             </p>
           </div>
 
-          {COLUMNS.map((col) => (
+          {columns.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
               <p
                 className="text-[11px] font-bold uppercase tracking-[0.22em] text-white/60"

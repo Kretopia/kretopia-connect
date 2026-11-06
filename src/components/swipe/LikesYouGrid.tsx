@@ -7,6 +7,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
 import { CreatorPassportCard } from "@/components/discover/CreatorPassportCard";
+import { groupCreatorsByCraft } from "@/components/discover/creatorCategories";
+import { ScoutFieldCarousel } from "@/components/scout/ScoutFieldCarousel";
+import { Button } from "@/components/ui/button";
+
+/** Cards mounted per row before "Show all": a long row keeps scrolling smoothly. Nobody is dropped, only deferred. */
+const ROW_CARD_LIMIT = 24;
 
 interface Liker {
   user_id: string;
@@ -27,6 +33,7 @@ export function LikesYouGrid() {
   const [likers, setLikers] = useState<Liker[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -122,8 +129,41 @@ export function LikesYouGrid() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {likers.map(p => <CreatorPassportCard key={p.user_id} profile={p} onOpen={() => navigate(`/profile/${p.user_id}`)} reply={{ onMatch: () => respond(p.user_id, "right"), onPass: () => respond(p.user_id, "left"), busy: busyId === p.user_id }} />)}
+    <div className="space-y-6">
+      {groupCreatorsByCraft(likers).map((group) => {
+        const all = expanded[group.id] || group.creators.length <= ROW_CARD_LIMIT;
+        const shown = all ? group.creators : group.creators.slice(0, ROW_CARD_LIMIT);
+        return (
+          <section key={group.id} aria-label={`${group.label} creators`} className="min-w-0">
+            <ScoutFieldCarousel
+              label={`${group.label} creators`}
+              heading={
+                <h2 className="flex items-center gap-2 text-sm font-bold text-foreground">
+                  {group.label}
+                  <span className="text-xs font-normal tabular-nums text-muted-foreground">{group.creators.length}</span>
+                </h2>
+              }
+            >
+              {shown.map((p) => (
+                <li key={p.user_id}>
+                  <CreatorPassportCard
+                    profile={p}
+                    onOpen={() => navigate(`/profile/${p.user_id}`)}
+                    reply={{ onMatch: () => respond(p.user_id, "right"), onPass: () => respond(p.user_id, "left"), busy: busyId === p.user_id }}
+                  />
+                </li>
+              ))}
+              {!all && (
+                <li className="flex items-center">
+                  <Button variant="outline" onClick={() => setExpanded((e) => ({ ...e, [group.id]: true }))}>
+                    Show all {group.creators.length}
+                  </Button>
+                </li>
+              )}
+            </ScoutFieldCarousel>
+          </section>
+        );
+      })}
     </div>
   );
 }

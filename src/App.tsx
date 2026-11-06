@@ -17,7 +17,6 @@ import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
-import QuickActionFab from "./components/QuickActionFab";
 import { BrandLoader } from "./components/brand/BrandDots";
 
 import { ModeThemeSync } from "./components/ModeThemeSync";
@@ -286,7 +285,6 @@ const AppContent = () => {
       <PageViewTracker />
       {showNavbar && <Navbar user={user} />}
       {showBottomNav && <KretopiaBottomNav />}
-      {showBottomNav && <QuickActionFab />}
       {user && <Suspense fallback={null}><ThriveAgentFab /></Suspense>}
       {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
           a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
@@ -577,7 +575,7 @@ const AppContent = () => {
           </Routes>
         </Suspense>
       </main>
-      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter />}
+      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter variant={LEGAL_FOOTER_ROUTES.has(location.pathname) ? "balanced" : "default"} />}
       <ScrollToTopButton />
     </div>
   );
@@ -592,6 +590,9 @@ const PUBLIC_FOOTER_ROUTES = new Set([
   "/privacy",
   "/community-guidelines"
 ]);
+
+// Legal pages are not owned by the audience pages above, so they get the evened-out footer; the others keep the default.
+const LEGAL_FOOTER_ROUTES = new Set(["/terms", "/privacy", "/community-guidelines"]);
 
 const PUBLIC_NO_UNDERLINE_ROUTES = new Set([
   ...PUBLIC_FOOTER_ROUTES,

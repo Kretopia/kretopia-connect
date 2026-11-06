@@ -3,13 +3,11 @@ import { Home, BadgeCheck, Briefcase, LayoutGrid, UserSearch, Wallet } from "luc
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { useAccountTone } from "@/hooks/useAccountTone";
-import { BRAND_EDGE, BRAND_GRADIENT, FAB_SLOT_PX } from "./bottomNavMetrics";
 
 /**
- * Kretopia V1 bottom nav — Home · Passport · [+] · Scout · Studio. Scout leads to /scout, the same page as the desktop nav.
+ * Kretopia V1 bottom nav — Home · Passport · Scout · Studio. Scout leads to /scout, the same page as the desktop nav.
  *
- * Kreto is a persistent bar/FAB layer, NOT a nav tab. The "+" (QuickActionFab) floats over the middle of this bar, so the bar
- * reserves that slot (two entries, the slot, two entries): nothing and no label is ever under the button, on any width.
+ * Four equal entries on a frosted-glass bar: the active entry gets the same soft translucent pill the top bar uses on hover.
  * Company/business accounts keep their existing B2B nav unchanged.
  */
 const CREATIVE_ITEMS = [
@@ -94,20 +92,14 @@ const KretopiaBottomNav = memo(() => {
         aria-current={active ? "page" : undefined}
         data-active={active ? "true" : undefined}
         className={cn(
-          "relative flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 pb-1 pt-2 transition-colors duration-200",
+          "relative flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 pb-1.5 pt-2 transition-[background-color,color,box-shadow,transform] duration-200",
           "touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-          active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+          active
+            ? "bg-foreground/10 text-foreground shadow-[inset_0_1px_0_hsl(0_0%_100%/0.18),0_1px_6px_hsl(0_0%_0%/0.12)] ring-1 ring-foreground/10 backdrop-blur-md"
+            : "text-muted-foreground hover:bg-foreground/[0.07] hover:text-foreground"
         )}
         style={{ WebkitTapHighlightColor: "transparent" }}
       >
-        {active && (
-          <span
-            aria-hidden
-            data-testid="nav-active-mark"
-            className="absolute left-1/2 top-0 h-[3px] w-7 -translate-x-1/2 rounded-full"
-            style={{ background: BRAND_GRADIENT }}
-          />
-        )}
         <item.icon className="h-[22px] w-[22px] shrink-0" strokeWidth={active ? 2.2 : 1.8} aria-hidden />
         <span className={cn("max-w-full truncate text-[10px] leading-none", active ? "font-semibold" : "font-medium")}>
           {item.label}
@@ -116,30 +108,15 @@ const KretopiaBottomNav = memo(() => {
     );
   };
 
-  const half = Math.ceil(items.length / 2);
-
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 lg:hidden bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-foreground/10 bg-background/55 shadow-[0_-8px_32px_hsl(0_0%_0%/0.10)] backdrop-blur-2xl backdrop-saturate-150 supports-[not(backdrop-filter:blur(1px))]:bg-background/95 lg:hidden"
       role="navigation"
       aria-label="Mobile navigation"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
     >
-      {/* Brand edge: a hairline that fades in from both sides, in place of a flat border. */}
-      <span
-        aria-hidden
-        data-testid="nav-edge"
-        className="pointer-events-none absolute inset-x-0 top-0 h-px opacity-60"
-        style={{ background: BRAND_EDGE }}
-      />
-      <div
-        data-testid="nav-grid"
-        className="grid items-stretch px-2 pt-1"
-        style={{ gridTemplateColumns: `repeat(${half}, minmax(0, 1fr)) ${FAB_SLOT_PX}px repeat(${items.length - half}, minmax(0, 1fr))` }}
-      >
-        {items.slice(0, half).map(renderItem)}
-        <span aria-hidden data-testid="nav-fab-slot" />
-        {items.slice(half).map(renderItem)}
+      <div data-testid="nav-grid" className="grid grid-cols-4 items-stretch gap-1 px-3 pt-1.5">
+        {items.map(renderItem)}
       </div>
     </nav>
   );

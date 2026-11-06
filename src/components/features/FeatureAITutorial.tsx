@@ -4,6 +4,7 @@ import { Dialog } from "@/components/ui/dialog";
 import { FeatureTutorialDialogContent } from "./FeatureTutorialDialogContent";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { useFirstTimeUser } from "@/hooks/useFirstTimeUser";
+import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
@@ -31,7 +32,8 @@ interface FeatureAITutorialProps {
  * Auto-open policy: ONLY genuinely new users get the tour pushed at them
  * (useFirstTimeUser — young account / low XP). Everyone else just gets the
  * quiet trigger, so returning users never hit a modal wall. Once seen (or
- * dismissed) it never auto-opens again for that feature on that browser.
+ * dismissed) it never auto-opens again for that feature for that account: the memory is keyed by user, so a second account on
+ * the same device still gets its own first tour, and the trigger always replays it.
  */
 export function FeatureAITutorial({
   featureKey,
@@ -40,18 +42,19 @@ export function FeatureAITutorial({
   variant = "chip",
   className,
 }: FeatureAITutorialProps) {
-  const storageKey = `kretopia-tutorial-seen:${featureKey}`;
+  const { user } = useAuth();
+  const storageKey = `kretopia-tutorial-seen:${featureKey}:${user?.id ?? "guest"}`;
   const [open, setOpen] = useState(false);
   const { isFirstTime, loading } = useFirstTimeUser();
 
   useEffect(() => {
-    if (loading || !isFirstTime) return;
+    if (loading || !isFirstTime || !user) return;
     try {
       if (!localStorage.getItem(storageKey)) setOpen(true);
     } catch {
       /* private-browsing localStorage access can throw — skip auto-open, trigger still works */
     }
-  }, [storageKey, isFirstTime, loading]);
+  }, [storageKey, isFirstTime, loading, user]);
 
   const dismiss = () => {
     try {

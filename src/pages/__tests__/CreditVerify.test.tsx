@@ -31,10 +31,15 @@ function renderPage(token = "tok-1") {
   );
 }
 
-function mockRequest(row: Partial<typeof baseRow> | null) {
-  rpc.mockImplementation(async (fn: string) => {
-    if (fn === "get_credit_endorsement_by_token") return { data: row ? [{ ...baseRow, ...row }] : [], error: null };
-    return { data: { success: true }, error: null };
+type Row = Partial<typeof baseRow> & { addressed_to_member?: boolean; can_respond?: boolean };
+
+/** A stateful stand-in for the database: a successful submit changes what the next read returns. */
+function mockRequest(row: Row | null, submitReply: Record<string, unknown> | null = { success: true }) {
+  let stored = row ? { ...baseRow, ...row } : null;
+  rpc.mockImplementation(async (fn: string, args: { _accepted?: boolean }) => {
+    if (fn === "get_credit_endorsement_by_token") return { data: stored ? [stored] : [], error: null };
+    if (submitReply?.success && stored) stored = { ...stored, status: args._accepted ? "accepted" : "declined" };
+    return { data: submitReply, error: null };
   });
 }
 
@@ -113,5 +118,53 @@ describe("CreditVerify", () => {
     renderPage();
     expect(await screen.findByText("Credit confirmed")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Yes, we worked together/i })).not.toBeInTheDocument();
+  });
+
+  it("tells a different account the request is not theirs, before it shows any form", async () => {
+    mockRequest({ addressed_to_member: true, can_respond: false });
+    renderPage();
+    expect(await screen.findByText(/request is for another account/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Yes, we worked together/i })).not.toBeInTheDocument();
+    expect(rpc).not.toHaveBeenCalledWith("submit_credit_endorsement_by_token", expect.anything());
+  });
+
+  it("still shows the form for a guest link, which any holder of the link may answer", async () => {
+    mockRequest({ endorser_name: "Jordan Pierce", addressed_to_member: false, can_respond: true });
+    renderPage();
+    expect(await screen.findByRole("button", { name: /Yes, we worked together/i })).toBeEnabled();
+  });
+
+  it("switches to the not-recipient screen when the server refuses the answer", async () => {
+    mockRequest({ endorser_name: "Jordan Pierce" }, { success: false, code: "not_recipient", error: "x" });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: /Yes, we worked together/i }));
+    expect(await screen.findByText(/request is for another account/i)).toBeInTheDocument();
+    expect(screen.queryByText("Credit confirmed")).not.toBeInTheDocument();
+  });
+
+  it("shows the recorded answer when the request was already answered elsewhere", async () => {
+    const row = { endorser_name: "Jordan Pierce" };
+    let stored: Record<string, unknown> = { ...baseRow, ...row };
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "get_credit_endorsement_by_token") return { data: [stored], error: null };
+      stored = { ...stored, status: "declined" };
+      return { data: { success: false, code: "already_answered", error: "This request has already been answered" }, error: null };
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: /Yes, we worked together/i }));
+    expect(await screen.findByText("Response recorded")).toBeInTheDocument();
+    expect(screen.queryByText("Credit confirmed")).not.toBeInTheDocument();
+  });
+
+  it("does not announce success when a fresh read does not show the answer saved", async () => {
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "get_credit_endorsement_by_token") return { data: [{ ...baseRow, endorser_name: "Jordan Pierce" }], error: null };
+      return { data: { success: true }, error: null };
+    });
+    renderPage();
+    fireEvent.click(await screen.findByRole("button", { name: /Yes, we worked together/i }));
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith("submit_credit_endorsement_by_token", expect.anything()));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Yes, we worked together/i })).toBeEnabled());
+    expect(screen.queryByText("Credit confirmed")).not.toBeInTheDocument();
   });
 });
