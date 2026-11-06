@@ -78,6 +78,23 @@ describe("PublicProfileWrapped", () => {
     expect(title.innerHTML).not.toContain("--passport-accent");
   });
 
+  it("draws the bands it is given under the Passport and the record, at the width of the page, and nothing when it has none", () => {
+    const { unmount } = render(
+      <MemoryRouter>
+        <PublicProfileWrapped userId="11111111-2222-3333-4444-555555555555" fullName="Maya Laurent" verified stats={[...stats]} passport={<article aria-label="Passport card">the passport</article>} below={<section aria-label="Band">a band</section>}>
+          <section aria-label="Record">the record</section>
+        </PublicProfileWrapped>
+      </MemoryRouter>,
+    );
+    const band = screen.getByLabelText("Band");
+    expect(Boolean(screen.getByLabelText("Record").compareDocumentPosition(band) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+    // not in either column of the grid: it is the frame's own next block
+    expect(screen.getByLabelText("Passport card").parentElement?.parentElement).not.toContainElement(band);
+    unmount();
+    renderIt();
+    expect(screen.queryByLabelText("Band")).toBeNull();
+  });
+
   it("carries the Kretopia lockup", () => {
     renderIt();
     expect(document.querySelector('img[alt="Kretopia"]')).toBeInTheDocument();

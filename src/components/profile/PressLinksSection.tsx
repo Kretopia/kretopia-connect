@@ -336,7 +336,7 @@ export const PressLinksSection = ({ userId, isOwnProfile, onRefresh }: PressLink
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
+                  <div className="flex flex-wrap items-start justify-between gap-2 mb-1">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       {link.publication && (
                         <>

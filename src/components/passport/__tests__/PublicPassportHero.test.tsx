@@ -124,7 +124,6 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
   afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
   const controls = (over: Partial<PublicPassportOwner> = {}): PublicPassportOwner => ({
-    strength: 68,
     onEdit: vi.fn(), onShowQR: vi.fn(), onDownloadEPK: vi.fn(), onChangePhoto: vi.fn(),
     ...over,
   });
@@ -149,7 +148,7 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
     ),
   });
 
-  it("puts the photo button on the avatar and the Edit, Share, QR and press kit tiles on the card", () => {
+  it("puts the photo button on the avatar and the Edit, Share, QR and press kit buttons on the card", () => {
     const owner = controls();
     draw(owner);
     fireEvent.click(screen.getByRole("button", { name: "Change photo" }));
@@ -157,8 +156,10 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
 
     const tiles = within(screen.getByRole("list", { name: "Passport actions" }));
     expect(tiles.getAllByRole("listitem")).toHaveLength(4);
-    // Edit shows the Passport's real strength, and opens the editor
-    fireEvent.click(tiles.getByRole("button", { name: "Edit Profile. Passport Strength 68%." }));
+    // Edit says "Edit" and nothing else, and opens the editor
+    const edit = tiles.getByRole("button", { name: "Edit Passport" });
+    expect(edit).toHaveTextContent(/^Edit$/);
+    fireEvent.click(edit);
     expect(owner.onEdit).toHaveBeenCalledOnce();
     fireEvent.click(tiles.getByRole("button", { name: "Show QR code" }));
     expect(owner.onShowQR).toHaveBeenCalledOnce();
@@ -182,14 +183,26 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
     expect(onShare).toHaveBeenCalledTimes(2);
   });
 
-  it("draws what only the owner sees at the foot of the card, labelled, after everything else on it", () => {
-    const { container } = draw(controls({ privateFooter: <p>private overview</p> }), { children: <p>public record</p> });
-    const section = screen.getByRole("region", { name: "Only you see this" });
-    expect(within(section).getByText("Only you see this")).toBeInTheDocument();
-    expect(within(section).getByText("private overview")).toBeInTheDocument();
-    const article = container.querySelector("article") as HTMLElement;
-    expect(article.lastElementChild).toBe(section);
-    expect(Boolean(screen.getByText("public record").compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  it("adds the PDF to the same line when the document gives the card one, and presses it through", () => {
+    const pdf = { onDownload: vi.fn() };
+    draw(controls({ pdf }));
+    const tiles = within(screen.getByRole("list", { name: "Passport actions" }));
+    expect(tiles.getAllByRole("listitem")).toHaveLength(5);
+    fireEvent.click(tiles.getByRole("button", { name: "Download PDF" }));
+    expect(pdf.onDownload).toHaveBeenCalledOnce();
+  });
+
+  it("has no PDF button until the document gives it one", () => {
+    draw(controls());
+    expect(within(screen.getByRole("list", { name: "Passport actions" })).getAllByRole("listitem")).toHaveLength(4);
+    expect(screen.queryByRole("button", { name: "Download PDF" })).toBeNull();
+  });
+
+  it("does not draw the owner's private blocks itself: the document lays them out under the card and the record", () => {
+    draw(controls({ privateBand: <p>private overview</p> }), { children: <p>public record</p> });
+    expect(screen.queryByText("private overview")).toBeNull();
+    expect(screen.queryByRole("region", { name: "Only you see this" })).toBeNull();
+    expect(screen.getByText("public record")).toBeInTheDocument();
   });
 
   it("says how many credits other people tagged to the owner, and nothing when there are none", () => {
@@ -226,12 +239,13 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
   });
 
   it("is exactly the public card for anyone who is not the owner, even if controls are passed", () => {
-    draw(controls({ privateFooter: <p>private overview</p>, taggedCount: 3 }), { isOwner: false });
+    draw(controls({ privateBand: <p>private overview</p>, taggedCount: 3, pdf: { onDownload: vi.fn() } }), { isOwner: false });
     expect(screen.queryByRole("button", { name: "Change photo" })).toBeNull();
     expect(screen.queryByRole("list", { name: "Passport actions" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Only you see this" })).toBeNull();
     expect(screen.queryByText("private overview")).toBeNull();
     expect(screen.queryByText(/unclaimed credit/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Download PDF" })).toBeNull();
   });
 
   it("is the plain public card for an owner who was given no controls", () => {

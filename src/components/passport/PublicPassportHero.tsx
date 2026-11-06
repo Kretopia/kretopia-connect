@@ -48,12 +48,9 @@ interface PublicPassportProfile {
 
 /**
  * What the owner has on their own Passport card, grafted onto the very card visitors see: the owner card's old controls (the photo
- * button on the avatar, then Edit with the Passport's strength, Share, QR and press kit on one line) and, at the foot of the card,
- * what only they see. Without this the card is exactly the public one.
+ * button on the avatar, then Edit, Share, QR, the press kit and the PDF on one line). Without this the card is exactly the public one.
  */
 export interface PublicPassportOwner {
-  /** Passport Strength, 0 to 100 (src/lib/passport/strength.ts). */
-  strength: number;
   onEdit: () => void;
   onShowQR: () => void;
   onDownloadEPK: () => void;
@@ -63,8 +60,13 @@ export interface PublicPassportOwner {
   onShare?: () => void;
   /** Credits other people tagged to this person that they have not claimed yet. */
   taggedCount?: number;
-  /** Drawn at the foot of the card under "Only you see this" (Passport intelligence, Featured In to confirm, reach). */
-  privateFooter?: ReactNode;
+  /** The PDF button of the action line. The document fills it in (it holds the data the PDF is made of); the owner's page does not. */
+  pdf?: { onDownload: () => void; busy?: boolean; locked?: boolean };
+  /**
+   * What only the owner sees (Kreto's entry, the Passport intelligence, the press to confirm, the reach). It is not drawn by the card:
+   * the document lays it out as a band under the card and the record (see PassportPrivateBand).
+   */
+  privateBand?: ReactNode;
 }
 
 interface PublicPassportHeroProps {
@@ -211,10 +213,10 @@ export function PublicPassportHero({
 
           {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
 
-          {/* The owner's controls, on the card they edit: Edit (with the Passport's strength), Share, QR and press kit on one line. */}
+          {/* The owner's controls, on the card they edit: Edit, Share, QR, press kit and PDF on one line. */}
           {ownerMode && (
             <PassportSmartActions
-              strength={ownerMode.strength}
+              pdf={ownerMode.pdf}
               onEdit={ownerMode.onEdit}
               onShare={ownerMode.onShare ?? onShare}
               onShowQR={ownerMode.onShowQR}
@@ -257,13 +259,6 @@ export function PublicPassportHero({
            {children && <div className="space-y-5 border-t border-border pt-5">{children}</div>}
         </div>
 
-        {/* Only the owner has this: the Passport intelligence and the rest of what is private, at the foot of the card as before. */}
-        {ownerMode?.privateFooter && (
-          <section aria-label="Only you see this" className="border-t border-dashed border-border">
-            <p className="px-4 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-5">Only you see this</p>
-            {ownerMode.privateFooter}
-          </section>
-        )}
       </article>
     </HoloCard>
   );

@@ -23,7 +23,6 @@ import { PublicPassportView } from "@/components/passport/PublicPassportView";
 import { PressLinksSection } from "@/components/profile/PressLinksSection";
 import { SocialStatsInline } from "@/components/profile/SocialStatsInline";
 import type { PublicPassportOwner } from "@/components/passport/PublicPassportHero";
-import { passportStrength } from "@/lib/passport/strength";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -502,13 +501,6 @@ const ProfileContent = () => {
       unclaimed: !(profile as any).user_id,
     });
     return {
-      strength: passportStrength({
-        hasBio: Boolean(profile.bio),
-        hasAvatar: Boolean(profile.avatar_url),
-        totalCredits: credits?.length || 0,
-        verifiedCredits: verified,
-        cosigns,
-      }),
       onEdit: () => {
         setEditForm({
           full_name: profile.full_name || "",
@@ -529,21 +521,28 @@ const ProfileContent = () => {
       onChangePhoto: () => fileInputRef.current?.click(),
       isUploadingAvatar,
       taggedCount,
-      privateFooter: (
+      // The owner's band under the document: Kreto, the Passport intelligence and the press to confirm side by side. The reach sits
+      // under Kreto's entry, the two shortest blocks sharing a column.
+      privateBand: (
         <>
-          <PassportOverview
-            embedded
-            userId={profile.user_id}
-            credits={credits || []}
-            verified={verified}
-            cosigns={cosigns}
-            standing={standing}
-            onReviewCredits={() => navigate('/credits')}
-          />
-          <div className="border-t border-border px-4 py-4 sm:px-5">
+          <div className="space-y-6">
+            <PassportKretoEntry />
+            <div className="empty:hidden"><SocialStatsInline userId={profile.user_id} /></div>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <PassportOverview
+              embedded
+              userId={profile.user_id}
+              credits={credits || []}
+              verified={verified}
+              cosigns={cosigns}
+              standing={standing}
+              onReviewCredits={() => navigate('/credits')}
+            />
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
             <PressLinksSection userId={profile.user_id} isOwnProfile onRefresh={() => setPassportRev((r) => r + 1)} />
           </div>
-          <div className="px-4 pb-4 empty:hidden sm:px-5"><SocialStatsInline userId={profile.user_id} /></div>
         </>
       ),
     };
@@ -632,9 +631,6 @@ const ProfileContent = () => {
             </div>
           </div>
         )}
-
-        {/* Kreto entry point — Passport-native, not the generic whisper card */}
-        <PassportKretoEntry className="mb-4" />
 
         {/* Post-claim "we found X credits" nudge — was built, never mounted.
             Also now the "Your Passport is ready" prompt for the magic-link

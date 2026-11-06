@@ -1,37 +1,23 @@
 import type { ReactNode } from "react";
-import { FileDown, PencilLine, QrCode, Share2 } from "lucide-react";
+import { Crown, FileDown, FileText, PencilLine, QrCode, Share2 } from "lucide-react";
 
-import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 interface PassportSmartActionsProps {
-  /** 0 to 100, from the Passport's own strength formula. */
-  strength: number;
   onEdit: () => void;
   onShare: () => void;
   onShowQR: () => void;
   onDownloadEPK: () => void;
+  /** The direct PDF download of the Passport. The tile is drawn only when the card can do it. */
+  pdf?: {
+    onDownload: () => void;
+    busy?: boolean;
+    /** The PDF needs a paid plan: a crown says so, and pressing the tile explains. */
+    locked?: boolean;
+  };
   className?: string;
-}
-
-const GRADIENT_ID = "k-passport-action-gradient";
-/** Icons stroke with the Kretopia logo's exact linear gradient (same stops as --k-text-gradient). */
-const gradientStroke = `url(#${GRADIENT_ID})`;
-
-function LogoGradientDefs() {
-  return (
-    <svg width="0" height="0" className="absolute" aria-hidden focusable="false">
-      <defs>
-        <linearGradient id={GRADIENT_ID} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" style={{ stopColor: "var(--k-g-1)" }} />
-          <stop offset="35%" style={{ stopColor: "var(--k-g-2)" }} />
-          <stop offset="65%" style={{ stopColor: "var(--k-g-3)" }} />
-          <stop offset="100%" style={{ stopColor: "var(--k-g-4)" }} />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
 }
 
 const tileBase =
@@ -42,19 +28,19 @@ function Tile({
   ariaLabel,
   title,
   onClick,
-  className,
+  disabled,
   children,
 }: {
   label: ReactNode;
   ariaLabel: string;
   title?: string;
   onClick: () => void;
-  className?: string;
+  disabled?: boolean;
   children: ReactNode;
 }) {
   return (
-    <li className={cn("min-w-0", className)}>
-      <Button variant="outline" type="button" onClick={onClick} aria-label={ariaLabel} title={title ?? ariaLabel} className={tileBase}>
+    <li className="min-w-0">
+      <Button variant="outline" type="button" onClick={onClick} disabled={disabled} aria-label={ariaLabel} title={title ?? ariaLabel} className={tileBase}>
         {children}
         <span className="truncate">{label}</span>
       </Button>
@@ -62,43 +48,47 @@ function Tile({
   );
 }
 
+// The icons draw in the text colour (white in Midnight, the foreground in Daylight), all the same: the buttons are one family.
 const iconClass = "h-6 w-6";
 
 /**
- * The owner's Passport actions on one line. The K mark and Edit used to be two
- * tiles opening the same editor; they are now one: the K shows the real
- * strength, a gradient pencil badge says pressing it edits the profile.
+ * The owner's Passport actions on one line: Edit, Share, QR, the press kit and, when the card can make it, the PDF. The Edit tile
+ * says "Edit" and nothing else (it used to carry the Passport's strength as a percentage).
  */
-export function PassportSmartActions({ strength, onEdit, onShare, onShowQR, onDownloadEPK, className }: PassportSmartActionsProps) {
-  const pct = Math.max(0, Math.min(100, Math.round(strength)));
+export function PassportSmartActions({ onEdit, onShare, onShowQR, onDownloadEPK, pdf, className }: PassportSmartActionsProps) {
   return (
-    <>
-      <LogoGradientDefs />
-      <ul aria-label="Passport actions" className={cn("grid grid-cols-4 gap-2", className)}>
+    <ul aria-label="Passport actions" className={cn("grid gap-2", pdf ? "grid-cols-5" : "grid-cols-4", className)}>
+      <Tile label="Edit" ariaLabel="Edit Passport" onClick={onEdit}>
+        <PencilLine className={iconClass} aria-hidden />
+      </Tile>
+      <Tile label="Share" ariaLabel="Share Passport" onClick={onShare}>
+        <Share2 className={iconClass} aria-hidden />
+      </Tile>
+      <Tile label="QR" ariaLabel="Show QR code" onClick={onShowQR}>
+        <QrCode className={iconClass} aria-hidden />
+      </Tile>
+      <Tile label="Press kit" ariaLabel="Download press kit PDF" onClick={onDownloadEPK}>
+        <FileText className={iconClass} aria-hidden />
+      </Tile>
+      {pdf && (
         <Tile
-          label={<>Edit <span className="k-gradient-text font-semibold">{pct}%</span></>}
-          ariaLabel={`Edit Profile. Passport Strength ${pct}%.`}
-          title={`Edit Profile — Passport Strength ${pct}%`}
-          onClick={onEdit}
+          label="PDF"
+          ariaLabel={pdf.busy ? "Generating PDF" : "Download PDF"}
+          title={pdf.locked ? "Download PDF (Creator plan)" : undefined}
+          onClick={pdf.onDownload}
+          disabled={pdf.busy}
         >
-          <span className="relative inline-flex">
-            <img src={kMarkAsset.url} alt="" draggable={false} aria-hidden className="h-6 w-6 select-none object-contain" />
-            <span className="absolute -bottom-1 -right-2 flex h-4 w-4 items-center justify-center rounded-full border border-border bg-card">
-              <PencilLine className="h-2.5 w-2.5" stroke={gradientStroke} aria-hidden />
+          {pdf.busy ? (
+            <KretopiaSpinner className={iconClass} />
+          ) : (
+            <span className="relative inline-flex">
+              <FileDown className={iconClass} aria-hidden />
+              {pdf.locked && <Crown className="absolute -right-2 -top-1.5 h-3 w-3" aria-hidden />}
             </span>
-          </span>
+          )}
         </Tile>
-        <Tile label="Share" ariaLabel="Share Passport" onClick={onShare}>
-          <Share2 className={iconClass} stroke={gradientStroke} aria-hidden />
-        </Tile>
-        <Tile label="QR" ariaLabel="Show QR code" onClick={onShowQR}>
-          <QrCode className={iconClass} stroke={gradientStroke} aria-hidden />
-        </Tile>
-        <Tile label="Press kit" ariaLabel="Download press kit PDF" onClick={onDownloadEPK}>
-          <FileDown className={iconClass} stroke={gradientStroke} aria-hidden />
-        </Tile>
-      </ul>
-    </>
+      )}
+    </ul>
   );
 }
 

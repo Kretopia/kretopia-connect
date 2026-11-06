@@ -53,7 +53,7 @@ export function TodayDeck({ cards, lead }: TodayDeckProps) {
   const deck = reduced ? <FlatDeck cards={cards} /> : roulette ? <RouletteDeck cards={cards} /> : <SwipeDeck cards={cards} />;
   if (!lead) return deck;
   return (
-    <div className="space-y-5">
+    <div className="space-y-10">
       <div className={cn(roulette && ROULETTE_EXTENT)}>{lead}</div>
       {deck}
     </div>

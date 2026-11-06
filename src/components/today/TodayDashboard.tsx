@@ -55,7 +55,7 @@ export function TodayDashboard({ firstName, profile, profileFull, myCredits = 0 
         </div>
       ) : (
         <motion.div
-          className="space-y-10"
+          className="space-y-16"
           initial={reducedMotion ? false : { opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={reducedMotion ? { duration: 0 } : { duration: 0.4, ease: [0.2, 0.65, 0.3, 0.95] }}

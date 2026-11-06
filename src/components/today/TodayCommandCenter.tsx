@@ -149,7 +149,8 @@ export function TodayCommandCenter({
     ) : undefined;
 
   return (
-    <div className="space-y-5">
+    // More air between the header and the deck than between ordinary blocks: the deck is the page's one hero.
+    <div className="space-y-8">
       <FeaturePageHeader
         eyebrow="Today"
         title={firstName ? `${firstName},` : "Today,"}
@@ -160,7 +161,6 @@ export function TodayCommandCenter({
           label: "How Today works",
           steps: TODAY_TUTORIAL,
         }}
-        compact
       />
 
       <TodayDeck
