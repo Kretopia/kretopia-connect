@@ -1,3 +1,4 @@
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 /**
  * ScrollToTopButton — landing page only. Appears bottom-right once the
  * visitor has scrolled a meaningful distance, and returns them to the
@@ -9,7 +10,7 @@
  */
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp } from "lucide-react";
+
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 const SHOW_AFTER_PX = 600;
@@ -42,7 +43,7 @@ export function ScrollToTopButton() {
           transition={{ duration: 0.25, ease: [0.2, 0.65, 0.3, 0.95] }}
           className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-glow hover:bg-primary/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary"
         >
-          <ArrowUp className="h-4 w-4" aria-hidden />
+          <KretopiaIcon name="arrow-up" className="h-4 w-4" aria-hidden />
         </motion.button>
       )}
     </AnimatePresence>

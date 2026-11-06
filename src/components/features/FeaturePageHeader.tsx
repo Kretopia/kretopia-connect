@@ -31,6 +31,8 @@ interface FeaturePageHeaderProps {
   /** A Kreto scene in the expression of this feature, shown under the title as a banner signed Kretopia. */
   scene?: KretoSceneId;
   company?: boolean;
+  retainEyebrowWithTutorial?: boolean;
+  bannerDescription?: string;
 }
 
 /**
@@ -43,7 +45,7 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene, retainEyebrowWithTutorial = false, bannerDescription }: FeaturePageHeaderProps) {
   usePublishFeatureScene(scene, eyebrow, { title, accentTitle, subtitle });
   const { panels } = useFeatureSceneState();
   // The page's main Wrapped panel draws the banner as its head: never twice.
@@ -96,6 +98,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
               steps={tutorial.steps}
               className="mt-0 relative z-10"
             />
+            {retainEyebrowWithTutorial && <span className="landing-eyebrow">{eyebrow}</span>}
             </div>
           )
         }
@@ -104,7 +107,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
       {/* As wide as the page's own content (StudioFeatureShell: max-w-6xl, px-4), not as wide as the title block. */}
       {drawBanner && (
         <div className="relative mx-auto -mt-2 w-full max-w-6xl px-4 pb-6">
-          <SceneBanner scene={scene} label={eyebrow} layout="split" lazy={false} className="rounded-3xl border border-border" />
+          <SceneBanner scene={scene} label={eyebrow} description={bannerDescription} layout="split" lazy={false} className="rounded-3xl border border-border" />
         </div>
       )}
     </div>

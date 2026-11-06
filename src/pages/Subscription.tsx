@@ -1,49 +1,75 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Users, ListChecks, ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Sparkles, Zap, Crown, Briefcase, User, Check } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   SUBSCRIPTION_PRODUCTS,
   type AccountType, type BillingInterval,
 } from "@/lib/subscriptionConfig";
-import { getCreatorPlans, getBrandPlans, type PlanCard } from "@/lib/subscriptionPlans";
+import { getCreatorPlans, type PlanCard } from "@/lib/subscriptionPlans";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
-import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
+import * as AccordionPrimitive from "@radix-ui/react-accordion";
+import { Accordion, AccordionItem, AccordionContent } from "@/components/ui/accordion";
+import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { GlassCta, GlassCtaButton, OutlineCtaButton } from "@/components/ui/glass-cta";
+import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
+import { CREATIVE_COPY, COMPANY_OPTIONS, CREATIVE_GUIDANCE, COMPANY_BENEFITS, CREATIVE_FAQS, COMPANY_FAQS } from "@/components/pricing/pricingContent";
+import "./Subscription.css";
 
-const SUBSCRIPTION_TUTORIAL: TutorialStep[] = [
-  { icon: Zap, title: "Start free", body: "Spark is free forever — no credit card, no time limit. Upgrade only when you're ready for more." },
-  { icon: Sparkles, title: "Try Pro risk-free", body: "Monthly plans start with a 7-day free trial, and every plan cancels anytime." },
-  { icon: Crown, title: "Manage it anytime", body: "Once you're subscribed, open Manage Subscription here to update your card, change plans, or cancel." },
+const money = (value: number, decimals = 0) => new Intl.NumberFormat("en-US", {
+  style: "currency", currency: "USD", minimumFractionDigits: decimals, maximumFractionDigits: decimals,
+}).format(value);
+const externalIcon = <KretopiaIcon name="external-link" size={16} />;
+const PRICING_SIGNUP = "/auth?tab=signup&src=pricing";
+
+const CREATIVE_PRICING_STEPS = [
+  { icon: Users, title: "Choose your path", body: "Select For Creatives or For Companies to see the right options." },
+  { icon: ListChecks, title: "Compare the plans", body: "Review included features and switch between monthly and yearly billing where available." },
+  { icon: ArrowUpRight, title: "Start or upgrade", body: "Start with Spark or sign in to review and manage your subscription." },
 ];
 
-export default function Subscription() {
+const COMPANY_PRICING_STEPS = [
+  { icon: Users, title: "Explore company options", body: "Select For Companies to see ways to work with Kretopia." },
+  { icon: ListChecks, title: "Review the fit", body: "Compare the workflows and choose the most relevant starting point." },
+  { icon: ArrowUpRight, title: "Discuss your requirements", body: "Use the existing contact flow to discuss next steps with the team." },
+];
+
+export default function Subscription({ publicPricing = false }: { publicPricing?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [currentTier, setCurrentTier] = useState<string>("free");
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>("none");
   const [accountType, setAccountType] = useState<AccountType>("individual");
   const [viewMode, setViewMode] = useState<"creator" | "brand">("creator");
   const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
-  const [checkingSubscription, setCheckingSubscription] = useState(true);
-  const [founderSpotsTaken, setFounderSpotsTaken] = useState(0);
+  const [checkingSubscription, setCheckingSubscription] = useState(!publicPricing);
+  const [founderSpotsTaken, setFounderSpotsTaken] = useState<number | null>(null);
+  const [subscriptionVerified, setSubscriptionVerified] = useState(false);
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [founderOpen, setFounderOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, session } = useAuth();
+  const publicPlanDestination = user && session ? "/subscription" : `${PRICING_SIGNUP}&next=%2Fsubscription`;
 
   useEffect(() => {
+    if (publicPricing) return;
     checkSubscription();
     fetchFounderCount();
-  }, []);
+  }, [publicPricing]);
 
   useEffect(() => {
-    if (!checkingSubscription) {
+    if (!publicPricing && !checkingSubscription) {
       if (accountType === "company") setViewMode("brand");
       const trackPaywall = async () => {
         const { analytics } = await import("@/lib/analytics");
@@ -51,12 +77,12 @@ export default function Subscription() {
       };
       trackPaywall();
     }
-  }, [checkingSubscription, currentTier, accountType]);
+  }, [publicPricing, checkingSubscription, currentTier, accountType]);
 
   const fetchFounderCount = async () => {
     try {
       const { data, error } = await supabase.rpc('get_founder_circle_count');
-      if (!error && data !== null) setFounderSpotsTaken(data);
+      if (!error && data !== null && Number.isFinite(Number(data)) && Number(data) >= 0) setFounderSpotsTaken(Number(data));
     } catch (e) {
       console.error("Error fetching founder count:", e);
     }
@@ -65,7 +91,7 @@ export default function Subscription() {
   const checkSubscription = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { navigate("/auth"); return; }
+      if (!session) return;
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -73,7 +99,10 @@ export default function Subscription() {
         .eq("user_id", session.user.id)
         .single();
 
-      if (profile?.subscription_tier) setCurrentTier(profile.subscription_tier);
+      if (profile?.subscription_tier) {
+        setCurrentTier(profile.subscription_tier);
+        setSubscriptionVerified(true);
+      }
       if (profile?.subscription_status) setSubscriptionStatus(profile.subscription_status);
       if (profile?.account_type) setAccountType(profile.account_type as AccountType);
     } catch (error: any) {
@@ -154,13 +183,17 @@ export default function Subscription() {
 
   const confirmPlan = (plan: PlanCard) => {
     if (plan.isFounder) {
-      handleFounderCheckout();
+      setFounderOpen(true);
+    } else if (publicPricing) {
+      navigate(publicPlanDestination);
+    } else if (!plan.priceId) {
+      navigate(PRICING_SIGNUP);
     } else {
       handleSubscribe(plan.priceId, plan.tier);
     }
   };
 
-  if (checkingSubscription) {
+  if (!publicPricing && checkingSubscription) {
     return (
       <div className="container mx-auto px-4 py-16">
         <div className="flex items-center justify-center">
@@ -170,199 +203,215 @@ export default function Subscription() {
     );
   }
 
-  const founderSpotsRemaining = SUBSCRIPTION_PRODUCTS.founder.maxSpots - founderSpotsTaken;
-  const isFounder = currentTier === 'founder';
-  const hasPaidSub = currentTier !== "free" && (subscriptionStatus === "active" || subscriptionStatus === "trialing") && currentTier !== "founder";
-  const plans = viewMode === "brand" ? getBrandPlans(billingInterval) : getCreatorPlans(billingInterval, founderSpotsRemaining);
-
-  const isCurrentPlan = (plan: PlanCard) => (plan.isFounder ? isFounder : plan.tier === currentTier);
+  const founderSpotsRemaining = founderSpotsTaken === null ? null : Math.max(0, SUBSCRIPTION_PRODUCTS.founder.maxSpots - founderSpotsTaken);
+  const isFounder = currentTier === "founder";
+  const hasPaidSub = !publicPricing && subscriptionVerified && currentTier !== "free" && (subscriptionStatus === "active" || subscriptionStatus === "trialing") && !isFounder;
+  const plans = getCreatorPlans(billingInterval, founderSpotsRemaining ?? Infinity);
+  const company = viewMode === "brand";
+  const faqs = company ? COMPANY_FAQS : CREATIVE_FAQS;
+  const annualSavingsPercent = Math.max(0, Math.round(100 * Math.max(
+    1 - SUBSCRIPTION_PRODUCTS.pro.yearlyPrice / (12 * SUBSCRIPTION_PRODUCTS.pro.price),
+    1 - SUBSCRIPTION_PRODUCTS.creator_pro.yearlyPrice / (12 * SUBSCRIPTION_PRODUCTS.creator_pro.price),
+  )));
+  const isCurrentPlan = (plan: PlanCard) => !publicPricing && subscriptionVerified && (plan.isFounder ? isFounder : plan.tier === "free" ? currentTier === "free" : hasPaidSub && plan.tier === currentTier);
   const isPlanLoading = (plan: PlanCard) => loading !== null && loading === (plan.isFounder ? "founder" : plan.priceId);
 
-  return (
-    <div className="min-h-screen">
-      <div className="relative">
+  function exploreAudience(value: "creator" | "brand") {
+    setViewMode(value);
+    requestAnimationFrame(() => {
+      document.querySelector(".k-pricing__selectors")?.scrollIntoView({ behavior: "auto", block: "start" });
+      document.querySelector<HTMLButtonElement>('.k-pricing [aria-label="Pricing audience"] button[aria-pressed="true"]')?.focus({ preventScroll: true });
+    });
+  }
 
+  function showComparison() {
+    setCompareOpen(true);
+    requestAnimationFrame(() => {
+      const heading = document.getElementById("pricing-comparison-title");
+      heading?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+      heading?.focus({ preventScroll: true });
+    });
+  }
+
+  return (
+    <div className="k-pricing landing-theme min-h-screen">
       <FeaturePageHeader
         scene="krepay"
-        eyebrow="Pricing"
-        title="Choose"
-        // "plan." alone (~70px) was too narrow for the gradient's 4-stop
-        // sweep to read as complete -- same issue as the landing chapters'
-        // "you"/"finds you" fix. Widened to "the right plan." so the box
-        // is wide enough to show the full blue->orange range.
-        accentTitle="the right plan."
-        subtitle={
-          viewMode === "brand"
-            ? "Find, hire & manage top creative talent."
-            : "Unlock the full potential of Kretopia."
-        }
-        tutorial={{ featureKey: "subscription", label: "How Pricing works", steps: SUBSCRIPTION_TUTORIAL }}
-        tabs={
-          <div className="flex flex-col items-center gap-3 text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm text-xs font-semibold text-muted-foreground">
-              {viewMode === "brand" ? (
-                <><Briefcase className="h-3.5 w-3.5" /> Brand plans</>
-              ) : (
-                <><User className="h-3.5 w-3.5" /> Creator plans</>
-              )}
-            </div>
+        bannerDescription={company
+          ? "Discover creative talent, explore experience, and start the right conversation."
+          : "One creative journey, room to grow. Find the tools that fit what you do next."}
+        tutorial={{ featureKey: company ? "pricing-company" : "pricing-creative", label: "How Pricing works", steps: company ? COMPANY_PRICING_STEPS : CREATIVE_PRICING_STEPS }}
 
-            <div className="flex items-center justify-center gap-3">
-              <Label htmlFor="billing-toggle" className={cn("text-sm", billingInterval === 'monthly' ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
-                Monthly
-              </Label>
-              <Switch
-                id="billing-toggle"
-                checked={billingInterval === 'yearly'}
-                onCheckedChange={(checked) => setBillingInterval(checked ? 'yearly' : 'monthly')}
-              />
-              <Label htmlFor="billing-toggle" className={cn("text-sm", billingInterval === 'yearly' ? 'font-semibold text-foreground' : 'text-muted-foreground')}>
-                Yearly
-              </Label>
-              {billingInterval === 'yearly' && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs border"
-                  style={{
-                    backgroundColor: "hsl(var(--energy) / 0.1)",
-                    color: "hsl(var(--energy))",
-                    borderColor: "hsl(var(--energy) / 0.3)",
-                  }}
-                >
-                  Save up to 17%
-                </Badge>
-              )}
-            </div>
-          </div>
-        }
+        eyebrow={company ? "PLANS FOR COMPANIES" : "PLANS FOR CREATIVES"}
+        title={company ? "Find the right people." : "Choose"}
+        accentTitle={company ? "Build better work." : "the right plan."}
+        subtitle={company ? "Discover creative talent, explore relevant experience, and bring the right people together for your next project." : "Find the tools that fit the way you create. Start free, discover new opportunities, and grow at your own pace."}
+
       />
-      </div>
 
       <StudioFeatureShell>
-        {hasPaidSub && (
-          <div className="flex justify-end">
-            <Button size="sm" onClick={handleManageSubscription} variant="outline" disabled={loading === "portal"}>
-              {loading === "portal" ? (
-                <><KretopiaSpinner className="mr-2 h-4 w-4" />Loading...</>
-              ) : (
-                "Manage Subscription"
-              )}
-            </Button>
+        {hasPaidSub && <div className="flex justify-end"><OutlineCtaButton onClick={handleManageSubscription} disabled={loading !== null}>{loading === "portal" ? <KretopiaSpinner className="h-4 w-4" /> : "Manage Subscription"}</OutlineCtaButton></div>}
+
+        <section className="k-pricing__section" aria-labelledby="pricing-options-title">
+          <div className="mb-8 max-w-3xl">
+            <h2 id="pricing-options-title" className="landing-h2 k-pricing__heading">{company ? "Great work begins with the right connections." : "More possibilities for your creative work."}</h2>
+            <div className="k-pricing__body">{company ? <>
+              <p>Finding creative talent is about more than matching a title to a role.</p>
+              <p>It's about understanding experience, recognising contributions, and connecting with people who can bring something valuable to the work.</p>
+              <p>Kretopia is designed to help companies approach creative discovery and collaboration with greater clarity.</p>
+            </> : <p>From discovering your next opportunity to managing more ambitious projects, Kretopia gives you room to grow.</p>}</div>
           </div>
-        )}
+          <div className="k-pricing__selectors mb-8 flex justify-center scroll-mt-24">
+            <div className="flex flex-col items-center gap-5">
+          <div role="group" aria-label="Pricing audience" className="inline-flex max-w-full flex-wrap justify-center gap-1 rounded-full border border-border bg-card p-1">
+            {([ ["creator", "For Creatives", "profile"], ["brand", "For Companies", "company"] ] as const).map(([value, label, icon]) => <button key={value} type="button" aria-pressed={viewMode === value} onClick={() => setViewMode(value)} className={cn("inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none", viewMode === value ? "bg-background text-foreground ring-1 ring-border" : "text-muted-foreground hover:text-foreground")}><KretopiaIcon name={icon} size={16} />{label}</button>)}
+          </div>
+          {!company && <div className="flex flex-wrap items-center justify-center gap-3">
+            <Label htmlFor="billing-toggle" className={cn("text-sm", billingInterval === "monthly" ? "font-semibold" : "text-muted-foreground")}>Monthly</Label>
+            <Switch id="billing-toggle" aria-label="Yearly billing" checked={billingInterval === "yearly"} onCheckedChange={checked => setBillingInterval(checked ? "yearly" : "monthly")} />
+            <Label htmlFor="billing-toggle" className={cn("text-sm", billingInterval === "yearly" ? "font-semibold" : "text-muted-foreground")}>Yearly</Label>
+            {annualSavingsPercent > 0 && <span className="k-pricing__saving-badge">Save up to {annualSavingsPercent}%</span>}
+          </div>}
+        </div>
+          </div>
 
-        <div
-          className={cn(
-            "grid grid-cols-1 gap-6 items-stretch mx-auto",
-            plans.length >= 4 ? "sm:grid-cols-2 lg:grid-cols-4 max-w-6xl" : "sm:grid-cols-3 max-w-5xl",
-          )}
-        >
-          {plans.map((plan) => {
-            const Icon = plan.icon;
-            const current = isCurrentPlan(plan);
-            const showFounderProgress = plan.isFounder && SUBSCRIPTION_PRODUCTS.founder.maxSpots > 0;
-            const founderPct = showFounderProgress
-              ? (founderSpotsTaken / SUBSCRIPTION_PRODUCTS.founder.maxSpots) * 100
-              : 0;
 
-            return (
-              <HoloCard key={plan.tier} className="h-full">
-                <div
-                  className={cn(
-                    "relative flex h-full flex-col rounded-2xl border bg-card p-5 sm:p-6",
-                    plan.popular || current ? "border-[hsl(var(--energy))]" : "border-border",
-                  )}
-                >
-                  {plan.popular && !current && (
-                    <Badge
-                      className="absolute top-3 right-3 border-transparent text-white"
-                      style={{ backgroundColor: "hsl(var(--energy))" }}
-                    >
-                      Most Popular
-                    </Badge>
-                  )}
-                  {current && (
-                    <Badge
-                      className="absolute top-3 right-3 border-transparent text-white"
-                      style={{ backgroundColor: "hsl(var(--energy))" }}
-                    >
-                      Your Plan
-                    </Badge>
-                  )}
-
-                  <Icon className="h-6 w-6 mb-3 shrink-0" style={{ color: "hsl(var(--energy))" }} aria-hidden />
-                  <h3 className="text-lg font-bold text-foreground leading-tight">{plan.name}</h3>
-                  <p className="text-sm text-muted-foreground mt-1 mb-4">{plan.tagline}</p>
-
-                  <div className="mb-5">
-                    <span className="text-3xl font-black text-foreground">{plan.displayPrice}</span>
-                    {!plan.oneTime && plan.price > 0 && <span className="text-sm text-muted-foreground ml-1">/mo</span>}
-                    {plan.oneTime && <span className="text-sm text-muted-foreground ml-1">one-time</span>}
-                  </div>
-
-                  {showFounderProgress && (
-                    <div className="mb-5">
-                      <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                        <span>{founderSpotsTaken} claimed</span>
-                        <span>{SUBSCRIPTION_PRODUCTS.founder.maxSpots} total</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all"
-                          style={{ width: `${founderPct}%`, backgroundColor: "hsl(var(--energy))" }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <ul className="space-y-2.5 mb-6 flex-1">
-                    {plan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2 text-sm text-foreground/80">
-                        <Check className="h-4 w-4 shrink-0 mt-0.5" style={{ color: "hsl(var(--energy))" }} aria-hidden />
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <Button
-                    onClick={() => confirmPlan(plan)}
-                    disabled={current || plan.soldOut || isPlanLoading(plan)}
-                    variant={plan.popular ? "default" : "outline"}
-                    className="w-full mt-auto"
-                    style={plan.popular ? { backgroundColor: "hsl(var(--energy))", borderColor: "hsl(var(--energy))" } : undefined}
-                  >
-                    {current ? (
-                      "Current Plan"
-                    ) : plan.soldOut ? (
-                      "Sold Out"
-                    ) : isPlanLoading(plan) ? (
-                      <KretopiaSpinner className="h-4 w-4" />
-                    ) : (
-                      plan.ctaLabel
-                    )}
-                  </Button>
+          {company ? <>
+            <p className="mb-5 text-sm text-muted-foreground">Access options and workflows are confirmed through direct enquiry.</p>
+            <div className="grid gap-6 md:grid-cols-2">
+              {COMPANY_OPTIONS.map(option => <Card key={option.name} className="k-pricing__card">
+                <div className="k-pricing__plan-header">
+                  <div className="k-pricing__plan-name"><KretopiaIcon name={option.icon} size={26} /><h3 className="text-lg font-semibold">{option.name}</h3></div>
                 </div>
-              </HoloCard>
-            );
-          })}
-        </div>
-
-        {viewMode === "brand" && (
-          <div className="text-center max-w-2xl mx-auto">
-            <p className="text-sm text-muted-foreground mb-2">
-              Brand subscriptions are separate from creator plans. You can have both active simultaneously.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Creators receive 100% of their rate. Service fees are charged to your brand on top.
-            </p>
+                <p className="text-sm font-semibold">{option.tagline}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{option.description}</p>
+                <p className="k-pricing__enquiry-price">{option.price}</p>
+                <h4 className="text-sm font-semibold">Designed around</h4>
+                <ul className="k-pricing__features">{option.features.map(feature => <li key={feature}><KretopiaIcon name="check" size={16} /><span>{feature}</span></li>)}</ul>
+                <div className="mt-auto space-y-3"><GlassCta to="/contact" icon={externalIcon} className="w-full whitespace-normal text-center min-h-11">{option.ctaLabel}</GlassCta><p className="text-xs leading-relaxed text-muted-foreground">{option.footnote}</p></div>
+              </Card>)}
+            </div>
+          </> : <div className="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 xl:grid-cols-4">
+            {plans.map(plan => {
+              const copy = CREATIVE_COPY[plan.tier];
+              const current = isCurrentPlan(plan);
+              const recurring = !plan.oneTime && plan.price > 0;
+              const yearly = recurring && billingInterval === "yearly";
+              const product = plan.tier === "pro" ? SUBSCRIPTION_PRODUCTS.pro : plan.tier === "creator_pro" ? SUBSCRIPTION_PRODUCTS.creator_pro : null;
+              const savings = product ? product.price * 12 - product.yearlyPrice : 0;
+              return <HoloCard key={plan.tier} className="h-full">
+                <Card className={cn("k-pricing__card", plan.popular && "k-pricing__card--featured", plan.isFounder && "k-pricing__card--founder", (plan.popular || current) && "border-foreground/40")}>
+                  <div className="k-pricing__plan-header">
+                    <div className="k-pricing__plan-name"><KretopiaIcon name={copy.icon} size={26} /><h3 className="text-lg font-semibold">{copy.name}</h3></div>
+                    {current ? <Badge variant="secondary">Your Plan</Badge> : plan.popular ? <Badge variant="secondary" className="k-pricing__popular-badge">Most Popular</Badge> : null}
+                  </div>
+                  <div><p className="text-sm font-semibold">{copy.tagline}</p>{plan.isFounder && <p className="k-pricing__lifetime-label">One-time purchase · Lifetime Creator access</p>}</div>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{copy.description}</p>
+                  <div className="k-pricing__price" aria-live="polite" aria-atomic="true">
+                    <p key={plan.oneTime ? "founder" : `${plan.tier}-${billingInterval}`} className="k-pricing__price-change"><span className="text-3xl font-semibold">{money(yearly ? plan.price / 12 : plan.price, yearly ? 2 : 0)}</span><span className="ml-1 text-sm text-muted-foreground">{plan.oneTime ? "/ one-time" : recurring ? "/ month" : "/ Free"}</span></p>
+                    {yearly && <><p className="mt-2 text-sm text-muted-foreground">{money(plan.price)} billed yearly · monthly equivalent</p><p className="mt-1 text-xs font-medium text-foreground">Save {money(savings)}/year compared with monthly billing</p></>}
+                  </div>
+                  {plan.isFounder && founderSpotsTaken !== null && <div className="space-y-2"><p className="text-xs text-muted-foreground">{founderSpotsTaken} claimed · {SUBSCRIPTION_PRODUCTS.founder.maxSpots} total</p><div role="progressbar" aria-label="Founder places claimed" aria-valuemin={0} aria-valuemax={SUBSCRIPTION_PRODUCTS.founder.maxSpots} aria-valuenow={Math.min(founderSpotsTaken, SUBSCRIPTION_PRODUCTS.founder.maxSpots)} className="h-1.5 overflow-hidden rounded-full bg-muted"><div className="h-full bg-foreground transition-[width] motion-reduce:transition-none" style={{ width: `${Math.min(100, founderSpotsTaken / SUBSCRIPTION_PRODUCTS.founder.maxSpots * 100)}%` }} /></div></div>}
+                  <h4 className="text-sm font-semibold">What's included</h4>
+                  <ul className="k-pricing__features">{copy.features.map(feature => <li key={feature}><KretopiaIcon name="check" size={16} /><span>{feature}</span></li>)}</ul>
+                  <div className="mt-auto space-y-3">
+                    {current ? <span role="status" className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-border px-6 py-3 text-sm font-semibold text-muted-foreground">Current Plan</span> : plan.popular ? <GlassCtaButton className="w-full whitespace-normal text-center min-h-11" icon={externalIcon} onClick={() => confirmPlan(plan)} disabled={current || plan.soldOut || loading !== null} aria-busy={isPlanLoading(plan)}>{current ? "Current Plan" : isPlanLoading(plan) ? <KretopiaSpinner className="h-4 w-4" /> : copy.ctaLabel}</GlassCtaButton> : <OutlineCtaButton className="w-full whitespace-normal text-center min-h-11" icon={externalIcon} onClick={() => confirmPlan(plan)} disabled={current || plan.soldOut || loading !== null} aria-busy={isPlanLoading(plan)}>{current ? "Current Plan" : plan.soldOut ? "Sold Out" : isPlanLoading(plan) ? <KretopiaSpinner className="h-4 w-4" /> : copy.ctaLabel}</OutlineCtaButton>}
+                    <p className="text-xs leading-relaxed text-muted-foreground">{copy.footnote}</p>
+                  </div>
+                </Card>
+              </HoloCard>;
+            })}
+          </div>}
+        </section>
+        {!company && <section className="k-pricing__section k-pricing__comparison-section border-t border-border" aria-label="Compare creative plans">
+          <div className="k-pricing__comparison-intro">
+            <div><h2 className="text-xl font-semibold text-foreground">Compare plans at a glance.</h2><p className="mt-2 text-sm leading-relaxed text-muted-foreground">See how the tools, allowances and billing differ.</p></div>
+            <OutlineCtaButton className="mt-6 min-h-11" icon={<KretopiaIcon name="chevron-down" size={16} />} aria-expanded={compareOpen} aria-controls="pricing-comparison" onClick={showComparison}>Compare All Plans</OutlineCtaButton>
           </div>
-        )}
+          {compareOpen && <div id="pricing-comparison" className="k-pricing__comparison mt-8"><h3 id="pricing-comparison-title" tabIndex={-1} className="text-xl font-semibold">Compare All Plans</h3><div className="mt-4 overflow-x-auto rounded-[var(--radius-panel)] border border-border"><table><caption className="sr-only">Creative plan allowances and billing</caption><thead><tr><th scope="col">Included</th><th scope="col">Spark</th><th scope="col">Creator</th><th scope="col">Creator+</th><th scope="col">Founder</th></tr></thead><tbody>
+            <tr><th scope="row">Kreto Talk</th><td>15 minutes/day</td><td>Up to 2 hours/day, with memory</td><td>Up to 10 hours/day, with long-term memory</td><td>Creator plan included</td></tr>
+            <tr><th scope="row">Smart Gig Scout</th><td>Weekly preview</td><td>Daily discovery</td><td>Priority discovery and saved shortlists</td><td>Creator plan included</td></tr>
+            <tr><th scope="row">Billing</th>{plans.map(plan => <td key={plan.tier}>{plan.oneTime ? `${money(plan.price)} one-time` : plan.price === 0 ? "Free" : billingInterval === "yearly" ? `${money(plan.price)} yearly` : `${money(plan.price)}/month`}</td>)}</tr>
+          </tbody></table></div></div>}
+        </section>}
 
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Free forever to start · Cancel anytime · Secure payments · 24/7 support</p>
-          <p className="mt-2">Save 17% with annual billing · No hidden fees</p>
-        </div>
+        {company ? <section className="k-pricing__section border-t border-border" aria-labelledby="company-collaboration-title">
+          <p className="landing-eyebrow mb-4">A clearer path to collaboration</p>
+          <h2 id="company-collaboration-title" className="landing-h2 k-pricing__heading">From requirements to the right conversation.</h2>
+          <div className="k-pricing__company-steps mt-8 grid gap-6 md:grid-cols-3">
+            {COMPANY_BENEFITS.map(([title, body], index) => <div className="k-pricing__step" key={title}>
+              <span className="k-pricing__step-number">0{index + 1}</span>
+              <h3 className="text-lg font-semibold">{title}</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{body}</p>
+            </div>)}
+          </div>
+        </section> : <section className="k-pricing__section border-t border-border" aria-labelledby="creative-guidance-title">
+          <h2 id="creative-guidance-title" className="landing-h2 k-pricing__heading">Find what works for you.</h2>
+          <p className="k-pricing__body">Every creative journey is different. Your tools should reflect that.</p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">{CREATIVE_GUIDANCE.map(([title, body]) => <div key={title} className="k-pricing__guidance-card"><h3 className="font-semibold">{title}</h3><p className="mt-3 text-sm leading-relaxed text-muted-foreground">{body}</p></div>)}</div>
+
+        </section>}
+
+        <section className="k-pricing__section border-t border-border" aria-labelledby="pricing-faq-title">
+          {!company && <p className="landing-eyebrow mb-4">A little more clarity.</p>}
+          <h2 id="pricing-faq-title" className="landing-h2 k-pricing__heading">Frequently asked questions</h2>
+          <Accordion key={viewMode} type="single" collapsible className="mt-6">
+            {faqs.map(([question, answer], index) => <AccordionItem key={question} value={`pricing-faq-${index}`} className="k-pricing__faq-item"><AccordionPrimitive.Header><AccordionPrimitive.Trigger className="k-pricing__faq-trigger">{question}<KretopiaIcon name="chevron-down" size={18} /></AccordionPrimitive.Trigger></AccordionPrimitive.Header><AccordionContent className="max-w-3xl leading-relaxed text-muted-foreground">{answer}{!company && index === 2 && <p className="mt-3">Creator: {money(SUBSCRIPTION_PRODUCTS.pro.yearlyPrice)}/year. Creator+: {money(SUBSCRIPTION_PRODUCTS.creator_pro.yearlyPrice)}/year. The yearly cards show the monthly equivalents and exact annual savings.</p>}</AccordionContent></AccordionItem>)}
+          </Accordion>
+          <OutlineCtaButton className="mt-6 min-h-11" icon={externalIcon} onClick={() => exploreAudience(company ? "creator" : "brand")}>{company ? "View Creator Plans" : "Explore Company Plans"}</OutlineCtaButton>
+        </section>
+
+        <section className="k-pricing__section k-pricing__closing border-t border-border" aria-labelledby="pricing-closing-title">
+          <h2 id="pricing-closing-title" className="landing-h2 k-pricing__heading">{company ? "Every great project starts with people." : "Wherever your work takes you."}</h2>
+          <div className="k-pricing__body">{company ? <p>Discover the perspectives, experience, and creative talent that can bring your ideas to life.</p> : <><p>The next opportunity, the next collaboration, the next idea.</p><p>Find the tools that help you move forward.</p></>}</div>
+          <GlassCta className="mt-6 min-h-11" to={company ? "/contact" : publicPricing ? publicPlanDestination : PRICING_SIGNUP} icon={externalIcon}>{company ? "Discuss Team Requirements" : publicPricing && user && session ? "View Subscription" : "Get Started Free"}</GlassCta>
+        </section>
       </StudioFeatureShell>
+      <EditorialFooter />
+
+
+      <Dialog open={founderOpen} onOpenChange={setFounderOpen}>
+        <DialogContent aria-describedby="founder-offer-description">
+          <DialogHeader>
+            <DialogTitle>Explore Founder Access</DialogTitle>
+            <DialogDescription id="founder-offer-description">
+              {CREATIVE_COPY.founder.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <p className="text-2xl font-semibold">
+            {money(SUBSCRIPTION_PRODUCTS.founder.price)} · one-time
+          </p>
+
+          <ul className="k-pricing__features">
+            {CREATIVE_COPY.founder.features.map(feature =>
+              <li key={feature}>
+                <KretopiaIcon name="check" size={16} />
+                <span>{feature}</span>
+              </li>
+            )}
+          </ul>
+
+          <p className="text-xs text-muted-foreground">
+            Offer benefits and availability are subject to applicable terms.
+          </p>
+
+          {publicPricing ? (
+            <GlassCta to={publicPlanDestination}>{user && session ? "View Subscription" : "Join Kretopia"}</GlassCta>
+          ) : <GlassCtaButton
+            disabled={
+              loading !== null ||
+              founderSpotsRemaining === 0 ||
+              isFounder
+            }
+            onClick={handleFounderCheckout}
+          >
+            {loading === "founder"
+              ? <KretopiaSpinner className="h-4 w-4" />
+              : "Continue to checkout"}
+          </GlassCtaButton>}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

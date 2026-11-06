@@ -1,3 +1,4 @@
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Fingerprint, IdCard, MessageCircle, Search as SearchIcon, SlidersHorizontal } from "lucide-react";
@@ -175,7 +176,7 @@ const PassportDirectory = () => {
 
         <div className="space-y-3">
           <div className="relative">
-            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            <KretopiaIcon name="search" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
             <Input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
