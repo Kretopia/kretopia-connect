@@ -8,6 +8,7 @@ import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, 
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
+import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoDestinationIcon, ScoutDestinationIcon } from "@/components/brand/DestinationIcons";
@@ -175,8 +176,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
 
   // The search: the hero's field in a quick floating panel, shared by both bars.
   const searchSheet = (
-    <Sheet open={mobileSearchOpen} onOpenChange={setMobileSearchOpen}>
-      <SheetTrigger asChild>
+    <SearchOverlay
+      open={mobileSearchOpen}
+      onOpenChange={setMobileSearchOpen}
+      trigger={
         <Button
           variant="ghost"
           size="icon"
@@ -188,30 +191,20 @@ const Navbar = memo(({ user }: NavbarProps) => {
         >
           <KretopiaIcon name="search" className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
         </Button>
-      </SheetTrigger>
-      {/* The search is the hero's field, floating under the bar on a light dim: no slide, no blur of the page, no panel,
-          so it is there as soon as the button is pressed. */}
-      <SheetContent
-        side="top"
-        quick
-        overlayClassName="bg-background/40"
-        className={cn("mx-auto w-[min(calc(34rem+2cm),calc(100vw-2rem))]", guestBar ? "top-[calc(6.75rem+env(safe-area-inset-top,0px))] lg:top-[calc(5.25rem+env(safe-area-inset-top,0px))]" : "top-[calc(4.25rem+env(safe-area-inset-top,0px))]")}
-      >
-        <SheetHeader>
-          <SheetTitle className="sr-only">Search Kretopia</SheetTitle>
-        </SheetHeader>
-        <UnifiedSearchDropdown
-          variant="hero"
-          placeholder="People, projects, opportunities…"
-          autoFocus
-          onSelect={!user ? (result) => navigate(
-            result.type === "creator" ? `/profile/${result.id}`
-              : result.type === "gig" ? `/opportunity/${result.id}`
-              : `/production?name=${encodeURIComponent(result.title)}`,
-          ) : undefined}
-        />
-      </SheetContent>
-    </Sheet>
+      }
+    >
+      <UnifiedSearchDropdown
+        variant="hero"
+        placeholder="People, projects, gigs…"
+        autoFocus
+        resultsMaxHeight="var(--k-search-room)"
+        onSelect={!user ? (result) => navigate(
+          result.type === "creator" ? `/profile/${result.id}`
+            : result.type === "gig" ? `/opportunity/${result.id}`
+            : `/production?name=${encodeURIComponent(result.title)}`,
+        ) : undefined}
+      />
+    </SearchOverlay>
   );
 
   return (

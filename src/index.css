@@ -1359,6 +1359,25 @@ svg.k-gradient-icon {
    hairline and glow are drawn OUTSIDE the field's own box (a masked ring
    and a blurred halo), so its size never changes on focus -- the layout
    contract the hero search tests guard. */
+/* Search: the page around the field is blurred and dimmed so the field is the only thing in focus. The blur is strong on
+   purpose (the page behind stays recognisable as a colour field, never as readable content). Browsers without backdrop-filter,
+   and people who ask for less transparency, get a nearly opaque scrim instead, which is as clear. */
+/* In the top bar's search the field's own surface paints over its magnifier; lift the icon above it. Scoped to this overlay so the
+   hero field on other pages is left exactly as it is. */
+.k-search-overlay .k-search-hero > svg { z-index: 10; pointer-events: none; }
+
+.k-search-scrim {
+  background-color: hsl(var(--background) / 0.45);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  backdrop-filter: blur(24px) saturate(1.4);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .k-search-scrim { background-color: hsl(var(--background) / 0.94); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .k-search-scrim { background-color: hsl(var(--background) / 0.94); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
 .k-search-hero {
   isolation: isolate;
   border-radius: var(--k-hero-radius);

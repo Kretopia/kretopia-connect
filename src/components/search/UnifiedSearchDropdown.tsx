@@ -51,6 +51,8 @@ interface UnifiedSearchDropdownProps {
   /** Member picker: first-letter, paged users only; no AI, web or voice calls. */
   usersOnly?: boolean;
   disabled?: boolean;
+  /** Caps the results list to this height (any CSS length), for a host that knows how much room is left under the field. */
+  resultsMaxHeight?: string;
 }
 
 const CATALOG_ICON: Record<CatalogKind, typeof User> = {
@@ -90,6 +92,7 @@ export function UnifiedSearchDropdown({
   showCatalog,
   usersOnly = false,
   disabled = false,
+  resultsMaxHeight,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -618,6 +621,7 @@ export function UnifiedSearchDropdown({
           id={listboxId}
           role="region"
           aria-label="Search results"
+          style={resultsMaxHeight ? { maxHeight: resultsMaxHeight } : undefined}
           className={cn(
             // Solid bg-popover, not the translucent glass-surface-elevated
             // treatment used elsewhere in the app -- a search results list
