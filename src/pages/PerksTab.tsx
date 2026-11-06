@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { FeatureWrapped } from "@/components/wrapped/FeatureWrapped";
+import { useEffect, useState } from "react";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { Shield, Zap, Award, Star, Crown, Sparkles, TrendingUp, KeyRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PerkTierCard, type PerkTierState } from "@/components/perks/PerkTierCard";
@@ -7,9 +7,8 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { calculateStatusFromCredits, getAllTiers } from "@/lib/statusEngine";
-import { FeatureAITutorial } from "@/components/features/FeatureAITutorial";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
-import { useFitTitleOneLine } from "@/hooks/useFitTitleOneLine";
 
 const TIER_ICONS = [Shield, Zap, Award, Star, Crown, Sparkles];
 
@@ -32,9 +31,6 @@ export default function PerksTab() {
   const [loading, setLoading] = useState(true);
   const [currentTierIdx, setCurrentTierIdx] = useState(0);
   const [verifiedCredits, setVerifiedCredits] = useState(0);
-  const titleWrapperRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  useFitTitleOneLine(titleWrapperRef, titleRef, []);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -57,32 +53,15 @@ export default function PerksTab() {
 
   return (
     <div className="min-h-[calc(100vh-56px)] bg-background text-foreground">
-      <div className="mx-auto max-w-6xl px-4 py-10 space-y-8">
-        <div className="relative overflow-hidden -mx-4 px-4 pt-4 pb-2">
+      <FeaturePageHeader
+        eyebrow="Perks"
+        title="Perks."
+        accentTitle="Earned, not bought."
+        subtitle="What each ThriveStatus tier unlocks. Perks stack as your verified credits and reputation grow."
+        tutorial={{ featureKey: "perks", label: "How Perks works", steps: PERKS_TUTORIAL }}
+      />
 
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid-quadrille" />
-          <div className="relative flex flex-col items-center text-center">
-            <FeatureAITutorial featureKey="perks" label="How Perks works" steps={PERKS_TUTORIAL} className="mb-4 mt-0" />
-            <div ref={titleWrapperRef} className="w-full max-w-3xl">
-              <h1
-                ref={titleRef}
-                className="font-black tracking-[-0.03em] text-foreground leading-[1.05]"
-                style={{ fontSize: "3rem" }}
-              >
-                Perks. <span className="pink-glow-breathe" style={{ color: "hsl(var(--energy))" }}>Earned, not bought.</span>
-              </h1>
-            </div>
-            <p className="mt-3 text-sm sm:text-base text-foreground/60 max-w-xl mx-auto">
-              What each ThriveStatus tier unlocks. Perks stack as your verified credits and
-              reputation grow.
-            </p>
-          </div>
-        </div>
-
-        {/* Bottom hairline — anchors the hero, same treatment as Studio Room */}
-        <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-
-        <FeatureWrapped name="Perks">
+      <StudioFeatureShell wrapped={{ name: "Perks" }}>
         {loading ? (
           <div className="flex items-center gap-2 text-foreground/40 text-sm py-6">
             <KretopiaSpinner className="h-4 w-4" /> Checking your status…
@@ -119,8 +98,7 @@ export default function PerksTab() {
           Partner discounts and Founding Circle rewards land here as they go live — nothing listed
           above is a placeholder.
         </p>
-        </FeatureWrapped>
-      </div>
+      </StudioFeatureShell>
     </div>
   );
 }

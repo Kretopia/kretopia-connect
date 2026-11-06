@@ -18,6 +18,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SEO } from "@/components/SEO";
+import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 
 interface Shortlist {
   id: string;
@@ -222,17 +224,19 @@ const Shortlists = () => {
   }
 
   return (
-    <div className="container max-w-3xl mx-auto p-4 sm:p-6 space-y-4">
+    <div>
       <SEO title="My Shortlists · Kretopia" description="Organize creators you want to hire into private talent lists." />
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
 
-            <Bookmark className="h-5 w-5 text-primary" />
-            My Shortlists
-          </h1>
-          <p className="text-sm text-muted-foreground">Private lists of creators you want to hire</p>
-        </div>
+      <FeaturePageHeader
+        compact
+        eyebrow="Talent lists"
+        title="My Shortlists"
+        subtitle="Private lists of creators you want to hire"
+      />
+
+      <StudioFeatureShell className="max-w-3xl">
+        {/* The header carries no actions, so creating a list sits on its own row at the top of the body. */}
+        <div className="flex justify-end">
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
             <Button size="sm" className="gap-1.5">
@@ -257,54 +261,55 @@ const Shortlists = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        </div>
 
-      {loading ? (
-        <div className="flex justify-center py-10">
-          <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
-        </div>
-      ) : lists.length === 0 ? (
-        <Card className="p-8 text-center space-y-3">
-          <Users className="h-10 w-10 mx-auto text-muted-foreground/50" />
-          <div>
-            <p className="font-semibold">No shortlists yet</p>
-            <p className="text-sm text-muted-foreground">
-              Create lists to organize creators by project, vibe, or vertical.
-            </p>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <KretopiaSpinner className="h-5 w-5 text-muted-foreground" />
           </div>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {lists.map((list) => (
-            <Card
-              key={list.id}
-              className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
-              onClick={() => openList(list)}
-            >
-              <div className="flex -space-x-2">
-                {(list.previewAvatars || []).slice(0, 3).map((src, i) => (
-                  <Avatar key={i} className="h-8 w-8 border-2 border-background">
-                    <AvatarImage src={src} />
-                    <AvatarFallback>?</AvatarFallback>
-                  </Avatar>
-                ))}
-                {(!list.previewAvatars || list.previewAvatars.length === 0) && (
-                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold truncate">{list.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {list.itemCount} {list.itemCount === 1 ? "creator" : "creators"}
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </Card>
-          ))}
-        </div>
-      )}
+        ) : lists.length === 0 ? (
+          <Card className="p-8 text-center space-y-3">
+            <Users className="h-10 w-10 mx-auto text-muted-foreground/50" />
+            <div>
+              <p className="font-semibold">No shortlists yet</p>
+              <p className="text-sm text-muted-foreground">
+                Create lists to organize creators by project, vibe, or vertical.
+              </p>
+            </div>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {lists.map((list) => (
+              <Card
+                key={list.id}
+                className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
+                onClick={() => openList(list)}
+              >
+                <div className="flex -space-x-2">
+                  {(list.previewAvatars || []).slice(0, 3).map((src, i) => (
+                    <Avatar key={i} className="h-8 w-8 border-2 border-background">
+                      <AvatarImage src={src} />
+                      <AvatarFallback>?</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {(!list.previewAvatars || list.previewAvatars.length === 0) && (
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                      <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{list.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {list.itemCount} {list.itemCount === 1 ? "creator" : "creators"}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </Card>
+            ))}
+          </div>
+        )}
+      </StudioFeatureShell>
     </div>
   );
 };
