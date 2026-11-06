@@ -63,7 +63,13 @@ async function resolveCaller(req: Request): Promise<VerifiedCaller | null> {
 // message notifications, event comment notifications, opportunity
 // poster<->applicant status updates, or an accepted connection) -- not
 // just "both happen to be signed in."
-async function hasRealRelationship(admin: ReturnType<typeof createClient>, callerId: string, targetId: string): Promise<boolean> {
+// `ReturnType<typeof createClient>` is a client with no schema, whose query results are typed `never` (five `deno check` errors). The check only
+// needs `from`, and every row it reads is annotated below.
+// deno-lint-ignore no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type QueryClient = { from: (table: string) => any };
+
+async function hasRealRelationship(admin: QueryClient, callerId: string, targetId: string): Promise<boolean> {
   // 1) Accepted connection, either direction.
   const connectionCheck = admin
     .from("connections")
@@ -86,8 +92,8 @@ async function hasRealRelationship(admin: ReturnType<typeof createClient>, calle
       .select("id")
       .eq("created_by", callerId);
     const projectIds = [
-      ...(callerProjects ?? []).map((r) => r.project_id),
-      ...(ownedByCaller ?? []).map((r) => r.id),
+      ...(callerProjects ?? []).map((r: { project_id: string }) => r.project_id),
+      ...(ownedByCaller ?? []).map((r: { id: string }) => r.id),
     ];
     if (projectIds.length === 0) return false;
     const { data: targetOwns } = await admin
@@ -122,8 +128,8 @@ async function hasRealRelationship(admin: ReturnType<typeof createClient>, calle
       .select("id")
       .eq("created_by", callerId);
     const jamIds = [
-      ...(callerJams ?? []).map((r) => r.jam_id),
-      ...(hostedByCaller ?? []).map((r) => r.id),
+      ...(callerJams ?? []).map((r: { jam_id: string }) => r.jam_id),
+      ...(hostedByCaller ?? []).map((r: { id: string }) => r.id),
     ];
     if (jamIds.length === 0) return false;
     const { data: targetHosts } = await admin

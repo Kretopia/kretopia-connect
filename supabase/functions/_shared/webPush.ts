@@ -8,8 +8,11 @@
 
 const encoder = new TextEncoder();
 
+// Byte arrays handed to WebCrypto and to fetch are typed Uint8Array<ArrayBuffer>, not the wider Uint8Array<ArrayBufferLike>: newer TypeScript
+// (Deno 2.x, `deno check`) refuses the wider type as a BufferSource or a request body. Nothing changes at run time.
+
 /** Accepts both base64 and base64url (the app stores the browser's keys as plain base64), with or without padding. */
-export function base64UrlToBytes(value: string): Uint8Array {
+export function base64UrlToBytes(value: string): Uint8Array<ArrayBuffer> {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const binary = atob(base64 + "=".repeat((4 - (base64.length % 4)) % 4));
   const bytes = new Uint8Array(binary.length);
@@ -23,7 +26,7 @@ export function bytesToBase64Url(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function concat(...parts: Uint8Array[]): Uint8Array {
+function concat(...parts: Uint8Array[]): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
   let offset = 0;
   for (const part of parts) {
@@ -34,7 +37,7 @@ function concat(...parts: Uint8Array[]): Uint8Array {
 }
 
 /** HKDF-SHA-256 (RFC 5869): extract with `salt`, expand with `info`, return `length` bytes. */
-async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number): Promise<Uint8Array> {
+async function hkdf(salt: Uint8Array<ArrayBuffer>, ikm: Uint8Array<ArrayBuffer>, info: Uint8Array<ArrayBuffer>, length: number): Promise<Uint8Array<ArrayBuffer>> {
   const key = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
   return new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key, length * 8));
 }
@@ -47,7 +50,7 @@ export interface PushSubscriptionKeys {
 
 /** Test seam: RFC 8291 gives a worked example with a fixed salt and sender key. Production never passes this. */
 export interface EncryptOverrides {
-  salt?: Uint8Array;
+  salt?: Uint8Array<ArrayBuffer>;
   senderKeys?: CryptoKeyPair;
 }
 
@@ -64,7 +67,7 @@ export async function encryptWebPushPayload(
   plaintext: Uint8Array,
   subscription: PushSubscriptionKeys,
   overrides: EncryptOverrides = {},
-): Promise<Uint8Array> {
+): Promise<Uint8Array<ArrayBuffer>> {
   const uaPublic = base64UrlToBytes(subscription.p256dh);
   const authSecret = base64UrlToBytes(subscription.auth);
   if (uaPublic.length !== 65 || uaPublic[0] !== 0x04) throw new Error("push subscription p256dh is not an uncompressed P-256 key");
