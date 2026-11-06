@@ -87,7 +87,11 @@ describe("Verification user search", () => {
     fireEvent.change(screen.getByRole("combobox", { name: "Search Kretopia users" }), { target: { value: "A" } });
     fireEvent.click(await screen.findByRole("button", { name: /Alice 0/ }));
     await waitFor(() => expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ credit_id: "fixture-credit", requested_by: "viewer", endorser_id: "fixture-0", status: "pending" })));
-    expect(mocks.invoke).not.toHaveBeenCalled();
+    // Asking a member now also pushes to their devices. That is the only edge function this selection may call (no AI, no web, no
+    // credit function), and it opens the exact request (its token) instead of the member's profile.
+    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("send-push-notification", expect.anything()));
+    expect(mocks.invoke.mock.calls.map(([name]) => name)).toEqual(["send-push-notification"]);
+    expect(mocks.notify).toHaveBeenCalledWith(expect.objectContaining({ userId: "fixture-0", actionUrl: "/credit-verify?token=fixture-token" }));
     expect(mocks.web).not.toHaveBeenCalled();
   });
 });

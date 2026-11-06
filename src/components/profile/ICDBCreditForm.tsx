@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { notifyUser } from "@/lib/notifyUser";
+import { notifyCosignRequest } from "@/lib/cosignNotifications";
 import { Plus, X, Search, MapPin, Calendar, Link2, Users, Building2, Sparkles, ChevronRight, Wand2, ChevronDown, Mail, Database, ShieldCheck, UserPlus, Upload, Image as ImageIcon, Video, Music } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -478,25 +478,23 @@ export function ICDBCreditForm({ open, onOpenChange, onSuccess, userId, onCredit
 
         // Platform collaborator endorsements
         for (const collab of selectedCollaborators) {
-          const { error: askError } = await supabase.from('credit_endorsements').insert({
+          const { data: askRow, error: askError } = await supabase.from('credit_endorsements').insert({
             credit_id: insertedData.id,
             requested_by: userId,
             endorser_id: collab.user_id,
             endorser_name: collab.full_name,
             status: 'pending',
             relationship: 'collaborator',
-          });
+          }).select('token').maybeSingle();
           // Nothing else tells a member they were asked (the only DB trigger fires on
-          // acceptance), so without this the request just sat there unseen.
+          // acceptance), so without this the request just sat there unseen. The notification
+          // and the push open this exact request (its token), not the member's profile.
           if (!askError) {
-            void notifyUser({
-              userId: collab.user_id,
-              type: 'credit_confirmation_request',
-              title: 'Can you confirm a credit?',
-              message: `${form.project_name}: someone says you worked together. One tap to confirm.`,
-              actionUrl: '/profile',
-              actionText: 'Review request',
-              category: 'credits',
+            void notifyCosignRequest({
+              endorserId: collab.user_id,
+              requesterId: userId,
+              projectName: form.project_name,
+              token: askRow?.token,
             });
           }
         }

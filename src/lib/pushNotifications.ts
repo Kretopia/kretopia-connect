@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type NotificationType = 'match' | 'message' | 'opportunity' | 'milestone' | 'general';
+export type NotificationType = 'match' | 'message' | 'opportunity' | 'milestone' | 'cosign_request' | 'general';
 
 interface SendPushNotificationParams {
   userId: string;
@@ -12,6 +12,13 @@ interface SendPushNotificationParams {
   data?: Record<string, any>;
   /** When true, skip creating the in-app notification row (use this when a DB trigger already creates it). */
   skipInApp?: boolean;
+  /**
+   * What the device shows, when it should say less than the in-app row (a message preview stays in the app, off the lock screen).
+   * Defaults to `body`.
+   */
+  pushBody?: string;
+  /** One notification per tag on the device, and one undelivered message per tag at the push service: a repeat replaces, it does not stack. */
+  tag?: string;
 }
 
 /**
@@ -19,7 +26,7 @@ interface SendPushNotificationParams {
  * This creates an in-app notification and triggers a push notification if they're subscribed
  */
 export async function sendPushNotification(params: SendPushNotificationParams) {
-  const { userId, title, body, type, link, icon, data, skipInApp } = params;
+  const { userId, title, body, type, link, icon, data, skipInApp, pushBody, tag } = params;
 
   let inAppError: unknown = null;
 
@@ -58,14 +65,14 @@ export async function sendPushNotification(params: SendPushNotificationParams) {
       body: {
         userId,
         title,
-        body,
+        body: pushBody ?? body,
         icon: icon || "/logo.png",
         data: {
           type,
           link,
           ...data,
         },
-        tag: type, // Group notifications by type
+        tag: tag ?? type, // Group notifications by type unless the caller names a more specific tag
       },
     });
 
@@ -110,13 +117,17 @@ export async function notifyMatch(user1Id: string, user2Id: string, user1Name: s
 /**
  * Send message notification
  */
-export async function notifyMessage(receiverId: string, senderName: string, messagePreview: string) {
+export async function notifyMessage(receiverId: string, senderName: string, messagePreview: string, senderId?: string) {
   await sendPushNotification({
     userId: receiverId,
     title: `New message from ${senderName}`,
     body: messagePreview,
+    // The device shows who wrote, not what: a lock screen is not the place for the message itself.
+    pushBody: "Open Kretopia to read it.",
     type: "message",
-    link: "/messages",
+    // The tap opens that conversation, and a second message from the same person replaces the first instead of stacking.
+    link: senderId ? `/messages?user=${encodeURIComponent(senderId)}` : "/messages",
+    tag: senderId ? `message:${senderId}` : undefined,
   });
 }
 
