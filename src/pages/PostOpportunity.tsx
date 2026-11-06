@@ -1,3 +1,4 @@
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Briefcase, Building2, CheckCircle2, Mail, X, Upload, Crop, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
+import { Briefcase, Building2, CheckCircle2, Crop, ShieldCheck, Sparkles, Users, Zap } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
@@ -327,7 +328,7 @@ const PostOpportunity = () => {
         <Card className="max-w-md w-full text-center">
           <CardHeader>
             <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-              <Mail className="h-8 w-8 text-primary" />
+              <KretopiaIcon name="mail" className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-2xl">Check your email! </CardTitle>
             <CardDescription className="text-base">
@@ -357,7 +358,6 @@ const PostOpportunity = () => {
       </Helmet>
 
       <FeaturePageHeader
-        compact
         eyebrow="Hire Talent"
         tutorial={{ featureKey: "hire-talent", label: "How hiring works", steps: hireTalentTutorial }}
         title="Hire talent"
@@ -456,7 +456,7 @@ const PostOpportunity = () => {
                               className="text-white/90 hover:text-white"
                               aria-label="Replace logo"
                             >
-                              <Upload className="h-3.5 w-3.5" />
+                              <KretopiaIcon name="upload" className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
@@ -464,7 +464,7 @@ const PostOpportunity = () => {
                               className="text-white/90 hover:text-white"
                               aria-label="Remove logo"
                             >
-                              <X className="h-3.5 w-3.5" />
+                              <KretopiaIcon name="close" className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </div>
@@ -474,7 +474,7 @@ const PostOpportunity = () => {
                           onClick={() => logoFileInputRef.current?.click()}
                           className="w-full h-10 border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-1.5 text-foreground/50 hover:border-[hsl(var(--energy)/0.5)] hover:text-foreground transition-colors text-xs font-medium"
                         >
-                          <Upload className="h-3.5 w-3.5" />
+                          <KretopiaIcon name="upload" className="h-3.5 w-3.5" />
                           Upload
                         </button>
                       )}
@@ -629,7 +629,7 @@ const PostOpportunity = () => {
                         {formData.skills.map((skill) => (
                           <Badge key={skill} variant="secondary" className="gap-1 px-2.5 py-1">
                             {skill}
-                            <X className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
+                            <KretopiaIcon name="close" className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveSkill(skill)} />
                           </Badge>
                         ))}
                       </div>
@@ -654,7 +654,7 @@ const PostOpportunity = () => {
 
                 {/* Section: Cover Image */}
                 <Accordion type="single" collapsible><AccordionItem value="cover"><AccordionTrigger>Cover image (optional)</AccordionTrigger><AccordionContent className="space-y-3">
-                  <SectionHeading as="h3" icon={<Upload className="h-4 w-4" style={{ color: ACCENT }} />}>
+                  <SectionHeading as="h3" icon={<KretopiaIcon name="upload" className="h-4 w-4" style={{ color: ACCENT }} />}>
                     Cover Image (optional)
                   </SectionHeading>
                   <input
@@ -693,7 +693,7 @@ const PostOpportunity = () => {
                           className="h-9 w-9"
                           onClick={() => fileInputRef.current?.click()}
                         >
-                          <Upload className="h-4 w-4" />
+                          <KretopiaIcon name="upload" className="h-4 w-4" />
                         </Button>
                         <Button
                           type="button"
@@ -702,7 +702,7 @@ const PostOpportunity = () => {
                           className="h-9 w-9"
                           onClick={clearImage}
                         >
-                          <X className="h-4 w-4" />
+                          <KretopiaIcon name="close" className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -712,7 +712,7 @@ const PostOpportunity = () => {
                       onClick={() => fileInputRef.current?.click()}
                       className="w-full h-40 sm:h-52 border-2 border-dashed border-border rounded-xl flex flex-col items-center justify-center gap-2 text-foreground/50 hover:border-[hsl(var(--energy)/0.5)] hover:text-foreground transition-colors"
                     >
-                      <Upload className="h-7 w-7" />
+                      <KretopiaIcon name="upload" className="h-7 w-7" />
                       <span className="text-sm font-medium">Click to upload an image</span>
                       <span className="text-xs">PNG, JPG up to 5MB</span>
                     </button>

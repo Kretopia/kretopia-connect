@@ -29,7 +29,7 @@ import { Suspense, useEffect, useState } from "react";
 import { lazyWithRetry as lazy } from "@/lib/lazyWithRetry";
 import { KretopiaHero } from "@/components/landing/KretopiaHero";
 import { ChapterProgressNav } from "@/components/landing/kretopia/ChapterProgressNav";
-import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
+
 import { LandingFunnelTracker } from "@/components/landing/LandingFunnelTracker";
 import { KGradientDefs } from "@/components/brand/KGradientDefs";
 import { KretoLandingFlight } from "@/components/landing/kretopia/KretoLandingFlight";
@@ -67,7 +67,7 @@ export const KretopiaLanding = ({ onSearchSubmit }: KretopiaLandingProps) => {
       )}
 
       <ChapterProgressNav ready={showRest} />
-      <ScrollToTopButton />
+
       <LandingFunnelTracker />
     </div>
   );

@@ -1,14 +1,20 @@
 /**
- * Kretopia EditorialFooter — public navigation.
+ * EditorialFooter — Landing overhaul (24/09/2026), rebuilt to match the
+ * "kretopianewfooter" reference: a real 4-column link footer (Product /
+ * For / Explore / Legal) instead of the previous 3-column masthead
+ * strip. Every link below points at a route that already exists in
+ * App.tsx. "Pricing" opens the public /pricing route
+ * every other CTA in the app already links to (StorageMeter,
+ * QuotaExceededDialog, GroupChatPanel), and "Contact" opens the dedicated /contact page,
+ * which also offers the support@kretopia.com direct email address.
  *
- * Four columns: Product, For, Explore, Legal.
- * Contact: /contact
- * Pricing: /subscription (protected)
- * Events: /meetup
- * SoundStages: /soundstages
- * Logo: /landing
- *
- * Established design and gradient preserved.
+ * v2: dropped the small per-column underline accent (the 3px gradient
+ * bar under each heading) — that also retired the `accent` field on
+ * FooterColumn/COLUMNS entirely, since the underline was its only use.
+ * The full-width brand-gradient seam near the bottom is toned down
+ * (opacity 0.45) — six fully-saturated stops side by side on a dark
+ * background was reading as a bright glowing band rather than a quiet
+ * seam; same gradient, just dialed back.
  */
 import { Link } from "react-router-dom";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -29,27 +35,27 @@ const COLUMNS: FooterColumn[] = [
     heading: "Product",
     links: [
       { label: "Creative Passport", to: "/passport" },
-      { label: "Scout", to: "/opportunities" },
-      { label: "Studio", to: "/landing#chapter-studio" },
-      { label: "Kreto", to: "/landing#chapter-kreto" },
-      { label: "KrePay", to: "/landing#chapter-studio" },
+      { label: "Scout", to: "/scout" },
+      { label: "Studio", to: "/desk" },
+      { label: "Kreto", to: "/kreto" },
+      { label: "KrePay", to: "/thrivepay" },
     ],
   },
   {
     heading: "For",
     links: [
-      { label: "For creatives", to: "/landing#chapter-passport" },
+      { label: "For creatives", to: "/auth?tab=signup&src=footer" },
       { label: "For companies", to: "/post-opportunity" },
-      { label: "Pricing enquiries", to: "/contact" },
+      { label: "Pricing", to: "/pricing" },
     ],
   },
   {
     heading: "Explore",
     links: [
-      { label: "Talent Search", to: "/search" },
       { label: "Match", to: "/match" },
-      { label: "Events", to: "/meetup" },
-      { label: "SoundStages", to: "/soundstages" },
+      { label: "Talent Search", to: "/search" },
+      { label: "Events", to: "/events" },
+      { label: "SoundStages", to: "/circle?tab=live" },
     ],
   },
   {

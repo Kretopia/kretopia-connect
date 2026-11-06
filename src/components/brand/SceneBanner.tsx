@@ -7,6 +7,8 @@ interface SceneBannerProps {
   scene: KretoSceneId;
   /** Words after the K in the corner chip, e.g. "Passport" gives "Kretopia · Passport". */
   label?: string;
+  /** Optional supporting text for the Kreto banner. */
+  description?: string;
   /** Shape and size come from the slot (`h-28`, `h-36 rounded-3xl border`, ...). */
   className?: string;
   /** Draw the K chip. Off where the banner already sits under another brand mark. */
@@ -27,13 +29,14 @@ interface SceneBannerProps {
  * slot, a small K chip names the brand (and the feature) in the corner, and
  * the bottom edge can melt into the card under it. Decorative: no alt text.
  */
-export function SceneBanner({ scene, label, className, brand = true, fade = false, lazy = true, layout = "full" }: SceneBannerProps) {
+export function SceneBanner({ scene, label, description, className, brand = true, fade = false, lazy = true, layout = "full" }: SceneBannerProps) {
   if (layout === "split") {
     return (
       <div className={cn("relative isolate grid overflow-hidden bg-card sm:grid-cols-2", className)}>
         <div className="hidden flex-col justify-center gap-2 p-6 sm:flex">
           <BrandLogo lockup size="md" />
           {label && <p className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>}
+          {description && <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">{description}</p>}
         </div>
         <div className="relative h-36 sm:h-44">
           <KretoScene scene={scene} lazy={lazy} className="h-full w-full" />
@@ -45,6 +48,11 @@ export function SceneBanner({ scene, label, className, brand = true, fade = fals
             </span>
           )}
         </div>
+        {description && (
+          <p className="px-4 pb-4 pt-2 text-sm leading-relaxed text-muted-foreground sm:hidden">
+            {description}
+          </p>
+        )}
       </div>
     );
   }

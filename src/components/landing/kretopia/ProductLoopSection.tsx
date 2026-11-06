@@ -9,17 +9,22 @@
  */
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Fingerprint, Radar, Users, Clapperboard, CheckCircle2, Sparkles, RotateCw } from "lucide-react";
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { analytics } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
 
 const STAGES = [
-  { key: "passport", icon: Fingerprint, label: "Passport", body: "Your record of what you've actually done." },
-  { key: "scout", icon: Radar, label: "Scout", body: "Finds the gigs and briefs that fit your record." },
-  { key: "match", icon: Users, label: "Match", body: "Connects you with the right collaborators." },
-  { key: "studio", icon: Clapperboard, label: "Studio", body: "Where the work happens, start to finish." },
-  { key: "completed", icon: CheckCircle2, label: "Completed Work", body: "Real outcomes — credits, payment, proof." },
-  { key: "stronger", icon: Sparkles, label: "Stronger Passport", body: "Every finished project adds to your record." },
+  { key: "passport", icon: "passport", label: "Passport", body: "Your record of what you've actually done." },
+  { key: "scout", icon: "scout", label: "Scout", body: "Finds the gigs and briefs that fit your record." },
+  { key: "match", icon: "match", label: "Match", body: "Connects you with the right collaborators." },
+  { key: "studio", icon: "studio", label: "Studio", body: "Where the work happens, start to finish." },
+  { key: "completed", icon: "success", label: "Completed Work", body: "Real outcomes — credits, payment, proof." },
+  { key: "stronger", icon: "passport", label: "Stronger Passport", body: "Every finished project adds to your record." },
 ] as const;
+
+const stageAppearance = (active: boolean) => active
+  ? "border-foreground/20 bg-foreground/10 text-foreground"
+  : "border-foreground/10 bg-foreground/[0.025] text-muted-foreground";
 
 export const ProductLoopSection = () => {
   const [active, setActive] = useState(0);
@@ -64,7 +69,7 @@ export const ProductLoopSection = () => {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="mt-12 hidden lg:flex items-center gap-1"
         >
-          {STAGES.map(({ key, icon: Icon, label }, i) => {
+          {STAGES.map(({ key, icon, label }, i) => {
             const isActive = i === active;
             return (
               <div key={key} className="flex items-center gap-1 flex-1">
@@ -74,33 +79,23 @@ export const ProductLoopSection = () => {
                   onFocus={() => setStage(i)}
                   onClick={() => setStage(i)}
                   aria-pressed={isActive}
-                  className={`flex w-full flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors${isActive ? " k-gradient-chip" : ""}`}
-                  style={{
-                    borderColor: isActive ? "transparent" : "rgba(255,255,255,0.1)",
-                    backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
-                  }}
+                  className={cn(
+                    "flex w-full flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors",
+                    stageAppearance(isActive),
+                  )}
                 >
-                  <Icon
-                    className={`h-5 w-5${isActive ? " k-gradient-icon" : ""}`}
-                    style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }}
-                    aria-hidden
-                  />
+                  <KretopiaIcon name={icon} size={20} className="h-5 w-5" />
                   <span
-                    className={`text-[10px] font-bold uppercase tracking-[0.14em]${isActive ? " k-gradient-text" : ""}`}
-                    style={{
-                      color: isActive ? undefined : "rgba(255,255,255,0.7)",
-                      fontFamily: "'Satoshi', 'Inter', sans-serif",
-                    }}
+                    className="text-[10px] font-bold uppercase tracking-[0.14em]"
+                    style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                   >
                     {label}
                   </span>
                 </button>
                 {i < STAGES.length - 1 ? (
-                  <span className="text-white/25 text-lg shrink-0" aria-hidden>
-                    →
-                  </span>
+                  <KretopiaIcon name="arrow-right" size={16} className="shrink-0 text-muted-foreground" />
                 ) : (
-                  <RotateCw className="h-4 w-4 shrink-0 text-white/25" aria-hidden />
+                  <KretopiaIcon name="refresh" size={16} className="shrink-0 text-muted-foreground" />
                 )}
               </div>
             );
@@ -115,7 +110,7 @@ export const ProductLoopSection = () => {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="mt-10 flex lg:hidden flex-col gap-2"
         >
-          {STAGES.map(({ key, icon: Icon, label, body }, i) => {
+          {STAGES.map(({ key, icon, label, body }, i) => {
             const isActive = i === active;
             return (
               <button
@@ -123,28 +118,20 @@ export const ProductLoopSection = () => {
                 type="button"
                 onClick={() => setStage(isActive ? active : i)}
                 aria-pressed={isActive}
-                className={`flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors${isActive ? " k-gradient-chip" : ""}`}
-                style={{
-                  borderColor: isActive ? "transparent" : "rgba(255,255,255,0.1)",
-                  backgroundColor: isActive ? undefined : "rgba(255,255,255,0.02)",
-                }}
+                className={cn(
+                  "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors",
+                  stageAppearance(isActive),
+                )}
               >
-                <Icon
-                  className={`h-5 w-5 shrink-0 mt-0.5${isActive ? " k-gradient-icon" : ""}`}
-                  style={isActive ? undefined : { color: "rgba(255,255,255,0.5)" }}
-                  aria-hidden
-                />
+                <KretopiaIcon name={icon} size={20} className="h-5 w-5 shrink-0 mt-0.5" />
                 <div>
                   <p
-                    className={`w-fit text-[10px] font-bold uppercase tracking-[0.14em] mb-1${isActive ? " k-gradient-text" : ""}`}
-                    style={{
-                      color: isActive ? undefined : "rgba(255,255,255,0.7)",
-                      fontFamily: "'Satoshi', 'Inter', sans-serif",
-                    }}
+                    className="w-fit text-[10px] font-bold uppercase tracking-[0.14em] mb-1"
+                    style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                   >
                     {label}
                   </p>
-                  <p className="text-xs text-white/55" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                  <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
                     {body}
                   </p>
                 </div>
@@ -155,7 +142,7 @@ export const ProductLoopSection = () => {
 
         {/* Active stage explanation — desktop only, mobile shows it inline per-card above */}
         <div className="hidden lg:block mt-6 min-h-[3.5rem]">
-          <p className="text-sm text-white/70 max-w-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+          <p className="text-sm text-muted-foreground max-w-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
             <span className="k-gradient-text" style={{ fontWeight: 700 }}>
               {STAGES[active].label}.
             </span>{" "}

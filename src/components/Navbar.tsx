@@ -1,59 +1,16 @@
+import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GlassCta } from "@/components/ui/glass-cta";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  LogOut,
-  Plus,
-  Menu,
-  Settings,
-  Users,
-  User,
-  Briefcase,
-  MessageCircle,
-  Shield,
-  Crown,
-  Sparkles,
-  DollarSign,
-  FolderKanban,
-  LayoutDashboard,
-  Radar,
-  Search,
-  BarChart3,
-  ShoppingBag,
-  Share2,
-  Rocket,
-  Wallet,
-  MapPin,
-  Trophy,
-  CheckCircle,
-  Target,
-  Zap,
-  CalendarDays,
-  UserPlus,
-  UserCircle2,
-  Building2,
-  Inbox,
-  MessageSquare,
-  Sun,
-  LayoutGrid,
-  Compass,
-  BadgeCheck,
-  BookOpen,
-  Gift,
-  Star,
-  RefreshCw,
-  Theater,
-  Database,
-  Heart,
-  Video,
-} from "lucide-react";
+import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles, DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet, MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, UserPlus, UserCircle2, Building2, Inbox, MessageSquare, Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Gift, Star, RefreshCw, Theater, Database, Heart, Video } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
+import { KretoDestinationIcon, ScoutDestinationIcon, StudioDestinationIcon } from "@/components/brand/DestinationIcons";
 import { supabase } from "@/integrations/supabase/client";
 import { releasePushForSignOut } from "@/lib/pushSubscription";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -140,7 +97,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
         .maybeSingle(),
     )
       .then(({ data }) => {
-        
+
         if (data?.is_manager_mode) setIsManagerMode(true);
         setAvatarUrl(data?.avatar_url ?? null);
         setAvatarName(data?.full_name ?? "");
@@ -209,7 +166,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // KRETOPIA_PUBLIC_NAV_FOUR_LINKS_V5
   // Four direct links. No dropdowns.
   const guestNavItems = [
-    { path: "/about", label: "Platform" },
+    { path: "/landing", label: "Platform" },
     { path: "/passport", label: "For Creatives" },
     { path: "/post-opportunity", label: "For Companies" },
     { path: "/discover", label: "Discover" },
@@ -230,7 +187,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
           )}
           aria-label="Search"
         >
-          <Search className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+          <KretopiaIcon name="search" className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
         </Button>
       </SheetTrigger>
       {/* The search is the hero's field, floating under the bar on a light dim: no slide, no blur of the page, no panel,
@@ -418,7 +375,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
                     )}
                   >
-                    <Menu className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+                    <KretopiaIcon name="menu" className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
                   </Button>
                 )}
               </SheetTrigger>
@@ -493,7 +450,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                       <MenuGrid>
                         {[
                           { icon: MessageSquare, label: "Messages", path: "/messages" },
-                          { icon: LayoutGrid, label: "Studios", path: "/desk" },
+                          { icon: StudioDestinationIcon, label: "Studios", path: "/desk" },
                           { icon: Briefcase, label: "Gigs", path: "/opportunities" },
                           { icon: Search, label: "Talent", path: "/talent-finder" },
                           { icon: Wallet, label: "KrePay", path: "/thrivepay" },
@@ -520,9 +477,9 @@ const Navbar = memo(({ user }: NavbarProps) => {
                        <MenuGrid>
                          {[
                            { icon: Sun, label: "Today", path: "/" },
-                           { icon: Compass, label: "Scout", path: "/scout" },
+                           { icon: ScoutDestinationIcon, label: "Scout", path: "/scout" },
                            { icon: Theater, label: "Stages", path: "/circle" },
-                           { icon: Sparkles, label: "Kreto", path: "/kreto" },
+                           { icon: KretoDestinationIcon, label: "Kreto", path: "/kreto" },
                            { icon: Heart, label: "Match", path: "/match" },
                            { icon: Gift, label: "Perks", path: "/perks" },
                            { icon: CalendarDays, label: "Events", path: "/meetup" },
@@ -626,7 +583,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           path="/circle"
                         />
                         <MenuGridTile
-                          icon={Sparkles}
+                          icon={KretoDestinationIcon}
                           label="Kreto"
                           onClick={() => handleNavigation("/kreto")}
                           path="/kreto"

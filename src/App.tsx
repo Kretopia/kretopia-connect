@@ -1,3 +1,6 @@
+import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
+import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
+ // GUIDE_V2_REACTIVATION_2026
 import { Suspense, lazy as _reactLazy, useEffect, useMemo } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
 import { cn } from "./lib/utils";
@@ -10,6 +13,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
@@ -29,7 +33,7 @@ import { usePushSubscriptionSync } from "./hooks/usePushSubscriptionSync";
 import { AuthGate } from "./components/AuthGate";
 import { RoutePrefetcher } from "./lib/routePrefetch";
 // OnboardingTour removed — real /onboarding page is the single source of truth.
-const HomeEntry = lazy(() => import("./components/home/HomeEntry"));
+const UnifiedHome = lazy(() => import("./components/home/UnifiedHome"));
 import { GlobalIncomingCall } from "./components/calls/GlobalIncomingCall";
 import { GlobalVideoCallHost } from "./components/calls/GlobalVideoCallHost";
 import { VideoCallProvider } from "./contexts/VideoCallContext";
@@ -157,6 +161,7 @@ const ICDBProjectPage = lazy(() => import("./pages/ICDBProjectPage"));
 const BrandVerify = lazy(() => import("./pages/BrandVerify"));
 const WorkHome = lazy(() => import("./pages/WorkHome"));
 const Welcome = lazy(() => import("./pages/Welcome"));
+// KRETOPIA_LANDING_VNEXT_LOCAL — staged, local-only additional page.
 const NewRoomPage = lazy(() => import("./pages/NewRoomPage"));
 const CreativeCircle = lazy(() => import("./pages/CreativeCircle"));
 const Ambassadors = lazy(() => import("./pages/Ambassadors"));
@@ -193,7 +198,7 @@ const queryClient = new QueryClient({
 
 const LoadingFallback = () => <BrandLoader />;
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute = ({ children, redirectTo }: { children: React.ReactNode; redirectTo?: string }) => {
   const { user, loading, session } = useAuth();
 
   if (loading) {
@@ -202,10 +207,31 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   // Only show the auth gate after auth hydration is complete and there is truly no session
   if (!session || !user) {
+    if (redirectTo) return <Navigate to={redirectTo} replace />;
     return <AuthGate>{children}</AuthGate>;
   }
 
   return <>{children}</>;
+};
+
+// Unified home: same layout for guests & authenticated users
+const DefaultRoute = () => {
+  const { user } = useAuth();
+  const { isComplete, loading: onboardingLoading } = useOnboarding();
+
+  if (user) {
+    if (onboardingLoading) return <LoadingFallback />;
+    if (!isComplete) return <Navigate to="/onboarding" replace />;
+
+    // Check for pending event join (from OAuth redirect)
+    const pendingEvent = sessionStorage.getItem('pending_event_join');
+    if (pendingEvent) {
+      sessionStorage.removeItem('pending_event_join');
+      return <Navigate to={`/event/${pendingEvent}`} replace />;
+    }
+  }
+
+  return <UnifiedHome />;
 };
 
 // Catch-all: authenticated users go to mode-aware home
@@ -241,14 +267,13 @@ const AppContent = () => {
   const { user } = useAuth();
   useNativeCapacitor();
   useActivityPing();
-  usePushSubscriptionSync();
-  
+
   // Which parts of the frame this route wears (see lib/appChrome).
   const { showNavbar, showBottomNav } = appChrome(location.pathname, !!user);
 
   // Don't add bottom padding when on individual project pages or desk list
   const shouldAddBottomPadding = showBottomNav && !location.pathname.startsWith('/desk');
-  
+
   // overscroll-y-contain: this is the app's one scroller. Reaching its end must never hand the scroll to the document (html and body also
   // contain it), or any stray absolutely positioned element that stretches the document drags the whole app up and leaves an empty band.
   return (
@@ -264,12 +289,12 @@ const AppContent = () => {
       {user && <Suspense fallback={null}><ThriveAgentFab /></Suspense>}
       {/* Kreto mascot everywhere except the marketing Landing page: bottom-right on desktop, and on
           a phone just above the bottom nav (where it replaced the docked "Ask Kreto" bar). */}
-      {user && location.pathname !== "/landing" && (
+      {user && location.pathname !== "/landing" && location.pathname !== "/landing-vnext" && location.pathname !== "/contact" && (
         <Suspense fallback={null}>
           <KretoLauncher showOnMobile={showKretoMascotOnMobile(location.pathname, !!user)} />
         </Suspense>
       )}
-      
+
       {/* OnboardingTour removed — real /onboarding flow + GetStartedChecklist cover this. */}
       {user && <GlobalIncomingCall />}
       {user && <RoomKnockToast />}
@@ -280,13 +305,15 @@ const AppContent = () => {
       </Suspense>
       <main
         id="main-content"
-        className={cn(shouldAddBottomPadding ? "pb-36 lg:pb-0" : "")}
+        className={cn(shouldAddBottomPadding ? "pb-36 lg:pb-0" : "", PUBLIC_NO_UNDERLINE_ROUTES.has(location.pathname) && "k-public-no-underline")}
       >
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Active MVP Routes */}
-            <Route path="/" element={<HomeEntry />} />
+            <Route path="/" element={<DefaultRoute />} />
+            <Route path="/home-original" element={<DefaultRoute />} />
             <Route path="/landing" element={<Welcome />} />
+            {/* KRETOPIA_LANDING_VNEXT_LOCAL — existing landing remains untouched. */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/claim" element={<Claim />} />
@@ -299,7 +326,7 @@ const AppContent = () => {
             <Route path="/unboarding" element={<Navigate to="/onboarding" replace />} />
             <Route path="/founding-member" element={<ProtectedRoute><FoundingMember /></ProtectedRoute>} />
             <Route path="/company-onboarding" element={<ProtectedRoute><CompanyOnboarding /></ProtectedRoute>} />
-            
+
             {/* Core Feature Pages - Public browsable, actions gated */}
             <Route path="/circle" element={<Stages />} />
           {/* Speed Networking — public index of upcoming themed nights */}
@@ -347,10 +374,7 @@ const AppContent = () => {
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/copilot-memory" element={<ProtectedRoute><CopilotMemory /></ProtectedRoute>} />
             <Route path="/my-analytics" element={<Navigate to="/profile" replace />} />
-            {/* The Guide page is gone. The welcome email (send-user-email, sent by useOnboarding) still links to /guide, and production's copy of that
-                function only changes by a manual paste, so the path redirects instead of ending on a catch-all. */}
-            <Route path="/guide" element={<Navigate to="/" replace />} />
-            
+
             {/* ThriveDesk - Lightweight Project Workspace */}
             <Route path="/desk" element={<ProtectedRoute><WorkHome /></ProtectedRoute>} />
             <Route path="/desk/new-room" element={<ProtectedRoute><NewRoomPage /></ProtectedRoute>} />
@@ -375,9 +399,10 @@ const AppContent = () => {
             <Route path="/fund/new" element={<ProtectedRoute><FundNew /></ProtectedRoute>} />
             <Route path="/fund/manage" element={<ProtectedRoute><FundManage /></ProtectedRoute>} />
             <Route path="/fund/:slug" element={<FundCampaign />} />
-            
+
             {/* Subscription & Payment Routes */}
-            <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
+            <Route path="/pricing" element={<Subscription publicPricing />} />
+            <Route path="/subscription" element={<ProtectedRoute redirectTo="/auth?tab=signin&next=%2Fsubscription"><Subscription /></ProtectedRoute>} />
             <Route path="/thrivepay" element={<ProtectedRoute><ThrivePay /></ProtectedRoute>} />
             <Route path="/guest-pay" element={<GuestPay />} />
             <Route path="/wallet" element={<Navigate to="/thrivepay" replace />} />
@@ -389,7 +414,7 @@ const AppContent = () => {
             <Route path="/payment-canceled" element={<PaymentCanceled />} />
             <Route path="/pay/invoice/:id" element={<PayInvoice />} />
             <Route path="/pay/:slug" element={<PayLink />} />
-            
+
             {/* Legacy redirects for removed features */}
             <Route path="/agent" element={<Navigate to="/circle" replace />} />
             <Route path="/sales" element={<ProtectedRoute><SalesDashboard /></ProtectedRoute>} />
@@ -406,7 +431,7 @@ const AppContent = () => {
             <Route path="/ambassadors" element={<Ambassadors />} />
             <Route path="/ambassador" element={<ProtectedRoute><Ambassador /></ProtectedRoute>} />
             <Route path="/checkin" element={<Navigate to="/" replace />} />
-            
+
             {/* Public Browsable Routes */}
             <Route path="/nearby" element={<NearbyCreators />} />
             <Route path="/events/backstage" element={<Stages />} />
@@ -414,13 +439,13 @@ const AppContent = () => {
             <Route path="/desk/:projectId/crew" element={<EventCrewMode />} />
             <Route path="/scene" element={<Scene />} />
             <Route path="/explore" element={<Navigate to="/nearby" replace />} />
-            
+
             {/* Public Magazine Article - SEO accessible */}
             <Route path="/magazine/:slug" element={<MagazineArticlePage />} />
             <Route path="/magazine" element={<Navigate to="/spotlight?tab=magazine" replace />} />
             <Route path="/podcast" element={<Navigate to="/spotlight?tab=podcast" replace />} />
             <Route path="/spotlight" element={<Spotlight />} />
-            
+
             {/* PWA Install Page */}
             <Route path="/install" element={<Install />} />
 
@@ -429,14 +454,14 @@ const AppContent = () => {
             <Route path="/meet/:meetingId" element={<CallPage />} />
             <Route path="/guest/:token" element={<GuestStudio />} />
             <Route path="/review/:token" element={<ProjectReview />} />
-            
+
             {/* Invite Link with Code */}
             <Route path="/join/:code" element={<JoinWithCode />} />
-            
+
             {/* Project Invitation Accept */}
             <Route path="/accept-invite/:projectId" element={<AcceptInvite />} />
             <Route path="/desk/join/:token" element={<JoinGuestStudio />} />
-            
+
             {/* Admin Routes */}
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/admin/weekly-note" element={<ProtectedRoute><AdminWeeklyNote /></ProtectedRoute>} />
@@ -455,11 +480,12 @@ const AppContent = () => {
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/community-guidelines" element={<CommunityGuidelines />} />
+            <Route path="/platform" element={<Navigate to="/landing" replace />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/unsubscribe" element={<Unsubscribe />} />
             <Route path="/email-unsubscribe" element={<Suspense fallback={null}><EmailUnsubscribe /></Suspense>} />
-            
+
             {/* Share page SPA fallbacks (static HTML may not be served by SPA hosting) */}
             <Route path="/share/gig/:id" element={<ShareGigRedirect />} />
             <Route path="/share/profile/:id" element={<ShareProfileRedirect />} />
@@ -470,7 +496,7 @@ const AppContent = () => {
             {/* Partner Pages — redirected */}
             <Route path="/partner-directory" element={<Navigate to="/" replace />} />
             <Route path="/partner-submit" element={<Navigate to="/" replace />} />
-            
+
             {/* Opportunity Management */}
             <Route path="/opportunity/:id" element={<OpportunityDetail />} />
             <Route path="/opportunity-dashboard" element={<ProtectedRoute><OpportunityDashboard /></ProtectedRoute>} />
@@ -480,7 +506,7 @@ const AppContent = () => {
             {/* Rewards - hidden for now */}
             <Route path="/rewards" element={<Navigate to="/" replace />} />
             <Route path="/rewards-shop" element={<Navigate to="/" replace />} />
-            
+
             {/* Credits — personal dashboard (auth-gated); public discovery lives at /search */}
             <Route path="/credits" element={<CreditsDashboard />} />
             <Route path="/credits/mine" element={<Navigate to="/credits" replace />} />
@@ -520,7 +546,7 @@ const AppContent = () => {
             <Route path="/claim-event/:token" element={<ClaimEvent />} />
             <Route path="/verify-opportunity" element={<VerifyOpportunity />} />
             <Route path="/credit-verify" element={<CreditVerify />} />
-            
+
             {/* Notifications */}
             <Route path="/kreto" element={<ProtectedRoute><KretoTab /></ProtectedRoute>} />
             <Route path="/perks" element={<ProtectedRoute><PerksTab /></ProtectedRoute>} />
@@ -528,7 +554,7 @@ const AppContent = () => {
             <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
             <Route path="/inbox" element={<ProtectedRoute><InboxPage /></ProtectedRoute>} />
             <Route path="/intel" element={<ProtectedRoute><Intel /></ProtectedRoute>} />
-            
+
             {/* Legacy redirects — consolidated. /dashboard's own redirect
                 lives up near /profile now, next to the Passport route it
                 replaces the exit button for -- this duplicate definition
@@ -538,18 +564,38 @@ const AppContent = () => {
             <Route path="/spark" element={<Navigate to="/" replace />} />
             <Route path="/cre8" element={<Navigate to="/" replace />} />
             <Route path="/marketplace" element={<Navigate to="/opportunities" replace />} />
-            
+
             {/* Vanity URL for creator sites — must be before catch-all */}
             <Route path="/:username" element={<CreatorSiteByUsername />} />
-            
+
             {/* 404 - Catch all: redirect to main app */}
             <Route path="*" element={<CatchAllRedirect />} />
           </Routes>
         </Suspense>
       </main>
+      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter />}
+      <ScrollToTopButton />
     </div>
   );
 };
+
+/* GLOBAL_PUBLIC_NAVIGATION_FINAL */
+const PUBLIC_FOOTER_ROUTES = new Set([
+  "/discover",
+  "/passport",
+  "/post-opportunity",
+  "/terms",
+  "/privacy",
+  "/community-guidelines"
+]);
+
+const PUBLIC_NO_UNDERLINE_ROUTES = new Set([
+  ...PUBLIC_FOOTER_ROUTES,
+  "/landing",
+  "/pricing",
+  "/about",
+  "/contact"
+]);
 
 const App = () => {
   return (
@@ -560,7 +606,7 @@ const App = () => {
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                
+
                 <BrowserRouter>
                   <Suspense fallback={null}>
                     <InteractiveOnboarding />
