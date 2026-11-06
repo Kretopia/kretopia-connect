@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/profile/AvailabilityIndicator", () => ({ AvailabilityIndicator: () => null }));
 vi.mock("@/components/profile/TrustSignals", () => ({ TrustSignals: () => null }));
 
-import { PublicPassportHero } from "../PublicPassportHero";
+import { PublicPassportHero, type PublicPassportOwner } from "../PublicPassportHero";
 
 const profile = {
   user_id: "11111111-2222-3333-4444-555555555555",
@@ -108,5 +108,136 @@ describe("PublicPassportHero", () => {
       withBooking("/@maya/book", true);
       expect(screen.queryByRole("link", { name: "Book" })).toBeNull();
     });
+  });
+});
+
+describe("the owner's card: the owner card's controls, grafted onto the Passport card everybody sees", () => {
+  // jsdom has no PointerEvent, and without it clientX/clientY are dropped from the events below.
+  class TestPointerEvent extends MouseEvent {}
+  beforeEach(() => {
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes("reduce") ? false : true, // a fine pointer that can hover, no reduced motion
+      media: query, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    vi.stubGlobal("PointerEvent", TestPointerEvent);
+  });
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+  const controls = (over: Partial<PublicPassportOwner> = {}): PublicPassportOwner => ({
+    strength: 68,
+    onEdit: vi.fn(), onShowQR: vi.fn(), onDownloadEPK: vi.fn(), onChangePhoto: vi.fn(),
+    ...over,
+  });
+  const draw = (owner: PublicPassportOwner | undefined, { isOwner = true, onShare = vi.fn(), children }: { isOwner?: boolean; onShare?: () => void; children?: React.ReactNode } = {}) => ({
+    onShare,
+    ...render(
+      <PublicPassportHero
+        profile={profile}
+        owner={owner}
+        connectionStatus="none"
+        isOwner={isOwner}
+        isSignedIn
+        isConnecting={false}
+        onConnect={() => {}}
+        onMessage={() => {}}
+        onCollaborate={() => {}}
+        onAddToProject={() => {}}
+        onShare={onShare}
+        onJoin={() => {}}
+        showActions={false}
+      >{children}</PublicPassportHero>,
+    ),
+  });
+
+  it("puts the photo button on the avatar and the Edit, Share, QR and press kit tiles on the card", () => {
+    const owner = controls();
+    draw(owner);
+    fireEvent.click(screen.getByRole("button", { name: "Change photo" }));
+    expect(owner.onChangePhoto).toHaveBeenCalledOnce();
+
+    const tiles = within(screen.getByRole("list", { name: "Passport actions" }));
+    expect(tiles.getAllByRole("listitem")).toHaveLength(4);
+    // Edit shows the Passport's real strength, and opens the editor
+    fireEvent.click(tiles.getByRole("button", { name: "Edit Profile. Passport Strength 68%." }));
+    expect(owner.onEdit).toHaveBeenCalledOnce();
+    fireEvent.click(tiles.getByRole("button", { name: "Show QR code" }));
+    expect(owner.onShowQR).toHaveBeenCalledOnce();
+    fireEvent.click(tiles.getByRole("button", { name: "Download press kit PDF" }));
+    expect(owner.onDownloadEPK).toHaveBeenCalledOnce();
+  });
+
+  it("shares through the owner's own flow when there is one, from the card's tile and from its corner icon", () => {
+    const owner = controls({ onShare: vi.fn() });
+    const { onShare } = draw(owner);
+    const shareButtons = screen.getAllByRole("button", { name: "Share Passport" });
+    expect(shareButtons).toHaveLength(2); // the icon on the cover and the tile
+    shareButtons.forEach((button) => fireEvent.click(button));
+    expect(owner.onShare).toHaveBeenCalledTimes(2);
+    expect(onShare).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the plain share the document gives everybody when the owner has no flow of their own", () => {
+    const { onShare } = draw(controls());
+    screen.getAllByRole("button", { name: "Share Passport" }).forEach((button) => fireEvent.click(button));
+    expect(onShare).toHaveBeenCalledTimes(2);
+  });
+
+  it("draws what only the owner sees at the foot of the card, labelled, after everything else on it", () => {
+    const { container } = draw(controls({ privateFooter: <p>private overview</p> }), { children: <p>public record</p> });
+    const section = screen.getByRole("region", { name: "Only you see this" });
+    expect(within(section).getByText("Only you see this")).toBeInTheDocument();
+    expect(within(section).getByText("private overview")).toBeInTheDocument();
+    const article = container.querySelector("article") as HTMLElement;
+    expect(article.lastElementChild).toBe(section);
+    expect(Boolean(screen.getByText("public record").compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
+  });
+
+  it("says how many credits other people tagged to the owner, and nothing when there are none", () => {
+    const { unmount } = draw(controls({ taggedCount: 2 }));
+    expect(screen.getByText("2 unclaimed credits tagged to you")).toBeInTheDocument();
+    unmount();
+    const one = draw(controls({ taggedCount: 1 }));
+    expect(screen.getByText("1 unclaimed credit tagged to you")).toBeInTheDocument();
+    one.unmount();
+    draw(controls({ taggedCount: 0 }));
+    expect(screen.queryByText(/unclaimed credit/)).toBeNull();
+  });
+
+  it("disables the photo button while a photo uploads", () => {
+    draw(controls({ isUploadingAvatar: true }));
+    expect(screen.getByRole("button", { name: "Change photo" })).toBeDisabled();
+  });
+
+  it("does not tilt for its owner (it holds buttons now), while the same card still tilts for a visitor", () => {
+    const tiltOf = (root: HTMLElement) => {
+      const wrapper = root.firstElementChild as HTMLElement;
+      wrapper.getBoundingClientRect = () => ({ left: 0, top: 0, right: 200, bottom: 100, width: 200, height: 100, x: 0, y: 0, toJSON: () => ({}) });
+      fireEvent.pointerMove(wrapper, { clientX: 150, clientY: 20 });
+      const m = (wrapper.firstElementChild as HTMLElement).style.transform.match(/rotateX\((-?[\d.]+)deg\) rotateY\((-?[\d.]+)deg\)/);
+      return m ? { x: Math.abs(Number(m[1])), y: Math.abs(Number(m[2])) } : null;
+    };
+    const owner = draw(controls());
+    expect(tiltOf(owner.container)).toEqual({ x: 0, y: 0 });
+    owner.unmount();
+    const visitor = draw(undefined, { isOwner: false });
+    const visitorTilt = tiltOf(visitor.container);
+    expect(visitorTilt?.x).toBeGreaterThan(0);
+    expect(visitorTilt?.y).toBeGreaterThan(0);
+  });
+
+  it("is exactly the public card for anyone who is not the owner, even if controls are passed", () => {
+    draw(controls({ privateFooter: <p>private overview</p>, taggedCount: 3 }), { isOwner: false });
+    expect(screen.queryByRole("button", { name: "Change photo" })).toBeNull();
+    expect(screen.queryByRole("list", { name: "Passport actions" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Only you see this" })).toBeNull();
+    expect(screen.queryByText("private overview")).toBeNull();
+    expect(screen.queryByText(/unclaimed credit/)).toBeNull();
+  });
+
+  it("is the plain public card for an owner who was given no controls", () => {
+    draw(undefined);
+    expect(screen.queryByRole("button", { name: "Change photo" })).toBeNull();
+    expect(screen.queryByRole("list", { name: "Passport actions" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Only you see this" })).toBeNull();
   });
 });

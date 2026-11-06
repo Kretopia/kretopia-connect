@@ -4,12 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
 import { HoloCard } from "./HoloCard";
+import { PassportSmartActions } from "./PassportSmartActions";
 import { AvailabilityIndicator } from "@/components/profile/AvailabilityIndicator";
 import { TrustSignals } from "@/components/profile/TrustSignals";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import {
   CalendarDays,
+  Camera,
   CheckCircle2,
   Fingerprint,
   FolderPlus,
@@ -43,8 +46,31 @@ interface PublicPassportProfile {
   professional_skills?: unknown;
 }
 
+/**
+ * What the owner has on their own Passport card, grafted onto the very card visitors see: the owner card's old controls (the photo
+ * button on the avatar, then Edit with the Passport's strength, Share, QR and press kit on one line) and, at the foot of the card,
+ * what only they see. Without this the card is exactly the public one.
+ */
+export interface PublicPassportOwner {
+  /** Passport Strength, 0 to 100 (src/lib/passport/strength.ts). */
+  strength: number;
+  onEdit: () => void;
+  onShowQR: () => void;
+  onDownloadEPK: () => void;
+  onChangePhoto: () => void;
+  isUploadingAvatar?: boolean;
+  /** The owner's own share flow, in place of the plain link share visitors get. */
+  onShare?: () => void;
+  /** Credits other people tagged to this person that they have not claimed yet. */
+  taggedCount?: number;
+  /** Drawn at the foot of the card under "Only you see this" (Passport intelligence, Featured In to confirm, reach). */
+  privateFooter?: ReactNode;
+}
+
 interface PublicPassportHeroProps {
   profile: PublicPassportProfile;
+  /** The owner's controls; honoured only when `isOwner`. */
+  owner?: PublicPassportOwner;
   /** Experience + proof block (see PassportHiringGlance). */
   glance?: ReactNode;
   connectionStatus: "none" | "pending" | "connected";
@@ -66,6 +92,7 @@ interface PublicPassportHeroProps {
 
 export function PublicPassportHero({
   profile,
+  owner,
   glance,
   connectionStatus,
   isOwner,
@@ -98,9 +125,20 @@ export function PublicPassportHero({
       }).filter((skill): skill is string => Boolean(skill)).slice(0, 6)
     : [];
   const connected = connectionStatus === "connected";
+  const ownerMode = isOwner && owner ? owner : null;
+  const avatar = (
+    <FramedAvatar
+      src={profile.avatar_url || "/avatar-silhouette.svg"}
+      fallback={profile.full_name?.split(" ").map((name: string) => name[0]).join("") || "?"}
+      alt={profile.full_name || undefined}
+      frame={profile.profile_frame}
+      className="h-20 w-20 rounded-full border-2 border-card bg-card shadow-lg"
+    />
+  );
 
   return (
-    <HoloCard>
+    // The owner's card keeps the owner card's old feel: it does not tilt, because it now holds buttons that must stay under the finger.
+    <HoloCard maxTilt={ownerMode ? 0 : undefined}>
       <article className="relative overflow-hidden rounded-2xl border border-border bg-card">
         <div className={cn("relative aspect-[3/1] sm:aspect-[4/1] overflow-hidden", !profile.cover_image_url && "bg-muted/60")}>
           {profile.cover_image_url && <img src={profile.cover_image_url} alt="" className="h-full w-full object-cover" />}
@@ -108,19 +146,28 @@ export function PublicPassportHero({
           <div className="absolute left-2 top-2 rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
             Kretopia · Creative Passport
           </div>
-          <Button onClick={onShare} size="icon" variant="secondary" className="!absolute right-2 top-2 h-9 w-9 rounded-full" aria-label="Share Passport">
+          <Button onClick={ownerMode?.onShare ?? onShare} size="icon" variant="secondary" className="!absolute right-2 top-2 h-9 w-9 rounded-full" aria-label="Share Passport">
             <Share2 className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="relative -mt-8 space-y-4 px-5 pb-5">
-          <FramedAvatar
-            src={profile.avatar_url || "/avatar-silhouette.svg"}
-            fallback={profile.full_name?.split(" ").map((name: string) => name[0]).join("") || "?"}
-            alt={profile.full_name || undefined}
-            frame={profile.profile_frame}
-            className="h-20 w-20 rounded-full border-2 border-card bg-card shadow-lg"
-          />
+          {ownerMode ? (
+            <div className="relative w-fit">
+              {avatar}
+              <Button
+                size="icon"
+                variant="secondary"
+                className="!absolute -bottom-0.5 -right-0.5 h-6 w-6 rounded-full shadow-md"
+                onClick={ownerMode.onChangePhoto}
+                disabled={ownerMode.isUploadingAvatar}
+                aria-label="Change photo"
+                title="Change photo"
+              >
+                {ownerMode.isUploadingAvatar ? <KretopiaSpinner className="h-3 w-3" /> : <Camera className="h-3 w-3" />}
+              </Button>
+            </div>
+          ) : avatar}
 
           <div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -153,10 +200,27 @@ export function PublicPassportHero({
           <BrandLogo size="sm" />
           <TrustSignals emailVerified={profile.email_verified} phoneVerified={profile.phone_verified} idVerified={profile.id_verified} paymentVerified={profile.payment_verified} isOwnProfile={false} compact />
 
+          {ownerMode && (ownerMode.taggedCount ?? 0) > 0 && (
+            <p className="text-[11px] font-medium text-foreground">
+              {ownerMode.taggedCount} unclaimed credit{ownerMode.taggedCount === 1 ? "" : "s"} tagged to you
+            </p>
+          )}
+
           {/* Experience + proof, with the basis for each "verified" spelled out. */}
           {glance}
 
           {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
+
+          {/* The owner's controls, on the card they edit: Edit (with the Passport's strength), Share, QR and press kit on one line. */}
+          {ownerMode && (
+            <PassportSmartActions
+              strength={ownerMode.strength}
+              onEdit={ownerMode.onEdit}
+              onShare={ownerMode.onShare ?? onShare}
+              onShowQR={ownerMode.onShowQR}
+              onDownloadEPK={ownerMode.onDownloadEPK}
+            />
+          )}
 
           {/* No Instagram, LinkedIn, X, YouTube, Spotify, personal-site or booking
               links here: a Kretopia Passport keeps the conversation on Kretopia,
@@ -189,9 +253,17 @@ export function PublicPassportHero({
             </div>
           )}
 
-           {showActions && isOwner && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
+           {showActions && isOwner && !ownerMode && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
            {children && <div className="space-y-5 border-t border-border pt-5">{children}</div>}
         </div>
+
+        {/* Only the owner has this: the Passport intelligence and the rest of what is private, at the foot of the card as before. */}
+        {ownerMode?.privateFooter && (
+          <section aria-label="Only you see this" className="border-t border-dashed border-border">
+            <p className="px-4 pt-4 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground sm:px-5">Only you see this</p>
+            {ownerMode.privateFooter}
+          </section>
+        )}
       </article>
     </HoloCard>
   );

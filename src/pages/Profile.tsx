@@ -21,6 +21,9 @@ import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 // Components
 import { PublicPassportView } from "@/components/passport/PublicPassportView";
 import { PressLinksSection } from "@/components/profile/PressLinksSection";
+import { SocialStatsInline } from "@/components/profile/SocialStatsInline";
+import type { PublicPassportOwner } from "@/components/passport/PublicPassportHero";
+import { passportStrength } from "@/lib/passport/strength";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -469,6 +472,83 @@ const ProfileContent = () => {
     );
   }
 
+  // The owner's controls are drawn on the Passport card itself (the shared document owns the card; see PublicPassportOwner). What they
+  // need comes from the owner's own data and handlers, which live here, so it is worked out here and handed to the document.
+  const passportOwner: PublicPassportOwner | undefined = (() => {
+    if (!profile?.user_id) return undefined;
+    const verifiedCreditsList = credits?.filter((c: any) => c.verification_status === 'verified') || [];
+    const verified = verifiedCreditsList.length;
+    const ninetyDaysAgo = Date.now() - 90 * 86_400_000;
+    const recent90 = verifiedCreditsList.filter((c: any) => {
+      const t = c.created_at ? new Date(c.created_at).getTime() : 0;
+      return t > ninetyDaysAgo;
+    }).length;
+    const completion = checkProfileCompletion(profile, portfolioItems?.length || 0).percentage;
+    const cosigns = reviews?.filter((r: any) => r.status === 'approved').length || 0;
+    const lastCreditAt = verifiedCreditsList
+      .map((c: any) => c.created_at)
+      .filter(Boolean)
+      .sort()
+      .pop() as string | undefined;
+    const lastActivityAt = lastCreditAt || (profile as any).updated_at || null;
+    const standing = computeStanding({
+      verifiedCredits: verified,
+      recentCredits90d: recent90,
+      cosignsReceived: cosigns,
+      profileCompletionPct: completion,
+      activeProjects90d: stats?.projects || 0,
+      lastActivityAt,
+      verificationScore: (profile as any).verification_score ?? 0,
+      unclaimed: !(profile as any).user_id,
+    });
+    return {
+      strength: passportStrength({
+        hasBio: Boolean(profile.bio),
+        hasAvatar: Boolean(profile.avatar_url),
+        totalCredits: credits?.length || 0,
+        verifiedCredits: verified,
+        cosigns,
+      }),
+      onEdit: () => {
+        setEditForm({
+          full_name: profile.full_name || "",
+          role: profile.role || "",
+          bio: profile.bio || "",
+          location: profile.location || "",
+          avatar_url: profile.avatar_url || "",
+          company_size: profile.company_size || "",
+          collab_intent: (profile as any).collab_intent || "seeking_collaborators",
+          company_tagline: "",
+          cover_image_url: "",
+        });
+        setIsEditOpen(true);
+      },
+      onShare: handleShare,
+      onShowQR: () => setIsQRDialogOpen(true),
+      onDownloadEPK: () => setIsEPKEditorOpen(true),
+      onChangePhoto: () => fileInputRef.current?.click(),
+      isUploadingAvatar,
+      taggedCount,
+      privateFooter: (
+        <>
+          <PassportOverview
+            embedded
+            userId={profile.user_id}
+            credits={credits || []}
+            verified={verified}
+            cosigns={cosigns}
+            standing={standing}
+            onReviewCredits={() => navigate('/credits')}
+          />
+          <div className="border-t border-border px-4 py-4 sm:px-5">
+            <PressLinksSection userId={profile.user_id} isOwnProfile onRefresh={() => setPassportRev((r) => r + 1)} />
+          </div>
+          <div className="px-4 pb-4 empty:hidden sm:px-5"><SocialStatsInline userId={profile.user_id} /></div>
+        </>
+      ),
+    };
+  })();
+
   return (
     <div className="accent-passport min-h-screen pb-24 sm:pb-20 md:pb-6 bg-background">
       <ClaimedProfileGlow />
@@ -576,86 +656,14 @@ const ProfileContent = () => {
         {/* Identity section — who you are */}
         <section id="identity" className="scroll-mt-20">
 
-        {/* Owner controls and the private overview. The Passport itself is the shared document drawn below, the same one
-            everybody else sees, so the two can never look different. */}
-        {profile && (() => {
-          const verifiedCreditsList = credits?.filter((c: any) => c.verification_status === 'verified') || [];
-          const verified = verifiedCreditsList.length;
-          const ninetyDaysAgo = Date.now() - 90 * 86_400_000;
-          const recent90 = verifiedCreditsList.filter((c: any) => {
-            const t = c.created_at ? new Date(c.created_at).getTime() : 0;
-            return t > ninetyDaysAgo;
-          }).length;
-          const completion = checkProfileCompletion(profile, portfolioItems?.length || 0).percentage;
-          const cosigns = reviews?.filter((r: any) => r.status === 'approved').length || 0;
-          const lastCreditAt = verifiedCreditsList
-            .map((c: any) => c.created_at)
-            .filter(Boolean)
-            .sort()
-            .pop() as string | undefined;
-          const lastActivityAt = lastCreditAt || (profile as any).updated_at || null;
-          const standing = computeStanding({
-            verifiedCredits: verified,
-            recentCredits90d: recent90,
-            cosignsReceived: cosigns,
-            profileCompletionPct: completion,
-            activeProjects90d: stats?.projects || 0,
-            lastActivityAt,
-            verificationScore: (profile as any).verification_score ?? 0,
-            unclaimed: !(profile as any).user_id,
-          });
-          return (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-2" role="toolbar" aria-label="Your Passport">
-                <Button size="sm" onClick={() => {
-                  setEditForm({
-                    full_name: profile.full_name || "",
-                    role: profile.role || "",
-                    bio: profile.bio || "",
-                    location: profile.location || "",
-                    avatar_url: profile.avatar_url || "",
-                    company_size: profile.company_size || "",
-                    collab_intent: (profile as any).collab_intent || "seeking_collaborators",
-                    company_tagline: "",
-                    cover_image_url: "",
-                  });
-                  setIsEditOpen(true);
-                }}>Edit Passport</Button>
-                <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isUploadingAvatar}>
-                  {isUploadingAvatar ? "Uploading…" : "Change photo"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleShare}>Share</Button>
-                <Button size="sm" variant="outline" onClick={() => setIsQRDialogOpen(true)}>QR code</Button>
-                <Button size="sm" variant="outline" onClick={() => setIsEPKEditorOpen(true)}>Download EPK</Button>
-              </div>
-
-              <section aria-label="Only you see this" className="mb-6 rounded-2xl border border-dashed border-border bg-card/60 p-4">
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Only you see this</p>
-                <PassportOverview
-                  embedded
-                  userId={profile.user_id}
-                  credits={credits || []}
-                  verified={verified}
-                  cosigns={cosigns}
-                  standing={standing}
-                  onReviewCredits={() => navigate('/credits')}
-                />
-                <div className="mt-4 border-t border-border pt-4">
-                  <PressLinksSection userId={profile.user_id} isOwnProfile onRefresh={() => setPassportRev((r) => r + 1)} />
-                </div>
-              </section>
-            </>
-          );
-        })()}
-
         {profile && <PassportOriginalEPK userId={profile.user_id} />}
         </section>
         {/* /Identity */}
       </div>
 
 
-      {/* The Passport itself: the very document visitors see, with the owner's controls above it. */}
-      {profile?.user_id && <PublicPassportView userId={profile.user_id} embedded refreshKey={passportRev} />}
+      {/* The Passport itself: the very document visitors see. The owner's controls are on its card, nowhere else. */}
+      {profile?.user_id && <PublicPassportView userId={profile.user_id} embedded refreshKey={passportRev} owner={passportOwner} />}
 
       {/* Kreto builds the Passport — shown right after a batch credit confirm */}
       <Dialog open={!!builderCredits} onOpenChange={(open) => !open && setBuilderCredits(null)}>
