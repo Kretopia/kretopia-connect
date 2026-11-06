@@ -106,12 +106,12 @@ export function TodayRadar({ userId, profile }: TodayRadarProps) {
           Couldn't reach the radar. Check your connection and refresh.
         </p>
       ) : (
-        <>
+        <div className="space-y-8 sm:space-y-10">
           <RadarSignals signals={signals} />
           <RadarLive stages={radar.stages} total={radar.liveCount} />
 
-          <div className="grid gap-5 lg:grid-cols-12 lg:gap-6">
-            <div className="space-y-5 lg:col-span-7">
+          <div className="grid gap-6 lg:grid-cols-12 lg:gap-8">
+            <div className="space-y-6 lg:col-span-7">
               {status.nextEvent === "loading" ? (
                 <div className="h-44 animate-pulse rounded-2xl bg-muted/50" aria-busy="true" />
               ) : (
@@ -126,7 +126,7 @@ export function TodayRadar({ userId, profile }: TodayRadarProps) {
 
           <RadarPeople people={radar.people} credits={radar.credits} state={status.people} />
           {settled && <RadarProposals proposals={proposals} />}
-        </>
+        </div>
       )}
     </WrappedShell>
   );
