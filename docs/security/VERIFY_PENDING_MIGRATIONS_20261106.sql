@@ -34,5 +34,6 @@ SELECT proname, prosecdef FROM pg_proc
 SELECT position('request_icdb_role_claim' IN pg_get_functiondef('public.claim_icdb_role(uuid,text)'::regprocedure)) > 0 AS old_claim_files_request;
 SELECT has_function_privilege('anon', 'public.decide_icdb_role_claim(uuid,boolean,text)', 'EXECUTE') AS anon_can_decide;
 
--- 5. The review queue. Pending requests wait for an admin to call decide_icdb_role_claim(request_id, true|false, note).
+-- 5. The review queue. Pending requests wait for an admin to decide them in Admin > Users & Trust > Role claims
+--    (or by calling decide_icdb_role_claim(request_id, true|false, note)).
 SELECT status, count(*) FROM public.icdb_role_claim_requests GROUP BY status ORDER BY status;

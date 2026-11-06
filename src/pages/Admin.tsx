@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Users, ShieldCheck, Settings, UserPlus, Send, Leaf, CheckCircle, AlertCircle, Bot, Sparkles, Search, Megaphone, MessageSquare, Mail, Crown, Banknote, Activity, TrendingUp, type LucideIcon } from "lucide-react";
+import { Users, ShieldCheck, Settings, UserPlus, Send, Leaf, CheckCircle, AlertCircle, Bot, Sparkles, Search, Megaphone, MessageSquare, Mail, Crown, Banknote, Activity, TrendingUp, BadgeCheck, type LucideIcon } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { ScoutFunnelTab } from "@/components/admin/ScoutFunnelTab";
@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { UsersTab } from "@/components/admin/UsersTab";
 import { VerificationTab } from "@/components/admin/VerificationTab";
+import { RoleClaimsTab } from "@/components/admin/RoleClaimsTab";
 import { UnclaimedProfilesTab } from "@/components/admin/UnclaimedProfilesTab";
 import { OutreachTab } from "@/components/admin/OutreachTab";
 import { FeedbackTab } from "@/components/admin/FeedbackTab";
@@ -80,6 +81,7 @@ const TAB_GROUPS: AdminTabGroup[] = [
       { value: "users", label: "Users", icon: Users },
       { value: "unclaimed", label: "Unclaimed", icon: UserPlus },
       { value: "verifications", label: "Verify", icon: ShieldCheck },
+      { value: "role-claims", label: "Role claims", icon: BadgeCheck },
     ],
   },
   {
@@ -537,6 +539,10 @@ export default function Admin() {
 
         <TabsContent value="verifications" className="mt-4 sm:mt-6">
           <VerificationTab />
+        </TabsContent>
+
+        <TabsContent value="role-claims" className="mt-4 sm:mt-6">
+          <RoleClaimsTab />
         </TabsContent>
 
         <TabsContent value="drip" className="mt-4 sm:mt-6">
