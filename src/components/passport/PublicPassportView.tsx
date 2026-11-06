@@ -13,7 +13,7 @@ import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
-import { PublicPassportHero } from "@/components/passport/PublicPassportHero";
+import { PublicPassportHero, type PublicPassportOwner } from "@/components/passport/PublicPassportHero";
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
 import { PassportHiringGlance } from "@/components/passport/PassportHiringGlance";
 import { HireMeTrustBar } from "@/components/passport/HireMeTrustBar";
@@ -159,6 +159,11 @@ interface PublicPassportViewProps {
   embedded?: boolean;
   /** Changes whenever the owner saved something, so the document reloads from the database. */
   refreshKey?: unknown;
+  /**
+   * The owner's controls, drawn on the Passport card itself (see PublicPassportOwner). Ignored unless the signed-in user is the
+   * owner of this Passport, so passing it can never show them to anyone else.
+   */
+  owner?: PublicPassportOwner;
 }
 
 /**
@@ -166,7 +171,7 @@ interface PublicPassportViewProps {
  * two can never drift apart. It reads only public-safe data (`public_profiles_safe`, confirmed press, public credits), so
  * nothing private is fetched into it and hidden afterwards.
  */
-export const PublicPassportView = ({ userId, embedded = false, refreshKey }: PublicPassportViewProps) => {
+export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner }: PublicPassportViewProps) => {
   const navigate = useNavigate();
   const openWithReturn = useNavigateWithReturn();
   useRestoreReturnScroll();
@@ -540,6 +545,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey }: Pub
           passport={
           <PublicPassportHero
             profile={profile}
+            owner={isOwner ? owner : undefined}
             bookingPath={bookable && profile.username ? `/@${profile.username}/book` : null}
             glance={
               <div className="space-y-3">

@@ -53,13 +53,13 @@ export function PublicProfileWrapped({ userId, fullName, verified, stats, passpo
   return (
     <WrappedShell
       titleId="public-passport-title"
-      eyebrow="Kretopia · Creative Passport"
+      eyebrow="Passport"
       title={
         <>
-          {/* The Passport's one accent, the brand's Signal Teal (the Passport surface's dominant accent in the brand guide), not
-              the logo's gradient and not pink: on a page a client reads to judge a person, the colour must not compete
-              with the work. The foreground colour stands in where the token is not defined. */}
-          {firstName}'s <span data-epk-accent className="text-[hsl(var(--passport-accent,var(--foreground)))]">Creative Passport</span>
+          {/* The Kretopia title, as on Scout, Today and every other page: the text in the foreground colour (white in Midnight), then
+              one phrase in the logo's own linear gradient. (It was the brand's Signal Teal for a while, on the argument that the
+              colour must not compete with the work; the product owner asked for the Kretopia title back.) */}
+          {firstName}'s <span className="k-gradient-text">Creative Passport</span>
         </>
       }
       status={

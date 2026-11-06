@@ -30,7 +30,9 @@ describe("PublicProfileWrapped", () => {
   it("is one Wrapped surface named for the person's Passport", () => {
     renderIt();
     const region = screen.getByRole("region", { name: /Maya's Creative Passport/ });
-    expect(within(region).getByText("Kretopia · Creative Passport")).toBeInTheDocument();
+    // The eyebrow is the short feature label every Kretopia panel has ("Scout", "Credits", "Discover"), not the title said twice.
+    expect(document.getElementById("public-passport-title")?.previousElementSibling).toHaveTextContent(/^Passport$/);
+    expect(within(region).queryByText("Kretopia · Creative Passport")).not.toBeInTheDocument();
     expect(within(region).getByText("Verified on Kretopia")).toBeInTheDocument();
     expect(within(region).getByText(/KRT-11111/)).toBeInTheDocument();
   });
@@ -58,19 +60,22 @@ describe("PublicProfileWrapped", () => {
     expect(Boolean(passport.compareDocumentPosition(record) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true);
   });
 
-  // The title used the logo's blue-violet-pink-orange gradient, then a pink; it is now the Passport's own accent, the
-  // brand's Signal Teal, through a token that falls back to the foreground colour.
-  it("sets 'Creative Passport' in the Passport accent token: no pink, no gradient", () => {
+  // The Kretopia title, as on Scout, Today and the other panels: the text in the foreground colour (white in Midnight), then one phrase in
+  // the logo's own linear gradient (.k-gradient-text, defined from the logo's four stops). It was the brand's Signal Teal for a while;
+  // the product owner asked for the Kretopia title back, so this pins the new decision rather than the old one.
+  it("sets the title the Kretopia way: the person's text in white, then 'Creative Passport' in the logo gradient", () => {
     renderIt();
     const title = document.getElementById("public-passport-title") as HTMLElement;
     expect(title).toHaveTextContent("Maya's Creative Passport");
-    const accent = title.querySelector("[data-epk-accent]") as HTMLElement;
-    expect(accent).toHaveTextContent("Creative Passport");
-    expect(accent.className).toContain("--passport-accent");
-    expect(accent.className).toContain("var(--foreground)");
-    expect(accent.className).not.toMatch(/pink|magenta|--k-/);
-    expect(title.querySelector(".k-gradient-text")).toBeNull();
-    expect(document.querySelector(".k-gradient-text, .k-gradient-title")).toBeNull();
+    expect(title.className).toContain("text-foreground");
+    const accents = title.querySelectorAll(".k-gradient-text");
+    expect(accents).toHaveLength(1);
+    expect(accents[0]).toHaveTextContent("Creative Passport");
+    // the white part is the heading's own text, outside the gradient span
+    expect((title.textContent ?? "").replace("Creative Passport", "").trim()).toBe("Maya's");
+    // and no leftover of the teal accent
+    expect(title.querySelector("[data-epk-accent]")).toBeNull();
+    expect(title.innerHTML).not.toContain("--passport-accent");
   });
 
   it("carries the Kretopia lockup", () => {
