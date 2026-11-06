@@ -27,6 +27,11 @@ const PUBLIC_SUPABASE_DEFAULTS = {
   projectId: "kwmcocsitwssrtzkdojh",
 };
 
+// The VAPID public key is public by construction: the browser needs it to subscribe to push, and it ships in every bundle. It has to be the
+// public half of the server's VAPID_PRIVATE_KEY, or the push service refuses every message (403). The published build was compiled without
+// one, so Settings said "Notifications are not available yet". An environment value still wins, so a rotation needs no code change.
+const PUBLIC_VAPID_PUBLIC_KEY = "BHUeq8A8KUTkifx675Ll_C2R5dJHrSQggyim07tgr6lD1LK-yI31mtUJfJiJjOrYHv4Zn4ewFTGPQ8aUVcMMVZA";
+
 // PERMANENT: the real production backend is this one (all live users,
 // profiles, credits, payments, storage). Lovable Cloud's own backend for
 // this project was activated by mistake and is empty -- schema migrations
@@ -49,6 +54,7 @@ export default defineConfig(({ mode }) => {
   const supabaseProjectId = FORCE_LEGACY_BACKEND
     ? PUBLIC_SUPABASE_DEFAULTS.projectId
     : env.VITE_SUPABASE_PROJECT_ID || PUBLIC_SUPABASE_DEFAULTS.projectId;
+  const vapidPublicKey = env.VITE_VAPID_PUBLIC_KEY || PUBLIC_VAPID_PUBLIC_KEY;
   const generateStaticSocialPages = env.VITE_GENERATE_STATIC_SOCIAL_PAGES === "true";
   const analyzeBundle = process.env.ANALYZE === "true";
 
@@ -58,6 +64,7 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_SUPABASE_URL": JSON.stringify(supabaseUrl),
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(supabasePublishableKey),
       "import.meta.env.VITE_SUPABASE_PROJECT_ID": JSON.stringify(supabaseProjectId),
+      "import.meta.env.VITE_VAPID_PUBLIC_KEY": JSON.stringify(vapidPublicKey),
     },
     server: {
       host: "::",
