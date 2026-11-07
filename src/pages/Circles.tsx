@@ -10,6 +10,8 @@ import { CircleActivityDigest } from "@/components/circle/CircleActivityDigest";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card } from "@/components/ui/card";
+import { CARD_COVER_RATIO, CARD_RADIUS } from "@/components/cards/cardTokens";
+import { cn } from "@/lib/utils";
 
 const CirclesPage = () => {
   const navigate = useNavigate();
@@ -123,15 +125,13 @@ const CirclesPage = () => {
           )}
 
           {loading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="rounded-xl border bg-card p-4 animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 w-2/3 rounded bg-muted" />
-                      <div className="h-3 w-1/2 rounded bg-muted" />
-                    </div>
+            <div className="grid gap-5 sm:grid-cols-2" aria-hidden>
+              {[1, 2].map(i => (
+                <div key={i} className={cn("animate-pulse overflow-hidden border border-border bg-card", CARD_RADIUS)}>
+                  <div className={cn("bg-muted", CARD_COVER_RATIO)} />
+                  <div className="space-y-2 p-5">
+                    <div className="h-4 w-32 rounded bg-muted" />
+                    <div className="h-3 w-48 rounded bg-muted" />
                   </div>
                 </div>
               ))}
@@ -153,11 +153,13 @@ const CirclesPage = () => {
           ) : displayCircles.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">No Crews match your search.</p>
           ) : (
-            <div className="space-y-2">
+            <ul aria-label="Your Crews" className="grid gap-5 sm:grid-cols-2">
               {displayCircles.map(circle => (
-                <CircleCard key={circle.id} circle={circle} onClick={() => navigate(`/crew/${circle.id}`)} />
+                <li key={circle.id} className="min-w-0">
+                  <CircleCard circle={circle} onClick={() => navigate(`/crew/${circle.id}`)} />
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </div>
       </div>

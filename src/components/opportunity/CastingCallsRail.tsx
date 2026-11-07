@@ -73,7 +73,7 @@ export const CastingCallsRail = ({ limit = 12, onLoad }: CastingCallsRailProps) 
         <CarouselContent className="-ml-3">
           {calls.map((c) => (
             <CarouselItem key={c.id} className="pl-3 basis-auto">
-              <div className="w-64">
+              <div className="h-full w-64">
                 <GigRailCard opportunity={c} />
               </div>
             </CarouselItem>

@@ -130,11 +130,13 @@ export const CirclesTab = () => {
           <Button variant="gradient" onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-2" /> Create Circle</Button>
         </Card>
       ) : (
-        <div className="space-y-2">
+        <ul aria-label="Circles" className="grid gap-5 sm:grid-cols-2">
           {filteredCircles.map(circle => (
-            <CircleCard key={circle.id} circle={circle} onClick={() => setSelectedCircle(circle)} />
+            <li key={circle.id} className="min-w-0">
+              <CircleCard circle={circle} onClick={() => setSelectedCircle(circle)} />
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

@@ -16,6 +16,8 @@ export const VARIANTS = [
   { name: "credit", file: "src/components/profile/AchievementCard.tsx" },
   { name: "profile", file: "src/components/passport/ProfileCard.tsx" },
   { name: "event", file: "src/components/circle/EventCard.tsx" },
+  { name: "crew", file: "src/components/circle/CircleCard.tsx" },
+  { name: "casting", file: "src/components/opportunity/GigRailCard.tsx" },
 ];
 
 /** Cards that are a variant under the name a surface knows: they map its data onto the variant and decide no shape either. */

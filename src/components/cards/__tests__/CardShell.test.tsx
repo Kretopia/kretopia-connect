@@ -84,6 +84,24 @@ describe("CardShell: the budget is applied by the shell, not asked of the caller
     expect(card().querySelector('[data-card-part="primary"]')!.className).toContain("z-[3]");
   });
 
+  it("draws a feature's own action in the primary's place, above the card's link, and never beside a primary", () => {
+    const own = <button type="button">Quick Apply</button>;
+    const { unmount } = renderShell({ stretch: true, primary: undefined, secondary: undefined, action: own });
+    const footer = card().querySelector<HTMLElement>('[data-card-part="footer"]')!;
+    const slot = within(footer).getByRole("button", { name: "Quick Apply" }).parentElement!;
+    expect(slot).toHaveAttribute("data-card-part", "primary");
+    expect(slot.className).toContain("z-[3]");
+    unmount();
+    renderShell({ action: own });
+    expect(screen.queryByRole("button", { name: "Quick Apply" })).toBeNull();
+    expect(screen.getByRole("link", { name: /Open/ })).toBeInTheDocument();
+  });
+
+  it("draws a footer for a feature's own action even when there is no primary and no secondary", () => {
+    renderShell({ primary: undefined, secondary: undefined, action: <button type="button">Quick Apply</button> });
+    expect(card().querySelector('[data-card-part="footer"]')).not.toBeNull();
+  });
+
   it("lets a title with only a click handler be a button", () => {
     const onClick = vi.fn();
     renderShell({ open: { onClick, ariaLabel: "View brief" } });
