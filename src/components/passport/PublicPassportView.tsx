@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useNavigateWithReturn, useRestoreReturnScroll } from "@/hooks/usePassportReturn";
 import { Button } from "@/components/ui/button";
 import { CtaButton } from "@/components/ui/cta-button";
@@ -10,7 +10,9 @@ import { MediaPlayerModal } from "@/components/profile/MediaPlayerModal";
 import { PassportShowcase } from "@/components/passport/PassportShowcase";
 import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
-import { PassportRecognition } from "@/components/passport/PassportRecognition";
+import { PassportExpertise } from "@/components/passport/PassportExpertise";
+import { PassportPageHeader } from "@/components/passport/PassportPageHeader";
+import { PassportClaimCreditsDialog } from "@/components/passport/PassportClaimCreditsDialog";
 import { PassportPrivateBand } from "@/components/passport/PassportPrivateBand";
 import { useEpkPdfDownload } from "@/hooks/useEpkPdfDownload";
 import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
@@ -20,7 +22,10 @@ import { PublicPassportHero, type PublicPassportOwner } from "@/components/passp
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
 import { PassportHiringGlance } from "@/components/passport/PassportHiringGlance";
 import { HireMeTrustBar } from "@/components/passport/HireMeTrustBar";
-import { classifyCreditEvidence, creditEvidenceBasis, publicCreditBadge, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { classifyCreditEvidence, creditEvidenceBasis, type CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
+import { buildExpertise } from "@/lib/passport/expertise";
+import { claimableProjects, projectPagePath } from "@/lib/passport/claimableProjects";
+import { publicPassportPath } from "@/lib/passport/passportNav";
 import { buildHiringGlance, type GlanceCounts } from "@/lib/passport/hiringGlance";
 import { ModelStrip } from "@/components/passport/model/ModelStrip";
 import { VideoIntroSection } from "@/components/profile/VideoIntroSection";
@@ -42,20 +47,18 @@ import {
   Image as ImageIcon,
   Star,
   Award,
-  CheckCircle2,
+  ListChecks,
   Sparkles,
   UserCheck,
   ArrowRight,
   Package,
   Download,
-  Database,
   MessageCircle,
   UserPlus2,
 } from "lucide-react";
 import { Fingerprint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
-import { cn } from "@/lib/utils";
 import { APP_URL } from "@/lib/constants";
 
 interface Profile {
@@ -218,6 +221,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
   const [messageOpen, setMessageOpen] = useState(false);
   const [collaborateOpen, setCollaborateOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [claimOpen, setClaimOpen] = useState(false);
   const shareRef = useRef<HTMLDivElement>(null);
   // What the PDF is made of. Built here, above the early returns, because the download hook that uses it runs on every render.
   const epkPdfData = useMemo(
@@ -474,6 +478,15 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
     });
   };
 
+  // A signed-out visitor pressing Message, Start a project or Claim Credits signs in and comes back to this Passport. (Not `?connect=`:
+  // that one connects the two accounts on arrival, which pressing Claim Credits must never do.)
+  const handleSignIn = () => {
+    if (!userId) return;
+    navigate(`/auth?redirect=${encodeURIComponent(publicPassportPath(userId))}`);
+  };
+
+  const openProject = (name: string) => openWithReturn(projectPagePath(name));
+
   const handleShare = async () => {
     const url = `${APP_URL}/epk/${userId}`;
     if (navigator.share) {
@@ -526,6 +539,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
     ? { ...owner, pdf: { onDownload: () => void pdf.download(), busy: pdf.generating, locked: !pdf.isPro } }
     : undefined;
   const firstName = profile.full_name?.split(' ')[0] || 'this creator';
+  // Skills for the SEO tags, as before; the section a reader sees is built from the same two columns (see buildExpertise).
   const allSkills = [
     ...(Array.isArray(profile.professional_skills) 
       ? profile.professional_skills.map((s: any) => typeof s === 'string' ? s : s?.skill || s?.name).filter(Boolean)
@@ -534,6 +548,19 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
       ? profile.passion_skills.map((s: any) => typeof s === 'string' ? s : s?.skill || s?.name).filter(Boolean)
       : [])
   ];
+  const expertise = buildExpertise({
+    jobTitle: profile.job_title,
+    role: profile.role,
+    subRoles: profile.sub_roles,
+    professionalSkills: profile.professional_skills,
+    passionSkills: profile.passion_skills,
+    credentials: industryStats,
+    awards,
+    press: pressLinks.map((press) => ({ id: press.id, title: decodeHtmlEntities(press.title), publication: press.publication, url: press.url })),
+  });
+  // Message, Start a project and Claim Credits can only be taken by a signed-in member on somebody else's Passport: for the owner the
+  // buttons are not drawn and the dialogs behind them are not mounted, so there is no self-message, self-project or self-claim to make.
+  const canAct = Boolean(currentUserId) && !isOwner;
 
   const canonicalUrl = `${APP_URL}/epk/${userId}`;
 
@@ -555,17 +582,14 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         }}
       />}
 
+      {/* The same header as the owner's private page (PassportPageHeader): one implementation, two surfaces. */}
+      {!embedded && <PassportPageHeader surface="public" viewerId={currentUserId} passportOwnerId={profile.user_id} />}
+
       <div className={embedded ? "mx-auto max-w-7xl px-4 pb-8 pt-2" : "mx-auto max-w-7xl px-4 pb-16 pt-6"}>
         <PublicProfileWrapped
           userId={profile.user_id}
           fullName={profile.full_name}
           verified={profile.verification_status === 'verified'}
-          stats={[
-            { id: 'credits', label: 'Credits', value: glance.total },
-            { id: 'confirmed', label: 'Confirmed', value: glance.confirmed },
-            { id: 'features', label: 'Features', value: pressLinks.length },
-            { id: 'awards', label: 'Awards', value: awards.length },
-          ]}
           passport={
           <PublicPassportHero
             profile={profile}
@@ -573,7 +597,17 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
             bookingPath={bookable && profile.username ? `/@${profile.username}/book` : null}
             glance={
               <div className="space-y-3">
-                <PassportHiringGlance glance={glance} firstName={firstName} />
+                <PassportHiringGlance
+                  glance={glance}
+                  firstName={firstName}
+                  ownerActions={
+                    heroOwner ? (
+                      <Button asChild variant="outline" size="sm" className="w-full gap-2">
+                        <Link to="/credits"><ListChecks className="h-4 w-4" aria-hidden />{glance.total === 0 ? "Add your first credit" : "Manage credits"}</Link>
+                      </Button>
+                    ) : undefined
+                  }
+                />
                 <HireMeTrustBar
                   userId={profile.user_id}
                   avgResponseHours={profile.avg_response_hours}
@@ -601,13 +635,15 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         <PassportCollaborationCta
           firstName={firstName}
           isOwner={isOwner}
+          isSignedIn={Boolean(currentUserId)}
           connectionStatus={connectionStatus}
           isConnecting={isConnecting}
           onConnect={handleConnect}
+          onSignIn={handleSignIn}
           onMessage={() => setMessageOpen(true)}
           onPropose={() => setCollaborateOpen(true)}
           onInvite={() => setInviteOpen(true)}
-          onPreview={() => navigate(`/epk/${profile.user_id}`)}
+          onClaimCredits={() => setClaimOpen(true)}
         />
 
         {/* Positioning uses a full, themed surface rather than a light side stripe. */}
@@ -639,33 +675,18 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
 
           </PublicPassportHero>
           }
-          below={
-            <>
-              <PassportRecognition press={pressLinks.map((press) => ({ ...press, title: decodeHtmlEntities(press.title) }))} awards={awards} />
-              {isOwner && owner?.privateBand && <PassportPrivateBand>{owner.privateBand}</PassportPrivateBand>}
-            </>
-          }
+          below={isOwner && owner?.privateBand ? <PassportPrivateBand>{owner.privateBand}</PassportPrivateBand> : undefined}
         >
-          {allSkills.length > 0 && (
-            <section>
-              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Expertise</h3>
-              <div className="flex flex-wrap gap-2">{allSkills.slice(0, 12).map((skill, index) => <Badge key={`${skill}-${index}`} variant="secondary">{skill}</Badge>)}</div>
-            </section>
-          )}
-          <PassportShowcase pieces={portfolioItems} credits={credits} onOpenMedia={(piece) => setSelectedItem(piece)} />
+          {/* Expertise, CV-style, from what the record already holds: roles, skills, credentials, awards and where the work was featured. */}
+          <PassportExpertise expertise={expertise} onEditRoles={heroOwner ? owner?.onEdit : undefined} />
+          {/* The credits, once: the cards below are the record, and each opens its project. */}
+          <PassportShowcase
+            pieces={portfolioItems}
+            credits={credits}
+            onOpenMedia={(piece) => setSelectedItem(piece)}
+            onOpenCredit={(item) => openProject(item.title)}
+          />
           <PassportOriginalEPK userId={profile.user_id} />
-          {industryStats.length > 0 && (
-            <section>
-              <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Credentials & stats</h3>
-              <div className="grid grid-cols-2 gap-3">{industryStats.map((stat) => (
-                <div key={stat.id} className="min-w-0 border-t border-border pt-3">
-                  {stat.value && <p className="font-bold text-energy">{stat.value}</p>}
-                  <p className="break-words text-sm font-medium">{stat.title}</p>
-                  {stat.issuer && <p className="text-xs text-muted-foreground">{stat.issuer}</p>}
-                </div>
-              ))}</div>
-            </section>
-          )}
           {profile.availability_status && <p className="border-t border-border pt-4 text-sm text-muted-foreground">Availability · <span className="capitalize text-foreground">{profile.availability_status.replace(/_/g, ' ')}</span>{profile.availability_note && ` · ${profile.availability_note}`}</p>}
 {/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
@@ -726,129 +747,6 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         <div className="mb-8">
           <RateCardSection userId={userId || ''} isOwner={isOwner} />
         </div>
-
-        {/* Kretopia Credits — Verified Work History */}
-        {credits.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                Kretopia Credits
-              </h3>
-              <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary">
-                <Database className="h-3 w-3" />
-                {glance.confirmed} confirmed
-              </Badge>
-            </div>
-
-            {/* Featured credits — horizontal Netflix-style scroll */}
-            {credits.filter(c => c.isVerified).length > 0 && (
-              <div className="mb-4">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-                  {credits.filter(c => c.isVerified).slice(0, 8).map((credit) => {
-                    const tierConfig = (credit.evidence && publicCreditBadge(credit.evidence)) || { label: '', className: '' };
-
-                    return (
-                      <div key={credit.id} className="flex-shrink-0 w-[130px]">
-                        <div className="rounded-xl overflow-hidden border border-primary/10 hover:border-primary/30 transition-all h-[195px] flex flex-col relative group cursor-pointer"
-                          onClick={() => {
-                            const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                            openWithReturn(`/production?name=${name}`);
-                          }}
-                        >
-                          {/* Thumbnail or gradient fallback */}
-                          {credit.thumbnail_url ? (
-                            <div className="w-full h-[130px] overflow-hidden">
-                              <img 
-                                src={credit.thumbnail_url} 
-                                alt={decodeHtmlEntities(credit.project_name || credit.title || '')}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-full h-[130px] bg-gradient-to-br from-primary/20 to-accent/10 flex items-center justify-center">
-                              <CheckCircle2 className="h-8 w-8 text-primary/40" />
-                            </div>
-                          )}
-                          <div className="p-2 flex-1 flex flex-col justify-between">
-                            <p className="text-[11px] font-semibold leading-tight line-clamp-2">{decodeHtmlEntities(credit.project_name || credit.title || '')}</p>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-[9px] text-muted-foreground truncate">{credit.role}</p>
-                              {credit.year && <span className="text-[9px] text-muted-foreground">{credit.year}</span>}
-                            </div>
-                          </div>
-                          {/* Verification badge overlay */}
-                          {tierConfig.label && (
-                            <Badge variant="outline" className={cn("absolute top-1.5 right-1.5 text-[7px] h-3.5 px-1", tierConfig.className)}>
-                              {tierConfig.label}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Full credit list */}
-            <div className="space-y-1.5">
-              {credits.map((credit) => {
-                const tierConfig = (credit.evidence && publicCreditBadge(credit.evidence)) || { label: '', className: '' };
-
-                return (
-                  <div
-                    key={credit.id}
-                    role="button"
-                    tabIndex={0}
-                    className={cn(
-                      "flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-muted/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-                      credit.isVerified
-                        ? "bg-primary/5 border border-primary/10"
-                        : "bg-muted/50"
-                    )}
-                    onClick={() => {
-                      const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                      openWithReturn(`/production?name=${name}`);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const name = encodeURIComponent(decodeHtmlEntities(credit.project_name || credit.title || ''));
-                        openWithReturn(`/production?name=${name}`);
-                      }
-                    }}
-                  >
-                    {/* Thumbnail */}
-                    {credit.thumbnail_url && (
-                      <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
-                        <img src={credit.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{decodeHtmlEntities(credit.project_name || credit.title || '')}</p>
-                        {tierConfig.label && (
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 gap-0.5", tierConfig.className)}>
-                            <CheckCircle2 className="h-2.5 w-2.5" />
-                            {tierConfig.label}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {credit.role}
-                        {credit.platform && ` • ${credit.platform}`}
-                      </p>
-                    </div>
-                    {credit.year && (
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">{credit.year}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
 
         {/* Achievement Badges */}
         {profile.achievement_badges && profile.achievement_badges.length > 0 && (
@@ -966,12 +864,24 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
       </footer>
       )}
 
-      {profile && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
-      {profile && connectionStatus === 'connected' && (
+      {profile && canAct && <DirectMessageDialog open={messageOpen} onOpenChange={setMessageOpen} recipientId={profile.user_id} recipientName={profile.full_name} recipientAvatar={profile.avatar_url} />}
+      {profile && canAct && connectionStatus === 'connected' && (
         <StartProjectFromMatchDialog open={collaborateOpen} onOpenChange={setCollaborateOpen} matchedUser={{ id: profile.user_id, name: profile.full_name, role: profile.role, avatar: profile.avatar_url }} />
       )}
-      {profile && connectionStatus === 'connected' && (
+      {profile && canAct && connectionStatus === 'connected' && (
         <InviteToProjectDialog open={inviteOpen} onOpenChange={setInviteOpen} recipientUserId={profile.user_id} recipientName={profile.full_name} />
+      )}
+      {profile && canAct && (
+        <PassportClaimCreditsDialog
+          open={claimOpen}
+          onOpenChange={setClaimOpen}
+          firstName={firstName}
+          projects={claimableProjects(credits)}
+          onChoose={(project) => {
+            setClaimOpen(false);
+            openProject(project.name);
+          }}
+        />
       )}
     </div>
   );

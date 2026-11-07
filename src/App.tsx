@@ -13,6 +13,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthenticatedModalSurface } from "./components/auth/AuthenticatedModalSurface";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
@@ -78,6 +79,7 @@ const DisputeManage = lazy(() => import("./pages/DisputeManage"));
 const Stages = lazy(() => import("./pages/Stages"));
 const Discover = lazy(() => import("./pages/Discover"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
+import { SearchEntry } from "./components/search/SearchEntry";
 
 const Match = lazy(() => import("./pages/Match"));
 const CircleDetailPage = lazy(() => import("./pages/CircleDetail"));
@@ -509,15 +511,16 @@ const AppContent = () => {
             <Route path="/rewards" element={<Navigate to="/" replace />} />
             <Route path="/rewards-shop" element={<Navigate to="/" replace />} />
 
-            {/* Credits — personal dashboard (auth-gated); public discovery lives at /search */}
+            {/* Credits — personal dashboard (auth-gated); public discovery lives at /discover */}
             <Route path="/credits" element={<CreditsDashboard />} />
             <Route path="/credits/mine" element={<Navigate to="/credits" replace />} />
             <Route path="/credits/hub" element={<Navigate to="/credits" replace />} />
             <Route path="/credits/project/:projectId" element={<ICDBProjectPage />} />
-            <Route path="/credits/discover" element={<Navigate to="/search" replace />} />
+            <Route path="/credits/discover" element={<Navigate to="/discover" replace />} />
             <Route path="/verify-credit" element={<BrandVerify />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="/directory" element={<Navigate to="/search" replace />} />
+            {/* /search with a term is the results page; without one it is the old generic landing, which Discover replaces. */}
+            <Route path="/search" element={<SearchEntry><SearchResults /></SearchEntry>} />
+            <Route path="/directory" element={<Navigate to="/discover" replace />} />
 
             <Route path="/discover" element={<Discover />} />
             <Route path="/match" element={<Match />} />
@@ -608,20 +611,23 @@ const App = () => {
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
+              {/* A signed-in member's modals wear the Passport QR modal's surface (see ui/dialogBrand.tokens.ts); a visitor's stay plain. */}
+              <AuthenticatedModalSurface>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
 
-                <BrowserRouter>
-                  <Suspense fallback={null}>
-                    <InteractiveOnboarding />
-                    <FeedbackWidget />
-                  </Suspense>
-                  <VideoCallProvider>
-                    <AppContent />
-                  </VideoCallProvider>
-                </BrowserRouter>
-              </TooltipProvider>
+                  <BrowserRouter>
+                    <Suspense fallback={null}>
+                      <InteractiveOnboarding />
+                      <FeedbackWidget />
+                    </Suspense>
+                    <VideoCallProvider>
+                      <AppContent />
+                    </VideoCallProvider>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </AuthenticatedModalSurface>
             </AuthProvider>
         </QueryClientProvider>
       </HelmetProvider>

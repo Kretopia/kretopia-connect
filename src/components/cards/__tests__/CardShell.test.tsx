@@ -124,6 +124,98 @@ describe("CardShell: the back", () => {
     expect(document.activeElement).toBe(screen.getByTestId("quick-look"));
   });
 
+  // The footprint. A back taller than the front used to stretch the card (and its row) as soon as it was first turned, because the two
+  // faces shared one grid cell. The back is now laid over the front's box, so the front alone decides the size, and a long back scrolls.
+  it("lays the back over the front's box instead of sharing its grid cell, so a long back cannot stretch the card", () => {
+    renderShell(withBack({ back: { label: "quick look", eyebrow: "Quick look", children: <p>{LONG.repeat(40)}</p> } }));
+    const front = card().querySelector('[data-card-part="cover"]')!.parentElement as HTMLElement;
+    expect(front.className).toContain("[grid-area:1/1]");
+    fireEvent.click(screen.getByTestId("quick-look"));
+    const back = screen.getByRole("group", { name: /quick look/ });
+    expect(back.className).toContain("absolute");
+    expect(back.className).toContain("inset-0");
+    expect(back.className).not.toMatch(/(^|\s)relative(\s|$)/);
+    // the box they are laid in is the grid the front lives in, so "inset-0" is the front's box
+    expect(back.parentElement!.className).toContain("relative");
+    expect(back.parentElement!.className).toContain("grid");
+  });
+
+  it("scrolls what the back holds inside the card, with the footer outside the scrolling part so its buttons never scroll away", () => {
+    renderShell(withBack({ back: { label: "quick look", eyebrow: "Quick look", children: <p>{LONG.repeat(40)}</p>, actions: <button type="button">Do it</button> } }));
+    fireEvent.click(screen.getByTestId("quick-look"));
+    const back = screen.getByRole("group", { name: /quick look/ });
+    const scroller = back.querySelector('[data-card-part="back-scroll"]') as HTMLElement;
+    expect(scroller).toHaveTextContent("An extremely long headline");
+    expect(scroller.className).toContain("overflow-y-auto");
+    expect(scroller.className).toContain("min-h-0");
+    expect(scroller.className).toContain("overscroll-contain");
+    expect(scroller).not.toContainElement(screen.getByRole("button", { name: "Do it" }));
+    expect(scroller).not.toContainElement(screen.getByTestId("flip-back"));
+    // the face does not grow: it clips, and the scrolling part is the one that takes the room
+    expect(back.className).toContain("overflow-hidden");
+  });
+
+  it("makes the scrolling part a tab stop only while it really has more to show, so a keyboard can read the rest", () => {
+    const heights = { scrollHeight: 900, clientHeight: 300 };
+    const spies = [
+      vi.spyOn(HTMLElement.prototype, "scrollHeight", "get").mockImplementation(() => heights.scrollHeight),
+      vi.spyOn(HTMLElement.prototype, "clientHeight", "get").mockImplementation(() => heights.clientHeight),
+    ];
+    try {
+      renderShell(withBack());
+      fireEvent.click(screen.getByTestId("quick-look"));
+      const scroller = screen.getByRole("group", { name: /quick look/ }).querySelector('[data-card-part="back-scroll"]') as HTMLElement;
+      expect(scroller).toHaveAttribute("tabindex", "0");
+      expect(scroller).toHaveAttribute("role", "region");
+      expect(scroller.getAttribute("aria-label")).toMatch(/more below/);
+    } finally {
+      spies.forEach((spy) => spy.mockRestore());
+    }
+  });
+
+  it("adds nothing to the tab order when the back fits", () => {
+    renderShell(withBack());
+    fireEvent.click(screen.getByTestId("quick-look"));
+    const scroller = screen.getByRole("group", { name: /quick look/ }).querySelector('[data-card-part="back-scroll"]') as HTMLElement;
+    expect(scroller).not.toHaveAttribute("tabindex");
+  });
+
+  // Only the Quick look button turns it. Scrolling, the title's link and the primary action are what a person does on a card all day.
+  it("is turned by its button and by nothing else: not by scrolling, wheel, pointer, a click on the card, the title or the primary action", () => {
+    renderShell(withBack());
+    const article = card();
+    fireEvent.scroll(article);
+    fireEvent.wheel(article, { deltaY: 240 });
+    fireEvent.pointerMove(article, { clientX: 40, clientY: 40 });
+    fireEvent.pointerDown(article);
+    fireEvent.pointerUp(article);
+    fireEvent.touchStart(article, { touches: [{ clientX: 10, clientY: 10 }] });
+    fireEvent.touchMove(article, { touches: [{ clientX: 10, clientY: 90 }] });
+    fireEvent.touchEnd(article);
+    fireEvent.click(article);
+    fireEvent.click(article.querySelector('[data-card-part="cover"]')!);
+    fireEvent.click(article.querySelector('[data-card-part="description"]')!);
+    fireEvent.click(article.querySelector('[data-card-part="title"]')!);
+    fireEvent.click(article.querySelector('[data-card-part="primary"]')!);
+    expect(article).toHaveAttribute("data-flipped", "false");
+    fireEvent.click(screen.getByTestId("quick-look"));
+    expect(article).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("stays turned while the person scrolls or clicks inside the back, and turns back only through Flip back or Escape", () => {
+    renderShell(withBack());
+    fireEvent.click(screen.getByTestId("quick-look"));
+    const back = screen.getByRole("group", { name: /quick look/ });
+    const scroller = back.querySelector('[data-card-part="back-scroll"]') as HTMLElement;
+    fireEvent.scroll(scroller);
+    fireEvent.wheel(scroller, { deltaY: 300 });
+    fireEvent.click(scroller);
+    fireEvent.click(within(back).getByRole("button", { name: "Do it" }));
+    expect(card()).toHaveAttribute("data-flipped", "true");
+    fireEvent.click(screen.getByTestId("flip-back"));
+    expect(card()).toHaveAttribute("data-flipped", "false");
+  });
+
   it("puts the back's own actions in the back's footer, beside Flip back", () => {
     renderShell(withBack());
     fireEvent.click(screen.getByTestId("quick-look"));

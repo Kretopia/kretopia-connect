@@ -22,9 +22,32 @@ const credits = [
 describe("Passport showcase", () => {
   it("draws only the sections that have something, each as a labelled carousel", () => {
     render(<PassportShowcase pieces={[reel]} credits={credits} onOpenMedia={vi.fn()} />);
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Video", "Projects"]);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Video", "Kretopia credits"]);
     expect(screen.getByRole("region", { name: "Video, work samples" })).toBeTruthy();
     expect(screen.queryByRole("region", { name: /Audio/ })).toBeNull();
+  });
+
+  it("names the credits section Kretopia credits, never Projects", () => {
+    render(<PassportShowcase pieces={[]} credits={credits} onOpenMedia={vi.fn()} />);
+    expect(screen.getByRole("heading", { level: 3, name: "Kretopia credits" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Projects" })).toBeNull();
+    expect(screen.getByRole("region", { name: "Kretopia credits, work samples" })).toBeTruthy();
+  });
+
+  it("opens a credit's project from anywhere on its card, and not a portfolio image", () => {
+    const onOpenCredit = vi.fn();
+    render(<PassportShowcase pieces={[poster]} credits={credits} onOpenMedia={vi.fn()} onOpenCredit={onOpenCredit} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open Night Train" }));
+    expect(onOpenCredit).toHaveBeenCalledTimes(1);
+    expect(onOpenCredit.mock.calls[0][0]).toMatchObject({ id: "c1", title: "Night Train", source: "credit" });
+    // the portfolio image has no project page to open
+    expect(screen.queryByRole("button", { name: "Open Campaign poster" })).toBeNull();
+  });
+
+  it("draws plain cards when the page gives it nothing to open", () => {
+    render(<PassportShowcase pieces={[]} credits={credits} onOpenMedia={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /^Open / })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Night Train" })).toBeTruthy();
   });
 
   it("draws nothing at all when there is no work yet", () => {

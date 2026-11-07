@@ -23,7 +23,7 @@ import { PublicPassportView } from "@/components/passport/PublicPassportView";
 import { PressLinksSection } from "@/components/profile/PressLinksSection";
 import { SocialStatsInline } from "@/components/profile/SocialStatsInline";
 import type { PublicPassportOwner } from "@/components/passport/PublicPassportHero";
-import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
+import { PassportPageHeader } from "@/components/passport/PassportPageHeader";
 import { FinishProfileBanner } from "@/components/profile/FinishProfileBanner";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { PASSPORT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
@@ -562,13 +562,8 @@ const ProfileContent = () => {
 
       <div className="relative">
 
-        <FeaturePageHeader
-          eyebrow="Passport"
-          title="Passport."
-          accentTitle="Your work, verified."
-          subtitle="Your identity, your strongest credits, and every co-sign — one card you actually control."
-          tutorial={{ featureKey: "passport", label: "How Passport works", steps: PASSPORT_TUTORIAL }}
-        />
+        {/* The same header as the public Passport (one implementation, two surfaces), with the link to the member's own public Passport. */}
+        <PassportPageHeader surface="private" viewerId={user?.id} passportOwnerId={profile?.user_id} />
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">

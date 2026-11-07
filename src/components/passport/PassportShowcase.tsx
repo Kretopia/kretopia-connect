@@ -17,6 +17,8 @@ interface PassportShowcaseProps<P extends ShowcasePiece> {
   credits: readonly ShowcaseCredit[];
   /** Opens a video or audio piece in the player. Nothing plays until it is pressed. */
   onOpenMedia: (piece: P) => void;
+  /** Opens a credit's project page (its roll call, where roles are claimed). Without it the credit cards are plain cards. */
+  onOpenCredit?: (item: ProjectShowcaseItem) => void;
   className?: string;
 }
 
@@ -57,13 +59,27 @@ function MediaCard<P extends ShowcasePiece>({ item, onOpen }: { item: MediaShowc
   );
 }
 
-function ProjectCard({ item }: { item: ProjectShowcaseItem }) {
+function ProjectCard({ item, onOpen }: { item: ProjectShowcaseItem; onOpen?: () => void }) {
   return (
-    <article className="w-full">
+    <article className={cn("w-full", onOpen && "group relative")}>
       <Cover src={item.thumbnailUrl}>
         <Layers className="h-6 w-6" aria-hidden />
       </Cover>
-      <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-foreground">{item.title}</h4>
+      <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-foreground">
+        {onOpen ? (
+          // The whole card is the target: the button's own box is stretched over it, so the cover, the title and the role all open the project.
+          <button
+            type="button"
+            onClick={onOpen}
+            aria-label={`Open ${item.title}`}
+            className="rounded-sm text-left after:absolute after:inset-0 after:rounded-lg focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-offset-2"
+          >
+            {item.title}
+          </button>
+        ) : (
+          item.title
+        )}
+      </h4>
       {item.subtitle && <p className="mt-0.5 truncate text-xs text-muted-foreground">{item.subtitle}</p>}
       {item.proof && (
         <Badge variant="outline" className="mt-1.5 h-5 px-1.5 text-[10px] font-medium" title={creditEvidenceMeaning(item.proof)}>
@@ -75,12 +91,12 @@ function ProjectCard({ item }: { item: ProjectShowcaseItem }) {
 }
 
 /**
- * A creative's work as Video, Audio and Projects, each a carousel (swipe, arrow keys, buttons on larger screens,
+ * A creative's work as Video, Audio and Kretopia credits, each a carousel (swipe, arrow keys, buttons on larger screens,
  * position dots). Which section something belongs to, and what counts as its proof, is decided in
  * `lib/passport/showcase.ts`. Sections with nothing in them are not drawn, covers load lazily, and no media element
  * exists until the player is opened.
  */
-export function PassportShowcase<P extends ShowcasePiece>({ pieces, credits, onOpenMedia, className }: PassportShowcaseProps<P>) {
+export function PassportShowcase<P extends ShowcasePiece>({ pieces, credits, onOpenMedia, onOpenCredit, className }: PassportShowcaseProps<P>) {
   const sections = buildShowcase(pieces, credits);
   if (sections.length === 0) return null;
   return (
@@ -91,7 +107,11 @@ export function PassportShowcase<P extends ShowcasePiece>({ pieces, credits, onO
           <GlassCarousel label={`${section.label}, work samples`}>
             {section.items.map((item) => (
               <GlassCarouselItem key={item.id} className={ITEM}>
-                {item.kind === "project" ? <ProjectCard item={item} /> : <MediaCard item={item} onOpen={onOpenMedia} />}
+                {item.kind === "project" ? (
+                  <ProjectCard item={item} onOpen={onOpenCredit && item.source === "credit" ? () => onOpenCredit(item) : undefined} />
+                ) : (
+                  <MediaCard item={item} onOpen={onOpenMedia} />
+                )}
               </GlassCarouselItem>
             ))}
           </GlassCarousel>

@@ -4,13 +4,6 @@ import { MemoryRouter } from "react-router-dom";
 
 import { PublicProfileWrapped } from "../PublicProfileWrapped";
 
-const stats = [
-  { id: "credits", label: "Credits", value: 12 },
-  { id: "confirmed", label: "Confirmed", value: 5 },
-  { id: "features", label: "Features", value: 2 },
-  { id: "awards", label: "Awards", value: 0 },
-] as const;
-
 const renderIt = (verified = true) =>
   render(
     <MemoryRouter>
@@ -18,7 +11,6 @@ const renderIt = (verified = true) =>
         userId="11111111-2222-3333-4444-555555555555"
         fullName="Maya Laurent"
         verified={verified}
-        stats={[...stats]}
         passport={<article aria-label="Passport card">the passport</article>}
       >
         <section aria-label="Record">the record</section>
@@ -43,14 +35,13 @@ describe("PublicProfileWrapped", () => {
     expect(screen.getByText("On Kretopia")).toBeInTheDocument();
   });
 
-  it("shows the four counts as plain figures, a zero included, never as links", () => {
+  it("draws no standalone strip of Credits, Confirmed, Features and Awards counts above the Passport", () => {
     renderIt();
-    const list = screen.getByRole("list", { name: "Passport record" });
-    expect(within(list).getAllByRole("listitem")).toHaveLength(4);
-    expect(within(list).queryAllByRole("link")).toHaveLength(0);
-    expect(within(list).queryAllByRole("button")).toHaveLength(0);
-    expect(within(list).getByText("12")).toBeInTheDocument();
-    expect(within(list).getByText("Awards")).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Passport record" })).toBeNull();
+    for (const label of ["Credits", "Confirmed", "Features", "Awards"]) expect(screen.queryByText(label)).toBeNull();
+    // the frame's first block is the Passport itself
+    const region = screen.getByRole("region", { name: /Maya's Creative Passport/ });
+    expect(within(region).queryAllByRole("listitem")).toHaveLength(0);
   });
 
   it("puts the Passport before the record: it is the highlighted block", () => {
@@ -81,7 +72,7 @@ describe("PublicProfileWrapped", () => {
   it("draws the bands it is given under the Passport and the record, at the width of the page, and nothing when it has none", () => {
     const { unmount } = render(
       <MemoryRouter>
-        <PublicProfileWrapped userId="11111111-2222-3333-4444-555555555555" fullName="Maya Laurent" verified stats={[...stats]} passport={<article aria-label="Passport card">the passport</article>} below={<section aria-label="Band">a band</section>}>
+        <PublicProfileWrapped userId="11111111-2222-3333-4444-555555555555" fullName="Maya Laurent" verified passport={<article aria-label="Passport card">the passport</article>} below={<section aria-label="Band">a band</section>}>
           <section aria-label="Record">the record</section>
         </PublicProfileWrapped>
       </MemoryRouter>,

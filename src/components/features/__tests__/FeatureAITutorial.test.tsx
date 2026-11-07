@@ -46,6 +46,13 @@ describe("FeatureAITutorial", () => {
     expect(screen.getByText("close tour")).toBeInTheDocument();
   });
 
+  it("never opens by itself when the page says it is only a visit (autoOpen off), and the trigger still replays it", () => {
+    render(<FeatureAITutorial featureKey="passport" label="How Passport works" steps={steps} autoOpen={false} />);
+    expect(screen.queryByText("close tour")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /How this works/i }));
+    expect(screen.getByText("close tour")).toBeInTheDocument();
+  });
+
   it("does not auto-open for a visitor who is not signed in", () => {
     userId = null;
     render(<FeatureAITutorial featureKey="passport" label="How Passport works" steps={steps} />);

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { CheckCircle2, Clock, Globe, Handshake, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CreditEvidenceStatus } from "@/lib/passport/creditEvidence";
@@ -15,6 +16,11 @@ interface PassportHiringGlanceProps {
   glance: HiringGlance;
   firstName: string;
   className?: string;
+  /**
+   * The owner's edit actions for what this block summarises, passed only on the private Passport (for example, manage the credits).
+   * The roles a person is credited as are no longer a line of text here: each credit states its own role in its detail.
+   */
+  ownerActions?: ReactNode;
 }
 
 /**
@@ -23,12 +29,13 @@ interface PassportHiringGlanceProps {
  * actually do, and the strongest proof with the basis spelled out. Only facts
  * the Passport holds -- a missing figure is left out, never estimated.
  */
-export function PassportHiringGlance({ glance, firstName, className }: PassportHiringGlanceProps) {
+export function PassportHiringGlance({ glance, firstName, className, ownerActions }: PassportHiringGlanceProps) {
   if (glance.total === 0) {
     return (
-      <p className={cn("rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground", className)}>
-        {firstName} hasn't added any credits yet.
-      </p>
+      <div className={cn("space-y-2", className)}>
+        <p className="rounded-lg border border-dashed border-border px-3 py-2.5 text-xs text-muted-foreground">{firstName} hasn't added any credits yet.</p>
+        {ownerActions}
+      </div>
     );
   }
 
@@ -61,18 +68,7 @@ export function PassportHiringGlance({ glance, firstName, className }: PassportH
         ))}
       </div>
 
-      {glance.topRoles.length > 0 && (
-        <p className="text-xs text-muted-foreground">
-          <span className="font-semibold text-foreground">{glance.partial ? "Recently credited as " : "Credited as "}</span>
-          {glance.topRoles.map((r, i) => (
-            <span key={r.role}>
-              {i > 0 && ", "}
-              {r.role}
-              {r.count > 1 && <span className="text-muted-foreground/80"> ×{r.count}</span>}
-            </span>
-          ))}
-        </p>
-      )}
+      {ownerActions}
 
       {glance.proof.length > 0 && (
         <ul className="space-y-1.5">

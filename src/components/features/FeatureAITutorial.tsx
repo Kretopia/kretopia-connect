@@ -15,6 +15,11 @@ interface FeatureAITutorialProps {
   label: string;
   steps: TutorialStep[];
   /**
+   * Open the tour once, on its own, for a new member (default). Off for a page a member only visits, such as somebody else's public
+   * Passport: a stranger's page must not greet a new member with a tour about building their own.
+   */
+  autoOpen?: boolean;
+  /**
    * "chip"     — inline pill (default, used on pages that own their own layout)
    * "floating" — compact icon button meant to be absolutely positioned by the
    *              parent, so the trigger never stacks between a header and the
@@ -39,6 +44,7 @@ export function FeatureAITutorial({
   featureKey,
   label,
   steps,
+  autoOpen = true,
   variant = "chip",
   className,
 }: FeatureAITutorialProps) {
@@ -48,13 +54,13 @@ export function FeatureAITutorial({
   const { isFirstTime, loading } = useFirstTimeUser();
 
   useEffect(() => {
-    if (loading || !isFirstTime || !user) return;
+    if (!autoOpen || loading || !isFirstTime || !user) return;
     try {
       if (!localStorage.getItem(storageKey)) setOpen(true);
     } catch {
       /* private-browsing localStorage access can throw — skip auto-open, trigger still works */
     }
-  }, [storageKey, isFirstTime, loading, user]);
+  }, [storageKey, isFirstTime, loading, user, autoOpen]);
 
   const dismiss = () => {
     try {

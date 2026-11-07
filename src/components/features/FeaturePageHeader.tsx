@@ -20,8 +20,8 @@ interface FeaturePageHeaderProps {
   subtitle: string;
   /** Optional segmented tab toggle, rendered below the title block. */
   tabs?: ReactNode;
-  /** Feature key + tutorial steps -- omit to render the header with no tutorial trigger. */
-  tutorial?: { featureKey: string; label: string; steps: TutorialStep[] };
+  /** Feature key + tutorial steps -- omit to render the header with no tutorial trigger. `autoOpen: false` keeps the trigger but never opens the tour on its own. */
+  tutorial?: { featureKey: string; label: string; steps: TutorialStep[]; autoOpen?: boolean };
   /** Prefer one line on wider screens; defaults to wrapping for long titles. */
   oneLine?: boolean;
   /** Tighter top padding -- see CinematicHeaderPlate's own doc. Default false. */
@@ -96,6 +96,7 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
               featureKey={tutorial.featureKey}
               label={tutorial.label}
               steps={tutorial.steps}
+              autoOpen={tutorial.autoOpen}
               className="mt-0 relative z-10"
             />
             {retainEyebrowWithTutorial && <span className="landing-eyebrow">{eyebrow}</span>}

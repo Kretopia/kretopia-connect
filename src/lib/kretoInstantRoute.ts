@@ -35,8 +35,16 @@ const QUESTION_START = words("how what why when where who which whose whom comme
 
 const STRONG_VERB = words("search searching find finding look looking browse hunt scout cherche chercher recherche rechercher trouve trouver");
 const WEAK_VERB = words("show get give list see check want need wanna montre montrer affiche afficher donne donner voir veux voudrais besoin");
-const STRONG_JOB = words("job jobs gig gigs opportunity opportunities opportunite opportunites emploi emplois boulot boulots");
-const WEAK_JOB = words("role roles poste postes");
+const STRONG_JOB = words("job jobs gig gigs opportunity opportunities opportunite opportunites emploi emplois boulot boulots openings vacancies casting castings");
+const WEAK_JOB = words("role roles poste postes positions missions commissions");
+/**
+ * "Work" is an opportunity only as the thing being looked for ("find freelance work", "cherche du travail"): after a finding verb, and
+ * never as someone's own or someone else's work ("look at my work", "find work by Noé"), which are about a portfolio, not a gig.
+ */
+const WORK = words("work travail");
+const FIND_VERB = words("search searching find finding hunt hunting cherche chercher recherche rechercher trouve trouver");
+const POSSESSIVE = words("my our your his her their mon ma mes notre nos son sa ses");
+const OF_WORK = words("by from of de du par");
 const NAV_VERB = words("open go show take bring navigate launch ouvre ouvrir va aller affiche montre emmene amene");
 const MARKER = words("as for comme pour");
 const SCOUT = words("scout");
@@ -60,19 +68,59 @@ const PAGES: { words: Set<string>; path: string; label: string }[] = [
 
 const has = (tokens: Token[], set: Set<string>) => tokens.some((t) => set.has(t.fold));
 
+/** "find work", "looking for freelance work", "cherche du travail": see WORK. */
+function isWorkSearch(tokens: Token[]): boolean {
+  const at = tokens.findIndex((t) => WORK.has(t.fold));
+  if (at < 0) return false;
+  if (at > 0 && POSSESSIVE.has(tokens[at - 1].fold)) return false;
+  if (tokens[at + 1] && OF_WORK.has(tokens[at + 1].fold)) return false;
+  return tokens.some((t, i) => i < at && (FIND_VERB.has(t.fold) || (words("look looking").has(t.fold) && tokens[i + 1]?.fold === "for")));
+}
+
 /** A job search: a searching verb with a job noun, or a weaker verb ("show", "need") only with an unambiguous noun ("job", "gig"). */
 function isJobSearch(tokens: Token[]): boolean {
-  return (has(tokens, STRONG_VERB) && (has(tokens, STRONG_JOB) || has(tokens, WEAK_JOB))) || (has(tokens, WEAK_VERB) && has(tokens, STRONG_JOB) && tokens.length <= 10);
+  return (
+    (has(tokens, STRONG_VERB) && (has(tokens, STRONG_JOB) || has(tokens, WEAK_JOB))) ||
+    (has(tokens, WEAK_VERB) && has(tokens, STRONG_JOB) && tokens.length <= 10) ||
+    isWorkSearch(tokens)
+  );
 }
+
+/** What describes the kind of opportunity, how many, how near or how soon, not the role or the place: Scout has no use for it as a filter. */
+const TERM_FILLER = new Set<string>([
+  ...FILLER,
+  ...WORK,
+  ...words("one two three four five six seven eight nine ten few couple several many more another other all each every"),
+  ...words("freelance freelancer paid call calls near nearby around now today tonight tomorrow soon"),
+  ...words("quelques plusieurs chaque pres proche maintenant aujourd hui demain"),
+]);
+
+/**
+ * Words that open a clause about the person or about the answer ("that match my skills", "I should pursue this week", "and explain why")
+ * rather than naming what is searched for. The term stops before them, and a request that opens with one carries no term at all: Scout
+ * would be asked for jobs containing "that match skills", find none, and the person would land on an empty page.
+ */
+const CLAUSE = words(
+  "that which who whom whose where when should would could must might may match matches matching fit fits fitting suit suits suited based because since explain explaining why how this next " +
+    "qui que dont quand selon pourquoi comment correspondent correspond devrait doit ce cette",
+);
 
 /**
  * The role and place the person asked for, as the words Scout can match ("UX Designer Paris"). Words after "as"/"for" that follow the job
- * noun win ("a job as UX designer for Spotify"); otherwise whatever is not framing. Six words at most: a longer term matches nothing.
+ * noun win ("a job as UX designer for Spotify"); otherwise whatever is not framing. It stops at a clause about the person or the answer
+ * (see CLAUSE), and takes six words at most: a longer term matches nothing.
  */
 function searchTerm(tokens: Token[]): string {
-  const job = tokens.findIndex((t) => STRONG_JOB.has(t.fold) || WEAK_JOB.has(t.fold));
+  const job = tokens.findIndex((t) => STRONG_JOB.has(t.fold) || WEAK_JOB.has(t.fold) || WORK.has(t.fold));
   const marker = job >= 0 ? tokens.findIndex((t, i) => i > job && MARKER.has(t.fold)) : -1;
-  const keep = (list: Token[]) => list.filter((t) => !FILLER.has(t.fold));
+  const keep = (list: Token[]) => {
+    const kept: Token[] = [];
+    for (const t of list) {
+      if (CLAUSE.has(t.fold)) break;
+      if (!TERM_FILLER.has(t.fold)) kept.push(t);
+    }
+    return kept;
+  };
   const tail = marker >= 0 ? keep(tokens.slice(marker + 1)) : [];
   return (tail.length > 0 ? tail : keep(tokens)).slice(0, 6).map((t) => t.text).join(" ");
 }
