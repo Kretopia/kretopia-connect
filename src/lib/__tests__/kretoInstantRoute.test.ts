@@ -60,6 +60,53 @@ describe("matchKretoRoute", () => {
     expect(matchKretoRoute(long)?.path).toBe(scout("Motion Designer"));
   });
 
+  describe("an opportunity request never lands on the people search", () => {
+    it.each([
+      ["find work as a colorist", "colorist"],
+      ["Find me freelance work", undefined],
+      ["I want to find paid work", undefined],
+      ["looking for work in Lisbon", "Lisbon"],
+      ["Cherche des missions de montage", "montage"],
+      ["Trouve moi du travail en freelance", undefined],
+      ["search for commissions", undefined],
+      ["find casting calls in London", "London"],
+      ["any gigs near Lisbon?", "Lisbon"],
+      ["find job openings for editors", "editors"],
+    ])("opens Scout for %j", (text, query) => {
+      const r = matchKretoRoute(text);
+      expect(r?.path).toBe(scout(query));
+      expect(r?.path.startsWith("/search")).toBe(false);
+    });
+
+    it("sends the prompts Kreto itself offers to Scout with no invented filter", () => {
+      // The Today tip's button and the Kreto page's chip: the whole sentence is about the person and the answer, not a role to filter on.
+      for (const prompt of [
+        "Find me three new opportunities I should pursue this week and explain why each one fits.",
+        "Find opportunities that match my skills and availability right now.",
+        "Find me opportunities",
+      ]) {
+        expect(matchKretoRoute(prompt)?.path).toBe(scout());
+      }
+    });
+
+    it("keeps a role or a place that comes before a clause about the person", () => {
+      expect(matchKretoRoute("find UX designer jobs that match my skills")?.path).toBe(scout("UX designer"));
+      expect(matchKretoRoute("find motion design gigs in Berlin I should apply to this week")?.path).toBe(scout("motion design Berlin"));
+      expect(matchKretoRoute("Find me gigs I should apply to")?.path).toBe(scout());
+    });
+
+    it("does not read someone's work as an opportunity", () => {
+      for (const text of ["look at my work", "show me my work", "find work by Noé Plantier", "search my work for typos", "Trouve mon travail"]) {
+        expect(matchKretoRoute(text)?.path ?? "").not.toMatch(/^\/scout/);
+      }
+    });
+  });
+
+  it("still sends a search for people to the results page", () => {
+    expect(matchKretoRoute("look for a freelance mixing engineer")?.path).toBe("/search?q=freelance%20mixing%20engineer");
+    expect(matchKretoRoute("find three UX designers")?.path).toBe("/search?q=three%20UX%20designers");
+  });
+
   it("opens the page it names", () => {
     expect(matchKretoRoute("open match")?.path).toBe("/match");
     expect(matchKretoRoute("show me my wallet")?.path).toBe("/thrivepay");

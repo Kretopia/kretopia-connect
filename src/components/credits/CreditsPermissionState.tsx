@@ -5,7 +5,7 @@ import { Lock } from "lucide-react";
  * CreditsPermissionState — what a signed-out visitor sees at /credits.
  *
  * Credits is a personal, authenticated surface: no public directory, no
- * global user search. Public discovery lives at /search.
+ * global user search. Public discovery lives at /discover.
  */
 export function CreditsPermissionState() {
   return (
@@ -27,7 +27,7 @@ export function CreditsPermissionState() {
             Sign in
           </Link>
           <Link
-            to="/search"
+            to="/discover"
             className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/40 hover:text-foreground"
           >
             Search public work instead

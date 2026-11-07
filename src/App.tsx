@@ -79,6 +79,7 @@ const DisputeManage = lazy(() => import("./pages/DisputeManage"));
 const Stages = lazy(() => import("./pages/Stages"));
 const Discover = lazy(() => import("./pages/Discover"));
 const SearchResults = lazy(() => import("./pages/SearchResults"));
+import { SearchEntry } from "./components/search/SearchEntry";
 
 const Match = lazy(() => import("./pages/Match"));
 const CircleDetailPage = lazy(() => import("./pages/CircleDetail"));
@@ -510,15 +511,16 @@ const AppContent = () => {
             <Route path="/rewards" element={<Navigate to="/" replace />} />
             <Route path="/rewards-shop" element={<Navigate to="/" replace />} />
 
-            {/* Credits — personal dashboard (auth-gated); public discovery lives at /search */}
+            {/* Credits — personal dashboard (auth-gated); public discovery lives at /discover */}
             <Route path="/credits" element={<CreditsDashboard />} />
             <Route path="/credits/mine" element={<Navigate to="/credits" replace />} />
             <Route path="/credits/hub" element={<Navigate to="/credits" replace />} />
             <Route path="/credits/project/:projectId" element={<ICDBProjectPage />} />
-            <Route path="/credits/discover" element={<Navigate to="/search" replace />} />
+            <Route path="/credits/discover" element={<Navigate to="/discover" replace />} />
             <Route path="/verify-credit" element={<BrandVerify />} />
-            <Route path="/search" element={<SearchResults />} />
-            <Route path="/directory" element={<Navigate to="/search" replace />} />
+            {/* /search with a term is the results page; without one it is the old generic landing, which Discover replaces. */}
+            <Route path="/search" element={<SearchEntry><SearchResults /></SearchEntry>} />
+            <Route path="/directory" element={<Navigate to="/discover" replace />} />
 
             <Route path="/discover" element={<Discover />} />
             <Route path="/match" element={<Match />} />
