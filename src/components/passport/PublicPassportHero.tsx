@@ -43,7 +43,6 @@ interface PublicPassportProfile {
   phone_verified?: boolean;
   id_verified?: boolean;
   payment_verified?: boolean;
-  professional_skills?: unknown;
 }
 
 /**
@@ -115,17 +114,6 @@ export function PublicPassportHero({
     () => profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—",
     [profile.user_id],
   );
-  const skills = Array.isArray(profile.professional_skills)
-    ? profile.professional_skills.map((skill: unknown) => {
-        if (typeof skill === "string") return skill;
-        if (typeof skill === "object" && skill !== null) {
-          const value = skill as { skill?: unknown; name?: unknown };
-          if (typeof value.skill === "string") return value.skill;
-          if (typeof value.name === "string") return value.name;
-        }
-        return null;
-      }).filter((skill): skill is string => Boolean(skill)).slice(0, 6)
-    : [];
   const connected = connectionStatus === "connected";
   const ownerMode = isOwner && owner ? owner : null;
   const avatar = (
@@ -173,7 +161,8 @@ export function PublicPassportHero({
 
           <div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <h1 className="break-words text-xl font-black leading-tight tracking-normal">{profile.full_name}</h1>
+              {/* An h2: the page's own h1 is the shared Passport header above the document (PassportPageHeader). */}
+              <h2 className="break-words text-xl font-black leading-tight tracking-normal">{profile.full_name}</h2>
               {profile.verification_status === "verified" && (
                 <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary" title="Verified creator">
                   <CheckCircle2 className="h-2.5 w-2.5 text-primary-foreground" />
@@ -210,8 +199,6 @@ export function PublicPassportHero({
 
           {/* Experience + proof, with the basis for each "verified" spelled out. */}
           {glance}
-
-          {skills.length > 0 && <div className="flex flex-wrap gap-1">{skills.map((skill: string) => <Badge key={skill} variant="outline" className="h-5 px-1.5 text-[10px]">{skill}</Badge>)}</div>}
 
           {/* The owner's controls, on the card they edit: Edit, Share, QR, press kit and PDF on one line. */}
           {ownerMode && (

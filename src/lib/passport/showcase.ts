@@ -1,4 +1,4 @@
-// How a Passport's work is grouped into sections: Video, Audio and Projects.
+// How a Passport's work is grouped into sections: Video, Audio and Kretopia credits.
 //
 // Three different things are kept apart on purpose:
 //   - the kind of content: what a piece IS (video, audio, an image or nothing playable), read only from the
@@ -51,6 +51,8 @@ export interface MediaShowcaseItem<P extends ShowcasePiece = ShowcasePiece> {
 
 export interface ProjectShowcaseItem {
   kind: "project";
+  /** A credit opens its project page; a portfolio piece shown as a card has none. */
+  source: "credit" | "piece";
   id: string;
   title: string;
   /** "Role · year", whichever parts exist. */
@@ -71,7 +73,9 @@ export interface ShowcaseSection<P extends ShowcasePiece = ShowcasePiece> {
 
 export const SHOWCASE_SECTION_LIMIT = 12;
 
-const LABEL: Record<ShowcaseKind, string> = { video: "Video", audio: "Audio", project: "Projects" };
+// The projects are the Passport's credits (plus portfolio images with nothing to play): the one place the record is listed, under the name
+// the platform gives it.
+const LABEL: Record<ShowcaseKind, string> = { video: "Video", audio: "Audio", project: "Kretopia credits" };
 const VIDEO_TYPES = new Set(["video", "youtube", "vimeo"]);
 
 const isHttpUrl = (value: unknown): value is string => typeof value === "string" && /^https?:\/\/\S+$/i.test(value.trim());
@@ -105,7 +109,7 @@ export function buildShowcase<P extends ShowcasePiece>(
     } else {
       // An image, or media with no link to open: still part of the work, shown as a project card.
       const image = clean(piece.media_type).toLowerCase() === "image" && isHttpUrl(piece.media_url) ? piece.media_url!.trim() : null;
-      sections.project.push({ kind: "project", id: piece.id, title, subtitle: null, thumbnailUrl: thumb ?? image, category: null, proof: null });
+      sections.project.push({ kind: "project", source: "piece", id: piece.id, title, subtitle: null, thumbnailUrl: thumb ?? image, category: null, proof: null });
     }
   }
 
@@ -117,6 +121,7 @@ export function buildShowcase<P extends ShowcasePiece>(
     const subtitle = [clean(credit.role), credit.year ? String(credit.year) : ""].filter(Boolean).join(" · ") || null;
     sections.project.push({
       kind: "project",
+      source: "credit",
       id: credit.id,
       title,
       subtitle,

@@ -25,9 +25,9 @@ describe("playableKind", () => {
 });
 
 describe("buildShowcase", () => {
-  it("returns Video, Audio and Projects in that order, and omits the empty ones", () => {
+  it("returns Video, Audio and Kretopia credits in that order, and omits the empty ones", () => {
     const all = buildShowcase([piece("a"), piece("b", { media_type: "audio" })], [credit("c")]);
-    expect(all.map((s) => s.label)).toEqual(["Video", "Audio", "Projects"]);
+    expect(all.map((s) => s.label)).toEqual(["Video", "Audio", "Kretopia credits"]);
     expect(buildShowcase([piece("a", { media_type: "audio" })], []).map((s) => s.kind)).toEqual(["audio"]);
     expect(buildShowcase([], [credit("c")]).map((s) => s.kind)).toEqual(["project"]);
     expect(buildShowcase([], [])).toEqual([]);
@@ -38,7 +38,7 @@ describe("buildShowcase", () => {
     // a credit about music on Spotify is a project with a proof, never audio
     expect(video.items[0]).toMatchObject({ kind: "video", id: "v" });
     expect("proof" in video.items[0]).toBe(false);
-    expect(projects.items[0]).toMatchObject({ kind: "project", id: "c", proof: "co_signed", category: "music", subtitle: "Director · 2024" });
+    expect(projects.items[0]).toMatchObject({ kind: "project", source: "credit", id: "c", proof: "co_signed", category: "music", subtitle: "Director · 2024" });
   });
 
   it("shows a piece that cannot be played (image, or no link) as a project card, with no proof", () => {
@@ -48,7 +48,7 @@ describe("buildShowcase", () => {
     );
     expect(projects.kind).toBe("project");
     expect(projects.items.map((i) => i.id)).toEqual(["img", "dead"]);
-    expect(projects.items[0]).toMatchObject({ proof: null, thumbnailUrl: "https://x.test/p.png" });
+    expect(projects.items[0]).toMatchObject({ source: "piece", proof: null, thumbnailUrl: "https://x.test/p.png" });
     expect(projects.items[1]).toMatchObject({ proof: null, thumbnailUrl: null });
   });
 
