@@ -13,7 +13,10 @@ import {
   ChevronDown, Eye, Handshake, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CARD_BUDGET, CARD_LABEL, CARD_PILL, CARD_PILL_TONE, CARD_RADIUS, CARD_TITLE, clampClass } from '@/components/cards/cardTokens';
+import {
+  CARD_BTN, CARD_BTN_PRIMARY, CARD_BTN_PRIMARY_STYLE, CARD_BUDGET, CARD_COVER_RATIO, CARD_DESCRIPTION, CARD_ICON_BTN, CARD_LABEL, CARD_META_LINES, CARD_PAD, CARD_PILL,
+  CARD_PILL_TONE, CARD_RADIUS, CARD_TITLE, clampClass,
+} from '@/components/cards/cardTokens';
 import { supabase } from '@/integrations/supabase/client';
 import { SwipeProfile } from '@/hooks/useSwipeProfiles';
 import { useSwipeGestures } from '@/hooks/useSwipeGestures';
@@ -25,9 +28,10 @@ interface HingeStyleCardProps {
   onViewProfile: (profile: SwipeProfile) => void;
   onMessage?: (profile: SwipeProfile) => void;
   /**
-   * `shell` draws the card in the shape every other Kretopia card has (the Scout hybrid card's tokens: radius, title and label scale,
-   * pills), keeping this card's own layout and swipe actions. Off by default: the Discover page's swipe lane is unchanged until a
-   * surface turns it on (Match does).
+   * `shell` draws the card by the rules every other Kretopia card follows (the Scout hybrid card's tokens: radius, a 16:9 cover when
+   * stacked, padding, the title, label, meta and description scale, pills, and the primary and icon buttons with their hover and focus),
+   * keeping this card's own layout, its swipe gesture and every action. Off by default: the Discover page's swipe lane is unchanged
+   * until a surface turns it on (Match does).
    */
   variant?: 'default' | 'shell';
 }
@@ -144,7 +148,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       <HoloCard glow={false} maxTilt={0}>
       <div className="min-w-0 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
       <div className="min-w-0 border-b border-border lg:border-b-0 lg:border-r">
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted lg:aspect-[4/3]">
+        <div className={cn('relative overflow-hidden bg-muted lg:aspect-[4/3]', shell ? CARD_COVER_RATIO : 'aspect-[4/3]')}>
           {profile.cover_image_url || profile.avatar_url ? (
             <img
               src={profile.cover_image_url || profile.avatar_url || ''}
@@ -160,7 +164,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
             <img src={profile.avatar_url} alt="" draggable={false} className="absolute bottom-3 left-3 h-14 w-14 rounded-full border-2 border-background object-cover pointer-events-none" />
           )}
         </div>
-        <div className="space-y-3 p-4 sm:p-6">
+        <div className={cn('space-y-3', shell ? CARD_PAD : 'p-4 sm:p-6')}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <BrandLogo lockup size="sm" />
             {profile.verification_tier === 'industry' ? (
@@ -168,9 +172,9 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
             ) : profile.badge ? <Badge variant="secondary">{badgeLabel(profile.badge)}</Badge> : null}
           </div>
           <h2 className={shell ? cn(CARD_TITLE, 'block', clampClass(CARD_BUDGET.titleLines)) : 'break-words text-2xl font-bold leading-tight text-foreground'}>{profile.full_name}</h2>
-          <div className="flex items-start gap-2 text-sm font-medium text-foreground"><Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><span>{profile.role || 'Creator'}</span></div>
-          {profile.sub_roles?.length ? <p className="text-sm text-muted-foreground">{profile.sub_roles.join(' · ')}</p> : null}
-          {profile.location && <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{profile.location}</span></div>}
+          <div className={cn('flex items-start gap-2', shell ? cn(CARD_META_LINES, 'font-medium text-foreground') : 'text-sm font-medium text-foreground')}><Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><span>{profile.role || 'Creator'}</span></div>
+          {profile.sub_roles?.length ? <p className={shell ? CARD_META_LINES : 'text-sm text-muted-foreground'}>{profile.sub_roles.join(' · ')}</p> : null}
+          {profile.location && <div className={cn('flex items-start gap-2', shell ? CARD_META_LINES : 'text-sm text-muted-foreground')}><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{profile.location}</span></div>}
           {(profile.credits_count || profile.awards_count) ? (
             <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-border pt-3 text-xs text-muted-foreground">
               {!!profile.credits_count && <span><strong className="text-foreground">{profile.credits_count}</strong> credits</span>}
@@ -181,7 +185,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       </div>
 
       {/* Engageable Content Sections */}
-      <CardContent className="flex min-w-0 flex-col gap-4 p-4 sm:p-6">
+      <CardContent className={cn('flex min-w-0 flex-col gap-4', shell ? CARD_PAD : 'p-4 sm:p-6')}>
         {/* Common ground — why this profile ranked where it did */}
         {commonGround.length > 0 && (
           <div>
@@ -203,7 +207,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {profile.bio && (
           <div className="relative group">
             <p className={sectionLabel}>About</p>
-            <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
+            <p className={shell ? cn(CARD_DESCRIPTION, 'line-clamp-4') : 'text-sm text-muted-foreground leading-relaxed line-clamp-4'}>
               {profile.bio}
             </p>
             <Button variant="ghost"
@@ -220,13 +224,15 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {/* Skills — each is likeable */}
         {skills.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium">Skills</p>
+            <p className={shell ? cn(CARD_LABEL, 'mb-1.5') : 'text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium'}>Skills</p>
             <div className="flex flex-wrap gap-1.5">
               {skills.map((skill: string, i: number) => (
                 <Button variant="ghost"
                   key={i}
                   onClick={() => onLike(profile, { type: 'skill', label: skill })}
-                  className="group h-auto whitespace-normal inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors"
+                  className={shell
+                    ? cn('group h-auto whitespace-normal', CARD_PILL, CARD_PILL_TONE.plain, 'transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')
+                    : 'group h-auto whitespace-normal inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-medium hover:bg-primary/10 hover:text-primary transition-colors'}
                 >
                   {skill}
                   <Heart className="h-3 w-3 opacity-0 group-hover:opacity-100 text-primary transition-opacity" />
@@ -239,7 +245,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {/* Top Credits — view profile instead of auto-liking */}
         {credits.length > 0 && (
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium">Selected work</p>
+            <p className={shell ? cn(CARD_LABEL, 'mb-1.5') : 'text-[10px] uppercase tracking-wider text-muted-foreground mb-1.5 font-medium'}>Selected work</p>
             <div className="space-y-1.5">
               {credits.slice(0, expanded ? 4 : 2).map((credit) => (
                 <Button variant="ghost"
@@ -283,9 +289,11 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {profile.collab_intent && (
           <Button variant="ghost"
             onClick={() => onLike(profile, { type: 'intent', label: profile.collab_intent || '' })}
-            className="group h-auto whitespace-normal w-full flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 hover:border-primary/30 transition-colors"
+            className={shell
+              ? cn('group h-auto w-fit whitespace-normal', CARD_PILL, CARD_PILL_TONE.plain, 'gap-2 transition-colors hover:bg-primary/10 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')
+              : 'group h-auto whitespace-normal w-full flex items-center justify-between px-3 py-2 rounded-lg bg-primary/5 border border-primary/10 hover:border-primary/30 transition-colors'}
           >
-            <span className="text-xs font-medium text-primary">
+            <span className={shell ? undefined : 'text-xs font-medium text-primary'}>
               {profile.collab_intent === 'looking_to_hire' ? 'Looking to hire' :
                profile.collab_intent === 'available_for_hire' ? 'Available for hire' :
                profile.collab_intent === 'open_to_trade' ? 'Open to trade' :
@@ -297,7 +305,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         )}
 
         {/* Action Buttons — encourage connection */}
-        <div className="mt-auto space-y-3 border-t border-border pt-4">
+        <div className={cn('mt-auto space-y-3 border-t border-border', shell ? 'pt-[13px]' : 'pt-4')}>
           <div className="flex min-h-6 items-center justify-between gap-2 text-xs" aria-live="polite" aria-atomic="true">
             <span className={cn("inline-flex items-center gap-1.5 transition-colors", swipeDirection === 'left' ? 'font-semibold text-destructive' : 'text-muted-foreground')}>
               <ArrowLeft className="h-3.5 w-3.5" /> {swipeDirection === 'left' ? 'Release to pass' : 'Swipe left · Pass'}
@@ -310,7 +318,9 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11 rounded-full shrink-0 border-destructive/30 hover:bg-destructive/10 hover:border-destructive"
+            className={shell
+              ? cn(CARD_ICON_BTN, 'border-destructive/30 hover:bg-destructive/10 hover:border-destructive')
+              : 'h-11 w-11 rounded-full shrink-0 border-destructive/30 hover:bg-destructive/10 hover:border-destructive'}
             onClick={handlePassClick}
             disabled={isAnimating}
             aria-label={`Pass on ${profile.full_name}`}
@@ -320,7 +330,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           <Button
             variant="outline"
             size="icon"
-            className="h-11 w-11 rounded-full shrink-0"
+            className={shell ? CARD_ICON_BTN : 'h-11 w-11 rounded-full shrink-0'}
             onClick={() => onViewProfile(profile)}
             aria-label={`View ${profile.full_name}'s full profile`}
           >
@@ -328,7 +338,8 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
           </Button>
           <Button
             size="lg"
-            className="cta-solid h-12 min-w-0 flex-1 rounded-full gap-2"
+            className={shell ? cn(CARD_BTN, CARD_BTN_PRIMARY, 'h-11 min-w-0 flex-1 text-xs') : 'cta-solid h-12 min-w-0 flex-1 rounded-full gap-2'}
+            style={shell ? CARD_BTN_PRIMARY_STYLE : undefined}
             onClick={handleConnectClick}
             disabled={isAnimating}
           >

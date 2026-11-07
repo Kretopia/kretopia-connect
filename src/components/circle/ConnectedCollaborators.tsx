@@ -15,6 +15,7 @@ type ConnectedProfile = {
   role: string;
   bio: string | null;
   avatar_url: string | null;
+  cover_image_url?: string | null;
   location: string | null;
   badge: string;
   level: number;
@@ -52,7 +53,7 @@ export function ConnectedCollaborators() {
       }
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, full_name, avatar_url, role, location, level, xp, bio, badge")
+        .select("user_id, full_name, avatar_url, cover_image_url, role, location, level, xp, bio, badge")
         .in("user_id", Array.from(ids));
       if (error) throw error;
       setConnections((data ?? []) as ConnectedProfile[]);

@@ -22,6 +22,7 @@ export const VARIANTS = [
 export const ADAPTERS = [
   { name: "creator", file: "src/components/discover/CreatorPassportCard.tsx", variant: "ProfileCard" },
   { name: "directory", file: "src/components/passport/PassportDirectoryCard.tsx", variant: "ProfileCard" },
+  { name: "connection", file: "src/components/circle/ConnectionList.tsx", variant: "ProfileCard" },
   { name: "stage", file: "src/components/circle/StageCard.tsx", variant: "EventCard" },
 ];
 

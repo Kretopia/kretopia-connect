@@ -35,12 +35,16 @@ export const CARD_COVER_SCRIM = "pointer-events-none absolute inset-0 bg-gradien
 export const CARD_COVER_OVERLAY = "absolute inset-x-[15px] top-[15px] z-[2] flex items-start justify-between gap-2.5";
 
 // Body and type scale.
-export const CARD_BODY = "flex min-w-0 flex-1 flex-col gap-[13px] p-5 max-[420px]:p-4";
+// The padding a card's content sits in, on its own for a card that lays its content out differently (the Match deck's two columns).
+export const CARD_PAD = "p-5 max-[420px]:p-4";
+export const CARD_BODY = `flex min-w-0 flex-1 flex-col gap-[13px] ${CARD_PAD}`;
 export const CARD_BODY_BACK = "flex min-h-0 min-w-0 flex-1 flex-col gap-[18px] p-6 max-[420px]:p-[19px]";
 // What the back holds scrolls here, inside the card; overscroll-contain keeps the end of it from scrolling the page behind.
 export const CARD_BACK_SCROLL = "flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 export const CARD_TITLE = "text-left text-[21px] font-bold leading-[1.28] tracking-[-0.025em] text-foreground [overflow-wrap:anywhere] max-[420px]:text-[19px]";
-export const CARD_META = "truncate text-xs leading-normal text-muted-foreground";
+// A line of who and where. `CARD_META` keeps it to one line; a card with room for more (the Match deck) wraps it at the same size.
+export const CARD_META_LINES = "text-xs leading-normal text-muted-foreground";
+export const CARD_META = `truncate ${CARD_META_LINES}`;
 export const CARD_DESCRIPTION = "text-xs leading-[1.55] text-foreground/80";
 export const CARD_LABEL = "text-[9px] font-bold uppercase tracking-[0.07em] text-muted-foreground";
 export const CARD_BACK_LABEL = "flex items-center gap-[7px] text-[10px] font-extrabold uppercase tracking-[0.12em] text-primary";
