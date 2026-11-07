@@ -98,7 +98,7 @@ export function ProfileShareModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 border-none overflow-hidden bg-card">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
         <DialogHeader className="sr-only">
           <DialogTitle>Share your profile</DialogTitle>
         </DialogHeader>

@@ -117,7 +117,7 @@ export function FirstWinSheet({ open, onOpenChange }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(v) : handleClose())}>
-      <DialogContent className="sm:max-w-md p-0 border-none overflow-hidden max-h-[92dvh] overflow-y-auto bg-card">
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden max-h-[92dvh] overflow-y-auto">
         <div className="absolute top-0 left-1/2 z-50">
           <Confetti active={confetti} config={confettiConfig} />
         </div>

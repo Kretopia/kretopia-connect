@@ -205,7 +205,7 @@ export const StartCallSheet = ({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="k-sheet-92 p-0 flex flex-col bg-background gap-0"
+        className="k-sheet-92 p-0 flex flex-col gap-0"
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0 text-left">
           <SheetTitle className="text-lg font-semibold">Who's joining the call?</SheetTitle>

@@ -1127,7 +1127,7 @@ export const ThriveAgentFab = () => {
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent
             side="bottom"
-            className="rounded-t-3xl border-t border-border p-0 h-[85vh] flex flex-col"
+            className="rounded-t-3xl p-0 h-[85vh] flex flex-col"
           >
             {chatHeader(false)}
             {messagesArea}

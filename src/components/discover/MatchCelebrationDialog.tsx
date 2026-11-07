@@ -35,7 +35,7 @@ export const MatchCelebrationDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
         {/* Confetti effect */}
         {showConfetti && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden">

@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "../alert-dialog";
 import { DialogBrandHeader } from "../dialogBrand";
+import { Sheet, SheetContent, SheetTitle } from "../sheet";
 import { DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "../dialogBrand.tokens";
 import { ModalSurfaceProvider } from "../ModalSurfaceProvider";
 
@@ -348,5 +349,82 @@ describe("AuthenticatedModalSurface", () => {
       </AuthenticatedModalSurface>,
     );
     expect(hasAny(screen.getByRole("dialog"), DIALOG_SURFACE)).toBe(false);
+  });
+});
+
+describe("shared sheet", () => {
+  const Panel = ({ brand, quick, className }: { brand?: boolean; quick?: boolean; className?: string }) => (
+    <Sheet open>
+      <SheetContent side={quick ? "top" : "right"} quick={quick} brand={brand} className={className}>
+        <SheetTitle>Filters</SheetTitle>
+        <p>panel</p>
+      </SheetContent>
+    </Sheet>
+  );
+
+  it("stays the plain panel with no provider (a visitor)", () => {
+    render(<Panel />);
+    const panel = screen.getByRole("dialog");
+    expect(hasAny(panel, DIALOG_SURFACE)).toBe(false);
+    expect(panel).toHaveClass("bg-background", "shadow-lg");
+  });
+
+  it("wears the QR modal's surface, border and aura for a signed-in member, and keeps its side, width and slide", () => {
+    render(
+      <ModalSurfaceProvider branded>
+        <Panel />
+      </ModalSurfaceProvider>,
+    );
+    const panel = screen.getByRole("dialog");
+    expect(has(panel, DIALOG_SURFACE)).toBe(true);
+    expect(panel).not.toHaveClass("bg-background");
+    expect(panel).toHaveClass("right-0", "border-l", "sm:max-w-sm", "data-[state=open]:slide-in-from-right");
+  });
+
+  it("lets a panel keep its own width: className is merged last", () => {
+    render(
+      <ModalSurfaceProvider branded>
+        <Panel className="w-full sm:max-w-lg" />
+      </ModalSurfaceProvider>,
+    );
+    expect(screen.getByRole("dialog")).toHaveClass("sm:max-w-lg", "shadow-glow");
+  });
+
+  it("never dresses the quick search sheet, which brings its own surface, and brand={false} keeps one plain", () => {
+    const { unmount } = render(
+      <ModalSurfaceProvider branded>
+        <Panel quick />
+      </ModalSurfaceProvider>,
+    );
+    expect(hasAny(screen.getByRole("dialog"), DIALOG_SURFACE)).toBe(false);
+    unmount();
+    render(
+      <ModalSurfaceProvider branded>
+        <Panel brand={false} />
+      </ModalSurfaceProvider>,
+    );
+    expect(hasAny(screen.getByRole("dialog"), DIALOG_SURFACE)).toBe(false);
+  });
+
+  it("a dialog opened from inside a branded panel is branded too, and Escape closes only the dialog", async () => {
+    render(
+      <ModalSurfaceProvider branded>
+        <Sheet open>
+          <SheetContent>
+            <SheetTitle>Panel</SheetTitle>
+            <Dialog defaultOpen>
+              <DialogContent>
+                <DialogTitle>Inner</DialogTitle>
+              </DialogContent>
+            </Dialog>
+          </SheetContent>
+        </Sheet>
+      </ModalSurfaceProvider>,
+    );
+    const inner = screen.getByText("Inner").closest('[role="dialog"]') as HTMLElement;
+    expect(has(inner, DIALOG_SURFACE)).toBe(true);
+    escape();
+    await waitFor(() => expect(screen.queryByText("Inner")).toBeNull());
+    expect(screen.getByText("Panel")).toBeInTheDocument();
   });
 });

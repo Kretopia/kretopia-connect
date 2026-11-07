@@ -127,7 +127,7 @@ export const TicketPurchaseDialog = ({ open, onOpenChange, eventId, eventTitle, 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-background border-border max-w-lg">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl tracking-tight flex items-center gap-2">
             <Ticket className="h-5 w-5 text-energy" />

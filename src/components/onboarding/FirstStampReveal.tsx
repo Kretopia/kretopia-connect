@@ -38,7 +38,7 @@ export function FirstStampReveal({ open, onContinue, credit, total }: FirstStamp
   return (
     <Dialog open={open}>
       <DialogContent
-        className="max-w-sm border-primary/15 bg-background overflow-hidden p-0 [&>button]:hidden"
+        className="max-w-sm overflow-hidden p-0 [&>button]:hidden"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >

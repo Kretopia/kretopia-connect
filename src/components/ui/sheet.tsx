@@ -4,6 +4,9 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { DIALOG_SURFACE } from "./dialogBrand.tokens";
+import { useBrandedModalSurface } from "./modalSurface";
+import { ModalSurfaceProvider } from "./ModalSurfaceProvider";
 
 const Sheet = SheetPrimitive.Root;
 
@@ -61,26 +64,36 @@ interface SheetContentProps
   overlayClassName?: string;
   /** The quick, floating panel described at `quickSheet`; only for `side="top"`. */
   quick?: boolean;
+  /**
+   * The Kretopia surface, the Passport QR modal's (see dialogBrand.tokens.ts): on by default for a signed-in member, off for a visitor
+   * (see modalSurface.tsx). A quick sheet never wears it, because its content brings its own surface.
+   */
+  brand?: boolean;
 }
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, overlayClassName, quick = false, children, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay className={overlayClassName} />
-      <SheetPrimitive.Content 
-        ref={ref} 
-        className={cn(quick ? quickSheet : sheetVariants({ side }), className)} 
-        aria-describedby={undefined}
-        {...props}
-      >
-        {children}
-        {!quick && <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>}
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  ),
+  ({ side = "right", className, overlayClassName, quick = false, brand, children, ...props }, ref) => {
+    const branded = useBrandedModalSurface();
+    const wearsBrand = !quick && (brand ?? branded);
+    return (
+      <SheetPortal>
+        <SheetOverlay className={overlayClassName} />
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(quick ? quickSheet : sheetVariants({ side }), wearsBrand && DIALOG_SURFACE, className)}
+          aria-describedby={undefined}
+          {...props}
+        >
+          {/* What a panel opens in turn (a dialog, a confirmation) follows it. */}
+          <ModalSurfaceProvider branded={quick ? branded : wearsBrand}>{children}</ModalSurfaceProvider>
+          {!quick && <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>}
+        </SheetPrimitive.Content>
+      </SheetPortal>
+    );
+  },
 );
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 

@@ -26,7 +26,7 @@ interface CommandDialogProps extends DialogProps {}
 const CommandDialog = ({ children, ...props }: CommandDialogProps) => {
   return (
     <Dialog {...props}>
-      <DialogContent className="overflow-hidden p-0 shadow-lg sm:max-w-md">
+      <DialogContent className="overflow-hidden p-0 sm:max-w-md">
         {/* Was forcing every row/input/icon well past cmdk's own compact
             defaults (py-3 instead of py-1.5, h-12 input, h-5 w-5 icons) --
             a fast command tool should read as dense, not another full

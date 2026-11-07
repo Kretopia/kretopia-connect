@@ -262,7 +262,7 @@ export const CallInviteSheet = ({ open, onOpenChange, callContext }: Props) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[88dvh] p-0 flex flex-col bg-background gap-0"
+        className="h-[88dvh] p-0 flex flex-col gap-0"
       >
         <SheetHeader className="px-4 py-3 border-b border-border shrink-0 text-left">
           <SheetTitle className="text-base font-semibold">Invite to call</SheetTitle>
