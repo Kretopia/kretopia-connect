@@ -1,6 +1,5 @@
 import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
 import { HoloCard } from "./HoloCard";
@@ -179,11 +178,7 @@ export function PublicPassportHero({
               {profile.location && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{profile.location}</span>}
               <AvailabilityIndicator status={profile.availability_status || profile.availability} note={profile.availability_note} isOwnProfile={false} />
             </div>
-            {Array.isArray(profile.sub_roles) && profile.sub_roles.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {profile.sub_roles.slice(0, 4).map((role: string) => <Badge key={role} variant="outline" className="h-5 px-1.5 text-[10px]">{role}</Badge>)}
-              </div>
-            )}
+            {/* The other roles are a row of Expertise (one authoritative place for them), not a second list on the card. */}
           </div>
 
            {showBio && profile.bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/90">{profile.bio}</p>}
