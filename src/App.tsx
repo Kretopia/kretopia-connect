@@ -13,6 +13,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { AuthenticatedModalSurface } from "./components/auth/AuthenticatedModalSurface";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
 import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
@@ -608,20 +609,23 @@ const App = () => {
       <HelmetProvider>
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
+              {/* A signed-in member's modals wear the Passport QR modal's surface (see ui/dialogBrand.tokens.ts); a visitor's stay plain. */}
+              <AuthenticatedModalSurface>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
 
-                <BrowserRouter>
-                  <Suspense fallback={null}>
-                    <InteractiveOnboarding />
-                    <FeedbackWidget />
-                  </Suspense>
-                  <VideoCallProvider>
-                    <AppContent />
-                  </VideoCallProvider>
-                </BrowserRouter>
-              </TooltipProvider>
+                  <BrowserRouter>
+                    <Suspense fallback={null}>
+                      <InteractiveOnboarding />
+                      <FeedbackWidget />
+                    </Suspense>
+                    <VideoCallProvider>
+                      <AppContent />
+                    </VideoCallProvider>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </AuthenticatedModalSurface>
             </AuthProvider>
         </QueryClientProvider>
       </HelmetProvider>

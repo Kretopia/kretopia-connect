@@ -3,6 +3,9 @@ import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
 
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { useBrandedModalSurface } from "./modalSurface";
+import { ModalSurfaceProvider } from "./ModalSurfaceProvider";
+import { DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "./dialogBrand.tokens";
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
@@ -27,20 +30,32 @@ AlertDialogOverlay.displayName = AlertDialogPrimitive.Overlay.displayName;
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content>
->(({ className, ...props }, ref) => (
-  <AlertDialogPortal>
-    <AlertDialogOverlay />
-    <AlertDialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
-        className,
-      )}
-      {...props}
-    />
-  </AlertDialogPortal>
-));
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Content> & {
+    /** The Kretopia surface, the Passport QR modal's: on by default for a signed-in member, off for a visitor (see modalSurface.tsx). */
+    brand?: boolean;
+  }
+>(({ className, children, brand, ...props }, ref) => {
+  const branded = useBrandedModalSurface();
+  const wearsBrand = brand ?? branded;
+  return (
+    <AlertDialogPortal>
+      <AlertDialogOverlay />
+      <AlertDialogPrimitive.Content
+        ref={ref}
+        className={cn(
+          "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+          // The branded surface also insets from the screen edge like the dialog does (the plain alert runs edge to edge on a phone), and
+          // scrolls inside itself when its text is taller than the screen: the confirm and cancel buttons stay reachable.
+          wearsBrand && cn(DIALOG_SURFACE, DIALOG_SCROLL, "w-[calc(100%-2rem)]"),
+          className,
+        )}
+        {...props}
+      >
+        <ModalSurfaceProvider branded={wearsBrand}>{children}</ModalSurfaceProvider>
+      </AlertDialogPrimitive.Content>
+    </AlertDialogPortal>
+  );
+});
 AlertDialogContent.displayName = AlertDialogPrimitive.Content.displayName;
 
 const AlertDialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
@@ -56,9 +71,10 @@ AlertDialogFooter.displayName = "AlertDialogFooter";
 const AlertDialogTitle = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <AlertDialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold", className)} {...props} />
-));
+>(({ className, ...props }, ref) => {
+  const branded = useBrandedModalSurface();
+  return <AlertDialogPrimitive.Title ref={ref} className={cn("text-lg font-semibold", branded && DIALOG_TITLE, className)} {...props} />;
+});
 AlertDialogTitle.displayName = AlertDialogPrimitive.Title.displayName;
 
 const AlertDialogDescription = React.forwardRef<
