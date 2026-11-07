@@ -139,7 +139,7 @@ export const IncomingCallModal = ({ call, onClose }: Props) => {
 
   return (
     <Dialog open={!!call} onOpenChange={(o) => !o && decline()}>
-      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden border-0 bg-gradient-to-b from-primary/10 to-background">
+      <DialogContent className="sm:max-w-sm p-0 gap-0 overflow-hidden">
         <DialogTitle className="sr-only">Incoming call</DialogTitle>
         <div className="flex flex-col items-center text-center px-6 pt-8 pb-6">
           <p className="text-xs uppercase tracking-widest text-muted-foreground mb-4">

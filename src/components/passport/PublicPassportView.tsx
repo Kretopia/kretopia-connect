@@ -222,6 +222,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
   const [collaborateOpen, setCollaborateOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [claimOpen, setClaimOpen] = useState(false);
+  const [ownProjectNames, setOwnProjectNames] = useState<ReadonlySet<string>>(new Set());
   const shareRef = useRef<HTMLDivElement>(null);
   // What the PDF is made of. Built here, above the early returns, because the download hook that uses it runs on every render.
   const epkPdfData = useMemo(
@@ -442,6 +443,22 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         setConnectionStatus(status === 'accepted' ? 'connected' : status ? 'pending' : 'none');
       });
   }, [currentUserId, userId]);
+
+  // While the Claim Credits picker is open, a visitor's own project names: the picker says which of these they already have a credit on.
+  useEffect(() => {
+    if (!claimOpen || !currentUserId || currentUserId === userId) return;
+    let cancelled = false;
+    supabase
+      .from('credits')
+      .select('project_name')
+      .eq('user_id', currentUserId)
+      .limit(500)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setOwnProjectNames(new Set((data ?? []).map((row: { project_name?: string | null }) => (row.project_name ?? '').trim().toLowerCase()).filter(Boolean)));
+      });
+    return () => { cancelled = true; };
+  }, [claimOpen, currentUserId, userId]);
 
   const handleConnect = async () => {
     if (!userId) return;
@@ -687,7 +704,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
             onOpenCredit={(item) => openProject(item.title)}
           />
           <PassportOriginalEPK userId={profile.user_id} />
-          {profile.availability_status && <p className="border-t border-border pt-4 text-sm text-muted-foreground">Availability · <span className="capitalize text-foreground">{profile.availability_status.replace(/_/g, ' ')}</span>{profile.availability_note && ` · ${profile.availability_note}`}</p>}
+          {/* Availability is said once, on the card (its indicator carries the note too). */}
 {/* Video Intro — pinned high so the EPK feels alive */}
         {(profile.video_intro_url || isOwner) && (
           <div className="mb-8">
@@ -877,6 +894,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           onOpenChange={setClaimOpen}
           firstName={firstName}
           projects={claimableProjects(credits)}
+          alreadyCredited={ownProjectNames}
           onChoose={(project) => {
             setClaimOpen(false);
             openProject(project.name);

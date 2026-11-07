@@ -145,3 +145,90 @@ describe("ExternalOfferCard: what it does", () => {
     input.remove();
   });
 });
+
+describe("ExternalOfferCard: the shared card shape", () => {
+  const draw = (variant?: "default" | "shell", o = offer()) =>
+    render(
+      <MemoryRouter>
+        <ExternalOfferCard offer={o} onInterested={onInterested} onPass={onPass} variant={variant} />
+      </MemoryRouter>,
+    );
+  const title = () => screen.getByRole("heading", { name: "Graphic Designer & Video Editor" });
+  const frame = () => screen.getByTestId("external-offer-card").closest(".w-full.min-w-0") as HTMLElement;
+  const interested = () => screen.getByRole("button", { name: /interested/i });
+  const pass = () => screen.getByRole("button", { name: "Pass on Graphic Designer & Video Editor" });
+
+  it("is drawn as it always was unless the deck asks for the shared shape", () => {
+    draw();
+    expect(title().className).toContain("text-2xl");
+    expect(frame().className).toContain("rounded-xl");
+    expect(frame().className).not.toContain("rounded-2xl");
+    expect(screen.getByTestId("external-offer-card").className).toContain("p-4");
+    expect(interested().className).toContain("cta-solid");
+    expect(pass().className).toContain("rounded-full");
+    expect(interested().parentElement!.className).not.toContain("flex-wrap");
+  });
+
+  it("takes the Scout hybrid card's radius, padding, title, meta, description and buttons when asked", () => {
+    draw("shell");
+    // frame and padding: the shell's, the same as the person's card beside it in the deck
+    expect(frame().className).toContain("rounded-2xl");
+    expect(frame().className).not.toContain("rounded-xl");
+    expect(screen.getByTestId("external-offer-card").className).toContain("p-5");
+    // type: title at the card scale and clamped, who and where at the meta scale, the excerpt at the description scale
+    expect(title().className).toContain("text-[21px]");
+    expect(title().className).toContain("line-clamp-2");
+    expect(title().className).not.toContain("text-2xl");
+    expect(screen.getByText("BlueTuskr · Anywhere · Remote").className).toContain("text-xs");
+    expect(screen.getByText("A full-service e-commerce growth agency is hiring.").className).toContain("leading-[1.55]");
+    // buttons: the shell's icon button for Pass, its outline button for Open at source, its primary button for Interested
+    expect(pass().className).toContain("rounded-[10px]");
+    expect(pass().className).toContain("h-11");
+    expect(screen.getByRole("link", { name: /at the source/i }).className).toContain("rounded-[9px]");
+    expect(interested().className).toContain("rounded-[9px]");
+    expect(interested().className).toContain("border-transparent");
+    expect(interested().className).not.toContain("cta-solid");
+    // the action row wraps instead of squeezing "Interested" on a narrow phone (measured at 320 and 360px in the browser run)
+    expect(interested().parentElement!.className).toContain("flex-wrap");
+    expect(interested().className).toContain("min-w-[7.5rem]");
+    // the brand-gradient border is an inline background that jsdom cannot parse; it is checked in the browser run instead
+  });
+
+  it("says the same things in the shared shape: what it is, who published it, and that Kretopia sends nothing", () => {
+    draw("shell");
+    const labels = screen.getByTestId("listing-labels");
+    expect(labels).toHaveTextContent("External");
+    expect(labels).toHaveTextContent("Unclaimed");
+    expect(screen.getByText(/found outside kretopia/i)).toHaveTextContent("sends nothing: no message, no application");
+    expect(within(screen.getByText(/found outside kretopia/i)).getByRole("link", { name: "Details" })).toHaveAttribute("href", "/listing/l1");
+    expect(document.body.textContent ?? "").not.toMatch(/match|connect|they will|we will contact|apply for you/i);
+  });
+
+  it("answers the same way in the shared shape: buttons, arrow keys, and a plain link to the publisher", async () => {
+    const first = draw("shell");
+    const open = screen.getByRole("link", { name: /at the source/i });
+    expect(open).toHaveAttribute("href", "https://remoteok.com/remote-jobs/x-1137507");
+    expect(open).toHaveAttribute("target", "_blank");
+    fireEvent.click(open);
+    expect(onInterested).not.toHaveBeenCalled();
+    expect(onPass).not.toHaveBeenCalled();
+    fireEvent.click(interested());
+    await waitFor(() => expect(onInterested).toHaveBeenCalledTimes(1));
+    first.unmount();
+    onInterested.mockClear();
+    const second = draw("shell");
+    fireEvent.click(pass());
+    await waitFor(() => expect(onPass).toHaveBeenCalledTimes(1));
+    second.unmount();
+    onPass.mockClear();
+    draw("shell", offer({ id: "l2", title: "Colourist" }));
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await waitFor(() => expect(onInterested).toHaveBeenCalledTimes(1));
+    expect(onPass).not.toHaveBeenCalled();
+  });
+
+  it("with no destination the shared shape still offers no 'Open at source'", () => {
+    draw("shell", offer({ apply_url: null }));
+    expect(screen.queryByRole("link", { name: /at the source/i })).not.toBeInTheDocument();
+  });
+});

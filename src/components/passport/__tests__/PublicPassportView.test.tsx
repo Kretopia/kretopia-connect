@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -12,12 +12,15 @@ vi.mock("@/integrations/supabase/client", () => {
     reads.push(table);
     // A portfolio read is the credits table filtered on source=portfolio; the credits list is the same table without that filter.
     let portfolio = false;
-    const rows = () => (table === "credits" && portfolio ? (world.rows.portfolio ?? []) : (world.rows[table] ?? []));
+    let columns = "";
+    // The visitor's own project names are read with a one-column select; the Passport's own credits select many.
+    const rows = () => (table === "credits" && columns === "project_name" ? (world.rows.viewerCredits ?? []) : table === "credits" && portfolio ? (world.rows.portfolio ?? []) : (world.rows[table] ?? []));
     const result = () => ({ data: table === "public_profiles_safe" ? profileRow : null, error: null, count: 0 });
     const chain: unknown = new Proxy(() => undefined, {
       get: (_t, prop) => {
         if (prop === "then") return (resolve: (v: unknown) => void) => resolve({ ...result(), data: table === "public_profiles_safe" ? profileRow : rows() });
         if (prop === "maybeSingle" || prop === "single") return async () => result();
+        if (prop === "select") return (cols: string) => { columns = typeof cols === "string" ? cols : ""; return chain; };
         if (prop === "eq") return (column: string, value: unknown) => { if (column === "source" && value === "portfolio") portfolio = true; return chain; };
         return () => chain;
       },
@@ -264,6 +267,35 @@ describe("the public Passport page: the shared header, and a link back only for 
   });
 });
 
+describe("each fact is said once", () => {
+  const extra = { sub_roles: ["Colorist", "Gaffer"], availability_status: "busy", availability_note: "Booking for April" };
+  beforeEach(() => {
+    reads.length = 0;
+    world.signedInAs = null;
+    world.rows = {};
+    Object.assign(profileRow, extra);
+  });
+  afterEach(() => {
+    for (const key of Object.keys(extra)) delete (profileRow as Record<string, unknown>)[key];
+  });
+
+  it("says the other roles in Expertise only: no second list of them on the card", async () => {
+    renderPage();
+    const expertise = within(await screen.findByRole("region", { name: "Expertise" }));
+    expect(expertise.getByText("Cinematographer · Colorist · Gaffer")).toBeInTheDocument();
+    expect(screen.queryByText("Colorist")).toBeNull();
+    expect(screen.queryByText("Gaffer")).toBeNull();
+  });
+
+  it("says availability on the card only, with its note, and not again at the foot of the record", async () => {
+    renderPage();
+    await screen.findByRole("region", { name: "Expertise" });
+    expect(screen.getAllByText("Currently busy")).toHaveLength(1);
+    expect(screen.getAllByText("· Booking for April")).toHaveLength(1);
+    expect(screen.queryByText(/^Availability ·/)).toBeNull();
+  });
+});
+
 describe("the compact record: Expertise, one Kretopia credits section, no 'credited as'", () => {
   const credits = [
     { id: "c1", project_name: "Night Train", role: "Director", year: 2024, verification_status: "verified" },
@@ -352,6 +384,17 @@ describe("what a visitor can do from somebody else's Passport, and what the owne
     // choosing a project opens that project's own page, where the claim is made and confirmed
     fireEvent.click(within(dialog).getByRole("button", { name: /Night Train/ }));
     expect(screen.getByTestId("where")).toHaveTextContent("/production?name=Night%20Train");
+  });
+
+  it("Claim Credits says which of the Passport's projects the visitor already has a credit on", async () => {
+    world.signedInAs = "u2";
+    world.rows = { credits: [...credits, { id: "c9", project_name: "Open Road", role: "Editor", year: 2023 }], viewerCredits: [{ project_name: "open road" }] };
+    renderPage();
+    await screen.findByRole("button", { name: /Connect with Dee/ });
+    fireEvent.click(work().getByRole("button", { name: "Claim Credits" }));
+    const dialog = await screen.findByRole("dialog", { name: "Claim a credit" });
+    await waitFor(() => expect(within(dialog).getByRole("button", { name: /Open Road/ })).toHaveTextContent("You already have a credit on this project"));
+    expect(within(dialog).getByRole("button", { name: /Night Train/ })).not.toHaveTextContent("already have a credit");
   });
 
   it("signed in and connected: Message and Start a project are open, with the invitation flow beside them", async () => {

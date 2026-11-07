@@ -96,7 +96,7 @@ export const CopilotCapabilities = ({ open, onOpenChange, onPick }: Props) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-border p-0 max-h-[85vh] flex flex-col"
+        className="rounded-t-3xl p-0 max-h-[85vh] flex flex-col"
       >
         <SheetHeader className="px-5 pt-5 pb-3 border-b border-border shrink-0 text-left">
           <SheetTitle className="flex items-center gap-2 text-base">

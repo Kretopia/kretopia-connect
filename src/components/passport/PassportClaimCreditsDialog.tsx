@@ -10,6 +10,8 @@ interface Props {
   projects: ClaimableProject[];
   /** Opens the project's own page, where its roles are listed and the claim itself is made and confirmed. */
   onChoose: (project: ClaimableProject) => void;
+  /** Lower-cased names of the projects the visitor already has a credit on: said on the row, so nobody claims twice by accident. */
+  alreadyCredited?: ReadonlySet<string>;
 }
 
 /**
@@ -17,7 +19,7 @@ interface Props {
  * worked on, then opens that project, where the roll call lists its roles and a claim is made, left pending, and confirmed by the person
  * or company concerned. Nothing here writes to a record.
  */
-export function PassportClaimCreditsDialog({ open, onOpenChange, firstName, projects, onChoose }: Props) {
+export function PassportClaimCreditsDialog({ open, onOpenChange, firstName, projects, onChoose, alreadyCredited }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -49,6 +51,9 @@ export function PassportClaimCreditsDialog({ open, onOpenChange, firstName, proj
                       <span className="block truncate text-xs text-muted-foreground">
                         {[project.role, project.year].filter(Boolean).join(" · ")}
                       </span>
+                    )}
+                    {alreadyCredited?.has(project.name.trim().toLowerCase()) && (
+                      <span className="block truncate text-xs font-medium text-foreground/80">You already have a credit on this project</span>
                     )}
                   </span>
                   <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />

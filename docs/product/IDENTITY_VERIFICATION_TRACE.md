@@ -24,6 +24,20 @@ Idenfy, Stripe Identity, a liveness service or KYC, in `src/`, `supabase/` or `d
 is the selfie-against-photo model call above (ThriveIN is the former product name, e.g. `thrivein_pending_claim`). It is a lead, and it is
 not a verification provider.
 
+## Where else the lead was checked (2026-11-07)
+
+- **This repository's history** begins on 2026-10-31 with one bulk commit ("Changes", by the Lovable bot). The selfie step, the claim flow
+  and `verify-profile-claim` arrive in it. No later commit ever imported the claim flow from a page, so there is no earlier onboarding
+  integration to restore from history.
+- **The older Lovable project `kretopia-app`** (the editor project that reaches the legacy backend) has an edge-function manifest dated
+  2026-06-22 (291 functions). Its identity-related names are the same `verify-profile-claim`, `verify-profile` (an AI score of profile
+  completeness, not an identity check), `send-phone-otp` (phone verification), `merge-accounts-*`, `detect-duplicate-accounts` and
+  `update-verification-score`. No function is named for a verification provider.
+- **Not checkable from here:** the secrets configured on the legacy backend. They were not read, and none was printed. The only secret the
+  selfie matcher reads is `LOVABLE_API_KEY`.
+- **To confirm with the CEO:** where the "legacy ThriveIN integration" they remember actually lives. If it is a provider contract outside
+  these two codebases, it needs the same four approvals below before anything is restored.
+
 ## Why it must not be restored as it is
 
 1. It processes a face image with a third-party general-purpose model: no approved provider or agreement, no current consent text, no

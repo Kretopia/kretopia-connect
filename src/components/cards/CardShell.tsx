@@ -71,6 +71,11 @@ export interface CardShellProps {
   /** What this is and who stands behind it (an outside listing says so here). Two lines at most, always on the front. */
   trust?: ReactNode;
   primary?: CardAction;
+  /**
+   * The card's own action component, drawn where the primary action goes, for an action that owns its own state or dialog (Quick Apply)
+   * and so cannot be described as a target. It is given the primary's place, never a second one: ignored when `primary` is set.
+   */
+  action?: ReactNode;
   /** Ignored when the card has a `back`: the secondary action is then the one that turns it. */
   secondary?: CardIconAction;
   back?: CardBack;
@@ -128,7 +133,7 @@ export function CardTextButton({ className, ...props }: React.ButtonHTMLAttribut
  *
  * Long text, extra fields and anything else a surface wants to show belong on the back (`back`) or on the detail view, never on the front.
  */
-export function CardShell({ testId, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, secondary, back, className }: CardShellProps) {
+export function CardShell({ testId, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
   const backId = useId();
   const [flipped, setFlipped] = useState(false);
   const [backBuilt, setBackBuilt] = useState(false);
@@ -226,10 +231,10 @@ export function CardShell({ testId, title, open, stretch = false, cover, coverSt
               {description ? <div data-card-part="description" className={cn(CARD_DESCRIPTION, clampClass(CARD_BUDGET.descriptionLines))}>{description}</div> : null}
               {shownTags.length > 0 ? <div data-card-part="tags" className={CARD_TAGS}>{shownTags}</div> : null}
               {trust ? <div data-card-part="trust" className={cn(CARD_TRUST, clampClass(CARD_BUDGET.trustLines))}>{trust}</div> : null}
-              {trigger || primary ? (
+              {trigger || primary || action ? (
                 <footer data-card-part="footer" className={CARD_FOOTER}>
                   <div className="flex items-center gap-1.5">{trigger}</div>
-                  {primary ? <CardActionButton action={primary} className={CARD_ABOVE} /> : null}
+                  {primary ? <CardActionButton action={primary} className={CARD_ABOVE} /> : action ? <div data-card-part="primary" className={CARD_ABOVE}>{action}</div> : null}
                 </footer>
               ) : null}
             </div>

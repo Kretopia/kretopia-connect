@@ -191,7 +191,7 @@ export function MatchModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md p-0 overflow-hidden bg-gradient-to-b from-primary/10 via-background to-background border-none">
+        <DialogContent className="sm:max-w-md p-0 overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
             <Confetti active={showConfetti} config={confettiConfig} />
           </div>

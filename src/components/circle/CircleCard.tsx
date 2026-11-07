@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Users, MessageSquare, Lock, Crown, DollarSign, TrendingUp, Sparkles } from "lucide-react";
+import { Users, MessageSquare, Lock, Crown, DollarSign, Sparkles } from "lucide-react";
+import { CardPill, CardShell } from "@/components/cards/CardShell";
 import { cn } from "@/lib/utils";
 
 export interface CircleData {
@@ -35,8 +35,8 @@ const isNew = (createdAt: string) => {
 };
 
 const getActivityLevel = (messageCount: number) => {
-  if (messageCount > 200) return { label: "Very Active", color: "text-orange-500" };
-  if (messageCount > 50) return { label: "Active", color: "text-emerald-500" };
+  if (messageCount > 200) return { label: "Very Active" };
+  if (messageCount > 50) return { label: "Active" };
   return null;
 };
 
@@ -55,110 +55,58 @@ const gradientFor = (seed: string) => {
   return gradients[Math.abs(hash) % gradients.length];
 };
 
+/**
+ * A Crew, as the shared card: its cover (the picture, or its signature gradient and emoji) with whether it is new, joined or paid and whether it
+ * is private, its title, who runs it and how active it is, what it is about, and how many people and messages it has. The whole card opens the
+ * Crew; where that goes is the caller's.
+ */
 export const CircleCard = ({ circle, onClick }: { circle: CircleData; onClick: () => void }) => {
   const activity = getActivityLevel(circle.message_count);
   const crewIsNew = isNew(circle.created_at);
   const gradient = gradientFor(circle.id);
   const [coverFailed, setCoverFailed] = useState(false);
   const showImage = !!circle.cover_url && !coverFailed;
+  const emoji = circle.icon_emoji || "👥";
+  const messages = circle.message_count > 999 ? `${(circle.message_count / 1000).toFixed(1)}k` : circle.message_count;
 
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card hover:border-primary/40 cursor-pointer transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5"
-      onClick={onClick}
-    >
-      {/* Cover (image or signature gradient) */}
-      <div className="relative h-32 w-full overflow-hidden">
-        {showImage ? (
-          <img
-            src={circle.cover_url!}
-            alt=""
-            loading="lazy"
-            onError={() => setCoverFailed(true)}
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
-          />
+    <CardShell
+      testId={`crew-card-${circle.id}`}
+      title={circle.title}
+      stretch
+      open={{ onClick }}
+      cover={
+        showImage ? (
+          <>
+            <img src={circle.cover_url!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" onError={() => setCoverFailed(true)} />
+            <span aria-hidden className="absolute bottom-3 left-3 flex h-12 w-12 items-center justify-center rounded-full bg-card text-2xl ring-2 ring-card">{emoji}</span>
+          </>
         ) : (
-          <div className={cn("w-full h-full bg-gradient-to-br", gradient)}>
-            {/* Subtle grain overlay via radial */}
+          <div className={cn("relative flex h-full w-full items-center justify-center bg-gradient-to-br", gradient)}>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.18),transparent_60%)]" />
-            <div className="absolute inset-0 flex items-center justify-center text-5xl opacity-90 drop-shadow-md">
-              {circle.icon_emoji || "👥"}
-            </div>
+            <span aria-hidden className="relative text-5xl opacity-90">{emoji}</span>
           </div>
-        )}
-        {/* Bottom fade for legibility */}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-card via-card/70 to-transparent" />
-
-        {/* Top-right pill chips */}
-        <div className="absolute top-2.5 right-2.5 flex items-center gap-1.5 z-10">
-          {crewIsNew && (
-            <Badge className="text-[9px] px-1.5 py-0 bg-primary text-primary-foreground gap-0.5 backdrop-blur-sm">
-              <Sparkles className="h-2.5 w-2.5" /> New
-            </Badge>
-          )}
+        )
+      }
+      coverStart={
+        <>
+          {crewIsNew ? <CardPill tone="origin"><Sparkles className="h-3 w-3" aria-hidden />New</CardPill> : null}
           {circle.is_member ? (
-            <Badge className="text-[10px] px-2 py-0.5 bg-primary/90 text-primary-foreground border-0">Joined</Badge>
+            <CardPill tone="type">Joined</CardPill>
           ) : circle.is_paid ? (
-            <Badge variant="outline" className="text-[10px] px-2 py-0.5 border-amber-400/60 text-amber-100 bg-amber-500/30 backdrop-blur-sm">
-              <DollarSign className="h-2.5 w-2.5 mr-0.5" />{circle.price_monthly}/mo
-            </Badge>
+            <CardPill tone="type"><DollarSign className="h-3 w-3" aria-hidden />{circle.price_monthly}/mo</CardPill>
           ) : null}
-        </div>
-
-        {/* Top-left privacy */}
-        {circle.is_private && (
-          <div className="absolute top-2.5 left-2.5 rounded-full bg-black/40 backdrop-blur-sm p-1 z-10">
-            <Lock className="h-3 w-3 text-white" />
-          </div>
-        )}
-      </div>
-
-      {/* Body */}
-      <div className="px-4 pb-4 -mt-8 relative">
-        <div className="flex items-end gap-3 mb-2">
-          <div className="relative shrink-0">
-            <div className="w-14 h-14 rounded-2xl bg-card border-2 border-card shadow-lg flex items-center justify-center text-2xl">
-              {circle.icon_emoji || "👥"}
-            </div>
-            {activity && (
-              <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-card">
-                <div className="w-full h-full rounded-full bg-emerald-500 animate-ping opacity-75" />
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0 pb-1">
-            <h3 className="font-bold text-base leading-tight truncate">{circle.title}</h3>
-            {circle.creator_name && (
-              <p className="text-[11px] text-muted-foreground truncate">by {circle.creator_name}</p>
-            )}
-          </div>
-        </div>
-
-        {circle.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2 mb-3 leading-relaxed">{circle.description}</p>
-        )}
-
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <Users className="h-3 w-3" /> {circle.member_count}
-          </span>
-          {circle.message_count > 0 && (
-            <span className="flex items-center gap-1">
-              <MessageSquare className="h-3 w-3" /> {circle.message_count > 999 ? `${(circle.message_count / 1000).toFixed(1)}k` : circle.message_count}
-            </span>
-          )}
-          {circle.user_role === "admin" && (
-            <span className="flex items-center gap-1 text-amber-600">
-              <Crown className="h-3 w-3" /> Admin
-            </span>
-          )}
-          {activity && (
-            <span className={cn("flex items-center gap-1 ml-auto font-medium", activity.color)}>
-              <TrendingUp className="h-3 w-3" /> {activity.label}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+          {circle.is_private ? <CardPill tone="type"><Lock className="h-3 w-3" aria-hidden />Private</CardPill> : null}
+        </>
+      }
+      meta={[circle.creator_name ? `by ${circle.creator_name}` : null, activity?.label].filter(Boolean).join(" · ") || null}
+      description={circle.description}
+      tags={[
+        <CardPill key="members"><Users className="h-3 w-3" aria-hidden />{circle.member_count}<span className="sr-only"> members</span></CardPill>,
+        circle.message_count > 0 ? <CardPill key="messages"><MessageSquare className="h-3 w-3" aria-hidden />{messages}<span className="sr-only"> messages</span></CardPill> : null,
+        circle.user_role === "admin" ? <CardPill key="admin"><Crown className="h-3 w-3" aria-hidden />Admin</CardPill> : null,
+      ]}
+      primary={{ label: circle.is_member ? "Open crew" : "View crew", onClick: () => onClick() }}
+    />
   );
 };

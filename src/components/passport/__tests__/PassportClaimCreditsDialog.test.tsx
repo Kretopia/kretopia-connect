@@ -28,6 +28,16 @@ describe("PassportClaimCreditsDialog", () => {
     expect(onChoose).toHaveBeenCalledWith(projects[1]);
   });
 
+  it("says on the row which projects the visitor already has a credit on, and still lets them open it", () => {
+    const onChoose = vi.fn();
+    render(<PassportClaimCreditsDialog open onOpenChange={() => {}} firstName="Nova" projects={projects} onChoose={onChoose} alreadyCredited={new Set(["night train"])} />);
+    const night = screen.getByRole("button", { name: /Night Train/ });
+    expect(night).toHaveTextContent("You already have a credit on this project");
+    expect(screen.getByRole("button", { name: /Open Road/ })).not.toHaveTextContent("already have a credit");
+    fireEvent.click(night);
+    expect(onChoose).toHaveBeenCalledWith(projects[0]);
+  });
+
   it("says plainly that there is nothing to claim a role on when the Passport lists no project", () => {
     render(<PassportClaimCreditsDialog open onOpenChange={() => {}} firstName="Nova" projects={[]} onChoose={() => {}} />);
     expect(screen.getByText(/Nova has no projects listed yet/)).toBeInTheDocument();

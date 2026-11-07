@@ -162,10 +162,7 @@ export function ProfileLaunchScreen({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md p-0 overflow-hidden border-border max-h-[92dvh] overflow-y-auto"
-        style={{ backgroundColor: "hsl(var(--background))" }}
-      >
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden max-h-[92dvh] overflow-y-auto">
         <DialogTitle className="sr-only">{fullName}'s profile is live</DialogTitle>
 
         {/* Confetti anchors */}

@@ -180,4 +180,58 @@ describe("HingeStyleCard: the shared card shape", () => {
     expect(screen.getByRole("button", { name: /connect/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /pass/i })).toBeInTheDocument();
   });
+
+  it("follows the hybrid card's rules for spacing, cover, meta, description, chips and buttons, not only its radius", () => {
+    const { container } = draw("shell");
+    // cover: 16:9 when stacked, as on every card (the two-column desktop layout keeps its 4:3)
+    expect(container.querySelector(".aspect-\\[16\\/9\\]")).not.toBeNull();
+    expect(container.querySelector(".aspect-\\[4\\/3\\]")).toBeNull();
+    // padding: the shell's, in both columns
+    expect(container.querySelectorAll(".p-5").length).toBeGreaterThanOrEqual(2);
+    // type: role and place at the meta scale, the bio at the description scale
+    expect(screen.getByText("Photographer").closest("div")!.className).toContain("text-xs");
+    expect(screen.getByText(/Editorial and portrait photographer/).className).toContain("leading-[1.55]");
+    // chips: the shell's pill, still buttons that like the skill
+    const chip = screen.getByRole("button", { name: /lighting/i });
+    expect(chip.className).toContain("rounded-full");
+    expect(chip.className).toContain("text-[10px]");
+    // buttons: the shell's icon button for Pass and View, its primary button (brand-gradient border) for Connect
+    for (const name of [/pass on/i, /full profile/i]) {
+      const icon = screen.getByRole("button", { name });
+      expect(icon.className).toContain("rounded-[10px]");
+      expect(icon.className).toContain("h-11");
+    }
+    const connect = screen.getByRole("button", { name: /connect/i });
+    expect(connect.className).toContain("rounded-[9px]");
+    expect(connect.className).toContain("border-transparent");
+    expect(connect.className).not.toContain("cta-solid");
+    // the brand-gradient border is an inline background that jsdom cannot parse; it is checked in the browser run instead
+  });
+
+  it("keeps every action and the keyboard shortcuts in the shared shape", async () => {
+    const onLike = vi.fn();
+    const onPass = vi.fn();
+    const onViewProfile = vi.fn();
+    render(
+      <TooltipProvider>
+        <HingeStyleCard profile={baseProfile} onLike={onLike} onPass={onPass} onViewProfile={onViewProfile} variant="shell" />
+      </TooltipProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /full profile/i }));
+    expect(onViewProfile).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("button", { name: /connect/i }));
+    await waitFor(() => expect(onLike).toHaveBeenCalledWith(expect.objectContaining({ user_id: "user-1" }), { type: "profile", label: "their profile" }));
+    fireEvent.click(screen.getByRole("button", { name: /lighting/i }));
+    expect(onLike).toHaveBeenCalledWith(expect.anything(), { type: "skill", label: "lighting" });
+    fireEvent.click(screen.getByRole("button", { name: /pass on/i }));
+    await waitFor(() => expect(onPass).toHaveBeenCalledTimes(1));
+  });
+
+  it("leaves the default variant exactly as it was: no shell token reaches Discover's swipe lane", () => {
+    const { container } = draw();
+    expect(container.querySelector(".aspect-\\[16\\/9\\]")).toBeNull();
+    expect(screen.getByRole("button", { name: /connect/i }).className).toContain("cta-solid");
+    expect(screen.getByRole("button", { name: /pass on/i }).className).not.toContain("rounded-[10px]");
+    expect(screen.getByRole("button", { name: /lighting/i }).className).not.toContain("text-[10px]");
+  });
 });

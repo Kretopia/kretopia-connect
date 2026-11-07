@@ -277,7 +277,7 @@ export const VoiceCommandSheet = ({ open, onOpenChange }: VoiceCommandSheetProps
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-t border-border p-0 max-h-[92vh] overflow-y-auto"
+        className="rounded-t-3xl p-0 max-h-[92vh] overflow-y-auto"
       >
         <SheetHeader className="px-5 pt-5 pb-2">
           <SheetTitle className="flex items-center gap-2 text-base">

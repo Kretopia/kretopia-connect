@@ -15,6 +15,8 @@ interface EasyApplyButtonProps {
   opportunityId: string;
   opportunityTitle: string;
   className?: string;
+  /** For the one drawn style that cannot be a class: a card's primary button keeps its brand-gradient border as an inline background. */
+  style?: React.CSSProperties;
   size?: "sm" | "default";
 }
 
@@ -38,7 +40,7 @@ interface PortfolioItem {
   thumbnail_url: string | null;
 }
 
-export const EasyApplyButton = ({ opportunityId, opportunityTitle, className, size = "sm" }: EasyApplyButtonProps) => {
+export const EasyApplyButton = ({ opportunityId, opportunityTitle, className, style, size = "sm" }: EasyApplyButtonProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -189,6 +191,7 @@ export const EasyApplyButton = ({ opportunityId, opportunityTitle, className, si
         variant="default"
         size={size}
         className={className}
+        style={style}
         onClick={handleClick}
         disabled={loading}
       >

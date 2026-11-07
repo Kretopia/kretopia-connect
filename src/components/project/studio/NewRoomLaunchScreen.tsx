@@ -75,10 +75,7 @@ export function NewRoomLaunchScreen({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="sm:max-w-md p-0 overflow-hidden border-border max-h-[92dvh] overflow-y-auto"
-        style={{ backgroundColor: "hsl(var(--background))" }}
-      >
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden max-h-[92dvh] overflow-y-auto">
         <DialogTitle className="sr-only">{projectTitle} is ready</DialogTitle>
 
         <div className="absolute top-0 left-1/4 z-50"><Confetti active={showConfetti} config={confettiConfig} /></div>

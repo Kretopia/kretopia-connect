@@ -16,7 +16,7 @@ export function LevelUpCelebration({ newLevel, xp, previousLevel, open, onClose 
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md text-center border-0 bg-gradient-to-b from-background to-muted/50">
+      <DialogContent className="sm:max-w-md text-center">
         <div className="py-6 space-y-6">
           <div className="relative mx-auto w-24 h-24">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center animate-bounce">

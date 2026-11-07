@@ -16,12 +16,15 @@ export const VARIANTS = [
   { name: "credit", file: "src/components/profile/AchievementCard.tsx" },
   { name: "profile", file: "src/components/passport/ProfileCard.tsx" },
   { name: "event", file: "src/components/circle/EventCard.tsx" },
+  { name: "crew", file: "src/components/circle/CircleCard.tsx" },
+  { name: "casting", file: "src/components/opportunity/GigRailCard.tsx" },
 ];
 
 /** Cards that are a variant under the name a surface knows: they map its data onto the variant and decide no shape either. */
 export const ADAPTERS = [
   { name: "creator", file: "src/components/discover/CreatorPassportCard.tsx", variant: "ProfileCard" },
   { name: "directory", file: "src/components/passport/PassportDirectoryCard.tsx", variant: "ProfileCard" },
+  { name: "connection", file: "src/components/circle/ConnectionList.tsx", variant: "ProfileCard" },
   { name: "stage", file: "src/components/circle/StageCard.tsx", variant: "EventCard" },
 ];
 
