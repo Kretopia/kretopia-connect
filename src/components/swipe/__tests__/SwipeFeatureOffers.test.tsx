@@ -65,8 +65,8 @@ vi.mock("../ProfilePreviewSheet", () => ({ ProfilePreviewSheet: () => null }));
 vi.mock("@/components/discover/MatchExplanationDialog", () => ({ MatchExplanationDialog: () => null }));
 vi.mock("@/lib/profileCompletion", () => ({ getDiscoveryMissingFields: () => [] }));
 vi.mock("@/components/discover/HingeStyleCard", () => ({
-  HingeStyleCard: ({ profile, onLike, onPass }: { profile: { full_name: string }; onLike: (p: unknown, c: unknown) => void; onPass: (p: unknown) => void }) => (
-    <div>
+  HingeStyleCard: ({ profile, onLike, onPass, variant }: { profile: { full_name: string }; onLike: (p: unknown, c: unknown) => void; onPass: (p: unknown) => void; variant?: string }) => (
+    <div data-variant={variant ?? "default"}>
       <p>card:{profile.full_name}</p>
       <button onClick={() => onLike(profile, { type: "profile", label: "their profile" })}>like {profile.full_name}</button>
       <button onClick={() => onPass(profile)}>pass {profile.full_name}</button>
@@ -74,8 +74,8 @@ vi.mock("@/components/discover/HingeStyleCard", () => ({
   ),
 }));
 vi.mock("../ExternalOfferCard", () => ({
-  ExternalOfferCard: ({ offer, onInterested, onPass }: { offer: { title: string }; onInterested: (o: unknown) => void; onPass: (o: unknown) => void }) => (
-    <div>
+  ExternalOfferCard: ({ offer, onInterested, onPass, variant }: { offer: { title: string }; onInterested: (o: unknown) => void; onPass: (o: unknown) => void; variant?: string }) => (
+    <div data-variant={variant ?? "default"}>
       <p>offer:{offer.title}</p>
       <button onClick={() => onInterested(offer)}>interested in {offer.title}</button>
       <button onClick={() => onPass(offer)}>pass offer {offer.title}</button>
@@ -102,6 +102,26 @@ beforeEach(() => {
   state.enabledSeen.length = 0;
   vi.stubGlobal("open", state.windowOpen);
   state.windowOpen.mockReset();
+});
+
+describe("Match deck with offers: one card shape", () => {
+  const variantOf = (text: string) => screen.getByText(text).closest("[data-variant]")?.getAttribute("data-variant");
+
+  it("hands the deck's card variant to the person's card and to the offer card alike", async () => {
+    render(<MemoryRouter><SwipeFeature offers cardVariant="shell" /></MemoryRouter>);
+    expect(variantOf("card:Ada")).toBe("shell");
+    for (const name of ["Ada", "Bo", "Cy", "Di"]) answerPerson(name);
+    await screen.findByText("offer:Offer o1");
+    expect(variantOf("offer:Offer o1")).toBe("shell");
+  });
+
+  it("without a variant, neither card is asked for the shared shape", async () => {
+    renderDeck();
+    expect(variantOf("card:Ada")).toBe("default");
+    for (const name of ["Ada", "Bo", "Cy", "Di"]) answerPerson(name);
+    await screen.findByText("offer:Offer o1");
+    expect(variantOf("offer:Offer o1")).toBe("default");
+  });
 });
 
 describe("Match deck with offers: the order", () => {

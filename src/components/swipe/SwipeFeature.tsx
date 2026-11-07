@@ -346,6 +346,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           offer={current.item}
           onInterested={handleOfferInterested}
           onPass={handleOfferPass}
+          variant={cardVariant}
         />
       ) : (
         <HingeStyleCard
