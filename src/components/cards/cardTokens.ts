@@ -21,10 +21,13 @@ export const CARD_COVER_RATIO = "aspect-[16/9]";
 
 // Faces. Front and back share one grid cell; the back is turned away by backface-visibility.
 export const CARD_FACE = `relative flex min-w-0 flex-col overflow-hidden ${CARD_RADIUS} border border-border bg-card [grid-area:1/1]`;
-export const CARD_FACE_BACK = "bg-[linear-gradient(138deg,hsl(var(--primary)/0.10),hsl(var(--card))_65%)]";
+// The back is laid over the front's box (absolute, inset-0) instead of sharing its grid cell: a back taller than the front used to stretch
+// the whole card (and so its row) the moment it was first turned. Now the front alone decides the footprint, before, during and after the
+// flip, and a long back scrolls inside it (CARD_BACK_SCROLL) while its footer stays in reach.
+export const CARD_FACE_BACK = "absolute inset-0 bg-[linear-gradient(138deg,hsl(var(--primary)/0.10),hsl(var(--card))_65%)]";
 export const CARD_FACE_STYLE = { backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" } as const;
 export const CARD_FLIP_OUTER = "h-full [perspective:1300px]";
-export const CARD_FLIP_INNER = "grid h-full [transform-style:preserve-3d] transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.7,0.3,1)] motion-reduce:transition-none";
+export const CARD_FLIP_INNER = "relative grid h-full [transform-style:preserve-3d] transition-transform duration-[280ms] ease-[cubic-bezier(0.2,0.7,0.3,1)] motion-reduce:transition-none";
 
 // Cover: a fixed ratio, so every card in a row has the same picture height.
 export const CARD_COVER = `relative ${CARD_COVER_RATIO} shrink-0 overflow-hidden`;
@@ -33,7 +36,9 @@ export const CARD_COVER_OVERLAY = "absolute inset-x-[15px] top-[15px] z-[2] flex
 
 // Body and type scale.
 export const CARD_BODY = "flex min-w-0 flex-1 flex-col gap-[13px] p-5 max-[420px]:p-4";
-export const CARD_BODY_BACK = "flex min-w-0 flex-1 flex-col gap-[18px] p-6 max-[420px]:p-[19px]";
+export const CARD_BODY_BACK = "flex min-h-0 min-w-0 flex-1 flex-col gap-[18px] p-6 max-[420px]:p-[19px]";
+// What the back holds scrolls here, inside the card; overscroll-contain keeps the end of it from scrolling the page behind.
+export const CARD_BACK_SCROLL = "flex min-h-0 flex-1 flex-col gap-[18px] overflow-y-auto overscroll-contain pr-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 export const CARD_TITLE = "text-left text-[21px] font-bold leading-[1.28] tracking-[-0.025em] text-foreground [overflow-wrap:anywhere] max-[420px]:text-[19px]";
 export const CARD_META = "truncate text-xs leading-normal text-muted-foreground";
 export const CARD_DESCRIPTION = "text-xs leading-[1.55] text-foreground/80";

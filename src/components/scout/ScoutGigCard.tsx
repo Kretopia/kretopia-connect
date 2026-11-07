@@ -149,7 +149,7 @@ export function ScoutGigCard({ title, company, art, href, onOpen, pills, save, p
             <ApplyWithKreto opportunity={opportunity} value={draft?.value} onChange={draft?.onChange} />
           ) : (
             <>
-              <section aria-label="Brief" tabIndex={0} className="max-h-[18rem] overflow-y-auto pr-1 text-[13px] leading-[1.7] text-foreground/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" data-testid="quick-look-brief">
+              <section aria-label="Brief" className="text-[13px] leading-[1.7] text-foreground/85" data-testid="quick-look-brief">
                 {brief.loading ? (
                   <p className="flex items-center gap-2 text-xs text-muted-foreground"><KretopiaSpinner className="h-3.5 w-3.5" />Loading the full listing…</p>
                 ) : brief.node ? (

@@ -85,7 +85,7 @@ export default function Match() {
       content: (
         <div className="w-full min-w-0">
           <div className="w-full min-w-0">
-            <MatchDeck />
+            <MatchDeck cardVariant="shell" />
           </div>
         </div>
       ),

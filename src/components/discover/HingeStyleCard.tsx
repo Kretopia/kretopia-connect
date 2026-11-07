@@ -13,6 +13,7 @@ import {
   ChevronDown, Eye, Handshake, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { CARD_BUDGET, CARD_LABEL, CARD_PILL, CARD_PILL_TONE, CARD_RADIUS, CARD_TITLE, clampClass } from '@/components/cards/cardTokens';
 import { supabase } from '@/integrations/supabase/client';
 import { SwipeProfile } from '@/hooks/useSwipeProfiles';
 import { useSwipeGestures } from '@/hooks/useSwipeGestures';
@@ -23,6 +24,12 @@ interface HingeStyleCardProps {
   onPass: (profile: SwipeProfile) => void;
   onViewProfile: (profile: SwipeProfile) => void;
   onMessage?: (profile: SwipeProfile) => void;
+  /**
+   * `shell` draws the card in the shape every other Kretopia card has (the Scout hybrid card's tokens: radius, title and label scale,
+   * pills), keeping this card's own layout and swipe actions. Off by default: the Discover page's swipe lane is unchanged until a
+   * surface turns it on (Match does).
+   */
+  variant?: 'default' | 'shell';
 }
 
 interface CreditItem {
@@ -35,7 +42,9 @@ interface CreditItem {
   thumbnail_url: string | null;
 }
 
-export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessage }: HingeStyleCardProps) {
+export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessage, variant = 'default' }: HingeStyleCardProps) {
+  const shell = variant === 'shell';
+  const sectionLabel = shell ? cn(CARD_LABEL, 'mb-2') : 'mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground';
   const [credits, setCredits] = useState<CreditItem[]>([]);
   const [expanded, setExpanded] = useState(false);
 
@@ -130,7 +139,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
       onTouchStart={handleDragStart}
       onTouchMove={handleDragMove}
       onTouchEnd={handleDragEnd}
-      className="w-full min-w-0 rounded-lg border-border bg-card"
+      className={cn('w-full min-w-0 border-border bg-card', shell ? CARD_RADIUS : 'rounded-lg')}
     >
       <HoloCard glow={false} maxTilt={0}>
       <div className="min-w-0 lg:grid lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -158,7 +167,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
               <Badge variant="outline" className="gap-1 border-success/30 text-success"><Sparkles className="h-3 w-3" />Industry verified</Badge>
             ) : profile.badge ? <Badge variant="secondary">{badgeLabel(profile.badge)}</Badge> : null}
           </div>
-          <h2 className="break-words text-2xl font-bold leading-tight text-foreground">{profile.full_name}</h2>
+          <h2 className={shell ? cn(CARD_TITLE, 'block', clampClass(CARD_BUDGET.titleLines)) : 'break-words text-2xl font-bold leading-tight text-foreground'}>{profile.full_name}</h2>
           <div className="flex items-start gap-2 text-sm font-medium text-foreground"><Briefcase className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" /><span>{profile.role || 'Creator'}</span></div>
           {profile.sub_roles?.length ? <p className="text-sm text-muted-foreground">{profile.sub_roles.join(' · ')}</p> : null}
           {profile.location && <div className="flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0" /><span>{profile.location}</span></div>}
@@ -176,12 +185,12 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {/* Common ground — why this profile ranked where it did */}
         {commonGround.length > 0 && (
           <div>
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Why you connect</p>
+            <p className={sectionLabel}>Why you connect</p>
             <div className="flex flex-wrap gap-1.5">
             {commonGround.map(({ icon: Icon, label }) => (
               <span
                 key={label}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-foreground text-[10px] font-medium"
+                className={shell ? cn(CARD_PILL, CARD_PILL_TONE.plain, 'text-foreground') : 'inline-flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-foreground text-[10px] font-medium'}
               >
                 <Icon className="h-2.5 w-2.5" /> {label}
               </span>
@@ -193,7 +202,7 @@ export function HingeStyleCard({ profile, onLike, onPass, onViewProfile, onMessa
         {/* Bio */}
         {profile.bio && (
           <div className="relative group">
-            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">About</p>
+            <p className={sectionLabel}>About</p>
             <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">
               {profile.bio}
             </p>

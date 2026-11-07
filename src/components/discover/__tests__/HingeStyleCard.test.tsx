@@ -147,3 +147,37 @@ describe("HingeStyleCard: why you connect (similar and complementary)", () => {
     expect(screen.queryByText("Why you connect")).toBeNull();
   });
 });
+
+describe("HingeStyleCard: the shared card shape", () => {
+  const draw = (variant?: "default" | "shell") =>
+    render(
+      <TooltipProvider>
+        <HingeStyleCard profile={{ ...baseProfile, sub_roles: ["Editorial"] } as SwipeProfile} onLike={vi.fn()} onPass={vi.fn()} onViewProfile={vi.fn()} variant={variant} />
+      </TooltipProvider>,
+    );
+  const root = () => screen.getByRole("heading", { name: "Ava Chen" }).closest(".w-full.min-w-0") as HTMLElement;
+
+  it("is drawn as it always was unless a surface asks for the shared shape (Discover's swipe lane is unchanged)", () => {
+    draw();
+    expect(screen.getByRole("heading", { name: "Ava Chen" }).className).toContain("text-2xl");
+    expect(root().className).toContain("rounded-lg");
+    expect(root().className).not.toContain("rounded-2xl");
+    expect(screen.getByText("About").className).toContain("text-[10px]");
+  });
+
+  it("takes the Scout hybrid card's radius, title and label scale when asked, with the same content and the same swipe actions", () => {
+    draw("shell");
+    const title = screen.getByRole("heading", { name: "Ava Chen" });
+    expect(title.className).toContain("text-[21px]");
+    expect(title.className).toContain("line-clamp-2");
+    expect(title.className).not.toContain("text-2xl");
+    expect(root().className).toContain("rounded-2xl");
+    expect(root().className).not.toContain("rounded-lg");
+    expect(screen.getByText("About").className).toContain("text-[9px]");
+    // presentation only: what the card says and what its buttons do are untouched
+    expect(screen.getByText("Photographer")).toBeInTheDocument();
+    expect(screen.getByText("Los Angeles, CA")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /connect/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /pass/i })).toBeInTheDocument();
+  });
+});

@@ -29,12 +29,14 @@ export interface SwipeFeatureProps {
    * the deck is people only unless a surface turns it on (see MatchDeck, which does it for creator accounts).
    */
   offers?: boolean;
+  /** How the profile card is drawn (see HingeStyleCard). Default: unchanged. */
+  cardVariant?: 'default' | 'shell';
 }
 
 /** What the member just answered, newest first, so Undo can take either kind back. */
 type Answered = { type: 'profile'; profile: SwipeProfile } | { type: 'offer'; offer: PublicListing; since: number };
 
-export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfilesCountChange, offers = false }: SwipeFeatureProps) {
+export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfilesCountChange, offers = false, cardVariant = 'default' }: SwipeFeatureProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
@@ -349,6 +351,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
         <HingeStyleCard
           key={current.item.user_id}
           profile={current.item}
+          variant={cardVariant}
           onLike={handleLike}
           onPass={handlePass}
           onViewProfile={handleViewProfile}

@@ -4,7 +4,7 @@ import { ArrowRight, Eye, ExternalLink, RotateCcw } from "lucide-react";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
 import {
-  CARD_ABOVE, CARD_BACK_LABEL, CARD_BODY, CARD_BODY_BACK, CARD_BTN, CARD_BTN_PRIMARY, CARD_BTN_PRIMARY_STYLE, CARD_BUDGET, CARD_COVER, CARD_COVER_OVERLAY,
+  CARD_ABOVE, CARD_BACK_LABEL, CARD_BACK_SCROLL, CARD_BODY, CARD_BODY_BACK, CARD_BTN, CARD_BTN_PRIMARY, CARD_BTN_PRIMARY_STYLE, CARD_BUDGET, CARD_COVER, CARD_COVER_OVERLAY,
   CARD_COVER_SCRIM, CARD_DESCRIPTION, CARD_FACE, CARD_FACE_BACK, CARD_FACE_STYLE, CARD_FLIP_INNER, CARD_FLIP_OUTER, CARD_FOOTER, CARD_ICON_BTN,
   CARD_ICON_BTN_ON, CARD_META, CARD_PILL, CARD_PILL_TONE, CARD_STRETCH, CARD_TAGS, CARD_TEXT_ACTION, CARD_TITLE, CARD_TRUST, clampClass,
   type CardPillTone,
@@ -136,7 +136,22 @@ export function CardShell({ testId, title, open, stretch = false, cover, coverSt
   const backFace = useRef<HTMLDivElement>(null);
   const flipButton = useRef<HTMLButtonElement>(null);
   const flipBackButton = useRef<HTMLButtonElement>(null);
+  const backScroll = useRef<HTMLDivElement>(null);
+  const [backOverflows, setBackOverflows] = useState(false);
   const moved = useRef(false);
+
+  // A scrolling region is a tab stop only while it really has more to show, so a keyboard can reach the rest of a long back and a short
+  // one adds nothing to the tab order.
+  useEffect(() => {
+    const el = backScroll.current;
+    if (!el || !flipped) return;
+    const measure = () => setBackOverflows(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [flipped, backBuilt]);
 
   const flipTo = (on: boolean) => {
     moved.current = true;
@@ -234,10 +249,17 @@ export function CardShell({ testId, title, open, stretch = false, cover, coverSt
               <div className={CARD_BODY_BACK}>
                 <p className={CARD_BACK_LABEL}>{back.eyebrow}</p>
                 <div>
-                  <h4 className={cn(CARD_TITLE, "block")}>{title}</h4>
+                  <h4 className={cn(CARD_TITLE, "block", clampClass(CARD_BUDGET.titleLines))}>{title}</h4>
                   {meta ? <p className={cn("mt-1.5", CARD_META)}>{meta}</p> : null}
                 </div>
-                {back.children}
+                <div
+                  ref={backScroll}
+                  data-card-part="back-scroll"
+                  className={CARD_BACK_SCROLL}
+                  {...(backOverflows ? { tabIndex: 0, role: "region", "aria-label": `${title}: ${back.label}, more below` } : {})}
+                >
+                  {back.children}
+                </div>
                 <footer className={CARD_FOOTER}>
                   <button ref={flipBackButton} type="button" className={CARD_TEXT_ACTION} onClick={() => flipTo(false)} data-testid="flip-back">
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden />Flip back
