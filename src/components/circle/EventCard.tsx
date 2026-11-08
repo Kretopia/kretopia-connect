@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { Calendar, Users } from "lucide-react";
+import { Calendar, MapPin, Users } from "lucide-react";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { KretoScene } from "@/components/brand/KretoScene";
-import { CardPill, CardShell, type CardAction, type CardTarget } from "@/components/cards/CardShell";
+import { CardPill, CardShell, type CardAction, type CardIconAction, type CardTarget } from "@/components/cards/CardShell";
 
 export interface EventCardProps {
   testId?: string;
@@ -20,8 +20,15 @@ export interface EventCardProps {
   attendance?: string | null;
   /** One short thing worth knowing ("Only 3 spots left"). */
   note?: string | null;
+  /** More labels on the cover after the kind and live: a ticket price. */
+  coverExtra?: ReactNode;
+  /** Where it is, and how far: one more fact after when and how many. */
+  venue?: ReactNode;
   open: CardTarget;
-  primary: CardAction;
+  /** Absent when there is nothing to do (an event that has ended, or one the viewer hosts). */
+  primary?: CardAction;
+  /** One icon action beside the primary (share). */
+  secondary?: CardIconAction;
 }
 
 /**
@@ -29,7 +36,7 @@ export interface EventCardProps {
  * event, whether it is live, and who hosts it; the title; the host as the one meta line; when and how many as the facts; and one action. The
  * whole card opens the event.
  */
-export function EventCard({ testId, title, coverUrl, kindLabel, kindIcon, live, host, when, attendance, note, open, primary }: EventCardProps) {
+export function EventCard({ testId, title, coverUrl, kindLabel, kindIcon, live, host, when, attendance, note, coverExtra, venue, open, primary, secondary }: EventCardProps) {
   return (
     <CardShell
       testId={testId}
@@ -50,6 +57,7 @@ export function EventCard({ testId, title, coverUrl, kindLabel, kindIcon, live, 
         <>
           <CardPill tone="type">{kindIcon}{kindLabel}</CardPill>
           {live ? <CardPill className="border-transparent bg-destructive text-destructive-foreground uppercase motion-safe:animate-pulse"><span aria-hidden>●</span>Live</CardPill> : null}
+          {coverExtra}
         </>
       }
       meta={host?.name ? `Host: ${host.name}` : null}
@@ -57,8 +65,10 @@ export function EventCard({ testId, title, coverUrl, kindLabel, kindIcon, live, 
       tags={[
         <CardPill key="when"><Calendar className="h-3 w-3" aria-hidden />{when}</CardPill>,
         attendance ? <CardPill key="attendance"><Users className="h-3 w-3" aria-hidden />{attendance}</CardPill> : null,
+        venue ? <CardPill key="venue" className="max-w-full"><MapPin className="h-3 w-3 shrink-0" aria-hidden /><span className="min-w-0 truncate">{venue}</span></CardPill> : null,
       ]}
       primary={primary}
+      secondary={secondary}
     />
   );
 }

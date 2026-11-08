@@ -217,7 +217,7 @@ export default function SearchResults() {
                 <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-muted-foreground">Opportunities</h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {gigs.map((g) => (
-                    <GigCard key={g.id} opportunity={g} creator={gigCreators[g.created_by || ""] || null} compact />
+                    <GigCard key={g.id} opportunity={g} creator={gigCreators[g.created_by || ""] || null} compact variant="shell" />
                   ))}
                 </div>
               </section>

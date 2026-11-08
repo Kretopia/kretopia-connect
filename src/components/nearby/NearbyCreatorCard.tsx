@@ -1,8 +1,8 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { StatusAvatar } from "@/components/ui/status-avatar";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, MessageCircle, User, UserPlus, Lock } from "lucide-react";
+import { MapPin, User, Lock } from "lucide-react";
+import { CardRow } from "@/components/cards/CardRow";
+import { CardPill } from "@/components/cards/CardShell";
+import { CARD_ICON_BTN } from "@/components/cards/cardTokens";
 import { UserActionMenu } from "@/components/user/UserActionMenu";
 import { maskCreatorName } from "@/lib/guestUtils";
 
@@ -39,6 +39,10 @@ export const getMaskedName = (fullName: string, isConnected: boolean): string =>
   return maskCreatorName(fullName, false); // Use guest masking (First + Initial)
 };
 
+const DistancePill = ({ km }: { km: number }) => (
+  <CardPill className="text-primary"><MapPin className="h-3 w-3" aria-hidden />{formatDistance(km)}</CardPill>
+);
+
 interface CreatorCardProps {
   creator: NearbyCreator;
   onViewProfile: (userId: string) => void;
@@ -47,80 +51,34 @@ interface CreatorCardProps {
   onBlocked?: () => void;
 }
 
+/**
+ * A creator near the viewer, as a row of the shared card. Who they are stays as private as before: someone the viewer is not connected to
+ * shows a lock instead of a picture, a first name and an initial, and no bio. The card is not itself a link; its two buttons are.
+ */
 export const CreatorCard = ({ creator, onViewProfile, onMessage, isConnected = false, onBlocked }: CreatorCardProps) => {
-  const skills = getSkills(creator.professional_skills);
+  const skills = getSkills(creator.professional_skills).filter(Boolean);
   const displayName = getMaskedName(creator.full_name, isConnected);
-  
+
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3 mb-3">
-          {isConnected ? (
-            <StatusAvatar
-              src={creator.avatar_url}
-              fallback={creator.full_name?.charAt(0) || 'U'}
-              size="lg"
-            />
-          ) : (
-            <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center shrink-0">
-              <Lock className="h-5 w-5 text-muted-foreground" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold truncate">{displayName}</h4>
-            <p className="text-sm text-muted-foreground truncate">{creator.role}</p>
-            <p className="text-xs text-primary flex items-center gap-1 mt-1">
-              <MapPin className="h-3 w-3" />
-              {formatDistance(creator.distance_km)}
-            </p>
+    <CardRow
+      testId={`nearby-creator-${creator.user_id}`}
+      title={displayName}
+      lead={
+        isConnected ? (
+          <StatusAvatar src={creator.avatar_url} fallback={creator.full_name?.charAt(0) || 'U'} size="lg" />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <Lock className="h-5 w-5 text-muted-foreground" aria-hidden />
           </div>
-          <UserActionMenu
-            targetUserId={creator.user_id}
-            targetUserName={displayName}
-            onBlocked={onBlocked}
-            triggerClassName="h-7 w-7 text-muted-foreground"
-          />
-        </div>
-        
-        {creator.bio && isConnected && (
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{creator.bio}</p>
-        )}
-        
-        {skills.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-3">
-            {skills.map((skill, i) => (
-              <Badge key={i} variant="secondary" className="text-xs">{skill}</Badge>
-            ))}
-          </div>
-        )}
-        
-        <div className="flex gap-2">
-          {isConnected ? (
-            <>
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewProfile(creator.user_id)}>
-                <User className="h-3 w-3 mr-1" />
-                Profile
-              </Button>
-              <Button size="sm" className="flex-1" onClick={() => onMessage(creator.user_id)}>
-                <MessageCircle className="h-3 w-3 mr-1" />
-                Message
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => onViewProfile(creator.user_id)}>
-                <User className="h-3 w-3 mr-1" />
-                View
-              </Button>
-              <Button size="sm" className="flex-1" onClick={() => onMessage(creator.user_id)}>
-                <UserPlus className="h-3 w-3 mr-1" />
-                Connect
-              </Button>
-            </>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )
+      }
+      meta={creator.role}
+      description={isConnected ? creator.bio : null}
+      tags={[<DistancePill key="distance" km={creator.distance_km} />, ...skills.map((skill, i) => <CardPill key={`${skill}-${i}`}>{skill}</CardPill>)]}
+      controls={<UserActionMenu targetUserId={creator.user_id} targetUserName={displayName} onBlocked={onBlocked} triggerClassName="h-7 w-7 text-muted-foreground" />}
+      secondary={{ label: isConnected ? "Profile" : "View", onClick: () => onViewProfile(creator.user_id) }}
+      primary={{ label: isConnected ? "Message" : "Connect", onClick: () => onMessage(creator.user_id) }}
+    />
   );
 };
 
@@ -132,51 +90,33 @@ interface CreatorListItemProps {
   isConnected?: boolean;
 }
 
+/** A creator in the map's sidebar: the row selects them on the map; the icon opens their profile. */
 export const CreatorListItem = ({ creator, isSelected, onClick, onViewProfile, isConnected = false }: CreatorListItemProps) => {
-  const skills = getSkills(creator.professional_skills);
+  const skills = getSkills(creator.professional_skills).filter(Boolean);
   const displayName = getMaskedName(creator.full_name, isConnected);
-  
+
   return (
-    <Card 
-      className={`cursor-pointer transition-all ${isSelected ? 'ring-2 ring-primary shadow-md' : 'hover:shadow-md'}`}
-      onClick={onClick}
-    >
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          {isConnected ? (
-            <StatusAvatar
-              src={creator.avatar_url}
-              fallback={creator.full_name?.charAt(0) || 'U'}
-              size="md"
-            />
-          ) : (
-            <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-              <span className="text-sm font-medium text-muted-foreground">
-                {creator.full_name?.charAt(0) || 'U'}
-              </span>
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{displayName}</h4>
-            <p className="text-xs text-muted-foreground truncate">{creator.role}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-primary flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {formatDistance(creator.distance_km)}
-              </span>
-              {skills.length > 0 && (
-                <Badge variant="secondary" className="text-[10px] h-4">{skills[0]}</Badge>
-              )}
-            </div>
+    <CardRow
+      testId={`nearby-creator-row-${creator.user_id}`}
+      title={displayName}
+      open={{ onClick }}
+      selected={isSelected}
+      lead={
+        isConnected ? (
+          <StatusAvatar src={creator.avatar_url} fallback={creator.full_name?.charAt(0) || 'U'} size="md" />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+            <span className="text-sm font-medium text-muted-foreground">{creator.full_name?.charAt(0) || 'U'}</span>
           </div>
-          <Button 
-            size="sm" variant="ghost" className="h-8 w-8 p-0"
-            onClick={(e) => { e.stopPropagation(); onViewProfile(creator.user_id); }}
-          >
-            <User className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        )
+      }
+      meta={creator.role}
+      tags={[<DistancePill key="distance" km={creator.distance_km} />, skills[0] ? <CardPill key="skill">{skills[0]}</CardPill> : null]}
+      controls={
+        <button type="button" className={CARD_ICON_BTN} aria-label={`View ${displayName}'s profile`} onClick={() => onViewProfile(creator.user_id)}>
+          <User className="h-4 w-4" aria-hidden />
+        </button>
+      }
+    />
   );
 };

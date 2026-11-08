@@ -1,6 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar } from "lucide-react";
+import { CardRow } from "@/components/cards/CardRow";
+import { CardPill } from "@/components/cards/CardShell";
 
 export interface NearbySession {
   id: string;
@@ -27,39 +28,31 @@ interface SessionListItemProps {
   formatDistance: (km: number) => string;
 }
 
-export const SessionListItem = ({ session, isSelected, onClick, formatDistance }: SessionListItemProps) => {
+/** A session in the map's sidebar, as a row of the shared card. The dashed amber ring and the count on the avatar keep telling sessions from people. */
+export const SessionListItem = ({ session, isSelected, onClick }: SessionListItemProps) => {
   const startTime = new Date(session.start_time);
   const timeStr = startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const dateStr = startTime.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  
+
   return (
-    <Card 
-      className={`cursor-pointer transition-all ${isSelected ? 'ring-2 ring-amber-500 shadow-md' : 'hover:shadow-md'}`}
-      onClick={onClick}
-    >
-      <CardContent className="p-3">
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Avatar className="h-10 w-10 border-2 border-dashed border-amber-500">
-              <AvatarImage src={session.creator_avatar || undefined} />
-              <AvatarFallback className="bg-amber-500/10 text-amber-600 text-sm"></AvatarFallback>
-            </Avatar>
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-amber-500 text-white text-[8px] font-bold flex items-center justify-center">
-              {session.participant_count}
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-sm truncate">{session.title}</h4>
-            <p className="text-xs text-muted-foreground truncate">{session.category}</p>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-xs text-amber-600 flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                {dateStr} {timeStr}
-              </span>
-            </div>
+    <CardRow
+      testId={`nearby-session-${session.id}`}
+      title={session.title}
+      open={{ onClick }}
+      selected={isSelected}
+      lead={
+        <div className="relative">
+          <Avatar className="h-10 w-10 border-2 border-dashed border-amber-500">
+            <AvatarImage src={session.creator_avatar || undefined} />
+            <AvatarFallback className="bg-amber-500/10 text-sm text-amber-600"></AvatarFallback>
+          </Avatar>
+          <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[8px] font-bold text-white" title={`${session.participant_count} going`}>
+            {session.participant_count}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      }
+      meta={session.category}
+      tags={[<CardPill key="when" className="text-amber-600"><Calendar className="h-3 w-3" aria-hidden />{dateStr} {timeStr}</CardPill>]}
+    />
   );
 };

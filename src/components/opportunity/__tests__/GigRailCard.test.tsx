@@ -117,3 +117,38 @@ describe("GigRailCard: what it does", () => {
     expect(screen.queryByTestId("where")).toBeNull();
   });
 });
+
+describe("GigRailCard: the detailed form a grid of results uses", () => {
+  const creator = { user_id: "u9", full_name: "Mira Soto", avatar_url: null, role: "Producer" };
+  const soon = new Date(Date.now() + 5 * 86_400_000).toISOString();
+
+  it("also says when it closes and who posted it", () => {
+    draw({ detailed: true, creator }, gig({ application_deadline: soon }));
+    expect(card().querySelector('[data-card-part="meta"]')).toHaveTextContent(/Lisbon · 3 days ago · Closes [A-Z][a-z]{2} \d{1,2}/);
+    expect(card().querySelector('[data-card-part="trust"]')).toHaveTextContent("Posted by Mira Soto");
+  });
+
+  it("says what is offered in a trade, in the tags", () => {
+    draw({ detailed: true }, gig({ type: "barter", compensation: null, barter_offering: "A mix", barter_requesting: "A master" }));
+    expect(card().querySelector('[data-card-part="tags"]')).toHaveTextContent("A mix → A master");
+  });
+
+  it("says nothing about who posted a listing Kretopia scouted, and never an anonymous poster by name", () => {
+    const { unmount } = draw({ detailed: true, creator }, gig({ scouted_by: "kretopia" }));
+    expect(card().querySelector('[data-card-part="trust"]')).toBeNull();
+    unmount();
+    draw({ detailed: true, creator: { ...creator, full_name: null } });
+    expect(card().querySelector('[data-card-part="trust"]')).toHaveTextContent("Posted by Anonymous");
+  });
+
+  it("claims no closing it cannot show: no age-based badge, and no label without a real deadline", () => {
+    draw({ detailed: true, creator }, gig({ created_at: new Date(Date.now() - 40 * 86_400_000).toISOString(), application_deadline: null }));
+    expect(card().textContent).not.toMatch(/Closing|Closes/);
+  });
+
+  it("the rail's own form stays a glance: none of that", () => {
+    draw({ creator }, gig({ application_deadline: soon, type: "barter", barter_offering: "A mix", barter_requesting: "A master" }));
+    expect(card().querySelector('[data-card-part="trust"]')).toBeNull();
+    expect(card().textContent).not.toMatch(/Closes|A mix/);
+  });
+});

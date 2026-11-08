@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Bookmark, Plus, Trash2, ChevronRight, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Trash2, Users } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { ShortlistCreatorRow, ShortlistRow } from "@/components/shortlists/ShortlistRows";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +14,6 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -185,37 +185,15 @@ const Shortlists = () => {
         ) : (
           <div className="space-y-2">
             {items.map((item) => (
-              <Card key={item.id} className="p-3 flex items-center gap-3">
-                <Link
-                  to={`/profile/${item.profile?.username || item.creator_user_id}`}
-                  className="flex items-center gap-3 flex-1 min-w-0"
-                >
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={item.profile?.avatar_url || undefined} />
-                    <AvatarFallback>
-                      {(item.profile?.full_name || "?").slice(0, 1)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">
-                      {item.profile?.full_name || "Unknown creator"}
-                    </p>
-                    {item.profile?.job_title && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {item.profile.job_title}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => removeItem(item.id)}
-                  aria-label="Remove from list"
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </Card>
+              <ShortlistCreatorRow
+                key={item.id}
+                id={item.id}
+                fullName={item.profile?.full_name ?? null}
+                jobTitle={item.profile?.job_title ?? null}
+                avatarUrl={item.profile?.avatar_url ?? null}
+                profilePath={`/profile/${item.profile?.username || item.creator_user_id}`}
+                onRemove={() => removeItem(item.id)}
+              />
             ))}
           </div>
         )}
@@ -280,32 +258,13 @@ const Shortlists = () => {
         ) : (
           <div className="space-y-2">
             {lists.map((list) => (
-              <Card
+              <ShortlistRow
                 key={list.id}
-                className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/40 transition-colors"
-                onClick={() => openList(list)}
-              >
-                <div className="flex -space-x-2">
-                  {(list.previewAvatars || []).slice(0, 3).map((src, i) => (
-                    <Avatar key={i} className="h-8 w-8 border-2 border-background">
-                      <AvatarImage src={src} />
-                      <AvatarFallback>?</AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {(!list.previewAvatars || list.previewAvatars.length === 0) && (
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                      <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{list.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {list.itemCount} {list.itemCount === 1 ? "creator" : "creators"}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Card>
+                name={list.name}
+                itemCount={list.itemCount ?? 0}
+                previewAvatars={list.previewAvatars}
+                onOpen={() => openList(list)}
+              />
             ))}
           </div>
         )}

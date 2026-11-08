@@ -26,6 +26,25 @@ export const ADAPTERS = [
   { name: "directory", file: "src/components/passport/PassportDirectoryCard.tsx", variant: "ProfileCard" },
   { name: "connection", file: "src/components/circle/ConnectionList.tsx", variant: "ProfileCard" },
   { name: "stage", file: "src/components/circle/StageCard.tsx", variant: "EventCard" },
+  // An event or session: the event variant for a grid, and (compact) a row for a list beside other rows.
+  { name: "session", file: "src/components/sessions/SessionCard.tsx", variant: "EventCard" },
+];
+
+/** The compact form of the card, for lists that cannot be tiles (the map's sidebar, ranked results, a shortlist). Each draws its items through CardRow. */
+export const ROWS = [
+  { name: "nearby creator", file: "src/components/nearby/NearbyCreatorCard.tsx" },
+  { name: "nearby location", file: "src/components/nearby/LocationListItem.tsx" },
+  { name: "nearby session", file: "src/components/nearby/NearbySessionListItem.tsx" },
+  { name: "talent match", file: "src/components/match/TalentMatchRow.tsx" },
+  { name: "shortlist", file: "src/components/shortlists/ShortlistRows.tsx" },
+  { name: "session", file: "src/components/sessions/SessionCard.tsx" },
+];
+
+/** Pages that list people or lists as rows. They hold other panels and forms, so they are not held to the shape rules; they must use the row components. */
+export const ROW_PAGES = [
+  { file: "src/pages/TalentFinder.tsx", uses: ["<TalentMatchRow"], gone: ["rounded-lg shadow-none border-border/60 hover:border-primary/35"] },
+  { file: "src/pages/Shortlists.tsx", uses: ["<ShortlistRow", "<ShortlistCreatorRow"], gone: ['<Card key={item.id} className="p-3 flex items-center gap-3">', "cursor-pointer hover:bg-muted/40 transition-colors"] },
+  { file: "src/pages/NearbyCreators.tsx", uses: ["<CreatorCard", "<SessionCard key={s.id} session={s} compact"], gone: [] },
 ];
 
 /** Bespoke cards that existed before the shell. They are gone, and a file of that name must not come back. */
@@ -48,7 +67,7 @@ const FORBIDDEN: Array<[string, RegExp]> = [
   ["an inline shape style (borderRadius, boxShadow, aspectRatio)", /\b(?:borderRadius|boxShadow|aspectRatio)\s*:/],
 ];
 
-const SHELL_FILES = ["src/components/cards/CardShell.tsx"];
+const SHELL_FILES = ["src/components/cards/CardShell.tsx", "src/components/cards/CardRow.tsx"];
 
 describe("the shape of a card is decided once", () => {
   it("in cardTokens.ts: radius 16, a 16:9 cover, the hybrid card's elevation, and the budget the shell enforces", () => {
@@ -66,7 +85,7 @@ describe("the shape of a card is decided once", () => {
     expect(holo).not.toMatch(/\brounded-2xl\b/);
   });
 
-  it.each([...VARIANTS.map((v) => v.file), ...ADAPTERS.map((a) => a.file), ...SHELL_FILES])("%s declares no shape of its own", (file) => {
+  it.each([...new Set([...VARIANTS.map((v) => v.file), ...ADAPTERS.map((a) => a.file), ...ROWS.map((r) => r.file), ...SHELL_FILES])])("%s declares no shape of its own", (file) => {
     const source = read(file);
     for (const [what, pattern] of FORBIDDEN) {
       const hit = source.match(pattern);
@@ -95,6 +114,19 @@ describe("the shape of a card is decided once", () => {
     const source = read(file);
     expect(source).toMatch(new RegExp(`<${variant}\\b`));
     expect(source).not.toMatch(/<(HoloCard|Card|article)\b/);
+  });
+
+  it.each(ROWS)("the $name row is drawn through CardRow and builds no card of its own", ({ file }) => {
+    const source = read(file);
+    expect(source).toMatch(/from "@\/components\/cards\/CardRow"/);
+    expect(source).toMatch(/<CardRow\b/);
+    expect(source).not.toMatch(/<(HoloCard|Card|article)\b/);
+  });
+
+  it.each(ROW_PAGES)("$file draws its rows through the shared row components", ({ file, uses, gone }) => {
+    const source = read(file);
+    for (const needle of uses) expect(source, `${file} should use ${needle}`).toContain(needle);
+    for (const needle of gone) expect(source, `${file} still has its own row: ${needle}`).not.toContain(needle);
   });
 
   it("no bespoke card that the shell replaced has come back", () => {

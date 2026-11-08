@@ -9,16 +9,15 @@ import {
   Globe, Lock, Camera,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { format, formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
+import { formatDistanceToNow, differenceInDays, parseISO } from "date-fns";
 import { PREVIEW_FLAGS } from "@/config/kretopiaV1";
 
-/** "Closes Nov 12" for a deadline that has not passed; nothing for a missing, invalid or past one. */
-export function closingLabel(deadline: string | null | undefined, now: Date = new Date()): string | null {
-  if (!deadline) return null;
-  const date = parseISO(deadline);
-  if (Number.isNaN(date.getTime()) || date.getTime() < now.getTime()) return null;
-  return `Closes ${format(date, "MMM d")}`;
-}
+import { closingLabel } from "@/components/opportunity/closingLabel";
+import { formatUsageRights } from "@/components/opportunity/usageRights";
+import { GigRailCard } from "@/components/opportunity/GigRailCard";
+
+// Kept here so what imported it from this file still can.
+export { closingLabel };
 
 export interface GigOpportunity {
   id: string;
@@ -67,24 +66,6 @@ const TYPE_CONFIG: Record<string, { label: string; chip: string; icon: typeof Br
   casting:        { label: "Casting Call",  chip: "bg-rose-500/15 text-rose-400 border-rose-500/25",          icon: Camera },
 };
 
-const USAGE_LABELS: Record<string, string> = {
-  organic_social: "Organic Social",
-  paid_ads: "Paid Ads",
-  full_buyout: "Full Buyout",
-  broadcast: "Broadcast",
-  ooh: "OOH",
-  web_only: "Web Only",
-};
-
-const formatUsageRights = (opp: GigOpportunity): string | null => {
-  if (!opp.usage_type && !opp.usage_territory && !opp.usage_duration) return null;
-  const parts: string[] = [];
-  if (opp.usage_type) parts.push(USAGE_LABELS[opp.usage_type] || opp.usage_type);
-  if (opp.usage_territory) parts.push(opp.usage_territory);
-  if (opp.usage_duration) parts.push(opp.usage_duration);
-  return parts.join(" · ");
-};
-
 const UsageRightsChip = ({ opp, variant = "dark" }: { opp: GigOpportunity; variant?: "dark" | "muted" }) => {
   const summary = formatUsageRights(opp);
   if (!summary) return null;
@@ -117,11 +98,17 @@ interface GigCardProps {
    *  a real explanation is provided AND enableFitExplanationPreview is on
    *  (see kretopiaV1.ts), so this is a no-op for every caller today. */
   fitExplanation?: string | null;
+  /**
+   * `shell` draws the opportunity as the shared card (the one the Studio's casting rail uses) for a grid of results. It shows what `compact`
+   * shows, so it implies it. Off by default: the default card is unchanged.
+   */
+  variant?: "default" | "shell";
 }
 
-const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null, fitExplanation = null }: GigCardProps) => {
+const GigCard = ({ opportunity: opp, creator, compact = false, matchScore = null, fitExplanation = null, variant = "default" }: GigCardProps) => {
   const showFitExplanation = PREVIEW_FLAGS.enableFitExplanationPreview && !!fitExplanation;
   const navigate = useNavigate();
+  if (variant === "shell") return <GigRailCard opportunity={opp} creator={creator} matchScore={matchScore} detailed />;
   const config = TYPE_CONFIG[opp.type] || TYPE_CONFIG.job;
   const TypeIcon = config.icon;
   const isClosingSoon = opp.created_at && differenceInDays(new Date(), parseISO(opp.created_at)) >= 14;

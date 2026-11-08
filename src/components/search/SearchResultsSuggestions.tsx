@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { OPPORTUNITY_PUBLIC_COLUMNS } from "@/lib/opportunityColumns";
 import GigCard, { type GigOpportunity, type GigCreatorProfile } from "@/components/opportunity/GigCard";
 import { PassportPreviewCard } from "@/components/passport/PassportPreviewCard";
-import { HoloCard } from "@/components/passport/HoloCard";
 import {
   buildMyMatchContext,
   computeMatchScore,
@@ -243,14 +242,14 @@ export function SearchResultsSuggestions({ query, userId }: Props) {
           </div>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {opportunities.map(({ opp, score }) => (
-              <HoloCard key={opp.id} className="h-full">
-                <GigCard
-                  opportunity={opp}
-                  creator={oppCreators[opp.created_by || ""] || null}
-                  matchScore={score}
-                  compact
-                />
-              </HoloCard>
+              <GigCard
+                key={opp.id}
+                opportunity={opp}
+                creator={oppCreators[opp.created_by || ""] || null}
+                matchScore={score}
+                compact
+                variant="shell"
+              />
             ))}
           </div>
         </section>

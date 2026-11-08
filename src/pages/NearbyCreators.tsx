@@ -476,7 +476,7 @@ const NearbyCreators = () => {
                         <CreatorCard key={c.user_id} creator={c} onViewProfile={handleViewProfile} onMessage={handleMessage} isConnected={isConnected(c.user_id)} onBlocked={refetchBlocks} />
                       ))}
                       {filteredSessions.slice(0, 5).map(s => (
-                        <SessionCard key={s.id} session={s} onJoin={fetchNearbyData} onClick={() => setSelectedSession(s)} />
+                        <SessionCard key={s.id} session={s} compact onJoin={fetchNearbyData} onClick={() => setSelectedSession(s)} />
                       ))}
                       {filteredLocations.slice(0, 5).map(loc => (
                         <LocationListItem key={loc.id} location={loc} isSelected={false} onClick={() => setSelectedLocation(loc)}
@@ -505,7 +505,7 @@ const NearbyCreators = () => {
                 ) : (
                   <>
                     {filteredCreators.map(c => <CreatorCard key={c.user_id} creator={c} onViewProfile={handleViewProfile} onMessage={handleMessage} isConnected={isConnected(c.user_id)} onBlocked={refetchBlocks} />)}
-                    {filteredSessions.map(s => <SessionCard key={s.id} session={s} onJoin={fetchNearbyData} onClick={() => setSelectedSession(s)} />)}
+                    {filteredSessions.map(s => <SessionCard key={s.id} session={s} compact onJoin={fetchNearbyData} onClick={() => setSelectedSession(s)} />)}
                     {filteredLocations.map(loc => (
                       <LocationListItem key={loc.id} location={loc} isSelected={false} onClick={() => setSelectedLocation(loc)}
                         formatDistance={formatDistance} isBookmarked={bookmarkedIds.has(loc.id)} onToggleBookmark={() => toggleBookmark(loc.id)} />

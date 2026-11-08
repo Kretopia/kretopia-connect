@@ -71,6 +71,13 @@ export const CARD_ICON_BTN_ON = "border-energy/50 bg-energy/15 text-energy";
 export const CARD_TEXT_ACTION =
   "inline-flex min-h-[34px] items-center gap-[5px] rounded-md px-1 py-1.5 text-[11px] font-bold text-energy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring whitespace-nowrap";
 
+// Rows. A list that cannot be tiles (the map's sidebar, ranked results, the people in a shortlist) draws each item as the compact form of the
+// same card: the same radius, border and fill, the same pills, buttons and meta and description scale, in one flat line instead of a cover.
+export const CARD_ROW = `group relative flex min-w-0 items-start gap-3 border border-border bg-card p-3 transition-colors hover:border-primary/40 ${CARD_RADIUS}`;
+export const CARD_ROW_SELECTED = "border-primary ring-2 ring-primary";
+export const CARD_ROW_TITLE = "text-left text-sm font-bold leading-snug tracking-[-0.01em] text-foreground [overflow-wrap:anywhere]";
+export const CARD_ROW_BUDGET = { titleLines: 2, descriptionLines: 2, tags: 4 } as const;
+
 // Small labels on the cover and in the tags.
 export const CARD_PILL = "inline-flex items-center gap-[5px] rounded-full border px-2 py-[5px] text-[10px] font-bold leading-[1.2] tracking-[0.025em]";
 export const CARD_PILL_TONE = {

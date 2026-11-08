@@ -6,8 +6,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { TalentMatchRow } from "@/components/match/TalentMatchRow";
 import { Textarea } from "@/components/ui/textarea";
 import { PageTransition } from "@/components/PageTransition";
 import { FreeTierGate } from "@/components/FreeTierGate";
@@ -16,8 +16,8 @@ import { useFeatureGate } from "@/hooks/useFeatureGate";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { TALENT_FINDER_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import {
-  Sparkles, MapPin, Star,
-  Eye, UserPlus, MessageSquare, Zap, Send,
+  Sparkles, Star,
+  Eye, UserPlus, Zap, Send,
   FileText, CheckCircle2, RefreshCw, Crown, Briefcase
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
@@ -302,86 +302,16 @@ export default function TalentFinder() {
               </div>
 
               {matches.map((talent, idx) => (
-                <Card
+                <TalentMatchRow
                   key={talent.user_id}
-                  className="p-3 rounded-lg shadow-none border-border/60 hover:border-primary/35 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/profile/${talent.user_id}`)}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Rank */}
-                    <div className="flex flex-col items-center gap-1 shrink-0">
-                      {/* Kreto's order only: a model-made percentage is not shown, because nothing behind it can be checked. */}
-                      <span className="text-xs font-bold text-muted-foreground">#{idx + 1}</span>
-                    </div>
-
-                    {/* Avatar */}
-                    <Avatar className="h-11 w-11 shrink-0">
-                      <AvatarImage src={talent.avatar_url} />
-                      <AvatarFallback>{talent.full_name?.[0] || "?"}</AvatarFallback>
-                    </Avatar>
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold truncate">{talent.full_name}</span>
-          
-                      </div>
-                      {talent.role && (
-                        <p className="text-xs text-muted-foreground truncate">{talent.role}</p>
-                      )}
-
-                      {/* AI headline */}
-                      <p className="text-xs mt-1 text-muted-foreground line-clamp-2" >"{talent.headline}"</p>
-
-                      {/* Match reasons */}
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {(talent.match_reasons ?? []).slice(0, 2).map((reason, i) => (
-                          <Badge key={i} variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
-                            {reason}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      {talent.location && (
-                        <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-1">
-                          <MapPin className="h-2.5 w-2.5" /> {talent.location}
-                        </span>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex flex-wrap items-center gap-2 mt-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1"
-                          onClick={e => { e.stopPropagation(); navigate(`/profile/${talent.user_id}`); }}
-                        >
-                          <Eye className="h-3 w-3" /> View Passport
-                        </Button>
-                        {shortlisted[talent.user_id] ? (
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="h-7 text-xs gap-1"
-                            onClick={e => { e.stopPropagation(); navigate(`/messages?to=${talent.user_id}`); }}
-                          >
-                            <MessageSquare className="h-3 w-3" /> Message
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="h-7 text-xs gap-1"
-                             disabled={savingId === talent.user_id}
-                            onClick={e => { e.stopPropagation(); handleShortlist(talent.user_id, talent.full_name, talent.match_score, talent.match_reasons); }}
-                          >
-                            {savingId === talent.user_id ? <KretopiaSpinner className="h-3 w-3" /> : <UserPlus className="h-3 w-3" />} Shortlist
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Card>
+                  talent={talent}
+                  rank={idx + 1}
+                  shortlisted={!!shortlisted[talent.user_id]}
+                  saving={savingId === talent.user_id}
+                  onViewPassport={() => navigate(`/profile/${talent.user_id}`)}
+                  onShortlist={() => { void handleShortlist(talent.user_id, talent.full_name, talent.match_score, talent.match_reasons); }}
+                  onMessage={() => navigate(`/messages?to=${talent.user_id}`)}
+                />
               ))}
 
               {/* Post as Gig CTA */}

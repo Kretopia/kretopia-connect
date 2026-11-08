@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Eye, ExternalLink, RotateCcw } from "lucide-react";
+import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +26,8 @@ export interface CardTarget {
 export interface CardAction extends CardTarget {
   label: string;
   testId?: string;
+  /** The action is waiting for an answer: the brand spinner replaces the arrow and the button cannot be pressed again. */
+  busy?: boolean;
 }
 
 /** The card's one secondary action: an icon, always with the name a screen reader reads. */
@@ -87,19 +90,22 @@ export function CardPill({ tone = "plain", className, children }: { tone?: CardP
   return <span className={cn(CARD_PILL, CARD_PILL_TONE[tone], className)}>{children}</span>;
 }
 
-function Target({ target, className, style, children, testId, title, pressed, part }: { target: CardTarget; className?: string; style?: CSSProperties; children: ReactNode; testId?: string; title?: string; pressed?: boolean; part?: string }) {
-  const common = { className, style, "aria-label": target.ariaLabel, "data-testid": testId, "data-card-part": part, title };
+function Target({ target, className, style, children, testId, title, pressed, current, part }: { target: CardTarget; className?: string; style?: CSSProperties; children: ReactNode; testId?: string; title?: string; pressed?: boolean; current?: boolean; part?: string }) {
+  const common = { className, style, "aria-label": target.ariaLabel, "aria-current": current ? ("true" as const) : undefined, "data-testid": testId, "data-card-part": part, title };
   if (target.to) return <Link to={target.to} onClick={target.onClick} {...common}>{children}</Link>;
   if (target.href) return <a href={target.href} target="_blank" rel={target.rel ?? "noopener noreferrer"} onClick={target.onClick} {...common}>{children}</a>;
   return <button type="button" onClick={target.onClick} aria-pressed={pressed} disabled={target.disabled} {...common}>{children}</button>;
 }
 
+/** The card's own link or button element (a link in the app, a new-tab link, or a button), for variants that lay a card out differently (CardRow). */
+export const CardLink = Target;
+
 /** The primary action: a link in the app, a new-tab link to another site, or a button. */
 export function CardActionButton({ action, className }: { action: CardAction; className?: string }) {
   return (
-    <Target target={action} testId={action.testId} part="primary" className={cn(CARD_BTN, CARD_BTN_PRIMARY, className)} style={CARD_BTN_PRIMARY_STYLE}>
+    <Target target={{ ...action, disabled: action.disabled || action.busy }} testId={action.testId} part="primary" className={cn(CARD_BTN, CARD_BTN_PRIMARY, className)} style={CARD_BTN_PRIMARY_STYLE}>
       {action.label}
-      {action.href ? <ExternalLink className="h-3.5 w-3.5" aria-hidden /> : <ArrowRight className="h-3.5 w-3.5" aria-hidden />}
+      {action.busy ? <KretopiaSpinner className="h-3.5 w-3.5" /> : action.href ? <ExternalLink className="h-3.5 w-3.5" aria-hidden /> : <ArrowRight className="h-3.5 w-3.5" aria-hidden />}
     </Target>
   );
 }
