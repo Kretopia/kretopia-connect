@@ -66,6 +66,30 @@ describe("InlineKretoChat", () => {
     expect(mocks.create).not.toHaveBeenCalled();
   });
 
+  // Asking Kreto to find opportunities is Scout's job: a request for work opens Scout (its all-sources view, with the role and place as the
+  // search), never the people search, and still needs no planning, no model call and no thread.
+  it.each([
+    ["Find me design jobs in Lisbon", "/scout?tab=all&q=design%20Lisbon"],
+    ["I need a gig", "/scout?tab=all"],
+    ["open scout", "/scout?tab=all"],
+  ])("sends %j to Scout, never to /search, without planning, chatting or creating a thread", async (text, path) => {
+    render(<Harness />);
+    send(text);
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith(path));
+    expect(mocks.navigate).toHaveBeenCalledTimes(1);
+    expect(String(mocks.navigate.mock.calls[0][0])).not.toMatch(/^\/search/);
+    expect(mocks.stream).not.toHaveBeenCalled();
+    expect(mocks.create).not.toHaveBeenCalled();
+  });
+
+  it("a question about opportunities stays a conversation instead of being rerouted", async () => {
+    mocks.stream.mockImplementation(async ({ onDelta, onDone }: StreamArgs) => { onDelta("Here is how."); onDone(); });
+    render(<Harness />);
+    send("How do I find jobs that suit me?");
+    await waitFor(() => expect(mocks.stream).toHaveBeenCalledTimes(1));
+    expect(mocks.navigate).not.toHaveBeenCalled();
+  });
+
   it("streams one assistant bubble and ends with the complete text", async () => {
     mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => {
       "Hello there, creator".split(" ").forEach((w, i) => onDelta((i ? " " : "") + w));
