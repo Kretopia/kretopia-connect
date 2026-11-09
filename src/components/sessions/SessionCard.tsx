@@ -149,14 +149,9 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
   const startDate = new Date(session.start_time);
   const isPast = startDate < new Date();
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
-  const ticketPrice = isTicketed && session.ticket_currency && /^[A-Za-z]{3}$/.test(session.ticket_currency)
-    ? (() => {
-        try {
-          return new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency!.toUpperCase() }).format(session.ticket_price ?? 0);
-        } catch {
-          return "Paid ticket · currency unavailable";
-        }
-      })()
+  const ticketCurrency = session.ticket_currency;
+  const ticketPrice = isTicketed && ticketCurrency && /^[A-Za-z]{3}$/.test(ticketCurrency)
+    ? formatTicketPrice(session.ticket_price ?? 0, ticketCurrency)
     : isTicketed ? "Paid ticket · currency unavailable" : session.is_ticketed ? "Ticket options · booking paused" : null;
   const nativeTicketUnavailable = eventEntry(session).kind === "ticket";
 
@@ -248,10 +243,10 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
                 <><Check className="h-3.5 w-3.5 mr-1" /> Going</>
               ) : nativeTicketUnavailable ? (
                 "Ticket booking paused"
-              ) : session.is_ticketed ? (
-                <><Ticket className="h-3.5 w-3.5 mr-1" /> View ticket options</>
               ) : eventEntry(session).kind === "external" ? (
                 <><Ticket className="h-3.5 w-3.5 mr-1" /> Get tickets</>
+              ) : session.is_ticketed ? (
+                <><Ticket className="h-3.5 w-3.5 mr-1" /> View ticket options</>
               ) : isFull ? "Full" : "Join"}
             </Button>
           )}
@@ -266,3 +261,14 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
     </Card>
   );
 };
+
+function formatTicketPrice(price: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: currency.toUpperCase(),
+    }).format(price);
+  } catch {
+    return "Paid ticket · currency unavailable";
+  }
+}
