@@ -52,6 +52,8 @@ export interface CardBack {
 
 export interface CardShellProps {
   testId?: string;
+  /** Render a static Kretopia surface without the pointer-tracked HoloCard shell. */
+  flat?: boolean;
   title: string;
   /** Where the title goes. With `stretch`, the whole card is that target. */
   open?: CardTarget;
@@ -133,7 +135,7 @@ export function CardTextButton({ className, ...props }: React.ButtonHTMLAttribut
  *
  * Long text, extra fields and anything else a surface wants to show belong on the back (`back`) or on the detail view, never on the front.
  */
-export function CardShell({ testId, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
+export function CardShell({ testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
   const backId = useId();
   const [flipped, setFlipped] = useState(false);
   const [backBuilt, setBackBuilt] = useState(false);
@@ -199,12 +201,11 @@ export function CardShell({ testId, title, open, stretch = false, cover, coverSt
     <CardIconButton action={secondary} className={CARD_ABOVE} part="secondary" />
   ) : null;
 
-  return (
-    <HoloCard className={cn("h-full", className)} glow={false}>
+  const card = (
       <article
         data-testid={testId}
         data-flipped={flipped ? "true" : "false"}
-        className={CARD_FLIP_OUTER}
+        className={cn(CARD_FLIP_OUTER, flat && className)}
         onKeyDown={(event) => {
           if (event.key === "Escape" && flipped) {
             event.stopPropagation();
@@ -276,6 +277,6 @@ export function CardShell({ testId, title, open, stretch = false, cover, coverSt
           ) : null}
         </div>
       </article>
-    </HoloCard>
   );
+  return flat ? card : <HoloCard className={cn("h-full", className)} glow={false}>{card}</HoloCard>;
 }

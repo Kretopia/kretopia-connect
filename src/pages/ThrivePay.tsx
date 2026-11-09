@@ -29,16 +29,13 @@ import { WalletTransferDialog } from "@/components/wallet/WalletTransferDialog";
 import { AccountingDashboard } from "@/components/project/AccountingDashboard";
 import { FreeTierGate } from "@/components/FreeTierGate";
 import { KrePayDashboard } from "@/components/thrivepay/KrePayDashboard";
-import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
 import { SnapReceiptFAB } from "@/components/thrivepay/SnapReceiptFAB";
 import { PaymentLinksSection } from "@/components/thrivepay/PaymentLinksSection";
-import { KrePayAIInsights } from "@/components/thrivepay/KrePayAIInsights";
 import { TransactionDetailDrawer, type TransactionDetail } from "@/components/thrivepay/TransactionDetailDrawer";
 import { TrustControlsCard } from "@/components/thrivepay/TrustControlsCard";
 import { InvoiceSepaBeneficiaryCard } from "@/components/thrivepay/InvoiceSepaBeneficiaryCard";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
-import { KretoTip } from "@/components/agent/KretoTip";
 import { KREPAY_BRAND_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import {
@@ -315,17 +312,12 @@ export default function ThrivePay() {
             payment tools beneath the branded KrePay scene in the header. */}
         {!isBrand && (
           <>
-            <KretoTip compact />
             <div className="mb-4 sm:mb-6">
-              <KrePayDashboard />
-            </div>
-            <div className="mb-6">
               <ThriveWalletCard />
             </div>
-            <SurfaceProactiveCards surface="pay" className="px-0 mb-4 sm:mb-6" />
-            <div className="mb-4 sm:mb-6">
-              <KrePayAIInsights />
-            </div>
+            <section aria-label="Cash-flow overview" className="mb-6">
+              <KrePayDashboard />
+            </section>
           </>
         )}
 
@@ -448,18 +440,18 @@ export default function ThrivePay() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
                   <Shield className="h-5 w-5 text-primary" />
-                  Connect your bank — no Stripe account needed
+                  Payout account not connected
                 </CardTitle>
                 <CardDescription>
-                  Kretopia Wallet handles the heavy lifting. You won't manage a Stripe dashboard — just add your bank and get paid.
+                  Connect a Stripe account to receive eligible payouts. Availability and timing depend on account verification and Stripe.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
                   {[
-                    { icon: CheckCircle, title: "Secure & Compliant", desc: "Bank-grade security" },
-                    { icon: Zap, title: "Fast Payouts", desc: "Direct to your bank" },
-                    { icon: DollarSign, title: "No Liability", desc: "Kretopia never holds funds" },
+                    { icon: CheckCircle, title: "Account verification", desc: "Complete Stripe's required setup." },
+                    { icon: Zap, title: "Payout availability", desc: "Depends on Stripe account status." },
+                    { icon: DollarSign, title: "Payment processing", desc: "Handled by Stripe, not a Kretopia bank account." },
                   ].map((f) => (
                     <div key={f.title} className="flex items-start gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -473,7 +465,7 @@ export default function ThrivePay() {
                   ))}
                 </div>
                 <Button onClick={handleConnectAccount} className="w-full" size="lg">
-                  <ExternalLink className="mr-2 h-4 w-4" /> Set up payouts
+                  <ExternalLink className="mr-2 h-4 w-4" /> Set up payout account
                 </Button>
               </CardContent>
             </Card>
@@ -534,7 +526,7 @@ export default function ThrivePay() {
             <Card className="rounded-2xl border-border/60 shadow-none">
               <CardHeader>
                 <CardTitle className="text-base">Payouts active</CardTitle>
-                <CardDescription>Your bank is connected. Stripe transfers your balance automatically.</CardDescription>
+                <CardDescription>Stripe reports this account is enabled for payouts. Timing and availability remain subject to Stripe.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-wrap gap-3">
                 <Button onClick={handleManageAccount} variant="outline" size="sm">

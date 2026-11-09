@@ -1,8 +1,6 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ComponentType, type LazyExoticComponent } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { UserPlus } from "lucide-react";
 import { AuthGate } from "@/components/AuthGate";
-import { InviteDialog } from "@/components/InviteDialog";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -39,9 +37,8 @@ const VIEWS: Record<Exclude<StagesView, "sound">, LazyExoticComponent<ComponentT
 export default function Stages({ view }: { view?: StagesView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { pathname, search } = useLocation();
+  const { pathname, search, hash } = useLocation();
   const [searchParams] = useSearchParams();
-  const [showInvite, setShowInvite] = useState(false);
   const [profileVisibility, setProfileVisibility] = useState<{ isVisible: boolean; missingFields: string[] }>({ isVisible: true, missingFields: [] });
 
   const active = view ?? stagesViewFor(pathname);
@@ -73,6 +70,14 @@ export default function Stages({ view }: { view?: StagesView }) {
     };
   }, [active, refreshProfileVisibility]);
 
+  useEffect(() => {
+    if (active !== "sound" || hash !== "#stage-grid") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById("stage-grid")?.scrollIntoView({ block: "start" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, hash, pathname]);
+
   if (legacy) return <Navigate to={legacy} replace />;
 
   const Embedded = active === "sound" ? null : VIEWS[active];
@@ -92,7 +97,7 @@ export default function Stages({ view }: { view?: StagesView }) {
           eyebrow="Stages"
           title="Stages."
           accentTitle="Where creators meet, live."
-          subtitle="Join creative sessions, discover people you can work with, and grow meaningful professional connections."
+          subtitle="Open a room or join a live creative session."
           tutorial={{ featureKey: "stages", label: "How this works", steps: SOUNDSTAGES_TUTORIAL }}
           compact={active !== "sound"}
         />
@@ -118,27 +123,9 @@ export default function Stages({ view }: { view?: StagesView }) {
                 )}
               </ProfileActivationGate>
 
-              <button
-                type="button"
-                onClick={() => setShowInvite(true)}
-                className="btn-glass btn-glass-outline w-full text-left rounded-2xl p-4"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-[hsl(var(--energy))]/15 text-[hsl(var(--energy))] flex items-center justify-center shrink-0">
-                    <UserPlus className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(var(--energy))]">Kreto-powered</p>
-                    <p className="font-semibold text-sm">Grow your circle</p>
-                    <p className="text-xs text-muted-foreground">Kreto drafts the invite and picks who's worth reaching out to first.</p>
-                  </div>
-                </div>
-              </button>
             </>
           )}
         </StudioFeatureShell>
-
-        <InviteDialog open={showInvite} onOpenChange={setShowInvite} />
       </div>
     </PageTransition>
   );

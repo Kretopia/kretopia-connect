@@ -20837,6 +20837,10 @@ export type Database = {
         }
         Returns: string
       }
+      cancel_event_rsvp: {
+        Args: { p_event_id: string }
+        Returns: string
+      }
       search_my_credits: {
         Args: { p_limit?: number; p_query?: string }
         Returns: {

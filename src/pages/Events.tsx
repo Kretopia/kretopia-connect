@@ -1,19 +1,20 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Plus, MapPin, Calendar, Clock, Users, Ticket,
-  Search, Sparkles, Share2, Check, X
+  Plus, MapPin, Calendar, Clock, Ticket,
+  Search, Sparkles, Check, X, ChevronLeft, ChevronRight, Monitor,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { format } from "date-fns";
+import { KretoScene } from "@/components/brand/KretoScene";
+import { CardPill, CardShell } from "@/components/cards/CardShell";
+import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
 import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -41,6 +42,8 @@ interface EventItem {
   external_ticket_url?: string;
   status?: string;
   status_note?: string;
+  event_mode?: string;
+  my_status?: string | null;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -66,136 +69,157 @@ const QUICK_FILTERS = [
   { value: 'free', label: 'Free' },
 ];
 
+const formatEventTime = (value: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(new Date(value));
+
+const formatEventPrice = (event: EventItem) => {
+  if (!event.is_ticketed || !event.ticket_price || event.ticket_price <= 0) return "Free";
+  const currency = event.ticket_currency || "USD";
+  return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(event.ticket_price);
+};
+
 const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
-  const startDate = new Date(event.start_time);
-  const isPast = startDate < new Date();
-  const isTicketed = event.is_ticketed && event.ticket_price && event.ticket_price > 0;
-  const currencySymbol = CURRENCY_SYMBOLS[event.ticket_currency || 'USD'] || '$';
-  const spotsLeft = event.max_participants - event.participant_count;
-  const isHot = event.participant_count >= 5;
-  const isSoon = !isPast && (startDate.getTime() - Date.now()) < 48 * 60 * 60 * 1000;
+  const isPast = new Date(event.start_time).getTime() < Date.now();
+  const isFull = event.max_participants > 0 && event.participant_count >= event.max_participants;
+  const place = event.event_mode === "online" || event.event_type === "virtual"
+    ? "Online"
+    : event.venue_name || event.venue_address || "Location not listed";
+  const booking = event.my_status === "going" ? "You're going" : event.status === "cancelled" ? "Cancelled" : isPast ? "Event ended" : isFull ? "Full" : "Places available";
 
   return (
-    <div 
-      className={`flex gap-3 p-3 rounded-xl border bg-card hover:bg-accent/5 cursor-pointer transition-all hover:shadow-md group ${
-        isSoon ? "border-primary/30 shadow-sm shadow-primary/5" : "border-border/50"
-      }`}
-      onClick={onClick}
-    >
-      {/* Cover image or date block */}
-      {event.cover_image_url ? (
-        <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-lg overflow-hidden shrink-0">
-          <img src={event.cover_image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-          {isTicketed && (
-            <Badge className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[10px] px-1.5 py-0">
-              {currencySymbol}{event.ticket_price}
-            </Badge>
-          )}
-        </div>
-      ) : (
-        <div className="w-16 h-24 rounded-lg bg-primary/10 flex flex-col items-center justify-center shrink-0">
-          <span className="text-xs font-medium text-primary uppercase">{format(startDate, "MMM")}</span>
-          <span className="text-2xl font-bold text-primary">{format(startDate, "d")}</span>
-        </div>
-      )}
-      
-      {/* Info */}
-      <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
-            <Clock className="h-3 w-3" />
-            <span>{format(startDate, "EEE, MMM d · h:mm a")}</span>
-          </div>
-          <h3 className="font-semibold text-sm leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-            {event.title}
-          </h3>
-          <div className="flex items-center gap-1.5 mt-1">
-            <span className="text-xs text-muted-foreground">By {event.creator_name}</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {event.venue_name && (
-              <span className="flex items-center gap-1 truncate max-w-[120px]">
-                <MapPin className="h-3 w-3 shrink-0" /> {event.venue_name}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            {isHot && (
-              <Badge className="text-[10px] py-0 px-1.5 bg-orange-500/10 text-orange-600 border-0">Hot</Badge>
-            )}
-            {isSoon && !isPast && (
-              <Badge className="text-[10px] py-0 px-1.5 bg-primary/10 text-primary border-0">Soon</Badge>
-            )}
-            {spotsLeft <= 5 && spotsLeft > 0 && !isPast && (
-              <Badge variant="destructive" className="text-[10px] py-0 px-1.5">{spotsLeft} left</Badge>
-            )}
-            {spotsLeft <= 0 && !isPast && (
-              <Badge variant="destructive" className="text-[10px] py-0 px-1.5">Full</Badge>
-            )}
-            {!isTicketed && !isPast && (
-              <Badge variant="secondary" className="text-[10px] py-0 px-1.5">Free</Badge>
-            )}
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3 w-3" />
-              <span>{event.participant_count}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CardShell
+      flat
+      title={event.title}
+      open={{ onClick, ariaLabel: `View event: ${event.title}` }}
+      cover={
+        event.cover_image_url
+          ? <img src={event.cover_image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+          : <KretoScene scene="soundstages" size="thumb" className="h-full w-full" />
+      }
+      coverStart={
+        <>
+          <CardPill tone="type">{CATEGORY_LABELS[event.category] || event.category}</CardPill>
+          {isPast ? <CardPill>Past</CardPill> : null}
+          {event.status === "cancelled" ? <CardPill>Cancelled</CardPill> : null}
+        </>
+      }
+      meta={`By ${event.creator_name}`}
+      description={event.description?.trim() || null}
+      tags={[
+        <CardPill key="time"><Clock className="h-3 w-3" aria-hidden />{formatEventTime(event.start_time)}</CardPill>,
+        <CardPill key="place">{event.event_mode === "online" || event.event_type === "virtual" ? <Monitor className="h-3 w-3" aria-hidden /> : <MapPin className="h-3 w-3" aria-hidden />}{place}</CardPill>,
+        <CardPill key="price"><Ticket className="h-3 w-3" aria-hidden />{formatEventPrice(event)} · {booking}</CardPill>,
+      ]}
+      primary={{
+        label: event.my_status === "going" ? "View booking" : event.is_ticketed ? "View ticket options" : "View event & RSVP",
+        onClick,
+        ariaLabel: `View ${event.title} details`,
+        disabled: event.status === "cancelled",
+      }}
+    />
   );
 };
 
-// Featured horizontal scroller for events with cover images
-const FeaturedEvents = ({ events, onSelect }: { events: EventItem[]; onSelect: (e: EventItem) => void }) => {
-  const featured = events.filter(e => e.cover_image_url);
-  if (featured.length === 0) return null;
+function EventCalendar({
+  events,
+  month,
+  selectedDay,
+  onMonthChange,
+  onSelectDay,
+  onSelectEvent,
+  onOpenFull,
+  full = false,
+}: {
+  events: EventItem[];
+  month: Date;
+  selectedDay: Date;
+  onMonthChange: (month: Date) => void;
+  onSelectDay: (day: Date) => void;
+  onSelectEvent: (event: EventItem) => void;
+  onOpenFull?: () => void;
+  full?: boolean;
+}) {
+  const calendarRef = useRef<HTMLElement>(null);
+  const pendingFocus = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pendingFocus.current) return;
+    calendarRef.current?.querySelector<HTMLButtonElement>(`button[data-date="${pendingFocus.current}"]`)?.focus();
+    pendingFocus.current = null;
+  }, [month, selectedDay]);
+  const monthStart = startOfMonth(month);
+  const days = eachDayOfInterval({
+    start: startOfWeek(monthStart),
+    end: endOfWeek(endOfMonth(month)),
+  });
+  const dayEvents = events.filter((event) => isSameDay(new Date(event.start_time), selectedDay));
 
   return (
-    <div className="mb-4">
-      <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-        {featured.slice(0, 8).map(event => {
-          const startDate = new Date(event.start_time);
-          const isTicketed = event.is_ticketed && event.ticket_price && event.ticket_price > 0;
-          const currencySymbol = CURRENCY_SYMBOLS[event.ticket_currency || 'USD'] || '$';
-          
+    <section ref={calendarRef} className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Event availability calendar">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => onMonthChange(subMonths(month, 1)} aria-label="Previous month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="h-4 w-4" aria-hidden /></button>
+          <h2 className="min-w-[9rem] text-center text-base font-semibold">{format(month, "MMMM yyyy")}</h2>
+          <button type="button" onClick={() => onMonthChange(addMonths(month, 1)} aria-label="Next month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="h-4 w-4" aria-hidden /></button>
+        </div>
+        {!full && onOpenFull && (
+          <button type="button" onClick={onOpenFull} className="min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            Full calendar
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs text-muted-foreground" aria-hidden="true">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <span key={day} className="py-1">{day}</span>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1" role="group" aria-label={`${format(month, "MMMM yyyy")} dates`}>
+        {days.map((day) => {
+          const count = events.filter((event) => isSameDay(new Date(event.start_time), day)).length;
           return (
-            <div 
-              key={event.id}
-              className="shrink-0 w-[200px] rounded-xl overflow-hidden border border-border/50 cursor-pointer group hover:shadow-lg transition-all"
-              onClick={() => onSelect(event)}
+            <button
+              key={day.toISOString()}
+              type="button"
+              aria-label={`${format(day, "EEEE, MMMM d")}${count ? `, ${count} event${count === 1 ? "" : "s"}` : ", no events"}`}
+              data-date={format(day, "yyyy-MM-dd")}
+              aria-pressed={isSameDay(day, selectedDay)}
+              onClick={() => onSelectDay(day)}
+              onKeyDown={(event) => {
+                const delta = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" ? -7 : event.key === "ArrowDown" ? 7 : 0;
+                if (!delta) return;
+                event.preventDefault();
+                const next = new Date(day);
+                next.setDate(next.getDate() + delta);
+                pendingFocus.current = format(next, "yyyy-MM-dd");
+                onSelectDay(next);
+              }}
+              className={`relative min-h-10 rounded-lg text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                isSameDay(day, selectedDay) ? "bg-primary font-semibold text-primary-foreground" : isSameMonth(day, month) ? "text-foreground" : "text-muted-foreground/60"
+              }`}
             >
-              <div className="relative h-28">
-                <img src={event.cover_image_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
-                <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-xs font-bold text-foreground leading-tight line-clamp-2">{event.title}</p>
-                </div>
-                {isTicketed && (
-                  <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground text-[10px]">
-                    {currencySymbol}{event.ticket_price}
-                  </Badge>
-                )}
-              </div>
-              <div className="p-2.5 space-y-1">
-                <p className="text-xs text-muted-foreground">{format(startDate, "EEE, MMM d · h:mm a")}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground truncate">By {event.creator_name}</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-0.5">
-                    <Users className="h-3 w-3" /> {event.participant_count}
-                  </span>
-                </div>
-              </div>
-            </div>
+              {format(day, "d")}
+              {count > 0 && <span aria-hidden className={`absolute bottom-1 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${isSameDay(day, selectedDay) ? "bg-primary-foreground" : "bg-primary"}`} />}
+            </button>
           );
         })}
       </div>
-    </div>
+      <div className="mt-4 border-t border-border pt-4">
+        <h3 className="mb-3 text-sm font-semibold">{format(selectedDay, "EEEE, MMMM d")}</h3>
+        {dayEvents.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No events scheduled for this day.</p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {dayEvents.map((event) => <EventCard key={event.id} event={event} onClick={() => onSelectEvent(event)} />)}
+          </div>
+        )}
+      </div>
+    </section>
   );
-};
+}
 
 const Events = ({ embedded }: { embedded?: boolean }) => {
   const { user } = useAuth();
@@ -205,8 +229,13 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [myEvents, setMyEvents] = useState<EventItem[]>([]);
   const [joinedEvents, setJoinedEvents] = useState<EventItem[]>([]);
+  const [loadError, setLoadError] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+  const [calendarExpanded, setCalendarExpanded] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => startOfMonth(new Date()));
+  const [calendarDay, setCalendarDay] = useState(() => new Date());
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const [activeTab, setActiveTab] = useState(
@@ -254,8 +283,15 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
     setShowCreate(true);
   };
 
+  const changeCalendarMonth = (month: Date) => {
+    const first = startOfMonth(month);
+    setCalendarMonth(first);
+    setCalendarDay(first);
+  };
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       // Resolve user country: GPS first, fall back to profile.location
       let userCountry: string | null = currentGeo?.country || null;
@@ -283,43 +319,63 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
         query = query.or(`country.eq.${userCountry},country.is.null`);
       }
 
-      const { data: allEvents } = await query
+      const { data: allEvents, error: eventsError } = await query
         .order('start_time', { ascending: true })
         .limit(50);
+      if (eventsError) throw eventsError;
 
       const sessionIds = allEvents?.map(s => s.id) || [];
-      const { data: counts } = await supabase
+      const { data: counts, error: countsError } = await supabase
         .from('jam_participants')
         .select('jam_id')
         .in('jam_id', sessionIds.length ? sessionIds : ['none'])
-        .in('status', ['going', 'interested']);
+        .eq('status', 'going');
+      if (countsError) throw countsError;
 
       const countMap: Record<string, number> = {};
       counts?.forEach(c => { countMap[c.jam_id] = (countMap[c.jam_id] || 0) + 1; });
+
+      const ownStatus: Record<string, string> = {};
+      if (user && sessionIds.length) {
+        const { data: ownRows, error: ownError } = await supabase
+          .from('jam_participants')
+          .select('jam_id, status')
+          .eq('user_id', user.id)
+          .in('jam_id', sessionIds);
+        if (ownError) throw ownError;
+        ownRows?.forEach(row => { ownStatus[row.jam_id] = row.status; });
+      }
 
       setEvents((allEvents || []).map(s => ({
         ...s,
         participant_count: countMap[s.id] || 0,
         creator_name: (s.profiles as any)?.full_name || 'Unknown',
         creator_avatar: (s.profiles as any)?.avatar_url,
+        my_status: ownStatus[s.id] || null,
       })));
 
       // Only fetch user-specific data if logged in
-      if (!user) return;
+      if (!user) {
+        setMyEvents([]);
+        setJoinedEvents([]);
+        return;
+      }
 
       // My created events (all — past + upcoming)
-      const { data: mine } = await supabase
+      const { data: mine, error: mineError } = await supabase
         .from('creative_jams')
         .select('*')
         .eq('created_by', user.id)
         .order('start_time', { ascending: false });
+      if (mineError) throw mineError;
 
       const myIds = mine?.map(s => s.id) || [];
-      const { data: myCounts } = await supabase
+      const { data: myCounts, error: myCountsError } = await supabase
         .from('jam_participants')
         .select('jam_id')
         .in('jam_id', myIds.length ? myIds : ['none'])
-        .in('status', ['going', 'interested']);
+        .eq('status', 'going');
+      if (myCountsError) throw myCountsError;
 
       const myCountMap: Record<string, number> = {};
       myCounts?.forEach(c => { myCountMap[c.jam_id] = (myCountMap[c.jam_id] || 0) + 1; });
@@ -331,10 +387,11 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
       })));
 
       // Joined events
-      const { data: participations } = await supabase
+      const { data: participations, error: participationError } = await supabase
         .from('jam_participants')
         .select('jam_id, status, creative_jams (*, profiles!creative_jams_created_by_fkey (full_name, avatar_url))')
         .eq('user_id', user.id);
+      if (participationError) throw participationError;
 
       const joined: EventItem[] = [];
       participations?.forEach(p => {
@@ -345,12 +402,14 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
             participant_count: 0,
             creator_name: session.profiles?.full_name || 'Unknown',
             creator_avatar: session.profiles?.avatar_url,
+            my_status: p.status,
           });
         }
       });
       setJoinedEvents(joined);
     } catch (error) {
       console.error('Error fetching events:', error);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -473,6 +532,48 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
             ))}
           </div>
 
+          <div className="mb-4">
+            <button
+              type="button"
+              aria-expanded={calendarExpanded}
+              aria-controls="events-availability-calendar"
+              onClick={() => setCalendarExpanded((value) => !value)}
+              className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Calendar className="h-4 w-4 text-primary" aria-hidden />
+              {calendarExpanded ? "Hide calendar" : "Browse calendar"}
+            </button>
+            {calendarExpanded && (
+              <div id="events-availability-calendar" className="mt-3">
+                {loading ? (
+                  <div className="rounded-2xl border border-border bg-card p-6 text-center text-sm text-muted-foreground" aria-busy="true">
+                    <KretopiaSpinner className="mx-auto mb-2 h-4 w-4" />Loading availability…
+                  </div>
+                ) : loadError ? (
+                  <div role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm">
+                    <p className="font-semibold">Couldn't load event availability.</p>
+                    <Button type="button" variant="outline" size="sm" className="mt-3" onClick={fetchEvents}>Retry</Button>
+                  </div>
+                ) : <EventCalendar
+                  events={filteredEvents}
+                  month={calendarMonth}
+                  selectedDay={calendarDay}
+                  onMonthChange={changeCalendarMonth}
+                  onSelectDay={(day) => {
+                    setCalendarDay(day);
+                    if (!isSameMonth(day, calendarMonth)) setCalendarMonth(startOfMonth(day));
+                  }}
+                  onSelectEvent={(event) => {
+                    setCalendarOpen(false);
+                    handleEventClick(event);
+                  }}
+                  onOpenFull={() => setCalendarOpen(true)}
+                />
+                }
+              </div>
+            )}
+          </div>
+
           {/* Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full mb-4">
@@ -506,6 +607,14 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                     </CardContent></Card>
                   ))}
                 </div>
+              ) : loadError ? (
+                <EmptyState
+                  icon={Sparkles}
+                  eyebrow="Events"
+                  title="Couldn't load events"
+                  description="Your events and availability could not be refreshed."
+                  action={{ label: "Try again", icon: Calendar, onClick: fetchEvents }}
+                />
               ) : filteredEvents.length === 0 ? (
                 <EmptyState
                   icon={Sparkles}
@@ -515,8 +624,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                   action={{ label: "Host an Event", icon: Plus, onClick: handleHostEvent }}
                 />
               ) : (
-                <div className="space-y-2">
-                  <FeaturedEvents events={filteredEvents} onSelect={handleEventClick} />
+                <div className="grid gap-3 sm:grid-cols-2">
                   {filteredEvents.map(event => (
                     <EventCard key={event.id} event={event} onClick={() => handleEventClick(event)} />
                   ))}
@@ -620,6 +728,34 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
         onOpenChange={(open) => !open && setSelectedEvent(null)} 
         onRefresh={fetchEvents}
       />
+      <Dialog open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <DialogContent className="!inset-0 !left-0 !top-0 !h-[100dvh] !w-screen !max-w-none !translate-x-0 !translate-y-0 overflow-y-auto rounded-none border-0 p-3 sm:p-5 md:!left-1/2 md:!top-1/2 md:!h-[min(90dvh,900px)] md:!w-[min(1200px,calc(100vw-2rem))] md:!-translate-x-1/2 md:!-translate-y-1/2 md:rounded-2xl">
+          <DialogTitle className="sr-only">Event availability calendar</DialogTitle>
+          {loading ? (
+            <div className="p-6 text-center text-sm text-muted-foreground" aria-busy="true"><KretopiaSpinner className="mx-auto mb-2 h-4 w-4" />Loading availability…</div>
+          ) : loadError ? (
+            <div role="alert" className="m-4 rounded-2xl border border-destructive/30 bg-destructive/5 p-5 text-sm">
+              <p className="font-semibold">Couldn't load event availability.</p>
+              <Button type="button" variant="outline" size="sm" className="mt-3" onClick={fetchEvents}>Retry</Button>
+            </div>
+          ) : <EventCalendar
+            events={filteredEvents}
+            month={calendarMonth}
+            selectedDay={calendarDay}
+            onMonthChange={changeCalendarMonth}
+            onSelectDay={(day) => {
+              setCalendarDay(day);
+              if (!isSameMonth(day, calendarMonth)) setCalendarMonth(startOfMonth(day));
+            }}
+            onSelectEvent={(event) => {
+              setCalendarOpen(false);
+              handleEventClick(event);
+            }}
+            full
+          />
+          }
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
