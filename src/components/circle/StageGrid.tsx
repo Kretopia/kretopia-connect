@@ -135,7 +135,7 @@ export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-busy="true" aria-label="Loading stages">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse">
+          <div key={i} className="rounded-2xl border border-border bg-card overflow-hidden motion-safe:animate-pulse">
             <div className="aspect-video bg-muted" />
             <div className="p-3.5 space-y-2">
               <div className="h-4 w-3/4 bg-muted rounded" />
@@ -155,7 +155,7 @@ export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
         <p className="text-sm text-muted-foreground">Check what’s scheduled, or open your own stage.</p>
         <div className="flex flex-col justify-center gap-2 pt-1 sm:flex-row">
           <a
-            href="#stage-grid"
+            href="#call-sheet"
             className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Browse upcoming sessions

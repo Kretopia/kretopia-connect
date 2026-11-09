@@ -250,7 +250,7 @@ export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
       </section>
 
       {/* Call Sheet — upcoming Speed Sessions */}
-      <section className="space-y-2">
+      <section id="call-sheet" className="space-y-2 scroll-mt-20">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1.5">
             <Calendar className="h-3 w-3" /> Call sheet — Speed Sessions
