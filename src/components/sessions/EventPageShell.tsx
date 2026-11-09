@@ -12,6 +12,8 @@ interface EventPageShellProps {
   host: ReactNode;
   bookingRail: ReactNode;
   afterHost?: ReactNode;
+  /** The host's own tools: drawn right under the header (the hero), before the page's content. Pass nothing for a visitor. */
+  hostTools?: ReactNode;
 }
 
 export function EventPageShell({
@@ -23,6 +25,7 @@ export function EventPageShell({
   host,
   bookingRail,
   afterHost,
+  hostTools,
 }: EventPageShellProps) {
   return (
     <WrappedShell
@@ -36,6 +39,7 @@ export function EventPageShell({
       className="min-h-screen w-full max-w-none !overflow-visible !rounded-none !border-0 !bg-background !p-0"
     >
       {hero}
+      {hostTools ? <div className={EVENT_PAGE_CONTENT_CLASS}>{hostTools}</div> : null}
       <div className={`${EVENT_PAGE_CONTENT_CLASS} pb-32`}>
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <main className="min-w-0 space-y-6">

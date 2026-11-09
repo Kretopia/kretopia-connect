@@ -8,14 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Sparkles, Check, Share2, ExternalLink, Pencil, XCircle, ScanLine,
-  MoreVertical, Crown, Ban, CheckCircle, Download,
+  Sparkles, Check, Share2, ExternalLink, XCircle,
+  CheckCircle,
   X, ChevronDown
 } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Helmet } from "react-helmet-async";
 import { useToast } from "@/hooks/use-toast";
@@ -31,6 +28,10 @@ import { EventRsvpSuccessDialog } from "@/components/sessions/EventRsvpSuccessDi
 import type { EventAttendeePreview } from "@/components/sessions/EventAttendeeStack";
 import { EventBookingActions } from "@/components/sessions/EventBookingActions";
 import { EventHostCard } from "@/components/sessions/EventHostCard";
+import { EventHostBar } from "@/components/sessions/EventHostBar";
+import { EventCalendarActions, type CalendarActionEvent } from "@/components/sessions/EventCalendarActions";
+import { EventSectionsDialog } from "@/components/sessions/EventSectionsDialog";
+import { SectionFaq, SectionLines } from "@/components/sessions/EventSectionContent";
 import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
 import { EventPageShell, EVENT_PAGE_CONTENT_CLASS } from "@/components/sessions/EventPageShell";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
@@ -43,6 +44,9 @@ import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
 import { getEventCountdown } from "@/lib/eventCountdown";
 import { getEventBookingLabel, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
+import { addToKretopiaCalendar, fetchCalendarEntries, removeFromKretopiaCalendar } from "@/lib/eventCalendar";
+import { emptySections, fetchEventSections, viewSection, type EventSectionKey, type FetchedSections } from "@/lib/eventSections";
+import { APP_URL } from "@/lib/constants";
 
 const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -70,6 +74,12 @@ const EventPage = () => {
   const [showRecap, setShowRecap] = useState(false);
   const [showGuestPass, setShowGuestPass] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showSections, setShowSections] = useState(false);
+  // The viewer's own Kretopia calendar is a list of its own: saving an event to it is not an RSVP and changes no count.
+  const [calendarIds, setCalendarIds] = useState<Set<string>>(() => new Set());
+  const [calendarAvailable, setCalendarAvailable] = useState(false);
+  const [calendarBusyId, setCalendarBusyId] = useState<string | null>(null);
+  const [sectionsLoaded, setSectionsLoaded] = useState<FetchedSections>({ sections: emptySections(), available: false, loadFailed: false });
   const [successSequence, setSuccessSequence] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const joinInFlight = useRef(false);
@@ -91,6 +101,16 @@ const EventPage = () => {
     // only self-corrects once the auth listener catches up a moment later.
     if (eventId && !authLoading) fetchEvent();
   }, [eventId, user, authLoading]);
+
+  useEffect(() => {
+    let active = true;
+    fetchCalendarEntries(user?.id ?? null).then((entries) => {
+      if (!active) return;
+      setCalendarIds(entries.ids);
+      setCalendarAvailable(entries.available);
+    });
+    return () => { active = false; };
+  }, [user?.id]);
 
   // Handle Stripe redirect: verify ticket purchase and refresh
   useEffect(() => {
@@ -199,6 +219,10 @@ const EventPage = () => {
       }
       setEvent(eventData);
 
+      // The host-editable sections load with the event, so the page is not drawn before it is known what the host has hidden. The host reads
+      // the table (every section, with its words); everyone else reads the public view, which gives the words of a visible section only.
+      const sectionsRequest = fetchEventSections(eventData.id, !!user && user.id === eventData.created_by);
+
       const { data: profileData } = await supabase
         .from('public_profiles_safe')
         .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level, website_url, instagram_url, twitter_url, linkedin_url, tiktok_url, behance_url, imdb_url, soundcloud_url, spotify_url, youtube_url, calendly_url')
@@ -241,6 +265,7 @@ const EventPage = () => {
         eventId,
         eventData.attendee_list_visibility !== "host_only" || user?.id === eventData.created_by || viewerIsParticipant,
       );
+      setSectionsLoaded(await sectionsRequest);
     } catch (err) {
       console.error('Error fetching event:', err);
       setEventLoadError(err instanceof Error ? err.message : "The event couldn't be loaded.");
@@ -253,10 +278,6 @@ const EventPage = () => {
     if (!event || !availabilityReady || availabilityLoading || bookingDisabled) return;
     if (bookingState === "sign-in-waitlist") {
       navigate(buildEventAuthUrl(event.id));
-      return;
-    }
-    if (event?.external_ticket_url) {
-      window.open(event.external_ticket_url, '_blank', 'noopener,noreferrer');
       return;
     }
     if (bookingState === "waitlist") {
@@ -354,6 +375,33 @@ const EventPage = () => {
     setShowShareDialog(true);
   };
 
+  // Putting an event on the calendar (or taking it off) is its own action. It never RSVPs, reserves or counts, and the message says only what
+  // the server confirmed.
+  const toggleCalendar = async (targetId: string) => {
+    if (!user) {
+      navigate(buildEventAuthUrl(targetId));
+      return;
+    }
+    if (calendarBusyId) return;
+    const wasSaved = calendarIds.has(targetId);
+    setCalendarBusyId(targetId);
+    const result = wasSaved ? await removeFromKretopiaCalendar(user.id, targetId) : await addToKretopiaCalendar(user.id, targetId);
+    setCalendarBusyId(null);
+    if (result.ok === false) {
+      if (result.reason === "unavailable") setCalendarAvailable(false);
+      toast({ title: wasSaved ? "Not removed from your calendar" : "Not added to your calendar", description: result.message, variant: "destructive" });
+      return;
+    }
+    setCalendarIds((previous) => {
+      const next = new Set(previous);
+      if (wasSaved) next.delete(targetId); else next.add(targetId);
+      return next;
+    });
+    toast(wasSaved
+      ? { title: "Removed from your Kretopia calendar", description: "Your RSVP, if you have one, is unchanged." }
+      : { title: "Added to your Kretopia calendar", description: "This only puts it on your calendar. It does not RSVP you or reserve a place." });
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -418,82 +466,92 @@ const EventPage = () => {
 
   const spotsLeft = availabilityReady && capacity > 0 ? capacity - participantCount : null;
   const showScarcity = capacity > 0 && spotsLeft !== null && spotsLeft > 0 && spotsLeft / capacity < 0.3;
-  const hostTools = isCreator ? (
-    <div className="flex justify-end">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="gap-2">
-            <MoreVertical className="h-4 w-4" aria-hidden /> Host tools
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={() => setShowCheckIn(true)}><ScanLine className="mr-2 h-4 w-4" />Check-In</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowEditDialog(true)}><Pencil className="mr-2 h-4 w-4" />Edit event</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate("/events/backstage")}><Sparkles className="mr-2 h-4 w-4" />Open Backstage</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowShareKit(true)}><Share2 className="mr-2 h-4 w-4" />Share / QR Code</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowCohosts(true)}><Crown className="mr-2 h-4 w-4" />Manage Co-hosts</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setShowRecap(true)}><Sparkles className="mr-2 h-4 w-4" />Post Update / Recap</DropdownMenuItem>
-          <DropdownMenuItem onClick={async () => {
-            const { data: parts } = await supabase
-              .from("jam_participants")
-              .select("user_id, guest_name, guest_email, status, joined_at")
-              .eq("jam_id", event.id)
-              .in("status", ["going", "interested", "maybe"]);
-            const userIds = (parts || []).map((part: any) => part.user_id).filter(Boolean);
-            const { data: profiles } = userIds.length > 0
-              ? await supabase.from("public_profiles_safe").select("user_id, full_name, role").in("user_id", userIds)
-              : { data: [] };
-            const profilesById = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
-            const rows = [["Name", "Role", "Email", "Status", "Joined At"]];
-            if (creator) rows.push([creator.full_name || "Host", creator.role || "", "", "Host", ""]);
-            (parts || []).forEach((part: any) => {
-              const profile = profilesById.get(part.user_id) as any;
-              rows.push([
-                profile?.full_name || part.guest_name || "Guest",
-                profile?.role || (part.user_id ? "" : "Guest RSVP"),
-                part.guest_email || "",
-                part.status,
-                part.joined_at ? new Date(part.joined_at).toLocaleDateString() : "",
-              ]);
-            });
-            const csv = rows.map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-            const blob = new Blob([csv], { type: "text/csv" });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `guest-list-${event.id.slice(0, 8)}.csv`;
-            link.click();
-            URL.revokeObjectURL(url);
-            toast({ title: "Guest list downloaded" });
-          }}>
-            <Download className="mr-2 h-4 w-4" />Download Guest List
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          {!isPast && !isCompleted && (
-            <DropdownMenuItem onClick={async () => {
-              await supabase.from("creative_jams").update({ status: "completed" } as any).eq("id", event.id).eq("created_by", user?.id || "");
-              toast({ title: "Event marked complete" });
-              fetchEvent();
-            }}>
-              <CheckCircle className="mr-2 h-4 w-4" />Mark Complete
-            </DropdownMenuItem>
-          )}
-          {!isCancelled && (
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive"
-              onClick={async () => {
-                await supabase.from("creative_jams").update({ status: "cancelled" } as any).eq("id", event.id).eq("created_by", user?.id || "");
-                toast({ title: "Event cancelled" });
-                fetchEvent();
-              }}
-            >
-              <Ban className="mr-2 h-4 w-4" />Cancel Event
-            </DropdownMenuItem>
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+  // What the viewer may see of the host-editable sections: a visitor gets nothing of a hidden one, the host sees it marked.
+  const sectionOf = (key: EventSectionKey) => viewSection(key, sectionsLoaded.sections[key], isCreator);
+  const programView = sectionOf("program");
+  const venueView = sectionOf("venue");
+  const policiesView = sectionOf("policies");
+  const faqView = sectionOf("faq");
+  // Hiding the Venue section also keeps the address off this page's hero, its calendar exports and its structured data (the venue's name stays: it is the listing headline).
+  // If the sections could not be read, a visitor is not shown the address either: it is not known whether the host hid it.
+  const venueDetailsVisible = isCreator || (!sectionsLoaded.loadFailed && sectionsLoaded.sections.venue.visible);
+  const publicVenueAddress = venueDetailsVisible ? event.venue_address || null : null;
+  // Tickets sold elsewhere are their own action, apart from RSVP, and only while there is something to buy.
+  const ticketUrl = hasExternalTicket && !isPast && !isCancelled && !isCompleted ? (event.external_ticket_url as string) : null;
+  const calendarEvent: CalendarActionEvent = {
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    startTime: event.start_time,
+    endTime: event.end_time,
+    venueName: event.venue_name,
+    venueAddress: publicVenueAddress,
+    url: `${APP_URL}/event/${event.id}`,
+  };
+
+  const downloadGuestList = async () => {
+    const { data: parts } = await supabase
+      .from("jam_participants")
+      .select("user_id, guest_name, guest_email, status, joined_at")
+      .eq("jam_id", event.id)
+      .in("status", ["going", "interested", "maybe"]);
+    const userIds = (parts || []).map((part: any) => part.user_id).filter(Boolean);
+    const { data: profiles } = userIds.length > 0
+      ? await supabase.from("public_profiles_safe").select("user_id, full_name, role").in("user_id", userIds)
+      : { data: [] };
+    const profilesById = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+    const rows = [["Name", "Role", "Email", "Status", "Joined At"]];
+    if (creator) rows.push([creator.full_name || "Host", creator.role || "", "", "Host", ""]);
+    (parts || []).forEach((part: any) => {
+      const profile = profilesById.get(part.user_id) as any;
+      rows.push([
+        profile?.full_name || part.guest_name || "Guest",
+        profile?.role || (part.user_id ? "" : "Guest RSVP"),
+        part.guest_email || "",
+        part.status,
+        part.joined_at ? new Date(part.joined_at).toLocaleDateString() : "",
+      ]);
+    });
+    const csv = rows.map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `guest-list-${event.id.slice(0, 8)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Guest list downloaded" });
+  };
+
+  const markComplete = async () => {
+    await supabase.from("creative_jams").update({ status: "completed" } as any).eq("id", event.id).eq("created_by", user?.id || "");
+    toast({ title: "Event marked complete" });
+    fetchEvent();
+  };
+
+  const cancelEvent = async () => {
+    await supabase.from("creative_jams").update({ status: "cancelled" } as any).eq("id", event.id).eq("created_by", user?.id || "");
+    toast({ title: "Event cancelled" });
+    fetchEvent();
+  };
+
+  // The host's tools sit right under the header. Only the creator is given them; each write is still limited to the creator's own event by the server.
+  const hostBar = isCreator ? (
+    <EventHostBar
+      isPast={isPast}
+      isCompleted={isCompleted}
+      isCancelled={isCancelled}
+      onEdit={() => setShowEditDialog(true)}
+      onEditSections={() => setShowSections(true)}
+      onCheckIn={() => setShowCheckIn(true)}
+      onShare={() => setShowShareKit(true)}
+      onBackstage={() => navigate("/events/backstage")}
+      onCohosts={() => setShowCohosts(true)}
+      onRecap={() => setShowRecap(true)}
+      onDownloadGuestList={downloadGuestList}
+      onMarkComplete={markComplete}
+      onCancelEvent={cancelEvent}
+    />
   ) : null;
 
   return (
@@ -521,7 +579,7 @@ const EventPage = () => {
             "location": event.venue_name ? {
               "@type": "Place",
               "name": event.venue_name,
-              "address": event.venue_address || ''
+              ...(publicVenueAddress ? { "address": publicVenueAddress } : {})
             } : undefined,
             "image": event.cover_image_url || undefined,
             "organizer": {
@@ -562,12 +620,20 @@ const EventPage = () => {
               onShare={handleShare}
               onShowGuestPass={() => setShowGuestPass(true)}
               onCancelRsvp={handleJoin}
-              onOpenCalendar={() => {
-                calendarReturnFocus.current = document.activeElement instanceof HTMLElement
-                  ? document.activeElement
-                  : document.getElementById("event-title");
-                setShowCalendar(true);
-              }}
+              calendarActions={
+                <EventCalendarActions
+                  event={calendarEvent}
+                  signedIn={isAuthenticated}
+                  saveAvailable={calendarAvailable}
+                  saved={calendarIds.has(event.id)}
+                  busy={calendarBusyId === event.id}
+                  onToggleSaved={() => toggleCalendar(event.id)}
+                  onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+                />
+              }
+              ticketUrl={ticketUrl}
+              venueDetailsVisible={venueDetailsVisible}
+              policiesVisible={policiesView.show}
               onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
               onSignIn={() => navigate(buildEventAuthUrl(event.id))}
             />
@@ -624,46 +690,69 @@ const EventPage = () => {
         about={
           <EventAboutSection
             description={event.description}
-            program={<p className="text-muted-foreground">No line-up or program details are listed for this event.</p>}
-            venue={
+            hiddenFromVisitors={{
+              program: programView.hiddenFromVisitors,
+              venue: venueView.hiddenFromVisitors,
+              policies: policiesView.hiddenFromVisitors,
+              faq: faqView.hiddenFromVisitors,
+            }}
+            program={programView.show ? (
+              programView.custom
+                ? <SectionLines text={sectionsLoaded.sections.program.text} />
+                : <p className="text-muted-foreground">No line-up or program details are listed for this event.</p>
+            ) : null}
+            venue={venueView.show ? (
               <>
                 {event.event_mode && event.event_mode !== "irl" ? (
                   <p className="text-muted-foreground">Online event{event.online_format ? ` · ${event.online_format}` : ""}.</p>
                 ) : (
                   <>
                     <p className="font-medium">{event.venue_name || "Location to be announced"}</p>
-                    {isAuthenticated && event.venue_address && <p className="text-sm text-muted-foreground">{event.venue_address}</p>}
-                    {!isAuthenticated && event.venue_address && <p className="text-sm text-muted-foreground">Sign in to see the full address.</p>}
+                    {isAuthenticated && publicVenueAddress && <p className="text-sm text-muted-foreground">{publicVenueAddress}</p>}
+                    {!isAuthenticated && publicVenueAddress && <p className="text-sm text-muted-foreground">Sign in to see the full address.</p>}
                   </>
                 )}
+                {venueView.custom && <p className="whitespace-pre-wrap text-sm text-muted-foreground">{sectionsLoaded.sections.venue.text}</p>}
               </>
-            }
-            policies={
-              <>
-                <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-                  <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
-                  <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
-                  <li>{isTicketed && !hasExternalTicket ? "Online payment booking is unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
-                </ul>
-                {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
-              </>
-            }
-            faq={
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium">How do I book?</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">Use I'm Going to RSVP. Your place is shown only after the server confirms it.</p>
+            ) : null}
+            policies={policiesView.show ? (
+              policiesView.custom ? (
+                <SectionLines text={sectionsLoaded.sections.policies.text} bullets />
+              ) : (
+                <>
+                  <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+                    <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
+                    <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
+                    <li>{isTicketed && !hasExternalTicket ? "Online ticket sales are unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
+                  </ul>
+                  {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
+                </>
+              )
+            ) : null}
+            faq={faqView.show ? (
+              faqView.custom ? (
+                <SectionFaq items={sectionsLoaded.sections.faq.faq} />
+              ) : (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium">How do I RSVP?</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">Use I'm Going. Your place is shown only after the server confirms it.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Can I cancel?</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">If you're going, use Cancel RSVP on this page. The cancellation is confirmed by the event service.</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium">Where do I find the address?</h4>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {!venueDetailsVisible
+                        ? "The host hasn't shared the venue details on this page."
+                        : event.venue_address && !isAuthenticated ? "Sign in to view the full address." : "Venue details are shown in the Venue block."}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-medium">Can I cancel?</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">If you're going, use Cancel RSVP on this page. The cancellation is confirmed by the event service.</p>
-                </div>
-                <div>
-                  <h4 className="font-medium">Where do I find the address?</h4>
-                  <p className="mt-1 text-sm text-muted-foreground">{event.venue_address && !isAuthenticated ? "Sign in to view the full address." : "Venue details are shown in the Venue block."}</p>
-                </div>
-              </div>
-            }
+              )
+            ) : null}
           />
         }
         attendees={
@@ -713,6 +802,12 @@ const EventPage = () => {
               calendarOpen={showCalendar}
               onCalendarOpenChange={setShowCalendar}
               returnFocusRef={calendarReturnFocus}
+              savedIds={calendarIds}
+              saveAvailable={calendarAvailable}
+              busyEventId={calendarBusyId}
+              onToggleSaved={toggleCalendar}
+              onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+              venueDetailsVisible={venueDetailsVisible}
             />
           ) : (
             <section id="schedule" aria-labelledby="event-schedule-heading" className="space-y-2 rounded-2xl border border-border bg-card p-4 md:p-6">
@@ -744,13 +839,13 @@ const EventPage = () => {
               disabled={bookingDisabled}
               joining={joining}
               onBook={handleJoinOrSignup}
+              ticketUrl={ticketUrl}
             />
-            {hasExternalTicket && <p className="mt-3 hidden text-xs text-muted-foreground lg:block">Tickets and payment are handled by the external provider.</p>}
           </>
         }
+        hostTools={hostBar}
         afterHost={
           <div className="space-y-6">
-            {hostTools}
             {event.event_mode && event.event_mode !== "irl" && !isPast && !isCancelled && (
               <JoinOnlineCard
                 eventId={event.id}
@@ -864,6 +959,16 @@ const EventPage = () => {
               open={showEditDialog} 
               onOpenChange={setShowEditDialog} 
               onUpdated={fetchEvent}
+            />
+          )}
+          {isCreator && (
+            <EventSectionsDialog
+              eventId={event.id}
+              userId={user?.id ?? null}
+              open={showSections}
+              onOpenChange={setShowSections}
+              loaded={sectionsLoaded}
+              onSaved={(sections) => setSectionsLoaded((previous) => ({ ...previous, sections, available: true, loadFailed: false }))}
             />
           )}
           {isCreator && (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -59,7 +59,17 @@ interface EventHeroCardProps {
   onShare: () => void;
   onShowGuestPass: () => void;
   onCancelRsvp: () => void;
-  onOpenCalendar: () => void;
+  /** The calendar actions (my calendar, export), apart from RSVP and tickets. */
+  calendarActions: ReactNode;
+  /** Where tickets are sold when the host sells them elsewhere: its own action, apart from RSVP. */
+  ticketUrl?: string | null;
+  /**
+   * Whether the address and the map are shown. The host can hide the Venue section; a visitor then sees the venue's name (a listing
+   * headline) but not its address or directions, here or anywhere else on the page. The host always sees them.
+   */
+  venueDetailsVisible?: boolean;
+  /** Whether the Policies section is shown, so that its link does not point at nothing. */
+  policiesVisible?: boolean;
   onGalleryChange: (urls: string[]) => void;
   onSignIn: () => void;
 }
@@ -67,8 +77,8 @@ interface EventHeroCardProps {
 export function EventHeroCard({
   event, creator, isCreator, isAuthenticated, isPast, isCancelled, isCompleted,
   countdown, cityLabel, priceLabel, participantCount, isFull, participation, joining,
-  attendees, attendeesVisible, onShare, onShowGuestPass, onCancelRsvp, onOpenCalendar,
-  onGalleryChange, onSignIn,
+  attendees, attendeesVisible, onShare, onShowGuestPass, onCancelRsvp, calendarActions,
+  ticketUrl = null, venueDetailsVisible = true, policiesVisible = true, onGalleryChange, onSignIn,
 }: EventHeroCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -78,11 +88,13 @@ export function EventHeroCard({
   const [coverImageFailed, setCoverImageFailed] = useState(false);
   const galleryUrls: string[] = event.gallery_image_urls || [];
   const eventIsOnline = event.event_mode && event.event_mode !== "irl";
+  const showAddress = venueDetailsVisible || isCreator;
+  const address = showAddress ? event.venue_address : null;
   const locationValue = eventIsOnline
     ? `Online event${event.online_format ? ` · ${event.online_format}` : ""}`
     : isAuthenticated
-      ? [event.venue_name, event.venue_address].filter(Boolean).join(" · ") || "Location to be announced"
-      : event.venue_name || (event.venue_address ? "Sign in to see the full address" : "Location to be announced");
+      ? [event.venue_name, address].filter(Boolean).join(" · ") || "Location to be announced"
+      : event.venue_name || (address ? "Sign in to see the full address" : "Location to be announced");
 
   useEffect(() => {
     setCoverImageFailed(false);
@@ -138,11 +150,7 @@ export function EventHeroCard({
       label: "When",
       value: <span title={`Shown in your local timezone (${eventTimeZone()})`}>{formatEventTime(event.start_time)} · local time</span>,
       icon: CalendarDays,
-      action: (
-        <Button type="button" variant="outline" size="sm" onClick={onOpenCalendar}>
-          Add to calendar
-        </Button>
-      ),
+      action: calendarActions,
     },
     {
       id: "where",
@@ -150,11 +158,11 @@ export function EventHeroCard({
       value: locationValue,
       icon: MapPin,
       action: eventIsOnline ? <span className="text-sm text-muted-foreground">Online</span>
-        : isAuthenticated && (event.venue_address || event.venue_name) ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => openDirections(event.venue_address, event.venue_name)}>
+        : isAuthenticated && showAddress && (address || event.venue_name) ? (
+          <Button type="button" variant="outline" size="sm" onClick={() => openDirections(address, event.venue_name)}>
             <Navigation className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Open map
           </Button>
-        ) : !isAuthenticated && event.venue_address ? (
+        ) : !isAuthenticated && address ? (
           <Button type="button" variant="outline" size="sm" onClick={onSignIn}>Sign in to view</Button>
         ) : <span className="text-sm text-muted-foreground">—</span>,
     },
@@ -163,7 +171,16 @@ export function EventHeroCard({
       label: "Price",
       value: priceLabel || "Free",
       icon: Ticket,
-      action: <a className="text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="#event-booking">I'm Going</a>,
+      action: ticketUrl ? (
+        <a
+          className="inline-flex items-center gap-1 text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href={ticketUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Get tickets <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </a>
+      ) : <a className="text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="#event-booking">I'm Going</a>,
     },
     {
       id: "host",
@@ -179,13 +196,13 @@ export function EventHeroCard({
       icon: Users,
       action: <a className="text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="#attendees">Who's coming</a>,
     },
-    {
+    ...(policiesVisible ? [{
       id: "policies",
       label: "Policies",
       value: "Event policies and booking details",
       icon: ExternalLink,
       action: <a className="text-sm font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" href="#about-policies">View policies</a>,
-    },
+    }] : []),
   ];
 
   return (

@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { ExternalLink } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +11,11 @@ interface EventBookingActionsProps {
   disabled: boolean;
   joining: boolean;
   onBook: () => void;
+  /**
+   * Where tickets are sold when the host sells them elsewhere. It is a separate action from the RSVP button: RSVP says "I'm going" on
+   * Kretopia, this opens the seller's page in a new tab. Drawn in the desktop rail; on a phone the hero's Price row carries it.
+   */
+  ticketUrl?: string | null;
   compact?: boolean;
   responsive?: boolean;
 }
@@ -22,6 +28,7 @@ export function EventBookingActions({
   disabled,
   joining,
   onBook,
+  ticketUrl = null,
   compact = false,
   responsive = false,
 }: EventBookingActionsProps) {
@@ -64,6 +71,16 @@ export function EventBookingActions({
           {joining ? <KretopiaSpinner className="h-4 w-4" /> : label}
         </Button>
       </div>
+      {ticketUrl && (
+        <div className={responsive ? "hidden lg:block" : undefined}>
+          <Button asChild variant="outline" className="w-full">
+            <a href={ticketUrl} target="_blank" rel="noopener noreferrer">
+              Get tickets <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />
+            </a>
+          </Button>
+          <p className="mt-2 text-xs text-muted-foreground">Tickets and payment are handled by the seller, not by Kretopia.</p>
+        </div>
+      )}
       {reason && (
         <p id={reasonId} className={isCompact ? "w-full basis-full text-xs text-muted-foreground lg:text-sm" : "text-sm text-muted-foreground"} role="status">{reason}</p>
       )}
