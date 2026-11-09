@@ -19,6 +19,7 @@ import {
 import { downloadIcs, openDirections } from "@/lib/eventActions";
 import { APP_URL } from "@/lib/constants";
 import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
+import type { EventCountdown } from "@/lib/eventCountdown";
 
 const CATEGORY_LABELS: Record<string, string> = {
   music: 'Music', film: 'Film', photo: 'Photo', art: 'Art',
@@ -47,7 +48,12 @@ interface EventHeroCardProps {
   isPast: boolean;
   isCancelled: boolean;
   isCompleted: boolean;
-  now: Date;
+  countdown: EventCountdown | null;
+  cityLabel: string | null;
+  priceLabel: string | null;
+  bookingLabel: string;
+  bookingReason: string | null;
+  bookingDisabled: boolean;
   participantCount: number;
   capacity: number;
   isFull: boolean;
@@ -55,6 +61,7 @@ interface EventHeroCardProps {
   showScarcity: boolean;
   participation: string | null;
   joining: boolean;
+  onBook: () => void;
   onShare: () => void;
   onShowGuestPass: () => void;
   onCancelRsvp: () => void;
@@ -68,9 +75,10 @@ interface EventHeroCardProps {
  */
 export function EventHeroCard({
   event, creator, isCreator, isAuthenticated, isPast, isCancelled, isCompleted,
-  now, participantCount, capacity, isFull, spotsLeft, showScarcity,
+  countdown, cityLabel, priceLabel, bookingLabel, bookingReason, bookingDisabled,
+  participantCount, capacity, isFull, spotsLeft, showScarcity,
   participation, joining,
-  onShare, onShowGuestPass, onCancelRsvp, onGalleryChange,
+  onBook, onShare, onShowGuestPass, onCancelRsvp, onGalleryChange,
 }: EventHeroCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -82,14 +90,6 @@ export function EventHeroCard({
   // Reset the broken-image fallback whenever the cover actually changes
   // (e.g. the host replaces it) so a stale failure doesn't stick around.
   useEffect(() => { setCoverImageFailed(false); }, [event.cover_image_url]);
-
-  const startDate = new Date(event.start_time);
-  const diff = startDate.getTime() - now.getTime();
-  const daysUntil = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  const hoursUntil = Math.max(0, Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)));
-  const minutesUntil = Math.max(0, Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
-  const secondsUntil = Math.max(0, Math.floor((diff % (1000 * 60)) / 1000));
-  const isImminent = diff > 0 && diff < 24 * 60 * 60 * 1000;
 
   const galleryUrls: string[] = event.gallery_image_urls || [];
 
@@ -131,85 +131,86 @@ export function EventHeroCard({
   };
 
   return (
-    <div className="mb-4 overflow-hidden rounded-2xl border border-border bg-card text-center px-4 pb-5 shadow-sm sm:mb-6 sm:px-6 sm:pb-7">
-        {event.cover_image_url && !coverImageFailed ? (
-          <div className="relative -mx-4 sm:-mx-6 mb-4 h-40 sm:h-56 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]">
+    <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card pb-5 text-left shadow-[0_20px_70px_-45px_hsl(var(--primary)/0.28)] sm:mb-8 sm:pb-7">
+        <div className="relative -mx-px -mt-px h-[min(72vw,34rem)] min-h-[280px] overflow-hidden rounded-t-2xl sm:min-h-[380px]">
+          {event.cover_image_url && !coverImageFailed ? (
             <img
               src={event.cover_image_url}
-              alt={event.title}
+              alt=""
               className="w-full h-full object-cover"
               onError={() => setCoverImageFailed(true)}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-card via-card/10 to-transparent" />
-          </div>
-        ) : (
-          <div className="-mx-4 sm:-mx-6 mb-4 h-40 sm:h-56 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]">
+          ) : (
             <KretoScene scene="soundstages" size="thumb" className="h-full w-full" />
-          </div>
-        )}
-
-        <Badge variant="secondary" className="mb-2 sm:mb-3 text-xs sm:text-sm">
-          {CATEGORY_LABELS[event.category] || event.category}
-        </Badge>
-        <h1 className="text-xl sm:text-4xl font-bold mb-2 sm:mb-3 leading-tight">{event.title}</h1>
-
-        {/* Hosted By — trust card */}
-        <button
-          type="button"
-          onClick={() => creator?.username && navigate(`/u/${creator.username}`)}
-          className="inline-flex items-center justify-center gap-3 mb-4 px-3 py-2 rounded-xl hover:bg-muted/50 transition-colors disabled:opacity-100"
-          disabled={!creator?.username}
-        >
-          <Avatar className="h-11 w-11 ring-2 ring-primary/20">
-            <AvatarImage src={creator?.avatar_url || undefined} />
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {creator?.full_name?.charAt(0) || 'H'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="text-left">
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Your host</p>
-            <div className="flex items-center gap-1.5">
-              <p className="font-semibold text-sm">{creator?.full_name || 'Kretopia Host'}</p>
-              {creator?.id_verified && (
-                <CheckCircle className="h-3.5 w-3.5 text-primary" aria-label="Verified" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/55 to-background/5" />
+          <div className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-12 sm:px-8 sm:pb-8">
+            <Badge variant="secondary" className="mb-3">
+              {CATEGORY_LABELS[event.category] || event.category}
+            </Badge>
+            <h1 className="max-w-4xl text-3xl font-bold leading-tight tracking-tight sm:text-5xl">{event.title}</h1>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground/90">
+              <span className="inline-flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary" aria-hidden />
+                {formatEventTime(event.start_time)}
+              </span>
+              {cityLabel && (
+                <span className="inline-flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" aria-hidden />
+                  {cityLabel}
+                </span>
               )}
+              <span className="inline-flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" aria-hidden />
+                {participantCount} going
+              </span>
             </div>
-            {(creator?.role || (creator?.hostedCount || 0) > 0) && (
-              <p className="text-[11px] text-muted-foreground">
-                {creator?.role}
-                {creator?.role && (creator?.hostedCount || 0) > 0 && ' · '}
-                {(creator?.hostedCount || 0) > 0 && `${creator!.hostedCount} ${creator!.hostedCount === 1 ? 'event' : 'events'} hosted`}
-              </p>
-            )}
+            <div className="mt-4 flex items-center gap-3">
+              <Avatar className="h-10 w-10 ring-2 ring-background">
+                <AvatarImage src={creator?.avatar_url || undefined} alt="" />
+                <AvatarFallback>{creator?.full_name?.charAt(0) || "H"}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-xs text-muted-foreground">Hosted by</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-semibold">{creator?.full_name || "Event host"}</p>
+                  {creator?.id_verified && <CheckCircle className="h-4 w-4 text-primary" aria-label="Verified host" />}
+                </div>
+              </div>
+            </div>
           </div>
-        </button>
+        </div>
+
+        <div className="px-4 pt-5 sm:px-8">
+          <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission</p>
+              <p className="mt-1 text-xl font-semibold">{priceLabel || "Free"}</p>
+            </div>
+            <Button className="w-full sm:w-auto sm:min-w-36" disabled={bookingDisabled || joining} onClick={onBook}>
+              {joining ? <KretopiaSpinner className="h-4 w-4" /> : bookingLabel}
+            </Button>
+          </div>
+          {bookingReason && <p className="mt-2 text-sm text-muted-foreground" role="status">{bookingReason}</p>}
+        </div>
 
         {/* Live countdown */}
-        {!isPast && !isCancelled && diff > 0 && (
-          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+        {!isPast && !isCancelled && countdown && !countdown.ended && (
+          <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3">
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
-              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{daysUntil}</p>
+              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.days}</p>
               <p className="text-[10px] text-muted-foreground uppercase">Days</p>
             </div>
             <span className="text-xl text-muted-foreground">:</span>
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
-              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(hoursUntil).padStart(2, '0')}</p>
+              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(countdown.hours).padStart(2, '0')}</p>
               <p className="text-[10px] text-muted-foreground uppercase">Hrs</p>
             </div>
             <span className="text-xl text-muted-foreground">:</span>
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
-              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(minutesUntil).padStart(2, '0')}</p>
+              <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(countdown.minutes).padStart(2, '0')}</p>
               <p className="text-[10px] text-muted-foreground uppercase">Min</p>
             </div>
-            {isImminent && (
-              <>
-                <span className="text-xl text-muted-foreground">:</span>
-                <div className="text-center px-3 py-1.5 rounded-lg bg-energy/15 border border-energy/40 min-w-[56px] motion-safe:animate-pulse">
-                  <p className="text-xl sm:text-2xl font-bold text-energy tabular-nums">{String(secondsUntil).padStart(2, '0')}</p>
-                  <p className="text-[10px] text-energy/80 uppercase">Sec</p>
-                </div>
-              </>
-            )}
           </div>
         )}
 
