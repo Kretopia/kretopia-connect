@@ -25,6 +25,10 @@ import { EventCheckInDialog } from "@/components/sessions/EventCheckInDialog";
 import { EventCohosts } from "@/components/sessions/EventCohosts";
 import { EventRecapButton } from "@/components/sessions/EventRecapButton";
 import { EventHeroCard } from "@/components/sessions/EventHeroCard";
+import { EventAboutSection } from "@/components/sessions/EventAboutSection";
+import { EventCalendarWorkspace } from "@/components/sessions/EventCalendarWorkspace";
+import { EventRsvpSuccessDialog } from "@/components/sessions/EventRsvpSuccessDialog";
+import type { EventAttendeePreview } from "@/components/sessions/EventAttendeeStack";
 import { EventBookingActions } from "@/components/sessions/EventBookingActions";
 import { EventHostCard } from "@/components/sessions/EventHostCard";
 import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
@@ -47,6 +51,7 @@ const EventPage = () => {
   const [event, setEvent] = useState<any>(null);
   const [creator, setCreator] = useState<any>(null);
   const [participantCount, setParticipantCount] = useState(0);
+  const [attendeePreview, setAttendeePreview] = useState<EventAttendeePreview[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [availabilityReady, setAvailabilityReady] = useState(false);
@@ -63,9 +68,11 @@ const EventPage = () => {
   const [showCohosts, setShowCohosts] = useState(false);
   const [showRecap, setShowRecap] = useState(false);
   const [showGuestPass, setShowGuestPass] = useState(false);
-  const [descExpanded, setDescExpanded] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [successSequence, setSuccessSequence] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const joinInFlight = useRef(false);
+  const calendarReturnFocus = useRef<HTMLElement | null>(null);
 
   const countdown = useMemo(() => getEventCountdown(event?.start_time, now), [event?.start_time, now]);
 
@@ -136,6 +143,41 @@ const EventPage = () => {
     }
   };
 
+  const refreshAttendeePreview = async (id: string, canView: boolean) => {
+    if (!canView) {
+      setAttendeePreview([]);
+      return;
+    }
+    try {
+      const { data: rows, error } = await supabase
+        .from("jam_participants")
+        .select("user_id")
+        .eq("jam_id", id)
+        .eq("status", "going")
+        .not("user_id", "is", null)
+        .limit(3);
+      if (error) throw error;
+      const userIds = [...new Set((rows || []).map((row) => row.user_id).filter((value): value is string => !!value))];
+      if (!userIds.length) {
+        setAttendeePreview([]);
+        return;
+      }
+      const { data: profiles, error: profileError } = await supabase
+        .from("public_profiles_safe")
+        .select("user_id, full_name, avatar_url")
+        .in("user_id", userIds);
+      if (profileError) throw profileError;
+      setAttendeePreview((profiles || []).map((profile) => ({
+        id: profile.user_id,
+        name: profile.full_name || "Event attendee",
+        avatarUrl: profile.avatar_url,
+      })));
+    } catch (error) {
+      console.error("Could not load attendee preview:", error);
+      setAttendeePreview([]);
+    }
+  };
+
   const fetchEvent = async () => {
     if (!eventId) return;
     setLoading(true);
@@ -177,6 +219,7 @@ const EventPage = () => {
       // Public availability uses a count only; attendee identities stay private.
       await refreshParticipantCount(eventId);
 
+      let viewerIsParticipant = false;
       if (user) {
         const { data: part } = await supabase
           .from('jam_participants').select('status').eq('jam_id', eventId).eq('user_id', user.id).maybeSingle();
@@ -185,8 +228,14 @@ const EventPage = () => {
         // same as no row at all, or a cancelled RSVP would still read as
         // truthy here and show "My pass" / "Cancel RSVP" for someone who
         // already left.
-        setParticipation(part && part.status !== 'cancelled' ? part.status : null);
+        const status = part && part.status !== 'cancelled' ? part.status : null;
+        viewerIsParticipant = !!status;
+        setParticipation(status);
       }
+      await refreshAttendeePreview(
+        eventId,
+        eventData.attendee_list_visibility !== "host_only" || user?.id === eventData.created_by || viewerIsParticipant,
+      );
     } catch (err) {
       console.error('Error fetching event:', err);
       setEventLoadError(err instanceof Error ? err.message : "The event couldn't be loaded.");
@@ -258,6 +307,8 @@ const EventPage = () => {
         } else if (result === 'joined') {
           setParticipation('going');
           await refreshParticipantCount(event.id);
+          await refreshAttendeePreview(event.id, true);
+          setSuccessSequence((sequence) => sequence + 1);
           toast({ title: "You're in!", description: "You've joined this event" });
 
           // Look up the new participant row to send confirmation email
@@ -406,7 +457,7 @@ const EventPage = () => {
       </Helmet>
       
       <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 pb-32 pt-6 sm:pb-16">
+        <div className="mx-auto max-w-7xl px-4 pb-32 pt-6 md:px-6 xl:px-8 sm:pb-16">
 
           {/* RSVP success banner (after guest quick-RSVP) */}
           {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rsvp") === "confirmed" && (
@@ -563,24 +614,26 @@ const EventPage = () => {
             countdown={countdown}
             cityLabel={cityLabel}
             priceLabel={ticketPriceLabel}
-            bookingLabel={bookingLabel}
-            bookingReason={bookingReason}
-            bookingDisabled={bookingDisabled}
             participantCount={availabilityReady ? participantCount : null}
+            attendees={attendeePreview}
+            attendeesVisible={event.attendee_list_visibility !== "host_only" || isCreator || !!participation}
             capacity={capacity}
             isFull={isFull}
             spotsLeft={spotsLeft}
             showScarcity={showScarcity}
             participation={participation}
             joining={joining}
-            onBook={handleJoinOrSignup}
             onShare={handleShare}
             onShowGuestPass={() => setShowGuestPass(true)}
             onCancelRsvp={handleJoin}
+            onOpenCalendar={() => {
+              calendarReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+              setShowCalendar(true);
+            }}
             onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
           />
 
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
             <main className="min-w-0 space-y-6">
               {event.event_mode && event.event_mode !== 'irl' && !isPast && !isCancelled && (
                 <JoinOnlineCard
@@ -599,37 +652,34 @@ const EventPage = () => {
                 />
               )}
 
-              <Card id="about">
-                <CardContent className="p-5 sm:p-7">
-                  <h2 className="text-xl font-semibold">About</h2>
-                  {event.description ? (
-                    <>
-                      <p className={`mt-3 whitespace-pre-wrap text-muted-foreground ${!descExpanded && event.description.length > 640 ? "line-clamp-8" : ""}`}>
-                        {event.description}
-                      </p>
-                      {event.description.length > 640 && (
-                        <button
-                          type="button"
-                          onClick={() => setDescExpanded((value) => !value)}
-                          className="mt-3 text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          {descExpanded ? "Show less" : "Read more"}
-                        </button>
-                      )}
-                    </>
-                  ) : <p className="mt-3 text-muted-foreground">The host hasn't added an event description yet.</p>}
-                </CardContent>
-              </Card>
+              <EventAboutSection description={event.description} />
+
+              <EventCalendarWorkspace
+                event={{
+                  ...event,
+                  creator_name: creator?.full_name || "Event host",
+                  participant_count: availabilityReady ? participantCount : 0,
+                  created_by: event.created_by,
+                }}
+                userId={user?.id || null}
+                participation={participation}
+                bookingDisabled={bookingDisabled}
+                bookingReason={bookingReason}
+                calendarOpen={showCalendar}
+                onCalendarOpenChange={setShowCalendar}
+                returnFocusRef={calendarReturnFocus}
+                onBook={handleJoinOrSignup}
+              />
 
               <Card id="program">
-                <CardContent className="p-5 sm:p-7">
+                <CardContent className="p-4 md:p-6">
                   <h2 className="text-xl font-semibold">Line-up &amp; program</h2>
                   <p className="mt-3 text-muted-foreground">No line-up or program details are listed for this event.</p>
                 </CardContent>
               </Card>
 
               <Card id="venue">
-                <CardContent className="p-5 sm:p-7">
+                <CardContent className="p-4 md:p-6">
                   <h2 className="text-xl font-semibold">Venue</h2>
                   {event.event_mode && event.event_mode !== "irl" ? (
                     <p className="mt-3 text-muted-foreground">Online event{event.online_format ? ` · ${event.online_format}` : ""}.</p>
@@ -659,7 +709,7 @@ const EventPage = () => {
               </section>
 
               <Card id="policies">
-                <CardContent className="p-5 sm:p-7">
+                <CardContent className="p-4 md:p-6">
                   <h2 className="text-xl font-semibold">Policies</h2>
                   <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
                     <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
@@ -671,7 +721,7 @@ const EventPage = () => {
               </Card>
 
               <Card id="faq">
-                <CardContent className="p-5 sm:p-7">
+                <CardContent className="p-4 md:p-6">
                   <h2 className="text-xl font-semibold">FAQ</h2>
                   <div className="mt-4 space-y-4">
                     <div>
@@ -731,7 +781,6 @@ const EventPage = () => {
                   onBook={handleJoinOrSignup}
                 />
                 {hasExternalTicket && <p className="mt-3 text-xs text-muted-foreground">Tickets and payment are handled by the external provider.</p>}
-                {isCreator && <Button variant="outline" className="mt-4 w-full" onClick={() => setShowShareKit(true)}>Share with your network</Button>}
               </div>
             </aside>
           </div>
@@ -801,7 +850,22 @@ const EventPage = () => {
             venueAddress={event.venue_address}
             onRsvpComplete={() => {
               setParticipation('going');
+              setSuccessSequence((sequence) => sequence + 1);
               refreshParticipantCount(event.id);
+              refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || !!user || isCreator);
+            }}
+          />
+
+          <EventRsvpSuccessDialog
+            successSequence={successSequence}
+            event={{
+              id: event.id,
+              title: event.title,
+              description: event.description,
+              start_time: event.start_time,
+              end_time: event.end_time,
+              venue_name: event.venue_name,
+              venue_address: event.venue_address,
             }}
           />
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/components/brand/KretoScene", () => ({
@@ -34,7 +34,7 @@ function CalendarHarness({ onSelectEvent }: { onSelectEvent: (event: EventItem) 
       onMonthChange={setMonth}
       onSelectDay={setSelectedDay}
       onSelectEvent={onSelectEvent}
-      renderEventCard={(event, onClick) => <EventCard event={event} onClick={onClick} />}
+      renderEventCard={(calendarEvent, onClick) => <EventCard key={calendarEvent.id} event={calendarEvent} onClick={onClick} />}
     />
   );
 }
@@ -98,6 +98,20 @@ describe("event cards and calendar", () => {
     expect(selected.getFullYear()).toBe(2099);
     expect(selected.getMonth()).toBe(5);
     expect(selected.getDate()).toBe(1);
+  });
+
+  it("uses a single roving tab stop and moves it with arrow keys", async () => {
+    render(<CalendarHarness onSelectEvent={() => {}} />);
+
+    const mayFirst = screen.getByRole("button", { name: /Friday, May 1, no events/i });
+    const maySecond = screen.getByRole("button", { name: /Saturday, May 2, no events/i });
+    expect(mayFirst).toHaveAttribute("tabindex", "0");
+    expect(maySecond).toHaveAttribute("tabindex", "-1");
+    expect(screen.getByText("May 2099")).toHaveAttribute("aria-live", "polite");
+
+    fireEvent.keyDown(mayFirst, { key: "ArrowRight" });
+    await waitFor(() => expect(maySecond).toHaveFocus());
+    expect(maySecond).toHaveAttribute("tabindex", "0");
   });
 });
 

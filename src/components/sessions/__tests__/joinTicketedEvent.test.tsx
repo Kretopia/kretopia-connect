@@ -129,6 +129,17 @@ describe("SessionDetailDialog: joining", () => {
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
+  it("ignores duplicate clicks while the server is resolving the booking", async () => {
+    mocks.rpc.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve({ data: "joined", error: null }), 30)));
+    open({ is_ticketed: false });
+    const joinButton = await screen.findByRole("button", { name: /Join Event/ });
+    fireEvent.click(joinButton);
+    fireEvent.click(joinButton);
+
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalled());
+  });
+
   it("does not confirm a seat when the server rejects a competing RSVP at capacity", async () => {
     mocks.rpc.mockResolvedValue({ data: "full_no_waitlist", error: null });
     open({ is_ticketed: false, max_participants: 2, participant_count: 1 });
