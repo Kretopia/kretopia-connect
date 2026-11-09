@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
-  Sparkles, ArrowRight, Check, Share2, Ticket, ExternalLink, Pencil, XCircle, ScanLine,
+  Sparkles, Check, Share2, ExternalLink, Pencil, XCircle, ScanLine,
   MoreVertical, Crown, Ban, CheckCircle, Download,
   X, ChevronDown
 } from "lucide-react";
-import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
@@ -25,16 +25,19 @@ import { EventCheckInDialog } from "@/components/sessions/EventCheckInDialog";
 import { EventCohosts } from "@/components/sessions/EventCohosts";
 import { EventRecapButton } from "@/components/sessions/EventRecapButton";
 import { EventHeroCard } from "@/components/sessions/EventHeroCard";
+import { EventBookingActions } from "@/components/sessions/EventBookingActions";
+import { EventHostCard } from "@/components/sessions/EventHostCard";
 import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
-import { TicketPurchaseDialog } from "@/components/meetup/TicketPurchaseDialog";
 import { GuestRsvpDialog } from "@/components/sessions/GuestRsvpDialog";
 import { GuestPassDialog } from "@/components/sessions/GuestPassDialog";
 import { EventPhotoWall } from "@/components/sessions/EventPhotoWall";
 import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
-import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/lib/eventActions";
+import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl, openDirections } from "@/lib/eventActions";
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
+import { getEventCountdown } from "@/lib/eventCountdown";
+import { getEventBookingLabel, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
 
 const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -46,10 +49,14 @@ const EventPage = () => {
   const [participantCount, setParticipantCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [availabilityReady, setAvailabilityReady] = useState(false);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+  const [eventLoadError, setEventLoadError] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
   const [participation, setParticipation] = useState<string | null>(null);
   const [showShareKit, setShowShareKit] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [showGuestRsvp, setShowGuestRsvp] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
@@ -57,13 +64,16 @@ const EventPage = () => {
   const [showRecap, setShowRecap] = useState(false);
   const [showGuestPass, setShowGuestPass] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => Date.now());
+  const joinInFlight = useRef(false);
 
-  // Tick every second for live countdown
+  const countdown = useMemo(() => getEventCountdown(event?.start_time, now), [event?.start_time, now]);
+
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000);
+    if (!event?.start_time) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
     return () => clearInterval(interval);
-  }, []);
+  }, [event?.start_time]);
 
   useEffect(() => {
     // Wait for auth to resolve before the first fetch -- otherwise this runs
@@ -104,18 +114,47 @@ const EventPage = () => {
     }
   }, [eventId]);
 
+  const refreshParticipantCount = async (id: string) => {
+    setAvailabilityLoading(true);
+    try {
+      const { count, error } = await supabase
+        .from('jam_participants')
+        .select('id', { count: 'exact', head: true })
+        .eq('jam_id', id)
+        .eq('status', 'going');
+      if (error) throw error;
+      setParticipantCount(count || 0);
+      setAvailabilityReady(true);
+      setAvailabilityError(null);
+      return true;
+    } catch (error) {
+      setAvailabilityReady(false);
+      setAvailabilityError(error instanceof Error ? error.message : "Availability could not be loaded.");
+      return false;
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
   const fetchEvent = async () => {
     if (!eventId) return;
     setLoading(true);
+    setEventLoadError(null);
+    setAvailabilityReady(false);
     try {
       const { data: eventData, error } = await supabase
         .from('creative_jams').select('*').eq('id', eventId).eq('is_public', true).single();
-      if (error || !eventData) { setEvent(null); setLoading(false); return; }
+      if (error || !eventData) {
+        setEvent(null);
+        setEventLoadError(error?.message || "This event may have been removed or is no longer available.");
+        setLoading(false);
+        return;
+      }
       setEvent(eventData);
 
       const { data: profileData } = await supabase
         .from('public_profiles_safe')
-        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level')
+        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level, avg_response_hours')
         .eq('user_id', eventData.created_by)
         .single();
 
@@ -136,13 +175,7 @@ const EventPage = () => {
       setCreator({ ...profileData, username: hostUsername?.username, hostedCount: hostedCount || 0 });
 
       // Public availability uses a count only; attendee identities stay private.
-      const { count, error: countError } = await supabase
-        .from('jam_participants')
-        .select('id', { count: 'exact', head: true })
-        .eq('jam_id', eventId)
-        .eq('status', 'going');
-      if (countError) throw countError;
-      setParticipantCount(count || 0);
+      await refreshParticipantCount(eventId);
 
       if (user) {
         const { data: part } = await supabase
@@ -156,34 +189,38 @@ const EventPage = () => {
       }
     } catch (err) {
       console.error('Error fetching event:', err);
+      setEventLoadError(err instanceof Error ? err.message : "The event couldn't be loaded.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleJoinOrSignup = () => {
-    // External ticketing → redirect
+  const handleJoinOrSignup = async () => {
+    if (!event || !availabilityReady || availabilityLoading || bookingDisabled) return;
     if (event?.external_ticket_url) {
-      window.open(event.external_ticket_url, '_blank');
+      window.open(event.external_ticket_url, '_blank', 'noopener,noreferrer');
       return;
     }
-    // Paid ticketed event → ticket dialog (Stripe collects email)
-    if (event?.is_ticketed) {
-      setShowTicketDialog(true);
+    if (bookingState === "waitlist") {
+      await handleJoin();
       return;
     }
-    // Host requires an account: send guest to /auth and bring them back here
+    if (isAuthenticated) {
+      await handleJoin();
+      return;
+    }
     if (event?.require_account_for_rsvp && !user) {
       navigate(buildEventAuthUrl(event.id));
       return;
     }
-    // Free event: frictionless inline RSVP (works for guests AND logged-in users)
     setShowGuestRsvp(true);
   };
 
   const handleJoin = async () => {
-    if (!user || !event || joining) return;
+    if (!user || !event || joinInFlight.current || (!availabilityReady && !participation) || (bookingDisabled && !participation)) return;
+    joinInFlight.current = true;
     setJoining(true);
+    setBookingError(null);
     try {
       if (participation) {
         const { data: result, error } = await supabase.rpc('cancel_event_rsvp', {
@@ -192,7 +229,7 @@ const EventPage = () => {
         if (error) throw error;
         if (result === 'not_going') throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
-        if (participation === 'going') setParticipantCount(prev => Math.max(0, prev - 1));
+        await refreshParticipantCount(event.id);
         toast({ title: "RSVP cancelled", description: "Your spot has been released." });
       } else {
         // Capture promoter/host attribution from ?ref= query
@@ -205,16 +242,18 @@ const EventPage = () => {
         if (error) throw error;
 
         if (result === 'waitlisted') {
+          setParticipation('waitlisted');
           toast({ title: "You're on the waitlist", description: "We'll notify you the moment a spot opens." });
         } else if (result === 'full_no_waitlist') {
+          await refreshParticipantCount(event.id);
           toast({ title: "Event is full", description: "The host hasn't enabled a waitlist for this one.", variant: "destructive" });
         } else if (result === 'already') {
           setParticipation('going');
+          await refreshParticipantCount(event.id);
           toast({ title: "Already going", description: "You're already on the guest list." });
         } else if (result === 'joined') {
-          // joined
           setParticipation('going');
-          setParticipantCount(prev => prev + 1);
+          await refreshParticipantCount(event.id);
           toast({ title: "You're in!", description: "You've joined this event" });
 
           // Look up the new participant row to send confirmation email
@@ -242,8 +281,11 @@ const EventPage = () => {
       }
     } catch (err) {
       console.error('RSVP error:', err);
-      toast({ title: "Error", description: "Failed to update RSVP", variant: "destructive" });
+      const message = err instanceof Error ? err.message : "Failed to update RSVP.";
+      setBookingError(message);
+      toast({ title: "Error", description: message, variant: "destructive" });
     } finally {
+      joinInFlight.current = false;
       setJoining(false);
     }
   };
@@ -255,7 +297,7 @@ const EventPage = () => {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <KretopiaSpinner className="h-8 w-8 text-primary" />
+        <KretopiaLoader />
       </div>
     );
   }
@@ -266,18 +308,24 @@ const EventPage = () => {
         <Card className="max-w-md w-full">
           <CardContent className="py-12 text-center">
             <Sparkles className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <h2 className="text-xl font-bold mb-2">Event not found</h2>
-            <p className="text-muted-foreground mb-6">This event may have been removed or is no longer available.</p>
-            <Button onClick={() => navigate('/')}>Go Home</Button>
+            <h2 className="text-xl font-bold mb-2">{eventLoadError ? "Event unavailable" : "Event not found"}</h2>
+            <p className="text-muted-foreground mb-6">{eventLoadError || "This event may have been removed or is no longer available."}</p>
+            <div className="flex justify-center gap-2">
+              {eventLoadError && <Button variant="outline" onClick={fetchEvent}>Try again</Button>}
+              <Button onClick={() => navigate('/')}>Go Home</Button>
+            </div>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  const startDate = new Date(event.start_time);
-  const isPast = startDate < new Date();
-  const isFull = participantCount >= (event.max_participants || 999);
+  const startTime = Date.parse(event.start_time);
+  const endTime = Date.parse(event.end_time || event.start_time);
+  const eventTimeValid = Number.isFinite(startTime) && Number.isFinite(endTime);
+  const isPast = eventTimeValid && endTime <= now;
+  const capacity = Number(event.max_participants) > 0 ? Number(event.max_participants) : 0;
+  const isFull = availabilityReady && capacity > 0 && participantCount >= capacity;
   const isCreator = user?.id === event.created_by;
   const isAuthenticated = !!user;
   const isTicketed = event.is_ticketed && event.ticket_price > 0;
@@ -288,14 +336,28 @@ const EventPage = () => {
   const isCancelled = event.status === 'cancelled';
   const isCompleted = event.status === 'completed';
   const hasExternalTicket = !!event.external_ticket_url;
+  const waitlistEnabled = event.waitlist_enabled === true;
+  const bookingState = getEventBookingState({
+    loading: availabilityLoading,
+    availabilityReady: availabilityReady && eventTimeValid,
+    cancelled: isCancelled,
+    ended: isPast || isCompleted,
+    hosting: isCreator,
+    participation,
+    full: isFull,
+    waitlistEnabled,
+    authenticated: isAuthenticated,
+    nativePaid: isTicketed && !hasExternalTicket,
+  });
+  const bookingDisabled = !["available", "waitlist"].includes(bookingState);
+  const bookingLabel = getEventBookingLabel(bookingState);
+  const bookingReason = bookingError || getEventBookingReason(bookingState);
+  const cityLabel = event.event_mode && event.event_mode !== "irl"
+    ? "Online"
+    : event.venue_name || null;
 
-  // Scarcity: capacity > 0, <30% remaining, not full
-  const capacity = event.max_participants || 0;
-  const spotsLeft = capacity > 0 ? capacity - participantCount : null;
+  const spotsLeft = availabilityReady && capacity > 0 ? capacity - participantCount : null;
   const showScarcity = capacity > 0 && spotsLeft !== null && spotsLeft > 0 && spotsLeft / capacity < 0.3;
-
-
-
 
   return (
     <>
@@ -339,8 +401,8 @@ const EventPage = () => {
         </script>
       </Helmet>
       
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-        <div className="max-w-2xl mx-auto px-3 sm:px-4 pt-4 pb-24 relative z-10">
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-7xl px-4 pb-32 pt-6 sm:pb-16">
 
           {/* RSVP success banner (after guest quick-RSVP) */}
           {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rsvp") === "confirmed" && (
@@ -494,170 +556,194 @@ const EventPage = () => {
             isPast={isPast}
             isCancelled={isCancelled}
             isCompleted={isCompleted}
-            now={now}
-            participantCount={participantCount}
+            countdown={countdown}
+            cityLabel={cityLabel}
+            priceLabel={ticketPriceLabel}
+            bookingLabel={bookingLabel}
+            bookingReason={bookingReason}
+            bookingDisabled={bookingDisabled}
+            participantCount={availabilityReady ? participantCount : null}
             capacity={capacity}
             isFull={isFull}
             spotsLeft={spotsLeft}
             showScarcity={showScarcity}
             participation={participation}
             joining={joining}
+            onBook={handleJoinOrSignup}
             onShare={handleShare}
             onShowGuestPass={() => setShowGuestPass(true)}
             onCancelRsvp={handleJoin}
             onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
           />
 
-          {/* Online room (only for online/hybrid events) */}
-          {event.event_mode && event.event_mode !== 'irl' && !isPast && !isCancelled && (
-            <JoinOnlineCard
-              eventId={event.id}
-              eventTitle={event.title}
-              startTime={event.start_time}
-              eventMode={event.event_mode}
-              onlineFormat={event.online_format}
-              onlineMaxAttendees={event.online_max_attendees}
-              watchPartyVideoUrl={event.watch_party_video_url}
-              recordingEnabled={!!event.recording_enabled}
-              videoRoomStartedAt={event.video_room_started_at}
-              hasAccess={isCreator || !!participation || (isTicketed && !!participation)}
-              needsRsvp={!participation && !isTicketed}
-              isHost={isCreator}
-            />
-          )}
-
-          {/* Ticket Banner (for ticketed events) */}
-          {isTicketed && !isPast && !isCancelled && (
-            <Card className="mb-6 border-primary/30 bg-primary/5 overflow-hidden">
-              <CardContent className="p-5 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Ticket className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold">{ticketPriceLabel}</p>
-                    <p className="text-sm text-muted-foreground">per ticket</p>
-                  </div>
-                </div>
-                {participation ? (
-                  <Badge className="bg-green-500/10 text-green-600 border-green-500/20 py-2 px-4">
-                    <Check className="h-4 w-4 mr-1.5" /> Ticket Secured
-                  </Badge>
-                ) : (
-                  <Button variant={isFull ? "outline" : "gradient"} onClick={handleJoinOrSignup} disabled={joining || isFull}>
-                    {joining ? <KretopiaSpinner className="h-4 w-4" /> : (
-                      <>
-                        {!isAuthenticated ? "Sign Up & Get Ticket" : isFull ? "Sold Out" : hasExternalTicket ? (
-                          <><ExternalLink className="h-4 w-4 mr-1.5" /> Get Ticket</>
-                        ) : "Get Ticket"}
-                      </>
-                    )}
-                  </Button>
-                )}
-              </CardContent>
-              {hasExternalTicket && (
-                <div className="px-5 pb-3">
-                  <p className="text-xs text-muted-foreground">Tickets via external platform</p>
-                </div>
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <main className="min-w-0 space-y-6">
+              {event.event_mode && event.event_mode !== 'irl' && !isPast && !isCancelled && (
+                <JoinOnlineCard
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  startTime={event.start_time}
+                  eventMode={event.event_mode}
+                  onlineFormat={event.online_format}
+                  onlineMaxAttendees={event.online_max_attendees}
+                  watchPartyVideoUrl={event.watch_party_video_url}
+                  recordingEnabled={!!event.recording_enabled}
+                  videoRoomStartedAt={event.video_room_started_at}
+                  hasAccess={isCreator || !!participation || (isTicketed && !!participation)}
+                  needsRsvp={!participation && !isTicketed}
+                  isHost={isCreator}
+                />
               )}
-            </Card>
-          )}
 
-          {/* Description */}
-          {event.description && (
-            <Card className="mb-6">
-              <CardContent className="p-5">
-                <h3 className="font-semibold mb-2">The vibe</h3>
-                {/* Open to everyone, signed in or not: people read what the event is, then decide to
-                    save a seat. Only the RSVP itself may ask for an account (see handleJoinOrSignup). */}
-                <div>
-                  <p
-                    className={`text-muted-foreground whitespace-pre-wrap ${
-                      !descExpanded && event.description.length > 320 ? "line-clamp-6" : ""
-                    }`}
-                  >
-                    {event.description}
-                  </p>
-                  {event.description.length > 320 && (
-                    <button
-                      type="button"
-                      onClick={() => setDescExpanded((v) => !v)}
-                      className="mt-2 flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                    >
-                      {descExpanded ? "Show less" : "Read more"}
-                      <ChevronDown className={`h-3.5 w-3.5 transition-transform ${descExpanded ? "rotate-180" : ""}`} />
-                    </button>
+              <Card id="about">
+                <CardContent className="p-5 sm:p-7">
+                  <h2 className="text-xl font-semibold">About</h2>
+                  {event.description ? (
+                    <>
+                      <p className={`mt-3 whitespace-pre-wrap text-muted-foreground ${!descExpanded && event.description.length > 640 ? "line-clamp-8" : ""}`}>
+                        {event.description}
+                      </p>
+                      {event.description.length > 640 && (
+                        <button
+                          type="button"
+                          onClick={() => setDescExpanded((value) => !value)}
+                          className="mt-3 text-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {descExpanded ? "Show less" : "Read more"}
+                        </button>
+                      )}
+                    </>
+                  ) : <p className="mt-3 text-muted-foreground">The host hasn't added an event description yet.</p>}
+                </CardContent>
+              </Card>
+
+              <Card id="program">
+                <CardContent className="p-5 sm:p-7">
+                  <h2 className="text-xl font-semibold">Line-up &amp; program</h2>
+                  <p className="mt-3 text-muted-foreground">No line-up or program details are listed for this event.</p>
+                </CardContent>
+              </Card>
+
+              <Card id="venue">
+                <CardContent className="p-5 sm:p-7">
+                  <h2 className="text-xl font-semibold">Venue</h2>
+                  {event.event_mode && event.event_mode !== "irl" ? (
+                    <p className="mt-3 text-muted-foreground">Online event{event.online_format ? ` · ${event.online_format}` : ""}.</p>
+                  ) : (
+                    <>
+                      <p className="mt-3 font-medium">{event.venue_name || "Location to be announced"}</p>
+                      {isAuthenticated && event.venue_address && <p className="mt-1 text-sm text-muted-foreground">{event.venue_address}</p>}
+                      {!isAuthenticated && event.venue_address && <p className="mt-1 text-sm text-muted-foreground">Sign in to see the full address.</p>}
+                      {isAuthenticated && (event.venue_address || event.venue_name) && (
+                        <Button variant="outline" className="mt-4" onClick={() => openDirections(event.venue_address, event.venue_name)}>
+                          <ExternalLink className="mr-2 h-4 w-4" aria-hidden /> Open map
+                        </Button>
+                      )}
+                    </>
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                </CardContent>
+              </Card>
 
-          {/* Component 2 — the crew: who's going, group chat, event chat, comments,
-              and (post-event) the bridge into a standing Circle. */}
-          <EventCommunityHub
-            eventId={event.id}
-            eventTitle={event.title}
-            eventCategory={event.category}
-            eventCoverImageUrl={event.cover_image_url}
-            hostId={event.created_by}
-            isCreator={isCreator}
-            isAuthenticated={isAuthenticated}
-            currentUserId={user?.id || null}
-            isParticipant={!!participation}
-            participantCount={participantCount}
-            attendeeListVisibility={event.attendee_list_visibility}
-            guestMatchingEnabled={event.guest_matching_enabled !== false}
-            isPast={isPast}
-            isCompleted={isCompleted}
-            groupChatEnabled={!!event.group_chat_enabled}
-            groupChatRoomId={event.group_chat_room_id || null}
-            onGroupChatChange={({ enabled, roomId }) => setEvent((prev: any) => prev ? { ...prev, group_chat_enabled: enabled, group_chat_room_id: roomId } : prev)}
-            circleId={event.circle_id || null}
-            onCircleLinked={fetchEvent}
-          />
+              <section id="host" aria-labelledby="event-host-heading">
+                <h2 id="event-host-heading" className="sr-only">Host</h2>
+                <EventHostCard
+                  host={creator}
+                  isAuthenticated={isAuthenticated}
+                  onOpenPassport={(username) => navigate(`/u/${username}`)}
+                  onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+                />
+              </section>
 
-          {/* Photo Wall — visible during/after event for attendees */}
-          {(isPast || isCompleted) && event.photo_wall_enabled !== false && (
-            <EventPhotoWall
-              eventId={event.id}
-              isHost={isCreator}
-              canUpload={isCreator || !!participation}
+              <Card id="policies">
+                <CardContent className="p-5 sm:p-7">
+                  <h2 className="text-xl font-semibold">Policies</h2>
+                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+                    <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
+                    <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
+                    <li>{isTicketed && !hasExternalTicket ? "Online payment booking is unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
+                  </ul>
+                  {event.status_note && <p className="mt-4 text-sm text-muted-foreground">{event.status_note}</p>}
+                </CardContent>
+              </Card>
+
+              <Card id="faq">
+                <CardContent className="p-5 sm:p-7">
+                  <h2 className="text-xl font-semibold">FAQ</h2>
+                  <div className="mt-4 space-y-4">
+                    <div>
+                      <h3 className="font-medium">How do I book?</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">Use Book to RSVP. Your place is shown only after the server confirms it.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Can I cancel?</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">If you're going, use Cancel RSVP on this page. The cancellation is confirmed by the event service.</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium">Where do I find the address?</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{event.venue_address && !isAuthenticated ? "Sign in to view the full address." : "Venue details are shown in the Venue section."}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {availabilityReady && (
+                <EventCommunityHub
+                  eventId={event.id}
+                  eventTitle={event.title}
+                  eventCategory={event.category}
+                  eventCoverImageUrl={event.cover_image_url}
+                  hostId={event.created_by}
+                  isCreator={isCreator}
+                  isAuthenticated={isAuthenticated}
+                  currentUserId={user?.id || null}
+                  isParticipant={!!participation}
+                  participantCount={participantCount}
+                  attendeeListVisibility={event.attendee_list_visibility}
+                  guestMatchingEnabled={event.guest_matching_enabled !== false}
+                  isPast={isPast}
+                  isCompleted={isCompleted}
+                  groupChatEnabled={!!event.group_chat_enabled}
+                  groupChatRoomId={event.group_chat_room_id || null}
+                  onGroupChatChange={({ enabled, roomId }) => setEvent((prev: any) => prev ? { ...prev, group_chat_enabled: enabled, group_chat_room_id: roomId } : prev)}
+                  circleId={event.circle_id || null}
+                  onCircleLinked={fetchEvent}
+                />
+              )}
+
+              {(isPast || isCompleted) && event.photo_wall_enabled !== false && (
+                <EventPhotoWall eventId={event.id} isHost={isCreator} canUpload={isCreator || !!participation} />
+              )}
+            </main>
+
+            <aside className="hidden lg:block">
+              <div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[0_20px_70px_-45px_hsl(var(--primary)/0.28)]">
+                <EventBookingActions
+                  label={bookingLabel}
+                  priceLabel={ticketPriceLabel}
+                  goingLabel={availabilityReady ? `${participantCount} going${capacity ? ` · ${capacity} places` : ""}` : "Attendance count unavailable"}
+                  reason={bookingReason}
+                  disabled={bookingDisabled}
+                  joining={joining}
+                  onBook={handleJoinOrSignup}
+                />
+                {hasExternalTicket && <p className="mt-3 text-xs text-muted-foreground">Tickets and payment are handled by the external provider.</p>}
+                {isCreator && <Button variant="outline" className="mt-4 w-full" onClick={() => setShowShareKit(true)}>Share with your network</Button>}
+              </div>
+            </aside>
+          </div>
+
+          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+            <EventBookingActions
+              compact
+              label={bookingLabel}
+              priceLabel={ticketPriceLabel}
+              goingLabel={availabilityReady ? `${participantCount} going` : "Count unavailable"}
+              reason={bookingReason}
+              disabled={bookingDisabled}
+              joining={joining}
+              onBook={handleJoinOrSignup}
             />
-          )}
-
-          {/* CTA */}
-          {!isCancelled && (
-            <div className="space-y-3">
-              {isPast || isCompleted ? (
-                <Badge variant="outline" className="w-full justify-center py-3 text-base">This event has wrapped</Badge>
-              ) : isCreator ? (
-                <div className="space-y-3">
-                  <Badge variant="secondary" className="w-full justify-center py-3 text-base">You're hosting</Badge>
-                  <Button variant="outline" className="w-full" onClick={() => setShowShareKit(true)}>
-                    <Share2 className="h-4 w-4 mr-2" /> Share with your network
-                  </Button>
-                </div>
-              ) : participation ? null : !isTicketed ? (
-                <Button variant={isFull ? "outline" : "gradient"} className="w-full py-6 text-lg" onClick={handleJoinOrSignup} disabled={joining || isFull}>
-                  {joining ? <KretopiaSpinner className="h-5 w-5" /> : !isAuthenticated ? (
-                    <>Save my spot <ArrowRight className="h-5 w-5 ml-2" /></>
-                  ) : isFull ? "Sold Out" : (
-                    <>Save my spot</>
-                  )}
-                </Button>
-              ) : null}
-            </div>
-          )}
-
-          {/* Powered by Kretopia */}
-          {!isAuthenticated && (
-            <div className="text-center mt-8">
-              <p className="text-xs text-muted-foreground">
-                Powered by <span className="font-semibold text-primary">Kretopia</span> — The Creative Community Platform
-              </p>
-            </div>
-          )}
+          </div>
 
           {isAuthenticated && (
             <EventShareKit
@@ -700,13 +786,6 @@ const EventPage = () => {
             }
           />
 
-          <TicketPurchaseDialog
-            open={showTicketDialog}
-            onOpenChange={setShowTicketDialog}
-            eventId={event.id}
-            eventTitle={event.title}
-          />
-
           <GuestRsvpDialog
             open={showGuestRsvp}
             onOpenChange={setShowGuestRsvp}
@@ -718,7 +797,7 @@ const EventPage = () => {
             venueAddress={event.venue_address}
             onRsvpComplete={() => {
               setParticipation('going');
-              setParticipantCount(prev => prev + 1);
+              refreshParticipantCount(event.id);
             }}
           />
 
