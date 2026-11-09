@@ -402,7 +402,6 @@ export function EventHeroCard({
             )}
           </div>
         )}
-      </div>
     </div>
   );
 }

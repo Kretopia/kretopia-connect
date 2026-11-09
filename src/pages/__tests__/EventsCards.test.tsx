@@ -15,7 +15,7 @@ const event: EventItem = {
   description: "An open studio with local artists.",
   category: "workshop",
   venue_name: "Studio 8",
-  start_time: new Date(2026, 4, 18, 18).toISOString(),
+  start_time: new Date(2099, 4, 18, 18).toISOString(),
   max_participants: 12,
   participant_count: 4,
   creator_name: "Maya",
@@ -23,8 +23,8 @@ const event: EventItem = {
 };
 
 function CalendarHarness({ onSelectEvent }: { onSelectEvent: (event: EventItem) => void }) {
-  const [month, setMonth] = useState(new Date(2026, 4, 1, 12));
-  const [selectedDay, setSelectedDay] = useState(new Date(2026, 4, 1, 12));
+  const [month, setMonth] = useState(new Date(2099, 4, 1, 12));
+  const [selectedDay, setSelectedDay] = useState(new Date(2099, 4, 1, 12));
   return (
     <EventCalendar
       events={[event]}
@@ -42,7 +42,7 @@ describe("event cards and calendar", () => {
     const onClick = vi.fn();
     render(<EventCard event={event} onClick={onClick} />);
 
-    expect(screen.getByRole("button", { name: /view event & rsvp/i })).toBeEnabled();
+    expect(screen.getByRole("button", { name: /view event & rsvp: ceramic studio/i })).toBeEnabled();
     expect(screen.getByText("By Maya")).toBeInTheDocument();
     expect(screen.getByText(/Your time/)).toBeInTheDocument();
     expect(screen.getByText(/Places available/)).toBeInTheDocument();
@@ -50,7 +50,7 @@ describe("event cards and calendar", () => {
     expect(document.querySelector(".ai-scan-line")).toBeNull();
     expect(document.querySelector(".ai-ambient-breathe")).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: /view event & rsvp/i }));
+    fireEvent.click(screen.getByRole("button", { name: /view event & rsvp: ceramic studio/i }));
     expect(onClick).toHaveBeenCalledOnce();
   });
 
@@ -71,7 +71,7 @@ describe("event cards and calendar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Monday, May 18, 1 event/i }));
     expect(screen.getByRole("button", { name: /Monday, May 18, 1 event/i })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: /view event & rsvp/i }));
+    fireEvent.click(screen.getByRole("button", { name: /view event & rsvp: ceramic studio/i }));
     expect(onSelectEvent).toHaveBeenCalledWith(event);
   });
 
@@ -81,8 +81,8 @@ describe("event cards and calendar", () => {
     render(
       <EventCalendar
         events={[]}
-        month={new Date(2026, 4, 1, 12)}
-        selectedDay={new Date(2026, 4, 31, 12)}
+        month={new Date(2099, 4, 1, 12)}
+        selectedDay={new Date(2099, 4, 31, 12)}
         onMonthChange={onMonthChange}
         onSelectDay={onSelectDay}
         onSelectEvent={() => {}}
@@ -90,8 +90,11 @@ describe("event cards and calendar", () => {
     );
 
     fireEvent.keyDown(screen.getByRole("button", { name: /Sunday, May 31, no events/i }), { key: "ArrowRight" });
-    expect(onMonthChange).toHaveBeenCalledWith(new Date(2026, 5, 1));
-    expect(onSelectDay).toHaveBeenCalledWith(new Date(2026, 5, 1, 12));
+    expect(onMonthChange).toHaveBeenCalledWith(new Date(2099, 5, 1));
+    const selected = onSelectDay.mock.calls[0][0] as Date;
+    expect(selected.getFullYear()).toBe(2099);
+    expect(selected.getMonth()).toBe(5);
+    expect(selected.getDate()).toBe(1);
   });
 });
 
