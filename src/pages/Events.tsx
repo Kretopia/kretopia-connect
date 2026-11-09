@@ -15,6 +15,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { CardPill, CardShell } from "@/components/cards/CardShell";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
+import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
 import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -65,19 +66,10 @@ const QUICK_FILTERS = [
   { value: 'free', label: 'Free' },
 ];
 
-const formatEventTime = (value: string) =>
-  new Intl.DateTimeFormat(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(new Date(value));
-
 const formatEventPrice = (event: EventItem) => {
   if (!event.is_ticketed || !event.ticket_price || event.ticket_price <= 0) return "Free";
   const currency = event.ticket_currency || "USD";
+  if (!/^[A-Za-z]{3}$/.test(currency)) return "Paid event · currency unavailable";
   return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(event.ticket_price);
 };
 
@@ -109,7 +101,7 @@ export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () =>
       meta={`By ${event.creator_name}`}
       description={event.description?.trim() || null}
       tags={[
-        <CardPill key="time"><Clock className="h-3 w-3" aria-hidden />{formatEventTime(event.start_time)}</CardPill>,
+        <CardPill key="time"><Clock className="h-3 w-3" aria-hidden /><span title={`Shown in your local timezone (${eventTimeZone()})`}>Your time · {formatEventTime(event.start_time)}</span></CardPill>,
         <CardPill key="place">{isOnline || event.event_mode === "hybrid" ? <Monitor className="h-3 w-3" aria-hidden /> : <MapPin className="h-3 w-3" aria-hidden />}{place}</CardPill>,
         <CardPill key="price"><Ticket className="h-3 w-3" aria-hidden />{formatEventPrice(event)} · {booking}</CardPill>,
       ]}
