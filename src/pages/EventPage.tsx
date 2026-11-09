@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
@@ -35,10 +35,6 @@ import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
 import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/lib/eventActions";
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', IDR: 'Rp', TTD: 'TT$',
-};
-
 const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const { user, loading: authLoading } = useAuth();
@@ -47,7 +43,6 @@ const EventPage = () => {
   const [event, setEvent] = useState<any>(null);
   const [creator, setCreator] = useState<any>(null);
   const [participantCount, setParticipantCount] = useState(0);
-  const [attendeeAvatars, setAttendeeAvatars] = useState<{ avatar_url: string | null; full_name: string; role?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [participation, setParticipation] = useState<string | null>(null);
@@ -139,26 +134,14 @@ const EventPage = () => {
 
       setCreator({ ...profileData, username: hostUsername?.username, hostedCount: hostedCount || 0 });
 
-      // Get participant count and avatars
-      const { data: participants, count } = await supabase
+      // Public availability uses a count only; attendee identities stay private.
+      const { count, error: countError } = await supabase
         .from('jam_participants')
-        .select('user_id, guest_name', { count: 'exact' })
+        .select('id', { count: 'exact', head: true })
         .eq('jam_id', eventId)
         .eq('status', 'going');
+      if (countError) throw countError;
       setParticipantCount(count || 0);
-
-      // Fetch first 12 attendee avatars + roles for richer social proof
-      if (participants && participants.length > 0) {
-        const userIds = participants.map(p => p.user_id).filter(Boolean).slice(0, 12) as string[];
-        const { data: profiles } = userIds.length
-          ? await supabase.from('public_profiles_safe').select('user_id, avatar_url, full_name, role').in('user_id', userIds)
-          : { data: [] as any[] };
-        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-        setAttendeeAvatars(participants.slice(0, 12).map((p: any) => {
-          const profile = p.user_id ? profileMap.get(p.user_id) as any : null;
-          return profile || { avatar_url: null, full_name: p.guest_name || 'Guest', role: null };
-        }));
-      }
 
       if (user) {
         const { data: part } = await supabase
@@ -268,19 +251,6 @@ const EventPage = () => {
     setShowShareDialog(true);
   };
 
-  // Role breakdown for "Who's going" — top 2 roles (must run before any early return)
-  const roleBreakdown = useMemo(() => {
-    const counts: Record<string, number> = {};
-    attendeeAvatars.forEach(a => {
-      const r = a.role?.trim();
-      if (r) counts[r] = (counts[r] || 0) + 1;
-    });
-    return Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 2)
-      .map(([role, n]) => `${n} ${role.toLowerCase()}${n > 1 ? 's' : ''}`);
-  }, [attendeeAvatars]);
-
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -310,7 +280,9 @@ const EventPage = () => {
   const isCreator = user?.id === event.created_by;
   const isAuthenticated = !!user;
   const isTicketed = event.is_ticketed && event.ticket_price > 0;
-  const currencySymbol = CURRENCY_SYMBOLS[event.ticket_currency || 'USD'] || '$';
+  const ticketPriceLabel = isTicketed && event.ticket_currency && /^[A-Za-z]{3}$/.test(event.ticket_currency)
+    ? new Intl.NumberFormat(undefined, { style: "currency", currency: event.ticket_currency.toUpperCase() }).format(event.ticket_price)
+    : isTicketed ? "Paid ticket · currency not recorded" : null;
   const isCancelled = event.status === 'cancelled';
   const isCompleted = event.status === 'completed';
   const hasExternalTicket = !!event.external_ticket_url;
@@ -355,10 +327,10 @@ const EventPage = () => {
               "@type": "Person",
               "name": creator?.full_name || 'Kretopia Host'
             },
-            "offers": event.is_ticketed && event.ticket_price ? {
+            "offers": isTicketed && event.ticket_currency && /^[A-Za-z]{3}$/.test(event.ticket_currency) ? {
               "@type": "Offer",
               "price": event.ticket_price,
-              "priceCurrency": event.ticket_currency || "USD",
+              "priceCurrency": event.ticket_currency.toUpperCase(),
               "availability": isFull ? "https://schema.org/SoldOut" : "https://schema.org/InStock"
             } : undefined
           })}
@@ -528,8 +500,6 @@ const EventPage = () => {
             showScarcity={showScarcity}
             participation={participation}
             joining={joining}
-            attendeeAvatars={attendeeAvatars}
-            roleBreakdown={roleBreakdown}
             onShare={handleShare}
             onShowGuestPass={() => setShowGuestPass(true)}
             onCancelRsvp={handleJoin}
@@ -563,7 +533,7 @@ const EventPage = () => {
                     <Ticket className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold">{currencySymbol}{event.ticket_price.toFixed(2)}</p>
+                    <p className="text-xl font-bold">{ticketPriceLabel}</p>
                     <p className="text-sm text-muted-foreground">per ticket</p>
                   </div>
                 </div>

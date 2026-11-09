@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { HoloCard } from "@/components/passport/HoloCard";
+import { KretoScene } from "@/components/brand/KretoScene";
 import {
   Calendar, MapPin, Users, Share2, Ticket, CheckCircle, CalendarPlus,
   Navigation, Lock, ImagePlus, X as XIcon, XCircle,
@@ -16,9 +16,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { format } from "date-fns";
 import { downloadIcs, openDirections } from "@/lib/eventActions";
 import { APP_URL } from "@/lib/constants";
+import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
 
 const CATEGORY_LABELS: Record<string, string> = {
   music: 'Music', film: 'Film', photo: 'Photo', art: 'Art',
@@ -39,8 +39,6 @@ interface Creator {
   hostedCount?: number;
 }
 
-interface AttendeeAvatar { avatar_url: string | null; full_name: string; role?: string | null }
-
 interface EventHeroCardProps {
   event: any;
   creator: Creator | null;
@@ -57,8 +55,6 @@ interface EventHeroCardProps {
   showScarcity: boolean;
   participation: string | null;
   joining: boolean;
-  attendeeAvatars: AttendeeAvatar[];
-  roleBreakdown: string[];
   onShare: () => void;
   onShowGuestPass: () => void;
   onCancelRsvp: () => void;
@@ -66,14 +62,14 @@ interface EventHeroCardProps {
 }
 
 /**
- * Component 1 — the Holo Card. Everything about the event itself lives here:
+ * Event hero. Everything about the event itself lives here:
  * cover, title, host, live countdown, the "who's going" headcount, the host's
  * gallery, and the when/where/capacity detail rows. One card, one glance.
  */
 export function EventHeroCard({
   event, creator, isCreator, isAuthenticated, isPast, isCancelled, isCompleted,
   now, participantCount, capacity, isFull, spotsLeft, showScarcity,
-  participation, joining, attendeeAvatars, roleBreakdown,
+  participation, joining,
   onShare, onShowGuestPass, onCancelRsvp, onGalleryChange,
 }: EventHeroCardProps) {
   const navigate = useNavigate();
@@ -135,8 +131,7 @@ export function EventHeroCard({
   };
 
   return (
-    <HoloCard className="mb-4 sm:mb-6">
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card text-center px-4 pb-5 sm:px-6 sm:pb-7">
+    <div className="mb-4 overflow-hidden rounded-2xl border border-border bg-card text-center px-4 pb-5 shadow-sm sm:mb-6 sm:px-6 sm:pb-7">
         {event.cover_image_url && !coverImageFailed ? (
           <div className="relative -mx-4 sm:-mx-6 mb-4 h-40 sm:h-56 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]">
             <img
@@ -148,7 +143,9 @@ export function EventHeroCard({
             <div className="absolute inset-0 bg-gradient-to-t from-card via-card/10 to-transparent" />
           </div>
         ) : (
-          <div className="-mx-4 sm:-mx-6 mb-4 h-16 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)] bg-gradient-to-r from-primary/20 via-primary/10 to-accent/20" />
+          <div className="-mx-4 sm:-mx-6 mb-4 h-40 sm:h-56 w-[calc(100%+2rem)] sm:w-[calc(100%+3rem)]">
+            <KretoScene scene="soundstages" size="thumb" className="h-full w-full" />
+          </div>
         )}
 
         <Badge variant="secondary" className="mb-2 sm:mb-3 text-xs sm:text-sm">
@@ -207,7 +204,7 @@ export function EventHeroCard({
             {isImminent && (
               <>
                 <span className="text-xl text-muted-foreground">:</span>
-                <div className="text-center px-3 py-1.5 rounded-lg bg-energy/15 border border-energy/40 min-w-[56px] animate-pulse">
+                <div className="text-center px-3 py-1.5 rounded-lg bg-energy/15 border border-energy/40 min-w-[56px] motion-safe:animate-pulse">
                   <p className="text-xl sm:text-2xl font-bold text-energy tabular-nums">{String(secondsUntil).padStart(2, '0')}</p>
                   <p className="text-[10px] text-energy/80 uppercase">Sec</p>
                 </div>
@@ -225,32 +222,6 @@ export function EventHeroCard({
         )}
 
         {/* Décompte — headcount, folded straight into the hero instead of a floating strip */}
-        {attendeeAvatars.length > 0 && (
-          <div className="mb-4 flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-muted/40 border border-border/50">
-            <div className="flex -space-x-2.5">
-              {attendeeAvatars.slice(0, 6).map((a, i) => (
-                <Avatar key={i} className="h-9 w-9 border-2 border-background">
-                  <AvatarImage src={a.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                    {a.full_name?.charAt(0) || '?'}
-                  </AvatarFallback>
-                </Avatar>
-              ))}
-              {participantCount > 6 && (
-                <div className="h-9 w-9 rounded-full bg-primary/10 border-2 border-background flex items-center justify-center">
-                  <span className="text-xs font-semibold text-primary">+{participantCount - 6}</span>
-                </div>
-              )}
-            </div>
-            <div className="text-left flex-1 min-w-0">
-              <p className="text-sm font-semibold">{participantCount} {participantCount === 1 ? 'person is' : 'people are'} going</p>
-              <p className="text-xs text-muted-foreground truncate">
-                {roleBreakdown.length > 0 ? `Incl. ${roleBreakdown.join(', ')}` : 'Join the crew'}
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Quick share + pass */}
         <div className="flex items-center justify-center gap-2 flex-wrap">
           <Button variant="ghost" size="sm" onClick={onShare} className="text-muted-foreground">
@@ -305,8 +276,10 @@ export function EventHeroCard({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">When</p>
-              <p className="font-medium">{format(startDate, "EEEE, MMMM d, yyyy")}</p>
-              <p className="text-sm text-muted-foreground">{format(startDate, "h:mm a")}{event.end_time ? ` – ${format(new Date(event.end_time), "h:mm a")}` : ''}</p>
+              <p className="font-medium">Your local time · {formatEventTime(event.start_time)}</p>
+              <p className="text-sm text-muted-foreground" title={`Timezone: ${eventTimeZone()}`}>
+                {event.end_time ? `Ends · ${formatEventTime(event.end_time)}` : `Timezone · ${eventTimeZone()}`}
+              </p>
             </div>
             {!isPast && !isCancelled && (
               <Button
@@ -430,7 +403,7 @@ export function EventHeroCard({
           </div>
         )}
       </div>
-    </HoloCard>
+    </div>
   );
 }
 
