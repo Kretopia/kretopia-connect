@@ -34,6 +34,7 @@ import { EventPhotoWall } from "@/components/sessions/EventPhotoWall";
 import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
 import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/lib/eventActions";
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
+import { formatCurrencyAmount } from "@/lib/currency";
 
 const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -280,9 +281,10 @@ const EventPage = () => {
   const isCreator = user?.id === event.created_by;
   const isAuthenticated = !!user;
   const isTicketed = event.is_ticketed && event.ticket_price > 0;
-  const ticketPriceLabel = isTicketed && event.ticket_currency && /^[A-Za-z]{3}$/.test(event.ticket_currency)
-    ? new Intl.NumberFormat(undefined, { style: "currency", currency: event.ticket_currency.toUpperCase() }).format(event.ticket_price)
-    : isTicketed ? "Paid ticket · currency not recorded" : null;
+  const ticketCurrency = typeof event.ticket_currency === "string" ? event.ticket_currency.trim().toUpperCase() : "";
+  const ticketPriceLabel = isTicketed
+    ? formatCurrencyAmount(event.ticket_price, ticketCurrency) ?? "Paid ticket · currency unavailable"
+    : null;
   const isCancelled = event.status === 'cancelled';
   const isCompleted = event.status === 'completed';
   const hasExternalTicket = !!event.external_ticket_url;
@@ -327,10 +329,10 @@ const EventPage = () => {
               "@type": "Person",
               "name": creator?.full_name || 'Kretopia Host'
             },
-            "offers": isTicketed && event.ticket_currency && /^[A-Za-z]{3}$/.test(event.ticket_currency) ? {
+            "offers": isTicketed && formatCurrencyAmount(event.ticket_price, ticketCurrency) ? {
               "@type": "Offer",
               "price": event.ticket_price,
-              "priceCurrency": event.ticket_currency.toUpperCase(),
+              "priceCurrency": ticketCurrency,
               "availability": isFull ? "https://schema.org/SoldOut" : "https://schema.org/InStock"
             } : undefined
           })}
@@ -483,7 +485,7 @@ const EventPage = () => {
             </div>
           )}
           
-          {/* Component 1 — Holo Card: cover, title, host, countdown, headcount, gallery, when/where/capacity */}
+          {/* Event hero: cover, title, host, countdown, gallery, when/where/capacity */}
           <EventHeroCard
             event={event}
             creator={creator}

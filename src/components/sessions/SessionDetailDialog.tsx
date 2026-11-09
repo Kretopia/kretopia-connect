@@ -19,6 +19,7 @@ import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { eventEntry } from "@/lib/eventEntry";
+import { formatCurrencyAmount } from "@/lib/currency";
 import { SessionParticipants } from "./SessionParticipants";
 import { SessionChat } from "./SessionChat";
 import { EventShareKit } from "./EventShareKit";
@@ -199,9 +200,9 @@ export const SessionDetailDialog = ({
   const isParticipant = !!participation || isCreator;
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
   const nativePaidTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);
-  const ticketPriceLabel = session.ticket_price && session.ticket_price > 0 && session.ticket_currency && /^[A-Za-z]{3}$/.test(session.ticket_currency)
-    ? new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency.toUpperCase() }).format(session.ticket_price)
-    : "Paid ticket · currency not recorded";
+  const ticketPriceLabel = session.ticket_price && session.ticket_price > 0
+    ? formatCurrencyAmount(session.ticket_price, session.ticket_currency) ?? "Paid ticket · currency unavailable"
+    : "Ticket price unavailable";
 
   return (
     <>

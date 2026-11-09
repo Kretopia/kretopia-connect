@@ -71,11 +71,14 @@ beforeEach(() => {
 describe("SessionCard: joining", () => {
   const join = () => fireEvent.click(screen.getAllByRole("button").find((b) => /join|going|ticket|rsvp/i.test(b.textContent || "")) || screen.getAllByRole("button")[0]);
 
-  it("a ticketed event is not joined for free: no guest-list row, the event page opens instead", async () => {
+  it("native ticket bookings remain disabled until server capacity and payment confirmation are available", async () => {
     inRouter(<SessionCard session={{ ...base, is_ticketed: true, ticket_price: undefined } as any} />);
-    join();
-    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/event/ev1"));
+    expect(await screen.findByRole("button", { name: /ticket booking paused/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /ticket booking paused/i }));
+    expect(screen.getByTestId("where")).toHaveTextContent("/discover");
     expect(mocks.inserts).toHaveLength(0);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+    expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
   it("an event whose tickets are sold elsewhere opens that link, with no guest-list row", async () => {
@@ -85,11 +88,12 @@ describe("SessionCard: joining", () => {
     expect(mocks.inserts).toHaveLength(0);
   });
 
-  it("a free event is still joined in one tap", async () => {
+  it("a free event uses the authenticated capacity-checking RSVP RPC", async () => {
     inRouter(<SessionCard session={{ ...base, is_ticketed: false } as any} />);
     join();
-    await waitFor(() => expect(mocks.inserts).toHaveLength(1));
-    expect(mocks.inserts[0]).toMatchObject({ jam_id: "ev1", user_id: "me", status: "going" });
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("rsvp_to_event", { p_event_id: "ev1" }));
+    expect(mocks.inserts).toHaveLength(0);
+    expect(mocks.invoke).not.toHaveBeenCalled();
     expect(screen.getByTestId("where")).toHaveTextContent("/discover");
   });
 });

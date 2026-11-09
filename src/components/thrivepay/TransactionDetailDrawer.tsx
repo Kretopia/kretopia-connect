@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowDownRight, ArrowUpRight, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PaymentStatusTimeline } from "./PaymentStatusTimeline";
+import { formatCurrencyAmount } from "@/lib/currency";
 
 export interface TransactionDetail {
   id: string;
@@ -60,9 +61,7 @@ export function TransactionDetailDrawer({ transaction, onOpenChange }: Props) {
         <div className="py-4 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <span className="text-sm font-medium text-muted-foreground">
-              {transaction.currency && /^[A-Za-z]{3}$/.test(transaction.currency)
-                ? new Intl.NumberFormat(undefined, { style: "currency", currency: transaction.currency.toUpperCase() }).format(Math.abs(transaction.amount))
-                : "Amount not shown · currency not recorded"}
+              {formatCurrencyAmount(Math.abs(transaction.amount), transaction.currency) ?? "Amount not shown · currency not recorded"}
             </span>
             <Badge variant="outline" className={badgeCls}>
               {status.charAt(0).toUpperCase() + status.slice(1)}

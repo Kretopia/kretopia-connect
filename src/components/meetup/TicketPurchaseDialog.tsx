@@ -5,6 +5,7 @@ import { Ticket } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatCurrencyAmount } from "@/lib/currency";
 
 interface Tier {
   id: string;
@@ -117,13 +118,5 @@ function formatTierPrice(tier: Tier) {
   const price = Number(tier.price);
   if (!Number.isFinite(price) || price < 0) return "Price unavailable";
   if (price === 0) return "Free tier";
-  if (!/^[A-Za-z]{3}$/.test(tier.currency || "")) return "Paid tier · currency unavailable";
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: tier.currency.toUpperCase(),
-    }).format(price);
-  } catch {
-    return "Paid tier · currency unavailable";
-  }
+  return formatCurrencyAmount(price, tier.currency) ?? "Paid tier · currency unavailable";
 }

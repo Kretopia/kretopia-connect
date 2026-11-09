@@ -16,6 +16,7 @@ import { KretoScene } from "@/components/brand/KretoScene";
 import { CardPill, CardShell } from "@/components/cards/CardShell";
 import { addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
+import { formatCurrencyAmount } from "@/lib/currency";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
 import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -70,13 +71,7 @@ const formatEventPrice = (event: EventItem) => {
   if (!event.is_ticketed) return "Free";
   if (event.ticket_price === 0) return "Free ticket";
   if (!event.ticket_price || event.ticket_price < 0) return "Ticket options · booking paused";
-  const currency = event.ticket_currency || "";
-  if (!/^[A-Za-z]{3}$/.test(currency)) return "Paid event · currency unavailable";
-  try {
-    return new Intl.NumberFormat(undefined, { style: "currency", currency: currency.toUpperCase() }).format(event.ticket_price);
-  } catch {
-    return "Paid event · currency unavailable";
-  }
+  return formatCurrencyAmount(event.ticket_price, event.ticket_currency) ?? "Paid event · currency unavailable";
 };
 
 export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
@@ -189,6 +184,7 @@ export function EventCalendar({
                 const next = new Date(day);
                 next.setDate(next.getDate() + delta);
                 pendingFocus.current = format(next, "yyyy-MM-dd");
+                if (!isSameMonth(next, month)) onMonthChange(startOfMonth(next));
                 onSelectDay(next);
               }}
               className={`relative min-h-10 rounded-lg text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -422,8 +418,6 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
     return matchesSearch && matchesQuickFilter;
   });
 
-  const upcomingCount = events.length;
-
   return (
     <>
       {!embedded && (
@@ -445,9 +439,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                 </h1>
               )}
               <p className="text-sm text-muted-foreground">
-                {upcomingCount > 0
-                  ? `${upcomingCount} happening soon · ${events.filter(e => e.participant_count >= 5).length} trending`
-                  : "Real-life moments with the creative community"}
+                Upcoming creative gatherings
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
