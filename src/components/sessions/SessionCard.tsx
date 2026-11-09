@@ -150,9 +150,15 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
   const isPast = startDate < new Date();
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
   const ticketPrice = isTicketed && session.ticket_currency && /^[A-Za-z]{3}$/.test(session.ticket_currency)
-    ? new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency.toUpperCase() }).format(session.ticket_price ?? 0)
-    : isTicketed ? "Paid ticket · currency not recorded" : null;
-  const nativeTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);
+    ? (() => {
+        try {
+          return new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency!.toUpperCase() }).format(session.ticket_price ?? 0);
+        } catch {
+          return "Paid ticket · currency unavailable";
+        }
+      })()
+    : isTicketed ? "Paid ticket · currency unavailable" : session.is_ticketed ? "Ticket options · booking paused" : null;
+  const nativeTicketUnavailable = eventEntry(session).kind === "ticket";
 
   return (
     <Card className="hover:shadow-lg transition-all cursor-pointer group overflow-hidden" onClick={onClick}>
@@ -229,7 +235,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
           
           <div className="flex items-center gap-2">
             <Users className="h-3.5 w-3.5 text-muted-foreground" />
-            <span>{session.participant_count} / {session.max_participants} going</span>
+            <span>{session.participant_count}{session.max_participants > 0 ? ` / ${session.max_participants}` : ""} going</span>
             {isFull && <Badge variant="destructive" className="text-[10px] ml-auto py-0 px-1.5">Full</Badge>}
           </div>
         </div>

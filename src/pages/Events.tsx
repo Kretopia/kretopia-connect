@@ -67,10 +67,16 @@ const QUICK_FILTERS = [
 ];
 
 const formatEventPrice = (event: EventItem) => {
-  if (!event.is_ticketed || !event.ticket_price || event.ticket_price <= 0) return "Free";
-  const currency = event.ticket_currency || "USD";
+  if (!event.is_ticketed) return "Free";
+  if (event.ticket_price === 0) return "Free ticket";
+  if (!event.ticket_price || event.ticket_price < 0) return "Ticket options · booking paused";
+  const currency = event.ticket_currency || "";
   if (!/^[A-Za-z]{3}$/.test(currency)) return "Paid event · currency unavailable";
-  return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(event.ticket_price);
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: currency.toUpperCase() }).format(event.ticket_price);
+  } catch {
+    return "Paid event · currency unavailable";
+  }
 };
 
 export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
@@ -79,7 +85,7 @@ export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () =>
   const isFull = event.max_participants > 0 && event.participant_count >= event.max_participants;
   const isOnline = event.event_mode === "online" || event.event_type === "virtual";
   const place = isOnline ? "Online" : event.event_mode === "hybrid" ? "Hybrid" : event.venue_name || event.venue_address || "Location not listed";
-  const booking = event.my_status === "going" ? "You're going" : event.status === "cancelled" ? "Cancelled" : isPast ? "Event ended" : isFull ? "Full" : "Places available";
+  const booking = event.my_status === "going" ? "You're going" : event.status === "cancelled" ? "Cancelled" : isPast ? "Event ended" : isFull ? "Full" : event.max_participants > 0 ? "Places available" : "RSVP open";
 
   return (
     <CardShell
