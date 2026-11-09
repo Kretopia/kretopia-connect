@@ -31,6 +31,8 @@ describe("event booking state", () => {
 
   it("offers a waitlist only when the server supports it and the user is signed in", () => {
     expect(getEventBookingState({ ...available, full: true, waitlistEnabled: true, authenticated: true })).toBe("waitlist");
-    expect(getEventBookingState({ ...available, full: true, waitlistEnabled: true })).toBe("sold-out");
+    const guest = getEventBookingState({ ...available, full: true, waitlistEnabled: true });
+    expect(guest).toBe("sign-in-waitlist");
+    expect(getEventBookingReason(guest)).toContain("Sign in");
   });
 });

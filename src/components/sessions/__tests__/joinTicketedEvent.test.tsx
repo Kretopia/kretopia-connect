@@ -128,4 +128,14 @@ describe("SessionDetailDialog: joining", () => {
     expect(mocks.inserts).toHaveLength(0);
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
+
+  it("does not confirm a seat when the server rejects a competing RSVP at capacity", async () => {
+    mocks.rpc.mockResolvedValue({ data: "full_no_waitlist", error: null });
+    open({ is_ticketed: false, max_participants: 1, participant_count: 1 });
+    fireEvent.click(await screen.findByRole("button", { name: /Join Event/ }));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("rsvp_to_event", { p_event_id: "ev1" }));
+    expect(mocks.inserts).toHaveLength(0);
+    expect(mocks.email).not.toHaveBeenCalled();
+    expect(mocks.toast).toHaveBeenCalled();
+  });
 });
