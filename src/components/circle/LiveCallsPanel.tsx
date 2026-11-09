@@ -20,8 +20,6 @@ import { SoundStageRoom } from "./SoundStageRoom";
 import { StageGrid } from "./StageGrid";
 
 interface LiveCallsPanelProps {
-  /** Where "Find a Collaborator" goes: Match, the one place to discover people. */
-  onFindCollaborator?: () => void;
   /** From a shared Stage link (?join=<stage_id>) — auto-joins on mount once.
    * join-sound-stage re-validates is_live server-side regardless of how the
    * caller learned the id, so this adds no new trust surface. */
@@ -33,7 +31,7 @@ interface LiveCallsPanelProps {
  * stages, and the upcoming call sheet, all inside the same Studio-grammar
  * surface instead of a stack of independently-styled sections.
  */
-export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPanelProps) {
+export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -93,7 +91,7 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
 
   const handleJoinStage = async (stage: SoundStage) => {
     if (!user) {
-      toast({ title: "Sign in to walk on", variant: "destructive" });
+      navigate(`/auth?redirect=${encodeURIComponent(`/circle?join=${stage.id}`)}`);
       return;
     }
     if (joiningStageIds.current.has(stage.id)) return;
@@ -178,7 +176,7 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
   const requestGoLive = () => {
     if (!user) {
       toast({ title: "Sign in to open a stage" });
-      navigate("/auth?redirect=/discover?tab=live");
+      navigate(`/auth?redirect=${encodeURIComponent("/circle")}`);
       return;
     }
     setGoLiveOpen(true);
@@ -231,7 +229,7 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
         onClick={() => {
           if (!user) {
             toast({ title: "Sign in to schedule a Speed Session" });
-            navigate("/auth?redirect=/discover?tab=live");
+            navigate(`/auth?redirect=${encodeURIComponent("/circle")}`);
             return;
           }
           setScheduleOpen(true);

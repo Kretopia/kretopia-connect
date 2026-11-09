@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   inserts: [] as unknown[],
   invoke: vi.fn(),
+  rpc: vi.fn(),
   toast: vi.fn(),
   email: vi.fn(),
 }));
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     functions: { invoke: (...a: unknown[]) => mocks.invoke(...a) },
+    rpc: (...a: unknown[]) => mocks.rpc(...a),
     from: (table: string) => {
       const chain: any = {
         select: () => chain,
@@ -60,6 +62,7 @@ const inRouter = (ui: React.ReactNode) =>
 beforeEach(() => {
   mocks.inserts.length = 0;
   mocks.invoke.mockReset();
+  mocks.rpc.mockReset().mockResolvedValue({ data: "joined", error: null });
   mocks.toast.mockReset();
   mocks.email.mockReset();
   vi.spyOn(window, "open").mockImplementation(() => null);
@@ -103,19 +106,20 @@ describe("SessionDetailDialog: joining", () => {
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 
-  it("a single-price ticketed event still starts the Stripe checkout, with no guest-list row", async () => {
+  it("a single-price native ticket is unavailable until capacity and payment confirmation are atomic", async () => {
     mocks.invoke.mockResolvedValue({ data: { url: "https://checkout.example/s" }, error: null });
     open({ is_ticketed: true, ticket_price: 25, ticket_currency: "USD" });
-    // The dialog shows the same "Get Ticket" action twice (header and tickets tab); either is the real one.
-    fireEvent.click((await screen.findAllByRole("button", { name: /Get Ticket/ }))[0]);
-    await waitFor(() => expect(mocks.invoke).toHaveBeenCalledWith("purchase-event-ticket", { body: { eventId: "ev1" } }));
+    expect(await screen.findByRole("button", { name: /Ticket booking paused/i })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /Ticket booking paused/i }));
+    expect(mocks.invoke).not.toHaveBeenCalled();
     expect(mocks.inserts).toHaveLength(0);
   });
 
-  it("a free event is still joined directly", async () => {
+  it("a free event uses the authenticated capacity-checking RSVP RPC, not a client insert", async () => {
     open({ is_ticketed: false });
     fireEvent.click(await screen.findByRole("button", { name: /Join Event/ }));
-    await waitFor(() => expect(mocks.inserts).toHaveLength(1));
+    await waitFor(() => expect(mocks.rpc).toHaveBeenCalledWith("rsvp_to_event", { p_event_id: "ev1" }));
+    expect(mocks.inserts).toHaveLength(0);
     expect(mocks.invoke).not.toHaveBeenCalled();
   });
 });

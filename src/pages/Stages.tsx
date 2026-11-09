@@ -1,6 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState, type ComponentType, type LazyExoticComponent } from "react";
-import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { AuthGate } from "@/components/AuthGate";
+import { Navigate, useLocation, useSearchParams } from "react-router-dom";
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { LiveCallsPanel } from "@/components/circle/LiveCallsPanel";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
@@ -36,7 +35,6 @@ const VIEWS: Record<Exclude<StagesView, "sound">, LazyExoticComponent<ComponentT
  */
 export default function Stages({ view }: { view?: StagesView }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { pathname, search, hash } = useLocation();
   const [searchParams] = useSearchParams();
   const [profileVisibility, setProfileVisibility] = useState<{ isVisible: boolean; missingFields: string[] }>({ isVisible: true, missingFields: [] });
@@ -114,13 +112,7 @@ export default function Stages({ view }: { view?: StagesView }) {
                 missingFields={profileVisibility.missingFields}
                 surfaceLabel="Stage"
               >
-                {user ? (
-                  <LiveCallsPanel joinStageId={searchParams.get("join")} onFindCollaborator={() => navigate("/match")} />
-                ) : (
-                  <AuthGate>
-                    <div className="h-[40vh] bg-gradient-to-br from-primary/5 to-accent/5 rounded-2xl" />
-                  </AuthGate>
-                )}
+                <LiveCallsPanel joinStageId={searchParams.get("join")} />
               </ProfileActivationGate>
 
             </>
