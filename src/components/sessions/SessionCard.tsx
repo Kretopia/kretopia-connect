@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_URL } from "@/lib/constants";
 import { eventEntry } from "@/lib/eventEntry";
+import { formatCurrencyAmount } from "@/lib/currency";
 
 interface Session {
   id: string;
@@ -149,10 +150,9 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
   const startDate = new Date(session.start_time);
   const isPast = startDate < new Date();
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
-  const ticketCurrency = session.ticket_currency;
-  const ticketPrice = isTicketed && ticketCurrency && /^[A-Za-z]{3}$/.test(ticketCurrency)
-    ? formatTicketPrice(session.ticket_price ?? 0, ticketCurrency)
-    : isTicketed ? "Paid ticket · currency unavailable" : session.is_ticketed ? "Ticket options · booking paused" : null;
+  const ticketPrice = isTicketed
+    ? formatCurrencyAmount(session.ticket_price ?? 0, session.ticket_currency) ?? "Paid ticket · currency unavailable"
+    : session.is_ticketed ? "Ticket options · booking paused" : null;
   const nativeTicketUnavailable = eventEntry(session).kind === "ticket";
 
   return (
@@ -260,15 +260,4 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
       </CardContent>
     </Card>
   );
-};
-
-function formatTicketPrice(price: number, currency: string) {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: currency.toUpperCase(),
-    }).format(price);
-  } catch {
-    return "Paid ticket · currency unavailable";
-  }
 }

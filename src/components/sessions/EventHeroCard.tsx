@@ -216,7 +216,7 @@ export function EventHeroCard({
         {/* Scarcity line */}
         {showScarcity && !isPast && !isCancelled && (
           <div className="mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-energy/15 border border-energy/40 text-energy text-xs font-semibold">
-            <span className="h-1.5 w-1.5 rounded-full bg-energy animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-energy motion-safe:animate-pulse" />
             Only {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} left
           </div>
         )}

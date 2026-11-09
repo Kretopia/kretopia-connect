@@ -1,19 +1,12 @@
 import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { HoloCard } from "@/components/passport/HoloCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import QRCodeStyling from "qr-code-styling";
 import { Ticket, Check, Calendar, MapPin, CalendarPlus, Navigation, X } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
-
-// Literal hex, not a CSS var -- feeds qr-code-styling's own canvas/SVG
-// renderer below, which can't resolve custom properties. Was flat pink;
-// now the logo's own violet stop, matching the rest of the app.
-const ENERGY = "#A516C5";
-const MIDNIGHT = "#05070D";
+import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
 
 interface EventPassCardProps {
   eventTitle: string;
@@ -32,12 +25,8 @@ interface EventPassCardProps {
 }
 
 /**
- * The Kretopia-branded event pass — same holographic-card, ambient-glow and
- * scan-line language as the rest of the app (HoloCard, KretopiaHero's
- * search treatment), with the Kretopia mark embedded straight into the QR
- * code so the pass reads as unmistakably Kretopia even when it's just a
- * photo of a screen at a door. The QR is the dominant element on the card
- * by design — everything else (venue, calendar, directions) sits below it.
+ * The Kretopia-branded event pass keeps the QR prominent and scannable
+ * without pointer-tracked or animated effects.
  */
 export const EventPassCard = ({
   eventTitle,
@@ -60,25 +49,23 @@ export const EventPassCard = ({
     let cancelled = false;
     qrRef.current.innerHTML = "";
 
+    const styles = getComputedStyle(document.documentElement);
+    const foreground = styles.getPropertyValue("--foreground").trim();
+    const background = styles.getPropertyValue("--background").trim();
+    if (!foreground || !background) return;
+    const foregroundLightness = Number(foreground.match(/(\d+(?:\.\d+)?)%\s*$/)?.[1]);
+    if (!Number.isFinite(foregroundLightness)) return;
+    const inkToken = foregroundLightness > 50 ? background : foreground;
+    const qrForeground = `hsl(${inkToken})`;
     const baseOptions = {
       width: 240,
       height: 240,
       data: token,
       margin: 8,
       qrOptions: { errorCorrectionLevel: "H" as const },
-      dotsOptions: {
-        type: "extra-rounded" as const,
-        gradient: {
-          type: "linear" as const,
-          rotation: Math.PI / 4,
-          colorStops: [
-            { offset: 0, color: MIDNIGHT },
-            { offset: 1, color: ENERGY },
-          ],
-        },
-      },
-      cornersSquareOptions: { color: ENERGY, type: "extra-rounded" as const },
-      cornersDotOptions: { color: MIDNIGHT, type: "dot" as const },
+      dotsOptions: { type: "extra-rounded" as const, color: qrForeground },
+      cornersSquareOptions: { color: qrForeground, type: "extra-rounded" as const },
+      cornersDotOptions: { color: qrForeground, type: "dot" as const },
       backgroundOptions: { color: "#ffffff" },
     };
 
@@ -113,15 +100,8 @@ export const EventPassCard = ({
   }, [token, loading]);
 
   return (
-    <HoloCard className={className}>
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-card">
-        {/* Header — same cinematic plate signature as the landing hero / feature headers, theme-aware */}
+      <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm", className)}>
         <div className="relative overflow-hidden px-5 pt-5 pb-6 text-center" style={{ backgroundColor: "hsl(var(--background))" }}>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 ai-ambient-breathe"
-            style={{ background: `radial-gradient(70% 60% at 50% 0%, ${ENERGY}26, transparent 65%)` }}
-          />
           {onClose && (
             <button
               type="button"
@@ -136,7 +116,7 @@ export const EventPassCard = ({
             <BrandLogo size="sm" lockup />
             <div
               className="mt-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em]"
-              style={{ color: ENERGY, backgroundColor: `${ENERGY}1A`, border: `1px solid ${ENERGY}40` }}
+              style={{ color: "hsl(var(--primary))", backgroundColor: "hsl(var(--primary) / 0.1)", border: "1px solid hsl(var(--primary) / 0.25)" }}
             >
               <Ticket className="h-3 w-3" /> Your pass
             </div>
@@ -152,20 +132,7 @@ export const EventPassCard = ({
           <div className="border-t border-dashed border-border mx-3 mt-1.5" />
         </div>
 
-        {/* QR — the priority element on the card, framed with the same ambient-glow + scan-line signature used across Kretopia's AI-powered surfaces */}
-        <div className="relative px-5 pt-5 pb-2">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-x-2 top-2 h-64 rounded-[32px] blur-2xl opacity-70 ai-ambient-breathe"
-            style={{ background: `radial-gradient(60% 100% at 50% 30%, ${ENERGY}22, transparent 70%)` }}
-          />
-          <div aria-hidden className="pointer-events-none absolute inset-x-8 top-3 h-px overflow-hidden rounded-full">
-            <div
-              className="ai-scan-line h-full w-1/3"
-              style={{ background: `linear-gradient(90deg, transparent, ${ENERGY}, transparent)` }}
-            />
-          </div>
-
+        <div className="px-5 pt-5 pb-2">
           <div className="relative flex flex-col items-center">
             {loading ? (
               <div className="h-[240px] w-[240px] flex items-center justify-center">
@@ -174,8 +141,7 @@ export const EventPassCard = ({
             ) : token ? (
               <>
                 <div
-                  className="rounded-2xl p-3 bg-white"
-                  style={{ boxShadow: `0 0 0 1px ${ENERGY}30, 0 12px 40px -12px ${ENERGY}55` }}
+                  className="rounded-2xl bg-white p-3 shadow-[0_12px_40px_-12px_hsl(var(--primary)/.3)]"
                   ref={qrRef}
                 />
                 {checkedIn ? (
@@ -206,9 +172,10 @@ export const EventPassCard = ({
               <Calendar className="h-4 w-4 text-primary" />
             </div>
             <span className="text-sm font-medium">
-              {format(new Date(startTime), "EEE, MMM d · h:mm a")}
+              Your local time · {formatEventTime(startTime)}
             </span>
           </div>
+          <p className="pl-12 text-xs text-muted-foreground">Timezone · {eventTimeZone()}</p>
           {venueName && (
             <div className="flex items-start gap-3">
               <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -247,7 +214,7 @@ export const EventPassCard = ({
           </p>
         </div>
       </div>
-    </HoloCard>
+
   );
 };
 
