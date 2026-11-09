@@ -69,9 +69,9 @@ export default function Stages({ view }: { view?: StagesView }) {
   }, [active, refreshProfileVisibility]);
 
   useEffect(() => {
-    if (active !== "sound" || hash !== "#stage-grid") return;
+    if (active !== "sound" || !["#stage-grid", "#call-sheet"].includes(hash)) return;
     const frame = window.requestAnimationFrame(() => {
-      document.getElementById("stage-grid")?.scrollIntoView({ block: "start" });
+      document.getElementById(hash.slice(1))?.scrollIntoView({ block: "start" });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [active, hash, pathname]);
