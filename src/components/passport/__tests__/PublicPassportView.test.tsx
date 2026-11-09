@@ -47,6 +47,7 @@ vi.mock("@/components/DirectMessageDialog", () => ({ DirectMessageDialog: () => 
 vi.mock("@/components/project/StartProjectFromMatchDialog", () => ({ StartProjectFromMatchDialog: () => <div data-testid="start-project-flow" /> }));
 vi.mock("@/components/project/InviteToProjectDialog", () => ({ InviteToProjectDialog: () => <div data-testid="invite-flow" /> }));
 
+import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { PublicPassportView } from "../PublicPassportView";
 
 const renderView = (embedded: boolean) =>
@@ -75,6 +76,25 @@ describe("PublicPassportView: one Passport for visitors and for its owner", () =
     renderView(true);
     expect((await screen.findAllByText("Dee Marshall")).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("seo")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Operating System for Creative Careers/i)).not.toBeInTheDocument();
+  });
+
+  it("ends in its own small footer on its own, and leaves it out under the app's shared footer", async () => {
+    const page = renderView(false);
+    await screen.findAllByText("Dee Marshall");
+    expect(screen.getByText(/Operating System for Creative Careers/i)).toBeInTheDocument();
+    page.unmount();
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <SharedFooterProvider value>
+            <PublicPassportView userId="u1" embedded={false} />
+          </SharedFooterProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findAllByText("Dee Marshall");
     expect(screen.queryByText(/Operating System for Creative Careers/i)).not.toBeInTheDocument();
   });
 

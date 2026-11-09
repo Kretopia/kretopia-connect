@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { EventPageShell } from "../EventPageShell";
 
 describe("EventPageShell", () => {
@@ -62,5 +63,27 @@ describe("EventPageShell", () => {
     // hero, then the content wrapper: no empty wrapper sits between them.
     const hero = container.querySelector("#hero")!;
     expect(hero.nextElementSibling?.querySelector("#about")).not.toBeNull();
+  });
+
+  it("keeps the room for the fixed booking bar itself without a footer, and leaves that room to the footer's foot under one", () => {
+    const shell = () => (
+      <EventPageShell
+        eventTitle="Studio Night"
+        hero={<section id="hero" />}
+        about={<section id="about" />}
+        attendees={null}
+        calendar={null}
+        host={null}
+        bookingRail={<button type="button">I'm Going</button>}
+      />
+    );
+    // main > grid > the content wrapper that carries the bottom padding
+    const wrapperOf = (container: HTMLElement) => container.querySelector("#about")!.closest("main")!.parentElement!.parentElement!;
+    const alone = render(shell());
+    expect(wrapperOf(alone.container).className).toContain("pb-32");
+    alone.unmount();
+    const underFooter = render(<SharedFooterProvider value>{shell()}</SharedFooterProvider>);
+    expect(wrapperOf(underFooter.container).className).toContain("pb-10");
+    expect(wrapperOf(underFooter.container).className).not.toContain("pb-32");
   });
 });

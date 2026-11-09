@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { useSharedFooter } from "@/components/layout/sharedFooter";
 import { cn } from "@/lib/utils";
 
 /** Thin L-shaped corner marks: the HUD feel, drawn with borders only (no filters, no images). */
@@ -33,7 +34,10 @@ export interface WrappedShellProps {
   aside?: ReactNode;
   /** Ref for the outer section (visibility checks). */
   sectionRef?: Ref<HTMLElement>;
-  /** The Kretopia lockup at the foot of the panel. On by default; a page that stacks two panels keeps it on the last one. */
+  /**
+   * The Kretopia lockup at the foot of the panel. On by default; a page that stacks two panels keeps it on the last one. It is left out
+   * wherever the app draws its shared footer under the page (which has the lockup itself), so a page never ends in two.
+   */
   brandFooter?: boolean;
   /** Omit the visible feature header while retaining an accessible heading. */
   showHeader?: boolean;
@@ -73,6 +77,7 @@ export function WrappedShell({
   banner,
   children,
 }: WrappedShellProps) {
+  const sharedFooter = useSharedFooter();
   return (
     <section
       ref={sectionRef}
@@ -106,7 +111,7 @@ export function WrappedShell({
           <div className="flex shrink-0 items-center gap-2">{aside}</div>
         </header>}
         {children}
-        {brandFooter && (
+        {brandFooter && !sharedFooter && (
           <footer className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
             <BrandLogo lockup size="sm" className="opacity-90" />
             <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow.replace(/^Kretopia( ·)?\s*/i, "")}</span>

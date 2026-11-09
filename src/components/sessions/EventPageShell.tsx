@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useSharedFooter } from "@/components/layout/sharedFooter";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
 
 export const EVENT_PAGE_CONTENT_CLASS = "mx-auto w-full max-w-7xl px-4 md:px-6 xl:px-8";
@@ -27,6 +28,9 @@ export function EventPageShell({
   afterHost,
   hostTools,
 }: EventPageShellProps) {
+  // Below lg the booking bar is fixed to the bottom of the screen. With no footer under the page the content keeps the room for it; under the
+  // shared footer the footer keeps that room at its own foot (see footerBottomReserve), so the page does not end in an empty band above it.
+  const sharedFooter = useSharedFooter();
   return (
     <WrappedShell
       titleId="event-page-shell-heading"
@@ -40,7 +44,7 @@ export function EventPageShell({
     >
       {hero}
       {hostTools ? <div className={EVENT_PAGE_CONTENT_CLASS}>{hostTools}</div> : null}
-      <div className={`${EVENT_PAGE_CONTENT_CLASS} pb-32`}>
+      <div className={`${EVENT_PAGE_CONTENT_CLASS} ${sharedFooter ? "pb-10" : "pb-32"}`}>
         <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
           <main className="min-w-0 space-y-6">
             {about}

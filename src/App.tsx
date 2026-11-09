@@ -1,4 +1,5 @@
-import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
+import { AppFooter } from "@/components/layout/AppFooter";
+import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
  // GUIDE_V2_REACTIVATION_2026
 import { Suspense, lazy as _reactLazy, useEffect, useMemo } from "react";
@@ -16,7 +17,7 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { AuthenticatedModalSurface } from "./components/auth/AuthenticatedModalSurface";
 import { useOnboarding } from "./hooks/useOnboarding";
 import Navbar from "./components/Navbar";
-import { appChrome, showKretoMascotOnMobile } from "./lib/appChrome";
+import { appChrome, appFooter, footerBottomReserve, showKretoMascotOnMobile } from "./lib/appChrome";
 import KretopiaBottomNav from "./components/nav/KretopiaBottomNav";
 import { BrandLoader } from "./components/brand/BrandDots";
 
@@ -272,9 +273,12 @@ const AppContent = () => {
 
   // Which parts of the frame this route wears (see lib/appChrome).
   const { showNavbar, showBottomNav } = appChrome(location.pathname, !!user);
+  // The one footer of the product, under the pages that wear it (see appFooter): a page never draws it itself.
+  const footer = appFooter(location.pathname, !!user);
 
-  // Don't add bottom padding when on individual project pages or desk list
-  const shouldAddBottomPadding = showBottomNav && !location.pathname.startsWith('/desk');
+  // Don't add bottom padding when on individual project pages or desk list. Under a footer, the footer keeps that room (at its own foot,
+  // see footerBottomReserve) so the page does not end in an empty band above it.
+  const shouldAddBottomPadding = showBottomNav && !location.pathname.startsWith('/desk') && !footer;
 
   // overscroll-y-contain: this is the app's one scroller. Reaching its end must never hand the scroll to the document (html and body also
   // contain it), or any stray absolutely positioned element that stretches the document drags the whole app up and leaves an empty band.
@@ -308,6 +312,7 @@ const AppContent = () => {
         id="main-content"
         className={cn(shouldAddBottomPadding ? "pb-36 lg:pb-0" : "", PUBLIC_NO_UNDERLINE_ROUTES.has(location.pathname) && "k-public-no-underline")}
       >
+        <SharedFooterProvider value={footer !== null}>
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
             {/* Active MVP Routes */}
@@ -577,15 +582,17 @@ const AppContent = () => {
             <Route path="*" element={<CatchAllRedirect />} />
           </Routes>
         </Suspense>
+        </SharedFooterProvider>
       </main>
-      {PUBLIC_FOOTER_ROUTES.has(location.pathname) && <EditorialFooter variant={LEGAL_FOOTER_ROUTES.has(location.pathname) ? "balanced" : "default"} />}
+      {footer && <AppFooter variant={footer} reserve={footerBottomReserve(location.pathname, showBottomNav)} />}
       <ScrollToTopButton />
     </div>
   );
 };
 
 /* GLOBAL_PUBLIC_NAVIGATION_FINAL */
-const PUBLIC_FOOTER_ROUTES = new Set([
+// The public pages that draw their links without underlines. (Which pages wear the footer is decided by appFooter in lib/appChrome.)
+const PUBLIC_MARKETING_ROUTES = new Set([
   "/discover",
   "/passport",
   "/post-opportunity",
@@ -594,11 +601,8 @@ const PUBLIC_FOOTER_ROUTES = new Set([
   "/community-guidelines"
 ]);
 
-// Legal pages are not owned by the audience pages above, so they get the evened-out footer; the others keep the default.
-const LEGAL_FOOTER_ROUTES = new Set(["/terms", "/privacy", "/community-guidelines"]);
-
 const PUBLIC_NO_UNDERLINE_ROUTES = new Set([
-  ...PUBLIC_FOOTER_ROUTES,
+  ...PUBLIC_MARKETING_ROUTES,
   "/landing",
   "/pricing",
   "/about",

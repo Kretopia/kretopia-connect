@@ -60,6 +60,7 @@ import { Fingerprint } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SEO } from "@/components/SEO";
 import { APP_URL } from "@/lib/constants";
+import { useSharedFooter } from "@/components/layout/sharedFooter";
 
 interface Profile {
   full_name: string;
@@ -178,6 +179,8 @@ interface PublicPassportViewProps {
  * nothing private is fetched into it and hidden afterwards.
  */
 export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner }: PublicPassportViewProps) => {
+  // Under the app's shared footer the page does not draw its own small one as well.
+  const sharedFooter = useSharedFooter();
   const navigate = useNavigate();
   const openWithReturn = useNavigateWithReturn();
   useRestoreReturnScroll();
@@ -879,7 +882,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         </PublicProfileWrapped>
       </div>
 
-      {!embedded && (
+      {!embedded && !sharedFooter && (
       <footer className="border-t border-border">
         <div className="mx-auto flex max-w-5xl flex-col items-center gap-3 px-6 py-8 text-center">
           <div className="h-px w-24 bg-gradient-to-r from-primary via-energy to-accent" aria-hidden="true" />
