@@ -21,6 +21,7 @@ interface EventHostCardProps {
 }
 
 export function EventHostCard({ host, isAuthenticated, onOpenPassport, onSignIn }: EventHostCardProps) {
+  const username = host?.username;
   const responseHours = host?.avg_response_hours;
   const responseLabel = typeof responseHours === "number" && Number.isFinite(responseHours) && responseHours >= 0
     ? responseHours < 1
@@ -51,9 +52,9 @@ export function EventHostCard({ host, isAuthenticated, onOpenPassport, onSignIn 
               .filter(Boolean).join(" · ")}
           </p>
         </div>
-        {host?.username && (
+        {username && (
           isAuthenticated ? (
-            <Button variant="outline" className="shrink-0 gap-2" onClick={() => onOpenPassport(host.username!)}>
+            <Button variant="outline" className="shrink-0 gap-2" onClick={() => onOpenPassport(username)}>
               Contact host <ExternalLink className="h-4 w-4" aria-hidden />
             </Button>
           ) : (

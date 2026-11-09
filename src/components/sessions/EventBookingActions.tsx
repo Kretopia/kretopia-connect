@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 
@@ -22,8 +23,10 @@ export function EventBookingActions({
   onBook,
   compact = false,
 }: EventBookingActionsProps) {
+  const reasonId = useId();
+
   return (
-    <div className={compact ? "flex items-center gap-3" : "space-y-4"}>
+    <div className={compact ? "flex flex-wrap items-center gap-3" : "space-y-4"}>
       {!compact && (
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -37,16 +40,16 @@ export function EventBookingActions({
       <div className={compact ? "shrink-0" : undefined}>
         <Button
           type="button"
-          className="w-full"
+          className={compact ? "min-w-24" : "w-full"}
           disabled={disabled || joining}
           onClick={onBook}
-          aria-describedby={reason ? "event-booking-reason" : undefined}
+          aria-describedby={reason ? reasonId : undefined}
         >
           {joining ? <KretopiaSpinner className="h-4 w-4" /> : label}
         </Button>
       </div>
-      {!compact && reason && (
-        <p id="event-booking-reason" className="text-sm text-muted-foreground" role="status">{reason}</p>
+      {reason && (
+        <p id={reasonId} className={compact ? "w-full basis-full text-xs text-muted-foreground" : "text-sm text-muted-foreground"} role="status">{reason}</p>
       )}
     </div>
   );

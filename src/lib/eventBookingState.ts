@@ -4,6 +4,7 @@ export type EventBookingState =
   | "cancelled"
   | "ended"
   | "hosting"
+  | "waitlisted"
   | "booked"
   | "waitlist"
   | "sold-out"
@@ -34,11 +35,12 @@ export function getEventBookingState({
   nativePaid: boolean;
 }): EventBookingState {
   if (loading) return "loading";
-  if (!availabilityReady) return "unavailable";
   if (cancelled) return "cancelled";
   if (ended) return "ended";
   if (hosting) return "hosting";
+  if (participation === "waitlisted") return "waitlisted";
   if (participation) return "booked";
+  if (!availabilityReady) return "unavailable";
   if (full) return waitlistEnabled && authenticated ? "waitlist" : "sold-out";
   if (nativePaid) return "payment-unavailable";
   return "available";
@@ -51,6 +53,7 @@ export function getEventBookingLabel(state: EventBookingState): string {
     case "cancelled": return "Cancelled";
     case "ended": return "Event ended";
     case "hosting": return "You're hosting";
+    case "waitlisted": return "Waitlisted";
     case "booked": return "You're going";
     case "waitlist": return "Join waitlist";
     case "sold-out": return "Sold out";

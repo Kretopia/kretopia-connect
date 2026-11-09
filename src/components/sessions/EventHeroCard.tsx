@@ -1,5 +1,4 @@
 import { useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +53,7 @@ interface EventHeroCardProps {
   bookingLabel: string;
   bookingReason: string | null;
   bookingDisabled: boolean;
-  participantCount: number;
+  participantCount: number | null;
   capacity: number;
   isFull: boolean;
   spotsLeft: number | null;
@@ -80,7 +79,6 @@ export function EventHeroCard({
   participation, joining,
   onBook, onShare, onShowGuestPass, onCancelRsvp, onGalleryChange,
 }: EventHeroCardProps) {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -162,7 +160,7 @@ export function EventHeroCard({
               )}
               <span className="inline-flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" aria-hidden />
-                {participantCount} going
+                {participantCount === null ? "Attendance count unavailable" : `${participantCount} going`}
               </span>
             </div>
             <div className="mt-4 flex items-center gap-3">
@@ -346,7 +344,9 @@ export function EventHeroCard({
             </div>
             <div className="flex-1">
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Who's coming</p>
-              <p className="font-medium">{participantCount}{capacity ? ` of ${capacity}` : ''} going</p>
+              <p className="font-medium">
+                {participantCount === null ? "Attendance count unavailable" : `${participantCount}${capacity ? ` of ${capacity}` : ''} going`}
+              </p>
               {isFull && <p className="text-xs text-amber-500">This one's full — try the waitlist</p>}
             </div>
           </div>
