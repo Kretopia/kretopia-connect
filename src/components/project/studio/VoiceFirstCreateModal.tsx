@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { KretoCharacter, type KretoCharacterState } from "@/components/brand/KretoCharacter";
 import { HoloCard } from "@/components/passport/HoloCard";
+import { DIALOG_CLOSE } from "@/components/ui/dialogBrand.tokens";
+import { useModalSurfaceClasses } from "@/components/ui/modalSurface";
 import { FunnelStepper, type FunnelStep } from "@/components/onboarding/FunnelStepper";
 import { FeatureAITutorial } from "@/components/features/FeatureAITutorial";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
@@ -126,6 +128,17 @@ interface ExtractionPlan {
   retryTo: "prompt" | "link";
   resend?: { label: string; run: () => void };
 }
+
+/**
+ * The modal's frame. A signed-in member sees the plain frame the Passport QR modal has (the surface, border and glow come from the panel
+ * inside); anyone else keeps the holo-tilt card it always had, with its sheen and halo.
+ */
+const NewRoomFrame = ({ branded, children }: { branded: boolean; children: React.ReactNode }) =>
+  branded ? (
+    <div className="relative z-10 my-8 w-full max-w-lg">{children}</div>
+  ) : (
+    <HoloCard className="w-full max-w-lg relative z-10 my-8">{children}</HoloCard>
+  );
 
 /**
  * Full-screen "What are you making?" entry. Voice-first, with a single
@@ -884,6 +897,8 @@ export const VoiceFirstCreateModal = ({
   // have to be built by hand here.
   const modalRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  // Not a Radix dialog, so the QR modal's backdrop and surface come from here (a visitor's stay as they were).
+  const modal = useModalSurfaceClasses({ backdrop: "bg-background/95 backdrop-blur-sm", panel: "border-primary/10 bg-card shadow-xl shadow-primary/5" });
 
   useEffect(() => {
     if (!open) return;
@@ -988,15 +1003,19 @@ export const VoiceFirstCreateModal = ({
     {!createdProject && (
     <div
       ref={modalRef}
-      className="fixed inset-0 z-[60] overflow-y-auto bg-background/95 backdrop-blur-sm flex items-center justify-center p-4"
+      className={cn("fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4", modal.backdrop)}
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-room-title"
     >
-      {/* Ambient accents — same recipe as Onboarding's centered HoloCard shell */}
-      <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent pointer-events-none" />
-      <div className="absolute top-20 -left-32 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
-      <div className="absolute top-40 -right-32 w-64 h-64 rounded-full bg-[hsl(var(--energy)/0.05)] blur-3xl pointer-events-none" />
+      {/* Ambient accents — same recipe as Onboarding's centered HoloCard shell. The QR modal's aura is its own glow, so a member sees none of these. */}
+      {!modal.branded && (
+        <>
+          <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent pointer-events-none" />
+          <div className="absolute top-20 -left-32 w-64 h-64 rounded-full bg-primary/5 blur-3xl pointer-events-none" />
+          <div className="absolute top-40 -right-32 w-64 h-64 rounded-full bg-[hsl(var(--energy)/0.05)] blur-3xl pointer-events-none" />
+        </>
+      )}
 
       <input
         ref={fileInputRef}
@@ -1006,8 +1025,8 @@ export const VoiceFirstCreateModal = ({
         onChange={handleFilePick}
       />
 
-      <HoloCard className="w-full max-w-lg relative z-10 my-8">
-        <div className="relative flex flex-col max-h-[85vh] overflow-hidden rounded-2xl border border-primary/10 bg-card shadow-xl shadow-primary/5">
+      <NewRoomFrame branded={modal.branded}>
+        <div className={cn("relative flex max-h-[85vh] flex-col overflow-hidden rounded-2xl border", modal.panel)}>
           {/* Top bar -- py-3 (not a fixed h-16) so the stepper's active-step
               ring/scale bleed gets real clearance above and below, same
               generous-padding spirit as Onboarding's own pt-6 pb-3 header
@@ -1038,6 +1057,7 @@ export const VoiceFirstCreateModal = ({
                 size="icon"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close"
+                className={cn(modal.branded && cn("text-foreground hover:bg-transparent", DIALOG_CLOSE))}
               >
                 <X className="h-5 w-5" />
               </Button>
@@ -1722,7 +1742,7 @@ export const VoiceFirstCreateModal = ({
         </div>
       )}
         </div>
-      </HoloCard>
+      </NewRoomFrame>
     </div>
     )}
 

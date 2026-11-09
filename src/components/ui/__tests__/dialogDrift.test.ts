@@ -106,3 +106,56 @@ describe("authenticated modals keep the shared surface", () => {
     expect(SURFACE.test(tags[0])).toBe(true);
   });
 });
+
+// An overlay that is a modal but not a Radix dialog (a bottom action sheet, a full-screen create flow) draws its own backdrop and panel, so the
+// primitives cannot dress it. It takes the QR modal's backdrop, surface and title from useModalSurfaceClasses instead, and keeps its own
+// geometry, animation, focus handling and dismissal. Any file that draws a `role="dialog"` of its own must do that, or be listed here with the
+// reason it is not that kind of modal, so a new one cannot quietly paint its own.
+const read = (file: string) => readFileSync(join(ROOT, file), "utf8");
+/** The attribute in JSX (a querySelector string such as '[role="dialog"]' has no space before it). */
+const DRAWS_A_DIALOG = /\srole="dialog"/;
+
+const WEARS_THE_SURFACE = [
+  "src/components/QuickActionFab.tsx",
+  "src/components/thrivepay/SnapReceiptFAB.tsx",
+  "src/components/project/studio/VoiceFirstCreateModal.tsx",
+];
+
+const NOT_THAT_KIND_OF_MODAL: Record<string, string> = {
+  "src/components/desk/ThriveAgentFab.tsx": "the docked Kreto chat: a widget in the corner with no backdrop, not a modal over the page",
+  "src/components/epk/EPKPdfEditor.tsx": "a full-screen document editor: the workspace itself, not a card over the page",
+};
+
+describe("overlays that are not Radix dialogs keep the shared surface too", () => {
+  const drawing = files.filter((file) => DRAWS_A_DIALOG.test(read(file)));
+
+  it("finds the overlays it is meant to police", () => {
+    expect(drawing.length).toBeGreaterThanOrEqual(WEARS_THE_SURFACE.length);
+  });
+
+  it("every file that draws a dialog of its own wears the surface or is listed as not that kind of modal", () => {
+    const unlisted = drawing.filter((file) => !WEARS_THE_SURFACE.includes(file) && !(file in NOT_THAT_KIND_OF_MODAL));
+    expect(unlisted, `These draw their own role="dialog". Take the surface from useModalSurfaceClasses, or list the file with its reason:\n${unlisted.join("\n")}`).toEqual([]);
+  });
+
+  it("and the lists are not stale: each file in them still draws a dialog", () => {
+    for (const file of [...WEARS_THE_SURFACE, ...Object.keys(NOT_THAT_KIND_OF_MODAL)]) {
+      expect(drawing, `${file} no longer draws a role="dialog"; remove it from the list`).toContain(file);
+    }
+  });
+
+  // What each of them wrote on its backdrop and panel before. It is now handed to the hook as what a visitor sees, and is no longer on the elements.
+  const PAINTED_BEFORE: Record<string, string[]> = {
+    "src/components/QuickActionFab.tsx": ["lg:hidden bg-background/70", "bg-card border border-border/60 rounded-2xl shadow-2xl"],
+    "src/components/thrivepay/SnapReceiptFAB.tsx": ['className="absolute inset-0 bg-background/80"', "rounded-t-2xl border bg-background shadow-2xl"],
+    "src/components/project/studio/VoiceFirstCreateModal.tsx": ["overflow-y-auto bg-background/95 backdrop-blur-sm", "border border-primary/10 bg-card shadow-xl shadow-primary/5"],
+  };
+
+  it.each(WEARS_THE_SURFACE)("%s takes its backdrop and panel from useModalSurfaceClasses and no longer paints its own", (file) => {
+    const source = read(file);
+    expect(source).toMatch(/import \{ useModalSurfaceClasses \} from "@\/components\/ui\/modalSurface"/);
+    expect(source).toContain("modal.backdrop");
+    expect(source).toContain("modal.panel");
+    for (const painted of PAINTED_BEFORE[file]) expect(source, `${file} paints "${painted}" itself again`).not.toContain(painted);
+  });
+});

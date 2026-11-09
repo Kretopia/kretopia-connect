@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import { DIALOG_CLOSE } from "@/components/ui/dialogBrand.tokens";
+import { useModalSurfaceClasses } from "@/components/ui/modalSurface";
 
 // This FAB is mounted on every page (App.tsx renders it unconditionally
 // whenever the bottom nav shows), so a plain static import of any dialog
@@ -45,6 +47,8 @@ const QuickActionFab = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
+  // The action sheet is a modal that is not a Radix dialog, so it takes the Passport QR modal's backdrop, surface and title from here.
+  const modal = useModalSurfaceClasses({ backdrop: "bg-background/70", panel: "border-border/60 shadow-2xl", title: "text-sm font-semibold" });
 
   const [open, setOpen] = useState(false);
   const [isCompany, setIsCompany] = useState(false);
@@ -295,7 +299,7 @@ const QuickActionFab = () => {
           type="button"
           aria-label="Close quick actions"
           onClick={close}
-          className="fixed inset-0 z-[55] lg:hidden bg-background/70 animate-in fade-in duration-150"
+          className={cn("fixed inset-0 z-[55] lg:hidden animate-in fade-in duration-150", modal.backdrop)}
         />
       )}
 
@@ -308,10 +312,10 @@ const QuickActionFab = () => {
           className="fixed left-0 right-0 z-[56] lg:hidden px-4 animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{ bottom: `calc(env(safe-area-inset-bottom, 0px) + 150px)` }}
         >
-          <div className="mx-auto max-w-md bg-card border border-border/60 rounded-2xl shadow-2xl overflow-hidden">
+          <div className={cn("mx-auto max-w-md overflow-hidden rounded-2xl border bg-card", modal.panel)}>
             <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-border/50">
               <div>
-                <p className="text-sm font-semibold leading-tight">Quick actions</p>
+                <p className={cn("leading-tight", modal.title)}>Quick actions</p>
                 <p className="text-[11px] text-muted-foreground leading-tight">
                   Jump straight to it
                 </p>
@@ -319,7 +323,10 @@ const QuickActionFab = () => {
               <button
                 onClick={close}
                 aria-label="Close"
-                className="h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center",
+                  modal.branded ? cn("text-foreground", DIALOG_CLOSE) : "rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                )}
               >
                 <X className="h-4 w-4" />
               </button>

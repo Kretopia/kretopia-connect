@@ -12,6 +12,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { recordMoneyAction } from "@/lib/moneyStreak";
 import { EXPENSE_CATEGORIES, getCategoryInfo } from "@/components/project/expense/ExpenseCategories";
+import { cn } from "@/lib/utils";
+import { DIALOG_CLOSE } from "@/components/ui/dialogBrand.tokens";
+import { useModalSurfaceClasses } from "@/components/ui/modalSurface";
 import { Capacitor } from "@capacitor/core";
 import { Camera as NativeCamera, CameraResultType, CameraSource } from "@capacitor/camera";
 
@@ -81,6 +84,9 @@ type ReceiptImageInput = {
  */
 export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
   const { user } = useAuth();
+  // The review sheet is a modal that is not a Radix dialog, so it takes the Passport QR modal's backdrop, surface and title from here.
+  // (The camera view and the small menu above the button are not modals of that kind: a viewfinder, and a popover.)
+  const modal = useModalSurfaceClasses({ backdrop: "bg-background/80", panel: "bg-background shadow-2xl", title: "text-base font-semibold" });
   const cameraRef = useRef<HTMLInputElement>(null);
   const uploadRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -536,19 +542,19 @@ export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
           <button
             type="button"
             aria-label="Close receipt review"
-            className="absolute inset-0 bg-background/80"
+            className={cn("absolute inset-0", modal.backdrop)}
             onClick={() => setReviewOpen(false)}
           />
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="receipt-review-title"
-            className="absolute inset-x-0 bottom-0 z-[100] flex h-[92dvh] flex-col rounded-t-2xl border bg-background shadow-2xl"
+            className={cn("absolute inset-x-0 bottom-0 z-[100] flex h-[92dvh] flex-col rounded-t-2xl border", modal.panel)}
           >
             <div className="shrink-0 border-b px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="space-y-1 text-left">
-                  <h2 id="receipt-review-title" className="flex items-center gap-2 text-base font-semibold text-foreground">
+                  <h2 id="receipt-review-title" className={cn("flex items-center gap-2 text-foreground", modal.title)}>
                     <Sparkles className="h-4 w-4 text-primary" />
                     Review your receipt
                   </h2>
@@ -556,10 +562,17 @@ export function SnapReceiptFAB({ projectId }: SnapReceiptFABProps) {
                     {scanning ? "Reading the image now — the fields will fill in here." : "Tweak anything, then add to expenses."}
                   </p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setReviewOpen(false)} disabled={saving} className="h-9 w-9 shrink-0">
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Close</span>
-                </Button>
+                {modal.branded ? (
+                  <button type="button" onClick={() => setReviewOpen(false)} disabled={saving} className={cn("flex h-9 w-9 shrink-0 items-center justify-center text-foreground", DIALOG_CLOSE)}>
+                    <X className="h-4 w-4" aria-hidden />
+                    <span className="sr-only">Close</span>
+                  </button>
+                ) : (
+                  <Button variant="ghost" size="icon" onClick={() => setReviewOpen(false)} disabled={saving} className="h-9 w-9 shrink-0">
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Close</span>
+                  </Button>
+                )}
               </div>
             </div>
 

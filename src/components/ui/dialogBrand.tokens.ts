@@ -10,6 +10,16 @@
 /** Surface, border and aura: the card colour, a hairline of the energy colour and the glow shadow around it. */
 export const DIALOG_SURFACE = "border-energy/30 bg-card shadow-glow";
 
+/** The backdrop behind a modal: black at 80%. The dialog, alert dialog and sheet primitives draw it, and so does any overlay that is not one of them. */
+export const DIALOG_BACKDROP = "bg-black/80";
+
+/**
+ * The close control's look, as the dialog primitive draws it: faint until it is hovered, with a ring on focus. Its place is the header's, so a
+ * modal that is not a Radix dialog and lays its own header out puts this on its close button and keeps its own position and hit area.
+ */
+export const DIALOG_CLOSE =
+  "rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none";
+
 /**
  * A modal that is taller than the screen scrolls inside itself. `dvh`, not `vh`: on a phone the address bar makes 100vh taller than what
  * is visible, which pushed a tall modal's last row (and its buttons) off the screen.

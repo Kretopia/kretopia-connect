@@ -16,8 +16,10 @@ import {
 } from "../alert-dialog";
 import { DialogBrandHeader } from "../dialogBrand";
 import { Sheet, SheetContent, SheetTitle } from "../sheet";
-import { DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "../dialogBrand.tokens";
+import { Drawer, DrawerContent, DrawerTitle } from "../drawer";
+import { DIALOG_BACKDROP, DIALOG_CLOSE, DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "../dialogBrand.tokens";
 import { ModalSurfaceProvider } from "../ModalSurfaceProvider";
+import { useModalSurfaceClasses } from "../modalSurface";
 
 const mockUseAuth = vi.fn();
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mockUseAuth() }));
@@ -426,5 +428,145 @@ describe("shared sheet", () => {
     escape();
     await waitFor(() => expect(screen.queryByText("Inner")).toBeNull());
     expect(screen.getByText("Panel")).toBeInTheDocument();
+  });
+});
+
+describe("the sheet's title, the drawer and the backdrop", () => {
+  const Titled = ({ brand, quick, titleClass }: { brand?: boolean; quick?: boolean; titleClass?: string }) => (
+    <Sheet open>
+      <SheetContent side={quick ? "top" : "right"} quick={quick} brand={brand}>
+        <SheetTitle className={titleClass}>Filters</SheetTitle>
+      </SheetContent>
+    </Sheet>
+  );
+  const branded = (ui: React.ReactElement) => render(<ModalSurfaceProvider branded>{ui}</ModalSurfaceProvider>);
+
+  it("a branded sheet's title is the QR modal's: its size, weight and tracking", () => {
+    branded(<Titled />);
+    const title = screen.getByText("Filters");
+    expect(has(title, DIALOG_TITLE)).toBe(true);
+    expect(title).not.toHaveClass("text-lg");
+  });
+
+  it("a visitor's sheet, a quick sheet and one with brand={false} keep the sheet's own title", () => {
+    const { unmount } = render(<Titled />);
+    expect(screen.getByText("Filters")).toHaveClass("text-lg");
+    unmount();
+    const quick = branded(<Titled quick />);
+    expect(screen.getByText("Filters")).toHaveClass("text-lg");
+    expect(screen.getByText("Filters")).not.toHaveClass("text-2xl");
+    quick.unmount();
+    branded(<Titled brand={false} />);
+    expect(screen.getByText("Filters")).toHaveClass("text-lg");
+  });
+
+  it("a title that sets its own size keeps it", () => {
+    branded(<Titled titleClass="text-base" />);
+    const title = screen.getByText("Filters");
+    expect(title).toHaveClass("text-base");
+    expect(title).not.toHaveClass("text-2xl");
+  });
+
+  it("a dialog opened from a quick sheet is branded, though the sheet's own title is not", () => {
+    branded(
+      <Sheet open>
+        <SheetContent side="top" quick>
+          <SheetTitle>Quick</SheetTitle>
+          <Dialog defaultOpen>
+            <DialogContent>
+              <DialogTitle>Inner</DialogTitle>
+            </DialogContent>
+          </Dialog>
+        </SheetContent>
+      </Sheet>,
+    );
+    expect(screen.getByText("Quick")).not.toHaveClass("text-2xl");
+    expect(has(screen.getByText("Inner"), DIALOG_TITLE)).toBe(true);
+  });
+
+  it("the drawer wears the surface and the title for a member, and is the plain drawer for a visitor", () => {
+    const visitor = render(
+      <Drawer open>
+        <DrawerContent>
+          <DrawerTitle>Pick one</DrawerTitle>
+        </DrawerContent>
+      </Drawer>,
+    );
+    expect(hasAny(screen.getByRole("dialog"), DIALOG_SURFACE)).toBe(false);
+    expect(screen.getByText("Pick one")).toHaveClass("text-lg");
+    visitor.unmount();
+    branded(
+      <Drawer open>
+        <DrawerContent>
+          <DrawerTitle>Pick one</DrawerTitle>
+        </DrawerContent>
+      </Drawer>,
+    );
+    expect(has(screen.getByRole("dialog"), DIALOG_SURFACE)).toBe(true);
+    expect(has(screen.getByText("Pick one"), DIALOG_TITLE)).toBe(true);
+  });
+
+  it("the dialog, the alert dialog, the sheet and the drawer draw the one backdrop token", () => {
+    const overlayOf = () => document.querySelector<HTMLElement>('div.fixed.inset-0[data-state="open"]');
+    const backdrop = DIALOG_BACKDROP;
+    const dialog = render(<Plain />);
+    expect(overlayOf()).toHaveClass(backdrop);
+    dialog.unmount();
+    const alert = render(
+      <AlertDialog open>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Delete?</AlertDialogTitle><AlertDialogDescription>Sure.</AlertDialogDescription></AlertDialogHeader>
+        </AlertDialogContent>
+      </AlertDialog>,
+    );
+    expect(overlayOf()).toHaveClass(backdrop);
+    alert.unmount();
+    const sheet = render(<Titled />);
+    expect(overlayOf()).toHaveClass(backdrop);
+    sheet.unmount();
+    render(
+      <Drawer open>
+        <DrawerContent>
+          <DrawerTitle>Pick one</DrawerTitle>
+        </DrawerContent>
+      </Drawer>,
+    );
+    expect(document.querySelector('[data-vaul-overlay]')).toHaveClass(backdrop);
+  });
+
+  it("the dialog's close control looks the way the shared token says, so an overlay that is not a dialog can match it", () => {
+    render(<Plain />);
+    const close = screen.getByRole("button", { name: "Close" });
+    for (const token of classes(DIALOG_CLOSE)) expect(close, token).toHaveClass(token);
+  });
+});
+
+describe("useModalSurfaceClasses: for a modal that is not a Radix dialog", () => {
+  const Probe = ({ plain }: { plain?: { backdrop: string; panel: string; title?: string } }) => {
+    const modal = useModalSurfaceClasses(plain ?? { backdrop: "bg-background/70", panel: "border-border/60 shadow-2xl", title: "text-sm font-semibold" });
+    return <p data-testid="probe" data-branded={String(modal.branded)} data-backdrop={modal.backdrop} data-panel={modal.panel} data-title={modal.title} />;
+  };
+
+  it("gives a member the QR modal's backdrop, surface and title", () => {
+    render(<ModalSurfaceProvider branded><Probe /></ModalSurfaceProvider>);
+    const probe = screen.getByTestId("probe");
+    expect(probe).toHaveAttribute("data-branded", "true");
+    expect(probe).toHaveAttribute("data-backdrop", DIALOG_BACKDROP);
+    expect(probe).toHaveAttribute("data-panel", DIALOG_SURFACE);
+    expect(probe).toHaveAttribute("data-title", DIALOG_TITLE);
+  });
+
+  it("gives a visitor exactly what the modal always drew", () => {
+    render(<Probe />);
+    const probe = screen.getByTestId("probe");
+    expect(probe).toHaveAttribute("data-branded", "false");
+    expect(probe).toHaveAttribute("data-backdrop", "bg-background/70");
+    expect(probe).toHaveAttribute("data-panel", "border-border/60 shadow-2xl");
+    expect(probe).toHaveAttribute("data-title", "text-sm font-semibold");
+  });
+
+  it("leaves the title empty when a plain modal has none to give", () => {
+    render(<Probe plain={{ backdrop: "bg-background/80", panel: "bg-background" }} />);
+    expect(screen.getByTestId("probe")).toHaveAttribute("data-title", "");
   });
 });

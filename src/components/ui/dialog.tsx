@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBrandedModalSurface } from "./modalSurface";
 import { ModalSurfaceProvider } from "./ModalSurfaceProvider";
-import { DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "./dialogBrand.tokens";
+import { DIALOG_BACKDROP, DIALOG_SCROLL, DIALOG_SURFACE, DIALOG_TITLE } from "./dialogBrand.tokens";
 
 const Dialog = DialogPrimitive.Root;
 
@@ -22,7 +22,8 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      DIALOG_BACKDROP,
       className,
     )}
     {...props}

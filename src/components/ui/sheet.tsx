@@ -4,11 +4,14 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
-import { DIALOG_SURFACE } from "./dialogBrand.tokens";
+import { DIALOG_BACKDROP, DIALOG_SURFACE, DIALOG_TITLE } from "./dialogBrand.tokens";
 import { useBrandedModalSurface } from "./modalSurface";
 import { ModalSurfaceProvider } from "./ModalSurfaceProvider";
 
 const Sheet = SheetPrimitive.Root;
+
+/** Whether the sheet this is drawn in wears the Kretopia surface, so its title can take the QR modal's type. A quick sheet never does, and what it opens in turn can. */
+const SheetBrandContext = React.createContext(false);
 
 const SheetTrigger = SheetPrimitive.Trigger;
 
@@ -22,7 +25,8 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      DIALOG_BACKDROP,
       className,
     )}
     {...props}
@@ -85,7 +89,9 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           {...props}
         >
           {/* What a panel opens in turn (a dialog, a confirmation) follows it. */}
-          <ModalSurfaceProvider branded={quick ? branded : wearsBrand}>{children}</ModalSurfaceProvider>
+          <SheetBrandContext.Provider value={wearsBrand}>
+            <ModalSurfaceProvider branded={quick ? branded : wearsBrand}>{children}</ModalSurfaceProvider>
+          </SheetBrandContext.Provider>
           {!quick && <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
@@ -110,9 +116,10 @@ SheetFooter.displayName = "SheetFooter";
 const SheetTitle = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Title>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Title>
->(({ className, ...props }, ref) => (
-  <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold text-foreground", className)} {...props} />
-));
+>(({ className, ...props }, ref) => {
+  const wearsBrand = React.useContext(SheetBrandContext);
+  return <SheetPrimitive.Title ref={ref} className={cn("text-lg font-semibold text-foreground", wearsBrand && DIALOG_TITLE, className)} {...props} />;
+});
 SheetTitle.displayName = SheetPrimitive.Title.displayName;
 
 const SheetDescription = React.forwardRef<
