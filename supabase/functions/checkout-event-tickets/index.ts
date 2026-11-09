@@ -21,6 +21,7 @@ const PLATFORM_FEES: Record<string, number> = {
 
 const log = (s: string, d?: any) =>
   console.log(`[checkout-event-tickets] ${s}${d ? " " + JSON.stringify(d) : ""}`);
+const NATIVE_EVENT_TICKET_RESERVATIONS_ENABLED = false;
 
 serve(async (req) => {
   const corsHeaders = corsFor(req);
@@ -44,6 +45,15 @@ serve(async (req) => {
     const body = await req.json();
     const { eventId, tierId, quantity: rawQuantity = 1, promoCode } = body || {};
     if (!eventId || !tierId) throw new Error("eventId and tierId required");
+    if (!NATIVE_EVENT_TICKET_RESERVATIONS_ENABLED) {
+      return new Response(JSON.stringify({
+        error: "Native ticket reservations are paused until per-person limits and atomic capacity checks cover the full payment confirmation flow.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 503,
+      });
+    }
+
     // An integer from 1 to 50: 1.5, NaN and "2" used to pass the range check and reach the price
     // and capacity maths.
     const quantity = cleanQuantity(rawQuantity);

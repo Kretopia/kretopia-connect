@@ -63,6 +63,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
 
   const handleJoin = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (loading) return;
     if (!user) {
       toast({ title: "Not authenticated", description: "Please log in to join events", variant: "destructive" });
       return;
@@ -76,6 +77,10 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
         return;
       }
       if (entry.kind === "ticket") {
+        if (session.ticket_price && session.ticket_price > 0) {
+          toast({ title: "Ticket booking is paused", description: "Native ticket reservations are unavailable until server-side capacity checks are in place.", variant: "destructive" });
+          return;
+        }
         toast({ title: "This event needs a ticket", description: "Opening the event page to get yours." });
         navigate(`/event/${session.id}`);
         return;
@@ -84,14 +89,34 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
     setLoading(true);
     try {
       if (participation) {
-        await supabase.from('jam_participants').delete().eq('jam_id', session.id).eq('user_id', user.id);
+        const { data: result, error } = await supabase.rpc("cancel_event_rsvp", { p_event_id: session.id });
+        if (error) throw error;
+        if (result === "not_going") throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         toast({ title: "Left event" });
       } else {
-        const { data: inserted } = await supabase.from('jam_participants').insert({ jam_id: session.id, user_id: user.id, status: 'going' }).select('id').single();
+        const { data: result, error } = await supabase.rpc("rsvp_to_event", { p_event_id: session.id });
+        if (error) throw error;
+        if (result === "full_no_waitlist") {
+          toast({ title: "Event is full", description: "The host hasn't enabled a waitlist for this one.", variant: "destructive" });
+          return;
+        }
+        if (result === "waitlisted") {
+          toast({ title: "You're on the waitlist" });
+          return;
+        }
+        if (result !== "joined" && result !== "already") throw new Error("The event did not confirm your RSVP.");
         setParticipation('going');
-        toast({ title: "Joined!" });
-        if (inserted) {
+        toast({ title: result === "already" ? "Already going" : "Joined!" });
+        if (result === "joined") {
+          const { data: inserted, error: participantError } = await supabase
+            .from("jam_participants")
+            .select("id")
+            .eq("jam_id", session.id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (participantError) throw participantError;
+          if (inserted) {
           sendEventConfirmationEmail({
             eventId: session.id,
             eventTitle: session.title,
@@ -101,6 +126,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
             isTicketed: false,
             participantId: inserted.id,
           });
+          }
         }
       }
       onJoin?.();

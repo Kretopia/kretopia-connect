@@ -88,20 +88,20 @@ export function KrePayDashboard() {
     };
   }, [user?.id, retryKey]);
 
-  const fmt = (n: number, moneyCurrency = currency) =>
-    new Intl.NumberFormat(undefined, { style: "currency", currency: moneyCurrency }).format(n);
-
   const currencies = useMemo(() => currenciesFor(invoices, expenses), [invoices, expenses]);
+  const activeCurrency = currencies.includes(currency) ? currency : currencies[0] ?? null;
   useEffect(() => {
-    if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]);
+    if (activeCurrency && activeCurrency !== currency) setCurrency(activeCurrency);
   }, [currencies, currency]);
+  const fmt = (n: number, moneyCurrency = activeCurrency) =>
+    moneyCurrency ? new Intl.NumberFormat(undefined, { style: "currency", currency: moneyCurrency }).format(n) : "—";
 
   const summary = useMemo(() => {
     let owedToYou = 0;
     let overdueCount = 0;
     const now = new Date();
     invoices.forEach((i) => {
-      if (currencyOf(i.currency) !== currency) return;
+      if (!activeCurrency || currencyOf(i.currency) !== activeCurrency) return;
       const amt = Number(i.total_amount || i.amount || 0);
       if (i.status !== "paid" && i.status !== "cancelled") {
         owedToYou += amt;
@@ -109,9 +109,16 @@ export function KrePayDashboard() {
       }
     });
     return { owedToYou, overdueCount };
-  }, [invoices, currency]);
+  }, [invoices, activeCurrency]);
 
-  const chartData = useMemo(() => buildCashFlow(invoices, expenses, currency, range), [invoices, expenses, currency, range]);
+  const chartData = useMemo(
+    () => activeCurrency ? buildCashFlow(invoices, expenses, activeCurrency, range) : [],
+    [invoices, expenses, activeCurrency, range],
+  );
+  const uncategorizedCount = useMemo(
+    () => invoices.filter((row) => currencyOf(row.currency) === null).length + expenses.filter((row) => currencyOf(row.currency) === null).length,
+    [invoices, expenses],
+  );
   const rangeTotals = useMemo(
     () => chartData.reduce((acc, point) => ({ income: acc.income + point.income, outgoing: acc.outgoing + point.outgoing }), { income: 0, outgoing: 0 }),
     [chartData],
@@ -174,8 +181,13 @@ export function KrePayDashboard() {
 
       <CardContent className="space-y-5">
         <p className="text-xs text-muted-foreground">
-          Invoice and expense activity · {currency} · last {range}
+          Invoice and expense activity · {activeCurrency ?? "currency not recorded"} · last {range}
         </p>
+        {uncategorizedCount > 0 && (
+          <p role="status" className="text-xs text-muted-foreground">
+            {uncategorizedCount} record{uncategorizedCount === 1 ? " has" : "s have"} no supported currency and {uncategorizedCount === 1 ? "is" : "are"} excluded from totals.
+          </p>
+        )}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
           <Tile label={`Income · ${range}`} value={fmt(rangeTotals.income)} tone="positive" icon={TrendingUp} />
           <Tile label={`Outgoing · ${range}`} value={fmt(rangeTotals.outgoing)} tone="negative" icon={TrendingDown} />
@@ -223,7 +235,7 @@ export function KrePayDashboard() {
 
           {rangeTotals.income === 0 && rangeTotals.outgoing === 0 ? (
             <div className="h-40 flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-              No recorded money movement in this range.
+              {activeCurrency ? "No recorded money movement in this range." : "No currency-coded money movement is available for this range."}
             </div>
           ) : (
             <div role="img" aria-label={`Income ${fmt(rangeTotals.income)}, outgoing ${fmt(rangeTotals.outgoing)}, over the last ${range}`}>
@@ -252,8 +264,8 @@ export function KrePayDashboard() {
             </summary>
             <div className="mt-3 overflow-x-auto">
               <table className="w-full min-w-[320px] text-left text-xs">
-                <caption className="sr-only">Income and outgoing totals by date, in {currency}</caption>
-                <thead><tr className="border-b border-border text-muted-foreground"><th scope="col" className="py-2 pr-3">Date</th><th scope="col" className="py-2 pr-3">Income ({currency})</th><th scope="col" className="py-2">Outgoing ({currency})</th></tr></thead>
+                <caption className="sr-only">Income and outgoing totals by date, in {activeCurrency ?? "an unspecified currency"}</caption>
+                <thead><tr className="border-b border-border text-muted-foreground"><th scope="col" className="py-2 pr-3">Date</th><th scope="col" className="py-2 pr-3">Income ({activeCurrency ?? "N/A"})</th><th scope="col" className="py-2">Outgoing ({activeCurrency ?? "N/A"})</th></tr></thead>
                 <tbody>{chartData.map((point) => <tr key={point.label} className="border-b border-border/60"><th scope="row" className="py-2 pr-3 font-medium">{point.label}</th><td className="py-2 pr-3">{fmt(point.income)}</td><td className="py-2">{fmt(point.outgoing)}</td></tr>)}</tbody>
               </table>
             </div>

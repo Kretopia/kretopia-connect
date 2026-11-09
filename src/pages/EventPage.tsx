@@ -144,7 +144,7 @@ const EventPage = () => {
         .from('jam_participants')
         .select('user_id, guest_name', { count: 'exact' })
         .eq('jam_id', eventId)
-        .in('status', ['going', 'interested']);
+        .eq('status', 'going');
       setParticipantCount(count || 0);
 
       // Fetch first 12 attendee avatars + roles for richer social proof
@@ -198,19 +198,17 @@ const EventPage = () => {
   };
 
   const handleJoin = async () => {
-    if (!user || !event) return;
+    if (!user || !event || joining) return;
     setJoining(true);
     try {
       if (participation) {
-        // Cancel RSVP — frees the spot and triggers waitlist auto-promotion
-        const { error } = await supabase
-          .from('jam_participants')
-          .update({ status: 'cancelled' } as any)
-          .eq('jam_id', event.id)
-          .eq('user_id', user.id);
+        const { data: result, error } = await supabase.rpc('cancel_event_rsvp', {
+          p_event_id: event.id,
+        });
         if (error) throw error;
+        if (result === 'not_going') throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
-        setParticipantCount(prev => Math.max(0, prev - 1));
+        if (participation === 'going') setParticipantCount(prev => Math.max(0, prev - 1));
         toast({ title: "RSVP cancelled", description: "Your spot has been released." });
       } else {
         // Capture promoter/host attribution from ?ref= query
@@ -229,7 +227,7 @@ const EventPage = () => {
         } else if (result === 'already') {
           setParticipation('going');
           toast({ title: "Already going", description: "You're already on the guest list." });
-        } else {
+        } else if (result === 'joined') {
           // joined
           setParticipation('going');
           setParticipantCount(prev => prev + 1);
@@ -254,6 +252,8 @@ const EventPage = () => {
               participantId: inserted.id,
             }).catch(() => {});
           }
+        } else {
+          throw new Error("The event did not confirm your RSVP.");
         }
       }
     } catch (err) {
@@ -733,6 +733,7 @@ const EventPage = () => {
             onOpenChange={setShowTicketDialog}
             eventId={event.id}
             eventTitle={event.title}
+            reservationsEnabled={false}
             onSuccess={() => {
               setParticipation('going');
               setParticipantCount(prev => prev + 1);
