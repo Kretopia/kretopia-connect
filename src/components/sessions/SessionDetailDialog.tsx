@@ -69,10 +69,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   general: 'Creative',
 };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', IDR: 'Rp', TTD: 'TT$',
-};
-
 export const SessionDetailDialog = ({ 
   session, open, onOpenChange, onRefresh 
 }: SessionDetailDialogProps) => {
@@ -197,13 +193,15 @@ export const SessionDetailDialog = ({
   if (!session) return null;
 
   const isCreator = user?.id === session.created_by;
-  const isFull = session.participant_count >= session.max_participants;
+  const isFull = session.max_participants > 0 && session.participant_count >= session.max_participants;
   const startDate = new Date(session.start_time);
   const isPast = startDate < new Date();
   const isParticipant = !!participation || isCreator;
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
   const nativePaidTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);
-  const currencySymbol = CURRENCY_SYMBOLS[session.ticket_currency || 'USD'] || session.ticket_currency || '$';
+  const ticketPriceLabel = session.ticket_price && session.ticket_price > 0 && session.ticket_currency && /^[A-Za-z]{3}$/.test(session.ticket_currency)
+    ? new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency.toUpperCase() }).format(session.ticket_price)
+    : "Paid ticket · currency not recorded";
 
   return (
     <>
@@ -336,7 +334,7 @@ export const SessionDetailDialog = ({
                   {loading ? <KretopiaSpinner className="h-4 w-4" /> : participation ? (
                     <><Check className="h-4 w-4 mr-1.5" /> Going</>
                   ) : nativePaidTicketUnavailable ? "Ticket booking paused" : isTicketed ? (
-                    <>{session.external_ticket_url ? <ExternalLink className="h-4 w-4 mr-1.5" /> : <Ticket className="h-4 w-4 mr-1.5" />} Get Ticket — {currencySymbol}{session.ticket_price}</>
+                    <>{session.external_ticket_url ? <ExternalLink className="h-4 w-4 mr-1.5" /> : <Ticket className="h-4 w-4 mr-1.5" />} Get Ticket — {ticketPriceLabel}</>
                   ) : session.is_ticketed ? (
                     <><Ticket className="h-4 w-4 mr-1.5" /> Get Ticket</>
                   ) : isFull ? "Full" : "Join Event"}
@@ -413,7 +411,7 @@ export const SessionDetailDialog = ({
                       <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-semibold text-lg">{currencySymbol}{session.ticket_price?.toFixed(2)}</p>
+                            <p className="font-semibold text-lg">{ticketPriceLabel}</p>
                             <p className="text-sm text-muted-foreground">General Admission</p>
                           </div>
                           {!isCreator && !isPast && !participation && (

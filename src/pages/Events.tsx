@@ -20,7 +20,7 @@ import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useCurrentGeoCountry } from "@/hooks/useCurrentGeoCountry";
 
-interface EventItem {
+export interface EventItem {
   id: string;
   title: string;
   description?: string;
@@ -53,10 +53,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   general: 'Creative',
 };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', IDR: 'Rp', TTD: 'TT$',
-};
-
 // Reduced to the handful people actually tap, inline as quick pills --
 // replaces the old 8-option category dropdown buried in a filter sheet
 // alongside three more filter dimensions (when/price/mode). Search now
@@ -85,12 +81,12 @@ const formatEventPrice = (event: EventItem) => {
   return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(event.ticket_price);
 };
 
-const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
+export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
+  const [coverFailed, setCoverFailed] = useState(false);
   const isPast = new Date(event.start_time).getTime() < Date.now();
   const isFull = event.max_participants > 0 && event.participant_count >= event.max_participants;
-  const place = event.event_mode === "online" || event.event_type === "virtual"
-    ? "Online"
-    : event.venue_name || event.venue_address || "Location not listed";
+  const isOnline = event.event_mode === "online" || event.event_type === "virtual";
+  const place = isOnline ? "Online" : event.event_mode === "hybrid" ? "Hybrid" : event.venue_name || event.venue_address || "Location not listed";
   const booking = event.my_status === "going" ? "You're going" : event.status === "cancelled" ? "Cancelled" : isPast ? "Event ended" : isFull ? "Full" : "Places available";
 
   return (
@@ -99,8 +95,8 @@ const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }
       title={event.title}
       open={{ onClick, ariaLabel: `View event: ${event.title}` }}
       cover={
-        event.cover_image_url
-          ? <img src={event.cover_image_url} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+        event.cover_image_url && !coverFailed
+          ? <img src={event.cover_image_url} alt="" loading="lazy" decoding="async" onError={() => setCoverFailed(true)} className="h-full w-full object-cover" />
           : <KretoScene scene="soundstages" size="thumb" className="h-full w-full" />
       }
       coverStart={
@@ -114,7 +110,7 @@ const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }
       description={event.description?.trim() || null}
       tags={[
         <CardPill key="time"><Clock className="h-3 w-3" aria-hidden />{formatEventTime(event.start_time)}</CardPill>,
-        <CardPill key="place">{event.event_mode === "online" || event.event_type === "virtual" ? <Monitor className="h-3 w-3" aria-hidden /> : <MapPin className="h-3 w-3" aria-hidden />}{place}</CardPill>,
+        <CardPill key="place">{isOnline || event.event_mode === "hybrid" ? <Monitor className="h-3 w-3" aria-hidden /> : <MapPin className="h-3 w-3" aria-hidden />}{place}</CardPill>,
         <CardPill key="price"><Ticket className="h-3 w-3" aria-hidden />{formatEventPrice(event)} · {booking}</CardPill>,
       ]}
       primary={{
@@ -127,7 +123,7 @@ const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }
   );
 };
 
-function EventCalendar({
+export function EventCalendar({
   events,
   month,
   selectedDay,

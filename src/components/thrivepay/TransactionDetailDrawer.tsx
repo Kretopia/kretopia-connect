@@ -13,6 +13,7 @@ export interface TransactionDetail {
   description: string | null;
   status: string;
   created_at: string;
+  currency?: string | null;
   related_project_id?: string | null;
 }
 
@@ -36,7 +37,8 @@ export function TransactionDetailDrawer({ transaction, onOpenChange }: Props) {
   if (!transaction) return null;
 
   const isIn = transaction.type.includes("earned") || transaction.type.includes("received");
-  const badgeCls = STATUS_BADGE[transaction.status] || "bg-muted text-muted-foreground border-border";
+  const status = transaction.status || "unknown";
+  const badgeCls = STATUS_BADGE[status] || "bg-muted text-muted-foreground border-border";
   // Not a payment method / card fragment — a short, safe internal reference
   // the user can quote in support conversations without exposing anything
   // sensitive.
@@ -56,19 +58,21 @@ export function TransactionDetailDrawer({ transaction, onOpenChange }: Props) {
         </SheetHeader>
 
         <div className="py-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <span className={`text-2xl font-bold ${isIn ? "text-green-500" : "text-red-500"}`}>
-              {isIn ? "+" : "-"}${Math.abs(transaction.amount).toFixed(2)}
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm font-medium text-muted-foreground">
+              {transaction.currency && /^[A-Za-z]{3}$/.test(transaction.currency)
+                ? new Intl.NumberFormat(undefined, { style: "currency", currency: transaction.currency.toUpperCase() }).format(Math.abs(transaction.amount))
+                : "Amount not shown · currency not recorded"}
             </span>
             <Badge variant="outline" className={badgeCls}>
-              {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+              {status.charAt(0).toUpperCase() + status.slice(1)}
             </Badge>
           </div>
 
           <Separator />
 
           <div className="space-y-2 text-sm">
-            <Row label="Date" value={new Date(transaction.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} />
+            <Row label="Date" value={transaction.created_at ? new Date(transaction.created_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Date unavailable"} />
             <Row label="Type" value={transaction.type.replace(/_/g, " ")} />
             <Row label="Reference" value={safeRef} />
           </div>
@@ -77,7 +81,7 @@ export function TransactionDetailDrawer({ transaction, onOpenChange }: Props) {
 
           <div>
             <p className="text-xs text-muted-foreground mb-3">Status</p>
-            <PaymentStatusTimeline createdAt={transaction.created_at} status={transaction.status} />
+            <PaymentStatusTimeline createdAt={transaction.created_at} status={status} />
           </div>
 
           {transaction.related_project_id && (
