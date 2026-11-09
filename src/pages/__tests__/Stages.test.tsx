@@ -85,7 +85,7 @@ describe("Stages default view", () => {
     renderAt("/circle");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Stages. Where creators meet, live.");
     expect(document.querySelector("h1 .k-gradient-text")).toHaveTextContent("Where creators meet, live.");
-    expect(screen.getByText("Join creative sessions, discover people you can work with, and grow meaningful professional connections.")).toBeInTheDocument();
+    expect(screen.getByText("Open a room or join a live creative session.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "How this works" })).toBeInTheDocument();
     expect(screen.getByLabelText("Everything in Stages")).toBeInTheDocument();
   });
