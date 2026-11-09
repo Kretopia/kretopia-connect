@@ -4,9 +4,11 @@ import { CalendarDays, Clock3, Lightbulb } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { DialogBrandHeader } from "@/components/ui/dialogBrand";
+import { DIALOG_BODY } from "@/components/ui/dialogBrand.tokens";
 import { downloadIcs } from "@/lib/eventActions";
 import { APP_URL } from "@/lib/constants";
 import type { EventItem } from "@/pages/Events";
@@ -24,7 +26,6 @@ interface EventCalendarWorkspaceProps {
   calendarOpen: boolean;
   onCalendarOpenChange: (open: boolean) => void;
   returnFocusRef: MutableRefObject<HTMLElement | null>;
-  onBook: () => void;
 }
 
 type CalendarView = "agenda" | "week" | "month";
@@ -48,7 +49,6 @@ export function EventCalendarWorkspace({
   calendarOpen,
   onCalendarOpenChange,
   returnFocusRef,
-  onBook,
 }: EventCalendarWorkspaceProps) {
   const activeEvent = useMemo(() => asEventItem(event), [event]);
   const [bookedEvents, setBookedEvents] = useState<EventItem[]>([]);
@@ -97,11 +97,13 @@ export function EventCalendarWorkspace({
           .in("id", ids);
         if (error) throw error;
         if (active) {
-          setBookedEvents((data || []).map((row) => asEventItem({
-            ...row,
-            participant_count: 0,
-            creator_name: "Event host",
-          })));
+          setBookedEvents((data || [])
+            .filter((row) => Number.isFinite(Date.parse(row.start_time)))
+            .map((row) => asEventItem({
+              ...row,
+              participant_count: 0,
+              creator_name: "Event host",
+            })));
         }
       } catch (error) {
         if (active) setBookingsError(error instanceof Error ? error.message : "Your booked events could not be loaded.");
@@ -119,6 +121,11 @@ export function EventCalendarWorkspace({
     byId.set(activeEvent.id, activeEvent);
     return [...byId.values()].sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
   }, [activeEvent, bookedEvents]);
+  const myBookings = useMemo(() => {
+    const byId = new Map<string, EventItem>(bookedEvents.map((item) => [item.id, item]));
+    if (participation === "going") byId.set(activeEvent.id, activeEvent);
+    return [...byId.values()].sort((a, b) => Date.parse(a.start_time) - Date.parse(b.start_time));
+  }, [activeEvent, bookedEvents, participation]);
   const filteredEvents = useMemo(() => {
     if (filter === "booked") return allEvents.filter((item) => item.id !== activeEvent.id || participation === "going");
     if (filter === "this-event") return [activeEvent];
@@ -202,7 +209,10 @@ export function EventCalendarWorkspace({
   });
 
   const openCalendar = () => {
-    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const activeElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    returnFocusRef.current = activeElement && !activeElement.closest('[role="menuitem"]')
+      ? activeElement
+      : document.getElementById("event-title");
     onCalendarOpenChange(true);
   };
 
@@ -277,40 +287,50 @@ export function EventCalendarWorkspace({
 
       <Dialog open={calendarOpen} onOpenChange={onCalendarOpenChange}>
         <DialogContent
-          className="max-h-[90dvh] max-w-3xl overflow-y-auto p-4 sm:p-6"
+          brand
+          className="h-[100dvh] w-full max-w-none overflow-y-auto rounded-none p-0 sm:h-auto sm:max-h-[90dvh] sm:max-w-3xl sm:rounded-2xl"
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             returnFocusRef.current?.focus();
           }}
         >
-          <DialogTitle>Event calendar</DialogTitle>
-          <DialogDescription>Review the event schedule, your bookings, and the available booking action.</DialogDescription>
-          <Tabs value={calendarTab} onValueChange={setCalendarTab}>
+          <DialogBrandHeader title="Event calendar" description="Review the event schedule and your bookings." />
+          <div className={DIALOG_BODY}>
+            <Tabs value={calendarTab} onValueChange={setCalendarTab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="calendar">Calendar</TabsTrigger>
               <TabsTrigger value="bookings">My bookings</TabsTrigger>
             </TabsList>
             <TabsContent value="calendar" className="space-y-4">
               {renderMonthCalendar(allEvents, true)}
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="sticky bottom-0 flex flex-col gap-3 rounded-xl border border-border bg-background/95 p-4 backdrop-blur sm:static sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <p className="font-semibold">{selectedCalendarEvent.title}</p>
                   <p className="text-sm text-muted-foreground">{format(new Date(selectedCalendarEvent.start_time), "EEEE, MMMM d · p")} · local time</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" disabled={selectedCalendarEvent.id !== activeEvent.id || bookingDisabled || participation === "going"} onClick={onBook}>
-                    {selectedCalendarEvent.id !== activeEvent.id || participation === "going" ? "Already booked" : "Continue to booking"}
-                  </Button>
+                  {selectedCalendarEvent.id === activeEvent.id && !bookingDisabled && participation !== "going" ? (
+                    <a
+                      href="#event-booking"
+                      onClick={() => onCalendarOpenChange(false)}
+                      className="inline-flex min-h-10 items-center rounded-lg px-4 font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      Go to event booking
+                    </a>
+                  ) : (
+                    <p className="self-center text-sm text-muted-foreground" role="status">
+                      {selectedCalendarEvent.id !== activeEvent.id || participation === "going" ? "Already booked" : bookingReason || "Booking unavailable"}
+                    </p>
+                  )}
                   <Button type="button" variant="outline" onClick={() => downloadEvent(selectedCalendarEvent)}>Add to calendar</Button>
                 </div>
-                {selectedCalendarEvent.id === activeEvent.id && bookingReason && <p className="basis-full text-sm text-muted-foreground" role="status">{bookingReason}</p>}
               </div>
             </TabsContent>
             <TabsContent value="bookings" className="space-y-3">
               {bookingsLoading ? <div className="flex justify-center p-8"><KretopiaSpinner /></div> : bookingsError ? (
                 <p role="alert" className="text-sm text-destructive">{bookingsError}</p>
-              ) : bookedEvents.length ? (
-                bookedEvents.map((item) => (
+              ) : myBookings.length ? (
+                myBookings.map((item) => (
                   <div key={item.id} className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
                     <button type="button" className="min-w-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => selectEventInModal(item)}>
                       <span className="block truncate font-semibold">{item.title}</span>
@@ -321,7 +341,8 @@ export function EventCalendarWorkspace({
                 ))
               ) : <p className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">{userId ? "No confirmed bookings found." : "Sign in to see your booked events."}</p>}
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          </div>
         </DialogContent>
       </Dialog>
     </>

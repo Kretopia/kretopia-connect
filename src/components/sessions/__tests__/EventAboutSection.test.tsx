@@ -9,7 +9,15 @@ describe("EventAboutSection", () => {
   });
 
   it("clamps to two mobile lines and three desktop lines, then expands in place", () => {
-    render(<EventAboutSection description="An event description long enough to overflow the preview." />);
+    render(
+      <EventAboutSection
+        description="An event description long enough to overflow the preview."
+        program={<p>No line-up or program details are listed for this event.</p>}
+        venue={<p>Online event · Workshop.</p>}
+        policies={<p>RSVP availability is confirmed by the event service.</p>}
+        faq={<p>Use I'm Going to RSVP.</p>}
+      />,
+    );
 
     const paragraph = screen.getByText("An event description long enough to overflow the preview.");
     expect(paragraph.className).toContain("line-clamp-2");
@@ -18,5 +26,24 @@ describe("EventAboutSection", () => {
     fireEvent.click(screen.getByRole("button", { name: "Read more" }));
     expect(paragraph.className).not.toContain("line-clamp-2");
     expect(screen.getByRole("button", { name: "Read less" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("keeps every former event detail block in the About section in the required order", () => {
+    const { container } = render(
+      <EventAboutSection
+        description="About this event"
+        program={<p>No line-up or program details are listed for this event.</p>}
+        venue={<p>Venue details</p>}
+        policies={<p>Guests may RSVP without creating an account.</p>}
+        faq={<p>Where do I find the address?</p>}
+      />,
+    );
+
+    expect(container.querySelector("#about-program")).toHaveTextContent("No line-up or program details are listed for this event.");
+    expect(container.querySelector("#about-venue")).toHaveTextContent("Venue details");
+    expect(container.querySelector("#about-policies")).toHaveTextContent("Guests may RSVP without creating an account.");
+    expect(container.querySelector("#about-faq")).toHaveTextContent("Where do I find the address?");
+    const blocks = ["about-program", "about-venue", "about-policies", "about-faq"].map((id) => container.querySelector(`#${id}`));
+    expect(blocks.map((block) => [...container.querySelectorAll("section")].indexOf(block!))).toEqual([1, 2, 3, 4]);
   });
 });

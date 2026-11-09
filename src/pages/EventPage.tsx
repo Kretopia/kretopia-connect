@@ -32,12 +32,13 @@ import type { EventAttendeePreview } from "@/components/sessions/EventAttendeeSt
 import { EventBookingActions } from "@/components/sessions/EventBookingActions";
 import { EventHostCard } from "@/components/sessions/EventHostCard";
 import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
+import { EventPageShell, EVENT_PAGE_CONTENT_CLASS } from "@/components/sessions/EventPageShell";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
 import { GuestRsvpDialog } from "@/components/sessions/GuestRsvpDialog";
 import { GuestPassDialog } from "@/components/sessions/GuestPassDialog";
 import { EventPhotoWall } from "@/components/sessions/EventPhotoWall";
 import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
-import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl, openDirections } from "@/lib/eventActions";
+import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/lib/eventActions";
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
 import { getEventCountdown } from "@/lib/eventCountdown";
@@ -72,6 +73,7 @@ const EventPage = () => {
   const [successSequence, setSuccessSequence] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const joinInFlight = useRef(false);
+  const verifiedTicketRef = useRef<string | null>(null);
   const calendarReturnFocus = useRef<HTMLElement | null>(null);
 
   const countdown = useMemo(() => getEventCountdown(event?.start_time, now), [event?.start_time, now]);
@@ -96,13 +98,16 @@ const EventPage = () => {
     const ticketStatus = params.get("ticket");
     const sessionId = params.get("session_id");
     const orderId = params.get("order");
-    if (ticketStatus === "success" && (sessionId || orderId)) {
+    const verificationId = sessionId || orderId;
+    if (ticketStatus === "success" && verificationId && verifiedTicketRef.current !== verificationId) {
+      verifiedTicketRef.current = verificationId;
       (async () => {
         try {
           const { data } = await supabase.functions.invoke("verify-event-ticket", {
             body: { sessionId, orderId },
           });
           if (data?.status === "paid") {
+            setSuccessSequence((sequence) => sequence + 1);
             toast({ title: "Ticket confirmed! 🎟️", description: "You're on the guest list." });
             fetchEvent();
           } else {
@@ -196,7 +201,7 @@ const EventPage = () => {
 
       const { data: profileData } = await supabase
         .from('public_profiles_safe')
-        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level')
+        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level, website_url, instagram_url, twitter_url, linkedin_url, tiktok_url, behance_url, imdb_url, soundcloud_url, spotify_url, youtube_url, calendly_url')
         .eq('user_id', eventData.created_by)
         .single();
 
@@ -413,6 +418,83 @@ const EventPage = () => {
 
   const spotsLeft = availabilityReady && capacity > 0 ? capacity - participantCount : null;
   const showScarcity = capacity > 0 && spotsLeft !== null && spotsLeft > 0 && spotsLeft / capacity < 0.3;
+  const hostTools = isCreator ? (
+    <div className="flex justify-end">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2">
+            <MoreVertical className="h-4 w-4" aria-hidden /> Host tools
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem onClick={() => setShowCheckIn(true)}><ScanLine className="mr-2 h-4 w-4" />Check-In</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowEditDialog(true)}><Pencil className="mr-2 h-4 w-4" />Edit event</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate("/events/backstage")}><Sparkles className="mr-2 h-4 w-4" />Open Backstage</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowShareKit(true)}><Share2 className="mr-2 h-4 w-4" />Share / QR Code</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowCohosts(true)}><Crown className="mr-2 h-4 w-4" />Manage Co-hosts</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowRecap(true)}><Sparkles className="mr-2 h-4 w-4" />Post Update / Recap</DropdownMenuItem>
+          <DropdownMenuItem onClick={async () => {
+            const { data: parts } = await supabase
+              .from("jam_participants")
+              .select("user_id, guest_name, guest_email, status, joined_at")
+              .eq("jam_id", event.id)
+              .in("status", ["going", "interested", "maybe"]);
+            const userIds = (parts || []).map((part: any) => part.user_id).filter(Boolean);
+            const { data: profiles } = userIds.length > 0
+              ? await supabase.from("public_profiles_safe").select("user_id, full_name, role").in("user_id", userIds)
+              : { data: [] };
+            const profilesById = new Map((profiles || []).map((profile: any) => [profile.user_id, profile]));
+            const rows = [["Name", "Role", "Email", "Status", "Joined At"]];
+            if (creator) rows.push([creator.full_name || "Host", creator.role || "", "", "Host", ""]);
+            (parts || []).forEach((part: any) => {
+              const profile = profilesById.get(part.user_id) as any;
+              rows.push([
+                profile?.full_name || part.guest_name || "Guest",
+                profile?.role || (part.user_id ? "" : "Guest RSVP"),
+                part.guest_email || "",
+                part.status,
+                part.joined_at ? new Date(part.joined_at).toLocaleDateString() : "",
+              ]);
+            });
+            const csv = rows.map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `guest-list-${event.id.slice(0, 8)}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            toast({ title: "Guest list downloaded" });
+          }}>
+            <Download className="mr-2 h-4 w-4" />Download Guest List
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          {!isPast && !isCompleted && (
+            <DropdownMenuItem onClick={async () => {
+              await supabase.from("creative_jams").update({ status: "completed" } as any).eq("id", event.id).eq("created_by", user?.id || "");
+              toast({ title: "Event marked complete" });
+              fetchEvent();
+            }}>
+              <CheckCircle className="mr-2 h-4 w-4" />Mark Complete
+            </DropdownMenuItem>
+          )}
+          {!isCancelled && (
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={async () => {
+                await supabase.from("creative_jams").update({ status: "cancelled" } as any).eq("id", event.id).eq("created_by", user?.id || "");
+                toast({ title: "Event cancelled" });
+                fetchEvent();
+              }}
+            >
+              <Ban className="mr-2 h-4 w-4" />Cancel Event
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -456,347 +538,241 @@ const EventPage = () => {
         </script>
       </Helmet>
       
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 pb-32 pt-6 md:px-6 xl:px-8 sm:pb-16">
-
-          {/* RSVP success banner (after guest quick-RSVP) */}
-          {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rsvp") === "confirmed" && (
-            <div className="mb-4 p-4 rounded-xl bg-primary/10 border border-primary/30 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
-              <CheckCircle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-              <div className="flex-1 min-w-0">
-                {new URLSearchParams(window.location.search).get("source") === "email" ? (
-                  <>
-                    <p className="font-semibold text-foreground">Attendance confirmed 🎉</p>
-                    <p className="text-sm text-muted-foreground">
-                      Great to have you
-                      {new URLSearchParams(window.location.search).get("name")
-                        ? `, ${new URLSearchParams(window.location.search).get("name")}`
-                        : ""}
-                      . Your spot is locked in. Here's the full event below.
-                    </p>
-                  </>
+      <EventPageShell
+        eventTitle={event.title}
+        hero={
+          <>
+            <EventHeroCard
+              event={event}
+              creator={creator}
+              isCreator={isCreator}
+              isAuthenticated={isAuthenticated}
+              isPast={isPast}
+              isCancelled={isCancelled}
+              isCompleted={isCompleted}
+              countdown={countdown}
+              cityLabel={cityLabel}
+              priceLabel={ticketPriceLabel}
+              participantCount={availabilityReady ? participantCount : null}
+              attendees={attendeePreview}
+              attendeesVisible={event.attendee_list_visibility !== "host_only" || isCreator || !!participation}
+              isFull={isFull}
+              participation={participation}
+              joining={joining}
+              onShare={handleShare}
+              onShowGuestPass={() => setShowGuestPass(true)}
+              onCancelRsvp={handleJoin}
+              onOpenCalendar={() => {
+                calendarReturnFocus.current = document.activeElement instanceof HTMLElement
+                  ? document.activeElement
+                  : document.getElementById("event-title");
+                setShowCalendar(true);
+              }}
+              onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
+              onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+            />
+            <div className={`${EVENT_PAGE_CONTENT_CLASS} space-y-3`}>
+              {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rsvp") === "confirmed" && (
+                <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
+                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    {new URLSearchParams(window.location.search).get("source") === "email" ? (
+                      <>
+                        <p className="font-semibold text-foreground">Attendance confirmed 🎉</p>
+                        <p className="text-sm text-muted-foreground">
+                          Great to have you
+                          {new URLSearchParams(window.location.search).get("name")
+                            ? `, ${new URLSearchParams(window.location.search).get("name")}`
+                            : ""}
+                          . Your spot is locked in. Here's the full event below.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-foreground">You're going! 🎉</p>
+                        <p className="text-sm text-muted-foreground">
+                          Confirmation sent to{" "}
+                          <span className="font-medium text-foreground">{new URLSearchParams(window.location.search).get("email") || "your email"}</span>
+                          . Here's the full event below.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => navigate(`/event/${event.id}`, { replace: true })} aria-label="Dismiss">
+                    <X className="h-4 w-4" aria-hidden />
+                  </Button>
+                </div>
+              )}
+              {isCancelled && (
+                <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                  <XCircle className="h-5 w-5 shrink-0 text-destructive" aria-hidden />
+                  <div>
+                    <p className="font-semibold text-destructive">Event Cancelled</p>
+                    {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
+                  </div>
+                </div>
+              )}
+              {isCompleted && (
+                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3">
+                  <Check className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
+                  <p className="font-semibold text-green-600">Event Completed</p>
+                </div>
+              )}
+            </div>
+          </>
+        }
+        about={
+          <EventAboutSection
+            description={event.description}
+            program={<p className="text-muted-foreground">No line-up or program details are listed for this event.</p>}
+            venue={
+              <>
+                {event.event_mode && event.event_mode !== "irl" ? (
+                  <p className="text-muted-foreground">Online event{event.online_format ? ` · ${event.online_format}` : ""}.</p>
                 ) : (
                   <>
-                    <p className="font-semibold text-foreground">You're going! 🎉</p>
-                    <p className="text-sm text-muted-foreground">
-                      Confirmation sent to{" "}
-                      <span className="text-foreground font-medium">
-                        {new URLSearchParams(window.location.search).get("email") || "your email"}
-                      </span>
-                      . Here's the full event below.
-                    </p>
+                    <p className="font-medium">{event.venue_name || "Location to be announced"}</p>
+                    {isAuthenticated && event.venue_address && <p className="text-sm text-muted-foreground">{event.venue_address}</p>}
+                    {!isAuthenticated && event.venue_address && <p className="text-sm text-muted-foreground">Sign in to see the full address.</p>}
                   </>
                 )}
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 -mr-1 -mt-1 shrink-0"
-                onClick={() => navigate(`/event/${event.id}`, { replace: true })}
-                aria-label="Dismiss"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-          
-          
-          {/* Cancelled/Completed Banner */}
-          {isCancelled && (
-            <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-destructive shrink-0" />
-              <div>
-                <p className="font-semibold text-destructive">Event Cancelled</p>
+              </>
+            }
+            policies={
+              <>
+                <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
+                  <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
+                  <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
+                  <li>{isTicketed && !hasExternalTicket ? "Online payment booking is unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
+                </ul>
                 {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
+              </>
+            }
+            faq={
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium">How do I book?</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">Use I'm Going to RSVP. Your place is shown only after the server confirms it.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium">Can I cancel?</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">If you're going, use Cancel RSVP on this page. The cancellation is confirmed by the event service.</p>
+                </div>
+                <div>
+                  <h4 className="font-medium">Where do I find the address?</h4>
+                  <p className="mt-1 text-sm text-muted-foreground">{event.venue_address && !isAuthenticated ? "Sign in to view the full address." : "Venue details are shown in the Venue block."}</p>
+                </div>
               </div>
-            </div>
-          )}
-          {isCompleted && (
-            <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-600 shrink-0" />
-              <p className="font-semibold text-green-600">Event Completed</p>
-            </div>
-          )}
-
-          {/* Host Actions */}
-          {isCreator && (
-            <div className="flex justify-end gap-2 mb-2">
-              <Button variant="outline" size="sm" onClick={() => setShowCheckIn(true)} className="gap-1.5">
-                <ScanLine className="h-3.5 w-3.5" /> Check-In
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)} className="gap-1.5">
-                <Pencil className="h-3.5 w-3.5" /> Edit
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="px-2">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem onClick={() => navigate("/events/backstage")}>
-                    <Sparkles className="h-4 w-4 mr-2" /> Open Backstage
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowShareKit(true)}>
-                    <Share2 className="h-4 w-4 mr-2" /> Share / QR Code
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCohosts(true)}>
-                    <Crown className="h-4 w-4 mr-2" /> Manage Co-hosts
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowRecap(true)}>
-                    <Sparkles className="h-4 w-4 mr-2" /> Post Update / Recap
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={async () => {
-                    const { data: parts } = await supabase
-                      .from('jam_participants')
-                      .select('user_id, guest_name, guest_email, status, joined_at')
-                      .eq('jam_id', event.id)
-                      .in('status', ['going', 'interested', 'maybe']);
-                    const userIds = (parts || []).map((p: any) => p.user_id).filter(Boolean);
-                    const { data: profiles } = userIds.length > 0
-                      ? await supabase.from('public_profiles_safe').select('user_id, full_name, role').in('user_id', userIds)
-                      : { data: [] };
-                    const pMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-                    const rows = [["Name", "Role", "Email", "Status", "Joined At"]];
-                    if (creator) rows.push([creator.full_name || "Host", creator.role || "", "", "Host", ""]);
-                    (parts || []).forEach((p: any) => {
-                      const prof = pMap.get(p.user_id) as any;
-                      rows.push([prof?.full_name || p.guest_name || "Guest", prof?.role || (p.user_id ? "" : "Guest RSVP"), p.guest_email || "", p.status, p.joined_at ? new Date(p.joined_at).toLocaleDateString() : ""]);
-                    });
-                    const csv = rows.map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
-                    const blob = new Blob([csv], { type: "text/csv" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `guest-list-${event.id.slice(0, 8)}.csv`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast({ title: "Guest list downloaded" });
-                  }}>
-                    <Download className="h-4 w-4 mr-2" /> Download Guest List
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  {!isPast && !isCompleted && (
-                    <DropdownMenuItem onClick={async () => {
-                      await supabase.from('creative_jams').update({ status: 'completed' } as any).eq('id', event.id).eq('created_by', user?.id || '');
-                      toast({ title: "Event marked complete" });
-                      fetchEvent();
-                    }}>
-                      <CheckCircle className="h-4 w-4 mr-2" /> Mark Complete
-                    </DropdownMenuItem>
-                  )}
-                  {!isCancelled && (
-                    <DropdownMenuItem
-                      className="text-destructive focus:text-destructive"
-                      onClick={async () => {
-                        await supabase.from('creative_jams').update({ status: 'cancelled' } as any).eq('id', event.id).eq('created_by', user?.id || '');
-                        toast({ title: "Event cancelled" });
-                        fetchEvent();
-                      }}
-                    >
-                      <Ban className="h-4 w-4 mr-2" /> Cancel Event
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
-          
-          {/* Event hero: cover, title, host, countdown, gallery, when/where/capacity */}
-          <EventHeroCard
-            event={event}
-            creator={creator}
-            isCreator={isCreator}
-            isAuthenticated={isAuthenticated}
-            isPast={isPast}
-            isCancelled={isCancelled}
-            isCompleted={isCompleted}
-            countdown={countdown}
-            cityLabel={cityLabel}
-            priceLabel={ticketPriceLabel}
-            participantCount={availabilityReady ? participantCount : null}
-            attendees={attendeePreview}
-            attendeesVisible={event.attendee_list_visibility !== "host_only" || isCreator || !!participation}
-            capacity={capacity}
-            isFull={isFull}
-            spotsLeft={spotsLeft}
-            showScarcity={showScarcity}
-            participation={participation}
-            joining={joining}
-            onShare={handleShare}
-            onShowGuestPass={() => setShowGuestPass(true)}
-            onCancelRsvp={handleJoin}
-            onOpenCalendar={() => {
-              calendarReturnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-              setShowCalendar(true);
-            }}
-            onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
+            }
           />
-
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-            <main className="min-w-0 space-y-6">
-              {event.event_mode && event.event_mode !== 'irl' && !isPast && !isCancelled && (
-                <JoinOnlineCard
-                  eventId={event.id}
-                  eventTitle={event.title}
-                  startTime={event.start_time}
-                  eventMode={event.event_mode}
-                  onlineFormat={event.online_format}
-                  onlineMaxAttendees={event.online_max_attendees}
-                  watchPartyVideoUrl={event.watch_party_video_url}
-                  recordingEnabled={!!event.recording_enabled}
-                  videoRoomStartedAt={event.video_room_started_at}
-                  hasAccess={isCreator || !!participation || (isTicketed && !!participation)}
-                  needsRsvp={!participation && !isTicketed}
-                  isHost={isCreator}
-                />
-              )}
-
-              <EventAboutSection description={event.description} />
-
-              <EventCalendarWorkspace
-                event={{
-                  ...event,
-                  creator_name: creator?.full_name || "Event host",
-                  participant_count: availabilityReady ? participantCount : 0,
-                  created_by: event.created_by,
-                }}
-                userId={user?.id || null}
-                participation={participation}
-                bookingDisabled={bookingDisabled}
-                bookingReason={bookingReason}
-                calendarOpen={showCalendar}
-                onCalendarOpenChange={setShowCalendar}
-                returnFocusRef={calendarReturnFocus}
-                onBook={handleJoinOrSignup}
+        }
+        attendees={
+          <section id="attendees" aria-labelledby="event-attendees-heading" className="scroll-mt-24 space-y-4 rounded-2xl border border-border bg-card p-4 md:p-6">
+            <h2 id="event-attendees-heading" className="text-xl font-semibold">Who's coming</h2>
+            <p className="text-sm text-muted-foreground">
+              {availabilityReady ? `${participantCount} going` : "Attendance count unavailable"}
+            </p>
+            {availabilityReady ? (
+              <EventCommunityHub
+                eventId={event.id}
+                eventTitle={event.title}
+                eventCategory={event.category}
+                eventCoverImageUrl={event.cover_image_url}
+                hostId={event.created_by}
+                isCreator={isCreator}
+                isAuthenticated={isAuthenticated}
+                currentUserId={user?.id || null}
+                isParticipant={!!participation}
+                participantCount={participantCount}
+                attendeeListVisibility={event.attendee_list_visibility}
+                guestMatchingEnabled={event.guest_matching_enabled !== false}
+                isPast={isPast}
+                isCompleted={isCompleted}
+                groupChatEnabled={!!event.group_chat_enabled}
+                groupChatRoomId={event.group_chat_room_id || null}
+                onGroupChatChange={({ enabled, roomId }) => setEvent((prev: any) => prev ? { ...prev, group_chat_enabled: enabled, group_chat_room_id: roomId } : prev)}
+                circleId={event.circle_id || null}
+                onCircleLinked={fetchEvent}
               />
-
-              <Card id="program">
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="text-xl font-semibold">Line-up &amp; program</h2>
-                  <p className="mt-3 text-muted-foreground">No line-up or program details are listed for this event.</p>
-                </CardContent>
-              </Card>
-
-              <Card id="venue">
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="text-xl font-semibold">Venue</h2>
-                  {event.event_mode && event.event_mode !== "irl" ? (
-                    <p className="mt-3 text-muted-foreground">Online event{event.online_format ? ` · ${event.online_format}` : ""}.</p>
-                  ) : (
-                    <>
-                      <p className="mt-3 font-medium">{event.venue_name || "Location to be announced"}</p>
-                      {isAuthenticated && event.venue_address && <p className="mt-1 text-sm text-muted-foreground">{event.venue_address}</p>}
-                      {!isAuthenticated && event.venue_address && <p className="mt-1 text-sm text-muted-foreground">Sign in to see the full address.</p>}
-                      {isAuthenticated && (event.venue_address || event.venue_name) && (
-                        <Button variant="outline" className="mt-4" onClick={() => openDirections(event.venue_address, event.venue_name)}>
-                          <ExternalLink className="mr-2 h-4 w-4" aria-hidden /> Open map
-                        </Button>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-
-              <section id="host" aria-labelledby="event-host-heading">
-                <h2 id="event-host-heading" className="sr-only">Host</h2>
-                <EventHostCard
-                  host={creator}
-                  isAuthenticated={isAuthenticated}
-                  onOpenPassport={(username) => navigate(`/u/${username}`)}
-                  onSignIn={() => navigate(buildEventAuthUrl(event.id))}
-                />
-              </section>
-
-              <Card id="policies">
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="text-xl font-semibold">Policies</h2>
-                  <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-muted-foreground">
-                    <li>{event.require_account_for_rsvp ? "An account is required to RSVP." : "Guests may RSVP without creating an account."}</li>
-                    <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
-                    <li>{isTicketed && !hasExternalTicket ? "Online payment booking is unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
-                  </ul>
-                  {event.status_note && <p className="mt-4 text-sm text-muted-foreground">{event.status_note}</p>}
-                </CardContent>
-              </Card>
-
-              <Card id="faq">
-                <CardContent className="p-4 md:p-6">
-                  <h2 className="text-xl font-semibold">FAQ</h2>
-                  <div className="mt-4 space-y-4">
-                    <div>
-                      <h3 className="font-medium">How do I book?</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">Use Book to RSVP. Your place is shown only after the server confirms it.</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Can I cancel?</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">If you're going, use Cancel RSVP on this page. The cancellation is confirmed by the event service.</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">Where do I find the address?</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">{event.venue_address && !isAuthenticated ? "Sign in to view the full address." : "Venue details are shown in the Venue section."}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {availabilityReady && (
-                <EventCommunityHub
-                  eventId={event.id}
-                  eventTitle={event.title}
-                  eventCategory={event.category}
-                  eventCoverImageUrl={event.cover_image_url}
-                  hostId={event.created_by}
-                  isCreator={isCreator}
-                  isAuthenticated={isAuthenticated}
-                  currentUserId={user?.id || null}
-                  isParticipant={!!participation}
-                  participantCount={participantCount}
-                  attendeeListVisibility={event.attendee_list_visibility}
-                  guestMatchingEnabled={event.guest_matching_enabled !== false}
-                  isPast={isPast}
-                  isCompleted={isCompleted}
-                  groupChatEnabled={!!event.group_chat_enabled}
-                  groupChatRoomId={event.group_chat_room_id || null}
-                  onGroupChatChange={({ enabled, roomId }) => setEvent((prev: any) => prev ? { ...prev, group_chat_enabled: enabled, group_chat_room_id: roomId } : prev)}
-                  circleId={event.circle_id || null}
-                  onCircleLinked={fetchEvent}
-                />
-              )}
-
-              {(isPast || isCompleted) && event.photo_wall_enabled !== false && (
-                <EventPhotoWall eventId={event.id} isHost={isCreator} canUpload={isCreator || !!participation} />
-              )}
-            </main>
-
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 rounded-2xl border border-border bg-card p-5 shadow-[0_20px_70px_-45px_hsl(var(--primary)/0.28)]">
-                <EventBookingActions
-                  label={bookingLabel}
-                  priceLabel={ticketPriceLabel}
-                  goingLabel={availabilityReady ? `${participantCount} going${capacity ? ` · ${capacity} places` : ""}` : "Attendance count unavailable"}
-                  reason={bookingReason}
-                  disabled={bookingDisabled}
-                  joining={joining}
-                  onBook={handleJoinOrSignup}
-                />
-                {hasExternalTicket && <p className="mt-3 text-xs text-muted-foreground">Tickets and payment are handled by the external provider.</p>}
-              </div>
-            </aside>
+            ) : <p className="text-sm text-muted-foreground" role="status">Attendance details are being checked.</p>}
+          </section>
+        }
+        calendar={
+          eventTimeValid ? (
+            <EventCalendarWorkspace
+              event={{
+                ...event,
+                creator_name: creator?.full_name || "Event host",
+                participant_count: availabilityReady ? participantCount : 0,
+                created_by: event.created_by,
+              }}
+              userId={user?.id || null}
+              participation={participation}
+              bookingDisabled={bookingDisabled}
+              bookingReason={bookingReason}
+              calendarOpen={showCalendar}
+              onCalendarOpenChange={setShowCalendar}
+              returnFocusRef={calendarReturnFocus}
+            />
+          ) : (
+            <section id="schedule" aria-labelledby="event-schedule-heading" className="space-y-2 rounded-2xl border border-border bg-card p-4 md:p-6">
+              <h2 id="event-schedule-heading" className="text-xl font-semibold">Schedule unavailable</h2>
+              <p className="text-sm text-muted-foreground">The event time could not be verified, so calendar actions are unavailable.</p>
+            </section>
+          )
+        }
+        host={
+          <div id="host" className="scroll-mt-24">
+            <EventHostCard
+              host={creator}
+              isAuthenticated={isAuthenticated}
+              onContactViaKretopia={(username) => username
+                ? navigate(`/u/${username}`)
+                : toast({ title: "Host contact unavailable", description: "This host has not shared a Kretopia username." })}
+              onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+            />
           </div>
-
-          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
+        }
+        bookingRail={
+          <>
             <EventBookingActions
-              compact
+              responsive
               label={bookingLabel}
               priceLabel={ticketPriceLabel}
-              goingLabel={availabilityReady ? `${participantCount} going` : "Count unavailable"}
+              goingLabel={availabilityReady ? `${participantCount} going${capacity ? ` · ${capacity} places` : ""}` : "Attendance count unavailable"}
               reason={bookingReason}
               disabled={bookingDisabled}
               joining={joining}
               onBook={handleJoinOrSignup}
             />
+            {hasExternalTicket && <p className="mt-3 hidden text-xs text-muted-foreground lg:block">Tickets and payment are handled by the external provider.</p>}
+          </>
+        }
+        afterHost={
+          <div className="space-y-6">
+            {hostTools}
+            {event.event_mode && event.event_mode !== "irl" && !isPast && !isCancelled && (
+              <JoinOnlineCard
+                eventId={event.id}
+                eventTitle={event.title}
+                startTime={event.start_time}
+                eventMode={event.event_mode}
+                onlineFormat={event.online_format}
+                onlineMaxAttendees={event.online_max_attendees}
+                watchPartyVideoUrl={event.watch_party_video_url}
+                recordingEnabled={!!event.recording_enabled}
+                videoRoomStartedAt={event.video_room_started_at}
+                hasAccess={isCreator || !!participation || (isTicketed && !!participation)}
+                needsRsvp={!participation && !isTicketed}
+                isHost={isCreator}
+              />
+            )}
+            {(isPast || isCompleted) && event.photo_wall_enabled !== false && (
+              <EventPhotoWall eventId={event.id} isHost={isCreator} canUpload={isCreator || !!participation} />
+            )}
           </div>
+        }
+      />
 
           {isAuthenticated && (
             <EventShareKit
@@ -921,8 +897,6 @@ const EventPage = () => {
               </DialogContent>
             </Dialog>
           )}
-        </div>
-      </div>
     </>
   );
 };

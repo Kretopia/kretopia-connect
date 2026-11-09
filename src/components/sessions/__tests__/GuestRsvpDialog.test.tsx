@@ -15,7 +15,7 @@ vi.mock("@/integrations/supabase/client", () => ({
     rpc: (...args: unknown[]) => mocks.rpc(...args),
     functions: { invoke: (...args: unknown[]) => mocks.invoke(...args) },
     from: () => {
-      const chain: any = {
+      const chain: MockQuery = {
         select: () => chain,
         eq: () => chain,
         order: () => chain,
@@ -30,6 +30,13 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null }) }));
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: mocks.toast }) }));
 
 import { GuestRsvpDialog } from "../GuestRsvpDialog";
+
+type MockQuery = {
+  select: () => MockQuery;
+  eq: () => MockQuery;
+  order: () => MockQuery;
+  then: (resolve: (value: { data: unknown[]; error: null }) => unknown) => Promise<unknown>;
+};
 
 describe("GuestRsvpDialog duplicate reservation", () => {
   beforeEach(() => {
