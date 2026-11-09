@@ -30,6 +30,7 @@ export function EventAttendeeStack({ attendees, totalCount, visible }: EventAtte
         ))}
         {overflow > 0 && (
           <span
+            role="img"
             className="-ml-2 flex h-9 w-9 items-center justify-center rounded-full border-2 border-background bg-muted text-xs font-semibold text-foreground"
             aria-label={`${overflow} more attendees`}
           >

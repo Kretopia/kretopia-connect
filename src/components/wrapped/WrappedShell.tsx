@@ -35,6 +35,12 @@ export interface WrappedShellProps {
   sectionRef?: Ref<HTMLElement>;
   /** The Kretopia lockup at the foot of the panel. On by default; a page that stacks two panels keeps it on the last one. */
   brandFooter?: boolean;
+  /** Omit the visible feature header while retaining an accessible heading. */
+  showHeader?: boolean;
+  /** Show the thin Kretopia HUD corner marks. */
+  showHudCorners?: boolean;
+  /** Override the shell's child spacing without changing its surface. */
+  contentClassName?: string;
   className?: string;
   /** Full-bleed head of the panel: the feature's Kretopia scene banner, fused into the frame. */
   banner?: ReactNode;
@@ -50,7 +56,23 @@ export interface WrappedShellProps {
  * drift apart. It owns the look only: what goes inside, and where its numbers
  * come from, belongs to each surface.
  */
-export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subtitle, status, aside, sectionRef, brandFooter = true, className, banner, children }: WrappedShellProps) {
+export function WrappedShell({
+  titleId,
+  eyebrow,
+  title,
+  hideTitle = false,
+  subtitle,
+  status,
+  aside,
+  sectionRef,
+  brandFooter = true,
+  showHeader = true,
+  showHudCorners = true,
+  contentClassName,
+  className,
+  banner,
+  children,
+}: WrappedShellProps) {
   return (
     <section
       ref={sectionRef}
@@ -60,6 +82,7 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
         className,
       )}
     >
+      {!showHeader && <h2 id={titleId} className="sr-only">{title}</h2>}
       {/* depth: a faint grid and one soft light from the top left, behind everything */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-grid-quadrille opacity-40" />
       <div
@@ -67,11 +90,11 @@ export function WrappedShell({ titleId, eyebrow, title, hideTitle = false, subti
         className="pointer-events-none absolute inset-0 -z-10"
         style={{ background: "radial-gradient(60% 45% at 0% 0%, hsl(var(--energy) / 0.10), transparent 70%)" }}
       />
-      <HudCorners />
+      {showHudCorners && <HudCorners />}
 
-      <div className="space-y-5 sm:space-y-6">
+      <div className={cn("space-y-5 sm:space-y-6", contentClassName)}>
         {banner}
-        {!banner && <header className="flex items-start justify-between gap-3">
+        {showHeader && !banner && <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{eyebrow}</p>
             <h2 id={titleId} className={cn("mt-1.5 text-xl font-bold leading-tight text-foreground sm:text-2xl", hideTitle && "sr-only")}>

@@ -55,15 +55,15 @@ export function getEventBookingLabel(state: EventBookingState): string {
     case "loading": return "Checking availability";
     case "unavailable": return "Booking unavailable";
     case "cancelled": return "Cancelled";
-    case "ended": return "Event ended";
+    case "ended": return "Ended";
     case "hosting": return "You're hosting";
     case "waitlisted": return "Waitlisted";
-    case "booked": return "You're going";
-    case "sign-in-waitlist": return "Sign in for waitlist";
-    case "waitlist": return "Join waitlist";
+    case "booked": return "Going";
+    case "sign-in-waitlist": return "Waitlist";
+    case "waitlist": return "Waitlist";
     case "sold-out": return "Sold out";
     case "payment-unavailable": return "Booking unavailable";
-    case "available": return "Book";
+    case "available": return "I'm Going";
   }
 }
 

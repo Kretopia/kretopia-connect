@@ -20,7 +20,13 @@ describe("event booking state", () => {
     const ended = getEventBookingState({ ...available, ended: true });
     expect(getEventBookingLabel(soldOut)).toBe("Sold out");
     expect(getEventBookingReason(soldOut)).toContain("no waitlist");
-    expect(getEventBookingLabel(ended)).toBe("Event ended");
+    expect(getEventBookingLabel(ended)).toBe("Ended");
+  });
+
+  it("uses one state-aware label for the primary I'm Going action", () => {
+    expect(getEventBookingLabel(getEventBookingState(available))).toBe("I'm Going");
+    expect(getEventBookingLabel(getEventBookingState({ ...available, participation: "going" }))).toBe("Going");
+    expect(getEventBookingLabel(getEventBookingState({ ...available, full: true, waitlistEnabled: true, authenticated: true }))).toBe("Waitlist");
   });
 
   it("does not allow native paid booking without a verified payment flow", () => {
