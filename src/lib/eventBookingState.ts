@@ -6,6 +6,7 @@ export type EventBookingState =
   | "hosting"
   | "waitlisted"
   | "booked"
+  | "sign-in-waitlist"
   | "waitlist"
   | "sold-out"
   | "payment-unavailable"
@@ -41,7 +42,10 @@ export function getEventBookingState({
   if (participation === "waitlisted") return "waitlisted";
   if (participation) return "booked";
   if (!availabilityReady) return "unavailable";
-  if (full) return waitlistEnabled && authenticated ? "waitlist" : "sold-out";
+  if (full) {
+    if (!waitlistEnabled) return "sold-out";
+    return authenticated ? "waitlist" : "sign-in-waitlist";
+  }
   if (nativePaid) return "payment-unavailable";
   return "available";
 }
@@ -55,6 +59,7 @@ export function getEventBookingLabel(state: EventBookingState): string {
     case "hosting": return "You're hosting";
     case "waitlisted": return "Waitlisted";
     case "booked": return "You're going";
+    case "sign-in-waitlist": return "Sign in for waitlist";
     case "waitlist": return "Join waitlist";
     case "sold-out": return "Sold out";
     case "payment-unavailable": return "Booking unavailable";
@@ -68,6 +73,7 @@ export function getEventBookingReason(state: EventBookingState): string | null {
     case "cancelled": return "The host cancelled this event.";
     case "ended": return "Bookings are closed because this event has ended.";
     case "sold-out": return "This event is full and no waitlist is available.";
+    case "sign-in-waitlist": return "This event is full. Sign in to join the waitlist.";
     case "payment-unavailable": return "Online payment booking isn't available for this event.";
     default: return null;
   }

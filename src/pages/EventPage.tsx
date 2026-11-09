@@ -197,6 +197,10 @@ const EventPage = () => {
 
   const handleJoinOrSignup = async () => {
     if (!event || !availabilityReady || availabilityLoading || bookingDisabled) return;
+    if (bookingState === "sign-in-waitlist") {
+      navigate(buildEventAuthUrl(event.id));
+      return;
+    }
     if (event?.external_ticket_url) {
       window.open(event.external_ticket_url, '_blank', 'noopener,noreferrer');
       return;
@@ -349,7 +353,7 @@ const EventPage = () => {
     authenticated: isAuthenticated,
     nativePaid: isTicketed && !hasExternalTicket,
   });
-  const bookingDisabled = !["available", "waitlist"].includes(bookingState);
+  const bookingDisabled = !["available", "waitlist", "sign-in-waitlist"].includes(bookingState);
   const bookingLabel = getEventBookingLabel(bookingState);
   const bookingReason = bookingError || getEventBookingReason(bookingState);
   const cityLabel = event.event_mode && event.event_mode !== "irl"
