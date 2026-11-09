@@ -311,7 +311,7 @@ export const SessionDetailDialog = ({
               </span>
               {isTicketed && (
                 <span className="flex items-center gap-1.5 text-primary font-semibold">
-                  <Ticket className="h-3.5 w-3.5" /> {currencySymbol}{session.ticket_price?.toFixed(2)}
+                  <Ticket className="h-3.5 w-3.5" /> {ticketPriceLabel}
                 </span>
               )}
             </div>

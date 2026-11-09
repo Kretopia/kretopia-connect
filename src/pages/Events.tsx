@@ -153,9 +153,9 @@ export function EventCalendar({
     <section ref={calendarRef} className="rounded-2xl border border-border bg-card p-4 sm:p-5" aria-label="Event availability calendar">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => onMonthChange(subMonths(month, 1)} aria-label="Previous month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="h-4 w-4" aria-hidden /></button>
+          <button type="button" onClick={() => onMonthChange(subMonths(month, 1))} aria-label="Previous month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="h-4 w-4" aria-hidden /></button>
           <h2 className="min-w-[9rem] text-center text-base font-semibold">{format(month, "MMMM yyyy")}</h2>
-          <button type="button" onClick={() => onMonthChange(addMonths(month, 1)} aria-label="Next month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="h-4 w-4" aria-hidden /></button>
+          <button type="button" onClick={() => onMonthChange(addMonths(month, 1))} aria-label="Next month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="h-4 w-4" aria-hidden /></button>
         </div>
         {!full && onOpenFull && (
           <button type="button" onClick={onOpenFull} className="min-h-10 rounded-lg border border-border px-3 text-sm font-semibold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
