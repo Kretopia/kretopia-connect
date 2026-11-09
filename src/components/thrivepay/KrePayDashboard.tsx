@@ -32,6 +32,10 @@ import {
 
 type SeriesFilter = "both" | "income" | "outgoing";
 
+interface KrePayDashboardProps {
+  connectBalance?: { available: number; pending: number; currency: string } | null;
+}
+
 /**
  * KREPAY_DASHBOARD_DATA_CONTRACT.md documents the source/calculation/role-
  * visibility for every metric here. This is the single unified dashboard
@@ -48,7 +52,7 @@ type SeriesFilter = "both" | "income" | "outgoing";
  * fabricated for visual polish, and every number is server-authoritative
  * (read-only queries scoped by RLS to `auth.uid()`, never client-writable).
  */
-export function KrePayDashboard() {
+export function KrePayDashboard({ connectBalance = null }: KrePayDashboardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -180,6 +184,18 @@ export function KrePayDashboard() {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {connectBalance && (
+          <section aria-label={`Stripe payout balance in ${connectBalance.currency.toUpperCase()}`}>
+            <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="text-sm font-semibold">Stripe payout balance</h3>
+              <span className="text-xs text-muted-foreground">{connectBalance.currency.toUpperCase()} · separate from wallet and cash flow</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Tile label="Available" value={fmt(connectBalance.available, connectBalance.currency.toUpperCase())} tone="positive" icon={TrendingUp} />
+              <Tile label="Pending" value={fmt(connectBalance.pending, connectBalance.currency.toUpperCase())} tone="warn" icon={Clock} />
+            </div>
+          </section>
+        )}
         <p className="text-xs text-muted-foreground">
           Invoice and expense activity · {activeCurrency ?? "currency not recorded"} · last {range}
         </p>

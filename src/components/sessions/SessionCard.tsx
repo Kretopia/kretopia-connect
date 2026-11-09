@@ -50,10 +50,6 @@ export const CATEGORY_LABELS: Record<string, string> = {
   general: 'Creative',
 };
 
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  USD: '$', EUR: '€', GBP: '£', IDR: 'Rp', TTD: 'TT$',
-};
-
 export const SessionCard = ({ session, userParticipation, onJoin, onClick }: SessionCardProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -149,11 +145,14 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
   };
 
   const isCreator = user?.id === session.created_by;
-  const isFull = session.participant_count >= session.max_participants;
+  const isFull = session.max_participants > 0 && session.participant_count >= session.max_participants;
   const startDate = new Date(session.start_time);
   const isPast = startDate < new Date();
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
-  const currencySymbol = CURRENCY_SYMBOLS[session.ticket_currency || 'USD'] || '$';
+  const ticketPrice = isTicketed && session.ticket_currency && /^[A-Za-z]{3}$/.test(session.ticket_currency)
+    ? new Intl.NumberFormat(undefined, { style: "currency", currency: session.ticket_currency.toUpperCase() }).format(session.ticket_price ?? 0)
+    : isTicketed ? "Paid ticket · currency not recorded" : null;
+  const nativeTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);
 
   return (
     <Card className="hover:shadow-lg transition-all cursor-pointer group overflow-hidden" onClick={onClick}>
@@ -165,9 +164,9 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
           <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
             {CATEGORY_LABELS[session.category] || session.category}
           </Badge>
-          {isTicketed && (
+          {ticketPrice && (
             <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground text-xs">
-              {currencySymbol}{session.ticket_price}
+              {ticketPrice}
             </Badge>
           )}
         </div>
@@ -224,7 +223,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
           {isTicketed && !session.cover_image_url && (
             <div className="flex items-center gap-2">
               <Ticket className="h-3.5 w-3.5 text-primary" />
-              <span className="font-semibold text-primary">{currencySymbol}{session.ticket_price?.toFixed(2)}</span>
+              <span className="font-semibold text-primary">{ticketPrice}</span>
             </div>
           )}
           
@@ -237,12 +236,16 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
 
         <div className="flex gap-2">
           {!isCreator && !isPast && (
-            <Button onClick={handleJoin} disabled={loading || (isFull && !participation)}
+            <Button onClick={handleJoin} disabled={loading || nativeTicketUnavailable || (isFull && !participation)}
               variant={participation ? "outline" : "gradient"} size="sm" className="flex-1 text-xs h-8">
               {loading ? <KretopiaSpinner className="h-3.5 w-3.5" /> : participation ? (
                 <><Check className="h-3.5 w-3.5 mr-1" /> Going</>
-              ) : isTicketed ? (
-                <><Ticket className="h-3.5 w-3.5 mr-1" /> Get Ticket</>
+              ) : nativeTicketUnavailable ? (
+                "Ticket booking paused"
+              ) : session.is_ticketed ? (
+                <><Ticket className="h-3.5 w-3.5 mr-1" /> View ticket options</>
+              ) : eventEntry(session).kind === "external" ? (
+                <><Ticket className="h-3.5 w-3.5 mr-1" /> Get tickets</>
               ) : isFull ? "Full" : "Join"}
             </Button>
           )}

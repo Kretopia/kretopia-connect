@@ -18,6 +18,7 @@ const fmt = (cents: number, currency: string) =>
 
 export function ThriveWalletCard() {
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [wallet, setWallet] = useState<Wallet | null>(null);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [methods, setMethods] = useState<Method[]>([]);
@@ -27,20 +28,26 @@ export function ThriveWalletCard() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
-      const { data } = await supabase.functions.invoke("wallet-balance", { body: {} });
+      const { data, error } = await supabase.functions.invoke("wallet-balance", { body: {} });
+      if (error) throw error;
+      if (!data) throw new Error("Wallet balance response was empty");
       const d = data as any;
       setWallet(d?.wallet ?? null);
-      setBalances(d?.balances ?? []);
+      if (!Array.isArray(d?.balances)) throw new Error("Wallet balance data is invalid");
+      setBalances(d.balances);
       setMethods(d?.methods ?? []);
-      const { data: ph } = await supabase
+      const { data: ph, error: payoutError } = await supabase
         .from("creator_payouts")
         .select("id, amount_cents, currency, status, arrival_date, created_at")
         .order("created_at", { ascending: false })
         .limit(5);
+      if (payoutError) throw payoutError;
       setPayouts((ph as Payout[]) ?? []);
     } catch (e) {
       console.error("[ThriveWalletCard]", e);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -57,6 +64,15 @@ export function ThriveWalletCard() {
     );
   }
 
+  if (loadError) {
+    return (
+      <Card className="space-y-3 p-5">
+        <p className="text-sm text-muted-foreground">Couldn't load wallet balances or payout activity.</p>
+        <Button type="button" variant="outline" size="sm" onClick={load}>Retry</Button>
+      </Card>
+    );
+  }
+
   const needsBank = !defaultMethod;
   const verified = wallet?.payouts_enabled;
 
@@ -67,9 +83,13 @@ export function ThriveWalletCard() {
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm text-muted-foreground">Available to cash out</p>
-            <p className="text-4xl font-serif mt-1">{fmt(primaryBal.available_cents, primaryBal.currency)}</p>
-            {primaryBal.pending_cents > 0 && (
-              <p className="text-xs text-muted-foreground mt-1">{fmt(primaryBal.pending_cents, primaryBal.currency)} pending</p>
+            {balances.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">No wallet balance is available yet.</p>
+            ) : (
+              <>
+                <p className="text-4xl font-serif mt-1">{fmt(primaryBal.available_cents, primaryBal.currency)}</p>
+                <p className="text-xs text-muted-foreground mt-1">{fmt(primaryBal.pending_cents, primaryBal.currency)} pending</p>
+              </>
             )}
           </div>
           {verified && <Badge variant="secondary" className="gap-1"><ShieldCheck className="h-3 w-3" /> Verified</Badge>}

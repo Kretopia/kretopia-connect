@@ -93,7 +93,7 @@ export default function ThrivePay() {
   const { isBusiness: isBrand } = useAccountTone();
   const [commandTab, setCommandTab] = useState("get-paid");
   const [connectStatus, setConnectStatus] = useState<string>("not_connected");
-  const [balance, setBalance] = useState({ available: 0, pending: 0, currency: "usd" });
+  const [balance, setBalance] = useState<{ available: number; pending: number; currency: string } | null>(null);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>("free");
   const [connectDetails, setConnectDetails] = useState<ConnectRequirements | null>(null);
@@ -167,7 +167,9 @@ export default function ThrivePay() {
         setConnectStatus(profile.stripe_account_status || "pending");
 
         if (profile.stripe_account_status === "active") {
-          const { data: balanceData } = await supabase.functions.invoke("get-connect-balance");
+          setBalance(null);
+          const { data: balanceData, error: balanceError } = await supabase.functions.invoke("get-connect-balance");
+          if (balanceError) throw balanceError;
           if (balanceData && !balanceData.error) setBalance(balanceData);
         }
 
@@ -316,7 +318,7 @@ export default function ThrivePay() {
               <ThriveWalletCard />
             </div>
             <section aria-label="Cash-flow overview" className="mb-6">
-              <KrePayDashboard />
+              <KrePayDashboard connectBalance={connectStatus === "active" ? balance : null} />
             </section>
           </>
         )}
@@ -412,12 +414,13 @@ export default function ThrivePay() {
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">{tx.description || tx.type}</p>
-                            <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {tx.created_at ? new Date(tx.created_at).toLocaleDateString() : "Date unavailable"}
+                              {" · "}{tx.status || "Status unavailable"}
+                              {" · Amount not shown (currency not recorded)"}
+                            </p>
                           </div>
                         </div>
-                        <span className={`text-sm sm:text-lg font-semibold flex-shrink-0 ${isIn ? "text-success" : "text-destructive"}`}>
-                          {isIn ? "+" : "-"}${tx.amount}
-                        </span>
                       </div>
                     </CardContent>
                   </Card>
