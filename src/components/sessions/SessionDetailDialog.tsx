@@ -108,14 +108,21 @@ export const SessionDetailDialog = ({
   };
 
   const handleJoin = async () => {
+    if (loading) return;
     if (!user || !session) {
       toast({ title: "Not authenticated", description: "Please log in to join events", variant: "destructive" });
+      return;
+    }
+    if (eventEntry(session).kind === "ticket" && session.ticket_price && session.ticket_price > 0) {
+      toast({ title: "Ticket booking is paused", description: "Native ticket reservations are unavailable until server-side capacity checks are in place.", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
       if (participation) {
-        await supabase.from('jam_participants').delete().eq('jam_id', session.id).eq('user_id', user.id);
+        const { data: result, error } = await supabase.rpc("cancel_event_rsvp", { p_event_id: session.id });
+        if (error) throw error;
+        if (result === "not_going") throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         toast({ title: "Left event" });
         onRefresh?.();
@@ -143,12 +150,29 @@ export const SessionDetailDialog = ({
           throw new Error("No checkout URL received");
         }
       } else {
-        // Free event — join directly
-        const { data: inserted } = await supabase.from('jam_participants').insert({ jam_id: session.id, user_id: user.id, status: 'going' }).select('id').single();
+        const { data: result, error } = await supabase.rpc("rsvp_to_event", { p_event_id: session.id });
+        if (error) throw error;
+        if (result === "full_no_waitlist") {
+          toast({ title: "Event is full", description: "The host hasn't enabled a waitlist for this one.", variant: "destructive" });
+          return;
+        }
+        if (result === "waitlisted") {
+          toast({ title: "You're on the waitlist" });
+          return;
+        }
+        if (result !== "joined" && result !== "already") throw new Error("The event did not confirm your RSVP.");
         setParticipation('going');
-        toast({ title: "You're in!" });
+        toast({ title: result === "already" ? "Already going" : "You're in!" });
         onRefresh?.();
-        if (inserted) {
+        if (result === "joined") {
+          const { data: inserted, error: participantError } = await supabase
+            .from("jam_participants")
+            .select("id")
+            .eq("jam_id", session.id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          if (participantError) throw participantError;
+          if (inserted) {
           sendEventConfirmationEmail({
             eventId: session.id,
             eventTitle: session.title,
@@ -159,6 +183,7 @@ export const SessionDetailDialog = ({
             isTicketed: false,
             participantId: inserted.id,
           });
+          }
         }
       }
     } catch (err: any) {
@@ -177,6 +202,7 @@ export const SessionDetailDialog = ({
   const isPast = startDate < new Date();
   const isParticipant = !!participation || isCreator;
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
+  const nativePaidTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);
   const currencySymbol = CURRENCY_SYMBOLS[session.ticket_currency || 'USD'] || session.ticket_currency || '$';
 
   return (
@@ -302,14 +328,14 @@ export const SessionDetailDialog = ({
                     }
                     handleJoin();
                   }}
-                  disabled={loading || (isFull && !participation)}
+                  disabled={loading || nativePaidTicketUnavailable || (isFull && !participation)}
                   variant={participation ? "outline" : "gradient"}
                   size="sm"
                   className="flex-1"
                 >
                   {loading ? <KretopiaSpinner className="h-4 w-4" /> : participation ? (
                     <><Check className="h-4 w-4 mr-1.5" /> Going</>
-                  ) : isTicketed ? (
+                  ) : nativePaidTicketUnavailable ? "Ticket booking paused" : isTicketed ? (
                     <>{session.external_ticket_url ? <ExternalLink className="h-4 w-4 mr-1.5" /> : <Ticket className="h-4 w-4 mr-1.5" />} Get Ticket — {currencySymbol}{session.ticket_price}</>
                   ) : session.is_ticketed ? (
                     <><Ticket className="h-4 w-4 mr-1.5" /> Get Ticket</>
@@ -397,8 +423,8 @@ export const SessionDetailDialog = ({
                               } else {
                                 handleJoin();
                               }
-                            }} disabled={loading || isFull}>
-                              <Ticket className="h-4 w-4 mr-1.5" /> Get Ticket
+                            }} disabled={loading || nativePaidTicketUnavailable || isFull}>
+                              <Ticket className="h-4 w-4 mr-1.5" /> {nativePaidTicketUnavailable ? "Ticket booking paused" : "Get Ticket"}
                             </Button>
                           )}
                           {participation && (
@@ -409,6 +435,9 @@ export const SessionDetailDialog = ({
                         </div>
                         {session.external_ticket_url && (
                           <p className="text-xs text-muted-foreground mt-2">Tickets via external platform</p>
+                        )}
+                        {nativePaidTicketUnavailable && !session.external_ticket_url && (
+                          <p className="mt-2 text-xs text-muted-foreground">Native ticket reservations are paused until server-side capacity checks are available.</p>
                         )}
                       </div>
                     </div>

@@ -12,6 +12,7 @@ const PLATFORM_FEES: Record<string, number> = {
   'pro': 0.07,
   'creator_pro': 0.07,
 };
+const NATIVE_PAID_TICKET_RESERVATIONS_ENABLED = false;
 
 const getPlatformFee = (tier: string | null): number => {
   return PLATFORM_FEES[tier || 'free'] || 0.15;
@@ -75,6 +76,15 @@ serve(async (req) => {
 
     if (!event.is_ticketed || !event.ticket_price || event.ticket_price <= 0) {
       throw new Error("This event is not a ticketed event");
+    }
+
+    if (!NATIVE_PAID_TICKET_RESERVATIONS_ENABLED) {
+      return new Response(JSON.stringify({
+        error: "Native paid ticket reservations are paused until capacity and payment confirmation can be enforced atomically.",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 503,
+      });
     }
 
     // Check if user already has a ticket

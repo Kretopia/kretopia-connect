@@ -642,8 +642,18 @@ export default function Onboarding() {
           // ticket is bought; inserting the row directly would skip the payment.
           const { data: pendingEvent } = await supabase.from("creative_jams").select("is_ticketed, external_ticket_url").eq("id", pendingEventJoin).maybeSingle();
           if (canJoinDirectly(pendingEvent)) {
-            const { data: inserted } = await supabase.from("jam_participants").insert({ jam_id: pendingEventJoin, user_id: user.id, status: "going" }).select("id").single();
-            if (inserted) {
+            const { data: result, error: rsvpError } = await supabase.rpc("rsvp_to_event", { p_event_id: pendingEventJoin });
+            if (rsvpError) throw rsvpError;
+            if (result === "full_no_waitlist") throw new Error("The event is full and is not accepting a waitlist.");
+            if (result === "joined") {
+              const { data: inserted, error: participantError } = await supabase
+                .from("jam_participants")
+                .select("id")
+                .eq("jam_id", pendingEventJoin)
+                .eq("user_id", user.id)
+                .maybeSingle();
+              if (participantError) throw participantError;
+              if (!inserted) throw new Error("The event did not confirm your RSVP.");
               const { data: ev } = await supabase.from("creative_jams").select("title, start_time, end_time, venue_name, venue_address").eq("id", pendingEventJoin).single();
               if (ev) {
                 const { sendEventConfirmationEmail } = await import("@/utils/eventConfirmationEmail");
