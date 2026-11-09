@@ -19,44 +19,18 @@ import {
   TrendingDown,
   Clock,
   AlertCircle,
-  Sparkles,
-  Receipt,
-  FileText,
-} from "lucide-react";
-import {
-  startOfMonth,
-  endOfMonth,
-  isWithinInterval,
-  startOfWeek,
-  endOfWeek,
-  format,
-  subDays,
-  eachWeekOfInterval,
-  eachDayOfInterval,
+  ChevronDown,
 } from "date-fns";
+import {
+  buildCashFlow,
+  currenciesFor,
+  currencyOf,
+  type CashFlowExpense,
+  type CashFlowInvoice,
+  type CashFlowRange,
+} from "@/lib/krePayCashFlow";
 
-interface InvoiceRow {
-  total_amount: number | null;
-  amount: number | null;
-  currency: string | null;
-  status: string | null;
-  paid_at: string | null;
-  due_date: string | null;
-  created_at: string;
-  issued_by: string;
-  issued_to: string | null;
-}
-interface ExpenseRow {
-  amount: number | null;
-  currency: string | null;
-  category: string | null;
-  date: string;
-}
-
-type Range = "7d" | "30d" | "90d";
 type SeriesFilter = "both" | "income" | "outgoing";
-
-const RANGE_DAYS: Record<Range, number> = { "7d": 7, "30d": 30, "90d": 90 };
 
 /**
  * KREPAY_DASHBOARD_DATA_CONTRACT.md documents the source/calculation/role-
@@ -79,120 +53,69 @@ export function KrePayDashboard() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
-  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
-  const [range, setRange] = useState<Range>("30d");
+  const [retryKey, setRetryKey] = useState(0);
+  const [invoices, setInvoices] = useState<CashFlowInvoice[]>([]);
+  const [expenses, setExpenses] = useState<CashFlowExpense[]>([]);
+  const [range, setRange] = useState<CashFlowRange>("30d");
   const [seriesFilter, setSeriesFilter] = useState<SeriesFilter>("both");
+  const [currency, setCurrency] = useState("USD");
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
     const cols = "total_amount,amount,currency,status,paid_at,due_date,created_at,issued_by,issued_to";
-    Promise.all([
-      supabase.from("invoices").select(cols).eq("issued_by", user.id).then((r) => (r.data as InvoiceRow[]) ?? [], () => []),
-      supabase.from("expenses").select("amount,currency,category,date").eq("user_id", user.id).then((r) => (r.data as ExpenseRow[]) ?? [], () => []),
+    setLoading(true);
+    setError(false);
+    void Promise.all([
+      supabase.from("invoices").select(cols).eq("issued_by", user.id),
+      supabase.from("expenses").select("amount,currency,category,date").eq("user_id", user.id),
     ])
-      .then(([inv, exp]) => {
+      .then(([invoiceResult, expenseResult]) => {
         if (cancelled) return;
-        setInvoices(inv);
-        setExpenses(exp);
+        if (invoiceResult.error) throw invoiceResult.error;
+        if (expenseResult.error) throw expenseResult.error;
+        setInvoices((invoiceResult.data ?? []) as CashFlowInvoice[]);
+        setExpenses((expenseResult.data ?? []) as CashFlowExpense[]);
       })
-      .catch(() => setError(true))
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        console.error("[KrePayDashboard] load", cause);
+        setError(true);
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [user?.id, retryKey]);
 
-  const fmt = (n: number, currency = "USD") =>
-    n.toLocaleString(undefined, { style: "currency", currency, maximumFractionDigits: 0 });
+  const fmt = (n: number, moneyCurrency = currency) =>
+    new Intl.NumberFormat(undefined, { style: "currency", currency: moneyCurrency }).format(n);
 
-  // Summary tiles — same calculation MoneyBrief used (hero variant, now retired).
+  const currencies = useMemo(() => currenciesFor(invoices, expenses), [invoices, expenses]);
+  useEffect(() => {
+    if (currencies.length && !currencies.includes(currency)) setCurrency(currencies[0]);
+  }, [currencies, currency]);
+
   const summary = useMemo(() => {
-    const monthRange = { start: startOfMonth(new Date()), end: endOfMonth(new Date()) };
-    let inThisMonth = 0;
     let owedToYou = 0;
     let overdueCount = 0;
     const now = new Date();
     invoices.forEach((i) => {
+      if (currencyOf(i.currency) !== currency) return;
       const amt = Number(i.total_amount || i.amount || 0);
-      if (i.status === "paid" && i.paid_at && isWithinInterval(new Date(i.paid_at), monthRange)) inThisMonth += amt;
       if (i.status !== "paid" && i.status !== "cancelled") {
         owedToYou += amt;
         if (i.due_date && new Date(i.due_date) < now) overdueCount += 1;
       }
     });
-    let outThisMonth = 0;
-    expenses.forEach((e) => {
-      if (e.date && isWithinInterval(new Date(e.date), monthRange)) outThisMonth += Number(e.amount || 0);
-    });
-    return { inThisMonth, outThisMonth, owedToYou, overdueCount };
-  }, [invoices, expenses]);
+    return { owedToYou, overdueCount };
+  }, [invoices, currency]);
 
-  // Chart series — bucketed by day (7d) or week (30d/90d) across the
-  // selected range. Same underlying rows the tiles above use, just
-  // grouped over time instead of collapsed to one number.
-  const chartData = useMemo(() => {
-    const days = RANGE_DAYS[range];
-    const end = new Date();
-    const start = subDays(end, days);
-    const buckets = range === "7d" ? eachDayOfInterval({ start, end }) : eachWeekOfInterval({ start, end });
-
-    return buckets.map((bucketStart, i) => {
-      const bucketEnd = range === "7d" ? bucketStart : (buckets[i + 1] ?? end);
-      const interval = { start: bucketStart, end: bucketEnd };
-      const income = invoices
-        .filter((inv) => inv.status === "paid" && inv.paid_at && isWithinInterval(new Date(inv.paid_at), interval))
-        .reduce((s, inv) => s + Number(inv.total_amount || inv.amount || 0), 0);
-      const outgoing = expenses
-        .filter((e) => e.date && isWithinInterval(new Date(e.date), interval))
-        .reduce((s, e) => s + Number(e.amount || 0), 0);
-      return {
-        label: format(bucketStart, range === "7d" ? "EEE" : "MMM d"),
-        income,
-        outgoing,
-      };
-    });
-  }, [invoices, expenses, range]);
-
-  const chartTotals = useMemo(
-    () => chartData.reduce((acc, d) => ({ income: acc.income + d.income, outgoing: acc.outgoing + d.outgoing }), { income: 0, outgoing: 0 }),
+  const chartData = useMemo(() => buildCashFlow(invoices, expenses, currency, range), [invoices, expenses, currency, range]);
+  const rangeTotals = useMemo(
+    () => chartData.reduce((acc, point) => ({ income: acc.income + point.income, outgoing: acc.outgoing + point.outgoing }), { income: 0, outgoing: 0 }),
     [chartData],
   );
-
-  // Weekly insights — same calculation WeeklyMoneyInsights used, folded in
-  // as a compact footer instead of a separate card.
-  const insights = useMemo(() => {
-    const weekRange = { start: startOfWeek(new Date()), end: endOfWeek(new Date()) };
-    const list: { icon: typeof TrendingUp; text: string; tone: "positive" | "warn" | "neutral" }[] = [];
-
-    const earnedThisWeek = invoices
-      .filter((i) => i.status === "paid" && i.paid_at && isWithinInterval(new Date(i.paid_at), weekRange))
-      .reduce((s, i) => s + Number(i.total_amount || i.amount || 0), 0);
-    if (earnedThisWeek > 0) list.push({ icon: TrendingUp, tone: "positive", text: `You earned ${fmt(earnedThisWeek)} this week` });
-
-    const overdue = invoices.filter((i) => i.status !== "paid" && i.status !== "cancelled" && i.due_date && new Date(i.due_date) < new Date());
-    if (overdue.length > 0) {
-      const overdueAmt = overdue.reduce((s, i) => s + Number(i.total_amount || i.amount || 0), 0);
-      list.push({ icon: AlertCircle, tone: "warn", text: `${overdue.length} overdue invoice${overdue.length > 1 ? "s" : ""} — ${fmt(overdueAmt)} unpaid` });
-    }
-
-    const expWeek = expenses.filter((e) => e.date && isWithinInterval(new Date(e.date), weekRange));
-    if (expWeek.length > 0) {
-      const byCat: Record<string, number> = {};
-      expWeek.forEach((e) => {
-        const c = e.category || "other";
-        byCat[c] = (byCat[c] || 0) + Number(e.amount || 0);
-      });
-      const top = Object.entries(byCat).sort(([, a], [, b]) => b - a)[0];
-      list.push({ icon: Receipt, tone: "neutral", text: `Top spend this week: ${top[0]} (${fmt(top[1])})` });
-    }
-
-    const sentThisWeek = invoices.filter((i) => isWithinInterval(new Date(i.created_at), weekRange));
-    if (sentThisWeek.length > 0) list.push({ icon: FileText, tone: "neutral", text: `${sentThisWeek.length} invoice${sentThisWeek.length > 1 ? "s" : ""} sent this week` });
-
-    return list;
-  }, [invoices, expenses]);
 
   if (!user) return null;
 
@@ -207,9 +130,9 @@ export function KrePayDashboard() {
   if (error) {
     return (
       <Card>
-        <CardContent className="p-6 text-sm text-muted-foreground">
-          Couldn't load your money dashboard right now.{" "}
-          <button onClick={() => window.location.reload()} className="underline text-foreground">Retry</button>
+        <CardContent className="flex flex-col items-start gap-3 p-6 text-sm text-muted-foreground">
+          <p>Couldn't load your money dashboard right now.</p>
+          <Button variant="outline" size="sm" onClick={() => setRetryKey((key) => key + 1)}>Retry</Button>
         </CardContent>
       </Card>
     );
@@ -220,12 +143,21 @@ export function KrePayDashboard() {
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-base">Money dashboard</CardTitle>
-          <div className="flex items-center gap-1" role="tablist" aria-label="Chart date range">
-            {(["7d", "30d", "90d"] as Range[]).map((r) => (
+          <div className="flex flex-wrap items-center gap-2">
+            {currencies.length > 1 && (
+              <label className="flex min-h-9 items-center gap-2 rounded-full border border-border bg-background px-3 text-xs font-semibold">
+                Currency
+                <select value={currency} onChange={(event) => setCurrency(event.target.value)} className="bg-transparent text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  {currencies.map((code) => <option key={code} value={code}>{code}</option>)}
+                </select>
+              </label>
+            )}
+            <div className="flex items-center gap-1" role="group" aria-label="Cash-flow date range">
+            {(["7d", "30d", "90d"] as CashFlowRange[]).map((r) => (
               <button
                 key={r}
-                role="tab"
-                aria-selected={range === r}
+                type="button"
+                aria-pressed={range === r}
                 onClick={() => setRange(r)}
                 className={cn(
                   "px-2.5 py-1 rounded-full text-xs font-semibold transition-colors",
@@ -235,15 +167,18 @@ export function KrePayDashboard() {
                 {r}
               </button>
             ))}
+            </div>
           </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-5">
-        {/* Summary tiles */}
+        <p className="text-xs text-muted-foreground">
+          Invoice and expense activity · {currency} · last {range}
+        </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
-          <Tile label="In this month" value={fmt(summary.inThisMonth)} tone="positive" icon={TrendingUp} />
-          <Tile label="Out this month" value={fmt(summary.outThisMonth)} tone="negative" icon={TrendingDown} />
+          <Tile label={`Income · ${range}`} value={fmt(rangeTotals.income)} tone="positive" icon={TrendingUp} />
+          <Tile label={`Outgoing · ${range}`} value={fmt(rangeTotals.outgoing)} tone="negative" icon={TrendingDown} />
           <Tile
             label="Owed to you"
             value={fmt(summary.owedToYou)}
@@ -251,7 +186,7 @@ export function KrePayDashboard() {
             subtitle={summary.overdueCount ? `${summary.overdueCount} overdue` : undefined}
             icon={summary.overdueCount ? AlertCircle : Clock}
           />
-          <Tile label="Net this month" value={fmt(summary.inThisMonth - summary.outThisMonth)} tone={summary.inThisMonth - summary.outThisMonth >= 0 ? "positive" : "negative"} icon={TrendingUp} />
+          <Tile label={`Net · ${range}`} value={fmt(rangeTotals.income - rangeTotals.outgoing)} tone={rangeTotals.income - rangeTotals.outgoing >= 0 ? "positive" : "negative"} icon={TrendingUp} />
         </div>
 
         {/* Chart + income/outgoing filter */}
@@ -278,20 +213,20 @@ export function KrePayDashboard() {
             </div>
             <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
               {seriesFilter !== "outgoing" && (
-                <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3 text-emerald-500" /> {fmt(chartTotals.income)}</span>
+                <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3 text-emerald-600 dark:text-emerald-400" /> {fmt(rangeTotals.income)}</span>
               )}
               {seriesFilter !== "income" && (
-                <span className="flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-500" /> {fmt(chartTotals.outgoing)}</span>
+                <span className="flex items-center gap-1"><TrendingDown className="h-3 w-3 text-destructive" /> {fmt(rangeTotals.outgoing)}</span>
               )}
             </div>
           </div>
 
-          {chartTotals.income === 0 && chartTotals.outgoing === 0 ? (
+          {rangeTotals.income === 0 && rangeTotals.outgoing === 0 ? (
             <div className="h-40 flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-              No money movement in this range yet
+              No recorded money movement in this range.
             </div>
           ) : (
-            <div role="img" aria-label={`Income ${fmt(chartTotals.income)}, outgoing ${fmt(chartTotals.outgoing)}, over the last ${range}`}>
+            <div role="img" aria-label={`Income ${fmt(rangeTotals.income)}, outgoing ${fmt(rangeTotals.outgoing)}, over the last ${range}`}>
               <ResponsiveContainer width="100%" height={180}>
                 <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
@@ -311,28 +246,19 @@ export function KrePayDashboard() {
               </ResponsiveContainer>
             </div>
           )}
+          <details className="rounded-lg border border-border px-3 py-2">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-semibold text-foreground">
+              View chart data as a table <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+            </summary>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[320px] text-left text-xs">
+                <caption className="sr-only">Income and outgoing totals by date, in {currency}</caption>
+                <thead><tr className="border-b border-border text-muted-foreground"><th scope="col" className="py-2 pr-3">Date</th><th scope="col" className="py-2 pr-3">Income ({currency})</th><th scope="col" className="py-2">Outgoing ({currency})</th></tr></thead>
+                <tbody>{chartData.map((point) => <tr key={point.label} className="border-b border-border/60"><th scope="row" className="py-2 pr-3 font-medium">{point.label}</th><td className="py-2 pr-3">{fmt(point.income)}</td><td className="py-2">{fmt(point.outgoing)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          </details>
         </div>
-
-        {/* This week, in money — folded-in insights */}
-        {insights.length > 0 && (
-          <div className="pt-3 border-t border-border/60">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground mb-2 flex items-center gap-1.5">
-              <Sparkles className="h-3 w-3" /> Your week, in money
-            </p>
-            <ul className="space-y-1.5">
-              {insights.map((ins, i) => {
-                const Icon = ins.icon;
-                const toneClr = ins.tone === "positive" ? "text-emerald-600 dark:text-emerald-400" : ins.tone === "warn" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground";
-                return (
-                  <li key={i} className="flex items-start gap-2 text-sm">
-                    <Icon className={cn("h-3.5 w-3.5 mt-0.5 shrink-0", toneClr)} />
-                    <span className="text-foreground">{ins.text}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
 
         <Button variant="link" size="sm" className="px-0 h-auto" onClick={() => navigate("/payment-history")}>
           View all transactions →

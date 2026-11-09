@@ -8,6 +8,7 @@ import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTa
 
 interface StageGridProps {
   onJoinSoundStage: (stage: SoundStage) => void;
+  onOpenStage: () => void;
 }
 
 /**
@@ -15,7 +16,7 @@ interface StageGridProps {
  * scheduled/live Curated Stages together, one card shape, one responsive
  * grid. Replaces the previous two separately-styled horizontal rails.
  */
-export function StageGrid({ onJoinSoundStage }: StageGridProps) {
+export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
   const navigate = useNavigate();
   const [cards, setCards] = useState<StageCardData[] | null>(null);
   const [error, setError] = useState(false);
@@ -148,10 +149,25 @@ export function StageGrid({ onJoinSoundStage }: StageGridProps) {
 
   if (cards.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/60 bg-muted/30 p-6 text-center space-y-1">
+      <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-center space-y-2">
         <Radio className="h-5 w-5 text-muted-foreground mx-auto mb-1" aria-hidden />
-        <p className="text-sm font-semibold">No stages live or scheduled</p>
-        <p className="text-xs text-muted-foreground">Be first up — pop open a stage and let people walk on.</p>
+        <p className="text-sm font-semibold">Nothing live right now</p>
+        <p className="text-sm text-muted-foreground">Check what’s scheduled, or open your own stage.</p>
+        <div className="flex flex-col justify-center gap-2 pt-1 sm:flex-row">
+          <a
+            href="#stage-grid"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Browse upcoming sessions
+          </a>
+          <button
+            type="button"
+            onClick={onOpenStage}
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Open a Sound Stage
+          </button>
+        </div>
       </div>
     );
   }

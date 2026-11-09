@@ -33,6 +33,7 @@ export function EventCard({ testId, title, coverUrl, kindLabel, kindIcon, live, 
   return (
     <CardShell
       testId={testId}
+      flat
       title={title}
       stretch
       open={open}

@@ -8,19 +8,15 @@ import { Input } from "@/components/ui/input";
 import { VideoCallSheet } from "@/components/project/VideoCallSheet";
 import {
   LinkIcon,
-  Radio,
   Calendar,
-  Sparkles,
   CalendarPlus,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
-import { HoloCard } from "@/components/passport/HoloCard";
 import type { SoundStage } from "./SoundStagesRail";
 import { GoLiveSheet } from "./GoLiveSheet";
 import { CallSheetUpcoming } from "./CallSheetUpcoming";
 import { CreateStageSheet } from "./CreateStageSheet";
 import { SoundStageRoom } from "./SoundStageRoom";
-import { StagePrimaryCard } from "./StagePrimaryCard";
 import { StageGrid } from "./StageGrid";
 
 interface LiveCallsPanelProps {
@@ -48,6 +44,7 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
   const [joining, setJoining] = useState(false);
 
   const [callOpen, setCallOpen] = useState(false);
+  const joiningStageIds = useRef(new Set<string>());
   const [activeRoom, setActiveRoom] = useState<{
     url: string;
     name: string;
@@ -99,6 +96,8 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
       toast({ title: "Sign in to walk on", variant: "destructive" });
       return;
     }
+    if (joiningStageIds.current.has(stage.id)) return;
+    joiningStageIds.current.add(stage.id);
     try {
       const { data, error } = await supabase.functions.invoke(
         "join-sound-stage",
@@ -128,6 +127,8 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
         description: e instanceof Error ? e.message : undefined,
         variant: "destructive",
       });
+    } finally {
+      joiningStageIds.current.delete(stage.id);
     }
   };
 
@@ -147,10 +148,12 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
         .eq("id", joinStageId)
         .maybeSingle();
       if (error || !data) {
+        joinedFromLinkRef.current = null;
         toast({ title: "Couldn't find that Stage", description: "The link may be expired.", variant: "destructive" });
         return;
       }
       if (!data.is_live) {
+        joinedFromLinkRef.current = null;
         toast({ title: "This Stage has ended" });
         return;
       }
@@ -210,57 +213,18 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
   };
 
   return (
-    <div className="w-full rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-6">
-      {/* Header */}
-      <div className="space-y-1">
-        <h2 className="text-lg font-bold text-foreground">Sound Stages</h2>
-      </div>
-
-      {/* Primary card — the one thing this page has to answer: what's live,
-          where to join, what's next, and what to do if nothing is live. */}
-      <StagePrimaryCard onJoinSoundStage={handleJoinStage} onStartStage={requestGoLive} />
-
-      {/* Primary actions — same row-card shape as the "Grow your circle" card,
-          holo-wrapped so Start a Stage carries Passport's signature shine. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <HoloCard maxTilt={4}>
-          <button
-            type="button"
-            onClick={requestGoLive}
-            className="w-full text-left rounded-2xl border border-border bg-card p-4 hover:border-[hsl(var(--energy))]/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-[hsl(var(--energy))]/15 text-[hsl(var(--energy))] flex items-center justify-center shrink-0">
-                <Radio className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(var(--energy))]">Go live</p>
-                <p className="font-semibold text-sm">Start a Stage</p>
-                <p className="text-xs text-muted-foreground">Open the room and let people walk on.</p>
-              </div>
-            </div>
-          </button>
-        </HoloCard>
-
-        <HoloCard maxTilt={4}>
-          <button
-            type="button"
-            onClick={() => onFindCollaborator?.()}
-            className="w-full text-left rounded-2xl border border-border bg-card p-4 hover:border-[hsl(var(--energy))]/40 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-[hsl(var(--energy))]/15 text-[hsl(var(--energy))] flex items-center justify-center shrink-0">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[hsl(var(--energy))]">Match</p>
-                <p className="font-semibold text-sm">Find a Collaborator</p>
-                <p className="text-xs text-muted-foreground">Swipe through creators from Stage.</p>
-              </div>
-            </div>
-          </button>
-        </HoloCard>
-      </div>
+    <div className="w-full space-y-5">
+      <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-foreground">Sound Stages</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Open a room or join a live creative session.</p>
+          </div>
+          <Button type="button" onClick={requestGoLive} className="min-h-11 w-full shrink-0 sm:w-auto">
+            Open a Sound Stage
+          </Button>
+        </div>
+      </section>
 
       <button
         type="button"
@@ -280,14 +244,11 @@ export function LiveCallsPanel({ onFindCollaborator, joinStageId }: LiveCallsPan
 
       {/* Every joinable Stage — one balanced grid, one card shape, live
           Sound Stages and scheduled/live Curated Stages together. */}
-      <section id="stage-grid" className="space-y-2 scroll-mt-20">
+      <section id="stage-grid" className="space-y-2 scroll-mt-20" aria-label="Live and upcoming stages">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-xs font-black uppercase tracking-[0.14em] text-muted-foreground flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" style={{ color: "hsl(var(--energy))" }} />{" "}
-            All Stages
-          </h3>
+          <h3 className="text-sm font-semibold text-foreground">Live stages &amp; upcoming sessions</h3>
         </div>
-        <StageGrid onJoinSoundStage={handleJoinStage} />
+        <StageGrid onJoinSoundStage={handleJoinStage} onOpenStage={requestGoLive} />
       </section>
 
       {/* Call Sheet — upcoming Speed Sessions */}
