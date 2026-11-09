@@ -22,25 +22,19 @@ interface Props {
 /** The three actions share one shape on purpose: same size, same weight, same icon slot. */
 const ACTION = "min-w-0 gap-1.5 px-2 text-xs";
 
-export function PassportCollaborationCta({
-  firstName,
-  isOwner,
-  isSignedIn,
-  connectionStatus = "none",
-  isConnecting = false,
-  onConnect,
-  onSignIn,
-  onMessage,
-  onPropose,
-  onInvite,
-  onClaimCredits,
-}: Props) {
-  // An owner never sees these: no message to oneself, no project with oneself, no claim on one's own record.
+/**
+ * Message, Start a project and Claim Credits: the three things a visitor can do with this Passport, drawn together in the "At a glance"
+ * block. The rules are the same wherever they are drawn (see PassportCollaborationCta for the rest of the entry):
+ *  - the owner gets none of them (nothing is drawn);
+ *  - a signed-out visitor can press any of them, and each leads to sign-in, then back to this Passport;
+ *  - Message and Start a project need an accepted connection (a connection request is not consent) and say so while they wait;
+ *  - Claim Credits does not need a connection.
+ */
+export function PassportCollaborationActions({ firstName, isOwner, isSignedIn, connectionStatus = "none", onSignIn, onMessage, onPropose, onClaimCredits }: Props) {
   if (isOwner) return null;
 
   const pending = connectionStatus === "pending";
   const connected = connectionStatus === "connected";
-  // Message and Start a project need an accepted connection (a connection request is not consent); Claim Credits does not.
   const needsConnection = isSignedIn && !connected;
   const hintId = "passport-collab-hint";
   const hint = !isSignedIn
@@ -52,6 +46,43 @@ export function PassportCollaborationCta({
       : null;
   // Signed out: every action leads to sign-in. Signed in: each one runs its own flow.
   const run = (action?: () => void) => (isSignedIn ? action : onSignIn);
+
+  return (
+    <div className="space-y-2">
+      <div role="group" aria-label={`Work with ${firstName}`} aria-describedby={hint ? hintId : undefined} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <Button variant="outline" onClick={run(onMessage)} disabled={needsConnection} className={ACTION}>
+          <MessageCircle className="h-4 w-4 shrink-0" />
+          Message
+        </Button>
+        <Button variant="outline" onClick={run(onPropose)} disabled={needsConnection} className={ACTION}>
+          <Handshake className="h-4 w-4 shrink-0" />
+          Start a project
+        </Button>
+        <Button variant="outline" onClick={run(onClaimCredits)} className={ACTION}>
+          <BadgeCheck className="h-4 w-4 shrink-0" />
+          Claim Credits
+        </Button>
+      </div>
+      {hint && (
+        <p id={hintId} className="text-xs leading-relaxed text-muted-foreground">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The rest of the collaboration entry, under the Passport's header: the invitation to work together, the connection request that
+ * Message and Start a project wait for, the invitation to an existing project once connected, and what every request is subject to.
+ * Its three actions live in the "At a glance" block (PassportCollaborationActions).
+ */
+export function PassportCollaborationCta({ firstName, isOwner, connectionStatus = "none", isConnecting = false, onConnect, onInvite }: Props) {
+  // An owner never sees this: no message to oneself, no project with oneself, no claim on one's own record.
+  if (isOwner) return null;
+
+  const pending = connectionStatus === "pending";
+  const connected = connectionStatus === "connected";
 
   return (
     <section className="relative space-y-4 py-5" aria-label="Collaborate on Kretopia">
@@ -71,26 +102,6 @@ export function PassportCollaborationCta({
           {pending ? "Request pending" : isConnecting ? "Sending…" : `Connect with ${firstName}`}
           <ArrowRight className="ml-auto h-4 w-4 shrink-0" />
         </CtaButton>
-      )}
-
-      <div role="group" aria-label={`Work with ${firstName}`} aria-describedby={hint ? hintId : undefined} className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <Button variant="outline" onClick={run(onMessage)} disabled={needsConnection} className={ACTION}>
-          <MessageCircle className="h-4 w-4 shrink-0" />
-          Message
-        </Button>
-        <Button variant="outline" onClick={run(onPropose)} disabled={needsConnection} className={ACTION}>
-          <Handshake className="h-4 w-4 shrink-0" />
-          Start a project
-        </Button>
-        <Button variant="outline" onClick={run(onClaimCredits)} className={ACTION}>
-          <BadgeCheck className="h-4 w-4 shrink-0" />
-          Claim Credits
-        </Button>
-      </div>
-      {hint && (
-        <p id={hintId} className="text-xs leading-relaxed text-muted-foreground">
-          {hint}
-        </p>
       )}
 
       {connected && (

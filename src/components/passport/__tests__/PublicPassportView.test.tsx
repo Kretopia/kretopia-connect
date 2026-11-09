@@ -349,6 +349,67 @@ describe("the compact record: Expertise, one Kretopia credits section, no 'credi
   });
 });
 
+describe("At a glance: the visitor's actions, not a second list of the credits", () => {
+  const credits = [
+    { id: "c1", project_name: "Night Train", role: "Director", year: 2024, verification_status: "verified" },
+    { id: "c2", project_name: "Open Road", role: "Editor", year: 2023 },
+  ];
+  const glance = () => within(screen.getByRole("region", { name: "Dee at a glance" }));
+  beforeEach(() => {
+    reads.length = 0;
+    world.signedInAs = null;
+    world.rows = { credits };
+  });
+
+  it("holds Message, Start a project and Claim Credits, once each on the page", async () => {
+    renderPage();
+    await screen.findByRole("region", { name: "Dee at a glance" });
+    expect(glance().getAllByRole("button").map((b) => b.textContent)).toEqual(["Message", "Start a project", "Claim Credits"]);
+    for (const name of ["Message", "Start a project", "Claim Credits"]) expect(screen.getAllByRole("button", { name })).toHaveLength(1);
+  });
+
+  it("no longer repeats the credits: the Kretopia credits section is the one place they are listed", async () => {
+    renderPage();
+    await screen.findByRole("heading", { level: 3, name: "Kretopia credits" });
+    expect(glance().queryByText("Credits")).toBeNull();
+    expect(glance().queryByText("Confirmed")).toBeNull();
+    expect(glance().queryByText(/on this Passport/)).toBeNull();
+    expect(glance().queryByText("Night Train")).toBeNull();
+    expect(glance().queryByText(/Verified = confirmed by a linked platform/)).toBeNull();
+    // …while the dedicated section still lists them
+    const section = within(screen.getByRole("region", { name: "Kretopia credits, work samples" }));
+    expect(section.getByText("Night Train")).toBeInTheDocument();
+    expect(section.getByText("Open Road")).toBeInTheDocument();
+  });
+
+  it("keeps the connect request and the invitation to work together under the header, apart from the actions", async () => {
+    world.signedInAs = "u2";
+    renderPage();
+    const cta = within(await screen.findByRole("region", { name: "Collaborate on Kretopia" }));
+    expect(cta.getByRole("button", { name: /Connect with Dee/ })).toBeInTheDocument();
+    expect(cta.queryByRole("button", { name: "Message" })).toBeNull();
+    expect(glance().queryByRole("button", { name: /Connect with Dee/ })).toBeNull();
+  });
+
+  it("gives the owner their own actions there instead of a visitor's: manage credits, and no message to oneself", async () => {
+    world.signedInAs = "u1";
+    renderPage({ embedded: true, owner: { onEdit: vi.fn(), onShowQR: vi.fn(), onDownloadEPK: vi.fn(), onChangePhoto: vi.fn() } });
+    const manage = await screen.findByRole("link", { name: "Manage credits" });
+    expect(glance().getByRole("link", { name: "Manage credits" })).toBe(manage);
+    expect(glance().queryByRole("group", { name: /Work with/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Message" })).toBeNull();
+  });
+
+  it("draws no empty block for the owner looking at their own public Passport with nothing to show", async () => {
+    world.signedInAs = "u1";
+    world.rows = {};
+    renderPage();
+    await screen.findByRole("link", { name: "Back to my private Passport" });
+    expect(screen.queryByRole("region", { name: "Dee at a glance" })).toBeNull();
+    expect(screen.queryByText("At a glance")).toBeNull();
+  });
+});
+
 describe("what a visitor can do from somebody else's Passport, and what the owner cannot do to themselves", () => {
   const credits = [{ id: "c1", project_name: "Night Train", role: "Director", year: 2024 }];
   const work = () => within(screen.getByRole("group", { name: /Work with Dee/ }));

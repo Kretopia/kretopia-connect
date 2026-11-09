@@ -16,7 +16,7 @@ import { PassportClaimCreditsDialog } from "@/components/passport/PassportClaimC
 import { PassportPrivateBand } from "@/components/passport/PassportPrivateBand";
 import { useEpkPdfDownload } from "@/hooks/useEpkPdfDownload";
 import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
-import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
+import { PassportCollaborationActions, PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { EPKReviews } from "@/components/epk/EPKReviews";
 import { PublicPassportHero, type PublicPassportOwner } from "@/components/passport/PublicPassportHero";
 import { PublicProfileWrapped } from "@/components/profile/PublicProfileWrapped";
@@ -294,7 +294,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
         // Fetch all data in parallel
         // A portfolio piece is not a credit, and `source` can be NULL, which `.neq` would silently drop.
         const notPortfolio = 'source.is.null,source.neq.portfolio';
-        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes, totalRes, confirmedRes, earliestRes, bookingRes] = await Promise.all([
+        const [portfolioRes, pressRes, awardsRes, creditsRes, statsRes, productsRes, icdbRes, reviewsRes, totalRes, earliestRes, bookingRes] = await Promise.all([
           // Portfolio items (from credits with source=portfolio)
           supabase
             .from('credits')
@@ -360,9 +360,8 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
             .order('created_at', { ascending: false })
             .limit(5),
 
-          // True record size, confirmed count and earliest dated credit (the list above is capped at 12)
+          // True record size and earliest dated credit (the list above is capped at 12)
           supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).or(notPortfolio),
-          supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('verification_status', 'verified').or(notPortfolio),
           supabase.from('credits').select('year').eq('user_id', userId).not('year', 'is', null).or(notPortfolio).order('year', { ascending: true }).limit(1),
           // Anyone may read a creative's active booking hours (that is what the booking page uses), so this is a safe public signal.
           supabase.from('creator_booking_windows').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('is_active', true),
@@ -372,7 +371,6 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
 
         setGlanceCounts({
           total: totalRes.count ?? null,
-          confirmed: confirmedRes.count ?? null,
           earliestYear: (earliestRes.data?.[0] as { year?: number } | undefined)?.year ?? null,
         });
 
@@ -617,6 +615,22 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
                 <PassportHiringGlance
                   glance={glance}
                   firstName={firstName}
+                  // The visitor's actions sit here, in place of the credits figures this block used to repeat (the credits section lists them).
+                  // The same rules as ever: none for the owner, sign-in first for a signed-out visitor, a connection for Message and Start a project.
+                  actions={
+                    isOwner ? undefined : (
+                      <PassportCollaborationActions
+                        firstName={firstName}
+                        isOwner={isOwner}
+                        isSignedIn={Boolean(currentUserId)}
+                        connectionStatus={connectionStatus}
+                        onSignIn={handleSignIn}
+                        onMessage={() => setMessageOpen(true)}
+                        onPropose={() => setCollaborateOpen(true)}
+                        onClaimCredits={() => setClaimOpen(true)}
+                      />
+                    )
+                  }
                   ownerActions={
                     heroOwner ? (
                       <Button asChild variant="outline" size="sm" className="w-full gap-2">
@@ -648,7 +662,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
             showBio={false}
             showActions={false}
           >
-        {/* Collaboration uses the same existing gated actions. */}
+        {/* The invitation to work together and the connection request. Its Message, Start a project and Claim Credits are in At a glance above. */}
         <PassportCollaborationCta
           firstName={firstName}
           isOwner={isOwner}
@@ -656,11 +670,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           connectionStatus={connectionStatus}
           isConnecting={isConnecting}
           onConnect={handleConnect}
-          onSignIn={handleSignIn}
-          onMessage={() => setMessageOpen(true)}
-          onPropose={() => setCollaborateOpen(true)}
           onInvite={() => setInviteOpen(true)}
-          onClaimCredits={() => setClaimOpen(true)}
         />
 
         {/* Positioning uses a full, themed surface rather than a light side stripe. */}
