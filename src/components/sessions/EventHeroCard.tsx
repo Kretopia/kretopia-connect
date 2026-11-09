@@ -7,18 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KretoScene } from "@/components/brand/KretoScene";
 import {
-  Calendar, MapPin, Users, Share2, Ticket, CheckCircle, CalendarPlus,
-  Navigation, Lock, ImagePlus, X as XIcon, XCircle,
+  Calendar, MapPin, Users, Share2, Ticket, CheckCircle, Navigation, Lock, ImagePlus, X as XIcon,
+  CalendarDays, MoreHorizontal,
 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { downloadIcs, openDirections } from "@/lib/eventActions";
-import { APP_URL } from "@/lib/constants";
+import { openDirections } from "@/lib/eventActions";
 import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
 import type { EventCountdown } from "@/lib/eventCountdown";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { EventAttendeeStack, type EventAttendeePreview } from "@/components/sessions/EventAttendeeStack";
 
 const CATEGORY_LABELS: Record<string, string> = {
   music: 'Music', film: 'Film', photo: 'Photo', art: 'Art',
@@ -50,9 +51,6 @@ interface EventHeroCardProps {
   countdown: EventCountdown | null;
   cityLabel: string | null;
   priceLabel: string | null;
-  bookingLabel: string;
-  bookingReason: string | null;
-  bookingDisabled: boolean;
   participantCount: number | null;
   capacity: number;
   isFull: boolean;
@@ -60,10 +58,12 @@ interface EventHeroCardProps {
   showScarcity: boolean;
   participation: string | null;
   joining: boolean;
-  onBook: () => void;
+  attendees: EventAttendeePreview[];
+  attendeesVisible: boolean;
   onShare: () => void;
   onShowGuestPass: () => void;
   onCancelRsvp: () => void;
+  onOpenCalendar: () => void;
   onGalleryChange: (urls: string[]) => void;
 }
 
@@ -74,10 +74,10 @@ interface EventHeroCardProps {
  */
 export function EventHeroCard({
   event, creator, isCreator, isAuthenticated, isPast, isCancelled, isCompleted,
-  countdown, cityLabel, priceLabel, bookingLabel, bookingReason, bookingDisabled,
+  countdown, cityLabel, priceLabel,
   participantCount, capacity, isFull, spotsLeft, showScarcity,
-  participation, joining,
-  onBook, onShare, onShowGuestPass, onCancelRsvp, onGalleryChange,
+  participation, joining, attendees, attendeesVisible,
+  onShare, onShowGuestPass, onCancelRsvp, onOpenCalendar, onGalleryChange,
 }: EventHeroCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -129,8 +129,8 @@ export function EventHeroCard({
   };
 
   return (
-    <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card pb-5 text-left shadow-[0_20px_70px_-45px_hsl(var(--primary)/0.28)] sm:mb-8 sm:pb-7">
-        <div className="relative -mx-px -mt-px h-[min(72vw,34rem)] min-h-[280px] overflow-hidden rounded-t-2xl sm:min-h-[380px]">
+    <div className="mb-6 overflow-hidden rounded-2xl border border-border bg-card pb-5 text-left shadow-sm">
+        <div className="relative -mx-px -mt-px aspect-[16/9] min-h-64 max-h-96 overflow-hidden rounded-t-2xl">
           {event.cover_image_url && !coverImageFailed ? (
             <img
               src={event.cover_image_url}
@@ -158,10 +158,7 @@ export function EventHeroCard({
                   {cityLabel}
                 </span>
               )}
-              <span className="inline-flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" aria-hidden />
-                {participantCount === null ? "Attendance count unavailable" : `${participantCount} going`}
-              </span>
+              <span className="font-semibold">{priceLabel || "Free"}</span>
             </div>
             <div className="mt-4 flex items-center gap-3">
               <Avatar className="h-10 w-10 ring-2 ring-background">
@@ -179,35 +176,26 @@ export function EventHeroCard({
           </div>
         </div>
 
-        <div className="px-4 pt-5 sm:px-8">
-          <div className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admission</p>
-              <p className="mt-1 text-xl font-semibold">{priceLabel || "Free"}</p>
-            </div>
-            <Button className="w-full sm:w-auto sm:min-w-36" disabled={bookingDisabled || joining} onClick={onBook}>
-              {joining ? <KretopiaSpinner className="h-4 w-4" /> : bookingLabel}
-            </Button>
-          </div>
-          {bookingReason && <p className="mt-2 text-sm text-muted-foreground" role="status">{bookingReason}</p>}
-        </div>
-
         {/* Live countdown */}
         {!isPast && !isCancelled && countdown && !countdown.ended && (
-          <div className="mt-4 flex items-center justify-center gap-2 sm:gap-3">
+          <div
+            className="mt-4 flex items-center justify-center gap-2 sm:gap-3"
+            role="timer"
+            aria-label={`${countdown.days} days, ${countdown.hours} hours, and ${countdown.minutes} minutes until the event`}
+          >
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
               <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{countdown.days}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Days</p>
+              <p className="text-xs text-muted-foreground uppercase">Days</p>
             </div>
             <span className="text-xl text-muted-foreground">:</span>
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
               <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(countdown.hours).padStart(2, '0')}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Hrs</p>
+              <p className="text-xs text-muted-foreground uppercase">Hrs</p>
             </div>
             <span className="text-xl text-muted-foreground">:</span>
             <div className="text-center px-3 py-1.5 rounded-lg bg-primary/10 min-w-[56px]">
               <p className="text-xl sm:text-2xl font-bold text-primary tabular-nums">{String(countdown.minutes).padStart(2, '0')}</p>
-              <p className="text-[10px] text-muted-foreground uppercase">Min</p>
+              <p className="text-xs text-muted-foreground uppercase">Min</p>
             </div>
           </div>
         )}
@@ -220,33 +208,38 @@ export function EventHeroCard({
           </div>
         )}
 
-        {/* Décompte — headcount, folded straight into the hero instead of a floating strip */}
-        {/* Quick share + pass */}
-        <div className="flex items-center justify-center gap-2 flex-wrap">
-          <Button variant="ghost" size="sm" onClick={onShare} className="text-muted-foreground">
-            <Share2 className="h-4 w-4 mr-1.5" /> Share with friends
-          </Button>
-          {!!participation && (
-            <Button variant="outline" size="sm" onClick={onShowGuestPass} className="gap-1.5">
-              <Ticket className="h-4 w-4" /> My pass
-            </Button>
-          )}
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 pt-5 sm:px-8">
+          <EventAttendeeStack attendees={attendees} totalCount={participantCount ?? 0} visible={attendeesVisible} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="outline" size="sm" aria-label="Event options">
+                <MoreHorizontal className="mr-2 h-4 w-4" aria-hidden />
+                Event options
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onClick={onShare}>
+                <Share2 className="mr-2 h-4 w-4" aria-hidden /> Share event
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenCalendar}>
+                <CalendarDays className="mr-2 h-4 w-4" aria-hidden /> Add to calendar
+              </DropdownMenuItem>
+              {!!participation && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onShowGuestPass}>
+                    <Ticket className="mr-2 h-4 w-4" aria-hidden /> My pass
+                  </DropdownMenuItem>
+                  {!isPast && !isCompleted && (
+                    <DropdownMenuItem disabled={joining} className="text-destructive focus:text-destructive" onClick={() => setConfirmCancel(true)}>
+                      Cancel RSVP
+                    </DropdownMenuItem>
+                  )}
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        {!!participation && !isPast && !isCompleted && (
-          <div className="mt-3 flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setConfirmCancel(true)}
-              disabled={joining}
-              className="gap-1.5 rounded-full border-destructive/50 bg-destructive/10 px-5 font-semibold text-destructive shadow-[0_0_18px_-3px_hsl(var(--destructive)/0.55)] transition-shadow hover:border-destructive hover:bg-destructive/15 hover:text-destructive hover:shadow-[0_0_26px_-2px_hsl(var(--destructive)/0.75)]"
-            >
-              {joining ? <KretopiaSpinner className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
-              Cancel RSVP
-            </Button>
-          </div>
-        )}
         <AlertDialog open={confirmCancel} onOpenChange={setConfirmCancel}>
           <AlertDialogContent className="max-w-sm rounded-2xl border-destructive/30 shadow-[0_0_40px_-8px_hsl(var(--destructive)/0.5)]">
             <AlertDialogHeader>
@@ -268,7 +261,7 @@ export function EventHeroCard({
         </AlertDialog>
 
         {/* Event detail — when / where / capacity, same card */}
-        <div className="mt-5 pt-5 border-t border-border/60 text-left space-y-4">
+        <div className="mt-5 space-y-4 border-t border-border/60 px-4 pt-5 text-left sm:px-8">
           <div className="flex items-start gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
               <Calendar className="h-5 w-5 text-primary" />
@@ -280,27 +273,6 @@ export function EventHeroCard({
                 {event.end_time ? `Ends · ${formatEventTime(event.end_time)}` : `Timezone · ${eventTimeZone()}`}
               </p>
             </div>
-            {!isPast && !isCancelled && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="shrink-0 gap-1.5"
-                onClick={() => downloadIcs({
-                  id: event.id,
-                  title: event.title,
-                  description: event.description,
-                  startTime: event.start_time,
-                  endTime: event.end_time,
-                  venueName: event.venue_name,
-                  venueAddress: event.venue_address,
-                  url: `${APP_URL}/event/${event.id}`,
-                })}
-              >
-                <CalendarPlus className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Add to Calendar</span>
-                <span className="sm:hidden">Save</span>
-              </Button>
-            )}
           </div>
 
           <div className="flex items-start gap-3">

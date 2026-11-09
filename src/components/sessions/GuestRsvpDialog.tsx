@@ -145,6 +145,12 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
         if (result === "full_no_waitlist") {
           throw new Error("This event is full and isn't accepting a waitlist right now.");
         }
+        if (result === "already") {
+          onOpenChange(false);
+          toast({ title: "Already registered", description: "You're already on the guest list." });
+          navigate(`/event/${eventId}`);
+          return;
+        }
         waitlisted = result === "waitlisted";
         if (!waitlisted) {
           // rsvp_to_event returns only a status string, not the participant
@@ -172,6 +178,12 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
         if (!row) throw new Error("RSVP failed");
         if (row.status === "full_no_waitlist") {
           throw new Error("This event is full and isn't accepting guest waitlist entries.");
+        }
+        if (row.status === "already") {
+          onOpenChange(false);
+          toast({ title: "Already registered", description: "You're already on the guest list." });
+          navigate(`/event/${eventId}`);
+          return;
         }
         guestToken = row.check_in_token ?? null;
       }

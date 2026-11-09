@@ -56,7 +56,7 @@ export function EventCalendar({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => onMonthChange(subMonths(month, 1))} aria-label="Previous month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronLeft className="h-4 w-4" aria-hidden /></button>
-          <h2 className="min-w-[9rem] text-center text-base font-semibold">{format(month, "MMMM yyyy")}</h2>
+          <h2 aria-live="polite" aria-atomic="true" className="min-w-[9rem] text-center text-base font-semibold">{format(month, "MMMM yyyy")}</h2>
           <button type="button" onClick={() => onMonthChange(addMonths(month, 1))} aria-label="Next month" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ChevronRight className="h-4 w-4" aria-hidden /></button>
         </div>
         {!full && onOpenFull && (
@@ -78,6 +78,7 @@ export function EventCalendar({
               aria-label={`${format(day, "EEEE, MMMM d")}${count ? `, ${count} event${count === 1 ? "" : "s"}` : ", no events"}`}
               data-date={format(day, "yyyy-MM-dd")}
               aria-pressed={isSameDay(day, selectedDay)}
+              tabIndex={isSameDay(day, selectedDay) ? 0 : -1}
               onClick={() => onSelectDay(day)}
               onKeyDown={(event) => {
                 const delta = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : event.key === "ArrowUp" ? -7 : event.key === "ArrowDown" ? 7 : 0;
