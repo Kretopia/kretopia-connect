@@ -113,8 +113,10 @@ describe("SessionDetailDialog: joining", () => {
   it("a single-price native ticket is unavailable until capacity and payment confirmation are atomic", async () => {
     mocks.invoke.mockResolvedValue({ data: { url: "https://checkout.example/s" }, error: null });
     open({ is_ticketed: true, ticket_price: 25, ticket_currency: "USD" });
-    expect(await screen.findByRole("button", { name: /Ticket booking paused/i })).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: /Ticket booking paused/i }));
+    const ticketButtons = await screen.findAllByRole("button", { name: /Ticket booking paused/i });
+    expect(ticketButtons.length).toBeGreaterThan(0);
+    ticketButtons.forEach((button) => expect(button).toBeDisabled());
+    fireEvent.click(ticketButtons[0]);
     expect(mocks.invoke).not.toHaveBeenCalled();
     expect(mocks.inserts).toHaveLength(0);
   });

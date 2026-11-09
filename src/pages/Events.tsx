@@ -81,6 +81,7 @@ export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () =>
   const isOnline = event.event_mode === "online" || event.event_type === "virtual";
   const place = isOnline ? "Online" : event.event_mode === "hybrid" ? "Hybrid" : event.venue_name || event.venue_address || "Location not listed";
   const booking = event.my_status === "going" ? "You're going" : event.status === "cancelled" ? "Cancelled" : isPast ? "Event ended" : isFull ? "Full" : event.max_participants > 0 ? "Places available" : "RSVP open";
+  const actionLabel = event.my_status === "going" ? "View booking" : event.is_ticketed ? "View ticket options" : "View event & RSVP";
 
   return (
     <CardShell
@@ -107,9 +108,9 @@ export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () =>
         <CardPill key="price"><Ticket className="h-3 w-3" aria-hidden />{formatEventPrice(event)} · {booking}</CardPill>,
       ]}
       primary={{
-        label: event.my_status === "going" ? "View booking" : event.is_ticketed ? "View ticket options" : "View event & RSVP",
+        label: actionLabel,
         onClick,
-        ariaLabel: `View ${event.title} details`,
+        ariaLabel: `${actionLabel}: ${event.title}`,
         disabled: event.status === "cancelled",
       }}
     />

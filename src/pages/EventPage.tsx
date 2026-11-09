@@ -705,11 +705,6 @@ const EventPage = () => {
             onOpenChange={setShowTicketDialog}
             eventId={event.id}
             eventTitle={event.title}
-            reservationsEnabled={false}
-            onSuccess={() => {
-              setParticipation('going');
-              setParticipantCount(prev => prev + 1);
-            }}
           />
 
           <GuestRsvpDialog

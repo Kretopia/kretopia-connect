@@ -27,7 +27,6 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   eventId: string;
   eventTitle: string;
-  onSuccess?: () => void;
 }
 
 export const TicketPurchaseDialog = ({ open, onOpenChange, eventId, eventTitle }: Props) => {
