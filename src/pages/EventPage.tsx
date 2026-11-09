@@ -154,7 +154,7 @@ const EventPage = () => {
 
       const { data: profileData } = await supabase
         .from('public_profiles_safe')
-        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level, avg_response_hours')
+        .select('user_id, full_name, avatar_url, role, bio, id_verified, verification_status, verification_tier, badge, level')
         .eq('user_id', eventData.created_by)
         .single();
 

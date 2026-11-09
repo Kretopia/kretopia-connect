@@ -467,7 +467,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                       renderEventCard={(event, onClick) => <EventCard key={event.id} event={event} onClick={onClick} />}
                     />
                   </Suspense>
-                }
+                )}
               </div>
             )}
           </div>
@@ -655,7 +655,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
                 full
               />
             </Suspense>
-          }
+          )}
         </DialogContent>
       </Dialog>
     </>

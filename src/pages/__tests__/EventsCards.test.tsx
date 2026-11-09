@@ -6,7 +6,8 @@ vi.mock("@/components/brand/KretoScene", () => ({
   KretoScene: () => <div data-testid="brand-event-cover" />,
 }));
 
-import { EventCalendar, EventCard, type EventItem } from "../Events";
+import { EventCard, type EventItem } from "../Events";
+import { EventCalendar } from "@/components/sessions/EventCalendar";
 import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
 
 const event: EventItem = {
@@ -33,6 +34,7 @@ function CalendarHarness({ onSelectEvent }: { onSelectEvent: (event: EventItem) 
       onMonthChange={setMonth}
       onSelectDay={setSelectedDay}
       onSelectEvent={onSelectEvent}
+      renderEventCard={(event, onClick) => <EventCard event={event} onClick={onClick} />}
     />
   );
 }
@@ -86,6 +88,7 @@ describe("event cards and calendar", () => {
         onMonthChange={onMonthChange}
         onSelectDay={onSelectDay}
         onSelectEvent={() => {}}
+        renderEventCard={(calendarEvent, onClick) => <EventCard event={calendarEvent} onClick={onClick} />}
       />,
     );
 
