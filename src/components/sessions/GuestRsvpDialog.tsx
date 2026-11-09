@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
   const [email, setEmail] = useState(user?.email ?? "");
   const [emailConfirm, setEmailConfirm] = useState(user?.email ?? "");
   const [loading, setLoading] = useState(false);
+  const submitInFlight = useRef(false);
   const [errors, setErrors] = useState<{ guest_name?: string; guest_email?: string; guest_email_confirm?: string }>({});
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, any>>({});
@@ -103,6 +104,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitInFlight.current) return;
     setErrors({});
     const parsed = schema.safeParse({ guest_name: name, guest_email: email, guest_email_confirm: emailConfirm });
     if (!parsed.success) {
@@ -127,6 +129,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
       }
     }
 
+    submitInFlight.current = true;
     setLoading(true);
     let guestToken: string | null = null;
     let waitlisted = false;
@@ -148,7 +151,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
           // row -- without this lookup guestToken stays null for every
           // logged-in RSVP, so the confirmation email below silently sends
           // with no QR code (checkInToken: undefined). Guests get theirs
-          // from guest_rsvp_upsert's own return value below; this is the
+          // from reserve_event_guest_rsvp's return value below; this is the
           // equivalent read for the signed-in path.
           const { data: row } = await supabase
             .from("jam_participants")
@@ -159,7 +162,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
           guestToken = row?.check_in_token ?? null;
         }
       } else {
-        const { data, error } = await (supabase as any).rpc("guest_rsvp_upsert", {
+        const { data, error } = await (supabase as any).rpc("reserve_event_guest_rsvp", {
           p_event_id: eventId,
           p_guest_name: parsed.data.guest_name,
           p_guest_email: parsed.data.guest_email,
@@ -167,6 +170,9 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
         if (error) throw error;
         const row = Array.isArray(data) ? data[0] : data;
         if (!row) throw new Error("RSVP failed");
+        if (row.status === "full_no_waitlist") {
+          throw new Error("This event is full and isn't accepting guest waitlist entries.");
+        }
         guestToken = row.check_in_token ?? null;
       }
 
@@ -254,6 +260,7 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
     } catch (err: any) {
       toast({ title: "Couldn't RSVP", description: err?.message || "Try again", variant: "destructive" });
     } finally {
+      submitInFlight.current = false;
       setLoading(false);
     }
   };
