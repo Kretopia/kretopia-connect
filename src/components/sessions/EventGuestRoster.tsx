@@ -40,7 +40,8 @@ interface Props {
   /** Host privacy: only 'host_only' hides the list from people who haven't saved a seat. */
   attendeeListVisibility?: string | null;
   isHost: boolean;
-  participantCount: number;
+  /** Not drawn here any more: the Event page says how many are going once, in its booking block. Kept so existing callers still type-check. */
+  participantCount?: number;
 }
 
 /**
@@ -49,7 +50,7 @@ interface Props {
  * Tap a guest -> profile preview sheet with tagged Connect button.
  */
 export const EventGuestRoster = ({
-  eventId, eventTitle, hostId, currentUserId, isParticipant, isHost, participantCount, attendeeListVisibility = "public",
+  eventId, eventTitle, hostId, currentUserId, isParticipant, isHost, attendeeListVisibility = "public",
 }: Props) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -200,7 +201,7 @@ export const EventGuestRoster = ({
 
   if (!canSee) {
     return (
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-5">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -209,7 +210,7 @@ export const EventGuestRoster = ({
             <div className="min-w-0">
               <h3 className="font-semibold leading-tight">Who's going</h3>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {participantCount} {participantCount === 1 ? "person" : "people"} so far · The host keeps the guest list private until you save a seat
+                The host keeps the guest list private until you save a seat
               </p>
             </div>
           </div>
@@ -220,7 +221,7 @@ export const EventGuestRoster = ({
 
   return (
     <>
-      <Card className="mb-6">
+      <Card>
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">

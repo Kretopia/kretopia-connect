@@ -65,11 +65,15 @@ export function appFooter(pathname: string, signedIn: boolean): AppFooterVariant
 
 /**
  * The room the footer keeps free at its foot below `lg`, where the page has something fixed to the bottom of the screen: the signed-in
- * bottom nav, and the Event page's booking bar. Without it the footer's last line could not be scrolled out from under them. From `lg`
- * neither exists.
+ * bottom nav, and the Event page's booking bar (which sits above that nav). Without it the footer's last line could not be scrolled out
+ * from under them. From `lg` neither exists.
  */
 export function footerBottomReserve(pathname: string, showBottomNav: boolean): string {
-  if (/^\/event\/[^/]+$/.test(pathname)) return "pb-[calc(7rem+env(safe-area-inset-bottom,0px))] lg:pb-0";
+  if (/^\/event\/[^/]+$/.test(pathname)) {
+    return showBottomNav
+      ? "pb-[calc(9rem+env(safe-area-inset-bottom,0px))] lg:pb-0"
+      : "pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0";
+  }
   return showBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:pb-0" : "";
 }
 

@@ -17,7 +17,6 @@ interface Props {
   currentUserId: string | null;
   isParticipant: boolean;
   attendeeListVisibility?: string | null;
-  participantCount: number;
   guestMatchingEnabled: boolean;
   isPast: boolean;
   isCompleted: boolean;
@@ -44,7 +43,7 @@ interface Props {
  */
 export function EventCommunityHub({
   eventId, eventTitle, eventCategory, eventCoverImageUrl, hostId,
-  isCreator, isAuthenticated, currentUserId, isParticipant, participantCount, attendeeListVisibility,
+  isCreator, isAuthenticated, currentUserId, isParticipant, attendeeListVisibility,
   guestMatchingEnabled, isPast, isCompleted, groupChatEnabled, groupChatRoomId, onGroupChatChange,
   circleId, onCircleLinked,
 }: Props) {
@@ -53,7 +52,8 @@ export function EventCommunityHub({
   if (guestMatchingEnabled) {
     tabs.push({
       id: "who",
-      label: participantCount > 0 ? `Who's Going (${participantCount})` : "Who's Going",
+      // No number here: the page says how many are going once, in the booking block.
+      label: "Who's Going",
       icon: Users2,
       content: (
         <EventGuestRoster
@@ -63,7 +63,6 @@ export function EventCommunityHub({
           currentUserId={currentUserId}
           isParticipant={isParticipant}
           isHost={isCreator}
-          participantCount={participantCount}
           attendeeListVisibility={attendeeListVisibility}
         />
       ),
@@ -115,7 +114,7 @@ export function EventCommunityHub({
   });
 
   return (
-    <section className="relative mb-6">
+    <section className="relative">
       <div
         aria-hidden
         className="pointer-events-none absolute -inset-2 rounded-[28px] blur-xl opacity-40 ai-ambient-breathe"

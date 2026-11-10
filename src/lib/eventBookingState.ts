@@ -78,3 +78,41 @@ export function getEventBookingReason(state: EventBookingState): string | null {
     default: return null;
   }
 }
+
+/**
+ * What the one booking control is in each state. Only a state the viewer can act on is a "primary" call to action; every other state is a
+ * fact about the viewer ("Going", "Sold out", "Ended") drawn as a status, not as a second booking-shaped button. Leaving is a quiet action
+ * that sits beside the "Going" status, not a button of equal weight.
+ */
+export interface EventBookingControl {
+  label: string;
+  kind: "primary" | "status";
+  /** Only meaningful for "primary". */
+  enabled: boolean;
+  /** "Cancel RSVP" is offered beside the status. */
+  cancellable: boolean;
+  /** The label of that leaving action. */
+  cancelLabel: string | null;
+}
+
+export function getEventBookingControl(state: EventBookingState): EventBookingControl {
+  const status = (label: string, extra: Partial<EventBookingControl> = {}): EventBookingControl => ({ label, kind: "status", enabled: false, cancellable: false, cancelLabel: null, ...extra });
+  switch (state) {
+    case "available": return { label: getEventBookingLabel(state), kind: "primary", enabled: true, cancellable: false, cancelLabel: null };
+    case "waitlist":
+    case "sign-in-waitlist": return { label: getEventBookingLabel(state), kind: "primary", enabled: true, cancellable: false, cancelLabel: null };
+    case "booked": return status(getEventBookingLabel(state), { cancellable: true, cancelLabel: "Cancel RSVP" });
+    case "waitlisted": return status(getEventBookingLabel(state), { cancellable: true, cancelLabel: "Leave waitlist" });
+    default: return status(getEventBookingLabel(state));
+  }
+}
+
+/**
+ * "12 places left" or "No places left"; null when the event has no limit, or when the server's count is not known (the booking reason then
+ * says so once). The count must be the server's, never an optimistic one.
+ */
+export function placesLeftLabel(capacity: number, serverCount: number | null): string | null {
+  if (!(capacity > 0) || serverCount === null) return null;
+  const left = Math.max(0, capacity - serverCount);
+  return left === 0 ? "No places left" : `${left} ${left === 1 ? "place" : "places"} left`;
+}

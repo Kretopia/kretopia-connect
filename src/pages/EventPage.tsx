@@ -1,6 +1,6 @@
 import { csvCell } from "@/lib/csvCell";
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,8 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Sparkles, Check, Share2, ExternalLink, XCircle,
-  CheckCircle,
-  X, ChevronDown
+  ChevronDown
 } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -25,16 +24,15 @@ import { EventRecapButton } from "@/components/sessions/EventRecapButton";
 import { EventHeroCard } from "@/components/sessions/EventHeroCard";
 import { EventAboutSection } from "@/components/sessions/EventAboutSection";
 import { EventCalendarWorkspace } from "@/components/sessions/EventCalendarWorkspace";
-import { EventRsvpSuccessDialog } from "@/components/sessions/EventRsvpSuccessDialog";
 import type { EventAttendeePreview } from "@/components/sessions/EventAttendeeStack";
-import { EventBookingActions } from "@/components/sessions/EventBookingActions";
-import { EventHostCard } from "@/components/sessions/EventHostCard";
+import { EventBookingBlock, type RsvpNotice } from "@/components/sessions/EventBookingBlock";
+import { EventGallery } from "@/components/sessions/EventGallery";
 import { EventHostBar } from "@/components/sessions/EventHostBar";
 import { EventCalendarActions, type CalendarActionEvent } from "@/components/sessions/EventCalendarActions";
 import { EventSectionsDialog } from "@/components/sessions/EventSectionsDialog";
 import { SectionFaq, SectionLines } from "@/components/sessions/EventSectionContent";
 import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
-import { EventPageShell, EVENT_PAGE_CONTENT_CLASS } from "@/components/sessions/EventPageShell";
+import { EventPageShell } from "@/components/sessions/EventPageShell";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
 import { GuestRsvpDialog } from "@/components/sessions/GuestRsvpDialog";
 import { cancelEventRsvp } from "@/lib/eventRsvp";
@@ -45,7 +43,8 @@ import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
 import { getEventCountdown } from "@/lib/eventCountdown";
-import { getEventBookingLabel, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
+import { getEventBookingControl, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
+import { publicPassportPath } from "@/lib/passport/passportNav";
 import { addToKretopiaCalendar, fetchCalendarEntries, removeFromKretopiaCalendar } from "@/lib/eventCalendar";
 import { emptySections, fetchEventSections, viewSection, type EventSectionKey, type FetchedSections } from "@/lib/eventSections";
 import { APP_URL } from "@/lib/constants";
@@ -54,6 +53,7 @@ const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [event, setEvent] = useState<any>(null);
   const [creator, setCreator] = useState<any>(null);
@@ -65,7 +65,8 @@ const EventPage = () => {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [availabilityError, setAvailabilityError] = useState<string | null>(null);
   const [eventLoadError, setEventLoadError] = useState<string | null>(null);
-  const [bookingError, setBookingError] = useState<string | null>(null);
+  // What the last RSVP action did, said once in the booking block (no toast and no dialog repeat it).
+  const [rsvpNotice, setRsvpNotice] = useState<RsvpNotice | null>(null);
   const [participation, setParticipation] = useState<string | null>(null);
   const [showShareKit, setShowShareKit] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
@@ -82,7 +83,6 @@ const EventPage = () => {
   const [calendarAvailable, setCalendarAvailable] = useState(false);
   const [calendarBusyId, setCalendarBusyId] = useState<string | null>(null);
   const [sectionsLoaded, setSectionsLoaded] = useState<FetchedSections>({ sections: emptySections(), available: false, loadFailed: false });
-  const [successSequence, setSuccessSequence] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const joinInFlight = useRef(false);
   const verifiedTicketRef = useRef<string | null>(null);
@@ -129,11 +129,10 @@ const EventPage = () => {
             body: { sessionId, orderId },
           });
           if (data?.status === "paid") {
-            setSuccessSequence((sequence) => sequence + 1);
-            toast({ title: "Ticket confirmed! 🎟️", description: "You're on the guest list." });
+            setRsvpNotice({ tone: "success", text: "Ticket confirmed. You're on the guest list." });
             fetchEvent();
           } else {
-            toast({ title: "Processing payment…", description: "We'll confirm shortly." });
+            setRsvpNotice({ tone: "info", text: "Processing your payment. We'll confirm shortly." });
           }
         } catch {
           // silent
@@ -143,10 +142,26 @@ const EventPage = () => {
         }
       })();
     } else if (ticketStatus === "cancelled") {
-      toast({ title: "Checkout cancelled", variant: "destructive" });
+      setRsvpNotice({ tone: "error", text: "Checkout cancelled." });
       window.history.replaceState({}, "", `/event/${eventId}`);
     }
   }, [eventId]);
+
+  // A guest lands here from the RSVP form with ?rsvp=confirmed: that is the same one message, not a banner of its own.
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("rsvp") !== "confirmed") return;
+    const name = params.get("name");
+    const email = params.get("email");
+    setRsvpNotice(params.get("source") === "email"
+      ? { tone: "success", text: `Attendance confirmed. Great to have you${name ? `, ${name}` : ""}. Your spot is locked in.` }
+      : { tone: "success", text: `You're going. We're sending a confirmation to ${email || "your email"}.` });
+  }, [location.search]);
+
+  const dismissRsvpNotice = () => {
+    setRsvpNotice(null);
+    if (event && new URLSearchParams(location.search).get("rsvp") === "confirmed") navigate(`/event/${event.id}`, { replace: true });
+  };
 
   const refreshParticipantCount = async (id: string) => {
     setAvailabilityLoading(true);
@@ -297,19 +312,34 @@ const EventPage = () => {
     setShowGuestRsvp(true);
   };
 
+  // What the server stored for this viewer: their row (a cancelled one reads as no status), null when there is no row, and "unreadable"
+  // when the read itself failed (the caller then keeps the answer the RSVP call gave).
+  const readOwnParticipation = async (eventId: string, userId: string): Promise<{ id: string; status: string | null } | null | "unreadable"> => {
+    const { data, error } = await supabase
+      .from('jam_participants').select('id, status').eq('jam_id', eventId).eq('user_id', userId).maybeSingle();
+    if (error) return "unreadable";
+    if (!data) return null;
+    return { id: data.id, status: data.status && data.status !== 'cancelled' ? data.status : null };
+  };
+
   const handleJoin = async () => {
     if (!user || !event || joinInFlight.current || (!availabilityReady && !participation) || (bookingDisabled && !participation)) return;
     joinInFlight.current = true;
     setJoining(true);
-    setBookingError(null);
+    setRsvpNotice(null);
     try {
       if (participation) {
+        const wasWaitlisted = participation === 'waitlisted';
         // The cancel function when the database has it, the direct update this was before when it does not: see lib/eventRsvp.
         const result = await cancelEventRsvp(event.id, user.id);
         if (result === 'not_going') throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         await refreshParticipantCount(event.id);
-        toast({ title: "RSVP cancelled", description: "Your spot has been released." });
+        await refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || user.id === event.created_by);
+        setRsvpNotice({
+          tone: "info",
+          text: wasWaitlisted ? "You've left the waitlist." : "Your RSVP is cancelled. Your spot has been released.",
+        });
       } else {
         // Capture promoter/host attribution from ?ref= query
         const referredBy = await captureRefFromUrl(event.id);
@@ -320,41 +350,39 @@ const EventPage = () => {
         });
         if (error) throw error;
 
-        if (result === 'waitlisted') {
-          setParticipation('waitlisted');
-          toast({ title: "You're on the waitlist", description: "We'll notify you the moment a spot opens." });
-        } else if (result === 'full_no_waitlist') {
+        if (result === 'full_no_waitlist') {
           await refreshParticipantCount(event.id);
-          toast({ title: "Event is full", description: "The host hasn't enabled a waitlist for this one.", variant: "destructive" });
-        } else if (result === 'already') {
-          setParticipation('going');
+          setRsvpNotice({ tone: "error", text: "This event is full, and the host hasn't opened a waitlist." });
+        } else if (result === 'waitlisted' || result === 'already' || result === 'joined') {
+          // The notice says what the server stored for this viewer, not just what the call answered.
+          const stored = await readOwnParticipation(event.id, user.id);
+          const status = stored && stored !== "unreadable" ? stored.status : result === 'waitlisted' ? 'waitlisted' : 'going';
+          setParticipation(status);
           await refreshParticipantCount(event.id);
-          toast({ title: "Already going", description: "You're already on the guest list." });
-        } else if (result === 'joined') {
-          setParticipation('going');
-          await refreshParticipantCount(event.id);
-          await refreshAttendeePreview(event.id, true);
-          setSuccessSequence((sequence) => sequence + 1);
-          toast({ title: "You're in!", description: "You've joined this event" });
-
-          // Look up the new participant row to send confirmation email
-          const { data: inserted } = await supabase
-            .from('jam_participants')
-            .select('id')
-            .eq('jam_id', event.id)
-            .eq('user_id', user.id)
-            .maybeSingle();
-          if (inserted) {
-            sendEventConfirmationEmail({
-              eventId: event.id,
-              eventTitle: event.title,
-              startTime: event.start_time,
-              endTime: event.end_time,
-              venueName: event.venue_name,
-              venueAddress: event.venue_address,
-              isTicketed: false,
-              participantId: inserted.id,
-            }).catch(() => {});
+          if (status === 'waitlisted') {
+            setRsvpNotice({ tone: "success", text: "You're on the waitlist. We'll let you know the moment a place opens." });
+          } else if (status === 'going' && result === 'already') {
+            setRsvpNotice({ tone: "info", text: "You're already on the guest list." });
+          } else if (status === 'going') {
+            setRsvpNotice({ tone: "success", text: "You're going. Your place is confirmed." });
+          } else {
+            throw new Error("The event did not confirm your RSVP.");
+          }
+          if (result === 'joined' && status === 'going') {
+            await refreshAttendeePreview(event.id, true);
+            // The confirmation email is sent once, for the row the server just stored.
+            if (stored && stored !== "unreadable") {
+              sendEventConfirmationEmail({
+                eventId: event.id,
+                eventTitle: event.title,
+                startTime: event.start_time,
+                endTime: event.end_time,
+                venueName: event.venue_name,
+                venueAddress: event.venue_address,
+                isTicketed: false,
+                participantId: stored.id,
+              }).catch(() => {});
+            }
           }
         } else {
           throw new Error("The event did not confirm your RSVP.");
@@ -362,9 +390,7 @@ const EventPage = () => {
       }
     } catch (err) {
       console.error('RSVP error:', err);
-      const message = err instanceof Error ? err.message : "Failed to update RSVP.";
-      setBookingError(message);
-      toast({ title: "Error", description: message, variant: "destructive" });
+      setRsvpNotice({ tone: "error", text: err instanceof Error ? err.message : "Failed to update RSVP." });
     } finally {
       joinInFlight.current = false;
       setJoining(false);
@@ -458,11 +484,11 @@ const EventPage = () => {
     nativePaid: isTicketed && !hasExternalTicket,
   });
   const bookingDisabled = !["available", "waitlist", "sign-in-waitlist"].includes(bookingState);
-  const bookingLabel = getEventBookingLabel(bookingState);
-  const bookingReason = bookingError || getEventBookingReason(bookingState);
-  const cityLabel = event.event_mode && event.event_mode !== "irl"
-    ? "Online"
-    : event.venue_name || null;
+  const bookingControl = getEventBookingControl(bookingState);
+  const bookingReason = getEventBookingReason(bookingState);
+  const eventIsOnline = !!event.event_mode && event.event_mode !== "irl";
+  // The host's visibility setting, applied once: the host and anyone with a place always see who is going.
+  const attendeesVisible = event.attendee_list_visibility !== "host_only" || isCreator || !!participation;
 
   const spotsLeft = availabilityReady && capacity > 0 ? capacity - participantCount : null;
   const showScarcity = capacity > 0 && spotsLeft !== null && spotsLeft > 0 && spotsLeft / capacity < 0.3;
@@ -599,94 +625,83 @@ const EventPage = () => {
       <EventPageShell
         eventTitle={event.title}
         hero={
-          <>
-            <EventHeroCard
-              event={event}
-              creator={creator}
-              isCreator={isCreator}
-              isAuthenticated={isAuthenticated}
-              isPast={isPast}
-              isCancelled={isCancelled}
-              isCompleted={isCompleted}
-              countdown={countdown}
-              cityLabel={cityLabel}
-              priceLabel={ticketPriceLabel}
-              participantCount={availabilityReady ? participantCount : null}
-              attendees={attendeePreview}
-              attendeesVisible={event.attendee_list_visibility !== "host_only" || isCreator || !!participation}
-              isFull={isFull}
-              participation={participation}
-              joining={joining}
-              onShare={handleShare}
-              onShowGuestPass={() => setShowGuestPass(true)}
-              onCancelRsvp={handleJoin}
-              calendarActions={
-                <EventCalendarActions
-                  event={calendarEvent}
-                  signedIn={isAuthenticated}
-                  saveAvailable={calendarAvailable}
-                  saved={calendarIds.has(event.id)}
-                  busy={calendarBusyId === event.id}
-                  onToggleSaved={() => toggleCalendar(event.id)}
-                  onSignIn={() => navigate(buildEventAuthUrl(event.id))}
-                />
-              }
-              ticketUrl={ticketUrl}
-              venueDetailsVisible={venueDetailsVisible}
-              policiesVisible={policiesView.show}
-              onGalleryChange={(urls) => setEvent((prev: any) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
-              onSignIn={() => navigate(buildEventAuthUrl(event.id))}
-            />
-            <div className={`${EVENT_PAGE_CONTENT_CLASS} space-y-3`}>
-              {typeof window !== "undefined" && new URLSearchParams(window.location.search).get("rsvp") === "confirmed" && (
-                <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 p-4">
-                  <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden />
-                  <div className="min-w-0 flex-1">
-                    {new URLSearchParams(window.location.search).get("source") === "email" ? (
-                      <>
-                        <p className="font-semibold text-foreground">Attendance confirmed 🎉</p>
-                        <p className="text-sm text-muted-foreground">
-                          Great to have you
-                          {new URLSearchParams(window.location.search).get("name")
-                            ? `, ${new URLSearchParams(window.location.search).get("name")}`
-                            : ""}
-                          . Your spot is locked in. Here's the full event below.
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="font-semibold text-foreground">You're going! 🎉</p>
-                        <p className="text-sm text-muted-foreground">
-                          Confirmation sent to{" "}
-                          <span className="font-medium text-foreground">{new URLSearchParams(window.location.search).get("email") || "your email"}</span>
-                          . Here's the full event below.
-                        </p>
-                      </>
-                    )}
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => navigate(`/event/${event.id}`, { replace: true })} aria-label="Dismiss">
-                    <X className="h-4 w-4" aria-hidden />
-                  </Button>
-                </div>
-              )}
-              {isCancelled && (
-                <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
-                  <XCircle className="h-5 w-5 shrink-0 text-destructive" aria-hidden />
-                  <div>
-                    <p className="font-semibold text-destructive">Event Cancelled</p>
-                    {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
-                  </div>
-                </div>
-              )}
-              {isCompleted && (
-                <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3">
-                  <Check className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
-                  <p className="font-semibold text-green-600">Event Completed</p>
-                </div>
-              )}
-            </div>
-          </>
+          <EventHeroCard
+            event={event}
+            hasPass={!!user && !!participation}
+            onShare={handleShare}
+            onShowGuestPass={() => setShowGuestPass(true)}
+          />
         }
+        booking={
+          <EventBookingBlock
+            eventId={event.id}
+            eventTitle={event.title}
+            startTime={event.start_time}
+            countdown={countdown}
+            isPast={isPast}
+            isCancelled={isCancelled}
+            isCompleted={isCompleted}
+            isOnline={eventIsOnline}
+            onlineFormat={event.online_format}
+            venueName={event.venue_name || null}
+            venueAddress={publicVenueAddress}
+            venueDetailsVisible={venueDetailsVisible}
+            isAuthenticated={isAuthenticated}
+            isHost={isCreator}
+            priceLabel={ticketPriceLabel}
+            ticketUrl={ticketUrl}
+            capacity={capacity}
+            participantCount={availabilityReady ? participantCount : null}
+            attendees={attendeePreview}
+            attendeesVisible={attendeesVisible}
+            control={bookingControl}
+            reason={bookingState === "cancelled" ? null : bookingReason}
+            joining={joining}
+            rsvpNotice={rsvpNotice}
+            onDismissNotice={dismissRsvpNotice}
+            onBook={handleJoinOrSignup}
+            onCancelRsvp={handleJoin}
+            calendarAction={
+              <EventCalendarActions
+                event={calendarEvent}
+                signedIn={isAuthenticated}
+                saveAvailable={calendarAvailable}
+                saved={calendarIds.has(event.id)}
+                busy={calendarBusyId === event.id}
+                onToggleSaved={() => toggleCalendar(event.id)}
+                onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+                size="default"
+                labelAlways
+                className="w-full justify-start"
+              />
+            }
+            host={creator}
+            onContactHost={() => navigate(publicPassportPath(event.created_by))}
+            policiesVisible={policiesView.show}
+            onSignIn={() => navigate(buildEventAuthUrl(event.id))}
+            bottomNav={isAuthenticated}
+          />
+        }
+        notices={(isCancelled || isCompleted) ? (
+          <div className="space-y-3">
+            {isCancelled && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 p-3">
+                <XCircle className="h-5 w-5 shrink-0 text-destructive" aria-hidden />
+                <div>
+                  <p className="font-semibold text-destructive">Event Cancelled</p>
+                  {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
+                </div>
+              </div>
+            )}
+            {isCompleted && (
+              <div className="flex items-center gap-2 rounded-lg bg-green-500/10 p-3">
+                <Check className="h-5 w-5 shrink-0 text-green-600" aria-hidden />
+                <p className="font-semibold text-green-600">Event Completed</p>
+              </div>
+            )}
+          </div>
+        ) : null}
+        hostTools={hostBar}
         about={
           <EventAboutSection
             description={event.description}
@@ -725,7 +740,8 @@ const EventPage = () => {
                     <li>RSVP availability is confirmed by the event service; the displayed count is refreshed from the server.</li>
                     <li>{isTicketed && !hasExternalTicket ? "Online ticket sales are unavailable for this event." : "You can cancel an RSVP from this page while cancellation remains available."}</li>
                   </ul>
-                  {event.status_note && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
+                  {/* A cancelled event's note is in the notice at the top of the page; it is not said again here. */}
+                  {event.status_note && !isCancelled && <p className="text-sm text-muted-foreground">{event.status_note}</p>}
                 </>
               )
             ) : null}
@@ -755,12 +771,17 @@ const EventPage = () => {
             ) : null}
           />
         }
-        attendees={
-          <section id="attendees" aria-labelledby="event-attendees-heading" className="scroll-mt-24 space-y-4 rounded-2xl border border-border bg-card p-4 md:p-6">
-            <h2 id="event-attendees-heading" className="text-xl font-semibold">Who's coming</h2>
-            <p className="text-sm text-muted-foreground">
-              {availabilityReady ? `${participantCount} going` : "Attendance count unavailable"}
-            </p>
+        gallery={
+          <EventGallery
+            eventId={event.id}
+            urls={event.gallery_image_urls || []}
+            isCreator={isCreator}
+            onChange={(urls) => setEvent((prev: Record<string, unknown> | null) => prev ? { ...prev, gallery_image_urls: urls } : prev)}
+          />
+        }
+        crew={
+          <section id="attendees" aria-labelledby="event-attendees-heading" className="scroll-mt-24">
+            <h2 id="event-attendees-heading" className="sr-only">Who's coming</h2>
             {availabilityReady ? (
               <EventCommunityHub
                 eventId={event.id}
@@ -772,7 +793,6 @@ const EventPage = () => {
                 isAuthenticated={isAuthenticated}
                 currentUserId={user?.id || null}
                 isParticipant={!!participation}
-                participantCount={participantCount}
                 attendeeListVisibility={event.attendee_list_visibility}
                 guestMatchingEnabled={event.guest_matching_enabled !== false}
                 isPast={isPast}
@@ -816,35 +836,7 @@ const EventPage = () => {
             </section>
           )
         }
-        host={
-          <div id="host" className="scroll-mt-24">
-            <EventHostCard
-              host={creator}
-              isAuthenticated={isAuthenticated}
-              onContactViaKretopia={(username) => username
-                ? navigate(`/u/${username}`)
-                : toast({ title: "Host contact unavailable", description: "This host has not shared a Kretopia username." })}
-              onSignIn={() => navigate(buildEventAuthUrl(event.id))}
-            />
-          </div>
-        }
-        bookingRail={
-          <>
-            <EventBookingActions
-              responsive
-              label={bookingLabel}
-              priceLabel={ticketPriceLabel}
-              goingLabel={availabilityReady ? `${participantCount} going${capacity ? ` · ${capacity} places` : ""}` : "Attendance count unavailable"}
-              reason={bookingReason}
-              disabled={bookingDisabled}
-              joining={joining}
-              onBook={handleJoinOrSignup}
-              ticketUrl={ticketUrl}
-            />
-          </>
-        }
-        hostTools={hostBar}
-        afterHost={
+        afterCrew={
           <div className="space-y-6">
             {event.event_mode && event.event_mode !== "irl" && !isPast && !isCancelled && (
               <JoinOnlineCard
@@ -920,23 +912,10 @@ const EventPage = () => {
             venueName={event.venue_name}
             venueAddress={event.venue_address}
             onRsvpComplete={() => {
+              // The one confirmation is the notice that the ?rsvp=confirmed landing feeds; here only the page's numbers catch up with the server.
               setParticipation('going');
-              setSuccessSequence((sequence) => sequence + 1);
               refreshParticipantCount(event.id);
               refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || !!user || isCreator);
-            }}
-          />
-
-          <EventRsvpSuccessDialog
-            successSequence={successSequence}
-            event={{
-              id: event.id,
-              title: event.title,
-              description: event.description,
-              start_time: event.start_time,
-              end_time: event.end_time,
-              venue_name: event.venue_name,
-              venue_address: event.venue_address,
             }}
           />
 
