@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
+import { activateFounderPurchase } from "../_shared/founderActivation.ts";
+import { finalizeEventOrder } from "../_shared/eventTicketActivation.ts";
 import { syncProjectStatusIfAllMilestonesPaid } from "../_shared/milestoneProjectSync.ts";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
@@ -531,6 +533,21 @@ serve(async (req) => {
         return new Response(JSON.stringify({ received: true }), {
           headers: { "Content-Type": "application/json" },
         });
+      }
+
+      if (session.metadata?.type === "founder_circle" && session.payment_status === "paid") {
+        const founderUserId = session.metadata?.user_id;
+        if (founderUserId) {
+          const result = await activateFounderPurchase(supabaseAdmin, founderUserId, session);
+          logStep("Founder Circle processed via webhook", { result });
+        }
+        return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      if (session.metadata?.order_id && session.metadata?.event_id) {
+        const result = await finalizeEventOrder(supabaseAdmin, session);
+        logStep("Event ticket processed via webhook", { result });
+        return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
       }
 
       // Only handle marketplace purchases from here

@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
-import { activateFounderPurchase, checkFounderSession, FOUNDER_BONUS_XP } from "../_shared/founderActivation.ts";
+import { checkFounderSession, FOUNDER_BONUS_XP } from "../_shared/founderActivation.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
@@ -68,22 +68,15 @@ serve(async (req) => {
       );
     }
 
-    // One conditional claim of the purchase row, then the tier and the bonus: exactly once, however many
-    // callers (two tabs, check-subscription's recovery) verify the same session at the same time.
-    const activation = await activateFounderPurchase(supabaseAdmin, user.id, session);
-    if (activation === "already_processed") {
-      logStep("Already processed");
-      return new Response(JSON.stringify({ success: true, already_processed: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
-    logStep("Founder Circle activation complete", { userId: user.id });
-
-    return new Response(JSON.stringify({ success: true, bonus_xp: FOUNDER_BONUS_XP }), {
+    // Read-only: the founder tier is granted exclusively by the signature-verified payment
+    // webhook (stripe-marketplace-webhook -> activateFounderPurchase). This return-page call
+    // only reports whether that activation has landed.
+    const { data: profile } = await supabaseAdmin
+      .from("profiles").select("subscription_tier").eq("user_id", user.id).maybeSingle();
+    const active = profile?.subscription_tier === "founder";
+    return new Response(JSON.stringify({ success: active, pending: !active, bonus_xp: active ? FOUNDER_BONUS_XP : 0 }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
+      status: active ? 200 : 202,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
