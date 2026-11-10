@@ -220,6 +220,7 @@ describe("recoverPendingFounderPurchase: a buyer who paid and never came back to
 describe("the functions use it", () => {
   const verify = read("supabase/functions/verify-founder-payment/index.ts");
   const check = read("supabase/functions/check-subscription/index.ts");
+  const webhook = read("supabase/functions/stripe-marketplace-webhook/index.ts");
 
   it("verify-founder-payment claims through the shared activation and has no unconditional completion left", () => {
     expect(verify).not.toContain("activateFounderPurchase(");
