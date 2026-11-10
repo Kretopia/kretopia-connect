@@ -3,7 +3,9 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_3_1_PRO, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireUser, GuardError } from '../_shared/guard.ts';
+import { checkAiFeatureRateLimit } from '../_shared/aiRateLimit.ts';
+import { sanitizeChatHistory } from '../_shared/promptIsolation.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 
@@ -17,8 +19,15 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { messages, currency, document_type, existing_items, current_details, project_context, scan_image } = await req.json();
+    // Paid model call: signed-in caller and per-user daily budget first.
+    const caller = await requireUser(req, createClient(SUPABASE_URL, SUPABASE_ANON_KEY));
+    const rateAdmin = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const rateLimit = await checkAiFeatureRateLimit(rateAdmin, caller.id, "ai-pricing-copilot");
+    if (!rateLimit.allowed) return rateLimit.response;
 
+    const { messages: rawMessages, currency, document_type, existing_items, current_details, project_context, scan_image } = await req.json();
+
+    const messages = sanitizeChatHistory(rawMessages, { maxMessages: 30, maxChars: 8000 });
     const docLabel = document_type === "quote" ? "quote" : "invoice";
 
     // Build a compact, structured snapshot of the live Studio so the AI can
@@ -306,8 +315,9 @@ REMINDER: You can make mistakes. When you're not sure (rate, currency, unit, sco
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e: any) {
+    if (e instanceof GuardError) return e.response(req);
     console.error("ai-pricing-copilot error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: "Something went wrong" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

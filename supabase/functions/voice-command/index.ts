@@ -1,3 +1,4 @@
+import { wrapUntrustedContent, PROMPT_INJECTION_DEFENSE_CLAUSE } from "../_shared/promptIsolation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
@@ -50,7 +51,7 @@ serve(async (req) => {
 
     const today = today_iso || new Date().toISOString().slice(0, 10);
     const projectList = projects.length
-      ? projects.map((p) => `- "${p.title}" (id: ${p.id})`).join("\n")
+      ? wrapUntrustedContent("project titles", projects.map((p) => `- ${JSON.stringify(p.title.replace(/[\r\n]+/g, " "))} (id: ${p.id})`).join("\n"))
       : "(no projects yet)";
 
     const systemPrompt = `You are the voice command parser for ThriveDesk — a workspace for creative professionals.
@@ -63,7 +64,8 @@ Listen, transcribe, then classify the spoken intent into ONE action.
 - Match project names fuzzily (first word OK, partial OK). Use null project_id if nothing matches.
 - For relative dates ("tomorrow", "Friday"), resolve to ISO YYYY-MM-DD.
 - For amounts, normalize to numeric (e.g. "five hundred" → 500).
-- Always call the parse_command tool. Never reply in plain text.`;
+- Always call the parse_command tool. Never reply in plain text.
+${PROMPT_INJECTION_DEFENSE_CLAUSE}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

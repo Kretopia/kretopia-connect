@@ -1,3 +1,4 @@
+import { sanitizeChatHistory } from "../_shared/promptIsolation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
@@ -62,9 +63,18 @@ serve(async (req) => {
     console.log('Generating content for type:', type);
 
     // Normalize messages: support both { messages } and { prompt }
-    let messages = rawMessages as any[] | undefined;
-    if ((!messages || !Array.isArray(messages)) && typeof prompt === 'string' && prompt.trim().length > 0) {
-      messages = [{ role: 'user', content: prompt }];
+    // Only user/assistant text turns are accepted from the caller.
+    // A caller-sent "system" turn is demoted to a labelled user turn: it can
+    // shape the task but never sits at system level.
+    const demoted = Array.isArray(rawMessages)
+      ? rawMessages.map((m: any) =>
+          m && m.role === "system" && typeof m.content === "string"
+            ? { role: "user", content: `Task instructions:\n${m.content}` }
+            : m)
+      : rawMessages;
+    let messages: { role: string; content: string }[] | undefined = sanitizeChatHistory(demoted, { maxMessages: 20, maxChars: 12000 });
+    if (messages.length === 0 && typeof prompt === 'string' && prompt.trim().length > 0) {
+      messages = [{ role: 'user', content: prompt.slice(0, 12000) }];
     }
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {

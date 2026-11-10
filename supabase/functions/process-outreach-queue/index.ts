@@ -1,3 +1,4 @@
+import { plainTextToEmailHtml } from "../_shared/outboundText.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@4.0.0";
@@ -7,10 +8,7 @@ import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 import { corsFor } from '../_shared/guard.ts';
 function wrapHtml(body: string): string {
-  return body
-    .split("\n\n")
-    .map((p: string) => `<p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.6;">${p.replace(/\n/g, "<br>")}</p>`)
-    .join("");
+  return plainTextToEmailHtml(body);
 }
 
 serve(async (req) => {
@@ -160,7 +158,7 @@ serve(async (req) => {
 
             await client.close();
             sendSuccess = true;
-            console.log(`[OUTREACH-QUEUE] Sent via Gmail: ${seq.id} step ${nextEmail.step_number} to ${recipientEmail}`);
+            console.log(`[OUTREACH-QUEUE] Sent via Gmail: ${seq.id} step ${nextEmail.step_number}`);
           } catch (e) {
             console.error(`[OUTREACH-QUEUE] Gmail failed for ${seq.id}:`, e);
           }
@@ -184,7 +182,7 @@ serve(async (req) => {
             });
             if (sendError) throw new Error(sendError.message || "The email provider refused the message");
             sendSuccess = true;
-            console.log(`[OUTREACH-QUEUE] Sent via Resend: ${seq.id} step ${nextEmail.step_number} to ${recipientEmail}`);
+            console.log(`[OUTREACH-QUEUE] Sent via Resend: ${seq.id} step ${nextEmail.step_number}`);
           } catch (e) {
             console.error(`[OUTREACH-QUEUE] Resend failed for ${seq.id}:`, e);
           }

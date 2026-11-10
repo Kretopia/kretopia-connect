@@ -1,3 +1,4 @@
+import { parsePublicPageUrl } from "../_shared/publicUrl.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
@@ -81,12 +82,13 @@ serve(async (req) => {
 
   try {
     await requireAiCaller(req, "analyze-profile-url");
-    const { url } = await req.json();
-    console.log("Analyzing URL:", url);
+    const { url: rawUrl } = await req.json();
+    // Only a public web page URL is fetched or handed to the scraper.
+    const url = parsePublicPageUrl(rawUrl)?.toString() ?? "";
 
     if (!url) {
       return new Response(
-        JSON.stringify({ error: "URL is required" }),
+        JSON.stringify({ error: "A public http(s) page URL is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

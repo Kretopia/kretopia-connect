@@ -1,3 +1,4 @@
+import { sanitizeChatHistory } from "../_shared/promptIsolation.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
@@ -47,7 +48,14 @@ serve(async (req) => {
     if (userError || !userData.user) throw new Error("Authentication failed");
     const user = userData.user;
 
-    const { messages, pageUrl } = await req.json();
+    const { messages: rawMessages, pageUrl } = await req.json();
+    const messages = sanitizeChatHistory(rawMessages, { maxMessages: 20, maxChars: 4000 });
+    if (messages.length === 0) {
+      return new Response(JSON.stringify({ error: "messages required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Call Lovable AI Gateway
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {

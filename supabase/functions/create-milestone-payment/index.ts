@@ -1,3 +1,4 @@
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -114,7 +115,7 @@ serve(async (req) => {
     // The project and the title come from the milestone's own row, not from the request body.
     const projectId: string = milestone.project_id;
     const title = checkoutTitle(milestone.title, clientTitle);
-    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+    const origin = trustedReturnOrigin(req);
 
     const talentRate = payable.amount;
     if (clientAmount !== undefined && parseFloat(clientAmount) !== talentRate) {

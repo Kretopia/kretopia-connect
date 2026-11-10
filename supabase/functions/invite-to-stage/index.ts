@@ -103,7 +103,7 @@ serve(async (req) => {
               personalNote: personalNote || undefined,
             },
           },
-        }).catch((e) => console.warn("[invite-to-stage] email failed", row.email, e?.message)),
+        }).catch((e) => console.warn("[invite-to-stage] email failed", e?.message)),
       ),
     );
 

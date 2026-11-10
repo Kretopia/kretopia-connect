@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csvCell";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
@@ -428,10 +429,7 @@ const EventBackstage = ({ embedded = false }: { embedded?: boolean }) => {
         });
       }
 
-      const escape = (v: any) => {
-        const s = (v ?? "").toString().replace(/"/g, '""');
-        return /[",\n]/.test(s) ? `"${s}"` : s;
-      };
+      const escape = csvCell;
       const header = ["Name", "Email", "Username", "Status", "RSVP'd at", "Checked in at"];
       const rows = parts.map((p: any) => {
         const prof = p.user_id ? profileMap[p.user_id] : null;

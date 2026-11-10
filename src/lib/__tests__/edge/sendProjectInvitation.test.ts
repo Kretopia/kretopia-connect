@@ -102,12 +102,13 @@ describe("send-project-invitation: invite secret", () => {
     expect(world.db.rows("project_collaborators")[0].invite_secret_hash).toBeNull();
   });
 
-  it("adds no secret when there is no pending invitation for the address", async () => {
+  it("refuses an address that is not a pending invitation on the project", async () => {
     world.db.rows("project_collaborators")[0].status = "accepted";
     const seen: any[] = [];
     world.generateLink = async (args) => { seen.push(args); return { data: { properties: { action_link: "https://auth.example/magic" } }, error: null }; };
-    await invite();
-    expect(redirectOf(seen[0]).searchParams.has("t")).toBe(false);
+    const res = await invite();
+    expect(res.status).toBe(403);
+    expect(seen).toHaveLength(0);
     expect(world.db.writes("project_collaborators", "update")).toHaveLength(0);
   });
 

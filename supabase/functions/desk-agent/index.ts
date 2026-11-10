@@ -673,10 +673,15 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
               .from("project_tasks")
               .update({ status: "done", updated_at: new Date().toISOString() })
               .eq("id", taskId)
+              .eq("project_id", project_id)
               .select("id, title")
-              .single();
+              .maybeSingle();
             if (error) throw error;
-            actions.push({ tool: name, args, result: data, ok: true });
+            if (!data) {
+              actions.push({ tool: name, args, result: { error: "no match" }, ok: false });
+            } else {
+              actions.push({ tool: name, args, result: data, ok: true });
+            }
           }
         } else if (name === "send_message_to_collaborator") {
           const mention = collaborators.find((c) => c.id === args.mention_user_id);

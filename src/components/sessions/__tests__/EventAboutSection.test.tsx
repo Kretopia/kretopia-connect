@@ -44,7 +44,7 @@ describe("EventAboutSection", () => {
     expect(container.querySelector("#about-policies")).toHaveTextContent("Guests may RSVP without creating an account.");
     expect(container.querySelector("#about-faq")).toHaveTextContent("Where do I find the address?");
     const blocks = ["about-program", "about-venue", "about-policies", "about-faq"].map((id) => container.querySelector(`#${id}`));
-    expect(blocks.map((block) => [...container.querySelectorAll("section")].indexOf(block!))).toEqual([1, 2, 3, 4]);
+    expect(blocks.map((block) => [...container.querySelectorAll("section")].indexOf(block as HTMLElement))).toEqual([1, 2, 3, 4]);
   });
 
   it("draws only the sections it is given: a section left out (hidden by the host) is not in the page at all", () => {

@@ -85,7 +85,7 @@ serve(async (req) => {
           .insert({ event_id, name: "Main Layout", tables: newTables, created_by: user.id })
           .select("id").single();
         if (createErr || !created) {
-          return new Response(JSON.stringify({ error: `Couldn't create layout: ${createErr?.message || "unknown"}` }),
+          return new Response(JSON.stringify({ error: "Couldn't create layout" }),
             { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         resolvedLayoutId = created.id;
@@ -93,8 +93,13 @@ serve(async (req) => {
     }
 
     // Load layout (table list)
+    // The layout must belong to the event the caller hosts.
     const { data: layout } = await admin.from("event_seating_layouts")
-      .select("tables").eq("id", resolvedLayoutId).maybeSingle();
+      .select("tables").eq("id", resolvedLayoutId).eq("event_id", event_id).maybeSingle();
+    if (!layout) {
+      return new Response(JSON.stringify({ error: "Layout not found for this event" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const tables: any[] = Array.isArray(layout?.tables) ? layout!.tables : [];
     if (tables.length === 0) {
       return new Response(JSON.stringify({ error: "Add tables to the layout first." }),
@@ -167,7 +172,7 @@ serve(async (req) => {
     }
 
     // Persist: clear + insert assignments
-    await admin.from("event_seating_assignments").delete().eq("layout_id", resolvedLayoutId);
+    await admin.from("event_seating_assignments").delete().eq("layout_id", resolvedLayoutId).eq("event_id", event_id);
     const rows: any[] = [];
     Object.entries(tableSeats).forEach(([tid, occupants]) => {
       occupants.forEach((uid, idx) => {

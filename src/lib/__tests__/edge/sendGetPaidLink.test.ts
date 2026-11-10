@@ -17,7 +17,9 @@ vi.mock("https://esm.sh/resend@4.0.0", () => ({
 vi.mock("https://esm.sh/@supabase/supabase-js@2.57.2", () => {
   const query = (row: unknown) => {
     const q: any = {};
-    q.select = () => q; q.eq = () => q;
+    q.select = () => q; q.eq = () => q; q.gte = () => q; q.ilike = () => q; q.in = () => q;
+    q.then = (res: any, rej: any) => Promise.resolve({ data: [], count: 0, error: null }).then(res, rej);
+    q.insert = async () => ({ error: null });
     q.maybeSingle = async () => ({ data: row, error: null });
     q.single = async () => ({ data: row, error: null });
     q.insert = async () => ({ error: null });

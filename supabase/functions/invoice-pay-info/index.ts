@@ -17,7 +17,12 @@ serve(async (req) => {
     }
     const url = new URL(req.url);
     const invoiceId = url.searchParams.get("id");
-    if (!invoiceId) throw new Error("id required");
+    if (!invoiceId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(invoiceId)) {
+      return new Response(JSON.stringify({ error: "Invoice not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -29,7 +34,9 @@ serve(async (req) => {
       .select("id, invoice_number, issued_by, recipient_name, total_amount, currency, status, due_date, notes, brand_name, brand_logo_url, brand_color, document_type, line_items, bank_transfer_reported_at")
       .eq("id", invoiceId)
       .maybeSingle();
-    if (!invoice) {
+    // Only invoices actually sent to a client are readable here; drafts and
+    // cancelled documents are indistinguishable from a missing id.
+    if (!invoice || ["draft", "cancelled", "void"].includes(String(invoice.status))) {
       return new Response(JSON.stringify({ error: "Invoice not found" }), {
         status: 404,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -54,7 +61,7 @@ serve(async (req) => {
     // itself. Money never routes through Kretopia for this path: the client
     // sends the transfer directly to the issuer's own account.
     let sepa: { beneficiaryName: string; iban: string; bic: string | null; reference: string } | null = null;
-    if (invoice.issued_by) {
+    if (invoice.issued_by && invoice.status !== "paid") {
       const { data: beneficiary } = await admin
         .from("invoice_sepa_beneficiaries")
         .select("beneficiary_name, iban, bic")
@@ -74,8 +81,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error("[invoice-pay-info]", e);
+    return new Response(JSON.stringify({ error: "Something went wrong" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

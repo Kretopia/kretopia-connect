@@ -26,10 +26,10 @@ export const OUTREACH_PER_ACTOR_PER_HOUR = 30;
 export const OUTREACH_PER_RECIPIENT_PER_HOUR = 3;
 // A host's own contact list: one list a day per account, and no address mailed by hosts more than
 // three times a day, whoever the hosts are. Windows are 24 hours.
-export const EVENT_INVITES_PER_ACTOR_PER_DAY = 500;
+export const EVENT_INVITES_PER_ACTOR_PER_DAY = 150;
 export const EVENT_INVITES_PER_RECIPIENT_PER_DAY = 3;
 export const EVENT_INVITE_WINDOW_MINUTES = 24 * 60;
-export const EVENT_INVITE_NOTE_MAX = 500;
+export const EVENT_INVITE_NOTE_MAX = 280;
 
 export type BudgetDecision =
   | { ok: true }
@@ -193,4 +193,24 @@ export async function recordActorSendBatch(
     })),
   );
   return !error;
+}
+
+/**
+ * Count, decide and record one send in a single call. Nothing is recorded when
+ * the budget refuses. Use before any provider call that mails a caller-chosen
+ * address from our domain.
+ */
+export async function enforceSendBudget(
+  db: Db,
+  f: { template: string; actorId: string; recipientEmail: string; actorLimit: number; recipientLimit: number; sinceMinutes?: number },
+): Promise<BudgetDecision> {
+  const minutes = f.sinceMinutes ?? 60;
+  const [actorCount, recipientCount] = await Promise.all([
+    countActorSends(db, f.actorId, f.template, minutes),
+    countRecipientSends(db, f.recipientEmail, f.template, minutes),
+  ]);
+  const decision = decideSendBudget({ actorCount, recipientCount, actorLimit: f.actorLimit, recipientLimit: f.recipientLimit });
+  if (!decision.ok) return decision;
+  const recorded = await recordActorSend(db, { template: f.template, actorId: f.actorId, recipientEmail: f.recipientEmail, status: "sent" });
+  return recorded ? { ok: true } : { ok: false, status: 503, error: "Could not record the send, try again shortly" };
 }

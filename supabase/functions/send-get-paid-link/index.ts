@@ -1,3 +1,4 @@
+import { enforceSendBudget } from "../_shared/outboundBudget.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -68,6 +69,17 @@ serve(async (req) => {
     const decision = decideGetPaidLink({ projectId, recipientEmail: body?.recipientEmail, access });
     if (!decision.ok) throw new HttpError(decision.status, decision.error);
     const recipientEmail = decision.recipientEmail;
+    // Payment-invitation mail leaves from our domain: a budget per account and
+    // per recipient, recorded before anything is sent.
+    const budget = await enforceSendBudget(supabaseAdmin, {
+      template: 'get-paid-link',
+      actorId: user.id,
+      recipientEmail,
+      actorLimit: 10,
+      recipientLimit: 2,
+      sinceMinutes: 24 * 60,
+    });
+    if (!budget.ok) throw new HttpError(budget.status, budget.error);
     const recipientName = cleanFreeText(body?.recipientName, GET_PAID_NAME_MAX);
     const message = cleanFreeText(body?.message, GET_PAID_MESSAGE_MAX);
 

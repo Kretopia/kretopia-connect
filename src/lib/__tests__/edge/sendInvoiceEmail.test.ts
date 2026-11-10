@@ -32,7 +32,7 @@ const invoiceRow = (over: Record<string, unknown> = {}) => ({
   amount: 300, tax_rate: 0, tax_amount: 0, total_amount: 300, brand_name: "Studio Nord", brand_email: "billing@studio.test",
   recipient_name: "Client", line_items: [{ description: "Grade", quantity: 1, rate: 300, amount: 300 }], notes: null, due_date: null, ...over,
 });
-const seed = (over: Record<string, unknown> = {}) => new CountingDb().seed("invoices", [invoiceRow(over)]);
+const seed = (over: Record<string, unknown> = {}) => new CountingDb().seed("invoices", [invoiceRow({ recipient_email: "client@client.test", ...over })]);
 
 const call = (body: unknown, token: string | null = "t-issuer", method = "POST") =>
   world.handler!(new Request("https://edge.test", {
@@ -76,7 +76,7 @@ describe("send-invoice-email: who may send", () => {
   });
 
   it("accepts an external client who is not on the platform: an invoice to a new client is legitimate", async () => {
-    world.db = seed();
+    world.db = seed({ recipient_email: "someone@never-seen-before.example" });
     expect((await send({ recipientEmail: "someone@never-seen-before.example" })).status).toBe(200);
   });
 
@@ -129,6 +129,14 @@ describe("send-invoice-email: a settled invoice is never mailed again", () => {
     expect(res.status).toBe(502);
     expect(JSON.stringify(await res.json())).not.toMatch(/acct_secret|domain not verified/);
     expect(invoiceStatus(db)).toBe("draft");
+  });
+});
+
+describe("send-invoice-email: the recipient is bound to the invoice", () => {
+  it("refuses a recipient other than the invoice's billed contact", async () => {
+    world.db = seed();
+    expect((await send({ recipientEmail: "someone@else.test" })).status).toBe(400);
+    expect(world.fetch).not.toHaveBeenCalled();
   });
 });
 

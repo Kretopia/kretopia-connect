@@ -1,3 +1,4 @@
+import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 // Auto EPK Updater — analyzes profile + recent credits/projects and emits refresh suggestions.
 // Triggered on demand: { user_id? } (defaults to caller). Cron-friendly when called with service key.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
@@ -100,16 +101,22 @@ serve(async (req) => {
   try {
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const body = await req.json().catch(() => ({}));
-    let userId = body.user_id;
-
-    if (!userId) {
+    // A caller may only refresh their own EPK. Naming another user is reserved
+    // for the cron secret or an admin session.
+    let userId: string | undefined;
+    if (body.user_id) {
+      const guard = await requireAdminOrCron(req);
+      if (!guard.ok) return guard.response;
+      userId = typeof body.user_id === "string" ? body.user_id : undefined;
+    } else {
       const auth = req.headers.get("authorization");
-      if (!auth) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
+      if (!auth?.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
       const userClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
         global: { headers: { Authorization: auth } },
       });
       const { data: u } = await userClient.auth.getUser();
       userId = u?.user?.id;
+      if (!userId) return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401, headers: corsHeaders });
     }
     if (!userId) return new Response(JSON.stringify({ error: "no_user" }), { status: 400, headers: corsHeaders });
 
@@ -122,6 +129,6 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Something went wrong" }), { status: 500, headers: corsHeaders });
   }
 });

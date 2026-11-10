@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
     // Process profiles sequentially to avoid rate limits
     for (const profile of profiles || []) {
       try {
-        console.log(`[batch-enrich] Enriching: ${profile.full_name}`);
+        console.log(`[batch-enrich] Enriching profile ${profile.id}`);
 
         const enrichRes = await fetch(`${supabaseUrl}/functions/v1/enrich-creator-profile`, {
           method: 'POST',
@@ -95,16 +95,16 @@ Deno.serve(async (req) => {
             name: profile.full_name,
             result: enrichData,
           });
-          console.log(`[batch-enrich] ✓ ${profile.full_name}:`, enrichData);
+          console.log(`[batch-enrich] ✓ ${profile.id}`);
         } else {
           results.errors++;
-          console.error(`[batch-enrich] ✗ ${profile.full_name}:`, enrichData);
+          console.error(`[batch-enrich] ✗ ${profile.id}`);
         }
 
         // Delay between requests to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 2000));
       } catch (e) {
-        console.error(`[batch-enrich] Error for ${profile.full_name}:`, e);
+        console.error(`[batch-enrich] Error for ${profile.id}:`, (e as Error)?.message);
         results.errors++;
       }
     }

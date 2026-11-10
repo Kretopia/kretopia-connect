@@ -1,3 +1,4 @@
+import { enforceSendBudget } from "../_shared/outboundBudget.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { cleanFreeText, cleanRecipientEmail, escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
@@ -63,10 +64,27 @@ serve(async (req) => {
         .from('icdb_project_roles')
         .select('claimed_by')
         .eq('id', roleId)
+        .eq('project_id', projectId)
         .maybeSingle();
       if (!roleRow || roleRow.claimed_by !== submittedBy) {
         return new Response(JSON.stringify({ error: 'Not authorized for this role' }), {
           status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Brand verification mail leaves from our domain: a daily budget per
+      // account and per brand address, checked before anything is written.
+      const budget = await enforceSendBudget(supabase, {
+        template: 'brand-credit-verification',
+        actorId: submittedBy,
+        recipientEmail: cleanBrandEmail,
+        actorLimit: 10,
+        recipientLimit: 3,
+        sinceMinutes: 24 * 60,
+      });
+      if (!budget.ok) {
+        return new Response(JSON.stringify({ error: budget.error }), {
+          status: budget.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 

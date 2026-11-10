@@ -1,3 +1,4 @@
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 // Creates a Stripe Checkout session to pay an invoice. Public.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
@@ -47,7 +48,7 @@ serve(async (req) => {
       .maybeSingle();
 
     const stripe = new Stripe(resolveStripeSecretKey(), { apiVersion: "2025-08-27.basil" });
-    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+    const origin = trustedReturnOrigin(req);
 
     const params: Stripe.Checkout.SessionCreateParams = {
       mode: "payment",
