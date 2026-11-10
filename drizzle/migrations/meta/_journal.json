@@ -64,6 +64,13 @@
       "when": 1793473722398,
       "tag": "0008_revoke_username_attempt_public_exec",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794312792529,
+      "tag": "0009_drop_ai_credit_config_public_read",
+      "breakpoints": true
     }
   ]
 }
