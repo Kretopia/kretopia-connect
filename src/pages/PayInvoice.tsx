@@ -14,6 +14,7 @@ const fmt = (n: number, cur: string) =>
 export default function PayInvoice() {
   const { id } = useParams<{ id: string }>();
   const [sp] = useSearchParams();
+  const payToken = sp.get("t") || "";
   const status = sp.get("status");
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<any>(null);
