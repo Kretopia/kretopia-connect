@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   inserts: [] as unknown[],
+  updates: [] as unknown[],
+  participation: null as string | null,
   invoke: vi.fn(),
   rpc: vi.fn(),
   toast: vi.fn(),
@@ -19,9 +21,10 @@ vi.mock("@/integrations/supabase/client", () => ({
         select: () => chain,
         eq: () => chain,
         insert: (row: unknown) => { if (table === "jam_participants") mocks.inserts.push(row); return chain; },
+        update: (payload: unknown) => { mocks.updates.push({ table, payload }); return chain; },
         delete: () => chain,
         single: () => Promise.resolve({ data: { id: "part-1" }, error: null }),
-        maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        maybeSingle: () => Promise.resolve({ data: mocks.participation ? { status: mocks.participation } : null, error: null }),
         then: (ok: any) => Promise.resolve({ data: [], error: null }).then(ok),
       };
       return chain;
@@ -61,6 +64,8 @@ const inRouter = (ui: React.ReactNode) =>
 
 beforeEach(() => {
   mocks.inserts.length = 0;
+  mocks.updates.length = 0;
+  mocks.participation = null;
   mocks.invoke.mockReset();
   mocks.rpc.mockReset().mockResolvedValue({ data: "joined", error: null });
   mocks.toast.mockReset();
@@ -148,5 +153,44 @@ describe("SessionDetailDialog: joining", () => {
     expect(mocks.inserts).toHaveLength(0);
     expect(mocks.email).not.toHaveBeenCalled();
     expect(mocks.toast).toHaveBeenCalled();
+  });
+});
+
+describe("leaving an event against a database that has not got cancel_event_rsvp (production, 2026-11-10)", () => {
+  // What production's API answered for that function: HTTP 404, PGRST202. It exists only in migration 20261109130000, which production has not got.
+  const CANCEL_MISSING = { code: "PGRST202", message: "Could not find the function public.cancel_event_rsvp(p_event_id) in the schema cache" };
+
+  beforeEach(() => {
+    mocks.participation = "going";
+    mocks.rpc.mockImplementation(async (name: string) => (name === "cancel_event_rsvp" ? { data: null, error: CANCEL_MISSING } : { data: "joined", error: null }));
+  });
+
+  it("a member can still leave from the event card: their own row is set to cancelled, and the card says they left", async () => {
+    inRouter(<SessionCard session={{ ...base, is_ticketed: false } as any} userParticipation="going" />);
+    fireEvent.click(await screen.findByRole("button", { name: /Going/ }));
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith({ title: "Left event" }));
+    expect(mocks.updates).toEqual([{ table: "jam_participants", payload: { status: "cancelled" } }]);
+    expect(mocks.toast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: "destructive" }));
+  });
+
+  it("and from the event's detail dialog, which then refreshes the list", async () => {
+    const onRefresh = vi.fn();
+    inRouter(<SessionDetailDialog session={{ ...base, is_ticketed: false } as any} open onOpenChange={() => {}} onRefresh={onRefresh} />);
+    fireEvent.click((await screen.findAllByRole("button", { name: /Going/ }))[0]);
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith({ title: "Left event" }));
+    expect(mocks.updates).toEqual([{ table: "jam_participants", payload: { status: "cancelled" } }]);
+    expect(onRefresh).toHaveBeenCalled();
+  });
+
+  it("uses the cancel function when the database has it, and writes no row itself", async () => {
+    mocks.rpc.mockResolvedValue({ data: "cancelled", error: null });
+    inRouter(<SessionCard session={{ ...base, is_ticketed: false } as any} userParticipation="going" />);
+    fireEvent.click(await screen.findByRole("button", { name: /Going/ }));
+
+    await waitFor(() => expect(mocks.toast).toHaveBeenCalledWith({ title: "Left event" }));
+    expect(mocks.rpc).toHaveBeenCalledWith("cancel_event_rsvp", { p_event_id: "ev1" });
+    expect(mocks.updates).toEqual([]);
   });
 });

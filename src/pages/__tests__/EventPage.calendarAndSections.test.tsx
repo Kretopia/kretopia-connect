@@ -4,8 +4,8 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
- * The Event page as a whole: what putting an event on a calendar does and does not do, where the host's tools are, and who sees the
- * host-editable sections. Only the database is stood in for (a table-aware query builder that records every write); the page, its hero,
+ * The Event page as a whole: what putting an event on a calendar does and does not do, where the host's tools are, who sees the
+ * host-editable sections, and leaving an event against the database production has. Only the database is stood in for (a table-aware query builder that records every write); the page, its hero,
  * calendar actions, host bar, sections dialog and booking rail are the real ones.
  */
 type DbError = { code?: string; message: string } | null;
@@ -440,5 +440,53 @@ describe("Event page: a hidden Venue keeps the address off every public render p
     await draw();
     expect(document.body.textContent).not.toContain("1 Rue Exemple");
     expect(jsonLd().location).toEqual({ "@type": "Place", name: "Studio Nine" });
+  });
+});
+
+describe("Event page: leaving an event against a database that has not got cancel_event_rsvp (production, 2026-11-10)", () => {
+  // What production's API answered for that function: HTTP 404, PGRST202. It exists only in migration 20261109130000, which production has not got.
+  const CANCEL_MISSING = { code: "PGRST202", message: "Could not find the function public.cancel_event_rsvp(p_event_id) in the schema cache" };
+
+  const cancelFromTheMenu = async () => {
+    fireEvent.keyDown(screen.getByRole("button", { name: "More event actions" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Cancel RSVP" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Yes, cancel RSVP" }));
+  };
+
+  beforeEach(() => {
+    m.user = viewer;
+    m.participation = "going";
+  });
+
+  it("still releases the spot, by setting the member's own row to cancelled, and says so", async () => {
+    m.rpc.mockImplementation(async (name: string) => (name === "cancel_event_rsvp" ? { data: null, error: CANCEL_MISSING } : { data: "joined", error: null }));
+    await draw();
+    await cancelFromTheMenu();
+
+    await waitFor(() => expect(m.toast).toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." }));
+    expect(writesTo("jam_participants")).toEqual([{ table: "jam_participants", op: "update", payload: { status: "cancelled" } }]);
+    expect(m.toast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: "destructive" }));
+    // The page no longer shows the member as going.
+    expect((await screen.findAllByRole("button", { name: "I'm Going" })).length).toBeGreaterThan(0);
+  });
+
+  it("uses the cancel function when the database has it, and writes no row itself", async () => {
+    m.rpc.mockResolvedValue({ data: "cancelled", error: null });
+    await draw();
+    await cancelFromTheMenu();
+
+    await waitFor(() => expect(m.toast).toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." }));
+    expect(m.rpc).toHaveBeenCalledWith("cancel_event_rsvp", { p_event_id: "e1" });
+    expect(writesTo("jam_participants")).toEqual([]);
+  });
+
+  it("reports a real refusal as one, and does not retry it as a table update", async () => {
+    m.rpc.mockResolvedValue({ data: null, error: { code: "P0001", message: "auth_required" } });
+    await draw();
+    await cancelFromTheMenu();
+
+    await waitFor(() => expect(m.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Error", variant: "destructive" })));
+    expect(writesTo("jam_participants")).toEqual([]);
+    expect(m.toast).not.toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." });
   });
 });
