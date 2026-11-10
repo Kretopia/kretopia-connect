@@ -216,7 +216,7 @@ Return JSON only (no markdown):
               inviteCode: inviteCode
             }
           });
-          console.log(`Sent invite email to ${email} with code ${inviteCode}`);
+          console.log("Sent waitlist invite email");
         } catch (emailError) {
           console.error("Failed to send invite email:", emailError);
           // Don't fail the whole process if email fails
@@ -257,7 +257,7 @@ Return JSON only (no markdown):
       throw insertError;
     }
 
-    console.log(`Waitlist application processed: ${email}, Decision: ${evaluation.decision}, Score: ${evaluation.score}`);
+    console.log(`Waitlist application processed. Decision: ${evaluation.decision}, Score: ${evaluation.score}`);
 
     return new Response(
       JSON.stringify({

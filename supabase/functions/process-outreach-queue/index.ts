@@ -160,7 +160,7 @@ serve(async (req) => {
 
             await client.close();
             sendSuccess = true;
-            console.log(`[OUTREACH-QUEUE] Sent via Gmail: ${seq.id} step ${nextEmail.step_number} to ${recipientEmail}`);
+            console.log(`[OUTREACH-QUEUE] Sent via Gmail: ${seq.id} step ${nextEmail.step_number}`);
           } catch (e) {
             console.error(`[OUTREACH-QUEUE] Gmail failed for ${seq.id}:`, e);
           }
@@ -184,7 +184,7 @@ serve(async (req) => {
             });
             if (sendError) throw new Error(sendError.message || "The email provider refused the message");
             sendSuccess = true;
-            console.log(`[OUTREACH-QUEUE] Sent via Resend: ${seq.id} step ${nextEmail.step_number} to ${recipientEmail}`);
+            console.log(`[OUTREACH-QUEUE] Sent via Resend: ${seq.id} step ${nextEmail.step_number}`);
           } catch (e) {
             console.error(`[OUTREACH-QUEUE] Resend failed for ${seq.id}:`, e);
           }

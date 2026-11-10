@@ -136,7 +136,7 @@ serve(async (req) => {
                 await client.close();
                 sendSuccess = true;
               } catch (e) {
-                console.error(`[SCHEDULED-CAMPAIGNS] Gmail failed for ${recipient.email}:`, e);
+                console.error(`[SCHEDULED-CAMPAIGNS] Gmail failed for recipient ${recipient.id ?? "?"}:`, e);
               }
             }
 
@@ -155,7 +155,7 @@ serve(async (req) => {
                 if (sendError) throw new Error(sendError.message || "The email provider refused the message");
                 sendSuccess = true;
               } catch (e) {
-                console.error(`[SCHEDULED-CAMPAIGNS] Resend failed for ${recipient.email}:`, e);
+                console.error(`[SCHEDULED-CAMPAIGNS] Resend failed for recipient ${recipient.id ?? "?"}:`, e);
               }
             }
 
@@ -177,7 +177,7 @@ serve(async (req) => {
             await new Promise(resolve => setTimeout(resolve, 200));
           } catch (e) {
             failed++;
-            console.error(`[SCHEDULED-CAMPAIGNS] Error sending to ${recipient.email}:`, e);
+            console.error(`[SCHEDULED-CAMPAIGNS] Error sending to recipient ${recipient.id ?? "?"}:`, e);
             await supabaseAdmin.from("campaign_recipients").update({
               status: "failed",
               error_message: e instanceof Error ? e.message : "Unknown error",
