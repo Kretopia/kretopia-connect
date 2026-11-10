@@ -158,8 +158,7 @@ ${transcript.slice(0, 18000)}`;
 
     return json({ clips, sponsors });
   } catch (e) {
-    console.error("[generate-clips]", e);
-    return json({ error: e instanceof Error ? e.message : "error" }, 500);
+    return safeError(e, req);
   }
 });
 

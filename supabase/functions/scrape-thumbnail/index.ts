@@ -48,7 +48,7 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    await requireUser(
+    const caller = await requireUser(
       req,
       createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
     );
@@ -64,7 +64,8 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_URL')!,
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
           );
-          await supabase.from('credits').update({ thumbnail_url: ogImage }).eq('id', credit_id);
+          // Only the caller's own credit row is updated.
+          await supabase.from('credits').update({ thumbnail_url: ogImage }).eq('id', credit_id).eq('user_id', caller.id);
         }
         return new Response(JSON.stringify({ image_url: ogImage, source: 'og_scrape' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
