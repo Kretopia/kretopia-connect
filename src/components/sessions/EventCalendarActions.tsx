@@ -73,8 +73,10 @@ export function EventCalendarActions({ event, signedIn, saveAvailable, saved, bu
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button type="button" size={size} variant={saved ? "secondary" : "outline"} className={className} aria-label={saved ? "Calendar: on my calendar" : "Add to calendar"}>
-          {saved ? <Check className="mr-1.5 h-3.5 w-3.5" aria-hidden /> : <CalendarPlus className="mr-1.5 h-3.5 w-3.5" aria-hidden />}
-          {saved ? "On my calendar" : "Add to calendar"}
+          {/* On a phone the When row beside it is narrow, so the label gives way to the icon (a plus for "add", a check once it is on the calendar,
+              and the button's fill changes too); the accessible name above is the full label at every size, and from sm the label is drawn. */}
+          {saved ? <Check className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden /> : <CalendarPlus className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden />}
+          <span className="hidden sm:inline">{saved ? "On my calendar" : "Add to calendar"}</span>
           <ChevronDown className="ml-1 h-3.5 w-3.5" aria-hidden />
         </Button>
       </DropdownMenuTrigger>

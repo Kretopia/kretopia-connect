@@ -91,8 +91,9 @@ describe("EventCalendarWorkspace: my calendar is what I saved plus what I am goi
   it("an event I saved is on my calendar even though I am not going; an event I am going to is on it even though I did not save it", async () => {
     draw({ savedIds: new Set(["e1"]) });
     const first = await openMine();
-    expect(within(first).getByText("Studio Night")).toBeInTheDocument();
-    expect(within(first).getByText("On my calendar", { selector: "span" })).toBeInTheDocument();
+    // the row's own status line says so (the row's calendar menu also carries the words, from sm, so the status is read off the row's title button)
+    const row = within(first).getByText("Studio Night").closest("button") as HTMLElement;
+    expect(row).toHaveTextContent("On my calendar");
   });
 
   it("says plainly when nothing is on my calendar yet, and asks a visitor to sign in", async () => {

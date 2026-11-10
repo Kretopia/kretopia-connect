@@ -87,7 +87,8 @@ export function EventSectionsDialog({ open, onOpenChange, eventId, userId, loade
             const inputId = `event-section-${key}`;
             return (
               <fieldset key={key} aria-labelledby={`${inputId}-title`} className="space-y-3 rounded-xl border border-border p-4" disabled={blocked || saving}>
-                <div className="flex items-start justify-between gap-3">
+                {/* On a phone the title and its hint take the whole width and the switch sits under them; from sm they share a row. */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <h3 id={`${inputId}-title`} className="font-semibold">{SECTION_LABELS[key]}</h3>
                     <p id={`${inputId}-hint`} className="text-xs text-muted-foreground">{HINTS[key]}</p>

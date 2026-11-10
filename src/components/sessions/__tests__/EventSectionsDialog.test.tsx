@@ -109,4 +109,13 @@ describe("EventSectionsDialog", () => {
     expect(m.upsert).not.toHaveBeenCalled();
     expect(onSaved).not.toHaveBeenCalled();
   });
+
+  it("gives each section's title and hint the whole width on a phone, with the switch under them, and puts them side by side from sm", () => {
+    draw();
+    for (const label of ["Program / line-up", "Venue", "Policies", "FAQ"]) {
+      const header = screen.getByRole("heading", { name: label }).parentElement!.parentElement as HTMLElement;
+      expect(header).toHaveClass("flex-col", "sm:flex-row", "sm:justify-between");
+      expect(header.querySelector('[role="switch"]')).not.toBeNull();
+    }
+  });
 });

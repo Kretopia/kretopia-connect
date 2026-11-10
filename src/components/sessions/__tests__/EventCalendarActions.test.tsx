@@ -114,3 +114,21 @@ describe("EventCalendarActions: the side-by-side buttons say the same things", (
     expect(onSignIn).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("EventCalendarActions: the menu trigger on a narrow row", () => {
+  it("keeps its full name at every size and draws the words only from sm, so the When row beside it is not squeezed on a phone", () => {
+    draw();
+    const trigger = screen.getByRole("button", { name: "Add to calendar" });
+    const label = within(trigger).getByText("Add to calendar");
+    expect(label).toHaveClass("hidden", "sm:inline");
+    // the icon and the menu chevron stay, so the button is never blank
+    expect(trigger.querySelectorAll("svg")).toHaveLength(2);
+  });
+
+  it("says it is on the calendar the same way: a check, the fill, the full accessible name, and the words from sm", () => {
+    draw({ saved: true });
+    const trigger = screen.getByRole("button", { name: "Calendar: on my calendar" });
+    expect(within(trigger).getByText("On my calendar")).toHaveClass("hidden", "sm:inline");
+    expect(trigger.querySelectorAll("svg")).toHaveLength(2);
+  });
+});
