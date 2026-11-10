@@ -17,6 +17,7 @@
  * seam; same gradient, just dialed back.
  */
 import { Link } from "react-router-dom";
+import { OPPORTUNITIES_PATH } from "@/lib/opportunityRoutes";
 import { BrandLogo } from "@/components/BrandLogo";
 
 interface FooterLink {
@@ -35,7 +36,7 @@ const COLUMNS: FooterColumn[] = [
     heading: "Product",
     links: [
       { label: "Creative Passport", to: "/passport" },
-      { label: "Scout", to: "/scout" },
+      { label: "Opportunities", to: OPPORTUNITIES_PATH },
       { label: "Studio", to: "/desk" },
       { label: "Kreto", to: "/kreto" },
       { label: "KrePay", to: "/thrivepay" },

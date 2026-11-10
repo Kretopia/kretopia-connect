@@ -38,6 +38,7 @@ import scoutMp4 from "@/assets/landing/kretovideo2.mp4.asset.json";
 import scoutWebm from "@/assets/landing/kretovideo2.webm.asset.json";
 import matchMp4 from "@/assets/landing/kreto-vertical.mp4.asset.json";
 import matchWebm from "@/assets/landing/kreto-vertical.webm.asset.json";
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 import studioMp4 from "@/assets/landing/kretovideo1.mp4.asset.json";
 import studioWebm from "@/assets/landing/kretovideo1.webm.asset.json";
 import communityMp4 from "@/assets/landing/kretovideo.mp4.asset.json";
@@ -146,7 +147,7 @@ export const LandingBelowFold = () => {
         video={scoutVideo}
         videoWebm={scoutWebm.url}
         accent="hsl(var(--energy))"
-        href="/opportunities"
+        href={SCOUT_PATH}
         ctaLabel="Explore Opportunities"
         reverse
         tutorialSteps={SCOUT_TUTORIAL}

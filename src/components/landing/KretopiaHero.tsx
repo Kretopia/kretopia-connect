@@ -57,6 +57,7 @@ import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
 import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
@@ -486,8 +487,10 @@ export const KretopiaHero = () => {
           {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
               so the pair stays level whatever the labels' widths. */}
           <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
+            {/* Where each button lands: "Explore Passports" opens Match (people matched to you), "Explore Opportunities" opens Scout inside
+                Opportunities. The Passport directory itself stays at /passport. */}
             <GlassCta
-              to="/passport"
+              to="/match"
               size="md"
               data-cta="primary"
               onClick={() =>
@@ -502,7 +505,7 @@ export const KretopiaHero = () => {
             </GlassCta>
 
             <OutlineCta
-              to="/opportunities"
+              to={SCOUT_PATH}
               size="md"
               data-cta="secondary"
               onClick={() =>

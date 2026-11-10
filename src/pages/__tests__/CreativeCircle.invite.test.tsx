@@ -23,6 +23,8 @@ vi.mock("@/components/studio-reference/StudioFeatureShell", () => ({ StudioFeatu
 vi.mock("@/components/passport/HoloCard", () => ({ HoloCard: ({ children }: any) => <div>{children}</div> }));
 vi.mock("@/components/brand/KretoCharacter", () => ({ KretoCharacter: () => null }));
 vi.mock("@/components/circle/TierRewardsList", () => ({ TierMedallion: () => null, TierRewardsList: () => null }));
+// The Founding status is another feature that Creative Circle merely hosts: standing in for it keeps this test about invites.
+vi.mock("@/components/founding/FoundingStatusPanel", () => ({ FoundingStatusPanel: () => null }));
 
 import CreativeCircle from "../CreativeCircle";
 

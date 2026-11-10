@@ -6,26 +6,38 @@ let isBusiness = false;
 vi.mock("@/hooks/useAccountTone", () => ({ useAccountTone: () => ({ isBusiness }) }));
 
 import KretopiaBottomNav from "../KretopiaBottomNav";
+import { OPPORTUNITIES_PATH, SCOUT_PATH } from "@/lib/opportunityRoutes";
 
 const renderAt = (path: string) => render(<MemoryRouter initialEntries={[path]}><KretopiaBottomNav /></MemoryRouter>);
 
 describe("mobile navigation", () => {
-  it("Scout opens /scout, the same page as desktop Scout, and stays current on the opportunities pages", () => {
+  it("has one entry for work: Opportunities (Scout is inside it), current on every page of that space", () => {
     isBusiness = false;
-    const { unmount } = renderAt("/opportunities");
-    const scout = screen.getByRole("link", { name: /^Scout/ });
-    expect(scout).toHaveAttribute("href", "/scout");
-    expect(scout).toHaveAttribute("aria-current", "page");
-    unmount();
-    renderAt("/scout");
-    expect(screen.getByRole("link", { name: /^Scout/ })).toHaveAttribute("aria-current", "page");
+    // The bar says "Gigs" (the word has to fit a fifth of a phone); its accessible name is the full word.
+    for (const path of ["/opportunities", SCOUT_PATH, "/scout", "/opportunity/abc", "/opportunity-dashboard"]) {
+      const { unmount } = renderAt(path);
+      const entry = screen.getByRole("link", { name: /^Opportunities/ });
+      expect(entry, path).toHaveAttribute("href", "/opportunities");
+      expect(entry, path).toHaveAttribute("aria-current", "page");
+      expect(entry.textContent).toBe("Gigs");
+      unmount();
+    }
   });
 
-  it("matches the desktop nav's Scout destination", async () => {
+  it("has no entry of its own for Scout, Perks or the Founding Circle: they are inside Opportunities and Creative Circle", () => {
+    isBusiness = false;
+    renderAt("/");
+    const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(hrefs).toEqual(["/", "/match", "/profile", "/opportunities", "/desk"]);
+    for (const gone of ["/scout", "/perks", "/founding-member"]) expect(hrefs).not.toContain(gone);
+  });
+
+  it("matches the desktop nav's Opportunities entry", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const desktop = readFileSync(resolve(__dirname, "../../Navbar.tsx"), "utf8");
-    expect(desktop).toMatch(/path: "\/scout", icon: Compass, label: "Scout"/);
+    expect(desktop).toMatch(/path: OPPORTUNITIES_PATH, icon: Compass, label: "Opportunities"/);
+    expect(OPPORTUNITIES_PATH).toBe("/opportunities");
   });
 
   it("Company accounts keep Gigs at /opportunities", () => {
@@ -40,7 +52,7 @@ describe("mobile navigation", () => {
     const kids = Array.from(screen.getByTestId("nav-grid").children);
     expect(kids).toHaveLength(5);
     expect(kids.every((k) => k.tagName === "A")).toBe(true);
-    expect(kids.map((k) => k.textContent)).toEqual(["Home", "Match", "Passport", "Scout", "Studio"]);
+    expect(kids.map((k) => k.textContent)).toEqual(["Home", "Match", "Passport", "Gigs", "Studio"]);
     expect(screen.getByTestId("nav-grid").className).toContain("grid-cols-5");
     expect(screen.queryByTestId("nav-fab-slot")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /\+|quick|create/i })).not.toBeInTheDocument();
@@ -54,7 +66,7 @@ describe("mobile navigation", () => {
     expect(match).toHaveAttribute("aria-current", "page");
     expect(screen.getAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page")).toHaveLength(1);
     unmount();
-    renderAt("/scout");
+    renderAt(SCOUT_PATH);
     expect(screen.getByRole("link", { name: /^Match/ })).not.toHaveAttribute("aria-current");
   });
 
@@ -73,10 +85,10 @@ describe("mobile navigation", () => {
 
   it("marks only the current entry, with a translucent pill and no gradient", () => {
     isBusiness = false;
-    renderAt("/scout");
+    renderAt(SCOUT_PATH);
     const active = screen.getAllByRole("link").filter((l) => l.getAttribute("data-active") === "true");
     expect(active).toHaveLength(1);
-    expect(active[0]).toBe(screen.getByRole("link", { name: /^Scout/ }));
+    expect(active[0]).toBe(screen.getByRole("link", { name: /^Opportunities/ }));
     expect(active[0].className).toContain("bg-foreground/10");
     expect(screen.getByRole("link", { name: /^Home/ })).not.toHaveAttribute("data-active");
     expect(screen.queryByTestId("nav-active-mark")).not.toBeInTheDocument();

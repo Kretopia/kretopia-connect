@@ -2,6 +2,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { KretopiaHero } from "../KretopiaHero";
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 
 /**
  * Regression coverage for the Verified Creative Signal Field rollout
@@ -56,7 +57,8 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
     renderHero();
     const primary = screen.getByRole("link", { name: /explore passports/i });
-    expect(primary).toHaveAttribute("href", "/passport");
+    // "Explore Passports" opens Match (people matched to you); the Passport directory itself stays at /passport.
+    expect(primary).toHaveAttribute("href", "/match");
     // CtaButton = the same btn-glass-primary as "Explore Verified Credits".
     expect(primary.className).toMatch(/\bbtn-glass\b/);
     expect(primary.className).toMatch(/\bbtn-glass-primary\b/);
@@ -100,7 +102,8 @@ describe("KretopiaHero — Verified Creative Signal Field", () => {
   it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
     renderHero();
     const secondary = screen.getByRole("link", { name: /explore opportunities/i });
-    expect(secondary).toHaveAttribute("href", "/opportunities");
+    // "Explore Opportunities" opens Scout, which lives inside Opportunities (the old /opportunities feed is one click further, from Scout's page).
+    expect(secondary).toHaveAttribute("href", SCOUT_PATH);
     // Restrained plain outline (CDO audit: no gradient on a default secondary control).
     expect(secondary.className).not.toMatch(/\bbtn-glass\b/);
   });

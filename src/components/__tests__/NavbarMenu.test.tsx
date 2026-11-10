@@ -73,11 +73,14 @@ describe("Match sits right after Today", () => {
     const menu = openMenu();
     // the open menu is modal, so the bar behind it is aria-hidden: look at it as the page has it
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
-    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Scout", "Passport"]);
+    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Opportunities", "Passport"]);
     expect(within(rubrics).getByRole("link", { name: "Match", hidden: true })).toHaveAttribute("href", "/match");
+    expect(within(rubrics).getByRole("link", { name: "Opportunities", hidden: true })).toHaveAttribute("href", "/opportunities");
     expect(within(menu).queryByRole("button", { name: "Match" })).not.toBeInTheDocument();
     // what was reachable from the menu still is
-    for (const kept of ["Stages", "Kreto", "Perks", "Events"]) expect(within(menu).getByRole("button", { name: kept })).toBeInTheDocument();
+    for (const kept of ["Stages", "Kreto", "Events", "Creative Circle"]) expect(within(menu).getByRole("button", { name: kept })).toBeInTheDocument();
+    // one entry per role: Scout is inside Opportunities, Perks and the Founding Circle are inside Creative Circle
+    for (const gone of ["Scout", "Perks", "Founding Circle"]) expect(within(menu).queryByRole("button", { name: gone })).not.toBeInTheDocument();
   });
 
   it("Company: the menu lists Match immediately after Today, as before at the same route", () => {
@@ -86,6 +89,8 @@ describe("Match sits right after Today", () => {
     const tiles = [...menu.querySelectorAll(".k-menu-tile")].map((tile) => tile.getAttribute("aria-label"));
     expect(tiles.indexOf("Today")).toBeGreaterThanOrEqual(0);
     expect(tiles.indexOf("Match")).toBe(tiles.indexOf("Today") + 1);
+    for (const gone of ["Scout", "Perks", "Founding Circle"]) expect(tiles).not.toContain(gone);
+    expect(tiles).toContain("Creative Circle");
     fireEvent.click(within(menu).getByRole("button", { name: "Match" }));
     // the company's own nav is unchanged: it has no Today to put Match after
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
