@@ -133,7 +133,7 @@ serve(async (req) => {
             Deno.env.get('SUPABASE_URL')!,
             Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
           );
-          await supabase.from('credits').update({ thumbnail_url: imageUrl }).eq('id', credit_id);
+          await supabase.from('credits').update({ thumbnail_url: imageUrl }).eq('id', credit_id).eq('user_id', caller.id);
         }
 
         return new Response(JSON.stringify({
