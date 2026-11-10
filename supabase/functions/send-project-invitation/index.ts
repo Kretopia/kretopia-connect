@@ -150,6 +150,32 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // The address must already be a pending invitation on this project, written
+    // under the project's own access rules; a free-form address is not mailed.
+    if (email) {
+      const { data: pendingRows, error: pendingLookupErr } = await admin
+        .from("project_collaborators")
+        .select("email")
+        .eq("project_id", projectId)
+        .eq("status", "pending")
+        .not("email", "is", null);
+      if (pendingLookupErr) {
+        return new Response(JSON.stringify({ error: "Could not verify the invitation" }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const invited = (pendingRows ?? []).some(
+        (row: { email: string | null }) => (row.email ?? "").trim().toLowerCase() === email.toLowerCase(),
+      );
+      if (!invited) {
+        return new Response(JSON.stringify({ error: "Add this person to the project before sending the invitation" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     // A budget before anything is created or sent: an invitation mints a
     // sign-in link and, for an unknown address, creates a passwordless account.
     // The count is read first; a count that failed is not zero.
