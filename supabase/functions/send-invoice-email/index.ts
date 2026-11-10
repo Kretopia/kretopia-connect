@@ -58,6 +58,18 @@ serve(async (req) => {
     const decision = decideInvoiceSend(invoice, user.id);
     if (!decision.ok) return json({ error: decision.error }, decision.status);
 
+    const [actorCount, recipientCount] = await Promise.all([
+      countActorSends(db, user.id, INVOICE_EMAIL_TEMPLATE),
+      countRecipientSends(db, recipient, INVOICE_EMAIL_TEMPLATE),
+    ]);
+    const budget = decideSendBudget({
+      actorCount,
+      recipientCount,
+      actorLimit: INVOICE_EMAILS_PER_ACTOR_PER_HOUR,
+      recipientLimit: INVOICE_EMAILS_PER_RECIPIENT_PER_HOUR,
+    });
+    if (!budget.ok) return json({ error: budget.error }, budget.status);
+
     // The recipient is bound to the invoice: a stored recipient must match, and a first
     // send records its recipient so later sends cannot be redirected elsewhere.
     const boundRecipient = cleanRecipientEmail(invoice?.recipient_email);
@@ -75,18 +87,6 @@ serve(async (req) => {
         .maybeSingle();
       if (bindError || !bound) return json({ error: "Could not confirm the invoice recipient, try again shortly" }, 409);
     }
-
-    const [actorCount, recipientCount] = await Promise.all([
-      countActorSends(db, user.id, INVOICE_EMAIL_TEMPLATE),
-      countRecipientSends(db, recipient, INVOICE_EMAIL_TEMPLATE),
-    ]);
-    const budget = decideSendBudget({
-      actorCount,
-      recipientCount,
-      actorLimit: INVOICE_EMAILS_PER_ACTOR_PER_HOUR,
-      recipientLimit: INVOICE_EMAILS_PER_RECIPIENT_PER_HOUR,
-    });
-    if (!budget.ok) return json({ error: budget.error }, budget.status);
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) return json({ error: "Email sending is not configured" }, 503);
