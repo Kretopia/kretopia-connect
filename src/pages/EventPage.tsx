@@ -245,7 +245,7 @@ const EventPage = () => {
         .eq('created_by', eventData.created_by)
         .eq('is_public', true);
 
-      setCreator({ ...profileData, username: hostUsername?.username, hostedCount: hostedCount || 0 });
+      setCreator({ ...((profileData ?? {}) as Record<string, unknown>), username: hostUsername?.username, hostedCount: hostedCount || 0 });
 
       // Public availability uses a count only; attendee identities stay private.
       await refreshParticipantCount(eventId);
