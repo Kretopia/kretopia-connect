@@ -315,8 +315,9 @@ REMINDER: You can make mistakes. When you're not sure (rate, currency, unit, sco
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
   } catch (e: any) {
+    if (e instanceof GuardError) return e.response(req);
     console.error("ai-pricing-copilot error:", e);
-    return new Response(JSON.stringify({ error: e.message }), {
+    return new Response(JSON.stringify({ error: "Something went wrong" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
