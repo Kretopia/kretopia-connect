@@ -771,7 +771,19 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
 
       // Clickable "Pay with KrePay" link (only for unpaid invoices, not quotes)
       if (!isQuoteDoc && invoice.status !== "paid") {
-        const payUrl = `https://www.kretopia.com/pay/invoice/${invoice.id}`;
+        let payUrl = "";
+        try {
+          const { data: sess } = await supabase.auth.getSession();
+          const res = await fetch(
+            `https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/invoice-pay-info?id=${encodeURIComponent(invoice.id)}&mint=1`,
+            { headers: { Authorization: `Bearer ${sess.session?.access_token ?? ""}` } },
+          );
+          const json = await res.json();
+          if (res.ok && typeof json.token === "string") {
+            payUrl = `https://www.kretopia.com/pay/invoice/${invoice.id}?t=${encodeURIComponent(json.token)}`;
+          }
+        } catch { /* PDF still downloads without the pay link */ }
+        if (payUrl) {
         doc.setFillColor(rgb[0], rgb[1], rgb[2]);
         doc.roundedRect(20, 270, 75, 10, 2, 2, "F");
         doc.setTextColor(255, 255, 255);
@@ -782,6 +794,7 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
         doc.setFontSize(8);
         doc.setTextColor(120, 120, 120);
         doc.textWithLink(payUrl, 100, 277, { url: payUrl });
+        }
       }
 
       // Footer
