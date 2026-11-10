@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { appChrome, appFooter, footerBottomReserve, showKretoMascotOnMobile } from "../appChrome";
+import { SCOUT_PATH } from "../opportunityRoutes";
 
 describe("appChrome", () => {
   it("a public Passport wears the Kretopia navbar, for guests and signed-in people", () => {
@@ -72,7 +73,7 @@ describe("showKretoMascotOnMobile", () => {
 
 describe("appFooter: the Landing page's footer, drawn once by the layout", () => {
   it("is under the feature pages: Today (signed in), Studio, Scout, the private Passport, Match, Events and one event", () => {
-    for (const path of ["/", "/desk", "/scout", "/profile", "/match", "/meetup", "/event/abc-123"]) {
+    for (const path of ["/", "/desk", SCOUT_PATH, "/profile", "/match", "/meetup", "/event/abc-123"]) {
       expect(appFooter(path, true), path).toBe("balanced");
     }
   });
@@ -120,7 +121,7 @@ describe("appFooter: the Landing page's footer, drawn once by the layout", () =>
   });
 
   it("is not fooled by a longer path: an event's confirmation and pass pages, a Passport's sub-pages", () => {
-    for (const path of ["/event/abc/confirmed", "/event/abc/pass", "/epk/abc/edit", "/profile/abc/extra", "/scout/anything", "/matches"]) {
+    for (const path of ["/event/abc/confirmed", "/event/abc/pass", "/epk/abc/edit", "/profile/abc/extra", "/scout", "/scout/anything", "/matches", "/opportunities/scout/anything"]) {
       expect(appFooter(path, true), path).toBeNull();
     }
   });

@@ -1,12 +1,15 @@
 import { useAccountTone } from "@/hooks/useAccountTone";
 import ManageOpportunities from "@/pages/ManageOpportunities";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
 import { ScoutedGigsSection } from "@/components/opportunity/ScoutedGigsSection";
 import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 import { GigsViewToggle, type GigsView } from "@/components/opportunity/GigsViewToggle";
+import { Button } from "@/components/ui/button";
+import { Radar } from "lucide-react";
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 
 type Tab = GigsView;
 
@@ -31,7 +34,13 @@ const Opportunities = () => {
         accentTitle="Find your next one."
         subtitle="Real gigs scouted from across the web, plus the Kretopia marketplace — one feed."
       >
-        <GigsViewToggle value={tab} onChange={setTab} />
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <GigsViewToggle value={tab} onChange={setTab} />
+          {/* Scout is the personalised search and shortlist of this space: same page as before, reached from here instead of from a nav entry of its own. */}
+          <Button asChild variant="outline" size="sm" className="gap-1.5 rounded-full text-xs font-semibold">
+            <Link to={SCOUT_PATH}><Radar className="h-3.5 w-3.5" aria-hidden /> Scout: search and shortlist</Link>
+          </Button>
+        </div>
       </EditorialPageHero>
 
       <div className="container mx-auto max-w-5xl px-4 py-8">
