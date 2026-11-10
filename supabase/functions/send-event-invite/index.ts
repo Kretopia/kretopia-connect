@@ -200,7 +200,9 @@ serve(async (req) => {
                 startTimeFormatted: formatStart(ev.start_time),
                 venue: venue || undefined,
                 coverImageUrl: ev.cover_image_url || undefined,
-                personalNote: note || undefined,
+                // Free-text notes go only to the host's own test address: caller-chosen
+                // recipients receive the fixed invitation template, never custom text.
+                personalNote: testOnly ? (note || undefined) : undefined,
               },
             },
           },
