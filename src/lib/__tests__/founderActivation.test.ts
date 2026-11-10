@@ -222,7 +222,8 @@ describe("the functions use it", () => {
   const check = read("supabase/functions/check-subscription/index.ts");
 
   it("verify-founder-payment claims through the shared activation and has no unconditional completion left", () => {
-    expect(verify).toContain("activateFounderPurchase(supabaseAdmin, user.id, session)");
+    expect(verify).not.toContain("activateFounderPurchase(");
+    expect(webhook).toContain("activateFounderPurchase(supabaseAdmin, founderUserId, session)");
     expect(verify).toContain("checkFounderSession(session, user.id)");
     expect(verify).not.toMatch(/\.update\(\{\s*status: 'completed'/);
     expect(verify).not.toContain("FOUNDER_BONUS_XP = 5000");
@@ -233,11 +234,7 @@ describe("the functions use it", () => {
     expect(verify).toMatch(/if \(!authHeader\) \{[\s\S]{0,260}status: 401/);
   });
 
-  it("check-subscription recovers a pending purchase before it looks at subscriptions, and returns the founder tier", () => {
-    const recover = check.indexOf("recoverPendingFounderPurchase(supabaseClient, stripe, user.id)");
-    const customers = check.indexOf("stripe.customers.list");
-    expect(recover).toBeGreaterThan(-1);
-    expect(recover).toBeLessThan(customers);
-    expect(check).toMatch(/recoverPendingFounderPurchase\([^)]*\)\) \{[\s\S]{0,300}tier: 'founder'/);
+  it("check-subscription never activates a purchase from a client call", () => {
+    expect(check).not.toContain("recoverPendingFounderPurchase(");
   });
 });
