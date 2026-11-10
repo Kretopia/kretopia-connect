@@ -5,11 +5,11 @@ import { escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
-Deno.const MAX_GUEST_IMAGE_BYTES = 3 * 1024 * 1024;
+const MAX_GUEST_IMAGE_BYTES = 3 * 1024 * 1024;
 const MAX_GUEST_IMAGE_DATA_URL_CHARS = Math.ceil(MAX_GUEST_IMAGE_BYTES * 4 / 3) + 64;
 class GuestUploadTooLarge extends Error {}
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
