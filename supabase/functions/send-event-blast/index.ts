@@ -1,3 +1,4 @@
+import { sanitizeEmailHtml } from "../_shared/outboundText.ts";
 // Send event blast to attendees of a creative_jam event.
 // Triggered by the host from /meetup/manage. Resolves the segment, enqueues
 // one transactional email per recipient via send-transactional-email, and
@@ -192,7 +193,7 @@ serve(async (req) => {
             idempotencyKey: `blast-${blastId}-${r.user_id ?? r.email}`,
             templateData: {
               subject,
-              bodyHtml,
+              bodyHtml: sanitizeEmailHtml(bodyHtml),
               eventTitle: ev.title,
               eventUrl,
               ctaText: ctaText || "View Event",
