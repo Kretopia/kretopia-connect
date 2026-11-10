@@ -1,3 +1,5 @@
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
+
 /**
  * Which pieces of the app's frame a route wears.
  *
@@ -38,7 +40,7 @@ const DEFAULT_FOOTER_PATHS = new Set(["/discover", "/passport", "/post-opportuni
 // The legal documents: the evened-out layout, since no audience page owns them.
 const LEGAL_FOOTER_PATHS = new Set(["/terms", "/privacy", "/community-guidelines"]);
 // The product's feature pages: Studio, Scout, the private Passport, Match and Events. The evened-out layout (4 / 4 / 4 / 5 links, two by two on a phone).
-const FEATURE_FOOTER_PATHS = new Set(["/desk", "/scout", "/profile", "/match", "/meetup"]);
+const FEATURE_FOOTER_PATHS = new Set(["/desk", SCOUT_PATH, "/profile", "/match", "/meetup"]);
 // One event, and a Passport anybody can open (/epk/:id, and /profile/:id which resolves to the same page). Not /event/:id/confirmed or /pass, not /profile/edit's redirect target.
 const FEATURE_FOOTER_PATTERNS = [/^\/event\/[^/]+$/, /^\/epk\/[^/]+$/, /^\/profile\/[^/]+$/];
 

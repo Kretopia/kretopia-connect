@@ -1,6 +1,12 @@
 // Founding Member program — shared constants & helpers
-// Quest definitions and program deadline used by /founding-member,
+// Quest definitions and program deadline used by the Founding status panel in Creative Circle,
 // the profile entry card, and the Home dashboard nudge.
+
+/**
+ * Where the program lives: a status inside Creative Circle, not a page of its own. /founding-member redirects here, so old links, emails
+ * and bookmarks still land on it.
+ */
+export const FOUNDING_STATUS_PATH = "/creative-circle#founding";
 
 export type FoundingQuestKey = "claim_profile" | "log_credits" | "invite_signups";
 

@@ -6,14 +6,15 @@ import { Button } from "@/components/ui/button";
 import { GlassCta } from "@/components/ui/glass-cta";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles, DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet, MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, UserPlus, UserCircle2, Building2, Inbox, Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Gift, Star, RefreshCw, Theater, Database, Heart, Video } from "lucide-react";
+import { LogOut, Plus, Settings, Users, User, Briefcase, MessageCircle, Shield, Crown, Sparkles, DollarSign, FolderKanban, LayoutDashboard, Radar, Search, BarChart3, ShoppingBag, Share2, Rocket, Wallet, MapPin, Trophy, CheckCircle, Target, Zap, CalendarDays, UserPlus, UserCircle2, Building2, Inbox, Sun, LayoutGrid, Compass, BadgeCheck, BookOpen, Star, RefreshCw, Theater, Database, Heart, Video } from "lucide-react";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useAutoHideNavbar } from "@/hooks/useAutoHideNavbar";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
-import { KretoDestinationIcon, ScoutDestinationIcon } from "@/components/brand/DestinationIcons";
+import { KretoDestinationIcon } from "@/components/brand/DestinationIcons";
+import { OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 import { supabase } from "@/integrations/supabase/client";
 import { releasePushForSignOut } from "@/lib/pushSubscription";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -149,16 +150,18 @@ const Navbar = memo(({ user }: NavbarProps) => {
         { path: "/thrivepay", icon: Wallet, label: "KrePay" },
       ]
     : [
-        // Prioritized set — Today/Studio/Scout/Passport stay in the primary
-        // row; Stages, Kreto (the dedicated page — the floating Kreto
-        // mascot already gives one-tap chat access everywhere) and
-        // Perks moved into the Menu's Explore section so nothing becomes
-        // unreachable, just less crowded up top.
+        // Prioritized set — Today/Studio/Opportunities/Passport stay in the primary
+        // row; Stages and Kreto (the dedicated page — the floating Kreto
+        // mascot already gives one-tap chat access everywhere) moved into the
+        // Menu's Explore section so nothing becomes unreachable, just less
+        // crowded up top. Opportunities is the one entry for work: Scout (the
+        // personalised search and shortlist) is inside it, and Perks and the
+        // Founding status are inside Creative Circle.
         { path: "/", icon: Sun, label: "Today" },
         // Match sits right after Today, here and in the mobile bottom nav (and so is not repeated in the Menu below).
         { path: "/match", icon: Heart, label: "Match" },
         { path: "/desk", icon: LayoutGrid, label: "Studio" },
-        { path: "/scout", icon: Compass, label: "Scout" },
+        { path: OPPORTUNITIES_PATH, icon: Compass, label: "Opportunities" },
         { path: "/profile", icon: BadgeCheck, label: "Passport" },
       ];
 
@@ -297,10 +300,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 (path === "/circle" &&
                   location.pathname.startsWith("/circle") &&
                   !location.pathname.startsWith("/circles")) ||
-                (path === "/scout" &&
-                  (location.pathname.startsWith("/scout") ||
-                    location.pathname === "/opportunities" ||
-                    location.pathname === "/opportunity-dashboard")) ||
+                (path === OPPORTUNITIES_PATH && isOpportunitySpace(location.pathname)) ||
                 (path === "/profile" &&
                   (location.pathname.startsWith("/profile") ||
                     location.pathname.startsWith("/thrivepay") ||
@@ -467,15 +467,12 @@ const Navbar = memo(({ user }: NavbarProps) => {
                          {[
                            { icon: Sun, label: "Today", path: "/" },
                            { icon: Heart, label: "Match", path: "/match" },
-                           { icon: ScoutDestinationIcon, label: "Scout", path: "/scout" },
                            { icon: Theater, label: "Stages", path: "/circle" },
                            { icon: KretoDestinationIcon, label: "Kreto", path: "/kreto" },
-                           { icon: Gift, label: "Perks", path: "/perks" },
                            { icon: CalendarDays, label: "Events", path: "/meetup" },
                            { icon: Video, label: "Recordings", path: "/recordings" },
                            { icon: Sparkles, label: "Spotlight", path: "/spotlight" },
                            { icon: Database, label: "Credits", path: "/credits" },
-                           { icon: Crown, label: "Founding Circle", path: "/founding-member" },
                            { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
                          ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
                        </MenuGrid>
@@ -583,13 +580,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           onClick={() => handleNavigation("/kreto")}
                           path="/kreto"
                         />
-                        {/* Match is in the primary nav (right after Today), so it is not repeated here. */}
-                        <MenuGridTile
-                          icon={Gift}
-                          label="Perks"
-                          onClick={() => handleNavigation("/perks")}
-                          path="/perks"
-                        />
+                        {/* Match is in the primary nav (right after Today), so it is not repeated here. Perks is reached from Creative Circle (Member benefits). */}
                         <MenuGridTile
                           icon={CalendarDays}
                           label="Events"
@@ -626,12 +617,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           onClick={() => handleNavigation("/credits")}
                           path="/credits"
                         />
-                        <MenuGridTile
-                          icon={Crown}
-                          label="Founding Circle"
-                          onClick={() => handleNavigation("/founding-member")}
-                          path="/founding-member"
-                        />
+                        {/* Founding Circle is a status inside Creative Circle, so it has no entry of its own. */}
                         <MenuGridTile
                           icon={UserPlus}
                           label="Creative Circle"

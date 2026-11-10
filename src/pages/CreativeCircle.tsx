@@ -12,13 +12,14 @@ import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { SEO } from "@/components/SEO";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { KretoCharacter } from "@/components/brand/KretoCharacter";
 import { TierMedallion, TierRewardsList } from "@/components/circle/TierRewardsList";
+import { FoundingStatusPanel } from "@/components/founding/FoundingStatusPanel";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 
 const CREATIVE_CIRCLE_TUTORIAL: TutorialStep[] = [
@@ -36,6 +37,16 @@ const CreativeCircle = () => {
   const [showQR, setShowQR] = useState(false);
   const [personalLink, setPersonalLink] = useState<string | null>(null);
   const reducedMotion = useReducedMotion();
+  const { hash } = useLocation();
+
+  // /founding-member redirects to /creative-circle#founding: bring the Founding status into view once the page has drawn.
+  useEffect(() => {
+    if (hash !== "#founding") return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById("founding")?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "start" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [hash, reducedMotion]);
 
   useEffect(() => {
     if (!user) return;
@@ -186,6 +197,29 @@ const CreativeCircle = () => {
           )}
         </div>
       </HoloCard>
+
+      {/* Member benefits — Perks is reached from here, as what a Circle member gets (the tier ladder and what each tier unlocks), not from a
+          menu entry of its own. /perks keeps its address and its sign-in gate. */}
+      <section aria-labelledby="member-benefits-heading">
+        <Link
+          to="/perks"
+          className="group block rounded-2xl border border-border/60 bg-card p-5 transition-colors hover:border-[hsl(var(--energy)/0.4)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: "hsl(var(--energy) / 0.12)" }}>
+              <Gift className="h-5 w-5" style={{ color: "hsl(var(--energy))" }} aria-hidden />
+            </div>
+            <div className="min-w-0 flex-1">
+              <h2 id="member-benefits-heading" className="font-bold text-lg tracking-tight">Member benefits</h2>
+              <p className="text-sm text-muted-foreground">Perks by ThriveStatus tier: what each one unlocks, earned from verified credits and never bought.</p>
+            </div>
+            <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </div>
+        </Link>
+      </section>
+
+      {/* Founding status — Founding Circle is a status of a member, not a separate community: the badge and its three milestones. */}
+      <FoundingStatusPanel />
 
       {/* Network Stats — commission is shown as one honest lifetime-earned
           total. The schema has no pending/eligible/approved/paid breakdown,

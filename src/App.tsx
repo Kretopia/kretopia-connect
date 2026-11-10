@@ -87,6 +87,9 @@ const CircleDetailPage = lazy(() => import("./pages/CircleDetail"));
 const CircleChatView = lazy(() => import("./pages/CircleChatView"));
 const Circles = lazy(() => import("./pages/Circles"));
 import { CircleToCrewRedirect } from "./components/CircleToCrewRedirect";
+import { RedirectKeepingSearch } from "./components/RedirectKeepingSearch";
+import { SCOUT_PATH } from "@/lib/opportunityRoutes";
+import { FOUNDING_STATUS_PATH } from "@/lib/foundingMember";
 const Messages = lazy(() => import("./pages/Messages"));
 const ThriveDesk = lazy(() => import("./pages/ThriveDesk"));
 const ThriveGenerate = lazy(() => import("./pages/ThriveGenerate"));
@@ -128,7 +131,6 @@ const GuestCall = lazy(() => import("./pages/GuestCall"));
 const GuestStudio = lazy(() => import("./pages/GuestStudio"));
 const GuestPay = lazy(() => import("./pages/GuestPay"));
 const ProjectReview = lazy(() => import("./pages/ProjectReview"));
-const FoundingMember = lazy(() => import("./pages/FoundingMember"));
 const JoinWithCode = lazy(() => import("./pages/JoinWithCode"));
 const AcceptInvite = lazy(() => import("./pages/AcceptInvite"));
 const JoinGuestStudio = lazy(() => import("./pages/JoinGuestStudio"));
@@ -330,7 +332,8 @@ const AppContent = () => {
             <Route path="/founder-kit/metrics" element={<FounderKitMetrics />} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
             <Route path="/unboarding" element={<Navigate to="/onboarding" replace />} />
-            <Route path="/founding-member" element={<ProtectedRoute><FoundingMember /></ProtectedRoute>} />
+            {/* Founding Circle is a status inside Creative Circle (its panel there), not a page: the old address keeps landing on it. */}
+            <Route path="/founding-member" element={<RedirectKeepingSearch to={FOUNDING_STATUS_PATH} />} />
             <Route path="/company-onboarding" element={<ProtectedRoute><CompanyOnboarding /></ProtectedRoute>} />
 
             {/* Core Feature Pages - Public browsable, actions gated */}
@@ -532,7 +535,10 @@ const AppContent = () => {
             <Route path="/soundstages" element={<Stages />} />
             <Route path="/sound-stages" element={<Navigate to="/soundstages" replace />} />
             <Route path="/opportunities" element={<Opportunities />} />
-            <Route path="/scout" element={<ProtectedRoute><Scout /></ProtectedRoute>} />
+            {/* Scout (personalised search and shortlist) lives inside Opportunities. Same page, same gating; /scout is its old top-level
+                address and redirects with its ?tab= and ?q= (Studio, Kreto and Today link to it with them). */}
+            <Route path={SCOUT_PATH} element={<ProtectedRoute><Scout /></ProtectedRoute>} />
+            <Route path="/scout" element={<RedirectKeepingSearch to={SCOUT_PATH} />} />
 
             {/* Public Event Page */}
             <Route path="/event/:eventId" element={<EventPage />} />
