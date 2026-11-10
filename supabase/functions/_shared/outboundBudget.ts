@@ -26,10 +26,10 @@ export const OUTREACH_PER_ACTOR_PER_HOUR = 30;
 export const OUTREACH_PER_RECIPIENT_PER_HOUR = 3;
 // A host's own contact list: one list a day per account, and no address mailed by hosts more than
 // three times a day, whoever the hosts are. Windows are 24 hours.
-export const EVENT_INVITES_PER_ACTOR_PER_DAY = 500;
+export const EVENT_INVITES_PER_ACTOR_PER_DAY = 150;
 export const EVENT_INVITES_PER_RECIPIENT_PER_DAY = 3;
 export const EVENT_INVITE_WINDOW_MINUTES = 24 * 60;
-export const EVENT_INVITE_NOTE_MAX = 500;
+export const EVENT_INVITE_NOTE_MAX = 280;
 
 export type BudgetDecision =
   | { ok: true }
