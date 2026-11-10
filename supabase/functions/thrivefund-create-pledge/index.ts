@@ -1,3 +1,4 @@
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 // ThriveFund: Create a pledge with manual-capture (all-or-nothing model)
 // - Authorizes the card now via Stripe Checkout (capture_method: manual)
 // - Creates a 'pledges' row with capture_status='authorized'
@@ -142,7 +143,7 @@ serve(async (req) => {
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length > 0) customerId = customers.data[0].id;
 
-    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+    const origin = trustedReturnOrigin(req);
 
     // Create insert pending pledge first so we have an ID to put in metadata
     const { data: pledge, error: pledgeErr } = await supabaseAdmin

@@ -1,3 +1,4 @@
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -138,7 +139,7 @@ serve(async (req) => {
       applicationFee: applicationFee / 100,
     });
 
-    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+    const origin = trustedReturnOrigin(req);
     const currency = (circle.currency || 'usd').toLowerCase();
 
     // Create a subscription-style recurring checkout

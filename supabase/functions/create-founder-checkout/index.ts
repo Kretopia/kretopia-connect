@@ -1,3 +1,4 @@
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
@@ -84,8 +85,8 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}&type=founder`,
-      cancel_url: `${req.headers.get("origin")}/payment-canceled`,
+      success_url: `${trustedReturnOrigin(req)}/payment-success?session_id={CHECKOUT_SESSION_ID}&type=founder`,
+      cancel_url: `${trustedReturnOrigin(req)}/payment-canceled`,
       metadata: {
         user_id: user.id,
         type: 'founder_circle',
