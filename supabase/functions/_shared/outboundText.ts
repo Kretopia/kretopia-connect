@@ -76,3 +76,19 @@ export function plainTextToEmailHtml(body: unknown): string {
     })
     .join("");
 }
+
+/**
+ * Host-written rich text -> HTML with an allowlist: everything is escaped,
+ * then only bare p/br/strong/b/em/i/u/ul/ol/li tags and https links are
+ * restored, with no other attributes.
+ */
+export function sanitizeEmailHtml(raw: unknown, max = 20_000): string {
+  const escaped = escapeHtmlText(String(raw ?? "").slice(0, max));
+  return escaped
+    .replace(/&lt;(\/?)(p|br|strong|b|em|i|u|ul|ol|li)\s*\/?&gt;/gi, (_m, slash, tag) => `<${slash}${tag.toLowerCase()}>`)
+    .replace(/&lt;a\s+href=&quot;(https:\/\/[^\s"<>]*?)&quot;\s*&gt;/gi, (_m, url) => {
+      const safe = safeHttpsUrl(url.replace(/&amp;/g, "&"));
+      return safe ? `<a href="${safe}" target="_blank" rel="noopener noreferrer">` : "";
+    })
+    .replace(/&lt;\/a&gt;/gi, "</a>");
+}

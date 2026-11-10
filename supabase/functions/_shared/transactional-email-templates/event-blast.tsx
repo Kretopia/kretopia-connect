@@ -2,6 +2,7 @@ import * as React from 'npm:react@18.3.1'
 import { Link } from 'npm:@react-email/components@0.0.22'
 import { KretopiaEmail, Cta, K } from '../email-kit.tsx'
 import type { TemplateEntry } from './registry.ts'
+import { sanitizeEmailHtml } from '../outboundText.ts'
 
 interface EventBlastProps {
   subject?: string
@@ -33,8 +34,8 @@ const EventBlastEmail = ({
       ) : undefined
     }
   >
-    {/* Host-written HTML: set the base colours here so it reads on the dark card. */}
-    <div style={{ fontSize: '15px', lineHeight: '24px', color: K.muted }} dangerouslySetInnerHTML={{ __html: bodyHtml }} />
+    {/* Host-written HTML, allowlist-sanitized: set the base colours here so it reads on the dark card. */}
+    <div style={{ fontSize: '15px', lineHeight: '24px', color: K.muted }} dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(bodyHtml) }} />
   </KretopiaEmail>
 )
 
