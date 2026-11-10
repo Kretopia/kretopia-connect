@@ -1,3 +1,4 @@
+import { parsePublicPageUrl } from "../_shared/publicUrl.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
@@ -15,9 +16,11 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const { url } = await req.json();
-    if (!url || typeof url !== "string") {
-      return new Response(JSON.stringify({ error: "URL is required" }), {
+    const { url: rawUrl } = await req.json();
+    // Only a public web page URL is fetched.
+    const url = parsePublicPageUrl(rawUrl)?.toString() ?? "";
+    if (!url) {
+      return new Response(JSON.stringify({ error: "A public http(s) page URL is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
