@@ -113,221 +113,41 @@ serve(async (req) => {
 
     logStep("Buyer info", { buyerId, buyerEmail, listingType });
 
-    // Check if order already exists
+    // Read-only: marketplace orders are created exclusively by the signature-verified
+    // stripe-marketplace-webhook. This return-page call never writes orders; it only
+    // reports the webhook's result and signs fresh download links for the buyer.
     const { data: existingOrder } = await supabaseClient
       .from('marketplace_orders')
-      .select('id, download_urls')
+      .select('id, status, buyer_id')
       .eq('checkout_session_id', sessionId)
       .maybeSingle();
 
-    if (existingOrder) {
-      logStep("Order already recorded", { orderId: existingOrder.id });
-      return new Response(JSON.stringify({ 
-        success: true,
-        orderId: existingOrder.id,
-        downloadUrls: existingOrder.download_urls,
-        listingType,
-        message: 'Purchase already completed'
-      }), {
+    if (!existingOrder || existingOrder.buyer_id !== buyerId) {
+      return new Response(JSON.stringify({ success: false, pending: true, listingType,
+        message: 'Payment received, confirming your order' }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        status: 202,
       });
     }
 
-    // Calculate auto-release date based on listing type
-    const autoReleaseDate = new Date();
-    if (listingType === 'digital') {
-      autoReleaseDate.setDate(autoReleaseDate.getDate() + 3);
-    } else if (listingType === 'physical') {
-      autoReleaseDate.setDate(autoReleaseDate.getDate() + 14);
-    } else {
-      autoReleaseDate.setDate(autoReleaseDate.getDate() + 7);
-    }
-
-    // Determine delivery status
-    const deliveryStatus = listingType === 'digital' ? 'delivered' : 'pending';
-    const orderStatus = listingType === 'digital' ? 'completed' : 'escrow';
-
-    // Store raw file paths (NOT signed URLs) — signed URLs are generated on demand
-    // Only paths in the seller's own folder are signed or stored: the seller
-    // writes file_urls, and the service role can read the whole private bucket.
     const filePaths: string[] = deliverableProductFiles(product.file_urls, product.user_id);
-
-    // Generate temporary signed URLs for immediate download on success page
-    let downloadUrls: string[] = [];
-    if (listingType === 'digital' && filePaths.length > 0) {
-      for (const filePath of filePaths) {
-        if (filePath.startsWith('http')) {
-          downloadUrls.push(filePath);
-          continue;
-        }
-        const { data: signedData } = await supabaseClient
-          .storage
-          .from('product-files')
-          .createSignedUrl(filePath, 60 * 60); // 1 hour expiry
-        
-        if (signedData?.signedUrl) {
-          downloadUrls.push(signedData.signedUrl);
-        }
-      }
-    }
-
-    // Create marketplace order
-    const { data: order, error: orderError } = await supabaseClient
-      .from('marketplace_orders')
-      .insert({
-        listing_id: productId,
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        listing_type: listingType,
-        amount: product.price,
-        currency: product.currency || 'usd',
-        status: orderStatus,
-        payment_intent_id: session.payment_intent as string,
-        checkout_session_id: sessionId,
-        delivery_status: deliveryStatus,
-        delivered_at: listingType === 'digital' ? new Date().toISOString() : null,
-        auto_release_at: autoReleaseDate.toISOString(),
-        download_urls: filePaths.length > 0 ? filePaths : null,
-      })
-      .select()
-      .single();
-
-    if (orderError) {
-      logStep("Error creating order", { error: orderError });
-      throw new Error("Failed to record purchase");
-    }
-
-    logStep("Order created", { orderId: order.id, status: orderStatus });
-
-    // Also record in legacy purchases table for backward compat
-    await supabaseClient
-      .from('digital_product_purchases')
-      .insert({
-        product_id: productId,
-        buyer_id: buyerId,
-        seller_id: sellerId,
-        amount: product.price,
-        currency: product.currency || 'usd',
-        payment_status: 'completed',
-        payment_intent_id: session.payment_intent as string,
-        download_urls: filePaths.length > 0 ? filePaths : null,
-      });
-
-    // Update download count for digital
+    const downloadUrls: string[] = [];
     if (listingType === 'digital') {
-      await supabaseClient
-        .from('digital_products')
-        .update({ download_count: (product.download_count || 0) + 1 })
-        .eq('id', productId);
-    }
-
-    // Record transaction
-    await supabaseClient
-      .from('transactions')
-      .insert({
-        user_id: sellerId,
-        amount: product.price,
-        type: listingType === 'digital' ? 'payment_received' : 'escrow_received',
-        description: `${listingType === 'digital' ? 'Sale' : 'Escrow'}: ${product.title}`,
-        status: listingType === 'digital' ? 'completed' : 'pending',
-      });
-
-    // Notify seller
-    const statusMessage = listingType === 'digital' 
-      ? `Someone purchased "${product.title}" for $${product.price}` 
-      : `New order for "${product.title}" ($${product.price}) — payment held in escrow`;
-
-    await supabaseClient
-      .from('notifications')
-      .insert({
-        user_id: sellerId,
-        title: listingType === 'digital' ? 'New Sale! 💰' : 'New Order! 📦',
-        message: statusMessage,
-        type: 'sale',
-        category: 'sale',
-        priority: 'high',
-        link: '/orders',
-      });
-
-    // Send purchase confirmation email to buyer
-    if (buyerEmail) {
-      try {
-        const resendApiKey = Deno.env.get("RESEND_API_KEY");
-        if (resendApiKey) {
-          const resend = new Resend(resendApiKey);
-          
-          const downloadLinksHtml = listingType === 'digital' && downloadUrls.length > 0
-            ? downloadUrls.map((url, i) => 
-                `<a href="${escapeHtmlText(String(url))}" style="display:inline-block;background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin:4px 0;">Download File ${downloadUrls.length > 1 ? i + 1 : ''}</a>`
-              ).join('<br/>')
-            : '';
-
-          const emailHtml = `
-            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-              <div style="text-align:center;margin-bottom:24px;">
-                <h1 style="color:#7c3aed;margin:0;">Purchase Confirmed! 🎉</h1>
-              </div>
-              
-              <div style="background:#f9fafb;border-radius:12px;padding:20px;margin-bottom:20px;">
-                <h2 style="margin:0 0 8px 0;font-size:18px;">${escapeHtmlText(String(product.title ?? ""))}</h2>
-                <p style="margin:0;color:#6b7280;font-size:14px;">
-                  ${listingType.charAt(0).toUpperCase() + listingType.slice(1)} • $${escapeHtmlText(String(product.price ?? ""))} ${escapeHtmlText(String(product.currency || 'usd').toUpperCase())}
-                </p>
-              </div>
-
-              ${listingType === 'digital' ? `
-                <div style="margin-bottom:20px;">
-                  <h3 style="margin:0 0 12px 0;">Your Downloads</h3>
-                  ${downloadLinksHtml || '<p style="color:#6b7280;">Your files are available in your <a href="https://www.kretopia.com/purchases">Purchases</a> dashboard.</p>'}
-                  <p style="color:#9ca3af;font-size:12px;margin-top:12px;">Download links expire in 7 days. You can always access them from your purchases.</p>
-                </div>
-              ` : `
-                <div style="margin-bottom:20px;">
-                  <h3 style="margin:0 0 8px 0;">What's Next</h3>
-                  <p style="color:#6b7280;font-size:14px;">
-                    ${listingType === 'physical' 
-                      ? 'The seller has been notified and will arrange delivery. Your payment is held securely until you confirm receipt.'
-                      : 'The seller has been notified about your booking. Your payment is held securely until the service is completed.'}
-                  </p>
-                </div>
-              `}
-
-              <div style="text-align:center;margin-top:24px;">
-                <a href="https://www.kretopia.com/purchases" style="display:inline-block;background:#7c3aed;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;">View Your Purchases</a>
-              </div>
-
-              <p style="color:#9ca3af;font-size:12px;text-align:center;margin-top:24px;">
-                Order ID: ${order.id}<br/>
-                If you have any issues, contact us at noreply@kretopia.com
-              </p>
-            </div>
-          `;
-
-          // The SDK returns `error` instead of throwing when Resend refuses the send.
-          const { error: sendError } = await resend.emails.send({
-            from: 'Kretopia <noreply@kretopia.com>',
-            to: buyerEmail,
-            subject: `Purchase Confirmed: ${String(product.title ?? "").replace(/[\r\n]+/g, " ").slice(0, 150)}`,
-            html: emailHtml,
-          });
-          if (sendError) throw new Error(sendError.message || "The email provider refused the message");
-
-          logStep("Confirmation email sent", { to: buyerEmail });
-        }
-      } catch (emailError) {
-        logStep("Failed to send email (non-fatal)", { error: String(emailError) });
+      for (const filePath of filePaths) {
+        if (filePath.startsWith('http')) { downloadUrls.push(filePath); continue; }
+        const { data: signedData } = await supabaseClient.storage
+          .from('product-files').createSignedUrl(filePath, 60 * 60);
+        if (signedData?.signedUrl) downloadUrls.push(signedData.signedUrl);
       }
     }
 
-    logStep("Purchase completed successfully", { orderId: order.id });
-
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
-      orderId: order.id,
+      orderId: existingOrder.id,
       downloadUrls,
       listingType,
-      orderStatus,
+      orderStatus: existingOrder.status,
+      message: 'Purchase completed',
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
