@@ -8,6 +8,7 @@ import { deliverableProductFiles } from "../_shared/productFilePaths.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
+import { escapeHtmlText } from '../_shared/outboundText.ts';
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[COMPLETE-PRODUCT-PURCHASE] ${step}${detailsStr}`);
@@ -258,7 +259,7 @@ serve(async (req) => {
           
           const downloadLinksHtml = listingType === 'digital' && downloadUrls.length > 0
             ? downloadUrls.map((url, i) => 
-                `<a href="${url}" style="display:inline-block;background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin:4px 0;">Download File ${downloadUrls.length > 1 ? i + 1 : ''}</a>`
+                `<a href="${escapeHtmlText(String(url))}" style="display:inline-block;background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;margin:4px 0;">Download File ${downloadUrls.length > 1 ? i + 1 : ''}</a>`
               ).join('<br/>')
             : '';
 
@@ -269,9 +270,9 @@ serve(async (req) => {
               </div>
               
               <div style="background:#f9fafb;border-radius:12px;padding:20px;margin-bottom:20px;">
-                <h2 style="margin:0 0 8px 0;font-size:18px;">${product.title}</h2>
+                <h2 style="margin:0 0 8px 0;font-size:18px;">${escapeHtmlText(String(product.title ?? ""))}</h2>
                 <p style="margin:0;color:#6b7280;font-size:14px;">
-                  ${listingType.charAt(0).toUpperCase() + listingType.slice(1)} • $${product.price} ${(product.currency || 'usd').toUpperCase()}
+                  ${listingType.charAt(0).toUpperCase() + listingType.slice(1)} • $${escapeHtmlText(String(product.price ?? ""))} ${escapeHtmlText(String(product.currency || 'usd').toUpperCase())}
                 </p>
               </div>
 
@@ -307,7 +308,7 @@ serve(async (req) => {
           const { error: sendError } = await resend.emails.send({
             from: 'Kretopia <noreply@kretopia.com>',
             to: buyerEmail,
-            subject: `Purchase Confirmed: ${product.title}`,
+            subject: `Purchase Confirmed: ${String(product.title ?? "").replace(/[\r\n]+/g, " ").slice(0, 150)}`,
             html: emailHtml,
           });
           if (sendError) throw new Error(sendError.message || "The email provider refused the message");
