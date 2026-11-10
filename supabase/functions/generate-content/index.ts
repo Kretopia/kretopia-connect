@@ -64,7 +64,15 @@ serve(async (req) => {
 
     // Normalize messages: support both { messages } and { prompt }
     // Only user/assistant text turns are accepted from the caller.
-    let messages: { role: string; content: string }[] | undefined = sanitizeChatHistory(rawMessages, { maxMessages: 20, maxChars: 12000 });
+    // A caller-sent "system" turn is demoted to a labelled user turn: it can
+    // shape the task but never sits at system level.
+    const demoted = Array.isArray(rawMessages)
+      ? rawMessages.map((m: any) =>
+          m && m.role === "system" && typeof m.content === "string"
+            ? { role: "user", content: `Task instructions:\n${m.content}` }
+            : m)
+      : rawMessages;
+    let messages: { role: string; content: string }[] | undefined = sanitizeChatHistory(demoted, { maxMessages: 20, maxChars: 12000 });
     if (messages.length === 0 && typeof prompt === 'string' && prompt.trim().length > 0) {
       messages = [{ role: 'user', content: prompt.slice(0, 12000) }];
     }
