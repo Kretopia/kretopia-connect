@@ -108,10 +108,6 @@ serve(async (req) => {
 
     const listingType = product.listing_type || 'digital';
     const buyerId = session.metadata?.buyer_id;
-    const sellerId = session.metadata?.seller_id || product.user_id;
-    const buyerEmail = session.customer_details?.email || session.customer_email;
-
-    logStep("Buyer info", { buyerId, buyerEmail, listingType });
 
     // Read-only: marketplace orders are created exclusively by the signature-verified
     // stripe-marketplace-webhook. This return-page call never writes orders; it only
