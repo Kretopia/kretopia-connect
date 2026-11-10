@@ -197,7 +197,7 @@ serve(async (req) => {
               eventTitle: ev.title,
               eventUrl,
               ctaText: ctaText || "View Event",
-              ctaUrl: ctaUrl || eventUrl,
+              ctaUrl: (typeof ctaUrl === "string" && /^https:\/\//i.test(ctaUrl) ? ctaUrl : null) || eventUrl,
             },
           },
         });
