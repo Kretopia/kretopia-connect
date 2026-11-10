@@ -76,7 +76,7 @@ describe("send-invoice-email: who may send", () => {
   });
 
   it("accepts an external client who is not on the platform: an invoice to a new client is legitimate", async () => {
-    world.db = seed();
+    world.db = seed({ recipient_email: "someone@never-seen-before.example" });
     expect((await send({ recipientEmail: "someone@never-seen-before.example" })).status).toBe(200);
   });
 
