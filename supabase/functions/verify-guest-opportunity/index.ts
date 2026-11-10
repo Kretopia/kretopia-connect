@@ -5,7 +5,11 @@ import { escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
-Deno.serve(async (req) => {
+Deno.const MAX_GUEST_IMAGE_BYTES = 3 * 1024 * 1024;
+const MAX_GUEST_IMAGE_DATA_URL_CHARS = Math.ceil(MAX_GUEST_IMAGE_BYTES * 4 / 3) + 64;
+class GuestUploadTooLarge extends Error {}
+
+serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -58,6 +62,22 @@ Deno.serve(async (req) => {
       }
       const guestEmail = send.email;
 
+      // A global hourly ceiling on guest verification mails, so rotating
+      // addresses and IPs cannot turn this public form into a bulk relay.
+      const { count: globalCount, error: globalErr } = await adminClient
+        .from("opportunities")
+        .select("id", { count: "exact", head: true })
+        .eq("is_guest_post", true)
+        .gte("created_at", new Date(Date.now() - 60 * 60 * 1000).toISOString());
+      if (globalErr) {
+        return new Response(JSON.stringify({ error: "Could not verify this request, try again shortly" }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if ((globalCount ?? 0) >= 60) {
+        return new Response(JSON.stringify({ error: "Guest posting is busy right now, try again later" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+
       // Generate verification token
       const token = crypto.randomUUID().replace(/-/g, "");
 
@@ -68,11 +88,14 @@ Deno.serve(async (req) => {
       // here, so an uploaded file was silently dropped and the opportunity
       // was saved with no image at all.
       const uploadDataUrl = async (dataUrl: string, pathPrefix: string): Promise<string | null> => {
-        const match = /^data:(image\/\w+);base64,(.+)$/.exec(dataUrl);
+        // Bounded: only common raster images, at most 3 MB decoded.
+        if (dataUrl.length > MAX_GUEST_IMAGE_DATA_URL_CHARS) throw new GuestUploadTooLarge();
+        const match = /^data:(image\/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
         if (!match) return null;
         const [, contentType, base64Data] = match;
-        const ext = contentType.split("/")[1] || "jpg";
+        const ext = contentType.split("/")[1] === "jpeg" ? "jpg" : contentType.split("/")[1];
         const bytes = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0));
+        if (bytes.byteLength > MAX_GUEST_IMAGE_BYTES) throw new GuestUploadTooLarge();
         const filePath = `${pathPrefix}/${token}-${Date.now()}.${ext}`;
         const { error: uploadErr } = await adminClient.storage
           .from("media")
@@ -85,8 +108,18 @@ Deno.serve(async (req) => {
         return urlData.publicUrl;
       };
 
-      const uploadedImageUrl = typeof image_data === "string" ? await uploadDataUrl(image_data, "guest-opportunities/covers") : null;
-      const uploadedLogoUrl = typeof logo_data === "string" ? await uploadDataUrl(logo_data, "guest-opportunities/logos") : null;
+      let uploadedImageUrl: string | null = null;
+      let uploadedLogoUrl: string | null = null;
+      try {
+        uploadedImageUrl = typeof image_data === "string" ? await uploadDataUrl(image_data, "guest-opportunities/covers") : null;
+        uploadedLogoUrl = typeof logo_data === "string" ? await uploadDataUrl(logo_data, "guest-opportunities/logos") : null;
+      } catch (e) {
+        if (e instanceof GuestUploadTooLarge) {
+          return new Response(JSON.stringify({ error: "Images must be PNG, JPEG or WebP and under 3 MB" }),
+            { status: 413, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        throw e;
+      }
       const finalImageUrl = uploadedImageUrl || image_url || null;
       const finalLogoUrl = uploadedLogoUrl || logo_url || null;
 
