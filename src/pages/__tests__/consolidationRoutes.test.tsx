@@ -89,6 +89,12 @@ describe("navigation has one entry per role, and none of the retired ones", () =
     );
   });
 
+  it("the landing chapter CTA with the hero's label lands in the same place as the hero's button", () => {
+    expect(read("components/landing/kretopia/LandingBelowFold.tsx")).toMatch(/href=\{SCOUT_PATH\}\s+ctaLabel="Explore Opportunities"/);
+    expect(read("components/landing/KretopiaHero.tsx")).toMatch(/to=\{SCOUT_PATH\}/);
+    expect(read("components/landing/KretopiaHero.tsx")).toMatch(/to="\/match"/);
+  });
+
   it("Perks is reached from Creative Circle, as its Member benefits", () => {
     expect(read("pages/CreativeCircle.tsx")).toMatch(/to="\/perks"/);
   });

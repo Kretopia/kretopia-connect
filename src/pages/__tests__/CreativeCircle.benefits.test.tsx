@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -21,15 +22,15 @@ vi.mock("@/hooks/useReferralNetwork", () => ({
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     from: () => {
-      const chain: any = { select: () => chain, eq: () => chain, order: () => chain, limit: () => chain, then: (resolve: (v: unknown) => void) => resolve({ data: [] }) };
+      const chain: Record<string, unknown> = { select: () => chain, eq: () => chain, order: () => chain, limit: () => chain, then: (resolve: (v: unknown) => void) => resolve({ data: [] }) };
       return chain;
     },
   },
 }));
 vi.mock("@/components/SEO", () => ({ SEO: () => null }));
 vi.mock("@/components/features/FeaturePageHeader", () => ({ FeaturePageHeader: () => null }));
-vi.mock("@/components/studio-reference/StudioFeatureShell", () => ({ StudioFeatureShell: ({ children }: any) => <div>{children}</div> }));
-vi.mock("@/components/passport/HoloCard", () => ({ HoloCard: ({ children }: any) => <div>{children}</div> }));
+vi.mock("@/components/studio-reference/StudioFeatureShell", () => ({ StudioFeatureShell: ({ children }: { children?: ReactNode }) => <div>{children}</div> }));
+vi.mock("@/components/passport/HoloCard", () => ({ HoloCard: ({ children }: { children?: ReactNode }) => <div>{children}</div> }));
 vi.mock("@/components/brand/KretoCharacter", () => ({ KretoCharacter: () => null }));
 vi.mock("@/components/circle/TierRewardsList", () => ({ TierMedallion: () => null, TierRewardsList: () => null }));
 vi.mock("react-dom-confetti", () => ({ default: () => null }));
