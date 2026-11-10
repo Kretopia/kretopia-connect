@@ -1,7 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 
 
-import { corsFor, requireUser } from '../_shared/guard.ts';
+import { corsFor, requireUser, safeError } from '../_shared/guard.ts';
+import { requireAdminOrCron } from '../_shared/admin-guard.ts';
 const MAPBOX_TOKEN = 'pk.eyJ1IjoiZXRoYW5hdWd1c3RlIiwiYSI6ImNtZzhvbDk0dzAwaHYycnB6eWp4Zjh2OHAifQ.4uCSa5SdtxZAnC2Xvx6V5w';
 
 async function geocode(query: string): Promise<{ lat: number; lng: number } | null> {
@@ -19,7 +20,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    await requireUser(
+    const caller = await requireUser(
       req,
       createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
     );
@@ -36,7 +37,11 @@ Deno.serve(async (req) => {
       }
       const coords = await geocode(location);
       if (!coords) return new Response(JSON.stringify({ ok: false, reason: 'not_found' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      // Coordinates are only written to the caller's own profile.
       if (user_id) {
+        if (user_id !== caller.id) {
+          return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
         await supabase.from('profiles').update({ latitude: coords.lat, longitude: coords.lng }).eq('user_id', user_id);
       }
       return new Response(JSON.stringify({ ok: true, ...coords }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -44,6 +49,8 @@ Deno.serve(async (req) => {
 
     // Backfill mode (admin)
     if (mode === 'backfill') {
+      const guard = await requireAdminOrCron(req);
+      if (!guard.ok) return guard.response;
       const { data: rows } = await supabase
         .from('profiles')
         .select('user_id, location')
@@ -68,6 +75,6 @@ Deno.serve(async (req) => {
 
     return new Response(JSON.stringify({ error: 'invalid mode' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return safeError(e, req);
   }
 });
