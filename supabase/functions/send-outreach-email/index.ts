@@ -325,6 +325,24 @@ BODY: [email body with paragraphs]`,
       const { to, subject, body: emailBody, sequenceEmailId, leadId } = body;
       if (!to || !subject || !emailBody) throw new Error("Missing to, subject, or body");
 
+      // Mail sent from our own domain only goes to a contact the caller saved in
+      // their leads; a connected Gmail sends from the caller's own mailbox.
+      if (!useGmail) {
+        const target = cleanRecipientEmail(to);
+        if (!target) throw new HttpStatusError(400, "Invalid recipient address");
+        const { data: ownLead, error: leadError } = await supabaseAdmin
+          .from("leads")
+          .select("id")
+          .eq("user_id", user.id)
+          .ilike("email", target.replace(/[%_\\]/g, "\\$&"))
+          .limit(1)
+          .maybeSingle();
+        if (leadError) throw new HttpStatusError(503, "Could not verify the recipient, try again shortly");
+        if (!ownLead) {
+          throw new HttpStatusError(403, "Add this contact to your leads first, or connect your Gmail to email new addresses");
+        }
+      }
+
       // A linked sequence email is sent once: claim it (pending or failed -> sent,
       // compare-and-set, the caller's own row) before anything leaves, so a
       // double click or a retry cannot send it twice. The claim is released if
