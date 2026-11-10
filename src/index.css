@@ -81,6 +81,9 @@ All colors MUST be HSL.
   :root {
     /* One corner for the Landing hero's search field and its two calls to action: firm, not square, not a pill. */
     --k-hero-radius: 0.875rem;
+    /* The top bar's text colour: the Kretopia logo's own. The wordmark is white and is shown as it is on Midnight (see .dark below); on Daylight
+       it is darkened to brightness(0.22) of that white (.brand-wordmark), which is 22%. Links, icons and the sign-in button read this one token. */
+    --k-nav-text: 0 0% 22%;
     /* Kretopia v1 — Satoshi is the ONE typeface for the entire product
        (headings, body, labels, buttons, forms — everything). Inter is a
        technical fallback only, used if Satoshi fails to load, never an
@@ -287,6 +290,7 @@ All colors MUST be HSL.
      Lime/Neon vibe only applies when [data-vibe="neon"] is set explicitly.
      ============================================================ */
   .dark {
+    --k-nav-text: 0 0% 100%;           /* #FFFFFF  the logo wordmark, shown as it is */
     /* #05070D — the same cinematic surface FeaturePageHeader/
        EditorialPageHero/landing already hardcode (31 files). Previously
        this token was a close-but-different #0B0B10, creating a visible
@@ -1880,6 +1884,8 @@ svg.k-gradient-icon {
    transparent frame on hover, focus, click and for the current page; a ghost "Sign in" and a "Join Kretopia"
    with a gradient hairline. Only the signed-out bar wears it. */
 .k-top-bar {
+  /* The one text token of the bar (--k-nav-text: the logo's own white). Icon buttons inherit it (see [data-nav-chrome] .btn-glass below). */
+  color: hsl(var(--k-nav-text));
   background: hsl(var(--background) / 0.58);
   -webkit-backdrop-filter: blur(16px) saturate(115%);
   backdrop-filter: blur(16px) saturate(115%);
@@ -1917,19 +1923,34 @@ svg.k-gradient-icon {
   font-weight: 500;
   white-space: nowrap;
   text-decoration: none;
-  color: hsl(var(--foreground) / 0.58);
+  /* The text is the same colour at rest, on hover, on the current page and on focus: the logo's white. What tells the states apart is the
+     frame around it (a hover is a faint frame, the current page a firmer one, a press the firmest) and the focus ring, never a dimmer word. */
+  color: hsl(var(--k-nav-text));
   transition: color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .k-site-nav a:hover,
 .k-site-nav a:focus-visible,
 .k-site-nav a[aria-current="page"] {
-  color: hsl(var(--foreground));
+  color: hsl(var(--k-nav-text));
   background-color: hsl(var(--foreground) / 0.04);
   border-color: hsl(var(--foreground) / 0.12);
 }
+/* The current page is firmer than a hover, so the two are never mistaken for each other. */
+.k-site-nav a[aria-current="page"] {
+  background-color: hsl(var(--foreground) / 0.1);
+  border-color: hsl(var(--foreground) / 0.3);
+}
 .k-site-nav a:active {
-  background-color: hsl(var(--foreground) / 0.08);
-  border-color: hsl(var(--foreground) / 0.2);
+  background-color: hsl(var(--foreground) / 0.14);
+  border-color: hsl(var(--foreground) / 0.34);
+}
+/* Not available: dimmed, no frame on hover, not pressable, and said so to assistive technology by aria-disabled. */
+.k-site-nav a[aria-disabled="true"] {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+  background-color: transparent;
+  border-color: transparent;
 }
 /* Display and centring come from the utility classes on the links, so `hidden sm:inline-flex` can still hide Sign in on a phone. */
 .k-nav-signin,
@@ -1943,21 +1964,21 @@ svg.k-gradient-icon {
 .k-nav-signin {
   padding: 0 14px;
   font-weight: 500;
-  color: hsl(var(--foreground) / 0.68);
+  color: hsl(var(--k-nav-text));
   background: hsl(var(--foreground) / 0.024);
   border: 1px solid hsl(var(--foreground) / 0.1);
   transition: background 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .k-nav-signin:hover,
 .k-nav-signin:focus-visible {
-  color: hsl(var(--foreground));
+  color: hsl(var(--k-nav-text));
   background: hsl(var(--foreground) / 0.06);
   border-color: hsl(var(--foreground) / 0.18);
 }
 .k-nav-join {
   padding: 0 17px;
   font-weight: 600;
-  color: hsl(var(--foreground));
+  color: hsl(var(--k-nav-text));
   border: 1px solid transparent;
   background:
     linear-gradient(hsl(var(--background) / 0.94), hsl(var(--background) / 0.94)) padding-box,
@@ -1994,6 +2015,27 @@ svg.k-gradient-icon {
   .k-nav-join {
     transition: none;
   }
+}
+
+/* ── HAMBURGER ──────────────────────────────────────────────────────
+   Three bars of one length (HamburgerIcon). They become an X in two cases: the menu is open (data-open, so it is the same for a finger
+   or a keyboard as for a mouse), and the pointer is over the button, for a fine pointer only (a phone never hovers, and a tap would
+   leave :hover stuck). Keyboard focus does not draw the X: the button's own focus ring says where focus is. */
+.k-burger-bar {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.16s ease;
+}
+.k-burger[data-open="true"] .k-burger-top { transform: translateY(5.5px) rotate(45deg); }
+.k-burger[data-open="true"] .k-burger-bot { transform: translateY(-5.5px) rotate(-45deg); }
+.k-burger[data-open="true"] .k-burger-mid { opacity: 0; transform: scaleX(0.2); }
+@media (hover: hover) and (pointer: fine) {
+  :is(button, a):hover > .k-burger .k-burger-top { transform: translateY(5.5px) rotate(45deg); }
+  :is(button, a):hover > .k-burger .k-burger-bot { transform: translateY(-5.5px) rotate(-45deg); }
+  :is(button, a):hover > .k-burger .k-burger-mid { opacity: 0; transform: scaleX(0.2); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-burger-bar { transition: none; }
 }
 
 /* ── NAVBAR ROLLBACK ────────────────────────────────────────────────

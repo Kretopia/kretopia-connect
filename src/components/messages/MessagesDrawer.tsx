@@ -6,6 +6,7 @@ import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useConversations } from "@/pages/messages/useConversations";
 import { cn } from "@/lib/utils";
+import { NAV_ICON, NAV_ICON_BUTTON, NAV_ICON_STROKE } from "@/components/nav/navIcon";
 
 /**
  * Navbar "Messages" entry point — jumps straight to the full-screen
@@ -29,11 +30,11 @@ export const MessagesDrawer = ({ triggerClassName }: { triggerClassName?: string
     <Button
       variant="ghost"
       size="icon"
-      className={cn("relative h-8 w-8 sm:h-10 sm:w-10", triggerClassName)}
+      className={cn(NAV_ICON_BUTTON, triggerClassName)}
       aria-label="Messages"
       onClick={() => navigate("/messages")}
     >
-      <MessageCircle className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+      <MessageCircle className={NAV_ICON} strokeWidth={NAV_ICON_STROKE} />
       {totalUnread > 0 && (
         <Badge
           variant="destructive"

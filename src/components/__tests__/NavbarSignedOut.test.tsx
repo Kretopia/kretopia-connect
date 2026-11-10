@@ -148,7 +148,8 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       const bar = document.querySelector("[data-nav-chrome]") as HTMLElement;
       expect(bar).toHaveClass("k-top-bar");
       const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
-      expect(within(rubrics).getAllByRole("link").map((l) => l.textContent)).toEqual(["Today", "Studio", "Scout", "Passport"]);
+      expect(within(rubrics).getAllByRole("link").map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Scout", "Passport"]);
+      expect(within(rubrics).getByRole("link", { name: "Match" })).toHaveAttribute("href", "/match");
       expect(rubrics.querySelector("svg")).toBeNull();
       expect(within(rubrics).getByRole("link", { name: "Studio" })).toHaveAttribute("aria-current", "page");
       const row = rubrics.parentElement as HTMLElement;

@@ -46,4 +46,20 @@ describe("EventAboutSection", () => {
     const blocks = ["about-program", "about-venue", "about-policies", "about-faq"].map((id) => container.querySelector(`#${id}`));
     expect(blocks.map((block) => [...container.querySelectorAll("section")].indexOf(block!))).toEqual([1, 2, 3, 4]);
   });
+
+  it("draws only the sections it is given: a section left out (hidden by the host) is not in the page at all", () => {
+    const { container } = render(<EventAboutSection description="About this event" program={<p>19:00 Doors</p>} venue={null} policies={false} />);
+    expect(container.querySelector("#about-program")).toHaveTextContent("19:00 Doors");
+    for (const id of ["about-venue", "about-policies", "about-faq"]) expect(container.querySelector(`#${id}`)).toBeNull();
+    expect(screen.queryByText("Venue")).not.toBeInTheDocument();
+  });
+
+  it("marks a hidden section for the host who is still shown it, and marks nothing else", () => {
+    const { container } = render(
+      <EventAboutSection description="About" program={<p>Line-up</p>} faq={<p>Questions</p>} hiddenFromVisitors={{ faq: true }} />,
+    );
+    expect(container.querySelector("#about-faq")).toHaveTextContent("Hidden from visitors");
+    expect(container.querySelector("#about-program")).not.toHaveTextContent("Hidden from visitors");
+    expect(screen.getAllByText("Hidden from visitors")).toHaveLength(1);
+  });
 });

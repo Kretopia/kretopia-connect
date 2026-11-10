@@ -47,6 +47,7 @@ vi.mock("@/components/DirectMessageDialog", () => ({ DirectMessageDialog: () => 
 vi.mock("@/components/project/StartProjectFromMatchDialog", () => ({ StartProjectFromMatchDialog: () => <div data-testid="start-project-flow" /> }));
 vi.mock("@/components/project/InviteToProjectDialog", () => ({ InviteToProjectDialog: () => <div data-testid="invite-flow" /> }));
 
+import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { PublicPassportView } from "../PublicPassportView";
 
 const renderView = (embedded: boolean) =>
@@ -75,6 +76,25 @@ describe("PublicPassportView: one Passport for visitors and for its owner", () =
     renderView(true);
     expect((await screen.findAllByText("Dee Marshall")).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("seo")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Operating System for Creative Careers/i)).not.toBeInTheDocument();
+  });
+
+  it("ends in its own small footer on its own, and leaves it out under the app's shared footer", async () => {
+    const page = renderView(false);
+    await screen.findAllByText("Dee Marshall");
+    expect(screen.getByText(/Operating System for Creative Careers/i)).toBeInTheDocument();
+    page.unmount();
+
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter>
+          <SharedFooterProvider value>
+            <PublicPassportView userId="u1" embedded={false} />
+          </SharedFooterProvider>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    await screen.findAllByText("Dee Marshall");
     expect(screen.queryByText(/Operating System for Creative Careers/i)).not.toBeInTheDocument();
   });
 
@@ -346,6 +366,67 @@ describe("the compact record: Expertise, one Kretopia credits section, no 'credi
       expect(screen.queryByRole("button", { name: "Edit roles" })).toBeNull();
       unmount();
     }
+  });
+});
+
+describe("At a glance: the visitor's actions, not a second list of the credits", () => {
+  const credits = [
+    { id: "c1", project_name: "Night Train", role: "Director", year: 2024, verification_status: "verified" },
+    { id: "c2", project_name: "Open Road", role: "Editor", year: 2023 },
+  ];
+  const glance = () => within(screen.getByRole("region", { name: "Dee at a glance" }));
+  beforeEach(() => {
+    reads.length = 0;
+    world.signedInAs = null;
+    world.rows = { credits };
+  });
+
+  it("holds Message, Start a project and Claim Credits, once each on the page", async () => {
+    renderPage();
+    await screen.findByRole("region", { name: "Dee at a glance" });
+    expect(glance().getAllByRole("button").map((b) => b.textContent)).toEqual(["Message", "Start a project", "Claim Credits"]);
+    for (const name of ["Message", "Start a project", "Claim Credits"]) expect(screen.getAllByRole("button", { name })).toHaveLength(1);
+  });
+
+  it("no longer repeats the credits: the Kretopia credits section is the one place they are listed", async () => {
+    renderPage();
+    await screen.findByRole("heading", { level: 3, name: "Kretopia credits" });
+    expect(glance().queryByText("Credits")).toBeNull();
+    expect(glance().queryByText("Confirmed")).toBeNull();
+    expect(glance().queryByText(/on this Passport/)).toBeNull();
+    expect(glance().queryByText("Night Train")).toBeNull();
+    expect(glance().queryByText(/Verified = confirmed by a linked platform/)).toBeNull();
+    // …while the dedicated section still lists them
+    const section = within(screen.getByRole("region", { name: "Kretopia credits, work samples" }));
+    expect(section.getByText("Night Train")).toBeInTheDocument();
+    expect(section.getByText("Open Road")).toBeInTheDocument();
+  });
+
+  it("keeps the connect request and the invitation to work together under the header, apart from the actions", async () => {
+    world.signedInAs = "u2";
+    renderPage();
+    const cta = within(await screen.findByRole("region", { name: "Collaborate on Kretopia" }));
+    expect(cta.getByRole("button", { name: /Connect with Dee/ })).toBeInTheDocument();
+    expect(cta.queryByRole("button", { name: "Message" })).toBeNull();
+    expect(glance().queryByRole("button", { name: /Connect with Dee/ })).toBeNull();
+  });
+
+  it("gives the owner their own actions there instead of a visitor's: manage credits, and no message to oneself", async () => {
+    world.signedInAs = "u1";
+    renderPage({ embedded: true, owner: { onEdit: vi.fn(), onShowQR: vi.fn(), onDownloadEPK: vi.fn(), onChangePhoto: vi.fn() } });
+    const manage = await screen.findByRole("link", { name: "Manage credits" });
+    expect(glance().getByRole("link", { name: "Manage credits" })).toBe(manage);
+    expect(glance().queryByRole("group", { name: /Work with/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Message" })).toBeNull();
+  });
+
+  it("draws no empty block for the owner looking at their own public Passport with nothing to show", async () => {
+    world.signedInAs = "u1";
+    world.rows = {};
+    renderPage();
+    await screen.findByRole("link", { name: "Back to my private Passport" });
+    expect(screen.queryByRole("region", { name: "Dee at a glance" })).toBeNull();
+    expect(screen.queryByText("At a glance")).toBeNull();
   });
 });
 

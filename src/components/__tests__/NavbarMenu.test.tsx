@@ -63,3 +63,79 @@ describe("the signed-in hamburger menu", () => {
     expect(within(menu).getByRole("button", { name: /Clients/ })).toBeInTheDocument();
   });
 });
+
+describe("Match sits right after Today", () => {
+  beforeEach(() => {
+    tone.isBusiness = false;
+  });
+
+  it("Personal: it is in the primary nav, right after Today, and so is not repeated in the menu", () => {
+    const menu = openMenu();
+    // the open menu is modal, so the bar behind it is aria-hidden: look at it as the page has it
+    const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
+    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Scout", "Passport"]);
+    expect(within(rubrics).getByRole("link", { name: "Match", hidden: true })).toHaveAttribute("href", "/match");
+    expect(within(menu).queryByRole("button", { name: "Match" })).not.toBeInTheDocument();
+    // what was reachable from the menu still is
+    for (const kept of ["Stages", "Kreto", "Perks", "Events"]) expect(within(menu).getByRole("button", { name: kept })).toBeInTheDocument();
+  });
+
+  it("Company: the menu lists Match immediately after Today, as before at the same route", () => {
+    tone.isBusiness = true;
+    const menu = openMenu();
+    const tiles = [...menu.querySelectorAll(".k-menu-tile")].map((tile) => tile.getAttribute("aria-label"));
+    expect(tiles.indexOf("Today")).toBeGreaterThanOrEqual(0);
+    expect(tiles.indexOf("Match")).toBe(tiles.indexOf("Today") + 1);
+    fireEvent.click(within(menu).getByRole("button", { name: "Match" }));
+    // the company's own nav is unchanged: it has no Today to put Match after
+    const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
+    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Studios", "Gigs", "Talent", "KrePay"]);
+  });
+});
+
+describe("the hamburger is the menu's own button, not a second controller", () => {
+  const draw = () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/desk"]}>
+        <Navbar user={{ id: "u1" } as never} />
+      </MemoryRouter>,
+    );
+    const burger = () => container.querySelector(".k-burger") as SVGElement;
+    const button = () => burger().closest("button") as HTMLButtonElement;
+    return { burger, button };
+  };
+
+  it("is three equal bars at rest, on the one Open menu button", () => {
+    const { burger, button } = draw();
+    expect(button()).toHaveAttribute("aria-label", "Open menu");
+    expect(screen.getAllByRole("button", { name: "Open menu" })).toHaveLength(1);
+    const bars = [...burger().querySelectorAll("line")];
+    expect(bars).toHaveLength(3);
+    expect(new Set(bars.map((bar) => `${bar.getAttribute("x1")}-${bar.getAttribute("x2")}`)).size).toBe(1);
+    expect(burger()).not.toHaveAttribute("data-open");
+    expect(button()).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("shows the X whenever the menu is open, with aria-expanded and aria-controls from the menu itself, for touch and keyboard alike", () => {
+    const { burger, button } = draw();
+    // opened from the keyboard: Enter on the focused button, not a mouse click
+    button().focus();
+    fireEvent.keyDown(button(), { key: "Enter" });
+    fireEvent.click(button());
+    expect(button()).toHaveAttribute("aria-expanded", "true");
+    expect(burger()).toHaveAttribute("data-open", "true");
+    const controls = button().getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    expect(document.getElementById(controls!)).toBe(screen.getByRole("dialog"));
+  });
+
+  it("goes back to three bars when Escape closes the menu", () => {
+    const { burger, button } = draw();
+    fireEvent.click(button());
+    expect(burger()).toHaveAttribute("data-open", "true");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(button()).toHaveAttribute("aria-expanded", "false");
+    expect(burger()).not.toHaveAttribute("data-open");
+  });
+});

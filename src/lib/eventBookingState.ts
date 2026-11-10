@@ -62,7 +62,7 @@ export function getEventBookingLabel(state: EventBookingState): string {
     case "sign-in-waitlist": return "Waitlist";
     case "waitlist": return "Waitlist";
     case "sold-out": return "Sold out";
-    case "payment-unavailable": return "Booking unavailable";
+    case "payment-unavailable": return "Tickets unavailable";
     case "available": return "I'm Going";
   }
 }
@@ -74,7 +74,7 @@ export function getEventBookingReason(state: EventBookingState): string | null {
     case "ended": return "Bookings are closed because this event has ended.";
     case "sold-out": return "This event is full and no waitlist is available.";
     case "sign-in-waitlist": return "This event is full. Sign in to join the waitlist.";
-    case "payment-unavailable": return "Online payment booking isn't available for this event.";
+    case "payment-unavailable": return "Online ticket sales aren't available for this event.";
     default: return null;
   }
 }

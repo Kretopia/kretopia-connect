@@ -1,17 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, BadgeCheck, Briefcase, LayoutGrid, UserSearch, Wallet } from "lucide-react";
+import { Home, BadgeCheck, Briefcase, Heart, LayoutGrid, UserSearch, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { useAccountTone } from "@/hooks/useAccountTone";
 
 /**
- * Kretopia V1 bottom nav — Home · Passport · Scout · Studio. Scout leads to /scout, the same page as the desktop nav.
+ * Kretopia V1 bottom nav — Home · Match · Passport · Scout · Studio. Scout leads to /scout, the same page as the desktop nav, and Match
+ * sits right after Home (Today) here as it does in the top bar.
  *
- * Four equal entries on a frosted-glass bar: the active entry gets the same soft translucent pill the top bar uses on hover.
- * Company/business accounts keep their existing B2B nav unchanged.
+ * Equal entries on a frosted-glass bar: the active entry gets the same soft translucent pill the top bar uses on hover.
+ * Company/business accounts keep their existing B2B nav unchanged (four entries; it has no Today to put Match after).
  */
 const CREATIVE_ITEMS = [
   { path: "/", icon: Home, label: "Home", hint: "Today, insights, and Kreto's brief" },
+  { path: "/match", icon: Heart, label: "Match", hint: "People to work with, matched to you" },
   { path: "/profile", icon: BadgeCheck, label: "Passport", hint: "Your verified creative identity" },
   { path: "/scout", icon: Briefcase, label: "Scout", hint: "Scouted gigs matched to you" },
   { path: "/desk", icon: LayoutGrid, label: "Studio", hint: "Projects, files, and collaborators" },
@@ -115,7 +117,7 @@ const KretopiaBottomNav = memo(() => {
       aria-label="Mobile navigation"
       style={{ paddingBottom: "max(env(safe-area-inset-bottom), 10px)" }}
     >
-      <div data-testid="nav-grid" className="grid grid-cols-4 items-stretch gap-1 px-3 pt-1.5">
+      <div data-testid="nav-grid" className={cn("grid items-stretch gap-1 px-3 pt-1.5", items.length === 5 ? "grid-cols-5" : "grid-cols-4")}>
         {items.map(renderItem)}
       </div>
     </nav>

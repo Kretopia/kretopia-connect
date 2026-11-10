@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Layers, Music2, Play } from "lucide-react";
+import { KretoScene } from "@/components/brand/KretoScene";
 import { Badge } from "@/components/ui/badge";
 import { GlassCarousel, GlassCarouselItem } from "@/components/ui/glass/GlassCarousel";
+import { creditSceneFor } from "@/lib/passport/creditArt";
 import { creditEvidenceLabel, creditEvidenceMeaning } from "@/lib/passport/creditEvidence";
 import {
   buildShowcase,
@@ -38,6 +40,28 @@ function Cover({ src, children, className }: { src: string | null; children: Rea
   );
 }
 
+type CoverStage = "own" | "kreto" | "tile";
+
+/**
+ * A project's cover. Its own image when it has one; when there is none, or the image fails, one of Kreto's approved scenes chosen from the
+ * project's id (see creditArt.ts), so the same credit always wears the same picture; and a neutral tile only if that file fails as well.
+ * Each step is taken at most once and only forward, and the last step has no image to fail, so a broken URL can never loop.
+ */
+function ProjectCover({ id, src }: { id: string; src: string | null }) {
+  const [stage, setStage] = useState<CoverStage>(src ? "own" : "kreto");
+  return (
+    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+      {stage === "own" && src ? (
+        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setStage("kreto")} className="h-full w-full object-cover" />
+      ) : stage === "kreto" ? (
+        <KretoScene scene={creditSceneFor(id)} size="thumb" className="h-full w-full" onError={() => setStage("tile")} />
+      ) : (
+        <div className="grid h-full w-full place-items-center text-muted-foreground"><Layers className="h-6 w-6" aria-hidden /></div>
+      )}
+    </div>
+  );
+}
+
 function MediaCard<P extends ShowcasePiece>({ item, onOpen }: { item: MediaShowcaseItem<P>; onOpen: (piece: P) => void }) {
   const isAudio = item.kind === "audio";
   const Icon = isAudio ? Music2 : Play;
@@ -62,9 +86,8 @@ function MediaCard<P extends ShowcasePiece>({ item, onOpen }: { item: MediaShowc
 function ProjectCard({ item, onOpen }: { item: ProjectShowcaseItem; onOpen?: () => void }) {
   return (
     <article className={cn("w-full", onOpen && "group relative")}>
-      <Cover src={item.thumbnailUrl}>
-        <Layers className="h-6 w-6" aria-hidden />
-      </Cover>
+      {/* Keyed by the image too, so a refreshed cover starts from its own image again. */}
+      <ProjectCover key={`${item.id}|${item.thumbnailUrl ?? ""}`} id={item.id} src={item.thumbnailUrl} />
       <h4 className="mt-2 line-clamp-2 break-words text-sm font-semibold text-foreground">
         {onOpen ? (
           // The whole card is the target: the button's own box is stretched over it, so the cover, the title and the role all open the project.

@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { EventPageShell } from "../EventPageShell";
 
 describe("EventPageShell", () => {
@@ -24,5 +25,65 @@ describe("EventPageShell", () => {
       expect(elements[index]!.compareDocumentPosition(elements[index + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
     expect(within(shell).getAllByRole("button", { name: "I'm Going" })).toHaveLength(1);
+  });
+
+  it("puts the host's tools right under the header, before any of the page's content", () => {
+    const { container } = render(
+      <EventPageShell
+        eventTitle="Studio Night"
+        hero={<section id="hero" />}
+        hostTools={<section id="host-tools" aria-label="Host tools" />}
+        about={<section id="about" />}
+        attendees={<section id="attendees" />}
+        calendar={<section id="schedule" />}
+        host={<section id="host" />}
+        bookingRail={<button type="button">I'm Going</button>}
+      />,
+    );
+    const order = ["hero", "host-tools", "about", "attendees", "schedule", "host"].map((id) => container.querySelector(`#${id}`));
+    expect(order.every(Boolean)).toBe(true);
+    for (let index = 0; index < order.length - 1; index += 1) {
+      expect(order[index]!.compareDocumentPosition(order[index + 1]!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+  });
+
+  it("draws nothing in that place when there are no host tools, as for a visitor", () => {
+    const { container } = render(
+      <EventPageShell
+        eventTitle="Studio Night"
+        hero={<section id="hero" />}
+        about={<section id="about" />}
+        attendees={null}
+        calendar={null}
+        host={null}
+        bookingRail={<button type="button">I'm Going</button>}
+      />,
+    );
+    expect(screen.queryByRole("region", { name: "Host tools" })).not.toBeInTheDocument();
+    // hero, then the content wrapper: no empty wrapper sits between them.
+    const hero = container.querySelector("#hero")!;
+    expect(hero.nextElementSibling?.querySelector("#about")).not.toBeNull();
+  });
+
+  it("keeps the room for the fixed booking bar itself without a footer, and leaves that room to the footer's foot under one", () => {
+    const shell = () => (
+      <EventPageShell
+        eventTitle="Studio Night"
+        hero={<section id="hero" />}
+        about={<section id="about" />}
+        attendees={null}
+        calendar={null}
+        host={null}
+        bookingRail={<button type="button">I'm Going</button>}
+      />
+    );
+    // main > grid > the content wrapper that carries the bottom padding
+    const wrapperOf = (container: HTMLElement) => container.querySelector("#about")!.closest("main")!.parentElement!.parentElement!;
+    const alone = render(shell());
+    expect(wrapperOf(alone.container).className).toContain("pb-32");
+    alone.unmount();
+    const underFooter = render(<SharedFooterProvider value>{shell()}</SharedFooterProvider>);
+    expect(wrapperOf(underFooter.container).className).toContain("pb-10");
+    expect(wrapperOf(underFooter.container).className).not.toContain("pb-32");
   });
 });

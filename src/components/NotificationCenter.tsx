@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { BrandLogo } from "@/components/BrandLogo";
 import { cn } from "@/lib/utils";
+import { NAV_ICON, NAV_ICON_BUTTON, NAV_ICON_STROKE } from "@/components/nav/navIcon";
 
 export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: string } = {}) => {
   const { notifications, unreadCount, loading, markAsRead, markAllAsRead, deleteNotification, vouchOnCredit } = useNotifications();
@@ -75,11 +76,11 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
           variant="ghost"
           size="icon"
           style={{ overflow: 'visible' }}
-          className={cn("relative h-8 w-8 sm:h-10 sm:w-10", triggerClassName)}
+          className={cn(NAV_ICON_BUTTON, triggerClassName)}
           aria-label="Open notifications"
         >
           <span className="relative inline-flex h-5 w-5 items-center justify-center">
-            <Bell className="h-5 w-5" />
+            <Bell className={NAV_ICON} strokeWidth={NAV_ICON_STROKE} />
             {unreadCount > 0 && (
               // Tight to the bell icon itself: the badge is positioned
               // relative to this 20×20 icon wrapper so it hugs the top-right

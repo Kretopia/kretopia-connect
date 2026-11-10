@@ -31,8 +31,8 @@ describe("event booking state", () => {
 
   it("does not allow native paid booking without a verified payment flow", () => {
     const state = getEventBookingState({ ...available, nativePaid: true });
-    expect(getEventBookingLabel(state)).toBe("Booking unavailable");
-    expect(getEventBookingReason(state)).toContain("payment booking isn't available");
+    expect(getEventBookingLabel(state)).toBe("Tickets unavailable");
+    expect(getEventBookingReason(state)).toContain("ticket sales aren't available");
   });
 
   it("offers a waitlist only when the server supports it and the user is signed in", () => {

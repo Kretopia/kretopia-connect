@@ -1,4 +1,6 @@
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
+import { HamburgerIcon } from "@/components/nav/HamburgerIcon";
+import { NAV_ICON, NAV_ICON_BUTTON, SEARCH_ICON } from "@/components/nav/navIcon";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GlassCta } from "@/components/ui/glass-cta";
@@ -153,6 +155,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
         // Perks moved into the Menu's Explore section so nothing becomes
         // unreachable, just less crowded up top.
         { path: "/", icon: Sun, label: "Today" },
+        // Match sits right after Today, here and in the mobile bottom nav (and so is not repeated in the Menu below).
+        { path: "/match", icon: Heart, label: "Match" },
         { path: "/desk", icon: LayoutGrid, label: "Studio" },
         { path: "/scout", icon: Compass, label: "Scout" },
         { path: "/profile", icon: BadgeCheck, label: "Passport" },
@@ -183,13 +187,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            "relative h-8 w-8 sm:h-10 sm:w-10",
-            isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
-          )}
+          className={cn(NAV_ICON_BUTTON, isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10")}
           aria-label="Search"
         >
-          <KretopiaIcon name="search" className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+          <KretopiaIcon name="search" className={NAV_ICON} {...SEARCH_ICON} />
         </Button>
       }
     >
@@ -358,12 +359,11 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     variant="ghost"
                     size="icon"
                     aria-label="Open menu"
-                    className={cn(
-                      "h-8 w-8 sm:h-10 sm:w-10",
-                      isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10",
-                    )}
+                    className={cn(NAV_ICON_BUTTON, isDarkChromeRoute && "text-white hover:text-white hover:bg-white/10")}
                   >
-                    <KretopiaIcon name="menu" className="h-[18px] w-[18px] sm:h-5 sm:w-5" />
+                    {/* Three equal bars; an X while the menu is open (isOpen) and, for a mouse, under the pointer. The trigger itself carries
+                        aria-expanded and aria-controls (Radix). */}
+                    <HamburgerIcon open={isOpen} />
                   </Button>
                 )}
               </SheetTrigger>
@@ -437,7 +437,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         <div className="min-w-0 flex-1">
                           <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                         </div>
-                        <ThemeToggle />
+                        <ThemeToggle className="h-10 w-10" />
                       </div>
                       <Separator className="my-3" />
                       <MenuGrid>
@@ -466,10 +466,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                        <MenuGrid>
                          {[
                            { icon: Sun, label: "Today", path: "/" },
+                           { icon: Heart, label: "Match", path: "/match" },
                            { icon: ScoutDestinationIcon, label: "Scout", path: "/scout" },
                            { icon: Theater, label: "Stages", path: "/circle" },
                            { icon: KretoDestinationIcon, label: "Kreto", path: "/kreto" },
-                           { icon: Heart, label: "Match", path: "/match" },
                            { icon: Gift, label: "Perks", path: "/perks" },
                            { icon: CalendarDays, label: "Events", path: "/meetup" },
                            { icon: Video, label: "Recordings", path: "/recordings" },
@@ -526,7 +526,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         <div className="min-w-0 flex-1">
                           <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
                         </div>
-                        <ThemeToggle />
+                        <ThemeToggle className="h-10 w-10" />
                       </div>
 
                       <Separator className="my-3" />
@@ -583,12 +583,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                           onClick={() => handleNavigation("/kreto")}
                           path="/kreto"
                         />
-                        <MenuGridTile
-                          icon={Heart}
-                          label="Match"
-                          onClick={() => handleNavigation("/match")}
-                          path="/match"
-                        />
+                        {/* Match is in the primary nav (right after Today), so it is not repeated here. */}
                         <MenuGridTile
                           icon={Gift}
                           label="Perks"
