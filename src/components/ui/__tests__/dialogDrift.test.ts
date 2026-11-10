@@ -15,7 +15,6 @@ const ALLOWED: Record<string, string> = {
   "src/components/project/studio/MoodboardViewer.tsx": "a media viewer, full-bleed black",
   "src/pages/ProjectReview.tsx": "a video review player on black",
   "src/components/sessions/GuestPassDialog.tsx": "the pass card is the surface; the dialog around it is transparent",
-  "src/components/sessions/EventHeroCard.tsx": "a destructive confirmation keeps its destructive border and glow as a cue",
   "src/components/NewsletterPopup.tsx": "a visitor's popup, never shown to a signed-in member",
   "src/components/scene/MagazineArticleModal.tsx": "the public magazine reader keeps its own frame",
   "src/components/project/VideoCallSheet.tsx": "the video call surface (k-call-surface) is the call's own frame",

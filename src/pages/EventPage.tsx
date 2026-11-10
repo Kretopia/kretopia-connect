@@ -147,7 +147,9 @@ const EventPage = () => {
     }
   }, [eventId]);
 
-  // A guest lands here from the RSVP form with ?rsvp=confirmed: that is the same one message, not a banner of its own.
+  // A guest lands here from the RSVP form with ?rsvp=confirmed: that is the same one message, not a banner of its own. The message is
+  // kept in the page and the address is cleaned at once, so the guest's name, email and pass token are not left in the address bar to be
+  // copied or shared along with the link to the event.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("rsvp") !== "confirmed") return;
@@ -156,12 +158,10 @@ const EventPage = () => {
     setRsvpNotice(params.get("source") === "email"
       ? { tone: "success", text: `Attendance confirmed. Great to have you${name ? `, ${name}` : ""}. Your spot is locked in.` }
       : { tone: "success", text: `You're going. We're sending a confirmation to ${email || "your email"}.` });
-  }, [location.search]);
+    navigate({ pathname: location.pathname, hash: location.hash }, { replace: true });
+  }, [location.search, location.pathname, location.hash, navigate]);
 
-  const dismissRsvpNotice = () => {
-    setRsvpNotice(null);
-    if (event && new URLSearchParams(location.search).get("rsvp") === "confirmed") navigate(`/event/${event.id}`, { replace: true });
-  };
+  const dismissRsvpNotice = () => setRsvpNotice(null);
 
   const refreshParticipantCount = async (id: string) => {
     setAvailabilityLoading(true);

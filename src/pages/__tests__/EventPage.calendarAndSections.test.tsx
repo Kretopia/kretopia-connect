@@ -675,21 +675,36 @@ describe("Event page: one primary action, from a visitor's first screen to a pho
     expect(m.rpc).not.toHaveBeenCalled();
   });
 
-  it("shows the guest's confirmed landing as the same one message, and dismisses it", async () => {
-    window.history.replaceState({}, "", "/");
+  it("shows the guest's confirmed landing as the same one message, takes their details out of the address, and dismisses it", async () => {
     render(
-      <MemoryRouter initialEntries={["/event/e1?rsvp=confirmed&name=Ari&email=ari%40example.com"]}>
+      <MemoryRouter initialEntries={["/event/e1?rsvp=confirmed&name=Ari&email=ari%40example.com&token=11111111111111111111111111111111"]}>
         <Routes>
-          <Route path="/event/:eventId" element={<EventPage />} />
-          <Route path="*" element={<Where />} />
+          <Route path="/event/:eventId" element={<><EventPage /><Where /></>} />
         </Routes>
       </MemoryRouter>,
     );
     await screen.findByRole("heading", { level: 1, name: "Studio Night" });
     expect(await screen.findByText("You're going. We're sending a confirmation to ari@example.com.")).toBeInTheDocument();
     expect(document.querySelectorAll("[data-rsvp-notice]")).toHaveLength(1);
+    // The address no longer carries the guest's name, email or pass token: it is the plain link to the event, safe to copy or share.
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toBe("/event/e1"));
+    // …and the message is still there after the address changed.
+    expect(screen.getByText("You're going. We're sending a confirmation to ari@example.com.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Dismiss message" }));
     await waitFor(() => expect(document.querySelectorAll("[data-rsvp-notice]")).toHaveLength(0));
+  });
+
+  it("words the landing from the confirmation email as attendance confirmed, by name", async () => {
+    render(
+      <MemoryRouter initialEntries={["/event/e1?rsvp=confirmed&source=email&name=Ari"]}>
+        <Routes>
+          <Route path="/event/:eventId" element={<><EventPage /><Where /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Studio Night" });
+    expect(await screen.findByText("Attendance confirmed. Great to have you, Ari. Your spot is locked in.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toBe("/event/e1"));
   });
 });
 

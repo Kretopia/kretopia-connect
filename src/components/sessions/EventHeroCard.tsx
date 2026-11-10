@@ -33,9 +33,13 @@ export function EventHeroCard({ event, hasPass, onShare, onShowGuestPass }: Even
   }, [event.cover_image_url]);
 
   return (
-    // The cover keeps its shape, and grows (min-h-min) when a long title needs more room: the title is in the flow, so it is never clipped
-    // and never slides under the "More" button, which the padding above it keeps clear.
-    <header id="hero" aria-labelledby="event-title" className="relative flex aspect-[16/9] min-h-min w-full flex-col justify-end overflow-hidden rounded-2xl bg-muted sm:aspect-[16/7]">
+    // One grid cell holds two things: an empty box with the cover's shape, and the title. The row is as tall as the taller of the two, so
+    // the cover keeps its shape and grows only when a long title needs more room: the title is never clipped, and the padding above it
+    // keeps it clear of the "More" button.
+    // (The column is exactly the cover's width, and the shape box does not stretch: a stretched box would turn its extra height into
+    // extra width through its ratio.)
+    <header id="hero" aria-labelledby="event-title" className="relative grid w-full grid-cols-1 overflow-hidden rounded-2xl bg-muted">
+      <div aria-hidden className="col-start-1 row-start-1 aspect-[16/9] w-full self-start sm:aspect-[16/7]" />
       {event.cover_image_url && !coverImageFailed ? (
         <img
           src={event.cover_image_url}
@@ -63,9 +67,9 @@ export function EventHeroCard({ event, hasPass, onShare, onShowGuestPass }: Even
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="relative p-4 pt-14 sm:p-6 sm:pt-16">
+      <div className="relative col-start-1 row-start-1 min-w-0 self-end p-4 pt-14 sm:p-6 sm:pt-16">
         {event.category && <Badge variant="secondary" className="mb-2">{CATEGORY_LABELS[event.category] || event.category}</Badge>}
-        <h1 id="event-title" tabIndex={-1} className="max-w-4xl text-2xl font-bold leading-tight tracking-tight text-foreground focus-visible:outline-none sm:text-5xl">
+        <h1 id="event-title" tabIndex={-1} className="max-w-4xl break-words text-2xl font-bold leading-tight tracking-tight text-foreground focus-visible:outline-none sm:text-5xl">
           {event.title}
         </h1>
       </div>

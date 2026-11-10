@@ -26,6 +26,22 @@ describe("EventHeroCard: the cover and the name, and nothing the booking block s
     expect(screen.getByTestId("scene")).toBeInTheDocument();
   });
 
+  it("keeps the title in the flow, so a long one makes the cover taller instead of being clipped or sliding under More", () => {
+    draw({ event: { ...event, title: "The Long Night of Analog Synthesizers, Tape Machines and Field Recordings: an Open Studio" } });
+    const hero = document.getElementById("hero")!;
+    const titleBlock = screen.getByRole("heading", { level: 1 }).parentElement!;
+    // The title is a grid item, not an absolutely placed overlay (which a fixed-shape cover would clip)…
+    expect(titleBlock.className).not.toMatch(/(^|\s)absolute(\s|$)/);
+    expect(titleBlock.className).toContain("row-start-1");
+    // …it shares its cell with the box that gives the cover its shape, so the row is as tall as the taller of the two…
+    const shape = hero.querySelector('[aria-hidden="true"][class*="aspect-"]')!;
+    expect(shape.className).toContain("row-start-1");
+    expect(shape.className).toContain("self-start");
+    expect(hero.className).not.toMatch(/aspect-/);
+    // …and its top padding is the room the More button needs.
+    expect(titleBlock.className).toContain("pt-14");
+  });
+
   it("states no date, place, price, host, count or booking control: those are said once, in the booking block", () => {
     draw();
     const hero = document.getElementById("hero")!;
