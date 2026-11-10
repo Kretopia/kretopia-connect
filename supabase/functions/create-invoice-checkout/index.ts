@@ -9,6 +9,7 @@ import { checkInvoicePayable, cleanPayerEmail } from "../_shared/publicCheckoutI
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { verifyInvoiceLink } from '../_shared/invoiceCapability.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -22,6 +23,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => null);
     const invoice_id = typeof body?.invoice_id === "string" ? body.invoice_id : "";
     if (!invoice_id) throw new Error("invoice_id required");
+    const payToken = typeof body?.t === "string" ? body.t : "";
+    if (!(await verifyInvoiceLink(invoice_id, payToken))) throw new Error("Invoice not found");
     const payer_email = cleanPayerEmail(body?.payer_email);
 
     const admin = createClient(
@@ -61,8 +64,8 @@ serve(async (req) => {
         },
         quantity: 1,
       }],
-      success_url: `${origin}/pay/invoice/${invoice_id}?status=success`,
-      cancel_url: `${origin}/pay/invoice/${invoice_id}?status=cancelled`,
+      success_url: `${origin}/pay/invoice/${invoice_id}?t=${encodeURIComponent(payToken)}&status=success`,
+      cancel_url: `${origin}/pay/invoice/${invoice_id}?t=${encodeURIComponent(payToken)}&status=cancelled`,
       metadata: { kind: "invoice", invoice_id, recipient_user_id: invoice.issued_by },
     };
     // payouts_enabled is our own stored flag and can go stale relative to Stripe's

@@ -60,10 +60,10 @@ describe("planBulkSend", () => {
   });
 
   it("keeps the documented limits", () => {
-    expect(EVENT_INVITES_PER_ACTOR_PER_DAY).toBe(500);
+    expect(EVENT_INVITES_PER_ACTOR_PER_DAY).toBe(150);
     expect(EVENT_INVITES_PER_RECIPIENT_PER_DAY).toBe(3);
     expect(EVENT_INVITE_WINDOW_MINUTES).toBe(1440);
-    expect(EVENT_INVITE_NOTE_MAX).toBe(500);
+    expect(EVENT_INVITE_NOTE_MAX).toBe(280);
     expect(EVENT_INVITE_TEMPLATE).toBe("event-invite-direct");
   });
 });
@@ -170,7 +170,7 @@ describe("send-event-invite wiring", () => {
     expect(source).toContain("cleanRecipientEmail(e)");
     expect(source).not.toContain("const EMAIL_RE");
     expect(source).toContain("cleanFreeText(personalNote, EVENT_INVITE_NOTE_MAX)");
-    expect(source).toContain("personalNote: note || undefined");
+    expect(source).toContain("personalNote: testOnly ? (note || undefined) : undefined");
     expect(source).not.toContain("personalNote?.trim()");
   });
 

@@ -13,6 +13,7 @@ import {
   isUuid,
   renderInvoiceEmail,
 } from "../_shared/invoiceEmail.ts";
+import { signInvoiceLink } from "../_shared/invoiceCapability.ts";
 
 const MAX_BODY_BYTES = 8_000;
 
@@ -96,7 +97,7 @@ serve(async (req) => {
     const recorded = await recordActorSend(db, { template: INVOICE_EMAIL_TEMPLATE, actorId: user.id, recipientEmail: recipient, status: "sent" });
     if (!recorded) return json({ error: "Could not record the send, try again shortly" }, 503);
 
-    const { subject, html } = renderInvoiceEmail(invoice, recipient);
+    const { subject, html } = renderInvoiceEmail(invoice, recipient, await signInvoiceLink(invoice.id));
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {

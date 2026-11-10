@@ -1,10 +1,11 @@
-// Public read of a payable invoice. Used by /pay/invoice/:id
+// Read of a payable invoice for holders of its signed pay link (?t=). Used by /pay/invoice/:id
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { signInvoiceLink, verifyInvoiceLink } from '../_shared/invoiceCapability.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -28,6 +29,30 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Issuer mode: the signed-in issuer may mint the private pay link for their own invoice
+    // (used when generating the PDF). Everyone else needs that link's token.
+    if (url.searchParams.get("mint") === "1") {
+      const bearer = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+      const { data: who } = bearer ? await admin.auth.getUser(bearer) : { data: { user: null } };
+      const { data: own } = who?.user
+        ? await admin.from("invoices").select("id").eq("id", invoiceId).eq("issued_by", who.user.id).maybeSingle()
+        : { data: null };
+      if (!own) {
+        return new Response(JSON.stringify({ error: "Invoice not found" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      return new Response(JSON.stringify({ token: await signInvoiceLink(invoiceId) }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (!(await verifyInvoiceLink(invoiceId, url.searchParams.get("t")))) {
+      return new Response(JSON.stringify({ error: "Invoice not found" }), {
+        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: invoice } = await admin
       .from("invoices")

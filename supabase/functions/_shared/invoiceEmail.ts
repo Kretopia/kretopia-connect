@@ -66,7 +66,7 @@ export interface InvoiceForEmail {
 const esc = (v: unknown, max: number) => escapeHtmlText(singleLine(v, max));
 
 /** Subject and HTML for one invoice. Every value that did not come from this file is escaped; the pay link is built from a validated id. */
-export function renderInvoiceEmail(invoice: InvoiceForEmail, recipientEmail: string): { subject: string; html: string } {
+export function renderInvoiceEmail(invoice: InvoiceForEmail, recipientEmail: string, payToken = ""): { subject: string; html: string } {
   const number = esc(invoice.invoice_number, 60);
   const currency = invoice.currency;
   const items = (Array.isArray(invoice.line_items) ? invoice.line_items : []).slice(0, MAX_LINE_ITEMS);
@@ -106,7 +106,7 @@ export function renderInvoiceEmail(invoice: InvoiceForEmail, recipientEmail: str
   const payBlock = invoice.status !== "paid" && isUuid(invoice.id)
     ? `
             <div style="text-align: center; margin: 30px 0;">
-              <a href="https://www.kretopia.com/pay/invoice/${invoice.id}"
+              <a href="https://www.kretopia.com/pay/invoice/${invoice.id}?t=${encodeURIComponent(payToken)}"
                  style="display: inline-block; background-color: #111827; color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Pay ${escapeHtmlText(total)} securely
               </a>

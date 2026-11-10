@@ -99,7 +99,7 @@ describe("renderInvoiceEmail: nothing the issuer typed becomes markup", () => {
     expect(html).toContain("&amp;");
     // The only link in the mail is ours.
     expect(html.match(/<a\b/g)).toHaveLength(1);
-    expect(html).toContain(`href="https://www.kretopia.com/pay/invoice/${ID}"`);
+    expect(html).toContain(`href="https://www.kretopia.com/pay/invoice/${ID}?t=`);
   });
 
   it("keeps the subject on one line", () => {
