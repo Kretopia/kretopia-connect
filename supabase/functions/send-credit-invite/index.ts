@@ -1,3 +1,4 @@
+import { enforceSendBudget } from "../_shared/outboundBudget.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { cleanFreeText, cleanRecipientEmail } from "../_shared/outboundText.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -104,6 +105,24 @@ serve(async (req) => {
         .eq('endorser_email', email)
         .limit(1)
         .maybeSingle();
+      // Only collaborators already recorded on this credit's endorsement
+      // requests are mailed; a free-form address is not a recipient.
+      if (!existing) {
+        results.push({ email, name: null, error: 'not_on_credit' });
+        continue;
+      }
+      const budget = await enforceSendBudget(supabase, {
+        template: 'credit-chain-invite-direct',
+        actorId: user.id,
+        recipientEmail: email,
+        actorLimit: 50,
+        recipientLimit: 3,
+        sinceMinutes: 24 * 60,
+      });
+      if (!budget.ok) {
+        results.push({ email, name: null, error: 'rate_limited' });
+        continue;
+      }
       let token: string | null = existing?.token ?? null;
       if (!token) {
         token = crypto.randomUUID();
