@@ -28,7 +28,7 @@ export default function PayInvoice() {
     (async () => {
       try {
         const res = await fetch(
-          `https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/invoice-pay-info?id=${encodeURIComponent(id)}`
+          `https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/invoice-pay-info?id=${encodeURIComponent(id)}&t=${encodeURIComponent(payToken)}`
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Invoice not available");
@@ -39,14 +39,14 @@ export default function PayInvoice() {
         setLoading(false);
       }
     })().catch(() => {});
-  }, [id]);
+  }, [id, payToken]);
 
   const handlePay = async () => {
     if (!id) return;
     setSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-invoice-checkout", {
-        body: { invoice_id: id },
+        body: { invoice_id: id, t: payToken },
       });
       if (error) throw error;
       if (!data?.url) throw new Error("Checkout unavailable");
