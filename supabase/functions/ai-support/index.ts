@@ -1,3 +1,4 @@
+import { sanitizeChatHistory } from "../_shared/promptIsolation.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
@@ -52,8 +53,8 @@ Key platform features:
 
 Respond concisely and helpfully. If it's a bug, try to understand the exact steps to reproduce it.`
       },
-      ...conversationHistory,
-      { role: "user", content: message }
+      ...sanitizeChatHistory(conversationHistory, { maxMessages: 20, maxChars: 4000 }),
+      { role: "user", content: String(message ?? "").slice(0, 4000) }
     ];
 
     // Call Lovable AI
