@@ -7,8 +7,11 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { cn } from "@/lib/utils";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
 import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
+import { buildPassUrl, publicUrl } from "@/lib/publicLink";
 
 interface EventPassCardProps {
+  /** The event the pass is for: the code encodes the pass page of this event, never the token alone. */
+  eventId: string;
   eventTitle: string;
   guestName?: string | null;
   startTime: string;
@@ -29,6 +32,7 @@ interface EventPassCardProps {
  * without pointer-tracked or animated effects.
  */
 export const EventPassCard = ({
+  eventId,
   eventTitle,
   guestName,
   startTime,
@@ -44,8 +48,11 @@ export const EventPassCard = ({
 }: EventPassCardProps) => {
   const qrRef = useRef<HTMLDivElement>(null);
 
+  // What the code carries: the public address of this pass (a link a phone can open), never the bare check-in token.
+  const passLink = token && eventId ? publicUrl(buildPassUrl(eventId, token)) : undefined;
+
   useEffect(() => {
-    if (loading || !token || !qrRef.current) return;
+    if (loading || !passLink || !qrRef.current) return;
     let cancelled = false;
     qrRef.current.innerHTML = "";
 
@@ -60,9 +67,10 @@ export const EventPassCard = ({
     const baseOptions = {
       width: 240,
       height: 240,
-      data: token,
+      data: passLink,
       margin: 8,
-      qrOptions: { errorCorrectionLevel: "H" as const },
+      // A link is longer than the token was: Q (25%) keeps the code coarse enough to read from a screen, and still survives the logo.
+      qrOptions: { errorCorrectionLevel: "Q" as const },
       dotsOptions: { type: "extra-rounded" as const, color: qrForeground },
       cornersSquareOptions: { color: qrForeground, type: "extra-rounded" as const },
       cornersDotOptions: { color: qrForeground, type: "dot" as const },
@@ -97,7 +105,7 @@ export const EventPassCard = ({
     return () => {
       cancelled = true;
     };
-  }, [token, loading]);
+  }, [passLink, loading]);
 
   return (
       <div className={cn("relative overflow-hidden rounded-2xl border border-border bg-card shadow-sm", className)}>
@@ -143,6 +151,8 @@ export const EventPassCard = ({
                 <div
                   className="rounded-2xl bg-white p-3 shadow-[0_12px_40px_-12px_hsl(var(--primary)/.3)]"
                   ref={qrRef}
+                  role="img"
+                  aria-label="Pass QR code: scan it to open this pass"
                 />
                 {checkedIn ? (
                   <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-green-600">

@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import QRCodeStyling from "qr-code-styling";
 import kMarkAsset from "@/assets/brand/kretopia-k-mark.png.asset.json";
-import { safeQrPayload } from "@/lib/safeUrl";
+import { publicUrl } from "@/lib/publicLink";
 
 interface KretopiaQRCodeProps {
-  /** The URL (or any string payload) the code should resolve to. */
+  /** The public https URL the code should open. A bare id, a path or a non-public host is refused: the code is left empty. */
   data: string;
   /** Pixel width/height — the code is always square. */
   size?: number;
@@ -33,7 +33,7 @@ export function KretopiaQRCode({ data, size: requestedSize = 120, className, onR
   onReadyRef.current = onReady;
   const size = Math.max(requestedSize, MIN_SIZE);
 
-  const payload = safeQrPayload(data);
+  const payload = publicUrl(data);
 
   useEffect(() => {
     if (!ref.current) return;

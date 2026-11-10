@@ -70,6 +70,7 @@ export const GuestPassDialog = ({
         </DialogHeader>
 
         <EventPassCard
+          eventId={eventId}
           eventTitle={eventTitle}
           guestName={guestName}
           startTime={startTime}

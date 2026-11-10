@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { findArchetype } from "@/lib/eventArchetypes";
+import { buildEventShareUrl } from "@/lib/eventActions";
+import { buildShareData } from "@/lib/publicLink";
 
 interface Props {
   project: any;
@@ -182,9 +184,11 @@ export function EventHeroCard({ project }: Props) {
             variant="ghost"
             className="h-8 text-[11px]"
             onClick={() => {
-              const url = `${window.location.origin}/events/${event.id}`;
-              if (navigator.share) {
-                navigator.share({ title: event.title, url }).catch(() => {});
+              // The public event page, on the public origin: /events/:id is not a page, and a preview origin is not reachable by a stranger.
+              const url = buildEventShareUrl(event.id);
+              const data = buildShareData({ title: event.title, message: `Join me at ${event.title}`, url });
+              if (navigator.share && data) {
+                navigator.share(data).catch(() => {});
               } else {
                 navigator.clipboard.writeText(url).catch(() => {});
               }
