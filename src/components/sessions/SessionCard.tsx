@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { APP_URL } from "@/lib/constants";
 import { eventEntry } from "@/lib/eventEntry";
+import { cancelEventRsvp } from "@/lib/eventRsvp";
 import { formatCurrencyAmount } from "@/lib/currency";
 
 interface Session {
@@ -86,8 +87,8 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
     setLoading(true);
     try {
       if (participation) {
-        const { data: result, error } = await supabase.rpc("cancel_event_rsvp", { p_event_id: session.id });
-        if (error) throw error;
+        // The cancel function when the database has it, the direct update this was before when it does not: see lib/eventRsvp.
+        const result = await cancelEventRsvp(session.id, user.id);
         if (result === "not_going") throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         toast({ title: "Left event" });

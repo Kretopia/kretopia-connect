@@ -9,6 +9,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { reserveGuestRsvp } from "@/lib/eventRsvp";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -168,13 +169,8 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
           guestToken = row?.check_in_token ?? null;
         }
       } else {
-        const { data, error } = await (supabase as any).rpc("reserve_event_guest_rsvp", {
-          p_event_id: eventId,
-          p_guest_name: parsed.data.guest_name,
-          p_guest_email: parsed.data.guest_email,
-        });
-        if (error) throw error;
-        const row = Array.isArray(data) ? data[0] : data;
+        // The newer function when the database has it, the older one (what this was before) when it does not: see lib/eventRsvp.
+        const row = await reserveGuestRsvp({ eventId, name: parsed.data.guest_name, email: parsed.data.guest_email });
         if (!row) throw new Error("RSVP failed");
         if (row.status === "full_no_waitlist") {
           throw new Error("This event is full and isn't accepting guest waitlist entries.");

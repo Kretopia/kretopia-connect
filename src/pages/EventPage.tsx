@@ -36,6 +36,7 @@ import { EventCommunityHub } from "@/components/sessions/EventCommunityHub";
 import { EventPageShell, EVENT_PAGE_CONTENT_CLASS } from "@/components/sessions/EventPageShell";
 import { ShareToMessageDialog } from "@/components/messages/ShareToMessageDialog";
 import { GuestRsvpDialog } from "@/components/sessions/GuestRsvpDialog";
+import { cancelEventRsvp } from "@/lib/eventRsvp";
 import { GuestPassDialog } from "@/components/sessions/GuestPassDialog";
 import { EventPhotoWall } from "@/components/sessions/EventPhotoWall";
 import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
@@ -302,10 +303,8 @@ const EventPage = () => {
     setBookingError(null);
     try {
       if (participation) {
-        const { data: result, error } = await supabase.rpc('cancel_event_rsvp', {
-          p_event_id: event.id,
-        });
-        if (error) throw error;
+        // The cancel function when the database has it, the direct update this was before when it does not: see lib/eventRsvp.
+        const result = await cancelEventRsvp(event.id, user.id);
         if (result === 'not_going') throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         await refreshParticipantCount(event.id);
