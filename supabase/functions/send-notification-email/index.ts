@@ -1,3 +1,4 @@
+import { escapeHtmlText, safeHttpsUrl } from "../_shared/outboundText.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
@@ -326,8 +327,8 @@ const generateEmailContent = (type: string, data: any, unsubscribeToken?: string
         html: emailWrapper(`
           <div style="padding: 0 28px 28px; text-align: center;">
             <h1 style="font-size: 24px; font-weight: bold; color: #0a0a0f; margin: 0 0 16px;">Someone's interested</h1>
-            ${data.swiperAvatar ? `<img src="${data.swiperAvatar}" alt="Profile" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 16px;">` : ''}
-            <p style="font-size: 15px; color: #606068; line-height: 1.6; margin: 0 0 20px;"><strong style="color: #0a0a0f;">${data.swiperName}</strong> (${data.swiperRole}) wants to connect. Swipe right to match.</p>
+            ${safeHttpsUrl(data.swiperAvatar) ? `<img src="${safeHttpsUrl(data.swiperAvatar)}" alt="Profile" style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; margin-bottom: 16px;">` : ''}
+            <p style="font-size: 15px; color: #606068; line-height: 1.6; margin: 0 0 20px;"><strong style="color: #0a0a0f;">${escapeHtmlText(data.swiperName)}</strong> (${escapeHtmlText(data.swiperRole)}) wants to connect. Swipe right to match.</p>
             <a href="${baseUrl}/circle" style="display: inline-block; padding: 14px 28px; background: #4338CA; color: white; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 15px;">See Who</a>
           </div>
         `)

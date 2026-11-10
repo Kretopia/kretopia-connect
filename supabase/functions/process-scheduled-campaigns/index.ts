@@ -1,3 +1,4 @@
+import { plainTextToEmailHtml } from "../_shared/outboundText.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@4.0.0";
@@ -7,18 +8,7 @@ import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 import { corsFor } from '../_shared/guard.ts';
 function wrapHtml(body: string): string {
-  return body
-    .split("\n\n")
-    .map((p: string) => {
-      let html = p.replace(/\[image:(https?:\/\/[^\]|]+)(?:\|([^\]]*))?\]/gi, (_m, url, alt) => {
-        return `<img src="${url}" alt="${alt || 'Embedded image'}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; display: block;" />`;
-      });
-      html = html.replace(/\[video:(https?:\/\/[^\]|]+)(?:\|([^\]]*))?\]/gi, (_m, url, label) => {
-        return `<a href="${url}" target="_blank" style="display: inline-block; padding: 10px 20px; background: #8B5CF6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin: 8px 0;">▶ ${label || 'Watch Video'}</a>`;
-      });
-      return `<p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.6;">${html.replace(/\n/g, "<br>")}</p>`;
-    })
-    .join("");
+  return plainTextToEmailHtml(body);
 }
 
 serve(async (req) => {

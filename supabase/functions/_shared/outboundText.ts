@@ -40,3 +40,39 @@ const LINE_BREAKS = new RegExp("[\\r\\n\\v\\f\\u2028\\u2029]+", "g");
 export function singleLine(value: unknown, max: number): string {
   return String(value ?? "").replace(LINE_BREAKS, " ").trim().slice(0, max);
 }
+
+/** An https URL safe to place in an attribute, or null. */
+export function safeHttpsUrl(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "https:") return null;
+    return escapeHtmlText(u.toString());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Plain user text -> email paragraphs. All markup is escaped; only the
+ * [image:URL|alt] and [video:URL|label] markers become https-only tags.
+ */
+export function plainTextToEmailHtml(body: unknown): string {
+  return String(body ?? "")
+    .split("\n\n")
+    .map((p) => {
+      let html = escapeHtmlText(p);
+      html = html.replace(/\[image:(https:\/\/[^\]|\s]+)(?:\|([^\]]*))?\]/gi, (m, url, alt) => {
+        const safe = safeHttpsUrl(url.replace(/&amp;/g, "&"));
+        if (!safe) return m;
+        return `<img src="${safe}" alt="${alt || "Embedded image"}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 12px 0; display: block;" />`;
+      });
+      html = html.replace(/\[video:(https:\/\/[^\]|\s]+)(?:\|([^\]]*))?\]/gi, (m, url, label) => {
+        const safe = safeHttpsUrl(url.replace(/&amp;/g, "&"));
+        if (!safe) return m;
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10px 20px; background: #8B5CF6; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; margin: 8px 0;">&#9654; ${label || "Watch Video"}</a>`;
+      });
+      return `<p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.6;">${html.replace(/\n/g, "<br>")}</p>`;
+    })
+    .join("");
+}

@@ -1,3 +1,4 @@
+import { plainTextToEmailHtml } from "../_shared/outboundText.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@4.0.0";
@@ -7,10 +8,7 @@ import { requireAdminOrCron } from "../_shared/admin-guard.ts";
 
 import { corsFor } from '../_shared/guard.ts';
 function wrapHtml(body: string): string {
-  return body
-    .split("\n\n")
-    .map((p: string) => `<p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.6;">${p.replace(/\n/g, "<br>")}</p>`)
-    .join("");
+  return plainTextToEmailHtml(body);
 }
 
 serve(async (req) => {
