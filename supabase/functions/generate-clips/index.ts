@@ -8,7 +8,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, requireUser, safeError } from '../_shared/guard.ts';
+import { checkAiFeatureRateLimit } from '../_shared/aiRateLimit.ts';
 const SYSTEM = `You are "Producer", Kretopia's clip-generation specialist for creators.
 Given a podcast/video transcript, propose 3-5 short, scroll-stopping clips for social.
 
@@ -51,6 +52,15 @@ Deno.serve(async (req) => {
   }
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
+    // Paid model call: a signed-in caller and a per-user daily budget first.
+    const authUser = await requireUser(
+      req,
+      createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!),
+    );
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const rateLimit = await checkAiFeatureRateLimit(admin, authUser.id, "generate-clips");
+    if (!rateLimit.allowed) return rateLimit.response;
+
     const body = await req.json().catch(() => ({}));
     const transcript: string = (body?.transcript ?? body?.transcript_excerpt ?? "").toString();
     const episodeTitle: string = (body?.episode_title || "").toString();
@@ -119,8 +129,8 @@ ${transcript.slice(0, 18000)}`;
     if (resp.status === 429) return json({ error: "Rate limited, try again soon" }, 429);
     if (resp.status === 402) return json({ error: "AI credits exhausted" }, 402);
     if (!resp.ok) {
-      const t = await resp.text();
-      return json({ error: `AI error: ${t.slice(0, 300)}` }, 500);
+      console.error("[generate-clips] AI gateway status", resp.status);
+      return json({ error: "Clip generation failed" }, 500);
     }
 
     const ai = await resp.json();
