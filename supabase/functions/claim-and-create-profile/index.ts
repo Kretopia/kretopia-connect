@@ -163,7 +163,7 @@ async function checkAndProvisionUser(
   if (found) {
     // Existing user — attach claim to their profile if they don't have one yet, then maybe send magic link.
     userId = found.id;
-    console.log(`[claim] matched existing auth user ${userId} for ${email}`);
+    console.log(`[claim] matched existing auth user ${userId}`);
 
     // If skipMagicLink (Google flow), upsert profile + credits so the claim isn't lost
     if (skipMagicLink) {
@@ -181,7 +181,7 @@ async function checkAndProvisionUser(
     if (createErr || !created.user) throw new Error(createErr?.message || "Failed to create user");
     userId = created.user.id;
     isNewUser = true;
-    console.log(`[claim] created new auth user ${userId} for ${email}`);
+    console.log(`[claim] created new auth user ${userId}`);
 
     const outcome = await upsertProfileAndCredits(admin, userId, profile, credits, conflicts, faceVerified);
     profileSaved = outcome.profileSaved;
@@ -205,7 +205,7 @@ async function checkAndProvisionUser(
       options: { redirectTo },
     });
     if (linkErr) {
-      console.error(`[claim] magic link error for ${email}:`, linkErr);
+      console.error(`[claim] magic link error:`, linkErr);
       throw new Error("Couldn't send magic link");
     }
     console.log(`[claim] magic link generated`);
