@@ -17,6 +17,8 @@ const m = vi.hoisted(() => {
     event: {} as Record<string, unknown>,
     going: 3,
     participation: null as string | null,
+    participantRows: [] as unknown[],
+    profileRows: [] as unknown[],
     calendar: { rows: [] as { event_id: string }[], error: null as DbError, writeError: null as DbError },
     hostSections: { rows: [] as unknown[], error: null as DbError, writeError: null as DbError },
     publicSections: { rows: [] as unknown[], error: null as DbError },
@@ -34,14 +36,14 @@ const m = vi.hoisted(() => {
         if (c.head) return { data: null, count: 1, error: null };
         return c.single ? { data: s.event, error: null } : { data: [], error: null };
       case "public_profiles_safe":
-        return c.single ? { data: { user_id: "host", full_name: "Ada Host" }, error: null } : { data: [], error: null };
+        return c.single ? { data: { user_id: "host", full_name: "Ada Host" }, error: null } : { data: s.profileRows, error: null };
       case "profiles":
         return { data: { username: "ada" }, error: null };
       case "jam_participants":
         if (c.op !== "select") return { data: null, error: null };
         if (c.head) return { data: null, count: s.going, error: null };
-        if (c.single) return { data: s.participation ? { status: s.participation } : null, error: null };
-        return { data: [], error: null };
+        if (c.single) return { data: s.participation ? { id: "p1", status: s.participation } : null, error: null };
+        return { data: s.participantRows, error: null };
       case "event_calendar_entries":
         return c.op === "select" ? { data: s.calendar.rows, error: s.calendar.error } : { data: null, error: s.calendar.writeError };
       case "event_page_sections":
@@ -105,15 +107,14 @@ vi.mock("@/components/sessions/EventCheckInDialog", () => ({ EventCheckInDialog:
 vi.mock("@/components/sessions/EventCohosts", () => ({ EventCohosts: () => null }));
 vi.mock("@/components/sessions/EventRecapButton", () => ({ EventRecapButton: () => null }));
 vi.mock("@/components/sessions/EventCommunityHub", () => ({ EventCommunityHub: () => null }));
-vi.mock("@/components/sessions/EventHostCard", () => ({ EventHostCard: () => null }));
 vi.mock("@/components/sessions/EventPhotoWall", () => ({ EventPhotoWall: () => null }));
 vi.mock("@/components/sessions/JoinOnlineCard", () => ({ JoinOnlineCard: () => null }));
 vi.mock("@/components/sessions/GuestRsvpDialog", () => ({ GuestRsvpDialog: () => null }));
 vi.mock("@/components/sessions/GuestPassDialog", () => ({ GuestPassDialog: () => null }));
-vi.mock("@/components/sessions/EventRsvpSuccessDialog", () => ({ EventRsvpSuccessDialog: () => null }));
 vi.mock("@/components/messages/ShareToMessageDialog", () => ({ ShareToMessageDialog: () => null }));
 
 import EventPage from "../EventPage";
+import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
 
 const DAY = 86_400_000;
 const baseEvent = () => ({
@@ -154,12 +155,15 @@ beforeEach(() => {
   m.event = baseEvent();
   m.going = 3;
   m.participation = null;
+  m.participantRows = [];
+  m.profileRows = [];
   m.calendar = { rows: [], error: null, writeError: null };
   m.hostSections = { rows: [], error: null, writeError: null };
   m.publicSections = { rows: [], error: null };
   m.log.length = 0;
   m.rpc.mockReset().mockResolvedValue({ data: "joined", error: null });
   m.toast.mockReset();
+  vi.mocked(sendEventConfirmationEmail).mockClear();
   m.downloadIcs.mockReset();
   vi.stubGlobal("open", vi.fn());
 });
@@ -200,7 +204,9 @@ describe("Event page: putting the event on a calendar is not an RSVP, a reservat
     expect(m.rpc).not.toHaveBeenCalled();
     expect(writesTo("jam_participants")).toEqual([]);
     expect(m.toast).toHaveBeenCalledWith({ title: "Removed from your Kretopia calendar", description: "Your RSVP, if you have one, is unchanged." });
-    expect(screen.getAllByRole("button", { name: "Going" }).length).toBeGreaterThan(0);
+    // Still going: "Going" is the booking control's status, with its leaving action beside it.
+    expect(document.querySelector('[data-booking-state="Going"]')).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Cancel RSVP" })).toBeInTheDocument();
   });
 
   it("while saving is not available, says so, saves nothing, and still exports the event", async () => {
@@ -281,7 +287,9 @@ describe("Event page: tickets sold elsewhere are their own action", () => {
     m.user = viewer;
     await draw();
     expect(screen.queryByRole("link", { name: /Get tickets/ })).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Tickets unavailable" }).every((button) => (button as HTMLButtonElement).disabled)).toBe(true);
+    // Nothing to press: the control is a status, and there is no booking button on the page.
+    expect(document.querySelector('[data-booking-state="Tickets unavailable"]')).not.toBeNull();
+    expect(document.querySelector('[data-booking-cta="primary"]')).toBeNull();
   });
 });
 
@@ -447,9 +455,10 @@ describe("Event page: leaving an event against a database that has not got cance
   // What production's API answered for that function: HTTP 404, PGRST202. It exists only in migration 20261109130000, which production has not got.
   const CANCEL_MISSING = { code: "PGRST202", message: "Could not find the function public.cancel_event_rsvp(p_event_id) in the schema cache" };
 
-  const cancelFromTheMenu = async () => {
-    fireEvent.keyDown(screen.getByRole("button", { name: "More event actions" }), { key: "Enter" });
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Cancel RSVP" }));
+  const RELEASED = "Your RSVP is cancelled. Your spot has been released.";
+  // Leaving is one quiet action in the booking block and one confirmation; the result is told once, in the block.
+  const cancelFromTheBlock = async () => {
+    fireEvent.click(screen.getByRole("button", { name: "Cancel RSVP" }));
     fireEvent.click(await screen.findByRole("button", { name: "Yes, cancel RSVP" }));
   };
 
@@ -461,21 +470,23 @@ describe("Event page: leaving an event against a database that has not got cance
   it("still releases the spot, by setting the member's own row to cancelled, and says so", async () => {
     m.rpc.mockImplementation(async (name: string) => (name === "cancel_event_rsvp" ? { data: null, error: CANCEL_MISSING } : { data: "joined", error: null }));
     await draw();
-    await cancelFromTheMenu();
+    await cancelFromTheBlock();
 
-    await waitFor(() => expect(m.toast).toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." }));
+    expect(await screen.findByText(RELEASED)).toBeInTheDocument();
     expect(writesTo("jam_participants")).toEqual([{ table: "jam_participants", op: "update", payload: { status: "cancelled" } }]);
-    expect(m.toast).not.toHaveBeenCalledWith(expect.objectContaining({ variant: "destructive" }));
-    // The page no longer shows the member as going.
-    expect((await screen.findAllByRole("button", { name: "I'm Going" })).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    // Said once: no toast repeats it. And the page no longer shows the member as going.
+    expect(m.toast).not.toHaveBeenCalled();
+    expect(screen.getAllByText(RELEASED)).toHaveLength(1);
+    expect((await screen.findAllByRole("button", { name: "I'm Going" })).length).toBe(1);
   });
 
   it("uses the cancel function when the database has it, and writes no row itself", async () => {
     m.rpc.mockResolvedValue({ data: "cancelled", error: null });
     await draw();
-    await cancelFromTheMenu();
+    await cancelFromTheBlock();
 
-    await waitFor(() => expect(m.toast).toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." }));
+    expect(await screen.findByText(RELEASED)).toBeInTheDocument();
     expect(m.rpc).toHaveBeenCalledWith("cancel_event_rsvp", { p_event_id: "e1" });
     expect(writesTo("jam_participants")).toEqual([]);
   });
@@ -483,10 +494,272 @@ describe("Event page: leaving an event against a database that has not got cance
   it("reports a real refusal as one, and does not retry it as a table update", async () => {
     m.rpc.mockResolvedValue({ data: null, error: { code: "P0001", message: "auth_required" } });
     await draw();
-    await cancelFromTheMenu();
+    await cancelFromTheBlock();
 
-    await waitFor(() => expect(m.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Error", variant: "destructive" })));
+    // A real refusal is shown as one, in the block, and the member is still shown as going.
+    expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(writesTo("jam_participants")).toEqual([]);
-    expect(m.toast).not.toHaveBeenCalledWith({ title: "RSVP cancelled", description: "Your spot has been released." });
+    expect(screen.queryByText(RELEASED)).not.toBeInTheDocument();
+    expect(document.querySelector('[data-booking-state="Going"]')).not.toBeNull();
   });
 });
+
+// ---- One wrapper, one booking block, one primary action ------------------------------------------------------------------------------
+
+const primaryButtons = () => document.querySelectorAll('[data-booking-cta="primary"]');
+const bookingState = () => document.querySelector("[data-booking-state]")?.getAttribute("data-booking-state") ?? null;
+const occurrences = (needle: string | RegExp) => (typeof needle === "string" ? (document.body.textContent ?? "").split(needle).length - 1 : ((document.body.textContent ?? "").match(new RegExp(needle, "g")) ?? []).length);
+
+describe("Event page: one wrapper, one booking block", () => {
+  it("is one shell holding the cover, the one booking block, then the content, in that order", async () => {
+    m.user = viewer;
+    await draw();
+    const shell = screen.getByRole("region", { name: "Studio Night" });
+    const blocks = shell.querySelectorAll('[data-event-slot]');
+    expect([...blocks].map((node) => node.getAttribute("data-event-slot"))).toEqual(["hero", "booking", "main"]);
+    expect(shell.querySelectorAll('[aria-label="Event booking"]')).toHaveLength(1);
+    expect(shell.querySelectorAll('[class~="max-w-7xl"]')).toHaveLength(1);
+    const main = shell.querySelector('[data-event-slot="main"]')!;
+    expect(main.querySelector("#about")).not.toBeNull();
+    expect(shell.querySelector('[data-event-slot="hero"]')).toContainElement(document.getElementById("hero"));
+    expect(shell.querySelector('[data-event-slot="booking"]')).toContainElement(document.getElementById("host"));
+  });
+
+  it("says price, date, count and places once each: no Event options list, no Admission block, no second countdown", async () => {
+    m.user = viewer;
+    m.event = { ...baseEvent(), is_ticketed: true, ticket_price: 20, ticket_currency: "EUR", external_ticket_url: "https://tickets.example.com/e1", max_participants: 10 };
+    m.going = 7;
+    await draw();
+
+    expect(occurrences(/€\s?20|20[.,]00/)).toBe(1);
+    expect(occurrences(/7 going/)).toBe(1);
+    expect(occurrences("3 places left")).toBe(1);
+    expect(occurrences("Starts in")).toBe(1);
+    expect(screen.getAllByRole("timer")).toHaveLength(1);
+    expect(occurrences("Free")).toBe(0);
+    expect(occurrences(/Admission|Event options/)).toBe(0);
+    expect(screen.queryByRole("heading", { name: /event options/i })).not.toBeInTheDocument();
+    // One date line (the calendar's agenda is another feature and is not drawn until it is opened).
+    const when = formatEventTimeForTest(m.event.start_time as string);
+    expect(occurrences(when)).toBe(1);
+  });
+
+  it("puts a cancelled event's notice first, above the cover, and says the reason once", async () => {
+    m.user = viewer;
+    m.event = { ...baseEvent(), status: "cancelled", status_note: "The venue flooded." };
+    await draw();
+    const notice = screen.getByText("Event Cancelled");
+    expect(notice.compareDocumentPosition(document.getElementById("hero")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(occurrences("The venue flooded.")).toBe(1);
+    expect(occurrences("The host cancelled this event.")).toBe(0);
+    expect(bookingState()).toBe("Cancelled");
+    expect(primaryButtons()).toHaveLength(0);
+  });
+
+  it("says Free once for a free event", async () => {
+    await draw();
+    expect(occurrences("Free")).toBe(1);
+  });
+
+  it("keeps every deep link: #event-booking, #host, #attendees, #about-policies", async () => {
+    m.user = viewer;
+    await draw();
+    for (const id of ["event-booking", "host", "attendees", "about-policies"]) {
+      expect(document.querySelectorAll(`#${id}`), id).toHaveLength(1);
+    }
+    expect(document.getElementById("event-booking")).toContainElement(primaryButtons()[0] as HTMLElement);
+    expect(document.getElementById("event-booking")).toContainElement(document.getElementById("host"));
+    expect(screen.getByRole("link", { name: "Event policies" })).toHaveAttribute("href", "#about-policies");
+    expect(document.getElementById("about-policies")).toHaveTextContent("Policies");
+  });
+
+  it("has no standalone Host card, Attendees section header with a second count, or Policies row", async () => {
+    m.user = viewer;
+    await draw();
+    expect(document.querySelectorAll("#host")).toHaveLength(1);
+    expect(screen.queryByText("View policies")).not.toBeInTheDocument();
+    expect(screen.queryByText("Contact via Kretopia")).not.toBeInTheDocument();
+    expect(occurrences(/Contact host/)).toBe(1);
+  });
+});
+
+describe("Event page: one primary action, from a visitor's first screen to a phone's bottom bar", () => {
+  const scenarios: { name: string; setup: () => void; label: string; primary: number }[] = [
+    { name: "a visitor with a free place", setup: () => { m.user = null; }, label: "I'm Going", primary: 1 },
+    { name: "a member with a free place", setup: () => { m.user = viewer; }, label: "I'm Going", primary: 1 },
+    { name: "a member who is going", setup: () => { m.user = viewer; m.participation = "going"; }, label: "Going", primary: 0 },
+    { name: "a member on the waitlist", setup: () => { m.user = viewer; m.participation = "waitlisted"; }, label: "Waitlisted", primary: 0 },
+    { name: "a full event with a waitlist", setup: () => { m.user = viewer; m.event = { ...baseEvent(), max_participants: 3, waitlist_enabled: true }; }, label: "Waitlist", primary: 1 },
+    { name: "a full event without one", setup: () => { m.user = viewer; m.event = { ...baseEvent(), max_participants: 3 }; }, label: "Sold out", primary: 0 },
+    { name: "a cancelled event", setup: () => { m.user = viewer; m.event = { ...baseEvent(), status: "cancelled" }; }, label: "Cancelled", primary: 0 },
+    { name: "an event that has ended", setup: () => { m.user = viewer; m.event = { ...baseEvent(), start_time: new Date(Date.now() - 2 * DAY).toISOString(), end_time: new Date(Date.now() - DAY).toISOString() }; }, label: "Ended", primary: 0 },
+    { name: "the host", setup: () => { m.user = host; }, label: "You're hosting", primary: 0 },
+  ];
+
+  it.each(scenarios)("$name: $label, with $primary primary button(s) in the whole page", async ({ setup, label, primary }) => {
+    setup();
+    await draw();
+    expect(primaryButtons()).toHaveLength(primary);
+    if (primary) expect(primaryButtons()[0]).toHaveTextContent(label);
+    else expect(bookingState()).toBe(label);
+    // "Booking-shaped" buttons: nothing else on the page is named like the booking control.
+    expect(screen.queryAllByRole("button", { name: /^(I'm Going|Going|Waitlist|Sold out|Ended)$/ })).toHaveLength(primary);
+  });
+
+  it("walks Join, confirmed, Cancel as one control, with one message at each step and no toast", async () => {
+    m.user = viewer;
+    m.rpc.mockImplementation(async (name: string) => {
+      if (name === "cancel_event_rsvp") { m.participation = null; m.going = 3; return { data: "cancelled", error: null }; }
+      m.participation = "going"; m.going = 4; return { data: "joined", error: null };
+    });
+    await draw();
+
+    // Join
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+    expect(await screen.findByText("You're going. Your place is confirmed.")).toBeInTheDocument();
+    // Confirmed: the control reads what the server stored, and the count is the server's.
+    await waitFor(() => expect(bookingState()).toBe("Going"));
+    expect(primaryButtons()).toHaveLength(0);
+    expect(occurrences(/4 going/)).toBe(1);
+    expect(m.rpc).toHaveBeenCalledWith("rsvp_to_event", expect.objectContaining({ p_event_id: "e1" }));
+    expect(m.rpc.mock.calls.filter(([name]) => name === "rsvp_to_event")).toHaveLength(1);
+    // The confirmation email is requested once, for the row the server stored.
+    expect(sendEventConfirmationEmail).toHaveBeenCalledTimes(1);
+    expect(sendEventConfirmationEmail).toHaveBeenCalledWith(expect.objectContaining({ eventId: "e1", participantId: "p1" }));
+    // No second success surface: no toast, no dialog.
+    expect(m.toast).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(occurrences(/You're in/)).toBe(0);
+
+    // Cancel: one confirmation, then the resulting state.
+    fireEvent.click(screen.getByRole("button", { name: "Cancel RSVP" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Yes, cancel RSVP" }));
+    expect(await screen.findByText("Your RSVP is cancelled. Your spot has been released.")).toBeInTheDocument();
+    expect(screen.queryByText("You're going. Your place is confirmed.")).not.toBeInTheDocument();
+    await waitFor(() => expect(primaryButtons()).toHaveLength(1));
+    expect(primaryButtons()[0]).toHaveTextContent("I'm Going");
+    expect(occurrences(/3 going/)).toBe(1);
+    expect(m.toast).not.toHaveBeenCalled();
+    expect(sendEventConfirmationEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("tells what the server stored, not what the call answered: a join stored as a waitlist place reads as waitlisted", async () => {
+    m.user = viewer;
+    m.rpc.mockImplementation(async () => { m.participation = "waitlisted"; return { data: "joined", error: null }; });
+    await draw();
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+
+    expect(await screen.findByText(/You're on the waitlist/)).toBeInTheDocument();
+    await waitFor(() => expect(bookingState()).toBe("Waitlisted"));
+    expect(screen.queryByText(/You're going/)).not.toBeInTheDocument();
+    expect(sendEventConfirmationEmail).not.toHaveBeenCalled();
+  });
+
+  it("says a full event refused the join, and does not show the member as going", async () => {
+    m.user = viewer;
+    m.rpc.mockResolvedValue({ data: "full_no_waitlist", error: null });
+    await draw();
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("This event is full");
+    expect(bookingState()).toBeNull();
+    expect(primaryButtons()).toHaveLength(1);
+    expect(m.toast).not.toHaveBeenCalled();
+  });
+
+  it("sends a visitor who needs an account to sign in instead of booking", async () => {
+    m.event = { ...baseEvent(), require_account_for_rsvp: true };
+    await draw();
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toMatch(/^\/auth/));
+    expect(m.rpc).not.toHaveBeenCalled();
+  });
+
+  it("shows the guest's confirmed landing as the same one message, takes their details out of the address, and dismisses it", async () => {
+    render(
+      <MemoryRouter initialEntries={["/event/e1?rsvp=confirmed&name=Ari&email=ari%40example.com&token=11111111111111111111111111111111"]}>
+        <Routes>
+          <Route path="/event/:eventId" element={<><EventPage /><Where /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Studio Night" });
+    expect(await screen.findByText("You're going. We're sending a confirmation to ari@example.com.")).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-rsvp-notice]")).toHaveLength(1);
+    // The address no longer carries the guest's name, email or pass token: it is the plain link to the event, safe to copy or share.
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toBe("/event/e1"));
+    // …and the message is still there after the address changed.
+    expect(screen.getByText("You're going. We're sending a confirmation to ari@example.com.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss message" }));
+    await waitFor(() => expect(document.querySelectorAll("[data-rsvp-notice]")).toHaveLength(0));
+  });
+
+  it("words the landing from the confirmation email as attendance confirmed, by name", async () => {
+    render(
+      <MemoryRouter initialEntries={["/event/e1?rsvp=confirmed&source=email&name=Ari"]}>
+        <Routes>
+          <Route path="/event/:eventId" element={<><EventPage /><Where /></>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("heading", { level: 1, name: "Studio Night" });
+    expect(await screen.findByText("Attendance confirmed. Great to have you, Ari. Your spot is locked in.")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("where").textContent).toBe("/event/e1"));
+  });
+});
+
+describe("Event page: who is going", () => {
+  const rows = [{ id: "1", user_id: "u1", guest_name: null, joined_at: "2026-11-01T10:00:00Z" }, { id: "2", user_id: "u2", guest_name: null, joined_at: "2026-11-02T10:00:00Z" }];
+  const profiles = [{ user_id: "u1", full_name: "Ari Stone", avatar_url: null, role: "Producer" }, { user_id: "u2", full_name: "Bea Moon", avatar_url: null, role: "Director" }];
+
+  it("draws avatar circles in the booking block, and the stack opens the list whose rows open public Passports", async () => {
+    m.participantRows = rows;
+    m.profileRows = profiles;
+    m.going = 2;
+    await draw();
+
+    const stack = await screen.findByRole("button", { name: /2 going: Ari Stone, Bea Moon\. View everyone going\./ });
+    expect(document.getElementById("event-booking")).toContainElement(stack);
+    fireEvent.click(stack);
+    const dialog = await screen.findByRole("dialog", { name: "Who's going" });
+    const link = await within(dialog).findByRole("link", { name: /Bea Moon/ });
+    expect(link).toHaveAttribute("href", "/epk/u2");
+    fireEvent.click(link);
+    await waitFor(() => expect(screen.getByTestId("where")).toHaveTextContent("/epk/u2"));
+  });
+
+  it("keeps the avatars and the list from a visitor when the host keeps the guest list private, and still says how many", async () => {
+    m.event = { ...baseEvent(), attendee_list_visibility: "host_only" };
+    m.participantRows = rows;
+    m.profileRows = profiles;
+    m.going = 2;
+    await draw();
+
+    expect(await screen.findByText("2 going")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View everyone going/ })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain("Ari Stone");
+  });
+
+  it("shows the same list to a member who has a place, even when the host keeps it private", async () => {
+    m.user = viewer;
+    m.participation = "going";
+    m.event = { ...baseEvent(), attendee_list_visibility: "host_only" };
+    m.participantRows = rows;
+    m.profileRows = profiles;
+    m.going = 2;
+    await draw();
+    expect(await screen.findByRole("button", { name: /View everyone going/ })).toBeInTheDocument();
+  });
+
+  it("says nobody has joined yet instead of 0 going", async () => {
+    m.going = 0;
+    await draw();
+    expect(await screen.findByText("Be the first to join.")).toBeInTheDocument();
+    expect(occurrences(/0 going/)).toBe(0);
+  });
+});
+
+// The same one-line time the block prints; computed here so the test does not repeat the format.
+function formatEventTimeForTest(value: string) {
+  return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(value));
+}

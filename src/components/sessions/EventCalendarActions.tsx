@@ -33,6 +33,8 @@ interface EventCalendarActionsProps {
   layout?: "menu" | "buttons";
   size?: "sm" | "default";
   className?: string;
+  /** Draw the label at every width (a full-width row has room for it); by default a narrow row shows the icon only. */
+  labelAlways?: boolean;
 }
 
 const UNAVAILABLE = "Saving to your Kretopia calendar isn't available yet. You can still export this event.";
@@ -42,7 +44,7 @@ const UNAVAILABLE = "Saving to your Kretopia calendar isn't available yet. You c
  *   - My Kretopia calendar: put the event on the member's own calendar (or take it off). It is not an RSVP and reserves nothing.
  *   - Export to another calendar: a .ics file or Google Calendar. It needs no account.
  */
-export function EventCalendarActions({ event, signedIn, saveAvailable, saved, busy, onToggleSaved, onSignIn, layout = "menu", size = "sm", className }: EventCalendarActionsProps) {
+export function EventCalendarActions({ event, signedIn, saveAvailable, saved, busy, onToggleSaved, onSignIn, layout = "menu", size = "sm", className, labelAlways = false }: EventCalendarActionsProps) {
   const unavailable = signedIn && !saveAvailable;
   const exportIcs = () => downloadIcs(event);
   const exportGoogle = () => window.open(googleCalendarUrl(event), "_blank", "noopener,noreferrer");
@@ -75,8 +77,8 @@ export function EventCalendarActions({ event, signedIn, saveAvailable, saved, bu
         <Button type="button" size={size} variant={saved ? "secondary" : "outline"} className={className} aria-label={saved ? "Calendar: on my calendar" : "Add to calendar"}>
           {/* On a phone the When row beside it is narrow, so the label gives way to the icon (a plus for "add", a check once it is on the calendar,
               and the button's fill changes too); the accessible name above is the full label at every size, and from sm the label is drawn. */}
-          {saved ? <Check className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden /> : <CalendarPlus className="h-3.5 w-3.5 sm:mr-1.5" aria-hidden />}
-          <span className="hidden sm:inline">{saved ? "On my calendar" : "Add to calendar"}</span>
+          {saved ? <Check className={cn("h-3.5 w-3.5", labelAlways ? "mr-1.5" : "sm:mr-1.5")} aria-hidden /> : <CalendarPlus className={cn("h-3.5 w-3.5", labelAlways ? "mr-1.5" : "sm:mr-1.5")} aria-hidden />}
+          <span className={labelAlways ? undefined : "hidden sm:inline"}>{saved ? "On my calendar" : "Add to calendar"}</span>
           <ChevronDown className="ml-1 h-3.5 w-3.5" aria-hidden />
         </Button>
       </DropdownMenuTrigger>

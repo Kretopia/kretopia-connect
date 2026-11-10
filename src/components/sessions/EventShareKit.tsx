@@ -13,6 +13,7 @@ import QRCodeStyling from "qr-code-styling";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { buildWarmShareMessage, buildEventShareUrl, logShareClick, type ShareChannel } from "@/lib/eventActions";
+import { buildShareData, publicUrl } from "@/lib/publicLink";
 
 interface EventShareKitProps {
   event: {
@@ -44,7 +45,8 @@ export const EventShareKit = ({ event, hostFirstName, attendeeCount, open, onOpe
   }, [user?.id]);
   const [copied, setCopied] = useState(false);
   const [customMessage, setCustomMessage] = useState("");
-  const qrRef = useRef<HTMLDivElement>(null);
+  // A state ref: the code sits in the dialog's portal, which mounts a render after `open` flips, so the effect must run again when the node arrives.
+  const [qrNode, setQrNode] = useState<HTMLDivElement | null>(null);
   const qrCode = useRef<QRCodeStyling | null>(null);
 
   const isHost = !!user && event.created_by === user.id;
@@ -81,20 +83,25 @@ export const EventShareKit = ({ event, hostFirstName, attendeeCount, open, onOpe
   const shareText = customMessage || defaultShareText;
 
   useEffect(() => {
-    if (open && qrRef.current) {
+    // The code opens the public event page: an absolute https link, or no code at all.
+    const qrData = publicUrl(eventUrl);
+    if (open && qrNode && qrData) {
       qrCode.current = new QRCodeStyling({
-        width: 200,
-        height: 200,
-        data: eventUrl,
+        width: 220,
+        height: 220,
+        data: qrData,
+        // A quiet zone of about four modules and a stated error-correction level: the code sits on the dialog's own background.
+        margin: 16,
+        qrOptions: { errorCorrectionLevel: "Q" },
         dotsOptions: { color: "#7B61FF", type: "rounded" },
         cornersSquareOptions: { color: "#9413D2", type: "extra-rounded" },
         backgroundOptions: { color: "#ffffff" },
         imageOptions: { crossOrigin: "anonymous" },
       });
-      qrRef.current.innerHTML = '';
-      qrCode.current.append(qrRef.current);
+      qrNode.innerHTML = '';
+      qrCode.current.append(qrNode);
     }
-  }, [open, eventUrl]);
+  }, [open, eventUrl, qrNode]);
 
   const track = (channel: ShareChannel) => {
     logShareClick(event.id, channel, user?.id || null).catch(() => {});
@@ -126,7 +133,10 @@ export const EventShareKit = ({ event, hostFirstName, attendeeCount, open, onOpe
     track("native");
     if (navigator.share) {
       try {
-        await navigator.share({ title: event.title, text: shareText });
+        // The link as the link and a message beside it, so the receiving app never gets an identifier or a link buried in prose.
+        const data = buildShareData({ title: event.title, message: shareText, url: eventUrl });
+        if (data) await navigator.share(data);
+        else copyMessage();
       } catch {}
     } else {
       copyMessage();
@@ -212,7 +222,7 @@ export const EventShareKit = ({ event, hostFirstName, attendeeCount, open, onOpe
               QR Code · for posters & flyers
             </summary>
             <div className="flex flex-col items-center gap-3 p-4">
-              <div ref={qrRef} className="rounded-lg overflow-hidden" />
+              <div ref={setQrNode} className="rounded-lg overflow-hidden" />
               <Button size="sm" variant="outline" onClick={downloadQR}>
                 <Download className="h-4 w-4 mr-2" /> Download QR
               </Button>

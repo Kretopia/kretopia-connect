@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ downloadIcs: vi.fn() }));
@@ -130,5 +130,17 @@ describe("EventCalendarActions: the menu trigger on a narrow row", () => {
     const trigger = screen.getByRole("button", { name: "Calendar: on my calendar" });
     expect(within(trigger).getByText("On my calendar")).toHaveClass("hidden", "sm:inline");
     expect(trigger.querySelectorAll("svg")).toHaveLength(2);
+  });
+});
+
+describe("EventCalendarActions: as a full-width row", () => {
+  it("draws its label at every width when asked, and hides it on a narrow row otherwise", () => {
+    draw({ labelAlways: true });
+    expect(screen.getByText("Add to calendar").className).not.toContain("hidden");
+    cleanup();
+    draw();
+    expect(screen.getByText("Add to calendar").className).toContain("hidden");
+    // The accessible name is the full label either way.
+    expect(screen.getByRole("button", { name: "Add to calendar" })).toBeInTheDocument();
   });
 });

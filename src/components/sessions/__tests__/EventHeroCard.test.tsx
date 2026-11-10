@@ -1,100 +1,70 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-
-const m = vi.hoisted(() => ({ openDirections: vi.fn() }));
-
-vi.mock("@/integrations/supabase/client", () => ({ supabase: { from: vi.fn(), storage: { from: vi.fn() } } }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null }) }));
-vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast: vi.fn() }) }));
-vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => null }));
-vi.mock("@/lib/eventActions", () => ({ openDirections: (...args: unknown[]) => m.openDirections(...args) }));
-
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { EventHeroCard } from "../EventHeroCard";
 
-const event = {
-  id: "e1", title: "Studio Night", category: "music", start_time: "2026-12-05T18:30:00.000Z", end_time: "2026-12-05T21:00:00.000Z",
-  venue_name: "Studio Nine", venue_address: "1 Rue Exemple, Paris", event_mode: "irl", cover_image_url: "https://img.example.com/cover.jpg",
-  gallery_image_urls: [], attendee_list_visibility: "public",
-};
+vi.mock("@/components/brand/KretoScene", () => ({ KretoScene: () => <div data-testid="scene" /> }));
 
-const draw = (over: Partial<React.ComponentProps<typeof EventHeroCard>> = {}) =>
-  render(
-    <EventHeroCard
-      event={event}
-      creator={{ full_name: "Ada Host" }}
-      isCreator={false}
-      isAuthenticated
-      isPast={false}
-      isCancelled={false}
-      isCompleted={false}
-      countdown={null}
-      cityLabel="Studio Nine"
-      priceLabel={null}
-      participantCount={3}
-      isFull={false}
-      participation={null}
-      joining={false}
-      attendees={[]}
-      attendeesVisible
-      onShare={vi.fn()}
-      onShowGuestPass={vi.fn()}
-      onCancelRsvp={vi.fn()}
-      calendarActions={<button type="button">Add to calendar</button>}
-      onGalleryChange={vi.fn()}
-      onSignIn={vi.fn()}
-      {...over}
-    />,
-  );
+const event = { title: "Studio Night", category: "music", cover_image_url: "https://img.example.com/c.jpg" };
 
-beforeEach(() => m.openDirections.mockReset());
+const draw = (props: Partial<Parameters<typeof EventHeroCard>[0]> = {}) =>
+  render(<EventHeroCard event={event} hasPass={false} onShare={vi.fn()} onShowGuestPass={vi.fn()} {...props} />);
 
-describe("EventHeroCard: calendar, tickets and what the host keeps hidden", () => {
-  it("draws the calendar actions it is given in the When row", () => {
-    const { container } = draw();
-    const when = container.querySelector('[data-option-row="when"]') as HTMLElement;
-    expect(within(when).getByRole("button", { name: "Add to calendar" })).toBeInTheDocument();
-    // …and only there: the calendar is not also a ticket or RSVP action.
-    expect(container.querySelector('[data-option-row="price"]')).not.toHaveTextContent(/calendar/i);
-  });
-
-  it("shows the address and a map button to a signed-in visitor when the venue is shown", () => {
+describe("EventHeroCard: the cover and the name, and nothing the booking block says", () => {
+  it("is the page's h1 over the cover, with the category", () => {
     draw();
-    expect(screen.getByText(/1 Rue Exemple, Paris/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Open map/ }));
-    expect(m.openDirections).toHaveBeenCalledWith("1 Rue Exemple, Paris", "Studio Nine");
+    expect(screen.getByRole("heading", { level: 1, name: "Studio Night" })).toHaveAttribute("id", "event-title");
+    expect(screen.getByText("Music")).toBeInTheDocument();
+    expect(document.querySelector("img")).toHaveAttribute("src", "https://img.example.com/c.jpg");
   });
 
-  it("a visitor does not get the address or the map once the host hides the venue, but still gets the venue's name", () => {
-    draw({ venueDetailsVisible: false });
-    expect(screen.queryByText(/1 Rue Exemple/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Open map/ })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Studio Nine/).length).toBeGreaterThan(0);
+  it("falls back to the brand scene when the cover cannot load, and when there is none", () => {
+    const { unmount } = draw();
+    fireEvent.error(document.querySelector("img")!);
+    expect(screen.getByTestId("scene")).toBeInTheDocument();
+    unmount();
+    draw({ event: { ...event, cover_image_url: null } });
+    expect(screen.getByTestId("scene")).toBeInTheDocument();
   });
 
-  it("the host always sees the address and the map, even with the venue hidden from visitors", () => {
-    draw({ venueDetailsVisible: false, isCreator: true });
-    expect(screen.getByText(/1 Rue Exemple, Paris/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open map/ })).toBeInTheDocument();
+  it("keeps the title in the flow, so a long one makes the cover taller instead of being clipped or sliding under More", () => {
+    draw({ event: { ...event, title: "The Long Night of Analog Synthesizers, Tape Machines and Field Recordings: an Open Studio" } });
+    const hero = document.getElementById("hero")!;
+    const titleBlock = screen.getByRole("heading", { level: 1 }).parentElement!;
+    // The title is a grid item, not an absolutely placed overlay (which a fixed-shape cover would clip)…
+    expect(titleBlock.className).not.toMatch(/(^|\s)absolute(\s|$)/);
+    expect(titleBlock.className).toContain("row-start-1");
+    // …it shares its cell with the box that gives the cover its shape, so the row is as tall as the taller of the two…
+    const shape = hero.querySelector('[aria-hidden="true"][class*="aspect-"]')!;
+    expect(shape.className).toContain("row-start-1");
+    expect(shape.className).toContain("self-start");
+    expect(hero.className).not.toMatch(/aspect-/);
+    // …and its top padding is the room the More button needs.
+    expect(titleBlock.className).toContain("pt-14");
   });
 
-  it("links to the policies only while the Policies section is shown", () => {
-    const first = draw();
-    expect(screen.getByRole("link", { name: "View policies" })).toHaveAttribute("href", "#about-policies");
-    first.unmount();
-    draw({ policiesVisible: false });
-    expect(screen.queryByRole("link", { name: "View policies" })).not.toBeInTheDocument();
-  });
-
-  it("the Price row sends tickets sold elsewhere to the seller in a new tab, and otherwise points at the RSVP", () => {
-    const first = draw({ ticketUrl: "https://tickets.example.com/e1" });
-    const tickets = screen.getByRole("link", { name: /Get tickets/ });
-    expect(tickets).toHaveAttribute("href", "https://tickets.example.com/e1");
-    expect(tickets).toHaveAttribute("target", "_blank");
-    expect(tickets).toHaveAttribute("rel", "noopener noreferrer");
-    expect(screen.queryByRole("link", { name: "I'm Going" })).not.toBeInTheDocument();
-    first.unmount();
+  it("states no date, place, price, host, count or booking control: those are said once, in the booking block", () => {
     draw();
-    expect(screen.getByRole("link", { name: "I'm Going" })).toHaveAttribute("href", "#event-booking");
-    expect(screen.queryByRole("link", { name: /Get tickets/ })).not.toBeInTheDocument();
+    const hero = document.getElementById("hero")!;
+    expect(hero.textContent?.trim()).toBe("MoreMusicStudio Night");
+    expect(hero.querySelector("[data-booking-cta]")).toBeNull();
+    expect(screen.queryByRole("button", { name: /going|waitlist|cancel rsvp|tickets/i })).not.toBeInTheDocument();
+    expect(hero).not.toHaveTextContent(/Free|going|Hosted by|Starts in/);
+  });
+
+  it("offers Share, and My pass only to someone who has one, and never a second way to cancel", async () => {
+    const onShare = vi.fn();
+    const onShowGuestPass = vi.fn();
+    const { unmount } = draw({ onShare, onShowGuestPass });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More event actions" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Share event" }));
+    expect(onShare).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("menuitem", { name: "My pass" })).not.toBeInTheDocument();
+    unmount();
+
+    draw({ hasPass: true, onShare, onShowGuestPass });
+    fireEvent.keyDown(screen.getByRole("button", { name: "More event actions" }), { key: "Enter" });
+    fireEvent.click(await screen.findByRole("menuitem", { name: "My pass" }));
+    expect(onShowGuestPass).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("menuitem", { name: /cancel/i })).not.toBeInTheDocument();
   });
 });

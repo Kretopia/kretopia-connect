@@ -93,6 +93,7 @@ const GuestPass = () => {
         
 
         <EventPassCard
+          eventId={event.id}
           eventTitle={event.title}
           guestName={guestName}
           startTime={event.start_time}

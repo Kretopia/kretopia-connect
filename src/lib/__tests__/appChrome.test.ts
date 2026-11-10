@@ -140,8 +140,14 @@ describe("footerBottomReserve: room at the foot of the footer for what is fixed 
   });
 
   it("is larger on an event, whose booking bar is fixed to the bottom of the screen for a visitor too", () => {
-    expect(footerBottomReserve("/event/abc", false)).toContain("7rem");
-    expect(footerBottomReserve("/event/abc", true)).toContain("7rem");
+    expect(footerBottomReserve("/event/abc", false)).toContain("5rem");
+    expect(footerBottomReserve("/event/abc", false)).toContain("lg:pb-0");
     expect(footerBottomReserve("/event/abc", false)).not.toBe(footerBottomReserve("/scout", true));
+  });
+
+  it("holds the booking bar and the signed-in bottom nav together on an event: the bar sits above the nav, so both need room", () => {
+    expect(footerBottomReserve("/event/abc", true)).toContain("9rem");
+    expect(footerBottomReserve("/event/abc", true)).toContain("env(safe-area-inset-bottom");
+    expect(footerBottomReserve("/event/abc", true)).not.toBe(footerBottomReserve("/event/abc", false));
   });
 });

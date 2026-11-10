@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Camera, CameraOff, CheckCircle, Search, Users, Ticket, Radio } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { parsePassToken } from "@/lib/publicLink";
 
 // check_in_guest_by_token (see supabase/migrations/20260512154211_...sql)
 // only ever raises exactly these three messages -- anything else reaching
@@ -263,7 +264,8 @@ export const EventCheckInDialog = ({ eventId, eventTitle, open, onOpenChange }: 
   };
 
   const checkInByToken = async (rawToken: string) => {
-    const token = (rawToken || "").trim();
+    // A scanned pass is a link now; a bare token (an older pass, or one pasted by hand) still works.
+    const token = parsePassToken(rawToken);
     if (!token) return;
     setCheckingIn(token);
     try {
