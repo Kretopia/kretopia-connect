@@ -73,10 +73,13 @@ Deno.serve(async (req) => {
       if (kind) q = q.eq("kind", kind);
       if (query) {
         // Loose ilike across label/body
-        q = q.or(`label.ilike.%${query}%,body.ilike.%${query}%`);
+        // Filter syntax characters are stripped and the value is quoted, so
+        // the search text can only ever be a literal pattern.
+        const safe = query.replace(/[,()*%\\"'.:]/g, " ").replace(/\s+/g, " ").trim().slice(0, 100);
+        if (safe) q = q.or(`label.ilike."%${safe}%",body.ilike."%${safe}%"`);
       }
       const { data, error } = await q;
-      if (error) return json(corsHeaders, { error: error.message }, 500);
+      if (error) { console.error("[thrive-memory-tool] recall", error); return json(corsHeaders, { error: "Could not read memory" }, 500); }
 
       // Bump last_used_at for returned rows (fire-and-forget)
       if (data && data.length) {

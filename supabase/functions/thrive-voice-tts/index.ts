@@ -14,12 +14,11 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY") || "";
 const DEFAULT_VOICE = "alloy";
 const TTS_MODEL = "openai/gpt-4o-mini-tts";
 
-// gpt-4o-mini-tts takes its pacing and tone from instructions (it has no speed control). The client sends its own; this is what a
-// caller that sends none gets.
+// gpt-4o-mini-tts takes its pacing and tone from instructions (it has no speed control). These are the only
+// instructions used; the client copy is ignored.
 const DEFAULT_INSTRUCTIONS =
   "Speak as Kreto, a calm, warm creative producer: natural and unhurried, with a short pause between sentences and a lower, softer " +
   "voice for asides. Say numbers, prices, dates and names the way a person would. Never spell out symbols, links or punctuation.";
-const MAX_INSTRUCTIONS = 600;
 
 interface ReqBody {
   text: string;
@@ -82,10 +81,8 @@ Deno.serve(async (req) => {
     }
 
     const voice = resolveVoice(body.voice || body.voice_id);
-    const instructions =
-      typeof body.instructions === "string" && body.instructions.trim()
-        ? body.instructions.trim().slice(0, MAX_INSTRUCTIONS)
-        : DEFAULT_INSTRUCTIONS;
+    // Speech instructions are server-owned; anything a caller sends is ignored.
+    const instructions = DEFAULT_INSTRUCTIONS;
 
     try {
       const ttsResp = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
