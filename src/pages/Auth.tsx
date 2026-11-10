@@ -20,6 +20,8 @@ import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpWizard } from "@/components/auth/SignUpWizard";
 import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
 import { getAuthOrigin, getPostSignupUrl } from "@/lib/authRedirect";
+import { passwordPolicyError } from "@/lib/passwordPolicy";
+import { RATE_LIMIT_NOTICE, classifySignupError } from "@/lib/authErrors";
 import { PasswordResetForm } from "@/components/auth/PasswordResetForm";
 import { ForgotPasswordDialog } from "@/components/auth/ForgotPasswordDialog";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -39,30 +41,11 @@ type OAuthProvider = "google" | "apple" | "github" | "azure" | "discord" | "face
 // Temporarily hide the buttons until the secrets are configured.
 const OAUTH_TEMPORARILY_DISABLED = true;
 
-const PASSWORD_MIN_LENGTH = 12;
-
 // Canonical host (kretopia.com), not whatever host the person happens to be on: the
 // link in the email must never open a *.lovable.app preview. Query string is kept.
 const getAuthRedirectUrl = () => {
   if (typeof window === "undefined") return undefined;
   return `${getAuthOrigin()}/auth${window.location.search}`;
-};
-
-const validatePassword = (value: string) => {
-  if (value.length < PASSWORD_MIN_LENGTH) {
-    return `Use at least ${PASSWORD_MIN_LENGTH} characters.`;
-  }
-  if (value.length > 128) {
-    return "Use a password of 128 characters or fewer.";
-  }
-  if (/^\s|\s$/.test(value)) {
-    return "Avoid spaces at the beginning or end of your password.";
-  }
-  if (!/[a-z]/.test(value)) return "Add a lowercase letter.";
-  if (!/[A-Z]/.test(value)) return "Add an uppercase letter.";
-  if (!/[0-9]/.test(value)) return "Add a number.";
-  if (!/[^A-Za-z0-9]/.test(value)) return "Add a symbol.";
-  return null;
 };
 
 const OAuthButton = ({
@@ -539,7 +522,8 @@ const Auth = () => {
     e.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();
-    const passwordError = validatePassword(password);
+    // The same policy as the checklist and the wizard's check at the field (lib/passwordPolicy): this is the last look, not the first mention.
+    const passwordError = passwordPolicyError(password);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       toast({
@@ -569,57 +553,56 @@ const Auth = () => {
     }
 
     setLoading(true);
+    // Everything from here is inside the try: whatever goes wrong, the button comes back and the person is told, instead of it spinning for ever.
+    try {
+      const { trackEvent, EventCategory } = await import("@/lib/analytics");
+      trackEvent({ eventName: 'signup_attempt', eventCategory: EventCategory.AUTH, properties: { time_on_page_ms: Date.now() - authLoadTime, account_type: accountType, has_invite_code: !!inviteCode } });
+      trackSignupAttempt(authEntrySource, "email");
 
-    const { trackEvent, EventCategory } = await import("@/lib/analytics");
-    trackEvent({ eventName: 'signup_attempt', eventCategory: EventCategory.AUTH, properties: { time_on_page_ms: Date.now() - authLoadTime, account_type: accountType, has_invite_code: !!inviteCode } });
-    trackSignupAttempt(authEntrySource, "email");
+      const { data: signUpData, error } = await supabase.auth.signUp({
+        email: normalizedEmail, password,
+        options: {
+          // After confirming their email, a new member lands straight on their profile,
+          // always on kretopia.com (never a *.lovable.app preview host). The profile page
+          // invites them to finish setup if they haven't yet.
+          emailRedirectTo: getPostSignupUrl(),
+          data: { account_type: accountType, invite_code: inviteCode },
+        },
+      });
 
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email: normalizedEmail, password,
-      options: {
-        // After confirming their email, a new member lands straight on their profile,
-        // always on kretopia.com (never a *.lovable.app preview host). The profile page
-        // invites them to finish setup if they haven't yet.
-        emailRedirectTo: getPostSignupUrl(),
-        data: { account_type: accountType, invite_code: inviteCode },
-      },
-    });
+      if (error) {
+        const { analytics: errAnalytics } = await import("@/lib/analytics");
+        // Read from the server's status and code first, its words second (lib/authErrors): a limit is a limit, not a bad address.
+        const kind = classifySignupError(error);
+        errAnalytics.errorOccurred('signup_failed', kind, 'auth');
+        trackSignupError(authEntrySource, "email", categorizeAuthError(error));
 
-    if (error) {
-      const { analytics: errAnalytics } = await import("@/lib/analytics");
-      const msg = error.message || "";
-      const errorType = msg.includes("already registered") ? "already_registered"
-        : msg.toLowerCase().includes("password") ? "weak_password"
-        : msg.toLowerCase().includes("email") ? "invalid_email"
-        : msg.toLowerCase().includes("rate") ? "rate_limited"
-        : msg.includes("Failed to fetch") ? "network_error"
-        : "other";
-      errAnalytics.errorOccurred('signup_failed', errorType, 'auth');
-      trackSignupError(authEntrySource, "email", categorizeAuthError(error));
-
-      if (msg.includes("already registered")) {
-        toast({ title: "Account Exists", description: "This email is already registered. Switching to sign in.", variant: "destructive" });
-        setActiveTab("signin");
-      } else if (msg.toLowerCase().includes("password")) {
-        // Do not claim the client can override Supabase's server-side policy.
-        // This can also mean the password was found in a breached-password list.
-        toast({
-          title: "Password rejected by security policy",
-          description: "Try a new 12+ character password with upper/lowercase, a number and a symbol. If it still fails, choose a completely different password.",
-          variant: "destructive",
-        });
-      } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-        toast({ title: "Connection Error", description: "Please check your internet and try again.", variant: "destructive" });
-      } else {
-        toast({ title: "Sign-up failed", description: msg || "Something went wrong. Try a different email or sign in instead.", variant: "destructive" });
+        if (kind === "already_registered") {
+          toast({ title: "Account Exists", description: "This email is already registered. Switching to sign in.", variant: "destructive" });
+          setActiveTab("signin");
+        } else if (kind === "rate_limited") {
+          toast({ ...RATE_LIMIT_NOTICE, variant: "destructive" });
+        } else if (kind === "weak_password") {
+          // Do not claim the client can override Supabase's server-side policy.
+          // This can also mean the password was found in a breached-password list.
+          toast({
+            title: "Password rejected by security policy",
+            description: "Try a new 12+ character password with upper/lowercase, a number and a symbol. If it still fails, choose a completely different password.",
+            variant: "destructive",
+          });
+        } else if (kind === "network_error") {
+          toast({ title: "Connection Error", description: "Please check your internet and try again.", variant: "destructive" });
+        } else {
+          toast({ title: "Sign-up failed", description: error.message || "Something went wrong. Try a different email or sign in instead.", variant: "destructive" });
+        }
+        return;
       }
-    } else {
+
       // Detect Supabase "fake user" when email already exists (identities is empty)
       if (signUpData?.user && (!signUpData.user.identities || signUpData.user.identities.length === 0)) {
         trackSignupError(authEntrySource, "email", "account_exists");
         toast({ title: "Account Exists", description: "This email is already registered. Please sign in instead.", variant: "destructive" });
         setActiveTab("signin");
-        setLoading(false);
         return;
       }
 
@@ -641,7 +624,6 @@ const Auth = () => {
       if (!signUpData?.session) {
         setPendingVerificationEmail(normalizedEmail);
         toast({ title: "Check your email", description: "We sent you a verification link to finish signing up." });
-        setLoading(false);
         return;
       }
 
@@ -650,8 +632,18 @@ const Auth = () => {
         ? `/event/${eventId}`
         : accountType === "company" ? "/company-onboarding" : "/onboarding";
       navigate(postSignupTarget);
+    } catch (unexpected) {
+      // The call itself threw (storage refused the session, a response that was not what it should be...): it used to leave the form stuck.
+      console.error("[Auth] Sign-up error:", unexpected);
+      trackSignupError(authEntrySource, "email", categorizeAuthError(unexpected));
+      toast({
+        title: "Sign-up failed",
+        description: (unexpected as { message?: string })?.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handlePasswordReset = async (newPassword: string) => {
@@ -751,11 +743,14 @@ const Auth = () => {
                   try {
                     // Without emailRedirectTo the resent link falls back to the server's default
                     // site URL (a *.lovable.app host) instead of the profile on kretopia.com.
-                    await supabase.auth.resend({
+                    const { error: resendError } = await supabase.auth.resend({
                       type: "signup",
                       email: pendingVerificationEmail,
                       options: { emailRedirectTo: getPostSignupUrl() },
                     });
+                    // resend answers with an error object, it does not throw: a refusal (a limit, a failure) is read from the answer,
+                    // or the person is told it was sent when it was not.
+                    if (resendError) throw resendError;
                     toast({ title: "Verification email resent" });
                   } catch (err: any) {
                     toast({ title: "Could not resend", description: err?.message || "Try again in a moment.", variant: "destructive" });

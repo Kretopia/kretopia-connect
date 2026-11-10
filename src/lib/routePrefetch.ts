@@ -13,7 +13,14 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/landing", () => import("../pages/Welcome")],
   ["/auth", () => import("../pages/Auth")],
   ["/match", () => import("../pages/Match")],
+  // Scout lives inside Opportunities now. It must be listed on its own: the longest prefix wins, so "/opportunities" below would otherwise
+  // warm the feed's chunk for a link to Scout. "/scout" is its old address; a link to it redirects to the same page.
+  ["/opportunities/scout", () => import("../pages/Scout")],
   ["/scout", () => import("../pages/Scout")],
+  ["/perks", () => import("../pages/PerksTab")],
+  ["/creative-circle", () => import("../pages/CreativeCircle")],
+  // Founding Circle is a status inside Creative Circle; its old address redirects there.
+  ["/founding-member", () => import("../pages/CreativeCircle")],
   ["/messages", () => import("../pages/Messages")],
   ["/notifications", () => import("../pages/Notifications")],
   ["/passport", () => import("../pages/Profile")],

@@ -8,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { AlertCircle, ArrowRight, ArrowLeft, User, Briefcase } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PasswordVisibilityButton } from "./PasswordVisibilityButton";
-import { validateEmail, validatePassword } from "@/lib/validation";
+import { validateEmail } from "@/lib/validation";
+import { PASSWORD_MIN_LENGTH, SIGNUP_PASSWORD_RULES, passwordPolicyError } from "@/lib/passwordPolicy";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { SocialLoginButtons, OrDivider } from "./SocialLoginButtons";
 
@@ -59,8 +60,9 @@ export const SignUpWizard = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const pv = validatePassword(password);
-    if (!pv.valid) { setPasswordError(pv.error || ""); return; }
+    // The same policy as the checklist beside the field and as the page's final check, so what is said here is never a surprise later.
+    const policyError = passwordPolicyError(password);
+    if (policyError) { setPasswordError(policyError); return; }
     if (password !== confirmPassword) { setConfirmPasswordError("Passwords don't match"); return; }
     setPasswordError("");
     setConfirmPasswordError("");
@@ -146,22 +148,22 @@ export const SignUpWizard = ({
         </div>
       )}
 
-      {/* Step 2: Password */}
+      {/* Step 2: Password. noValidate: the rules are checked by handleSubmit, with the form's own words under the field, not by the browser's bubble. */}
       {step === 2 && (
-        <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        <form onSubmit={handleSubmit} noValidate className="space-y-5 animate-in fade-in slide-in-from-bottom-3 duration-300">
           <div className="space-y-2">
             <Label htmlFor="signup-password">Create Password</Label>
             <div className="relative">
               <Input
                 id="signup-password" type={showPassword ? "text" : "password"} placeholder="••••••••"
                 value={password} onChange={(e) => { setPassword(e.target.value); setPasswordError(""); }}
-                required minLength={8} className={`h-11 text-base pr-10 ${passwordError ? "border-destructive" : ""}`}
+                required minLength={PASSWORD_MIN_LENGTH} className={`h-11 text-base pr-10 ${passwordError ? "border-destructive" : ""}`}
                 autoComplete="new-password" autoFocus
               />
               <PasswordVisibilityButton visible={showPassword} onToggle={() => setShowPassword(!showPassword)} label="password" />
             </div>
             {passwordError && <p className="text-sm text-destructive flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {passwordError}</p>}
-            <PasswordStrengthIndicator password={password} />
+            <PasswordStrengthIndicator password={password} rules={SIGNUP_PASSWORD_RULES} />
           </div>
 
           <div className="space-y-2">

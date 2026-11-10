@@ -78,7 +78,7 @@ export type AuthEntrySource = LandingSectionId | "sticky_mobile" | "direct" | "u
 export type AuthMethod = "email" | "username" | "google" | "apple" | "github" | "azure" | "discord" | "facebook";
 
 export type AuthErrorCategory =
-  | "invalid_input" | "account_exists" | "provider_error" | "network_error" | "unknown_error";
+  | "invalid_input" | "account_exists" | "rate_limited" | "provider_error" | "network_error" | "unknown_error";
 
 export function trackSignupAttempt(entrySource: AuthEntrySource, method: AuthMethod) {
   trackEvent({ eventName: "signup_attempt", eventCategory: EVENT_CATEGORY, properties: { entry_source: entrySource, method } });
@@ -103,6 +103,8 @@ export function trackSigninError(entrySource: AuthEntrySource, method: AuthMetho
 export function categorizeAuthError(error: unknown): AuthErrorCategory {
   const msg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   if (msg.includes("already registered") || msg.includes("already exists") || msg.includes("user already")) return "account_exists";
+  // A limit before the words "email" and "password" below: "email rate limit exceeded" is not a bad address.
+  if (msg.includes("rate limit") || msg.includes("too many") || msg.includes("for security purposes")) return "rate_limited";
   if (msg.includes("invalid") || msg.includes("password") || msg.includes("email")) return "invalid_input";
   if (msg.includes("network") || msg.includes("fetch") || msg.includes("timeout")) return "network_error";
   if (msg.includes("provider") || msg.includes("oauth")) return "provider_error";

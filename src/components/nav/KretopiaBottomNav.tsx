@@ -3,10 +3,13 @@ import { Home, BadgeCheck, Briefcase, Heart, LayoutGrid, UserSearch, Wallet } fr
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { useAccountTone } from "@/hooks/useAccountTone";
+import { OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 
 /**
- * Kretopia V1 bottom nav — Home · Match · Passport · Scout · Studio. Scout leads to /scout, the same page as the desktop nav, and Match
- * sits right after Home (Today) here as it does in the top bar.
+ * Kretopia V1 bottom nav — Home · Match · Passport · Opportunities · Studio. The Opportunities entry leads to /opportunities, the same place
+ * as the desktop nav (Scout, the personalised search and shortlist, is inside it), and Match sits right after Home (Today) here as it does
+ * in the top bar. It reads "Gigs" on the bar because "Opportunities" does not fit a fifth of a phone's width; its accessible name is the
+ * full word (see `name`).
  *
  * Equal entries on a frosted-glass bar: the active entry gets the same soft translucent pill the top bar uses on hover.
  * Company/business accounts keep their existing B2B nav unchanged (four entries; it has no Today to put Match after).
@@ -15,7 +18,7 @@ const CREATIVE_ITEMS = [
   { path: "/", icon: Home, label: "Home", hint: "Today, insights, and Kreto's brief" },
   { path: "/match", icon: Heart, label: "Match", hint: "People to work with, matched to you" },
   { path: "/profile", icon: BadgeCheck, label: "Passport", hint: "Your verified creative identity" },
-  { path: "/scout", icon: Briefcase, label: "Scout", hint: "Scouted gigs matched to you" },
+  { path: OPPORTUNITIES_PATH, icon: Briefcase, label: "Gigs", name: "Opportunities", hint: "Gigs and Scout, your personalised search and shortlist" },
   { path: "/desk", icon: LayoutGrid, label: "Studio", hint: "Projects, files, and collaborators" },
 ];
 
@@ -62,14 +65,8 @@ const KretopiaBottomNav = memo(() => {
 
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
-    // Scout is one destination on desktop and mobile (/scout); the opportunities pages stay part of it.
-    if (path === "/scout" || path === "/opportunities") {
-      return (
-        location.pathname.startsWith("/opportunities") ||
-        location.pathname.startsWith("/opportunity") ||
-        location.pathname.startsWith("/scout")
-      );
-    }
+    // One destination on desktop and mobile: the feed, Scout inside it, one opportunity and the poster's dashboard are all "Opportunities".
+    if (path === OPPORTUNITIES_PATH) return isOpportunitySpace(location.pathname);
     if (path === "/profile") {
       return (
         location.pathname.startsWith("/profile") ||
@@ -90,7 +87,7 @@ const KretopiaBottomNav = memo(() => {
         key={item.path + item.label}
         to={item.path}
         title={item.hint}
-        aria-label={`${item.label} — ${item.hint}`}
+        aria-label={`${"name" in item ? item.name : item.label} — ${item.hint}`}
         aria-current={active ? "page" : undefined}
         data-active={active ? "true" : undefined}
         className={cn(
