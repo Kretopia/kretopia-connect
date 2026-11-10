@@ -1,3 +1,4 @@
+import { csvCell } from "@/lib/csvCell";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -511,7 +512,7 @@ const EventPage = () => {
         part.joined_at ? new Date(part.joined_at).toLocaleDateString() : "",
       ]);
     });
-    const csv = rows.map((row) => row.map((cell) => `"${(cell || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = rows.map((row) => row.map((cell) => csvCell(cell)).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");

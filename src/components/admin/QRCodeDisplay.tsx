@@ -1,3 +1,4 @@
+import { escapeHtml } from "@/lib/csvCell";
 import { useRef } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export function QRCodeDisplay({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print QR Code - ${location.name}</title>
+          <title>Print QR Code - ${escapeHtml(location.name)}</title>
           <style>
             body {
               font-family: system-ui, -apple-system, sans-serif;
@@ -119,14 +120,14 @@ export function QRCodeDisplay({
         </head>
         <body>
           <div class="container">
-            <h1>${location.name}</h1>
-            <div class="subtitle">${location.address}, ${location.city}</div>
+            <h1>${escapeHtml(location.name)}</h1>
+            <div class="subtitle">${escapeHtml(location.address)}, ${escapeHtml(location.city)}</div>
             <div class="qr-container">
               ${svg.outerHTML}
             </div>
             <div class="instructions">
               <p><strong>Scan to Check In</strong></p>
-              <p>Earn ${location.points_per_visit} points per visit</p>
+              <p>Earn ${escapeHtml(location.points_per_visit)} points per visit</p>
             </div>
           </div>
         </body>
