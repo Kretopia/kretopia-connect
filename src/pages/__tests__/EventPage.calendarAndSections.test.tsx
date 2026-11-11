@@ -751,6 +751,49 @@ describe("Event page: who is going", () => {
     expect(await screen.findByRole("button", { name: /View everyone going/ })).toBeInTheDocument();
   });
 
+  it("keeps a guest RSVP in the list, by the name they gave and with no link", async () => {
+    m.participantRows = [...rows, { id: "3", user_id: null, guest_name: "Cleo Guest", joined_at: "2026-11-03T10:00:00Z", is_visible: true }];
+    m.profileRows = profiles;
+    m.going = 3;
+    await draw();
+
+    fireEvent.click(await screen.findByRole("button", { name: /View everyone going/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Who's going" });
+    const guest = (await within(dialog).findByText("Cleo Guest")).closest("li")!;
+    expect(guest).toHaveTextContent("Guest RSVP");
+    expect(within(guest).queryByRole("link")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByRole("listitem")).toHaveLength(3);
+  });
+
+  it("keeps a member who hid themselves from the attendee list out of the avatars and out of the list, for a visitor", async () => {
+    m.participantRows = [...rows, { id: "3", user_id: "u3", guest_name: null, joined_at: "2026-11-03T10:00:00Z", is_visible: false }];
+    m.profileRows = [...profiles, { user_id: "u3", full_name: "Hid Den", avatar_url: null, role: "Editor" }];
+    m.going = 3;
+    await draw();
+
+    // Three are going (the server's count), two are named: the hidden member is in the count only.
+    const stack = await screen.findByRole("button", { name: /View everyone going/ });
+    expect(stack).toHaveAccessibleName("3 going: Ari Stone, Bea Moon and 1 more. View everyone going.");
+    fireEvent.click(stack);
+    const dialog = await screen.findByRole("dialog", { name: "Who's going" });
+    await within(dialog).findByRole("link", { name: /Ari Stone/ });
+    expect(within(dialog).getAllByRole("listitem")).toHaveLength(2);
+    expect(document.body.textContent).not.toContain("Hid Den");
+  });
+
+  it("shows the host that member, marked as hidden from other attendees", async () => {
+    m.user = host;
+    m.participantRows = [...rows, { id: "3", user_id: "u3", guest_name: null, joined_at: "2026-11-03T10:00:00Z", is_visible: false }];
+    m.profileRows = [...profiles, { user_id: "u3", full_name: "Hid Den", avatar_url: null, role: "Editor" }];
+    m.going = 3;
+    await draw();
+
+    fireEvent.click(await screen.findByRole("button", { name: /View everyone going/ }));
+    const dialog = await screen.findByRole("dialog", { name: "Who's going" });
+    const hidden = (await within(dialog).findByText("Hid Den")).closest("li")!;
+    expect(hidden).toHaveTextContent("Hidden from other attendees");
+  });
+
   it("says nobody has joined yet instead of 0 going", async () => {
     m.going = 0;
     await draw();

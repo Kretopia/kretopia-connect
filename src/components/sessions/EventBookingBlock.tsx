@@ -46,6 +46,8 @@ interface EventBookingBlockProps {
   venueDetailsVisible: boolean;
   isAuthenticated: boolean;
   isHost: boolean;
+  /** The signed-in viewer's id, if any: it decides which rows of the participants list they may see. */
+  viewerId: string | null;
   /** Price text for a paid event; null reads "Free". */
   priceLabel: string | null;
   /** Where tickets are sold when the host sells them elsewhere; a link, not a second button. */
@@ -88,7 +90,7 @@ const NOTICE_ICON = { success: CheckCircle, info: CheckCircle, error: TriangleAl
  */
 export function EventBookingBlock({
   eventId, eventTitle, startTime, countdown, isPast, isCancelled, isCompleted, isOnline, onlineFormat, venueName, venueAddress, venueDetailsVisible,
-  isAuthenticated, isHost, priceLabel, ticketUrl, capacity, participantCount, attendees, attendeesVisible, control, reason, joining,
+  isAuthenticated, isHost, viewerId, priceLabel, ticketUrl, capacity, participantCount, attendees, attendeesVisible, control, reason, joining,
   rsvpNotice, onDismissNotice, onBook, onCancelRsvp, calendarAction, host, onContactHost, policiesVisible, onSignIn, bottomNav,
 }: EventBookingBlockProps) {
   const reasonId = useId();
@@ -266,6 +268,8 @@ export function EventBookingBlock({
         onOpenChange={setParticipantsOpen}
         eventId={eventId}
         canSee={attendeesVisible}
+        viewerId={viewerId}
+        viewerIsHost={isHost}
         returnFocusRef={stackRef}
       />
 
