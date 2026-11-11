@@ -23,7 +23,7 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/founding-member", () => import("../pages/CreativeCircle")],
   ["/messages", () => import("../pages/Messages")],
   ["/notifications", () => import("../pages/Notifications")],
-  ["/passport", () => import("../pages/Profile")],
+  ["/passport", () => import("../pages/Match")],
   ["/profile", () => import("../pages/Profile")],
   ["/credits", () => import("../pages/CreditsDashboard")],
   ["/desk", () => import("../pages/WorkHome")],

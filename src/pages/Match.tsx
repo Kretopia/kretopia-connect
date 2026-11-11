@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-import { Sparkles, LayoutGrid, UserCheck, Users } from "lucide-react";
+import { Sparkles, LayoutGrid, UserCheck, Users, IdCard } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { MatchDeck } from "@/components/swipe";
 import { MatchPulse } from "@/components/swipe/MatchPulse";
@@ -11,7 +11,7 @@ import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { FeatureSectionNav } from "@/components/features/FeatureSectionNav";
 import type { StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
 
-const TAB_IDS = ["discover", "browse", "interested", "connected"] as const;
+const TAB_IDS = ["discover", "browse", "directory", "interested", "connected"] as const;
 type MatchTabId = (typeof TAB_IDS)[number];
 
 const LikesYouGrid = lazy(() =>
@@ -25,6 +25,8 @@ const ConnectedCollaborators = lazy(() =>
 const BrowseCreators = lazy(() =>
   import("@/components/discover/BrowseCreators").then((m) => ({ default: m.BrowseCreators }))
 );
+
+const PassportDirectory = lazy(() => import("@/pages/PassportDirectory"));
 
 const loadingRow = (label: string) => (
   <div className="flex items-center gap-2 text-xs text-muted-foreground py-10 justify-center">
@@ -97,6 +99,16 @@ export default function Match() {
       content: (
         <Suspense fallback={loadingRow("Loading creators…")}>
           <BrowseCreators />
+        </Suspense>
+      ),
+    },
+    {
+      id: "directory",
+      label: "Directory",
+      icon: IdCard,
+      content: (
+        <Suspense fallback={loadingRow("Loading Passports…")}>
+          <PassportDirectory embedded />
         </Suspense>
       ),
     },

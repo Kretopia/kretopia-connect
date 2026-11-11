@@ -1,6 +1,7 @@
 import { useAccountTone } from "@/hooks/useAccountTone";
 import ManageOpportunities from "@/pages/ManageOpportunities";
 import { Link, useSearchParams } from "react-router-dom";
+import { RedirectKeepingSearch } from "@/components/RedirectKeepingSearch";
 import { useState } from "react";
 import { SEO } from "@/components/SEO";
 import { OpportunitiesFeed } from "@/components/circle/OpportunitiesFeed";
@@ -9,7 +10,7 @@ import { EditorialPageHero } from "@/components/kretopia/EditorialPageHero";
 import { GigsViewToggle, type GigsView } from "@/components/opportunity/GigsViewToggle";
 import { Button } from "@/components/ui/button";
 import { Radar } from "lucide-react";
-import { SCOUT_PATH } from "@/lib/opportunityRoutes";
+import { SCOUT_PATH, scoutFeedTarget } from "@/lib/opportunityRoutes";
 
 type Tab = GigsView;
 
@@ -20,7 +21,8 @@ const Opportunities = () => {
 
   const { isBusiness } = useAccountTone();
   if (isBusiness && !marketplace) return <ManageOpportunities company />;
-
+  return <RedirectKeepingSearch to={scoutFeedTarget(params.toString())} />;
+  /* Retired presentation; the feed now lives in Scout.
   return (
     <div className="min-h-screen pb-20 bg-background">
       <SEO
@@ -47,7 +49,7 @@ const Opportunities = () => {
         {tab === "scouted" ? <ScoutedGigsSection /> : <OpportunitiesFeed />}
       </div>
     </div>
-  );
+  ); */
 };
 
 export default Opportunities;

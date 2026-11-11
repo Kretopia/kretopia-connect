@@ -60,7 +60,6 @@ const SalesDashboard = lazy(() => import("./pages/SalesDashboard"));
 const TalentManager = lazy(() => import("./pages/TalentManager"));
 const EndorseSkill = lazy(() => import("./pages/EndorseSkill"));
 const CreatorEPK = lazy(() => import("./pages/CreatorEPK"));
-const PassportDirectory = lazy(() => import("./pages/PassportDirectory"));
 const HandleResolver = lazy(() => import("./pages/HandleResolver"));
 const PersonalRoom = lazy(() => import("./pages/PersonalRoom"));
 const BookingPage = lazy(() => import("./pages/BookingPage"));
@@ -369,7 +368,7 @@ const AppContent = () => {
             <Route path="/comp/:userId" element={<CompCard />} />
             {/* Passport Directory + vanity routes — public, SEO-indexed.
                 Static "/passport/comp-card" must come BEFORE "/passport/:passportId". */}
-            <Route path="/passport" element={<PassportDirectory />} />
+            <Route path="/passport" element={<RedirectKeepingSearch to="/match?tab=directory" />} />
             <Route path="/passport/comp-card" element={<ProtectedRoute><CompCardBuilder /></ProtectedRoute>} />
             <Route path="/passport/:passportId" element={<HandleResolver mode="passportId" />} />
             {/* React Router v6 doesn't support literal-prefix param segments like "/@:handle"
@@ -535,10 +534,9 @@ const AppContent = () => {
             <Route path="/soundstages" element={<Stages />} />
             <Route path="/sound-stages" element={<Navigate to="/soundstages" replace />} />
             <Route path="/opportunities" element={<Opportunities />} />
-            {/* Scout (personalised search and shortlist) lives inside Opportunities. Same page, same gating; /scout is its old top-level
-                address and redirects with its ?tab= and ?q= (Studio, Kreto and Today link to it with them). */}
+            {/* Scout owns work discovery; preserve the former nested address and its search. */}
             <Route path={SCOUT_PATH} element={<ProtectedRoute><Scout /></ProtectedRoute>} />
-            <Route path="/scout" element={<RedirectKeepingSearch to={SCOUT_PATH} />} />
+            <Route path="/opportunities/scout" element={<RedirectKeepingSearch to={SCOUT_PATH} />} />
 
             {/* Public Event Page */}
             <Route path="/event/:eventId" element={<EventPage />} />

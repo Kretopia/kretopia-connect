@@ -487,21 +487,20 @@ export const KretopiaHero = () => {
           {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
               so the pair stays level whatever the labels' widths. */}
           <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
-            {/* Where each button lands: "Explore Passports" opens Match (people matched to you), "Explore Opportunities" opens Scout inside
-                Opportunities. The Passport directory itself stays at /passport. */}
+            {/* One entry per feature: Match owns people discovery; Scout owns work discovery. */}
             <GlassCta
               to="/match"
               size="md"
               data-cta="primary"
               onClick={() =>
                 trackLandingCta("hero_build_passport", "hero", {
-                  label: "Explore Passports",
+                  label: "Explore Match",
                   variant: "signal_field",
                 })
               }
               className="hero-passport-cta k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
-              Explore Passports
+              Explore Match
             </GlassCta>
 
             <OutlineCta
@@ -510,13 +509,13 @@ export const KretopiaHero = () => {
               data-cta="secondary"
               onClick={() =>
                 trackLandingCta("hero_explore_opportunities", "hero", {
-                  label: "Explore Opportunities",
+                  label: "Explore Scout",
                   variant: "signal_field",
                 })
               }
               className="k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
-              Explore Opportunities
+              Explore Scout
             </OutlineCta>
           </div>
         </motion.div>
