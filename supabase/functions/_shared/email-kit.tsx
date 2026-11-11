@@ -10,6 +10,7 @@ import * as React from 'npm:react@18.3.1'
 import {
   Body, Button, Container, Head, Heading, Html, Img, Link, Preview, Text,
 } from 'npm:@react-email/components@0.0.22'
+import { passQrImageUrl } from './passLink.ts'
 
 export const SITE_URL = 'https://www.kretopia.com'
 const ASSETS = `${SITE_URL}/__l5e/assets-v1`
@@ -26,9 +27,11 @@ const FUNCTIONS_BASE = (() => {
     return 'https://kwmcocsitwssrtzkdojh.supabase.co'
   }
 })()
-/** Real check-in tokens are 32 hex chars; anything else gets no QR rather than a broken image. */
-export const passQrUrl = (token?: string | null): string | null =>
-  token && /^[A-Za-z0-9_-]{32,64}$/.test(token) ? `${FUNCTIONS_BASE}/functions/v1/event-pass-qr?t=${encodeURIComponent(token)}` : null
+/**
+ * Real check-in tokens are 32 hex chars; anything else gets no QR rather than a broken image. With the event id the code carries
+ * the public pass link (see passLink.ts); without it, the token alone, as in emails sent before the code carried a link.
+ */
+export const passQrUrl = (token?: string | null, eventId?: string | null): string | null => passQrImageUrl(FUNCTIONS_BASE, token, eventId)
 
 // ── Palette ──
 export const K = {
@@ -263,9 +266,11 @@ export const Ghost = ({ href, children }: { href: string; children: React.ReactN
 )
 
 // ── Pass QR + people ──
-export const PassQr = ({ token, alt = 'Your Kretopia check-in QR code' }: { token?: string | null; alt?: string }) => {
-  const src = passQrUrl(token)
-  return src ? <Img src={src} width="200" height="200" alt={alt} style={{ margin: '4px auto 8px' }} /> : null
+// 240px, not 200: a link is longer than the token was, so the code has more modules, and at 240 each one is still wide enough
+// (about 3.6 CSS px) to scan from a phone screen.
+export const PassQr = ({ token, eventId, alt = 'Your Kretopia check-in QR code' }: { token?: string | null; eventId?: string | null; alt?: string }) => {
+  const src = passQrUrl(token, eventId)
+  return src ? <Img src={src} width="240" height="240" alt={alt} style={{ margin: '4px auto 8px' }} /> : null
 }
 
 export const Person = ({ name, role, avatar }: { name: string; role?: string | null; avatar?: string | null }) => (

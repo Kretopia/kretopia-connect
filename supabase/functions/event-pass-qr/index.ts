@@ -1,18 +1,24 @@
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 import { safeError } from '../_shared/guard.ts';
+import { passQrData } from '../_shared/passLink.ts';
 // event-pass-qr: the Kretopia-branded event pass QR as a PNG, for emails.
 //
 // An email can't run the app's qr-code-styling (no JS, and Gmail blocks data: images), so the
 // confirmation / reminder emails point an <img> at this endpoint instead of a generic QR service
 // (api.qrserver.com, which also received the check-in token and can't draw our design).
 //
-// It reproduces EventPassCard's QR: raw token as data, error correction H, rounded "extra-rounded"
-// dots in a 45 degree #05070D -> #A516C5 gradient, rounded violet finder rings with a dark dot,
-// the Kretopia K mark knocked out of the centre, on a white rounded card. Pure JS (no canvas/wasm)
-// so it behaves the same in Node (where it is tested) and in the edge runtime.
+// It reproduces EventPassCard's QR: the public pass link as data (the pass page of the event, carrying
+// the token: see _shared/passLink.ts), error correction H, rounded "extra-rounded" dots in a 45 degree
+// #05070D -> #A516C5 gradient, rounded violet finder rings with a dark dot, the Kretopia K mark knocked
+// out of the centre, on a white rounded card. Pure JS (no canvas/wasm) so it behaves the same in Node
+// (where it is tested) and in the edge runtime.
 //
-// Public on purpose (emails send no JWT): it renders whatever 32-64 URL-safe characters it is given
-// and reads nothing from the database.
+// What the code carries: with ?t=<token>&e=<event id> the pass link, which a phone that scans the code
+// can open. With ?t=<token> alone (the image address in emails sent before the code carried a link) the
+// token on its own, as before, so those emails still check in at the door.
+//
+// Public on purpose (emails send no JWT): it reads nothing from the database, and it can only draw a
+// pass token or a pass link on the public site built from a token and an event id, never other text.
 import qrcode from 'npm:qrcode-generator@1.5.2'
 import { zlibSync } from 'npm:fflate@0.8.2'
 import { decode as decodePng } from 'npm:fast-png@6.4.0'
@@ -292,13 +298,17 @@ export async function handle(req: Request): Promise<Response> {
     return safeError(perimeterError, req);
   }
   if (req.method !== 'GET' && req.method !== 'HEAD') return new Response('Method not allowed', { status: 405 })
-  const token = new URL(req.url).searchParams.get('t') ?? ''
+  const params = new URL(req.url).searchParams
+  const token = params.get('t') ?? ''
   if (!TOKEN_RE.test(token)) return new Response('Invalid token', { status: 400 })
-  const { size, rgba } = renderPassQr(token, await loadLogo())
+  // The pass link when the event is given; the token alone only for the image addresses of older emails.
+  const data = passQrData(token, params.get('e'))
+  if (!data) return new Response('Invalid event', { status: 400 })
+  const { size, rgba } = renderPassQr(data, await loadLogo())
   return new Response(req.method === 'HEAD' ? null : encodePng(size, rgba), {
     headers: {
       'Content-Type': 'image/png',
-      // A given token always renders the same image: let mail proxies and browsers keep it.
+      // A given token and event always render the same image: let mail proxies and browsers keep it.
       'Cache-Control': 'public, max-age=31536000, immutable',
     },
   })
