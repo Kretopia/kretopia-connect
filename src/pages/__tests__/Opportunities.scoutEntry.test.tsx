@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Opportunities is the one space for work; Scout, its personalised search and shortlist, is one click from its header. */
@@ -15,28 +15,28 @@ vi.mock("@/components/kretopia/EditorialPageHero", () => ({ EditorialPageHero: (
 import Opportunities from "../Opportunities";
 import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 
-const draw = (entry = "/opportunities") => render(<MemoryRouter initialEntries={[entry]}><Opportunities /></MemoryRouter>);
-
+const Where = () => {
+  const { pathname, search } = useLocation();
+  return <output data-testid="destination">{pathname + search}</output>;
+};
+const draw = (entry = "/opportunities") => render(<MemoryRouter initialEntries={[entry]}><Routes>
+  <Route path="/opportunities" element={<Opportunities />} />
+  <Route path="*" element={<Where />} />
+</Routes></MemoryRouter>);
 beforeEach(() => { tone.isBusiness = false; });
-
-describe("Opportunities: the way into Scout", () => {
-  it("offers Scout next to the feed switch, and it opens Scout inside Opportunities", () => {
+describe("Opportunities merges into Scout", () => {
+  it("opens the personalised feed in Scout", () => {
     draw();
-    expect(screen.getByRole("link", { name: /Scout/ })).toHaveAttribute("href", SCOUT_PATH);
-    expect(screen.getByRole("group", { name: "Gigs feed" })).toBeInTheDocument();
-    expect(screen.getByText("Scouted for you", { selector: "p" })).toBeInTheDocument();
+    expect(screen.getByTestId("destination")).toHaveTextContent("/scout?tab=scouted");
   });
-
-  it("is there for a visitor too (the page is public), and the marketplace view keeps it", () => {
-    draw("/opportunities?view=marketplace");
-    expect(screen.getByRole("link", { name: /Scout/ })).toHaveAttribute("href", SCOUT_PATH);
-    expect(screen.getByText("Marketplace feed")).toBeInTheDocument();
+  it("preserves the public marketplace view inside Scout", () => {
+    draw("/opportunities?view=marketplace&q=film");
+    expect(screen.getByTestId("destination")).toHaveTextContent("/scout?q=film&tab=marketplace");
   });
-
-  it("a company still gets its own view of the same address, unchanged", () => {
+  it("preserves Company offer management", () => {
     tone.isBusiness = true;
     draw();
     expect(screen.getByText("Manage your roles")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /Scout/ })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("destination")).not.toBeInTheDocument();
   });
 });

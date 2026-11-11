@@ -16,10 +16,10 @@ describe("mobile navigation", () => {
     // The bar says "Gigs" (the word has to fit a fifth of a phone); its accessible name is the full word.
     for (const path of ["/opportunities", SCOUT_PATH, "/scout", "/opportunity/abc", "/opportunity-dashboard"]) {
       const { unmount } = renderAt(path);
-      const entry = screen.getByRole("link", { name: /^Opportunities/ });
-      expect(entry, path).toHaveAttribute("href", "/opportunities");
+      const entry = screen.getByRole("link", { name: /^Scout/ });
+      expect(entry, path).toHaveAttribute("href", "/scout");
       expect(entry, path).toHaveAttribute("aria-current", "page");
-      expect(entry.textContent).toBe("Gigs");
+      expect(entry.textContent).toBe("Scout");
       unmount();
     }
   });
@@ -28,15 +28,15 @@ describe("mobile navigation", () => {
     isBusiness = false;
     renderAt("/");
     const hrefs = screen.getAllByRole("link").map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/", "/match", "/profile", "/opportunities", "/desk"]);
-    for (const gone of ["/scout", "/perks", "/founding-member"]) expect(hrefs).not.toContain(gone);
+    expect(hrefs).toEqual(["/", "/match", "/profile", "/scout", "/desk"]);
+    for (const gone of ["/opportunities", "/perks", "/founding-member"]) expect(hrefs).not.toContain(gone);
   });
 
   it("matches the desktop nav's Opportunities entry", async () => {
     const { readFileSync } = await import("node:fs");
     const { resolve } = await import("node:path");
     const desktop = readFileSync(resolve(__dirname, "../../Navbar.tsx"), "utf8");
-    expect(desktop).toMatch(/path: OPPORTUNITIES_PATH, icon: Compass, label: "Opportunities"/);
+    expect(desktop).toMatch(/path: SCOUT_PATH, icon: Compass, label: "Scout"/);
     expect(OPPORTUNITIES_PATH).toBe("/opportunities");
   });
 
@@ -52,7 +52,7 @@ describe("mobile navigation", () => {
     const kids = Array.from(screen.getByTestId("nav-grid").children);
     expect(kids).toHaveLength(5);
     expect(kids.every((k) => k.tagName === "A")).toBe(true);
-    expect(kids.map((k) => k.textContent)).toEqual(["Home", "Match", "Passport", "Gigs", "Studio"]);
+    expect(kids.map((k) => k.textContent)).toEqual(["Home", "Match", "Passport", "Scout", "Studio"]);
     expect(screen.getByTestId("nav-grid").className).toContain("grid-cols-5");
     expect(screen.queryByTestId("nav-fab-slot")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /\+|quick|create/i })).not.toBeInTheDocument();
@@ -88,7 +88,7 @@ describe("mobile navigation", () => {
     renderAt(SCOUT_PATH);
     const active = screen.getAllByRole("link").filter((l) => l.getAttribute("data-active") === "true");
     expect(active).toHaveLength(1);
-    expect(active[0]).toBe(screen.getByRole("link", { name: /^Opportunities/ }));
+    expect(active[0]).toBe(screen.getByRole("link", { name: /^Scout/ }));
     expect(active[0].className).toContain("bg-foreground/10");
     expect(screen.getByRole("link", { name: /^Home/ })).not.toHaveAttribute("data-active");
     expect(screen.queryByTestId("nav-active-mark")).not.toBeInTheDocument();

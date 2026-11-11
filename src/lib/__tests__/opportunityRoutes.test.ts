@@ -4,8 +4,8 @@ import { LEGACY_SCOUT_PATH, OPPORTUNITIES_PATH, SCOUT_PATH, isOpportunitySpace }
 describe("the opportunity space", () => {
   it("has one home, with Scout inside it and the old Scout address kept as an alias", () => {
     expect(OPPORTUNITIES_PATH).toBe("/opportunities");
-    expect(SCOUT_PATH).toBe("/opportunities/scout");
-    expect(SCOUT_PATH.startsWith(`${OPPORTUNITIES_PATH}/`)).toBe(true);
+    expect(SCOUT_PATH).toBe("/scout");
+    expect(SCOUT_PATH).toBe(LEGACY_SCOUT_PATH);
     expect(LEGACY_SCOUT_PATH).toBe("/scout");
   });
 

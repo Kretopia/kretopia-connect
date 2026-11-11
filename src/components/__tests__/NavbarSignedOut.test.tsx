@@ -47,7 +47,7 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
     const links = within(rubrics).getAllByRole("link");
     expect(links.map((l) => [l.textContent, l.getAttribute("href")])).toEqual([
-      ["Platform", "/about"],
+      ["Platform", "/landing"],
       ["For Creatives", "/passport"],
       ["For Companies", "/post-opportunity"],
       ["Discover", "/discover"],
@@ -56,7 +56,7 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
   });
 
   it("marks the page you are on, which draws the gradient underline", () => {
-    renderBar("/about");
+    renderBar("/landing");
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
     expect(within(rubrics).getByRole("link", { name: "Platform" })).toHaveAttribute("aria-current", "page");
     expect(within(rubrics).getByRole("link", { name: "Discover" })).not.toHaveAttribute("aria-current");
@@ -148,10 +148,10 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       const bar = document.querySelector("[data-nav-chrome]") as HTMLElement;
       expect(bar).toHaveClass("k-top-bar");
       const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
-      expect(within(rubrics).getAllByRole("link").map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Opportunities", "Passport"]);
+      expect(within(rubrics).getAllByRole("link").map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Scout", "Passport"]);
       expect(within(rubrics).getByRole("link", { name: "Match" })).toHaveAttribute("href", "/match");
       // one entry for work: Scout is inside Opportunities, so the bar has no Scout of its own
-      expect(within(rubrics).getByRole("link", { name: "Opportunities" })).toHaveAttribute("href", "/opportunities");
+      expect(within(rubrics).getByRole("link", { name: "Scout" })).toHaveAttribute("href", "/scout");
       expect(rubrics.querySelector("svg")).toBeNull();
       expect(within(rubrics).getByRole("link", { name: "Studio" })).toHaveAttribute("aria-current", "page");
       const row = rubrics.parentElement as HTMLElement;
