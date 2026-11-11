@@ -1,6 +1,6 @@
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { Fragment, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Fingerprint, IdCard, MessageCircle, Search as SearchIcon, SlidersHorizontal } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -39,10 +39,11 @@ const isVerified = (tier: string | null) => {
 
 const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [rows, setRows] = useState<DirectoryPassport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [professionFilter, setProfessionFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [standingFilter, setStandingFilter] = useState("all");

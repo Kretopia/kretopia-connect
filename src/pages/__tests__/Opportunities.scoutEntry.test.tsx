@@ -31,7 +31,7 @@ describe("Opportunities merges into Scout", () => {
   });
   it("preserves the public marketplace view inside Scout", () => {
     draw("/opportunities?view=marketplace&q=film");
-    expect(screen.getByTestId("destination")).toHaveTextContent("/scout?q=film&tab=marketplace");
+    expect(screen.getByTestId("destination")).toHaveTextContent("/scout?view=marketplace&q=film&tab=marketplace");
   });
   it("preserves Company offer management", () => {
     tone.isBusiness = true;
