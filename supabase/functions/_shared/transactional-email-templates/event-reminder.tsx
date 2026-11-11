@@ -1,5 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { KretopiaEmail, P, B, Panel, FactRows, Cta, PassQr } from '../email-kit.tsx'
+import { eventIdFromUrl } from '../passLink.ts'
 import type { TemplateEntry } from './registry.ts'
 
 interface Props {
@@ -45,7 +46,8 @@ const EventReminderEmail = ({
         <Panel label="Your Check-In QR Code">
           <P style={{ textAlign: 'center', fontSize: '13px', margin: '0 0 10px' }}>Show this at the door for quick check-in</P>
           <div style={{ textAlign: 'center' }}>
-            <PassQr token={checkInToken} />
+            {/* The code carries the public pass link (never the token alone), so a phone that scans it opens the pass. */}
+            <PassQr token={checkInToken} eventId={eventIdFromUrl(eventUrl)} />
           </div>
         </Panel>
       )}
@@ -64,7 +66,7 @@ export const template = {
     eventDate: 'Saturday, January 25, 2025',
     eventTime: '4:00 PM AST',
     eventVenue: 'The Creative Hub, Brooklyn',
-    eventUrl: 'https://www.kretopia.com/event/123',
+    eventUrl: 'https://www.kretopia.com/event/7f3c2a1e-5b6d-4c8f-9a0b-1c2d3e4f5a6b',
     checkInToken: '4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
     isTicketed: false,
   },

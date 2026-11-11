@@ -1,6 +1,7 @@
 import * as React from 'npm:react@18.3.1'
 import { Img } from 'npm:@react-email/components@0.0.22'
 import { KretopiaEmail, KRETO_WAVE_URL, SITE_URL, P, B, Small, Panel, FactRows, Cta, Ghost, PassQr } from '../email-kit.tsx'
+import { eventIdFromUrl } from '../passLink.ts'
 import type { TemplateEntry } from './registry.ts'
 
 interface Props {
@@ -82,7 +83,8 @@ const EventRegistrationConfirmationEmail = ({
         <Panel label="Your check-in pass">
           <div style={{ textAlign: 'center' }}>
             <Small style={{ margin: '0 0 10px' }}>Show this QR code at the door for a quick check-in.</Small>
-            <PassQr token={checkInToken} />
+            {/* The code carries the public pass link (never the token alone), so a phone that scans it opens the pass. */}
+            <PassQr token={checkInToken} eventId={eventIdFromUrl(eventUrl)} />
             {passUrl && <Ghost href={passUrl}>Open my pass in Kretopia</Ghost>}
           </div>
         </Panel>
@@ -105,8 +107,8 @@ export const template = {
     eventDate: 'Saturday, January 25, 2025',
     eventTime: '7:00 PM EST',
     eventVenue: 'The Creative Hub, Brooklyn',
-    eventUrl: 'https://www.kretopia.com/event/123',
-    passUrl: 'https://www.kretopia.com/event/123/pass?token=4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
+    eventUrl: 'https://www.kretopia.com/event/7f3c2a1e-5b6d-4c8f-9a0b-1c2d3e4f5a6b',
+    passUrl: 'https://www.kretopia.com/event/7f3c2a1e-5b6d-4c8f-9a0b-1c2d3e4f5a6b/pass?token=4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
     checkInToken: '4a9f8cccd3e24b81a0b7c5d6e7f8af9f',
     isTicketed: false,
     isGuest: false,

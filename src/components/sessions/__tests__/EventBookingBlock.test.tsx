@@ -18,6 +18,7 @@ vi.mock("@/integrations/supabase/client", () => ({
         select: () => chain,
         eq: () => chain,
         in: () => chain,
+        or: () => chain,
         then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
           Promise.resolve({ data: table === "jam_participants" ? m.participants : m.profiles, error: null }).then(resolve, reject),
       };
@@ -42,7 +43,7 @@ const props = (over: Partial<Parameters<typeof EventBookingBlock>[0]> = {}): Par
   countdown: { days: 29, hours: 23, minutes: 59, ended: false },
   isPast: false, isCancelled: false, isCompleted: false, isOnline: false, onlineFormat: null,
   venueName: "Studio Nine", venueAddress: "1 Rue Exemple, Paris", venueDetailsVisible: true,
-  isAuthenticated: true, isHost: false, priceLabel: null, ticketUrl: null, capacity: 0, participantCount: 3,
+  isAuthenticated: true, isHost: false, viewerId: "viewer", priceLabel: null, ticketUrl: null, capacity: 0, participantCount: 3,
   attendees: [{ id: "u1", name: "Ari" }, { id: "u2", name: "Bea" }, { id: "u3", name: "Cam" }], attendeesVisible: true,
   control: controlFor(), reason: null, joining: false, rsvpNotice: null, onDismissNotice: vi.fn(), onBook: vi.fn(), onCancelRsvp: vi.fn(),
   calendarAction: <button type="button">Add to calendar</button>,

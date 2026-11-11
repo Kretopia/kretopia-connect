@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { APP_URL } from "@/lib/constants";
+import { buildPassUrl } from "@/lib/publicLink";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -237,9 +239,10 @@ export const GuestRsvpDialog = ({ open, onOpenChange, eventId, eventTitle, start
             eventDate,
             eventTime,
             eventVenue: venue,
-            eventUrl: `${window.location.origin}/event/${eventId}`,
+            // The email is opened outside the app, so its links are on the public site, whatever host this page was opened on.
+            eventUrl: `${APP_URL}/event/${eventId}`,
             passUrl: guestToken
-              ? `${window.location.origin}/event/${eventId}/pass?token=${encodeURIComponent(guestToken)}&name=${encodeURIComponent(parsed.data.guest_name)}`
+              ? `${buildPassUrl(eventId, guestToken)}&name=${encodeURIComponent(parsed.data.guest_name)}`
               : undefined,
             checkInToken: guestToken ?? undefined,
             isGuest: !user,
