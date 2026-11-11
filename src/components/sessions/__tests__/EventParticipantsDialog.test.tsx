@@ -20,6 +20,7 @@ vi.mock("@/integrations/supabase/client", () => ({
         select: (columns: string) => { db.selects.push({ table, columns }); return chain; },
         eq: (...args: unknown[]) => { db.filters.push({ table, op: "eq", args }); return chain; },
         in: (...args: unknown[]) => { db.filters.push({ table, op: "in", args }); return chain; },
+        or: (...args: unknown[]) => { db.filters.push({ table, op: "or", args }); return chain; },
         then: (resolve: (value: unknown) => unknown, reject: (reason: unknown) => unknown) =>
           Promise.resolve(
             table === "jam_participants"
@@ -37,18 +38,20 @@ import { EventParticipantsDialog } from "../EventParticipantsDialog";
 const row = (id: string, userId: string | null, extra: Record<string, unknown> = {}) => ({ id, user_id: userId, guest_name: null, joined_at: `2026-11-0${id}T10:00:00Z`, ...extra });
 const profile = (userId: string, name: string, role: string | null = null, avatar: string | null = null) => ({ user_id: userId, full_name: name, avatar_url: avatar, role });
 
-function Harness({ canSee = true, startOpen = true }: { canSee?: boolean; startOpen?: boolean }) {
+type HarnessProps = { canSee?: boolean; startOpen?: boolean; viewerId?: string | null; viewerIsHost?: boolean };
+
+function Harness({ canSee = true, startOpen = true, viewerId = null, viewerIsHost = false }: HarnessProps) {
   const [open, setOpen] = useState(startOpen);
   const trigger = useRef<HTMLButtonElement>(null);
   return (
     <>
       <button ref={trigger} type="button" onClick={() => setOpen(true)}>Open list</button>
-      <EventParticipantsDialog open={open} onOpenChange={setOpen} eventId="e1" canSee={canSee} returnFocusRef={trigger} />
+      <EventParticipantsDialog open={open} onOpenChange={setOpen} eventId="e1" canSee={canSee} viewerId={viewerId} viewerIsHost={viewerIsHost} returnFocusRef={trigger} />
     </>
   );
 }
 
-const draw = (props: { canSee?: boolean; startOpen?: boolean } = {}) =>
+const draw = (props: HarnessProps = {}) =>
   render(
     <MemoryRouter initialEntries={["/event/e1"]}>
       <Routes>
@@ -102,14 +105,15 @@ describe("EventParticipantsDialog: who is going, as a list of public Passports",
     await screen.findByRole("list", { name: "Who's going" });
 
     expect(db.selects).toEqual([
-      { table: "jam_participants", columns: "id, user_id, guest_name, joined_at" },
+      { table: "jam_participants", columns: "id, user_id, guest_name, joined_at, is_visible" },
       { table: "public_profiles_safe", columns: "user_id, full_name, avatar_url, role" },
     ]);
     expect(db.selects.map((select) => select.columns).join(" ")).not.toMatch(/email|phone|token|username/i);
-    // Only people who are going, for this event.
+    // Only people who are going, for this event, and (for a visitor) only rows that are not hidden from the attendee list.
     expect(db.filters.filter((f) => f.table === "jam_participants")).toEqual([
       { table: "jam_participants", op: "eq", args: ["jam_id", "e1"] },
       { table: "jam_participants", op: "eq", args: ["status", "going"] },
+      { table: "jam_participants", op: "or", args: ["is_visible.is.null,is_visible.eq.true"] },
     ]);
   });
 
@@ -211,5 +215,79 @@ describe("EventParticipantsDialog: who is going, as a list of public Passports",
     fireEvent.click(screen.getByRole("button", { name: "Open list" }));
     expect(await screen.findByRole("link", { name: /Bea Moon/ })).toBeInTheDocument();
     expect(db.selects.filter((select) => select.table === "jam_participants").length).toBe(firstReads + 1);
+  });
+});
+
+describe("EventParticipantsDialog: guests are listed, hidden members are not", () => {
+  const ME = "11111111-1111-4111-8111-111111111111";
+  const everyone = () => {
+    db.participants = [
+      row("1", "u1"),
+      row("2", "u-hidden", { is_visible: false }),
+      row("3", null, { guest_name: "Cleo Guest" }),
+      row("4", ME, { is_visible: false }),
+    ];
+    db.profiles = [profile("u1", "Ari Stone", "Producer"), profile("u-hidden", "Hid Den", "Editor"), profile(ME, "Me Myself", "Writer")];
+  };
+  const names = async () => within(await screen.findByRole("list", { name: "Who's going" })).getAllByRole("listitem").map((item) => item.textContent ?? "");
+
+  it("always lists a guest RSVP, by the name they gave, for a visitor, a member and the host alike", async () => {
+    for (const props of [{}, { viewerId: ME }, { viewerId: "host", viewerIsHost: true }] as HarnessProps[]) {
+      everyone();
+      const view = draw(props);
+      expect((await names()).some((text) => text.includes("Cleo Guest") && text.includes("Guest RSVP"))).toBe(true);
+      view.unmount();
+    }
+  });
+
+  it("does not show a visitor a member who hid themselves from the attendee list", async () => {
+    everyone();
+    draw();
+    const listed = await names();
+    expect(listed).toHaveLength(2); // Ari and the guest
+    expect(listed.join(" ")).not.toMatch(/Hid Den|Me Myself/);
+    expect(document.body.textContent).not.toContain("Hid Den");
+  });
+
+  it("shows a member their own hidden row (and says it is hidden), but no other hidden member", async () => {
+    everyone();
+    draw({ viewerId: ME });
+    const listed = await names();
+    expect(listed.join(" ")).not.toContain("Hid Den");
+    const mine = listed.find((text) => text.includes("Me Myself"))!;
+    expect(mine).toContain("Hidden from other attendees");
+    expect(listed).toHaveLength(3);
+  });
+
+  it("shows the host everyone, with the hidden ones marked", async () => {
+    everyone();
+    draw({ viewerId: "host", viewerIsHost: true });
+    const listed = await names();
+    expect(listed).toHaveLength(4);
+    expect(listed.find((text) => text.includes("Hid Den"))).toContain("Hidden from other attendees");
+    expect(listed.find((text) => text.includes("Ari Stone"))).not.toContain("Hidden from other attendees");
+  });
+
+  it("asks the server only for the rows the viewer may see: visible rows, plus the viewer's own; the host asks for all", async () => {
+    const orFilters = () => db.filters.filter((f) => f.table === "jam_participants" && f.op === "or").map((f) => f.args[0]);
+
+    everyone();
+    let view = draw();
+    await names();
+    expect(orFilters()).toEqual(["is_visible.is.null,is_visible.eq.true"]);
+    view.unmount();
+
+    db.filters.length = 0;
+    everyone();
+    view = draw({ viewerId: ME });
+    await names();
+    expect(orFilters()).toEqual([`is_visible.is.null,is_visible.eq.true,user_id.eq.${ME}`]);
+    view.unmount();
+
+    db.filters.length = 0;
+    everyone();
+    draw({ viewerId: "host", viewerIsHost: true });
+    await names();
+    expect(orFilters()).toEqual([]);
   });
 });

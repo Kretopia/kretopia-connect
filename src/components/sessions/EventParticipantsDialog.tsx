@@ -6,6 +6,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { participantVisibilityFilter, participantVisibleTo } from "@/lib/eventParticipantVisibility";
 import { publicPassportPath } from "@/lib/passport/passportNav";
 
 export interface EventParticipant {
@@ -16,6 +17,8 @@ export interface EventParticipant {
   avatarUrl: string | null;
   /** The role the member shows on their public profile, or "Guest RSVP". */
   role: string | null;
+  /** The member hid themselves from the attendee list: only the host (and the member) is shown this row, and the host is told so. */
+  hidden: boolean;
 }
 
 type Load = { status: "loading" } | { status: "error" } | { status: "ready"; participants: EventParticipant[] };
@@ -29,24 +32,37 @@ interface EventParticipantsDialogProps {
    * always may; everyone else unless the host chose "host only"). When false nothing is read and nothing is listed.
    */
   canSee: boolean;
+  /** The signed-in viewer, if any: a member who hid themselves from the list still sees their own row. */
+  viewerId: string | null;
+  /** The viewer hosts the event: the host sees everyone, including members who hid themselves from the list. */
+  viewerIsHost: boolean;
   /** Where focus goes when the dialog closes: the control that opened it. */
   returnFocusRef: RefObject<HTMLElement | null>;
 }
 
 /**
- * Reads only what a visitor may see: the participants' ids and the typed name of a guest RSVP, then the public-safe profile of each member
- * (name, picture, role). A member whose profile the public view does not return is left out, never shown as a blank row. No email, no
- * phone, no owner-only field is selected anywhere in this file.
+ * Reads only what this viewer may see: the participants' ids and the typed name of a guest RSVP, then the public-safe profile of each member
+ * (name, picture, role). A guest RSVP (someone without an account) is always listed, by the name they gave. A member who hid themselves
+ * from the attendee list is neither asked for nor shown, except to the host and to that member (see participantVisibleTo). A member whose
+ * profile the public view does not return is left out, never shown as a blank row. No email, no phone, no owner-only field is selected
+ * anywhere in this file.
  */
-async function loadParticipants(eventId: string): Promise<EventParticipant[]> {
-  const { data: rows, error } = await supabase
+async function loadParticipants(eventId: string, viewerId: string | null, viewerIsHost: boolean): Promise<EventParticipant[]> {
+  let query = supabase
     .from("jam_participants")
-    .select("id, user_id, guest_name, joined_at")
+    .select("id, user_id, guest_name, joined_at, is_visible")
     .eq("jam_id", eventId)
     .eq("status", "going");
+  const visibility = participantVisibilityFilter(viewerId, viewerIsHost);
+  if (visibility) query = query.or(visibility);
+  const { data: rows, error } = await query;
   if (error) throw error;
 
-  const going = [...(rows || [])].sort((a, b) => String(a.joined_at ?? "").localeCompare(String(b.joined_at ?? "")));
+  // The filter above is the rule for what the server sends; the same rule is applied again here, so a hidden row is never drawn even if
+  // the server sent it.
+  const going = (rows || [])
+    .filter((row) => participantVisibleTo(row, viewerId, viewerIsHost))
+    .sort((a, b) => String(a.joined_at ?? "").localeCompare(String(b.joined_at ?? "")));
   const userIds = [...new Set(going.map((row) => row.user_id).filter((id): id is string => !!id))];
   let profiles = new Map<string, { full_name: string | null; avatar_url: string | null; role: string | null }>();
   if (userIds.length) {
@@ -71,6 +87,7 @@ async function loadParticipants(eventId: string): Promise<EventParticipant[]> {
         name: profile.full_name?.trim() || "Event attendee",
         avatarUrl: profile.avatar_url,
         role: profile.role?.trim() || null,
+        hidden: row.is_visible === false,
       });
     } else {
       participants.push({
@@ -79,25 +96,26 @@ async function loadParticipants(eventId: string): Promise<EventParticipant[]> {
         name: row.guest_name?.trim() || "Guest",
         avatarUrl: null,
         role: "Guest RSVP",
+        hidden: row.is_visible === false,
       });
     }
   }
   return participants;
 }
 
-export function EventParticipantsDialog({ open, onOpenChange, eventId, canSee, returnFocusRef }: EventParticipantsDialogProps) {
+export function EventParticipantsDialog({ open, onOpenChange, eventId, canSee, viewerId, viewerIsHost, returnFocusRef }: EventParticipantsDialogProps) {
   const [load, setLoad] = useState<Load>({ status: "loading" });
 
   const fetchList = useCallback(async (isCurrent: () => boolean) => {
     setLoad({ status: "loading" });
     try {
-      const participants = await loadParticipants(eventId);
+      const participants = await loadParticipants(eventId, viewerId, viewerIsHost);
       if (isCurrent()) setLoad({ status: "ready", participants });
     } catch (error) {
       console.error("Could not load the guest list:", error);
       if (isCurrent()) setLoad({ status: "error" });
     }
-  }, [eventId]);
+  }, [eventId, viewerId, viewerIsHost]);
 
   // Every opening reads the list again: what is shown is the server's current answer, not what an earlier opening left behind.
   useEffect(() => {
@@ -174,6 +192,7 @@ function ParticipantIdentity({ participant }: { participant: EventParticipant })
       <span className="min-w-0 flex-1">
         <span className="block truncate font-medium">{participant.name}</span>
         {participant.role && <span className="block truncate text-xs text-muted-foreground">{participant.role}</span>}
+        {participant.hidden && <span className="block truncate text-xs text-muted-foreground">Hidden from other attendees</span>}
       </span>
     </>
   );

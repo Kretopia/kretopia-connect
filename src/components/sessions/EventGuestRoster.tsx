@@ -12,6 +12,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { participantVisibilityFilter, participantVisibleTo } from "@/lib/eventParticipantVisibility";
 
 interface Guest {
   id: string;
@@ -85,12 +86,16 @@ export const EventGuestRoster = ({
     (async () => {
       setLoading(true);
       try {
-        const { data: parts } = await supabase
+        // A member who hid themselves from the attendee list is shown to the host and to themselves only (lib/eventParticipantVisibility).
+        let partsQuery = supabase
           .from("jam_participants")
-          .select("id, user_id, guest_name, joined_at")
+          .select("id, user_id, guest_name, joined_at, is_visible")
           .eq("jam_id", eventId)
           .in("status", ["going", "interested"]);
-        const participantRows = parts || [];
+        const visibility = participantVisibilityFilter(currentUserId, isHost);
+        if (visibility) partsQuery = partsQuery.or(visibility);
+        const { data: parts } = await partsQuery;
+        const participantRows = (parts || []).filter((p) => participantVisibleTo(p, currentUserId, isHost));
         const userIds = Array.from(new Set([hostId, ...participantRows.map((p) => p.user_id).filter(Boolean)])) as string[];
         const { data: profiles } = await supabase
           .from("public_profiles_safe")
@@ -153,7 +158,7 @@ export const EventGuestRoster = ({
         setLoading(false);
       }
     })().catch(() => setLoading(false));
-  }, [eventId, hostId, currentUserId, canSee]);
+  }, [eventId, hostId, currentUserId, canSee, isHost]);
 
   const handleConnect = async (guest: Guest) => {
     if (!currentUserId) {

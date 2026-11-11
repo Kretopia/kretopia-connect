@@ -44,6 +44,7 @@ import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
 import { getEventCountdown } from "@/lib/eventCountdown";
 import { getEventBookingControl, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
+import { participantVisibilityFilter, participantVisibleTo } from "@/lib/eventParticipantVisibility";
 import { publicPassportPath } from "@/lib/passport/passportNav";
 import { addToKretopiaCalendar, fetchCalendarEntries, removeFromKretopiaCalendar } from "@/lib/eventCalendar";
 import { emptySections, fetchEventSections, viewSection, type EventSectionKey, type FetchedSections } from "@/lib/eventSections";
@@ -185,21 +186,30 @@ const EventPage = () => {
     }
   };
 
-  const refreshAttendeePreview = async (id: string, canView: boolean) => {
+  // The faces in the avatar stack. `hostId` is the event's host: the host sees every member, anyone else only the members who have not
+  // hidden themselves from the attendee list (and themselves), by the one rule in lib/eventParticipantVisibility.
+  const refreshAttendeePreview = async (id: string, canView: boolean, hostId: string) => {
     if (!canView) {
       setAttendeePreview([]);
       return;
     }
     try {
-      const { data: rows, error } = await supabase
+      const viewerId = user?.id ?? null;
+      const viewerIsHost = !!viewerId && viewerId === hostId;
+      let query = supabase
         .from("jam_participants")
-        .select("user_id")
+        .select("user_id, is_visible")
         .eq("jam_id", id)
         .eq("status", "going")
-        .not("user_id", "is", null)
-        .limit(3);
+        .not("user_id", "is", null);
+      const visibility = participantVisibilityFilter(viewerId, viewerIsHost);
+      if (visibility) query = query.or(visibility);
+      const { data: rows, error } = await query.limit(3);
       if (error) throw error;
-      const userIds = [...new Set((rows || []).map((row) => row.user_id).filter((value): value is string => !!value))];
+      const userIds = [...new Set((rows || [])
+        .filter((row) => participantVisibleTo(row, viewerId, viewerIsHost))
+        .map((row) => row.user_id)
+        .filter((value): value is string => !!value))];
       if (!userIds.length) {
         setAttendeePreview([]);
         return;
@@ -209,11 +219,12 @@ const EventPage = () => {
         .select("user_id, full_name, avatar_url")
         .in("user_id", userIds);
       if (profileError) throw profileError;
-      setAttendeePreview((profiles || []).map((profile) => ({
-        id: profile.user_id,
-        name: profile.full_name || "Event attendee",
-        avatarUrl: profile.avatar_url,
-      })));
+      // Built from the ids this viewer may see, in their order: a profile that was not asked for is never drawn.
+      const profileOf = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+      setAttendeePreview(userIds.flatMap((userId) => {
+        const profile = profileOf.get(userId);
+        return profile ? [{ id: userId, name: profile.full_name || "Event attendee", avatarUrl: profile.avatar_url }] : [];
+      }));
     } catch (error) {
       console.error("Could not load attendee preview:", error);
       setAttendeePreview([]);
@@ -281,6 +292,7 @@ const EventPage = () => {
       await refreshAttendeePreview(
         eventId,
         eventData.attendee_list_visibility !== "host_only" || user?.id === eventData.created_by || viewerIsParticipant,
+        eventData.created_by,
       );
       setSectionsLoaded(await sectionsRequest);
     } catch (err) {
@@ -335,7 +347,7 @@ const EventPage = () => {
         if (result === 'not_going') throw new Error("Your RSVP could not be found. Refresh and try again.");
         setParticipation(null);
         await refreshParticipantCount(event.id);
-        await refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || user.id === event.created_by);
+        await refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || user.id === event.created_by, event.created_by);
         setRsvpNotice({
           tone: "info",
           text: wasWaitlisted ? "You've left the waitlist." : "Your RSVP is cancelled. Your spot has been released.",
@@ -369,7 +381,7 @@ const EventPage = () => {
             throw new Error("The event did not confirm your RSVP.");
           }
           if (result === 'joined' && status === 'going') {
-            await refreshAttendeePreview(event.id, true);
+            await refreshAttendeePreview(event.id, true, event.created_by);
             // The confirmation email is sent once, for the row the server just stored.
             if (stored && stored !== "unreadable") {
               sendEventConfirmationEmail({
@@ -648,6 +660,7 @@ const EventPage = () => {
             venueDetailsVisible={venueDetailsVisible}
             isAuthenticated={isAuthenticated}
             isHost={isCreator}
+            viewerId={user?.id ?? null}
             priceLabel={ticketPriceLabel}
             ticketUrl={ticketUrl}
             capacity={capacity}
@@ -915,7 +928,7 @@ const EventPage = () => {
               // The one confirmation is the notice that the ?rsvp=confirmed landing feeds; here only the page's numbers catch up with the server.
               setParticipation('going');
               refreshParticipantCount(event.id);
-              refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || !!user || isCreator);
+              refreshAttendeePreview(event.id, event.attendee_list_visibility !== "host_only" || !!user || isCreator, event.created_by);
             }}
           />
 
