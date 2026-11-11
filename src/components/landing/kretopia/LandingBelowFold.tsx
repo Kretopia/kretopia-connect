@@ -148,7 +148,7 @@ export const LandingBelowFold = () => {
         videoWebm={scoutWebm.url}
         accent="hsl(var(--energy))"
         href={SCOUT_PATH}
-        ctaLabel="Explore Opportunities"
+        ctaLabel="Explore Scout"
         reverse
         tutorialSteps={SCOUT_TUTORIAL}
         tutorialVisual={ScoutVisual}

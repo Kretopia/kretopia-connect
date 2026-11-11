@@ -14,7 +14,7 @@ import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoDestinationIcon } from "@/components/brand/DestinationIcons";
-import { OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
+import { SCOUT_PATH, OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 import { supabase } from "@/integrations/supabase/client";
 import { releasePushForSignOut } from "@/lib/pushSubscription";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -161,7 +161,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
         // Match sits right after Today, here and in the mobile bottom nav (and so is not repeated in the Menu below).
         { path: "/match", icon: Heart, label: "Match" },
         { path: "/desk", icon: LayoutGrid, label: "Studio" },
-        { path: OPPORTUNITIES_PATH, icon: Compass, label: "Opportunities" },
+        { path: SCOUT_PATH, icon: Compass, label: "Scout" },
         { path: "/profile", icon: BadgeCheck, label: "Passport" },
       ];
 
@@ -300,7 +300,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 (path === "/circle" &&
                   location.pathname.startsWith("/circle") &&
                   !location.pathname.startsWith("/circles")) ||
-                (path === OPPORTUNITIES_PATH && isOpportunitySpace(location.pathname)) ||
+                ((path === SCOUT_PATH || path === OPPORTUNITIES_PATH) && isOpportunitySpace(location.pathname)) ||
                 (path === "/profile" &&
                   (location.pathname.startsWith("/profile") ||
                     location.pathname.startsWith("/thrivepay") ||

@@ -73,9 +73,9 @@ describe("Match sits right after Today", () => {
     const menu = openMenu();
     // the open menu is modal, so the bar behind it is aria-hidden: look at it as the page has it
     const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
-    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Opportunities", "Passport"]);
+    expect(within(rubrics).getAllByRole("link", { hidden: true }).map((l) => l.textContent)).toEqual(["Today", "Match", "Studio", "Scout", "Passport"]);
     expect(within(rubrics).getByRole("link", { name: "Match", hidden: true })).toHaveAttribute("href", "/match");
-    expect(within(rubrics).getByRole("link", { name: "Opportunities", hidden: true })).toHaveAttribute("href", "/opportunities");
+    expect(within(rubrics).getByRole("link", { name: "Scout", hidden: true })).toHaveAttribute("href", "/scout");
     expect(within(menu).queryByRole("button", { name: "Match" })).not.toBeInTheDocument();
     // what was reachable from the menu still is
     for (const kept of ["Stages", "Kreto", "Events", "Creative Circle"]) expect(within(menu).getByRole("button", { name: kept })).toBeInTheDocument();

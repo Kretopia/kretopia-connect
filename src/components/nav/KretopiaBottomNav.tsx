@@ -3,7 +3,7 @@ import { Home, BadgeCheck, Briefcase, Heart, LayoutGrid, UserSearch, Wallet } fr
 import { cn } from "@/lib/utils";
 import { memo, useEffect, useState } from "react";
 import { useAccountTone } from "@/hooks/useAccountTone";
-import { OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
+import { SCOUT_PATH, OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 
 /**
  * Kretopia V1 bottom nav — Home · Match · Passport · Opportunities · Studio. The Opportunities entry leads to /opportunities, the same place
@@ -18,7 +18,7 @@ const CREATIVE_ITEMS = [
   { path: "/", icon: Home, label: "Home", hint: "Today, insights, and Kreto's brief" },
   { path: "/match", icon: Heart, label: "Match", hint: "People to work with, matched to you" },
   { path: "/profile", icon: BadgeCheck, label: "Passport", hint: "Your verified creative identity" },
-  { path: OPPORTUNITIES_PATH, icon: Briefcase, label: "Gigs", name: "Opportunities", hint: "Gigs and Scout, your personalised search and shortlist" },
+  { path: SCOUT_PATH, icon: Briefcase, label: "Scout", name: "Scout", hint: "Gigs, search and shortlist" },
   { path: "/desk", icon: LayoutGrid, label: "Studio", hint: "Projects, files, and collaborators" },
 ];
 
@@ -66,7 +66,7 @@ const KretopiaBottomNav = memo(() => {
   const isActive = (path: string) => {
     if (path === "/") return location.pathname === "/";
     // One destination on desktop and mobile: the feed, Scout inside it, one opportunity and the poster's dashboard are all "Opportunities".
-    if (path === OPPORTUNITIES_PATH) return isOpportunitySpace(location.pathname);
+    if (path === SCOUT_PATH || path === OPPORTUNITIES_PATH) return isOpportunitySpace(location.pathname);
     if (path === "/profile") {
       return (
         location.pathname.startsWith("/profile") ||

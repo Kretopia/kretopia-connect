@@ -1,6 +1,6 @@
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Fingerprint, IdCard, MessageCircle, Search as SearchIcon, SlidersHorizontal } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -37,12 +37,13 @@ const isVerified = (tier: string | null) => {
   return t === "verified" || t === "industry" || t === "elite";
 };
 
-const PassportDirectory = () => {
+const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const [rows, setRows] = useState<DirectoryPassport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [professionFilter, setProfessionFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [standingFilter, setStandingFilter] = useState("all");
@@ -116,15 +117,17 @@ const PassportDirectory = () => {
   const askKreto = () =>
     window.dispatchEvent(new CustomEvent("thrive-copilot:open", { detail: { prompt: ASK_KRETO_PROMPT } }));
 
+  const ContentShell = embedded ? Fragment : StudioFeatureShell;
+
   return (
-    <div className="accent-passport min-h-screen bg-background pb-24">
-      <SEO
+    <div className={embedded ? "space-y-4" : "accent-passport min-h-screen bg-background pb-24"}>
+      {!embedded && <SEO
         title="Passport Directory — The verified creative record | Kretopia"
         description={BRAND.passportHeadline + " " + BRAND.passportSubline}
         url={`${APP_URL}/passport`}
-      />
+      />}
 
-      <div className="relative">
+      {!embedded && <div className="relative">
 
         <FeaturePageHeader
           scene="passport"
@@ -134,10 +137,10 @@ const PassportDirectory = () => {
           subtitle="Find the people behind the work, read their record, and open their Passport in one tap."
           tutorial={{ featureKey: "passport-directory", label: "How the Passport Directory works", steps: DIRECTORY_TUTORIAL }}
         />
-      </div>
+      </div>}
 
-      <StudioFeatureShell
-        wrapped={{
+      <ContentShell
+        {...(embedded ? {} : { wrapped: {
           name: "Passport Directory",
           status: (
             <WrappedStatus
@@ -145,7 +148,7 @@ const PassportDirectory = () => {
               label={loading ? "Loading the record…" : `${rows.length.toLocaleString()} verified creative record${rows.length === 1 ? "" : "s"}`}
             />
           ),
-        }}
+        } })}
       >
         {/* Your Passport, and Kreto: the way to your own record is the first thing in the panel. */}
         <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/60 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
@@ -255,7 +258,7 @@ const PassportDirectory = () => {
             ))}
           </div>
         )}
-      </StudioFeatureShell>
+      </ContentShell>
 
       {messageTarget && (
         <DirectMessageDialog
