@@ -143,6 +143,11 @@ describe("GuestRsvpDialog against a database that has not got the newer reservat
         templateData: expect.objectContaining({ attendeeName: "Ari", checkInToken: "pass-token-1", isGuest: true }),
       }),
     }));
+    // One confirmation email per RSVP, and its links are on the public site (an email is opened outside the app).
+    expect(mocks.invoke).toHaveBeenCalledTimes(1);
+    const { templateData } = (mocks.invoke.mock.calls[0][1] as { body: { templateData: Record<string, string> } }).body;
+    expect(templateData.eventUrl).toBe("https://www.kretopia.com/event/event-1");
+    expect(templateData.passUrl).toBe("https://www.kretopia.com/event/event-1/pass?token=pass-token-1&name=Ari");
   });
 
   it("uses the newer function when the database has it, and never calls the older one", async () => {

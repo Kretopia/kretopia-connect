@@ -366,8 +366,10 @@ const EventPage = () => {
           await refreshParticipantCount(event.id);
           setRsvpNotice({ tone: "error", text: "This event is full, and the host hasn't opened a waitlist." });
         } else if (result === 'waitlisted' || result === 'already' || result === 'joined') {
-          // The notice says what the server stored for this viewer, not just what the call answered.
-          const stored = await readOwnParticipation(event.id, user.id);
+          // The notice says what the server stored for this viewer, not just what the call answered. The row is also what the
+          // confirmation email is sent for, so a read that failed is tried once more before the email is given up on.
+          let stored = await readOwnParticipation(event.id, user.id);
+          if (stored === "unreadable") stored = await readOwnParticipation(event.id, user.id);
           const status = stored && stored !== "unreadable" ? stored.status : result === 'waitlisted' ? 'waitlisted' : 'going';
           setParticipation(status);
           await refreshParticipantCount(event.id);
