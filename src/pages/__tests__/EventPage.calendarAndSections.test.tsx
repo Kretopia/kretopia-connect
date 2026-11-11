@@ -19,6 +19,8 @@ const m = vi.hoisted(() => {
     participation: null as string | null,
     participantRows: [] as unknown[],
     profileRows: [] as unknown[],
+    /** How many of the next reads of the viewer's own participation row fail (a dropped connection). */
+    ownRowReadFailures: 0,
     calendar: { rows: [] as { event_id: string }[], error: null as DbError, writeError: null as DbError },
     hostSections: { rows: [] as unknown[], error: null as DbError, writeError: null as DbError },
     publicSections: { rows: [] as unknown[], error: null as DbError },
@@ -42,7 +44,10 @@ const m = vi.hoisted(() => {
       case "jam_participants":
         if (c.op !== "select") return { data: null, error: null };
         if (c.head) return { data: null, count: s.going, error: null };
-        if (c.single) return { data: s.participation ? { id: "p1", status: s.participation } : null, error: null };
+        if (c.single) {
+          if (s.ownRowReadFailures > 0) { s.ownRowReadFailures -= 1; return { data: null, error: { code: "08006", message: "connection lost" } }; }
+          return { data: s.participation ? { id: "p1", status: s.participation } : null, error: null };
+        }
         return { data: s.participantRows, error: null };
       case "event_calendar_entries":
         return c.op === "select" ? { data: s.calendar.rows, error: s.calendar.error } : { data: null, error: s.calendar.writeError };
@@ -157,6 +162,7 @@ beforeEach(() => {
   m.participation = null;
   m.participantRows = [];
   m.profileRows = [];
+  m.ownRowReadFailures = 0;
   m.calendar = { rows: [], error: null, writeError: null };
   m.hostSections = { rows: [], error: null, writeError: null };
   m.publicSections = { rows: [], error: null };
@@ -641,6 +647,27 @@ describe("Event page: one primary action, from a visitor's first screen to a pho
     expect(occurrences(/3 going/)).toBe(1);
     expect(m.toast).not.toHaveBeenCalled();
     expect(sendEventConfirmationEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it("still sends the confirmation email when the first read of the new RSVP row fails: it reads once more", async () => {
+    m.user = viewer;
+    m.rpc.mockImplementation(async () => { m.participation = "going"; m.ownRowReadFailures = 1; return { data: "joined", error: null }; });
+    await draw();
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+
+    expect(await screen.findByText("You're going. Your place is confirmed.")).toBeInTheDocument();
+    await waitFor(() => expect(sendEventConfirmationEmail).toHaveBeenCalledTimes(1));
+    expect(sendEventConfirmationEmail).toHaveBeenCalledWith(expect.objectContaining({ eventId: "e1", participantId: "p1", eventTitle: "Studio Night" }));
+  });
+
+  it("does not send a second confirmation email to a member who was already going", async () => {
+    m.user = viewer;
+    m.rpc.mockImplementation(async () => { m.participation = "going"; return { data: "already", error: null }; });
+    await draw();
+    fireEvent.click(screen.getByRole("button", { name: "I'm Going" }));
+
+    expect(await screen.findByText("You're already on the guest list.")).toBeInTheDocument();
+    expect(sendEventConfirmationEmail).not.toHaveBeenCalled();
   });
 
   it("tells what the server stored, not what the call answered: a join stored as a waitlist place reads as waitlisted", async () => {

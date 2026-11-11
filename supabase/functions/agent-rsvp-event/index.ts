@@ -51,6 +51,36 @@ Deno.serve(async (req) => {
       p_referral_channel: body?.referral_channel ?? "agent",
     });
     if (error) throw error;
+
+    // The member gets the same confirmation email as when they RSVP on the event page (src/utils/eventConfirmationEmail.ts): the same
+    // template and the same idempotency key, so never two for one event. It is sent as the member; the email function checks the
+    // registration and writes the event's details itself. Best effort: a failed email never fails the RSVP.
+    if (data === "joined" && userData.user.email) {
+      try {
+        const [{ data: participant }, { data: profile }] = await Promise.all([
+          client.from("jam_participants").select("check_in_token").eq("jam_id", eventId).eq("user_id", userData.user.id).maybeSingle(),
+          client.from("profiles").select("full_name").eq("user_id", userData.user.id).maybeSingle(),
+        ]);
+        await client.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "event-registration-confirmation",
+            recipientEmail: userData.user.email,
+            idempotencyKey: `event-reg-v2-${eventId}-${userData.user.id}`,
+            templateData: {
+              attendeeName: profile?.full_name || undefined,
+              attendeeEmail: userData.user.email,
+              eventUrl: `https://www.kretopia.com/event/${eventId}`,
+              checkInToken: participant?.check_in_token || undefined,
+              isTicketed: false,
+              hasAccount: true,
+            },
+          },
+        });
+      } catch (emailError) {
+        console.error("[agent-rsvp-event] confirmation email failed:", emailError);
+      }
+    }
+
     return new Response(JSON.stringify({ ok: true, result: data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
