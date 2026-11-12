@@ -11,6 +11,8 @@ import { CalendarIcon, MapPin, Clock, Users, Ticket, X, ScanLine, Sparkles, Zap,
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PayoutsConnectWarning } from "./PayoutsConnectWarning";
 import { format } from "date-fns";
+import { eventSchedule, eventTimeZone, eventUtcToLocal, validEventTimeZone } from "@/lib/eventTime";
+import { EventTimeZoneFields } from "./EventTimeZoneFields";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -67,6 +69,9 @@ export const CreateSessionDialog = ({
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("14:00");
+  const [timezone, setTimezone] = useState(eventTimeZone);
+  const [localEnd, setLocalEnd] = useState("");
+  const localStart = date ? `${format(date, "yyyy-MM-dd")}T${time}` : "";
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   // userCircles removed
@@ -213,13 +218,9 @@ export const CreateSessionDialog = ({
 
     setLoading(true);
     try {
-      // Upload cover image if selected
+      const schedule = eventSchedule(localStart, localEnd, timezone);
       const coverUrl = await uploadCover();
-
-      // Combine date and time
-      const [hours, minutes] = time.split(':').map(Number);
-      const startTime = new Date(date);
-      startTime.setHours(hours, minutes, 0, 0);
+      const startTime = new Date(schedule.start_time);
 
       const isWorkspace = createMode === "workspace" && !!archetype;
       const arch = archetype ? findArchetype(archetype) : null;
@@ -234,7 +235,7 @@ export const CreateSessionDialog = ({
         venue_address: formData.venue_address,
         latitude: formData.latitude,
         longitude: formData.longitude,
-        start_time: startTime.toISOString(),
+        ...schedule,
         max_participants: formData.max_participants,
         is_public: true,
         status: 'upcoming',
@@ -327,6 +328,8 @@ export const CreateSessionDialog = ({
         circle_id: '',
       });
       setDate(undefined);
+      setLocalEnd("");
+      setTimezone(eventTimeZone());
       setCoverFile(null);
       setCoverPreview(null);
       setFormatValue({
@@ -481,7 +484,7 @@ export const CreateSessionDialog = ({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar mode="single" selected={date} onSelect={setDate} disabled={(date) => date < new Date()} initialFocus />
+                  <Calendar mode="single" selected={date} onSelect={setDate} disabled={(day) => format(day, "yyyy-MM-dd") < eventUtcToLocal(new Date().toISOString(), timezone).slice(0, 10)} initialFocus />
                 </PopoverContent>
               </Popover>
             </div>
@@ -494,6 +497,8 @@ export const CreateSessionDialog = ({
               </div>
             </div>
           </div>
+
+          <EventTimeZoneFields timezone={timezone} onTimezoneChange={setTimezone} localStart={localStart} localEnd={localEnd} onEndChange={setLocalEnd} />
 
           <div className="space-y-2">
             <Label>Location</Label>

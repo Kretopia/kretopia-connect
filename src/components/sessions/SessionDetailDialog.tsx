@@ -1,3 +1,4 @@
+import { getEventTiming } from "@/lib/eventTime";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -197,7 +198,7 @@ export const SessionDetailDialog = ({
   const isCreator = user?.id === session.created_by;
   const isFull = session.max_participants > 0 && session.participant_count >= session.max_participants;
   const startDate = new Date(session.start_time);
-  const isPast = startDate < new Date();
+  const isPast = getEventTiming(session).ended;
   const isParticipant = !!participation || isCreator;
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
   const nativePaidTicketUnavailable = eventEntry(session).kind === "ticket" && Boolean(session.ticket_price && session.ticket_price > 0);

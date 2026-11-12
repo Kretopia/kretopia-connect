@@ -1,4 +1,5 @@
 import { csvCell } from "@/lib/csvCell";
+import { getEventTiming } from "@/lib/eventTime";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
@@ -181,8 +182,7 @@ const EventBackstage = ({ embedded = false }: { embedded?: boolean }) => {
         drafts.push(e);
         return;
       }
-      const t = new Date(e.end_time || e.start_time).getTime();
-      if (t >= now && e.status !== "completed" && e.status !== "cancelled") upcoming.push(e);
+      if (!getEventTiming(e, now).ended && e.status !== "cancelled") upcoming.push(e);
       else past.push(e);
     });
     upcoming.sort(

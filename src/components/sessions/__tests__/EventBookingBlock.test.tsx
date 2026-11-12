@@ -141,9 +141,9 @@ describe("EventBookingBlock: when and where", () => {
     expect(timer).toHaveTextContent("29 days · 23 hours · 59 mins");
     expect(timer).toHaveAccessibleName("29 days, 23 hours, and 59 minutes until the event");
     const status = section("status")!;
-    expect(status).toHaveTextContent(`${formatEventTime(START)} · local time`);
+    expect(status).toHaveTextContent(`${formatEventTime(START)} · UTC`);
     expect(status).toHaveTextContent("Studio Nine");
-    expect(status.querySelector("[title^='Shown in your local timezone']")).not.toBeNull();
+    expect(status.querySelector("[title^='Event time zone:']")).not.toBeNull();
   });
 
   it("says Happening now once it started, and nothing once it is over", () => {

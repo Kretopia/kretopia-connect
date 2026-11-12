@@ -1,3 +1,4 @@
+import { getEventTiming } from "@/lib/eventTime";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,6 +25,8 @@ interface Session {
   venue_name?: string;
   venue_address?: string;
   start_time: string;
+  end_time?: string | null;
+  status?: string | null;
   max_participants: number;
   participant_count: number;
   distance_km?: number;
@@ -149,7 +152,7 @@ export const SessionCard = ({ session, userParticipation, onJoin, onClick }: Ses
   const isCreator = user?.id === session.created_by;
   const isFull = session.max_participants > 0 && session.participant_count >= session.max_participants;
   const startDate = new Date(session.start_time);
-  const isPast = startDate < new Date();
+  const isPast = getEventTiming(session).ended;
   const isTicketed = session.is_ticketed && session.ticket_price && session.ticket_price > 0;
   const ticketPrice = isTicketed
     ? formatCurrencyAmount(session.ticket_price ?? 0, session.ticket_currency) ?? "Paid ticket · currency unavailable"

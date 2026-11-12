@@ -10,7 +10,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { openDirections } from "@/lib/eventActions";
 import { placesLeftLabel, type EventBookingControl } from "@/lib/eventBookingState";
 import type { EventCountdown } from "@/lib/eventCountdown";
-import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
+import { validEventTimeZone, formatEventTime } from "@/lib/eventTime";
 import { cn } from "@/lib/utils";
 import { EventAttendeeStack, type EventAttendeePreview } from "@/components/sessions/EventAttendeeStack";
 import { EventBookingCta } from "@/components/sessions/EventBookingCta";
@@ -29,6 +29,7 @@ interface EventBookingBlockProps {
   eventId: string;
   eventTitle: string;
   startTime: string;
+  timezone?: string | null;
   countdown: EventCountdown | null;
   isPast: boolean;
   isCancelled: boolean;
@@ -89,7 +90,7 @@ const NOTICE_ICON = { success: CheckCircle, info: CheckCircle, error: TriangleAl
  * into a bar at the bottom of the screen, so there is never more than one booking button in the page.
  */
 export function EventBookingBlock({
-  eventId, eventTitle, startTime, countdown, isPast, isCancelled, isCompleted, isOnline, onlineFormat, venueName, venueAddress, venueDetailsVisible,
+  eventId, eventTitle, startTime, timezone, countdown, isPast, isCancelled, isCompleted, isOnline, onlineFormat, venueName, venueAddress, venueDetailsVisible,
   isAuthenticated, isHost, viewerId, priceLabel, ticketUrl, capacity, participantCount, attendees, attendeesVisible, control, reason, joining,
   rsvpNotice, onDismissNotice, onBook, onCancelRsvp, calendarAction, host, onContactHost, policiesVisible, onSignIn, bottomNav,
 }: EventBookingBlockProps) {
@@ -160,8 +161,8 @@ export function EventBookingBlock({
             </div>
           )}
           {happeningNow && <p className="text-sm font-semibold text-primary">Happening now</p>}
-          <p className="text-base font-semibold leading-snug" title={`Shown in your local timezone (${eventTimeZone()})`}>
-            {formatEventTime(startTime)} · local time
+          <p className="text-base font-semibold leading-snug" title={`Event time zone: ${validEventTimeZone(timezone)}`}>
+            {formatEventTime(startTime, timezone)} · {validEventTimeZone(timezone)}
           </p>
           <p className="flex items-start gap-1.5 text-sm text-muted-foreground">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />

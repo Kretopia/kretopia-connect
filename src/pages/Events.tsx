@@ -15,7 +15,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoScene } from "@/components/brand/KretoScene";
 import { CardPill, CardShell } from "@/components/cards/CardShell";
 import { isSameMonth, startOfMonth } from "date-fns";
-import { eventTimeZone, formatEventTime } from "@/lib/eventTime";
+import { validEventTimeZone, formatEventTime, getEventTiming } from "@/lib/eventTime";
 import { formatCurrencyAmount } from "@/lib/currency";
 import { CreateSessionDialog } from "@/components/sessions/CreateSessionDialog";
 import { SessionDetailDialog } from "@/components/sessions/SessionDetailDialog";
@@ -31,6 +31,7 @@ export interface EventItem {
   venue_address?: string;
   start_time: string;
   end_time?: string;
+  timezone?: string | null;
   max_participants: number;
   participant_count: number;
   creator_name: string;
@@ -78,7 +79,7 @@ const formatEventPrice = (event: EventItem) => {
 
 export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () => void }) => {
   const [coverFailed, setCoverFailed] = useState(false);
-  const isPast = new Date(event.start_time).getTime() < Date.now();
+  const isPast = getEventTiming(event).ended;
   const isFull = event.max_participants > 0 && event.participant_count >= event.max_participants;
   const isOnline = event.event_mode === "online" || event.event_type === "virtual";
   const place = isOnline ? "Online" : event.event_mode === "hybrid" ? "Hybrid" : event.venue_name || event.venue_address || "Location not listed";
@@ -105,7 +106,7 @@ export const EventCard = ({ event, onClick }: { event: EventItem; onClick: () =>
       meta={`By ${event.creator_name}`}
       description={event.description?.trim() || null}
       tags={[
-        <CardPill key="time"><Clock className="h-3 w-3" aria-hidden /><span title={`Shown in your local timezone (${eventTimeZone()})`}>Your time · {formatEventTime(event.start_time)}</span></CardPill>,
+        <CardPill key="time"><Clock className="h-3 w-3" aria-hidden /><span title={`Event time zone: ${validEventTimeZone(event.timezone)}`}>{formatEventTime(event.start_time, event.timezone)}</span></CardPill>,
         <CardPill key="place">{isOnline || event.event_mode === "hybrid" ? <Monitor className="h-3 w-3" aria-hidden /> : <MapPin className="h-3 w-3" aria-hidden />}{place}</CardPill>,
         <CardPill key="price"><Ticket className="h-3 w-3" aria-hidden />{formatEventPrice(event)} · {booking}</CardPill>,
       ]}
@@ -155,8 +156,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
     const upcoming: EventItem[] = [];
     const past: EventItem[] = [];
     list.forEach(e => {
-      const t = new Date(e.end_time || e.start_time).getTime();
-      if (t >= now) upcoming.push(e); else past.push(e);
+      if (getEventTiming(e, now).ended) past.push(e); else upcoming.push(e);
     });
     // sort: upcoming asc, past desc
     upcoming.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
@@ -210,7 +210,7 @@ const Events = ({ embedded }: { embedded?: boolean }) => {
         .select('*, profiles!creative_jams_created_by_fkey (full_name, avatar_url)')
         .eq('is_public', true)
         .in('status', ['upcoming', 'active'])
-        .gte('start_time', new Date().toISOString());
+        .or(`end_time.gt.${new Date().toISOString()},end_time.is.null`);
 
       // If we know user's country, prioritize that country + untagged events
       if (userCountry) {

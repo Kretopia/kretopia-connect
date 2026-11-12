@@ -42,6 +42,7 @@ import { JoinOnlineCard } from "@/components/sessions/JoinOnlineCard";
 import { captureRefFromUrl, buildWarmShareMessage, buildEventShareUrl } from "@/lib/eventActions";
 import { buildEventAuthUrl } from "@/lib/eventAuthRedirect";
 import { formatCurrencyAmount } from "@/lib/currency";
+import { getEventTiming } from "@/lib/eventTime";
 import { getEventCountdown } from "@/lib/eventCountdown";
 import { getEventBookingControl, getEventBookingReason, getEventBookingState } from "@/lib/eventBookingState";
 import { participantVisibilityFilter, participantVisibleTo } from "@/lib/eventParticipantVisibility";
@@ -93,7 +94,7 @@ const EventPage = () => {
 
   useEffect(() => {
     if (!event?.start_time) return;
-    const interval = window.setInterval(() => setNow(Date.now()), 60_000);
+    const interval = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => clearInterval(interval);
   }, [event?.start_time]);
 
@@ -468,10 +469,9 @@ const EventPage = () => {
     );
   }
 
-  const startTime = Date.parse(event.start_time);
-  const endTime = Date.parse(event.end_time || event.start_time);
-  const eventTimeValid = Number.isFinite(startTime) && Number.isFinite(endTime);
-  const isPast = eventTimeValid && endTime <= now;
+  const timing = getEventTiming(event, now);
+  const eventTimeValid = timing.valid;
+  const isPast = timing.ended;
   const capacity = Number(event.max_participants) > 0 ? Number(event.max_participants) : 0;
   const isFull = availabilityReady && capacity > 0 && participantCount >= capacity;
   const isCreator = user?.id === event.created_by;
@@ -651,6 +651,7 @@ const EventPage = () => {
             eventId={event.id}
             eventTitle={event.title}
             startTime={event.start_time}
+            timezone={event.timezone}
             countdown={countdown}
             isPast={isPast}
             isCancelled={isCancelled}

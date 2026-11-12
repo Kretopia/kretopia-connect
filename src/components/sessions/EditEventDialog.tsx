@@ -11,6 +11,8 @@ import { CalendarIcon, Clock, Users, Ticket, X, Trash2 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PayoutsConnectWarning } from "./PayoutsConnectWarning";
 import { format } from "date-fns";
+import { eventSchedule, eventTimeZone, eventUtcToLocal, validEventTimeZone } from "@/lib/eventTime";
+import { EventTimeZoneFields } from "./EventTimeZoneFields";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,6 +62,13 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
   const [fetching, setFetching] = useState(true);
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState("14:00");
+  const [timezone, setTimezone] = useState(eventTimeZone);
+  const [localEnd, setLocalEnd] = useState("");
+  const localStart = date ? `${format(date, "yyyy-MM-dd")}T${time}` : "";
+  const [originalSchedule, setOriginalSchedule] = useState<{
+    start_time: string; end_time: string | null; timezone: string | null;
+    localStart: string; localEnd: string; zone: string;
+  } | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [existingCoverUrl, setExistingCoverUrl] = useState<string | null>(null);
@@ -109,9 +118,16 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
       return;
     }
 
-    const startDate = new Date(data.start_time);
-    setDate(startDate);
-    setTime(format(startDate, "HH:mm"));
+    const zone = validEventTimeZone(data.timezone);
+    const local = eventUtcToLocal(data.start_time, zone);
+    setTimezone(zone);
+    setDate(new Date(`${local.slice(0, 10)}T12:00:00`));
+    setTime(local.slice(11));
+    setLocalEnd(data.end_time ? eventUtcToLocal(data.end_time, zone) : "");
+    setOriginalSchedule({
+      start_time: data.start_time, end_time: data.end_time, timezone: data.timezone,
+      localStart: local, localEnd: data.end_time ? eventUtcToLocal(data.end_time, zone) : "", zone,
+    });
     setExistingCoverUrl(data.cover_image_url || null);
     setCoverPreview(data.cover_image_url || null);
     setFormData({
@@ -173,10 +189,13 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
     if (!user || !date) return;
     setLoading(true);
     try {
+      // A description-only edit must not round seconds, infer a legacy zone, or shift an ambiguous historical time.
+      const unchanged = originalSchedule && originalSchedule.localStart === localStart
+        && originalSchedule.localEnd === localEnd && originalSchedule.zone === timezone;
+      const schedule = unchanged && originalSchedule
+        ? { start_time: originalSchedule.start_time, end_time: originalSchedule.end_time, timezone: originalSchedule.timezone }
+        : eventSchedule(localStart, localEnd, timezone);
       const coverUrl = await uploadCover();
-      const [hours, minutes] = time.split(':').map(Number);
-      const startTime = new Date(date);
-      startTime.setHours(hours, minutes, 0, 0);
 
       const { error } = await supabase
         .from('creative_jams')
@@ -188,7 +207,7 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
           venue_address: formData.venue_address,
           latitude: formData.latitude,
           longitude: formData.longitude,
-          start_time: startTime.toISOString(),
+          ...schedule,
           max_participants: formData.max_participants,
           is_ticketed: formData.is_ticketed,
           ticket_price: formData.is_ticketed ? formData.ticket_price : 0,
@@ -317,6 +336,8 @@ export const EditEventDialog = ({ open, onOpenChange, onUpdated, eventId }: Edit
               </div>
             </div>
           </div>
+
+          <EventTimeZoneFields timezone={timezone} onTimezoneChange={setTimezone} localStart={localStart} localEnd={localEnd} onEndChange={setLocalEnd} />
 
           <div className="space-y-2">
             <Label>Location</Label>
