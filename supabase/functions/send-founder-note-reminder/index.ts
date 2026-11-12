@@ -101,7 +101,7 @@ serve(async (req) => {
         subject: existingNote ? `📝 Reminder: Monday note ready (${mondayLabel})` : `⏰ Write your Monday note for ${mondayLabel}`,
         html,
       });
-      if (error) { errors++; console.error(`[reminder] ${email}:`, error); }
+      if (error) { errors++; console.error("[reminder] send failed:", error); }
       else success++;
     }
 

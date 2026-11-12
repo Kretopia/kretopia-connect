@@ -128,9 +128,11 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
       supabase.functions.invoke("verify-stage-ticket", { body: { session_id: sessionId, stage_id: id } })
         .then(({ data, error }) => {
           if (error) throw error;
-          if (data?.status === "paid") {
+          if (data?.paid && !data?.pending) {
             setMyRsvp({ status: "rsvp" });
             toast({ title: "Ticket confirmed", description: "You're in. We'll remind you before it starts." });
+          } else if (data?.pending) {
+            toast({ title: "Payment received", description: "Your seat is being confirmed. Refresh in a moment." });
           }
         })
         .catch((e) => toast({ title: "Couldn't verify ticket", description: e?.message, variant: "destructive" }))

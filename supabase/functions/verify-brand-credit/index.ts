@@ -60,6 +60,17 @@ serve(async (req) => {
         });
       }
 
+      // Only a company mailbox can confirm a brand credit: personal/free mail
+      // providers and the claimant's own email domain are refused.
+      const FREE_MAIL = new Set(['gmail.com','googlemail.com','yahoo.com','yahoo.co.id','ymail.com','hotmail.com','outlook.com','live.com','msn.com','icloud.com','me.com','mac.com','aol.com','proton.me','protonmail.com','gmx.com','gmx.net','mail.com','yandex.com','yandex.ru','zoho.com','qq.com','163.com','126.com','tutanota.com','hey.com','fastmail.com','mailinator.com','guerrillamail.com','tempmail.com','10minutemail.com']);
+      const brandDomain = cleanBrandEmail.split('@')[1] ?? '';
+      const ownDomain = (user.email ?? '').toLowerCase().split('@')[1] ?? '';
+      if (!brandDomain || FREE_MAIL.has(brandDomain) || brandDomain === ownDomain) {
+        return new Response(JSON.stringify({ error: 'Use the brand\'s company email address' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const { data: roleRow } = await supabase
         .from('icdb_project_roles')
         .select('claimed_by')

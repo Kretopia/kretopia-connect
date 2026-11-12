@@ -26,7 +26,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Sending test emails to: ${email}`);
+    console.log("Sending test emails");
     
     const emailTypes = [
       { type: 'welcome', data: { userName: 'Test User' } },

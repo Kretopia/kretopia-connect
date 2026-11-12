@@ -191,7 +191,7 @@ export default function GuestStudio() {
 
   const openFile = async (path: string, name: string) => {
     try {
-      const { data } = await supabase.storage.from("project-files").createSignedUrl(path, 3600, { download: name });
+      const { data } = await supabase.storage.from("project-files").createSignedUrl(path, 60, { download: name });
       if (data?.signedUrl) window.open(data.signedUrl, "_blank");
     } catch (e: any) {
       toast({ title: "Couldn't open file", description: e.message, variant: "destructive" });

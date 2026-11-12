@@ -75,22 +75,14 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) return json({ error: "Email sending is not configured" }, 503);
 
-    // The recipient is bound to the invoice: a stored recipient must match, and a first
-    // send records its recipient so later sends cannot be redirected elsewhere.
+    // The recipient is the invoice's stored billed contact; the request can only confirm it.
     const boundRecipient = cleanRecipientEmail(invoice?.recipient_email);
     if (boundRecipient && boundRecipient !== recipient) {
       return json({ error: "The recipient must match the invoice's billed contact" }, 400);
     }
     if (!boundRecipient) {
-      const { data: bound, error: bindError } = await db
-        .from("invoices")
-        .update({ recipient_email: recipient })
-        .eq("id", invoice.id)
-        .eq("issued_by", user.id)
-        .is("recipient_email", null)
-        .select("id")
-        .maybeSingle();
-      if (bindError || !bound) return json({ error: "Could not confirm the invoice recipient, try again shortly" }, 409);
+      // No first-send binding from request text: the billed contact must already be on the invoice.
+      return json({ error: "Add the client's email to the invoice before sending it" }, 400);
     }
 
     // The send is written down before it leaves, so it counts even if the provider answers late or not at all.

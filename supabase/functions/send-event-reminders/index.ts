@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
           .maybeSingle()
 
         if (existingLog) {
-          console.log(`[EVENT-REMINDERS] Already sent reminder for event ${event.id} to ${authUser.user.email}`)
+          console.log(`[EVENT-REMINDERS] Already sent reminder for event ${event.id}`)
           continue
         }
 
@@ -179,7 +179,7 @@ Deno.serve(async (req) => {
             console.error(`[EVENT-REMINDERS] Failed to record reminder claim:`, claimErr)
           }
         } catch (err) {
-          console.error(`[EVENT-REMINDERS] Failed to send reminder to ${authUser.user.email}:`, err)
+          console.error(`[EVENT-REMINDERS] Failed to send reminder:`, err)
         }
       }
     }

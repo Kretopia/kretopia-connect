@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { csvCell } from "@/lib/csvCell";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -159,7 +160,7 @@ export function EventResponsesDialog({ open, onOpenChange, eventId, eventTitle }
       ...questions.map((q) => r.vals[q.id] ?? ""),
     ]);
     const csv = [header, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(","))
+      .map((row) => row.map((cell) => csvCell(cell)).join(","))
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);

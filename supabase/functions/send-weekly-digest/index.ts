@@ -100,7 +100,7 @@ const handler = async (req: Request): Promise<Response> => {
     let body: any = {};
     try { body = await req.json(); } catch { /* GET / cron */ }
     const isPreview = body?.preview === true;
-    const previewRecipient: string | undefined = body?.recipient_email;
+    // A preview only ever goes to the calling admin's own address.
     const callerUserId: string | null = guard.viaCron ? null : guard.userId;
 
 
@@ -291,7 +291,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // === PREVIEW MODE: send single email to caller ===
     if (isPreview) {
-      const recipient = previewRecipient || (callerUserId ? (await supabaseAdmin.auth.admin.getUserById(callerUserId)).data.user?.email : null);
+      const recipient = (callerUserId ? (await supabaseAdmin.auth.admin.getUserById(callerUserId)).data.user?.email : null);
       if (!recipient) {
         return new Response(JSON.stringify({ error: "No recipient" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
@@ -318,7 +318,7 @@ const handler = async (req: Request): Promise<Response> => {
         html: buildEmailHtml(previewName, previewToken ? `${baseUrl}/unsubscribe?token=${previewToken}` : `${baseUrl}/settings`),
       });
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true, preview: true, sent_to: recipient }), {
+      return new Response(JSON.stringify({ success: true, preview: true }), {
         status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -401,7 +401,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
         if (error) {
           errors++;
-          console.error(`[weekly-update] ${email}:`, error);
+          console.error("[weekly-update] send failed:", error);
           logRows.push({ template_name: TEMPLATE_NAME, recipient_email: email, status: "failed", error_message: String((error as any)?.message ?? error).slice(0, 500) });
         } else {
           success++;
@@ -409,7 +409,7 @@ const handler = async (req: Request): Promise<Response> => {
         }
       } catch (err) {
         errors++;
-        console.error(`[weekly-update] ${email}:`, err);
+        console.error("[weekly-update] send failed:", err);
         logRows.push({ template_name: TEMPLATE_NAME, recipient_email: email, status: "failed", error_message: String((err as any)?.message ?? err).slice(0, 500) });
       }
       if (logRows.length >= 25) await flushLog();

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { trustedReturnOrigin } from "../_shared/returnOrigin.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { z } from "https://esm.sh/zod@3.23.8";
@@ -84,7 +85,7 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    const origin = req.headers.get("origin") || "https://www.thrivein.io";
+    const origin = trustedReturnOrigin(req);
 
     const checkout = await stripe.checkout.sessions.create({
       mode: "payment",

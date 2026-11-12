@@ -162,9 +162,12 @@ serve(async (req) => {
       if (!resolvedUser) return new Response(JSON.stringify({ error: "Please sign in again to use Kreto.", code: "AUTH_REQUIRED" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Anonymous callers share one bucket so unauthenticated use still passes
-    // through the same gate and the same global envelope.
-    const gateUserId = resolvedUser?.id ?? ANON_USER_ID;
+    // Every Kreto model call (chat and autocomplete) needs a signed-in caller.
+    if (!resolvedUser) {
+      return new Response(JSON.stringify({ error: "Sign in to use Kreto.", code: "AUTH_REQUIRED" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    const gateUserId = resolvedUser.id;
+    void ANON_USER_ID;
     const jsonOk = (payload: unknown) =>
       new Response(JSON.stringify(payload), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

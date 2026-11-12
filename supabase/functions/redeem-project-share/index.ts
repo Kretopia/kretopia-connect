@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
             if (path) {
               const { data: s } = await supabase.storage
                 .from("project-files")
-                .createSignedUrl(path, 60 * 60);
+                .createSignedUrl(path, 120); // short-lived: revocation takes effect within minutes
               signed_url = s?.signedUrl ?? null;
             }
           } catch (_) {}

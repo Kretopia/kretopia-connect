@@ -569,6 +569,12 @@ export function InvoiceGenerator({ projectId }: InvoiceGeneratorProps) {
     try {
       const email = invoice.recipient_email || prompt("Enter recipient email:");
       if (!email) return;
+      if (!invoice.recipient_email) {
+        // The billed contact is stored on the invoice first; sending only goes to that contact.
+        const { error: saveError } = await supabase
+          .from("invoices").update({ recipient_email: email.trim() }).eq("id", invoice.id);
+        if (saveError) throw saveError;
+      }
 
       const { error } = await supabase.functions.invoke("send-invoice-email", {
         body: { invoiceId: invoice.id, recipientEmail: email }

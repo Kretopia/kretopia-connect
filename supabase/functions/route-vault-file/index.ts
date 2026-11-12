@@ -2,6 +2,7 @@
 // Input: { project_id, file_id }
 // Reads project context + folder list, classifies via Lovable AI, updates folder_id.
 
+import { requireProjectAccess } from "../_shared/projectAccess.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
@@ -121,17 +122,27 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
+    // The caller must belong to the project before any of its data is read.
+    try {
+      await requireProjectAccess(admin, project_id, user.id);
+    } catch {
+      return new Response(JSON.stringify({ error: "Not authorized for this project" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const rateLimit = await checkAiFeatureRateLimit(admin, user.id, "route-vault-file");
     if (!rateLimit.allowed) return rateLimit.response;
 
     const [{ data: file }, { data: project }, { data: folders }] = await Promise.all([
-      admin.from("project_files").select("id, file_name, file_type, folder_id, user_id").eq("id", file_id).maybeSingle(),
+      admin.from("project_files").select("id, file_name, file_type, folder_id, user_id, project_id").eq("id", file_id).maybeSingle(),
       admin.from("projects").select("title, brief_summary, created_by").eq("id", project_id).maybeSingle(),
       admin.from("project_file_folders").select("id, name").eq("project_id", project_id).is("parent_id", null),
     ]);
 
     if (!file) throw new Error("file not found");
-    if (file.user_id !== user.id) {
+    if (file.user_id !== user.id || file.project_id !== project_id) {
       return new Response(JSON.stringify({ error: "Not authorized for this file" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -178,7 +189,7 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("[route-vault-file]", e);
     return new Response(
-      JSON.stringify({ error: (e as Error).message }),
+      JSON.stringify({ error: "Could not file this item" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

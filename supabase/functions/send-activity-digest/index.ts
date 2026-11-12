@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
         const email = userData.user.email;
         const userName = user.full_name || "Creative";
 
-        console.log(`Sending activity digest to ${email} (${unreadCount} unread)`);
+        console.log(`Sending activity digest (${unreadCount} unread)`);
 
         // Get unsubscribe token
         const { data: prefs } = await supabase
@@ -154,10 +154,10 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (emailResult.error) {
-          console.error(`Failed to send to ${email}:`, emailResult.error);
+          console.error("Failed to send activity digest:", emailResult.error);
           errors.push(`${email}: ${emailResult.error.message}`);
         } else {
-          console.log(`Successfully sent activity digest to ${email}`);
+          console.log(`Successfully sent activity digest`);
           digestsSent++;
         }
       } catch (err: any) {

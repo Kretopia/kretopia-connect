@@ -36,7 +36,7 @@ serve(async (req) => {
     if (!circleId) throw new Error("Circle ID is required");
     if (!sessionId) throw new Error("Session ID is required");
 
-    logStep("Verifying payment", { circleId, userId: user.id, sessionId });
+    logStep("Verifying payment");
 
     // This previously updated circle_subscriptions to 'active' on a bare
     // client claim with no Stripe interaction at all — any authenticated
@@ -48,7 +48,7 @@ serve(async (req) => {
     });
 
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    logStep("Session retrieved", { status: session.payment_status, metadata: session.metadata });
+    logStep("Session retrieved", { status: session.payment_status });
 
     if (session.payment_status !== "paid") {
       throw new Error("Payment not completed");
@@ -68,32 +68,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Update subscription status
-    await supabaseAdmin
-      .from('circle_subscriptions')
-      .update({
-        status: 'active',
-        started_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        stripe_subscription_id: sessionId || null,
-      })
-      .eq('circle_id', circleId)
-      .eq('user_id', user.id)
-      .eq('status', 'pending');
-
-    // Add user as member
-    const { error: memberError } = await supabaseAdmin
-      .from('spark_room_members')
-      .upsert({
-        room_id: circleId,
-        user_id: user.id,
-        role: 'member',
-      }, { onConflict: 'room_id,user_id' });
-
-    if (memberError) {
-      logStep("Error adding member", { error: memberError });
+    // Read-only: activation happens only in the signature-verified Stripe webhook.
+    const { data: member } = await supabaseAdmin
+      .from('spark_room_members').select('user_id')
+      .eq('room_id', circleId).eq('user_id', user.id).maybeSingle();
+    if (!member) {
+      return new Response(JSON.stringify({ success: false, pending: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 202,
+      });
     }
-
     logStep("Payment verified and member added");
 
     return new Response(JSON.stringify({ success: true }), {

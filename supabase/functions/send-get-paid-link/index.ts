@@ -69,6 +69,25 @@ serve(async (req) => {
     const decision = decideGetPaidLink({ projectId, recipientEmail: body?.recipientEmail, access });
     if (!decision.ok) throw new HttpError(decision.status, decision.error);
     const recipientEmail = decision.recipientEmail;
+    // The recipient must already be on this project's team (an invited or member
+    // collaborator row carrying that address, or a member account with that email).
+    {
+      const { data: collabs, error: collabErr } = await supabaseAdmin
+        .from('project_collaborators')
+        .select('email, user_id')
+        .eq('project_id', projectId as string)
+        .in('status', ['pending', 'accepted', 'active', 'invited']);
+      if (collabErr) throw new HttpError(503, "Could not verify the recipient, try again shortly");
+      let onTeam = (collabs ?? []).some((c: { email: string | null }) => c.email?.toLowerCase() === recipientEmail);
+      if (!onTeam) {
+        for (const c of (collabs ?? []) as { user_id: string | null }[]) {
+          if (!c.user_id) continue;
+          const { data: u } = await supabaseAdmin.auth.admin.getUserById(c.user_id);
+          if (u?.user?.email?.toLowerCase() === recipientEmail) { onTeam = true; break; }
+        }
+      }
+      if (!onTeam) throw new HttpError(403, "Invite this person to the project first");
+    }
     // Payment-invitation mail leaves from our domain: a budget per account and
     // per recipient, recorded before anything is sent.
     const budget = await enforceSendBudget(supabaseAdmin, {

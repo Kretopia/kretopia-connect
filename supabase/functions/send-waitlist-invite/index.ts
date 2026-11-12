@@ -109,7 +109,7 @@ serve(async (req) => {
       throw new Error(data.message || 'Failed to send email');
     }
 
-    console.log('Invite email sent successfully to:', to);
+    console.log('Invite email sent successfully');
 
     return new Response(
       JSON.stringify({ success: true, messageId: data.id }),

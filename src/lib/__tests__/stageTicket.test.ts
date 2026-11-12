@@ -177,22 +177,25 @@ describe("verify-stage-ticket wiring", () => {
     return i;
   };
 
-  it("still requires a paid session of the caller, now also a stage-ticket session", () => {
+  it("still requires a paid stage-ticket session of the caller", () => {
     expect(src).toContain('session.payment_status !== "paid"');
     expect(src).toContain("isStageTicketSession(session.metadata");
-    expect(src).toContain('if (buyerId !== user.id) throw new Error("Buyer mismatch")');
+    expect(src).toContain('throw new Error("Buyer mismatch")');
   });
 
-  it("seats a buyer of a private stage only after the entry rule, before it writes anything", () => {
-    expect(at("entryWasChecked(")).toBeLessThan(at('from("curated_stage_orders")'));
-    expect(at("canEnterStage(admin, stage, user)")).toBeLessThan(at('from("curated_stage_rsvps")'));
-    expect(src).toContain('error: "INVITE_REQUIRED", paid: true');
+  it("is read-only: never writes orders or seats", () => {
+    expect(src).not.toContain(".update(");
+    expect(src).not.toContain(".insert(");
+    expect(src).not.toContain(".upsert(");
   });
+});
 
-  it("records the payment even when the pending row is missing, and reads the seat's result", () => {
-    expect(src).toContain('status: "paid",\n        paid_at: paidAt');
+describe("stage ticket webhook fulfillment", () => {
+  const src = read("supabase/functions/_shared/stageCircleActivation.ts");
+  it("checks the entry rule before writing, and reads write errors", () => {
+    expect(src.indexOf("entryWasChecked(")).toBeLessThan(src.indexOf('from("curated_stage_orders")'));
+    expect(src).toContain("canEnterStage(admin, stage, u.user)");
     expect(src).toContain("if (rsvpErr) throw");
-    expect(src).toContain("if (orderErr) throw");
   });
 });
 

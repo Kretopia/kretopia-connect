@@ -82,7 +82,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
       if (emailError) {
-        console.error(`Failed to send warning to ${userData.user.email}:`, emailError);
+        console.error("Failed to send streak warning:", emailError);
       } else {
         warningsSent++;
       }

@@ -1,7 +1,7 @@
 // Sandbox manual-SEPA extension. Guest-callable (no auth) -- the payer may
 // have no Kretopia account at all, same rationale already documented for
 // confirm_invoice_paid_manually's self-report design. Possession of the
-// unguessable invoice UUID is the access boundary, matching invoice-pay-info.
+// the signed pay-link token (?t=) is the access boundary, matching invoice-pay-info.
 //
 // This endpoint does exactly one thing: stamps bank_transfer_reported_at.
 // It never sets status = 'paid' and never touches any wallet/ledger table.
@@ -14,6 +14,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 import { corsFor, safeError } from '../_shared/guard.ts';
 import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { verifyInvoiceLink } from '../_shared/invoiceCapability.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -30,8 +31,16 @@ serve(async (req) => {
     } catch (perimeterError) {
       return safeError(perimeterError, req);
     }
-    const { id } = await req.json();
-    if (!id || typeof id !== "string") throw new Error("id required");
+    const body = await req.json().catch(() => ({}));
+    const id = typeof body?.id === "string" ? body.id : "";
+    const t = typeof body?.t === "string" ? body.t : "";
+    // The signed per-invoice pay-link token is the access boundary, not the UUID.
+    if (!/^[0-9a-f-]{36}$/i.test(id) || !(await verifyInvoiceLink(id, t))) {
+      return new Response(JSON.stringify({ error: "Invoice not found" }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,

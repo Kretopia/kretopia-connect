@@ -1,4 +1,5 @@
-import { sanitizeEmailHtml } from "../_shared/outboundText.ts";
+import { escapeHtmlText, singleLine } from "../_shared/outboundText.ts";
+import { isTrustedAppOrigin } from "../_shared/returnOrigin.ts";
 // Send event blast to attendees of a creative_jam event.
 // Triggered by the host from /meetup/manage. Resolves the segment, enqueues
 // one transactional email per recipient via send-transactional-email, and
@@ -35,8 +36,8 @@ serve(async (req) => {
     const body = await req.json();
     const {
       eventId,
-      subject,
-      bodyHtml,
+      subject: rawSubject,
+      bodyHtml: rawBody,
       template = "custom",
       segment = "all",
       ctaText,
@@ -46,7 +47,24 @@ serve(async (req) => {
       segmentLabel,
     } = body ?? {};
 
-    if (!eventId || !subject || !bodyHtml) {
+    // Host text is plain text only: no markup, links or images reach attendees, the
+    // subject is a short single line and the button can only point into Kretopia.
+    const subject = singleLine(rawSubject, 150);
+    const bodyText = typeof rawBody === "string"
+      ? rawBody.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]*>/g, "").slice(0, 5000)
+      : "";
+    const bodyHtml = bodyText.split("\n\n").map((para) =>
+      `<p style="margin: 0 0 12px 0; color: #333; font-size: 14px; line-height: 1.6;">${escapeHtmlText(para).replace(/\n/g, "<br>")}</p>`
+    ).join("");
+    const ctaTarget = (() => {
+      try {
+        if (typeof ctaUrl !== "string") return null;
+        const u = new URL(ctaUrl);
+        return u.protocol === "https:" && isTrustedAppOrigin(u.origin) ? u.toString() : null;
+      } catch { return null; }
+    })();
+
+    if (!eventId || !subject || !bodyText.trim()) {
       return new Response(
         JSON.stringify({ error: "eventId, subject and bodyHtml required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -193,11 +211,11 @@ serve(async (req) => {
             idempotencyKey: `blast-${blastId}-${r.user_id ?? r.email}`,
             templateData: {
               subject,
-              bodyHtml: sanitizeEmailHtml(bodyHtml),
+              bodyHtml,
               eventTitle: ev.title,
               eventUrl,
-              ctaText: ctaText || "View Event",
-              ctaUrl: (typeof ctaUrl === "string" && /^https:\/\//i.test(ctaUrl) ? ctaUrl : null) || eventUrl,
+              ctaText: singleLine(ctaText, 40) || "View Event",
+              ctaUrl: ctaTarget || eventUrl,
             },
           },
         });
@@ -233,8 +251,8 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e: any) {
-    console.error("[send-event-blast] error", e);
-    return new Response(JSON.stringify({ error: e?.message || String(e) }), {
+    console.error("[send-event-blast] error", e?.message || "unknown");
+    return new Response(JSON.stringify({ error: "Could not send the update" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

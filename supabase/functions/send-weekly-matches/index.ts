@@ -371,7 +371,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
       } catch (err) {
         failed++;
-        console.error(`[weekly-matches] ${email}:`, err);
+        console.error("[weekly-matches] send failed:", err);
         batch.push({ template_name: TEMPLATE_NAME, recipient_email: email, status: "failed", error_message: String((err as any)?.message ?? err).slice(0, 500) });
       }
       if (batch.length >= 25) await flushLog();

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAllowedFetchUrl } from "../_shared/fetchAllowlist.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
@@ -71,8 +72,15 @@ serve(async (req) => {
     }
 
     const { url } = validationResult.data;
+    // Only known portfolio/media platforms are fetched server-side.
+    if (!isAllowedFetchUrl(url)) {
+      return new Response(
+        JSON.stringify({ platform: "unknown", mediaType: "link", mediaUrl: url }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    console.log("Analyzing URL:", url);
+    console.log("Analyzing portfolio URL");
 
     const data: PlatformData = {
       platform: "unknown",

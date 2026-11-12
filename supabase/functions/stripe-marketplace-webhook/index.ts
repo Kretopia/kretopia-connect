@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { activateFounderPurchase } from "../_shared/founderActivation.ts";
 import { finalizeEventOrder } from "../_shared/eventTicketActivation.ts";
+import { finalizeStageTicket, activateCircleSubscription } from "../_shared/stageCircleActivation.ts";
 import { syncProjectStatusIfAllMilestonesPaid } from "../_shared/milestoneProjectSync.ts";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { claimWebhookEvent, releaseWebhookEvent } from "../_shared/webhookLedger.ts";
@@ -541,6 +542,18 @@ serve(async (req) => {
           const result = await activateFounderPurchase(supabaseAdmin, founderUserId, session);
           logStep("Founder Circle processed via webhook", { result });
         }
+        return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      if (session.metadata?.kind === "curated_stage") {
+        const result = await finalizeStageTicket(supabaseAdmin, session);
+        logStep("Stage ticket processed via webhook", { result });
+        return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
+      }
+
+      if (session.metadata?.type === "circle_subscription") {
+        const result = await activateCircleSubscription(supabaseAdmin, session);
+        logStep("Circle subscription processed via webhook", { result });
         return new Response(JSON.stringify({ received: true }), { headers: { "Content-Type": "application/json" } });
       }
 

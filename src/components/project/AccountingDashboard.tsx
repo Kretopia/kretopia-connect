@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { csvCell } from "@/lib/csvCell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -257,7 +258,7 @@ export function AccountingDashboard({ projectId }: AccountingDashboardProps) {
         `-${Number(o.amount).toFixed(2)}`, "USD"
       ])
     ];
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const csv = rows.map(r => r.map(c => csvCell(c)).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");

@@ -115,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (emailError) {
-          console.error(`[send-broadcast-email] Failed to send to ${email}:`, emailError);
+          console.error(`[send-broadcast-email] Failed to send:`, emailError);
           errorCount++;
           errors.push(`${email}: ${emailError.message}`);
         } else {

@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
         );
 
         if (emailErr) {
-          console.error(`[day2-engagement] send failed for ${email}:`, emailErr);
+          console.error(`[day2-engagement] send failed:`, emailErr);
           errors++;
           continue;
         }
@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
           .eq("user_id", p.user_id);
 
         sent++;
-        console.log(`[day2-engagement] Sent to ${email} (gigs: ${gigCount}, views: ${profileViews})`);
+        console.log(`[day2-engagement] Sent (gigs: ${gigCount}, views: ${profileViews})`);
       } catch (e) {
         console.error(`[day2-engagement] error for ${p.user_id}:`, e);
         errors++;

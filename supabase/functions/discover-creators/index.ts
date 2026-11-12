@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 import { checkAiFeatureRateLimit } from "../_shared/aiRateLimit.ts";
 
 
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, safeError } from '../_shared/guard.ts';
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === 'OPTIONS') {
@@ -21,17 +22,14 @@ serve(async (req) => {
     // caller identity, this had no way to exclude "yourself" from your own
     // search results. Best-effort -- an anonymous/expired token just means
     // no self-exclusion, not a failed request.
-    let callerUserId: string | null = null;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader) {
-      const { data } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-      callerUserId = data.user?.id ?? null;
+    // AI-assisted discovery calls a metered model: signed-in callers only.
+    let callerUserId: string;
+    try {
+      callerUserId = (await requireAiCaller(req, "discover-creators")).id;
+    } catch (e) {
+      return safeError(e, req);
     }
-
-    // Only gate signed-in callers -- this endpoint intentionally still
-    // serves anonymous/expired-token requests (see comment above), so an
-    // unauthenticated caller has no per-user identity to key a limit on.
-    if (callerUserId) {
+    {
       const rateLimit = await checkAiFeatureRateLimit(supabase, callerUserId, "discover-creators");
       if (!rateLimit.allowed) return rateLimit.response;
     }

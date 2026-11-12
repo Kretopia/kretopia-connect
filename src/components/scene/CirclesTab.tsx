@@ -261,10 +261,12 @@ const CircleDetail = ({ circle, onBack, onOpenFullPage }: { circle: CircleData; 
       // Verify payment and grant membership
       const verifyPayment = async () => {
         try {
-          const { error } = await supabase.functions.invoke('verify-circle-payment', {
+          const { data, error } = await supabase.functions.invoke('verify-circle-payment', {
             body: { circleId: circle.id, sessionId },
           });
-          if (!error) {
+          if (!error && data?.pending) {
+            toast({ title: "Payment received", description: "Your membership is being confirmed. Refresh in a moment." });
+          } else if (!error && data?.success) {
             setIsMember(true);
             setUserRole("member");
             toast({ title: "Welcome!", description: `You're now a member of ${circle.title}` });

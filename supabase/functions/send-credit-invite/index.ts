@@ -55,7 +55,7 @@ serve(async (req) => {
     // Verify the caller actually owns this credit before sending anything.
     const { data: creditRow } = await supabase
       .from('credits')
-      .select('id, user_id')
+      .select('id, user_id, project_name, role')
       .eq('id', credit_id)
       .maybeSingle();
     if (!creditRow || creditRow.user_id !== inviter_id) {
@@ -81,8 +81,10 @@ serve(async (req) => {
     // clipped before it goes into the mail template.
     const MAX_COLLABORATORS = 20;
     const collaborators = (Array.isArray(external_collaborators) ? external_collaborators : []).slice(0, MAX_COLLABORATORS);
-    const projectNameClean = cleanFreeText(project_name, 120) ?? 'a project';
-    const roleClean = cleanFreeText(role, 60);
+    // Project name and role come from the stored credit, never from the request.
+    void project_name; void role;
+    const projectNameClean = cleanFreeText(creditRow.project_name, 120) ?? 'a project';
+    const roleClean = cleanFreeText(creditRow.role, 60);
 
     for (const collab of collaborators) {
       const email = cleanRecipientEmail(collab?.email);

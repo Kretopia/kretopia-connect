@@ -40,7 +40,7 @@ serve(async (req) => {
       .eq("id", opportunity_id)
       .single();
 
-    if (fetchErr || !opp) {
+    if (fetchErr || !opp || opp.created_by !== user.id) {
       return new Response(JSON.stringify({ error: "Opportunity not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -176,7 +176,8 @@ Rewrite to be professional, compelling, well-structured. Keep factual details ac
       const { error: updateErr } = await supabase
         .from("opportunities")
         .update(updates)
-        .eq("id", opportunity_id);
+        .eq("id", opportunity_id)
+        .eq("created_by", user.id);
 
       if (updateErr) throw new Error("Failed to update opportunity");
     }

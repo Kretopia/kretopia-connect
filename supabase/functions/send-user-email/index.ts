@@ -375,7 +375,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
       // The SDK returns `error` instead of throwing when Resend refuses the send: report it, not a success.
       if (response.error) throw new Error(response.error.message || "The email provider refused the message");
-      console.log(`[send-user-email] Email sent to ${to}:`, response);
+      console.log("[send-user-email] Email sent");
       return response;
     };
 
@@ -445,8 +445,8 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
 
-      // Truncate message preview
-      const preview = (requestData?.messagePreview || '').substring(0, 100);
+      // Message text is never taken from the caller: the email only says a message arrived.
+      const preview = '';
 
       const { subject, html } = generateEmailContent('message', {
         recipientName: recipientProfile?.full_name || 'there',

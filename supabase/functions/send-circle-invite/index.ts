@@ -20,13 +20,36 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
     if (userError || !user) throw new Error("Not authenticated");
 
-    const { circleId, emails, circleTitle } = await req.json();
-    if (!circleId || !emails?.length) throw new Error("Missing circleId or emails");
+    const body = await req.json().catch(() => ({}));
+    const circleId = typeof body?.circleId === "string" ? body.circleId : "";
+    const rawEmails: unknown[] = Array.isArray(body?.emails) ? body.emails : [];
+    const EMAIL_RE = /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[a-z]{2,}$/i;
+    const emails = [...new Set(rawEmails
+      .filter((e): e is string => typeof e === "string")
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e.length <= 254 && EMAIL_RE.test(e)))];
+    if (!/^[0-9a-f-]{36}$/i.test(circleId) || emails.length === 0 || emails.length > 100) {
+      return new Response(JSON.stringify({ error: "Invalid request" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400,
+      });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Only the circle's creator may record invites for it.
+    const { data: circle } = await supabaseAdmin
+      .from("spark_rooms")
+      .select("id, created_by")
+      .eq("id", circleId)
+      .maybeSingle();
+    if (!circle || circle.created_by !== user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403,
+      });
+    }
 
     // Get sender profile
     const { data: senderProfile } = await supabaseAdmin
@@ -39,9 +62,8 @@ serve(async (req) => {
     const inviteLink = `https://www.kretopia.com/circle/${circleId}`;
 
     // For now, log the invites. In production, integrate with email service.
-    console.log(`[SEND-CIRCLE-INVITE] ${senderName} inviting ${emails.length} people to "${circleTitle}"`);
-    console.log(`[SEND-CIRCLE-INVITE] Emails:`, emails);
-    console.log(`[SEND-CIRCLE-INVITE] Link: ${inviteLink}`);
+    console.log(`[SEND-CIRCLE-INVITE] recording ${emails.length} invite(s)`);
+    void senderName; void inviteLink;
 
     // Store invite records for tracking
     const inviteRecords = emails.map((email: string) => ({
@@ -62,8 +84,8 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: msg }), {
+    console.error("[SEND-CIRCLE-INVITE] error", error instanceof Error ? error.message : "unknown");
+    return new Response(JSON.stringify({ error: "Request failed" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

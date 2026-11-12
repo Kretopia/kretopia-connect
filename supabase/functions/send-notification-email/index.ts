@@ -2,7 +2,8 @@ import { escapeHtmlText, safeHttpsUrl } from "../_shared/outboundText.ts";
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@4.0.0";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
-import { corsFor } from '../_shared/guard.ts';
+import { corsFor, constantTimeEqual } from '../_shared/guard.ts';
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
 let resendClient: Resend | null = null;
 function getResend(): Resend {
@@ -87,8 +88,12 @@ async function authorizeSend(
   const isSelf =
     (!!recipientId && recipientId === callerId) ||
     (!!to && !!callerEmail && to.toLowerCase() === callerEmail.toLowerCase());
-  if (isSelf) {
-    return { ok: true, caller: { id: callerId, email: callerEmail, isServiceRole: false } };
+  // A self-send must be self on every supplied field: a matching recipientId
+  // cannot carry a different `to` address along with it.
+  const toIsOther = !!to && (!callerEmail || to.toLowerCase() !== callerEmail.toLowerCase());
+  const idIsOther = !!recipientId && recipientId !== callerId;
+  if (isSelf && !toIsOther && !idIsOther) {
+    return { ok: true, caller: { id: callerId, email: callerEmail, isServiceRole: false, isSelfOnly: true } };
   }
 
   const roleResponse = await fetch(
@@ -103,7 +108,7 @@ async function authorizeSend(
   return { ok: false, response: deny(403, "Forbidden: cannot send notifications to other users") };
 }
 
-type VerifiedCaller = { id: string | null; email: string | null; isServiceRole: boolean };
+type VerifiedCaller = { id: string | null; email: string | null; isServiceRole: boolean; isSelfOnly?: boolean };
 
 interface EmailRequest {
   to?: string;
@@ -463,13 +468,14 @@ const handler = async (req: Request): Promise<Response> => {
       return authResult.response;
     }
 
-    let to = body.to;
+    // Self-service callers always receive at their own verified address.
+    let to = authResult.caller.isSelfOnly ? (authResult.caller.email ?? undefined) : body.to;
     const type = body.type;
     let data = body.data || {};
     let unsubscribeToken: string | undefined;
     
     // If recipientId is provided, fetch email and user info from database
-    if (body.recipientId && !to) {
+    if (body.recipientId && (!to || authResult.caller.isSelfOnly)) {
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       
@@ -555,7 +561,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { subject, html } = generateEmailContent(type, data, unsubscribeToken);
 
-    console.log(`Sending ${type} email to ${to}`);
+    console.log(`Sending ${type} email`);
 
     const emailResponse = await getResend().emails.send({
       from: "Kretopia <noreply@kretopia.com>",
@@ -566,7 +572,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // The SDK returns `error` instead of throwing when Resend refuses the send: report it, not a success.
     if (emailResponse.error) throw new Error(emailResponse.error.message || "The email provider refused the message");
-    console.log("Email sent successfully:", emailResponse);
+    console.log("Email sent successfully");
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {
       status: 200,

@@ -1,3 +1,4 @@
+import { safeFilterTerm } from '../_shared/postgrestFilter.ts';
 // Copilot collaborator tools — exposed to agent-orchestrator for project_manager intents.
 // Tools: find_user, list_my_projects, add_collaborator, remove_collaborator
 //
@@ -93,7 +94,7 @@ async function findUser(corsHeaders: Record<string, string>, userId: string, bod
   if (!q || q.length < 2) {
     return json(corsHeaders, { ok: false, error: "name_query must be at least 2 characters" }, 400);
   }
-  const like = `%${q}%`;
+  const like = `%${safeFilterTerm(q)}%`;
 
   // 1. Connections-first lookup
   const { data: conns } = await admin
@@ -234,7 +235,7 @@ async function addCollaborator(corsHeaders: Record<string, string>, userId: stri
     if (authErr || !authLookup?.user) {
       const hint = String(body.invitee_name ?? body.name_query ?? body.name ?? "").trim();
       if (hint.length >= 2) {
-        const like = `%${hint}%`;
+        const like = `%${safeFilterTerm(hint)}%`;
         const { data: candidates } = await admin
           .from("profiles")
           .select("user_id, full_name, username, is_claimed")

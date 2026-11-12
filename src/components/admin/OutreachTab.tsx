@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { csvCell } from "@/lib/csvCell";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -123,7 +124,7 @@ Let me know if you have any questions 🙌`;
 
     const csvContent = [
       headers.join(","),
-      ...rows.map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(","))
+      ...rows.map(row => row.map(cell => csvCell(cell)).join(","))
     ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -232,12 +233,12 @@ Let me know if you have any questions 🙌`;
                 const csvContent = [
                   ["Name", "Role", "Instagram", "Twitter", "LinkedIn", "Profile Link"].join(","),
                   ...withSocial.map(p => [
-                    `"${p.full_name || ""}"`,
-                    `"${p.role || ""}"`,
-                    `"${p.instagram_url || ""}"`,
-                    `"${p.twitter_url || ""}"`,
-                    `"${p.linkedin_url || ""}"`,
-                    `"https://www.kretopia.com/profile/${p.user_id}"`
+                    csvCell(p.full_name),
+                    csvCell(p.role),
+                    csvCell(p.instagram_url),
+                    csvCell(p.twitter_url),
+                    csvCell(p.linkedin_url),
+                    csvCell(`https://www.kretopia.com/profile/${p.user_id}`)
                   ].join(","))
                 ].join("\n");
 

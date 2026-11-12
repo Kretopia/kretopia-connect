@@ -76,6 +76,11 @@ Deno.serve(async (req) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
+    // The conversation must belong to the caller.
+    const { data: convo } = await admin
+      .from("ai_conversations").select("id").eq("id", conversationId).eq("user_id", userId).maybeSingle();
+    if (!convo) return json(corsHeaders, { error: "Conversation not found" }, 404);
+
     // Pull last 6 turns (3 exchanges)
     const { data: turns } = await admin
       .from("ai_messages")

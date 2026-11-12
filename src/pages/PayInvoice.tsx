@@ -75,7 +75,7 @@ export default function PayInvoice() {
     try {
       const res = await fetch(
         `https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/invoice-report-bank-transfer`,
-        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, t: payToken }) }
       );
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Couldn't report the transfer");

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAllowedFetchUrl } from "../_shared/fetchAllowlist.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
@@ -23,7 +24,13 @@ serve(async (req) => {
       );
     }
 
-    console.log('Processing URL:', url);
+    if (typeof url !== 'string' || url.length > 2048 || !isAllowedFetchUrl(url)) {
+      return new Response(JSON.stringify({ error: 'This site is not supported for import' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    console.log('Processing profile import');
 
     // Create Supabase client early for deduplication check
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;

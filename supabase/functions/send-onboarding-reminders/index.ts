@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         )
 
         if (emailError) {
-          console.error(`[Onboarding Reminders] Email error for ${userData.user.email}:`, emailError)
+          console.error(`[Onboarding Reminders] Email error:`, emailError)
           errorCount++
           continue
         }
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
           .update({ onboarding_reminder_sent: true })
           .eq('user_id', profile.user_id)
 
-        console.log(`[Onboarding Reminders] Sent to ${userData.user.email}`)
+        console.log(`[Onboarding Reminders] Sent reminder`)
         successCount++
       } catch (error) {
         console.error(`[Onboarding Reminders] Error for ${profile.user_id}:`, error)

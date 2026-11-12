@@ -1,3 +1,4 @@
+import { safeFilterTerm } from '../_shared/postgrestFilter.ts';
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
@@ -29,11 +30,12 @@ serve(async (req) => {
     }
 
     // Run DB search, AI suggestions, and web search in parallel
+    const safeQ = safeFilterTerm(query);
     const dbSearchPromise = (async () => {
       let dbQuery = supabase
         .from('icdb_projects')
         .select('*, icdb_project_roles(id, role_title, person_name, is_claimed, claimed_by)')
-        .or(`title.ilike.%${query}%,description.ilike.%${query}%,client_brand.ilike.%${query}%`)
+        .or(`title.ilike.%${safeQ}%,description.ilike.%${safeQ}%,client_brand.ilike.%${safeQ}%`)
         .order('year', { ascending: false, nullsFirst: false })
         .limit(20);
 

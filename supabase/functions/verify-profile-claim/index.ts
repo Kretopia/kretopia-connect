@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireAiCaller } from '../_shared/aiPerimeter.ts';
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
 
@@ -42,6 +43,8 @@ serve(async (req) => {
   try {
     try {
       await publicPerimeter(req, "verify-profile-claim", 10);
+      // Face matching calls a metered model: signed-in callers only.
+      await requireAiCaller(req, "verify-profile-claim");
     } catch (perimeterError) {
       return safeError(perimeterError, req);
     }

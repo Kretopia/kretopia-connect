@@ -58,6 +58,21 @@ serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
+    // The applicant must actually have taken part in this stage: a turn, an
+    // application, a raised hand or a seat. Hosts cannot stamp arbitrary users.
+    if (!existing?.id) {
+      const [app, hand, rsvp] = await Promise.all([
+        admin.from("curated_stage_applications").select("id").eq("stage_id", stage_id).eq("user_id", applicant_user_id).limit(1).maybeSingle(),
+        admin.from("curated_stage_raised_hands").select("id").eq("stage_id", stage_id).eq("user_id", applicant_user_id).limit(1).maybeSingle(),
+        admin.from("curated_stage_rsvps").select("stage_id").eq("stage_id", stage_id).eq("user_id", applicant_user_id).limit(1).maybeSingle(),
+      ]);
+      if (!app.data && !hand.data && !rsvp.data) {
+        return new Response(JSON.stringify({ error: "This person did not take part in this stage" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     let turnId = existing?.id;
     if (turnId) {
       await admin.from("curated_stage_turns").update({
@@ -125,7 +140,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("[record-stage-outcome]", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+    return new Response(JSON.stringify({ error: "Could not record the outcome" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

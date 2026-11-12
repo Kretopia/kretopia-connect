@@ -152,11 +152,7 @@ serve(async (req) => {
         </div>
       `;
 
-      if (useGmail) {
-        return sendViaGmail(emailSettings as EmailSettings, to, subject, htmlBody);
-      }
-
-      if (!resendApiKey) throw new Error("No email provider configured. Please connect your Gmail in Outreach settings.");
+      if (!useGmail && !resendApiKey) throw new Error("No email provider configured. Please connect your Gmail in Outreach settings.");
 
       // Mail that leaves from our domain shares our sending reputation: a budget
       // per account and per recipient, read before anything is sent. A count
@@ -179,8 +175,12 @@ serve(async (req) => {
         status: "sent",
       });
 
+      if (useGmail) {
+        return sendViaGmail(emailSettings as EmailSettings, to, subject, htmlBody);
+      }
+
       return sendViaResend(
-        resendApiKey,
+        resendApiKey!,
         `${singleLine(senderProfile?.full_name, 60).replace(/[<>"\\]/g, "") || "Kretopia User"} via Kretopia <noreply@kretopia.com>`,
         to,
         subject,
@@ -325,9 +325,9 @@ BODY: [email body with paragraphs]`,
       const { to, subject, body: emailBody, sequenceEmailId, leadId } = body;
       if (!to || !subject || !emailBody) throw new Error("Missing to, subject, or body");
 
-      // Mail sent from our own domain only goes to a contact the caller saved in
-      // their leads; a connected Gmail sends from the caller's own mailbox.
-      if (!useGmail) {
+      // Every outreach send (Resend or connected Gmail) only goes to a contact the
+      // caller saved in their own leads, and counts against the same send budget.
+      {
         const target = cleanRecipientEmail(to);
         if (!target) throw new HttpStatusError(400, "Invalid recipient address");
         const { data: ownLead, error: leadError } = await supabaseAdmin
@@ -339,7 +339,7 @@ BODY: [email body with paragraphs]`,
           .maybeSingle();
         if (leadError) throw new HttpStatusError(503, "Could not verify the recipient, try again shortly");
         if (!ownLead) {
-          throw new HttpStatusError(403, "Add this contact to your leads first, or connect your Gmail to email new addresses");
+          throw new HttpStatusError(403, "Add this contact to your leads first");
         }
       }
 

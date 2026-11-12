@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { isAllowedFetchUrl } from "../_shared/fetchAllowlist.ts";
 import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
@@ -70,8 +71,15 @@ serve(async (req) => {
     }
 
     const { url } = validationResult.data;
+    // Only known platforms are fetched server-side; other links get no preview.
+    if (!isAllowedFetchUrl(url)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Preview not available for this site" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    console.log("Fetching Open Graph data for:", url);
+    
 
     // Fetch the page HTML
     let response: Response;

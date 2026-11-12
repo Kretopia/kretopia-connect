@@ -1,4 +1,5 @@
 import { parsePublicPageUrl } from "../_shared/publicUrl.ts";
+import { isAllowedFetchUrl } from "../_shared/fetchAllowlist.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { GEMINI_FLASH } from "../_shared/aiModels.ts";
@@ -18,7 +19,8 @@ serve(async (req) => {
 
     const { url: rawUrl } = await req.json();
     // Only a public web page URL is fetched.
-    const url = parsePublicPageUrl(rawUrl)?.toString() ?? "";
+    const parsedUrl = parsePublicPageUrl(rawUrl);
+    const url = parsedUrl && isAllowedFetchUrl(parsedUrl) ? parsedUrl.toString() : "";
     if (!url) {
       return new Response(JSON.stringify({ error: "A public http(s) page URL is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

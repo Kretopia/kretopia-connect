@@ -3,6 +3,7 @@
 // Uses HEAD/GET on the page itself, parses OpenGraph + provider hints.
 // Note: CORS open; called from authed clients only. No user data is stored.
 
+import { isAllowedFetchUrl } from "../_shared/fetchAllowlist.ts";
 import { safeFetch } from "../_shared/ssrf.ts";
 
 
@@ -114,7 +115,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!title || !thumbnail) {
+    if ((!title || !thumbnail) && isAllowedFetchUrl(url)) {
       try {
         const { response: res } = await safeFetch(url, {
           headers: {
