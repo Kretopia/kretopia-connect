@@ -383,7 +383,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 side="right"
                 className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
-                <SheetHeader className="shrink-0 pr-8 text-left">
+                <SheetHeader className="shrink-0 text-left">
+                  <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
                   <MenuIdentityCard
                     isCompany={isCompany}

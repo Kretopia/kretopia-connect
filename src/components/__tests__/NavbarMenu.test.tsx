@@ -144,3 +144,29 @@ describe("the hamburger is the menu's own button, not a second controller", () =
     expect(burger()).not.toHaveAttribute("data-open");
   });
 });
+
+describe("the menu's branded header and identity card", () => {
+  beforeEach(() => {
+    tone.isBusiness = false;
+  });
+
+  it("wears the Kretopia brand header like the notifications sheet, with the identity card under it", () => {
+    const menu = openMenu();
+    expect(within(menu).getByRole("img", { name: "Kretopia" })).toBeInTheDocument();
+    expect(within(menu).getByRole("heading", { name: "Menu" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Open Passport" })).toBeInTheDocument();
+  });
+
+  it("keeps the card itself free of a banner of its own, since the header already carries the brand", () => {
+    const card = within(openMenu()).getByRole("button", { name: "Open Passport" });
+    expect(within(card).queryByText("Creative Passport")).not.toBeInTheDocument();
+    expect(within(card).queryByText("Kretopia")).not.toBeInTheDocument();
+  });
+
+  it("shows the Company card under the same brand header in Company mode", () => {
+    tone.isBusiness = true;
+    const menu = openMenu();
+    expect(within(menu).getByRole("img", { name: "Kretopia" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "Open Company Page" })).toBeInTheDocument();
+  });
+});

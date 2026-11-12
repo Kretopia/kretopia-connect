@@ -1,6 +1,5 @@
 import { ArrowUpRight, Building2, User } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { BrandLogo } from "@/components/BrandLogo";
 
 interface MenuIdentityCardProps {
   isCompany: boolean;
@@ -28,7 +27,10 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-/** Mini Kretopia passport heading the right-side menu, for both account modes. */
+/** Mini Kretopia passport heading the right-side menu, for both account modes.
+ *  The sheet itself already wears the branded Kretopia header (see Navbar), so
+ *  this card carries no banner of its own: identity, fields and the
+ *  machine-readable line only, at the same width as every other menu card. */
 export function MenuIdentityCard({ isCompany, name, avatarUrl, username, summary, location, industry, onOpen }: MenuIdentityCardProps) {
   const displayName = name || (isCompany ? "Company / Brand" : "Personal Creator");
   return (
@@ -36,30 +38,15 @@ export function MenuIdentityCard({ isCompany, name, avatarUrl, username, summary
       type="button"
       onClick={onOpen}
       aria-label={isCompany ? "Open Company Page" : "Open Passport"}
-      className="group relative mt-3 w-full text-left transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[20px]"
+      className="group relative mt-1 w-full text-left transition-transform duration-300 ease-out hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[20px]"
     >
       <div className="relative overflow-hidden rounded-[20px] border border-primary/30 bg-card shadow-md transition-shadow duration-300 group-hover:shadow-[0_12px_32px_-12px_hsl(var(--primary)/0.55)]">
         {/* Guilloché + holo wash */}
         <div className="pointer-events-none absolute inset-0 opacity-60 bg-[repeating-radial-gradient(circle_at_100%_0%,hsl(var(--primary)/0.10)_0_1px,transparent_1px_7px)]" aria-hidden />
         <div className="pointer-events-none absolute -inset-x-10 -top-10 h-24 rotate-6 bg-gradient-to-r from-transparent via-primary/25 to-transparent opacity-0 blur-md transition-all duration-700 group-hover:translate-y-24 group-hover:opacity-100" aria-hidden />
 
-        {/* Header */}
-        <div className="relative flex items-center justify-between border-b border-dashed border-primary/30 bg-gradient-to-r from-primary/20 via-accent/15 to-transparent px-4 py-2">
-          <div className="flex items-center gap-2">
-            <BrandLogo iconOnly size="sm" className="[&_img]:h-5 [&_img]:w-5" />
-            <div className="leading-none">
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-foreground">Kretopia</p>
-              <p className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{isCompany ? "Company Passport" : "Creative Passport"}</p>
-            </div>
-          </div>
-          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-background/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
-            {isCompany ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
-            {isCompany ? "Company" : "Creator"}
-          </span>
-        </div>
-
-        {/* Body */}
-        <div className="relative flex gap-3 px-4 pt-3">
+        {/* Identity */}
+        <div className="relative flex items-start gap-3 border-b border-dashed border-primary/25 px-4 pb-3 pt-3.5">
           <div className="shrink-0 rounded-full bg-gradient-to-br from-primary via-accent to-primary p-[2px] shadow-md">
             <Avatar className="h-16 w-16 rounded-full border-2 border-card">
               <AvatarImage src={avatarUrl ?? undefined} alt="" className="rounded-full object-cover" />
@@ -69,12 +56,19 @@ export function MenuIdentityCard({ isCompany, name, avatarUrl, username, summary
             </Avatar>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-serif text-lg leading-tight">{displayName}</p>
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 truncate font-serif text-lg leading-tight">{displayName}</p>
+              <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full border border-primary/40 bg-background/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary">
+                {isCompany ? <Building2 className="h-3 w-3" /> : <User className="h-3 w-3" />}
+                {isCompany ? "Company" : "Creator"}
+              </span>
+            </div>
             {username && <p className="truncate text-xs text-primary">@{username}</p>}
             {summary && <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-foreground/75">{summary}</p>}
           </div>
         </div>
 
+        {/* Fields */}
         <div className="relative grid grid-cols-2 gap-x-3 gap-y-2 px-4 pb-3 pt-3">
           <Field label={isCompany ? "Industry" : "Craft"} value={isCompany ? industry : summary} />
           <Field label="Based in" value={location} />
@@ -91,7 +85,7 @@ export function MenuIdentityCard({ isCompany, name, avatarUrl, username, summary
           <p className="truncate font-mono text-[9px] tracking-[0.12em] text-muted-foreground" aria-hidden>{mrz(isCompany, name, username)}</p>
         </div>
 
-        {/* Passport side notches */}
+        {/* Passport side notches, centred on the avatar */}
         <span className="absolute -left-2 top-[46px] h-4 w-4 rounded-full border border-primary/30 bg-background" aria-hidden />
         <span className="absolute -right-2 top-[46px] h-4 w-4 rounded-full border border-primary/30 bg-background" aria-hidden />
       </div>
