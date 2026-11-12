@@ -133,13 +133,13 @@ describe("function wiring", () => {
     expect(source).not.toMatch(/INVITER_ROLES[^\n]*"guest"/);
   });
 
-  it("send-outreach-email: the budget is read before the platform send, only on that path", () => {
+  it("send-outreach-email: the budget is read before any send", () => {
     const source = read("send-outreach-email/index.ts");
     const gmailReturn = source.indexOf("return sendViaGmail(");
     const budget = source.indexOf("decideSendBudget({");
     const resend = source.indexOf("return sendViaResend(");
-    expect(gmailReturn).toBeGreaterThan(-1);
-    expect(budget).toBeGreaterThan(gmailReturn);
+    expect(gmailReturn).toBeGreaterThan(budget);
+    expect(budget).toBeGreaterThan(-1);
     expect(resend).toBeGreaterThan(budget);
     expect(source).toContain("HttpStatusError(budget.status, budget.error)");
   });

@@ -75,7 +75,7 @@ serve(async (req) => {
     // Only known portfolio/media platforms are fetched server-side.
     if (!isAllowedFetchUrl(url)) {
       return new Response(
-        JSON.stringify({ platform: "unknown", mediaType: "link", mediaUrl: url }),
+        JSON.stringify({ success: true, data: { platform: "unknown", mediaType: "link", mediaUrl: url } }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

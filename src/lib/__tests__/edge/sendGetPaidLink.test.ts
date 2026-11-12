@@ -15,10 +15,10 @@ vi.mock("https://esm.sh/resend@4.0.0", () => ({
   },
 }));
 vi.mock("https://esm.sh/@supabase/supabase-js@2.57.2", () => {
-  const query = (row: unknown) => {
+  const query = (row: unknown, list: unknown[] = []) => {
     const q: any = {};
     q.select = () => q; q.eq = () => q; q.gte = () => q; q.ilike = () => q; q.in = () => q;
-    q.then = (res: any, rej: any) => Promise.resolve({ data: [], count: 0, error: null }).then(res, rej);
+    q.then = (res: any, rej: any) => Promise.resolve({ data: list, count: 0, error: null }).then(res, rej);
     q.insert = async () => ({ error: null });
     q.maybeSingle = async () => ({ data: row, error: null });
     q.single = async () => ({ data: row, error: null });
@@ -31,7 +31,10 @@ vi.mock("https://esm.sh/@supabase/supabase-js@2.57.2", () => {
         getUser: async () => ({ data: { user: { id: "owner-1", email: "owner@example.com" } } }),
         admin: { listUsers: async () => ({ data: { users: [] } }) },
       },
-      from: (table: string) => query(table === "projects" ? { title: "Q&A shoot" } : { full_name: "Owner" }),
+      from: (table: string) =>
+        table === "project_collaborators"
+          ? query(null, [{ email: "pat@example.com", user_id: null }])
+          : query(table === "projects" ? { title: "Q&A shoot" } : { full_name: "Owner" }),
     }),
   };
 });

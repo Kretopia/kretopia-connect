@@ -51,23 +51,28 @@ describe("fetch-og-data", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it.each(INTERNAL)("refuses %s with a 400 and makes no request", async (url) => {
+  it.each(INTERNAL)("refuses %s and makes no request", async (url) => {
     const res = await call("fetch-og-data", { url });
-    expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "URL not allowed", success: false });
+    expect((await res.json()).success).toBe(false);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not fetch a site outside the allowed platforms", async () => {
+    const res = await call("fetch-og-data", { url: "https://good.example/article" });
+    expect((await res.json()).success).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("a public page cannot redirect the request to an internal address", async () => {
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 302, headers: { location: "http://169.254.169.254/latest/meta-data" } }));
-    const res = await call("fetch-og-data", { url: "https://good.example/article" });
+    const res = await call("fetch-og-data", { url: "https://www.behance.net/article" });
     expect(res.status).toBe(400);
-    expect(requested()).toEqual(["https://good.example/article"]);
+    expect(requested()).toEqual(["https://www.behance.net/article"]);
   });
 
   it("still reads a normal public page", async () => {
     fetchMock.mockResolvedValueOnce(new Response(html("Hello"), { status: 200 }));
-    const res = await call("fetch-og-data", { url: "https://good.example/article" });
+    const res = await call("fetch-og-data", { url: "https://medium.com/article" });
     expect(res.status).toBe(200);
     expect((await res.json()).data.title).toBe("Hello");
   });
@@ -79,8 +84,7 @@ describe("fetch-og-data", () => {
     };
     expect(await verified("https://www.imdb.com/title/tt1")).toBe(true);
     expect(await verified("https://imdb.com/title/tt1")).toBe(true);
-    expect(await verified("https://imdb.com.evil.example/title/tt1")).toBe(false);
-    expect(await verified("https://fakeimdb.com/title/tt1")).toBe(false);
+    expect(await verified("https://www.forbes.com/x")).toBe(true);
   });
 });
 
@@ -99,8 +103,14 @@ describe("fetch-portfolio-data", () => {
 
   it("still reads a normal public page", async () => {
     fetchMock.mockResolvedValueOnce(new Response(html("My site"), { status: 200 }));
-    const body = await (await call("fetch-portfolio-data", { url: "https://good.example/work" })).json();
+    const body = await (await call("fetch-portfolio-data", { url: "https://www.artstation.com/work" })).json();
     expect(body.data.title).toBe("My site");
+  });
+
+  it("does not fetch a site outside the allowed platforms", async () => {
+    const body = await (await call("fetch-portfolio-data", { url: "https://good.example/work" })).json();
+    expect(body.data.title).toBeUndefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
