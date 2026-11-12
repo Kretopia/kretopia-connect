@@ -13,6 +13,7 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
+import { MenuIdentityCard } from "@/components/nav/MenuIdentityCard";
 import { getMenuSections } from "@/components/nav/menuSections";
 import { SCOUT_PATH, OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 import { supabase } from "@/integrations/supabase/client";
@@ -384,24 +385,16 @@ const Navbar = memo(({ user }: NavbarProps) => {
               >
                 <SheetHeader className="shrink-0 pr-8 text-left">
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
-                  <Button
-                    variant="ghost"
-                    className="mt-3 h-auto w-full justify-start gap-3 px-0 py-2 text-left whitespace-normal"
-                    onClick={() => handleNavigation(isCompany ? `/profile/${user.id}` : "/profile")}
-                    aria-label={isCompany ? "Open Company Page" : "Open Passport"}
-                  >
-                    <Avatar className="h-12 w-12 shrink-0">
-                      <AvatarImage src={identityAvatar ?? undefined} alt="" />
-                      <AvatarFallback>{identityName?.charAt(0).toUpperCase() || (isCompany ? <Building2 className="h-5 w-5" /> : <User className="h-5 w-5" />)}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1 space-y-0.5">
-                      <p className="break-words text-sm font-semibold">{identityName || (isCompany ? "Company / Brand" : "Personal Creator")}</p>
-                      {menuProfile?.username && <p className="break-all text-xs text-muted-foreground">@{menuProfile.username}</p>}
-                      {identitySummary && <p className="line-clamp-2 break-words text-xs text-muted-foreground">{identitySummary}</p>}
-                      {menuProfile?.location && <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{menuProfile.location}</span></p>}
-                    </div>
-                  </Button>
-                  {isCompany && <CompanyModeBadge className="w-fit" />}
+                  <MenuIdentityCard
+                    isCompany={isCompany}
+                    name={identityName}
+                    avatarUrl={identityAvatar ?? null}
+                    username={menuProfile?.username ?? null}
+                    summary={identitySummary}
+                    location={menuProfile?.location ?? null}
+                    industry={menuProfile?.company_industry}
+                    onOpen={() => handleNavigation(isCompany ? `/profile/${user.id}` : "/profile")}
+                  />
                 </SheetHeader>
 
                 {/* [&>*]:shrink-0 is load-bearing, not decorative: every row
