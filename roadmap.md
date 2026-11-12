@@ -1,3 +1,8 @@
+# Sidebar organization
+- [x] Show Creator/Company identity first, Kreto in Workspace, categories of at most three cards, and shared account controls last without adjacent dividers.
+- [x] Verify both modes with 32 focused tests and successful preview compilation; no publication.
+- [ ] Check the signed-in sidebar visually with production profile data: blocked by unavailable legacy authenticated session.
+
 # Feature consolidation
 - [x] Restore Scout as the shared work destination, preserving existing offers and Company management.
 - [x] Integrate the Passport directory into Match and preserve old links.

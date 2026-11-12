@@ -13,7 +13,7 @@ import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { cn } from "@/lib/utils";
 import { BrandLogo } from "@/components/BrandLogo";
-import { KretoDestinationIcon } from "@/components/brand/DestinationIcons";
+import { getMenuSections } from "@/components/nav/menuSections";
 import { SCOUT_PATH, OPPORTUNITIES_PATH, isOpportunitySpace } from "@/lib/opportunityRoutes";
 import { supabase } from "@/integrations/supabase/client";
 import { releasePushForSignOut } from "@/lib/pushSubscription";
@@ -53,6 +53,16 @@ const Navbar = memo(({ user }: NavbarProps) => {
   // else the account menu opens off a plain Menu icon, not a photo.
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarName, setAvatarName] = useState<string>("");
+  const [menuProfile, setMenuProfile] = useState<{
+    username: string | null; passport_profession: string | null; job_title: string | null;
+    location: string | null; company_name: string | null; company_logo_url: string | null;
+    company_tagline: string | null; company_industry: string | null; company_about: string | null;
+  } | null>(null);
+  const identityName = isCompany ? menuProfile?.company_name || avatarName : avatarName;
+  const identityAvatar = isCompany ? menuProfile?.company_logo_url || avatarUrl : avatarUrl;
+  const identitySummary = isCompany
+    ? menuProfile?.company_tagline || menuProfile?.company_industry || menuProfile?.company_about
+    : menuProfile?.passport_profession || menuProfile?.job_title;
   // Route-only, not gated by !user: a signed-in user reaching /landing
   // (via the Navbar's own logo, see below) should get this same marketing
   // chrome -- normal app nav/icons hidden, connected-avatar trigger instead
@@ -95,13 +105,14 @@ const Navbar = memo(({ user }: NavbarProps) => {
     Promise.resolve(
       supabase
         .from("profiles")
-        .select("is_manager_mode, avatar_url, full_name")
+        .select("is_manager_mode, avatar_url, full_name, username, passport_profession, job_title, location, company_name, company_logo_url, company_tagline, company_industry, company_about")
         .eq("user_id", user.id)
         .maybeSingle(),
     )
       .then(({ data }) => {
 
-        if (data?.is_manager_mode) setIsManagerMode(true);
+        setIsManagerMode(!!data?.is_manager_mode);
+        setMenuProfile(data ?? null);
         setAvatarUrl(data?.avatar_url ?? null);
         setAvatarName(data?.full_name ?? "");
       })
@@ -372,8 +383,24 @@ const Navbar = memo(({ user }: NavbarProps) => {
                 className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
                 <SheetHeader className="shrink-0 pr-8 text-left">
-                  <BrandLogo size="sm" showBeta />
                   <SheetTitle className="font-serif text-2xl font-normal mt-1">Menu</SheetTitle>
+                  <Button
+                    variant="ghost"
+                    className="mt-3 h-auto w-full justify-start gap-3 px-0 py-2 text-left whitespace-normal"
+                    onClick={() => handleNavigation(isCompany ? `/profile/${user.id}` : "/profile")}
+                    aria-label={isCompany ? "Open Company Page" : "Open Passport"}
+                  >
+                    <Avatar className="h-12 w-12 shrink-0">
+                      <AvatarImage src={identityAvatar ?? undefined} alt="" />
+                      <AvatarFallback>{identityName?.charAt(0).toUpperCase() || (isCompany ? <Building2 className="h-5 w-5" /> : <User className="h-5 w-5" />)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className="break-words text-sm font-semibold">{identityName || (isCompany ? "Company / Brand" : "Personal Creator")}</p>
+                      {menuProfile?.username && <p className="break-all text-xs text-muted-foreground">@{menuProfile.username}</p>}
+                      {identitySummary && <p className="line-clamp-2 break-words text-xs text-muted-foreground">{identitySummary}</p>}
+                      {menuProfile?.location && <p className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3 shrink-0" /><span className="truncate">{menuProfile.location}</span></p>}
+                    </div>
+                  </Button>
                   {isCompany && <CompanyModeBadge className="w-fit" />}
                 </SheetHeader>
 
@@ -391,11 +418,17 @@ const Navbar = memo(({ user }: NavbarProps) => {
                     Switch-to-Company to 18px, both with the second line
                     rendered but invisible underneath the first. */}
                 <div className="flex flex-col gap-1 mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[max(1rem,env(safe-area-inset-bottom))] -mx-1 px-1 [&>*]:shrink-0">
-                  {isCompany ? (
-                    /* Company workspace and the same shared feature access as Creator. */
-                    <>
-                      {/* ACCOUNT — pinned to the top in Company mode too,
-                          exactly mirroring the Personal Creator menu order. */}
+                  {getMenuSections(isCompany, isManagerMode).map((section, index) => (
+                    <section key={section.title} aria-label={section.title}>
+                      {index > 0 && <Separator className="my-3" />}
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{section.title}</p>
+                      <MenuGrid>
+                        {section.items.map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
+                      </MenuGrid>
+                    </section>
+                  ))}
+                  <Separator className="my-3" />
+                  <section aria-label="Account" className="mt-auto">
                       <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                         Account
                       </p>
@@ -439,213 +472,10 @@ const Navbar = memo(({ user }: NavbarProps) => {
                         </div>
                         <ThemeToggle className="h-10 w-10" />
                       </div>
-                      <Separator className="my-3" />
-                      <MenuGrid>
-                        {/* Messages (top bar) and Studios / Gigs / Talent / KrePay (the nav) are not repeated here; their routes are unchanged. */}
-                        {[
-                          { icon: Plus, label: "Post a Gig", path: "/post-opportunity" },
-                          { icon: Building2, label: "Clients", path: "/clients" },
-                        ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
-                        <MenuGridTile
-                          icon={User}
-                          label="Company Page"
-                          onClick={() => handleNavigation(`/profile/${user?.id}`)}
-                          path={`/profile/${user?.id}`}
-                        />
-                        {isManagerMode && (
-                          <MenuGridTile
-                            icon={Users}
-                            label="Talent Manager"
-                            onClick={() => handleNavigation("/talent-manager")}
-                            path="/talent-manager"
-                          />
-                        )}
-                      </MenuGrid>
-                      <Separator className="my-3" />
-                       <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Explore</p>
-                       <MenuGrid>
-                         {[
-                           { icon: Sun, label: "Today", path: "/" },
-                           { icon: Heart, label: "Match", path: "/match" },
-                           { icon: Theater, label: "Stages", path: "/circle" },
-                           { icon: KretoDestinationIcon, label: "Kreto", path: "/kreto" },
-                           { icon: CalendarDays, label: "Events", path: "/meetup" },
-                           { icon: Video, label: "Recordings", path: "/recordings" },
-                           { icon: Sparkles, label: "Spotlight", path: "/spotlight" },
-                           { icon: Database, label: "Credits", path: "/credits" },
-                           { icon: UserPlus, label: "Creative Circle", path: "/creative-circle" },
-                         ].map(item => <MenuGridTile key={item.path} {...item} onClick={() => handleNavigation(item.path)} />)}
-                       </MenuGrid>
-                    </>
-                  ) : (
-                    /* ====== DAILY DRIVER MENU — System + Account only ====== */
-                    <>
-                      {/* ACCOUNT */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Account
-                      </p>
-                      <Button
-                        variant="ghost"
-                        className="justify-start gap-3 h-auto w-full py-3"
-                        onClick={() => handleNavigation("/subscription")}
-                      >
-                        {isPro ? (
-                          <Crown className="h-5 w-5 text-accent" />
-                        ) : (
-                          <Sparkles className="h-5 w-5 text-primary" />
-                        )}
-                        <div className="flex flex-col items-start gap-0.5">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Subscription</span>
-                            <Badge
-                              variant="secondary"
-                              className={cn(
-                                "text-[10px] uppercase tracking-wider",
-                                isPro ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground",
-                              )}
-                            >
-                              {tierName}
-                            </Badge>
-                          </div>
-                          {!isPro && <span className="text-xs text-primary font-medium">Upgrade →</span>}
-                        </div>
-                      </Button>
-
-                      <div className="px-1 py-1">
-                        <StorageMeter variant="compact" />
-                      </div>
-                      <AccountSwitcher
-                        currentAccountType={accountType}
-                        onSwitch={() => setIsOpen(false)}
-                        onManagerModeChange={(enabled) => setIsManagerMode(enabled)}
-                      />
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1">
-                          <MenuButton icon={Settings} label="Settings" onClick={() => handleNavigation("/settings")} />
-                        </div>
-                        <ThemeToggle className="h-10 w-10" />
-                      </div>
-
-                      <Separator className="my-3" />
-
-                      {/* WORKSPACE — daily shortcuts only. Today/Desk live in bottom nav; Pay in Passport. */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Workspace
-                      </p>
-                      <MenuGrid>
-                        <MenuGridTile
-                          icon={DollarSign}
-                          label="KrePay"
-                          onClick={() => handleNavigation("/thrivepay")}
-                          path="/thrivepay"
-                        />
-                        <MenuGridTile
-                          icon={Building2}
-                          label="Clients"
-                          onClick={() => handleNavigation("/clients")}
-                          path="/clients"
-                        />
-                        {/* Crews hidden from UI — data preserved, deep links still work via /crews. Group chat lives in Messages. */}
-                        {isManagerMode && (
-                          <MenuGridTile
-                            icon={Users}
-                            label="Manager Mode"
-                            onClick={() => handleNavigation("/talent-manager")}
-                            path="/talent-manager"
-                          />
-                        )}
-                      </MenuGrid>
-
-                      <Separator className="my-3" />
-
-                      {/* PILLARS — live surfaces not in bottom nav */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Explore
-                      </p>
-                      <MenuGrid>
-                        {/* "Stages" -> /circle is the one entry point here. /soundstages
-                            renders the same live-stages feed with no other chrome (confirmed
-                            duplicate content, not just a duplicate label) -- it stays reachable
-                            from inside /circle and from every in-app "Join"/"Start Stage" button,
-                            it just doesn't need its own top-level menu entry too. */}
-                        <MenuGridTile
-                          icon={Theater}
-                          label="Stages"
-                          onClick={() => handleNavigation("/circle")}
-                          path="/circle"
-                        />
-                        <MenuGridTile
-                          icon={KretoDestinationIcon}
-                          label="Kreto"
-                          onClick={() => handleNavigation("/kreto")}
-                          path="/kreto"
-                        />
-                        {/* Match is in the primary nav (right after Today), so it is not repeated here. Perks is reached from Creative Circle (Member benefits). */}
-                        <MenuGridTile
-                          icon={CalendarDays}
-                          label="Events"
-                          onClick={() => handleNavigation("/meetup")}
-                          path="/meetup"
-                        />
-                        <MenuGridTile
-                          icon={Video}
-                          label="Recordings"
-                          onClick={() => handleNavigation("/recordings")}
-                          path="/recordings"
-                        />
-                      </MenuGrid>
-
-                      <Separator className="my-3" />
-
-                      {/* MORE — keep lean. Brand Vault/Referrals reachable by direct URL.
-                          Spotlight restored here — it's the only path to the Magazine
-                          "Write" (edit/upload article) button for editors/admins, and
-                          direct-URL-only made that undiscoverable. */}
-                      <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        More
-                      </p>
-                      <MenuGrid>
-                        <MenuGridTile
-                          icon={Sparkles}
-                          label="Spotlight"
-                          onClick={() => handleNavigation("/spotlight")}
-                          path="/spotlight"
-                        />
-                        <MenuGridTile
-                          icon={Database}
-                          label="Credits"
-                          onClick={() => handleNavigation("/credits")}
-                          path="/credits"
-                        />
-                        {/* Founding Circle is a status inside Creative Circle, so it has no entry of its own. */}
-                        <MenuGridTile
-                          icon={UserPlus}
-                          label="Creative Circle"
-                          onClick={() => handleNavigation("/creative-circle")}
-                          path="/creative-circle"
-                        />
-                      </MenuGrid>
-
-                      {/* Settings and Support sections removed from this menu by request --
-                          Settings (incl. Notifications/Memory & Agent/Language/Privacy/Appearance)
-                          is unchanged and still one tap away via the gear icon in the top nav
-                          (SettingsDrawer renders the exact same Settings page, embedded). Feedback
-                          still fires via the "open-feedback" event from wherever else it's wired;
-                          Help Centre (/help) and About (/about) remain live routes, just not
-                          listed here. */}
-
-                      {/* ADMIN */}
-                      {user?.id === "ef429714-ea32-4f08-a4f9-ef0226f1804b" && (
-                        <>
-                          <Separator className="my-3" />
-
-                       <Separator className="my-3" />
-                          <MenuButton icon={Shield} label="Admin Panel" onClick={() => handleNavigation("/admin")} />
-                        </>
-                      )}
-                    </>
-                  )}
-
+                    {user.id === "ef429714-ea32-4f08-a4f9-ef0226f1804b" && (
+                      <MenuButton icon={Shield} label="Admin Panel" onClick={() => handleNavigation("/admin")} />
+                    )}
+                  </section>
                   <Separator className="my-3" />
 
                   <Button
@@ -688,7 +518,8 @@ function MenuGridTile({
   const location = useLocation();
   const isActive = !!path && (path === location.pathname || (path !== "/" && location.pathname.startsWith(path + "/")));
   return (
-    <button
+    <Button
+      variant="ghost"
       type="button"
       onClick={onClick}
       aria-current={isActive ? "page" : undefined}
@@ -703,7 +534,7 @@ function MenuGridTile({
       {badge && (
         <Badge className="absolute top-1.5 right-1.5 bg-primary/15 text-primary text-[9px] px-1.5 h-4">{badge}</Badge>
       )}
-    </button>
+    </Button>
   );
 }
 
