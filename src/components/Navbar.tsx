@@ -381,7 +381,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="k-menu-sheet flex h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
+                className="k-menu-sheet flex pt-[max(1.5rem,env(safe-area-inset-top))] h-[100dvh] max-h-[100dvh] w-[85vw] max-w-[400px] sm:w-[400px] flex-col overflow-hidden text-foreground"
               >
                 <SheetHeader className="shrink-0 text-left">
                   <BrandLogo size="sm" showBeta />

@@ -98,7 +98,7 @@ export const NotificationCenter = ({ triggerClassName }: { triggerClassName?: st
           </span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md">
+      <SheetContent className="w-[85vw] max-w-[400px] sm:w-full sm:max-w-md pt-[max(1.5rem,env(safe-area-inset-top))]">
         <SheetHeader className="text-left">
           <BrandLogo size="sm" showBeta />
           <SheetTitle className="font-serif text-2xl font-normal mt-1 flex items-center justify-between">

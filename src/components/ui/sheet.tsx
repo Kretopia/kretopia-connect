@@ -86,8 +86,8 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
         >
           {/* What a panel opens in turn (a dialog, a confirmation) follows it. */}
           <ModalSurfaceProvider branded={quick ? branded : wearsBrand}>{children}</ModalSurfaceProvider>
-          {!quick && <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
-            <X className="h-4 w-4" />
+          {!quick && <SheetPrimitive.Close className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 inline-flex h-10 w-10 items-center justify-center rounded-full bg-background/80 backdrop-blur opacity-80 ring-offset-background transition-opacity data-[state=open]:bg-secondary hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+            <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>}
         </SheetPrimitive.Content>
