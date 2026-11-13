@@ -3,6 +3,8 @@ import { Wallet, FileText, CheckCircle2, Circle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { paidProvenanceNote } from "@/lib/invoiceProvenance";
 import { cn } from "@/lib/utils";
 
 interface MoneySectionProps {
@@ -23,6 +25,9 @@ interface InvoiceLite {
   id: string;
   status: string;
   total_amount: number | null;
+  issued_by?: string | null;
+  /** Present once 20261015100000 is applied; absent before, which reads as "recorded by the issuer". */
+  stripe_payment_intent_id?: string | null;
 }
 
 const fmt = (n: number | null | undefined, ccy: string | null | undefined) => {
@@ -39,6 +44,7 @@ const fmt = (n: number | null | undefined, ccy: string | null | undefined) => {
 };
 
 export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoice }: MoneySectionProps) => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<InvoiceLite | null>(null);
   const [marking, setMarking] = useState(false);
@@ -49,7 +55,8 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
       try {
         const { data } = await supabase
           .from("invoices")
-          .select("id, status, total_amount")
+          // "*", not a column list: naming stripe_payment_intent_id fails until 20261015100000 is applied.
+          .select("*")
           .eq("project_id", project.id)
           .order("created_at", { ascending: false })
           .limit(1)
@@ -69,6 +76,7 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
   const value = project.client_price ?? project.creative_payout ?? null;
   const isPaid = invoice?.status === "paid";
   const isSent = invoice && !isPaid;
+  const paidNote = invoice ? paidProvenanceNote(invoice, user?.id) : null;
 
   const markPaid = async () => {
     if (!invoice) return;
@@ -158,7 +166,7 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
             </p>
             <p
               className={cn(
-                "font-semibold flex items-center gap-1 mt-0.5",
+                "font-semibold flex flex-wrap items-center gap-1 mt-0.5",
                 isPaid && "text-[hsl(var(--energy))]"
               )}
             >
@@ -167,6 +175,11 @@ export const MoneySection = ({ project, isOwner, clientView = false, onOpenInvoi
               ) : isPaid ? (
                 <>
                   <CheckCircle2 className="h-3 w-3" /> Paid
+                  {paidNote && (
+                    <span className="font-normal text-[10px] text-muted-foreground" title={paidNote.detail}>
+                      · {paidNote.short}
+                    </span>
+                  )}
                 </>
               ) : (
                 <>

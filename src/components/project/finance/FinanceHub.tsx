@@ -20,6 +20,7 @@ import {
 import { MilestoneBoard } from "@/components/project/MilestoneBoard";
 import { InvoiceGenerator } from "@/components/project/InvoiceGenerator";
 import { MarkPaidBankTransferDialog } from "@/components/project/finance/MarkPaidBankTransferDialog";
+import { paidProvenanceNote } from "@/lib/invoiceProvenance";
 import { PaymentRequestsReview } from "@/components/project/finance/PaymentRequestsReview";
 import { Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -50,6 +51,9 @@ interface InvoiceLite {
   milestone_id: string | null;
   created_at: string;
   issued_to: string | null;
+  issued_by?: string | null;
+  /** Present once 20261015100000 is applied; absent before, which reads as "recorded by the issuer". */
+  stripe_payment_intent_id?: string | null;
 }
 
 const STATUS_TONE: Record<string, string> = {
@@ -91,9 +95,9 @@ export function FinanceHub({
   const fetchInvoices = async () => {
     const { data } = await supabase
       .from("invoices")
-      .select(
-        "id, invoice_number, status, total_amount, amount, currency, recipient_name, due_date, document_type, milestone_id, created_at, issued_to"
-      )
+      // "*", not a column list: naming stripe_payment_intent_id fails until 20261015100000 is applied, and the
+      // provenance of a paid invoice (paidProvenanceNote) depends on it.
+      .select("*")
       .eq("project_id", projectId)
       .order("created_at", { ascending: false });
     setInvoices((data as InvoiceLite[]) || []);
@@ -399,6 +403,14 @@ export function FinanceHub({
                         >
                           {inv.status}
                         </Badge>
+                        {(() => {
+                          const note = paidProvenanceNote(inv, currentUserId);
+                          return note ? (
+                            <span className="text-[10px] text-muted-foreground" title={note.detail}>
+                              {note.short}
+                            </span>
+                          ) : null;
+                        })()}
                         {isQuote && (
                           <Badge variant="outline" className="text-[10px] bg-energy/10 text-energy-foreground border-energy/30">
                             Quote

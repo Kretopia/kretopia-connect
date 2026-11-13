@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { isProviderConfirmedPaid, isSelfReportedPaid } from "../invoiceProvenance";
+import { isProviderConfirmedPaid, isSelfReportedPaid, paidProvenanceNote } from "../invoiceProvenance";
 
 const root = (rel: string) => readFileSync(resolve(__dirname, "../../..", rel), "utf8");
 
@@ -67,10 +67,37 @@ describe("public trust signals count only provider-confirmed invoices", () => {
     expect(s).toContain('.not("stripe_payment_intent_id", "is", null)');
   });
 
-  it("the issuer's own list labels a self-reported paid invoice", () => {
+  it("the invoice list labels a paid invoice the issuer recorded, for whoever is looking", () => {
     const s = root("src/components/project/InvoiceGenerator.tsx");
-    expect(s).toContain("isSelfReportedPaid(inv)");
-    expect(s).toContain("· self-reported");
+    expect(s).toContain("paidProvenanceNote(inv, user?.id)");
+    expect(s).toContain("· {paidNote.short}");
+  });
+
+  it.each([
+    ["src/components/project/studio/MoneySection.tsx", "paidProvenanceNote(invoice, user?.id)"],
+    ["src/components/project/finance/FinanceHub.tsx", "paidProvenanceNote(inv, currentUserId)"],
+  ])("%s shows who vouches for a paid invoice, and reads the reference without naming it", (file, call) => {
+    const s = root(file);
+    expect(s).toContain(call);
+    // Naming stripe_payment_intent_id in a select fails until the migration is applied; "*" works before and after.
+    expect(s).not.toMatch(/\.select\([^)]*stripe_payment_intent_id/);
+    expect(s).toMatch(/\.from\("invoices"\)\s*(\/\/[^\n]*\s*)*\.select\("\*"\)/);
+  });
+});
+
+describe("paidProvenanceNote: whose word a paid invoice rests on", () => {
+  const manual = { status: "paid", stripe_payment_intent_id: null, issued_by: "issuer-1" };
+
+  it("tells the issuer it is their own record, and anyone else that it is the issuer's", () => {
+    expect(paidProvenanceNote(manual, "issuer-1")).toEqual({ short: "self-reported", detail: "Marked paid by you; no payment provider confirmed it" });
+    expect(paidProvenanceNote(manual, "client-9")?.short).toBe("recorded by the issuer");
+    expect(paidProvenanceNote(manual, null)?.short).toBe("recorded by the issuer");
+    expect(paidProvenanceNote({ status: "paid" }, "issuer-1")?.short).toBe("recorded by the issuer");
+  });
+
+  it("says nothing for a provider-confirmed or unpaid invoice", () => {
+    expect(paidProvenanceNote({ ...manual, stripe_payment_intent_id: "pi_1" }, "client-9")).toBeNull();
+    expect(paidProvenanceNote({ ...manual, status: "sent" }, "client-9")).toBeNull();
   });
 });
 

@@ -78,6 +78,13 @@ serve(async (req) => {
         headers: { "Content-Type": "application/json" },
       });
     }
+    if (ledgerClaim === "unavailable") {
+      // Nothing was processed and nothing was claimed: Stripe delivers the event again (_shared/webhookLedger.ts).
+      return new Response(JSON.stringify({ error: "Event ledger unavailable; retry" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     if (ledgerClaim === "claimed") {
       releaseLedger = () => releaseWebhookEvent(supabaseAdmin, event.id);
     }

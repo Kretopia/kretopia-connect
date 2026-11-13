@@ -40,6 +40,10 @@ serve(async (req) => {
   if (ledgerClaim === "duplicate") {
     return new Response("ok", { status: 200 });
   }
+  if (ledgerClaim === "unavailable") {
+    // Nothing was processed and nothing was claimed: Stripe delivers the event again (_shared/webhookLedger.ts).
+    return new Response("ledger unavailable", { status: 500 });
+  }
 
   try {
     switch (event.type) {

@@ -50,6 +50,9 @@ export const TARGET_KEYS: Readonly<Record<string, ReadonlyArray<readonly string[
   delete_project: [["project_id", "target_project_id"]],
   remove_collaborator: [["project_id", "target_project_id"], ["user_id_to_remove", "user_id"]],
   add_collaborator: [["project_id", "target_project_id"], ["user_id_to_add", "user_id"]],
+  // Desk tools that reach other people (_shared/deskApproval.ts): an approval may edit the text, not the project.
+  send_message_to_collaborator: [["project_id", "target_project_id"]],
+  start_video_call: [["project_id", "target_project_id"]],
 };
 
 const text = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
