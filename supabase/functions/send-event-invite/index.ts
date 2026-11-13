@@ -128,11 +128,30 @@ serve(async (req) => {
         cleaned.push(v);
         if (cleaned.length >= MAX_RECIPIENTS) break;
       }
+
+      // Only the host's accepted Kretopia connections may be invited: resolve their
+      // account emails server-side and drop every address that is not one of them.
+      const { data: conns } = await admin
+        .from("connections")
+        .select("user_id, connected_user_id")
+        .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
+        .eq("status", "accepted")
+        .limit(2000);
+      const peerIds = [...new Set((conns ?? []).map((c: any) =>
+        c.user_id === user.id ? c.connected_user_id : c.user_id
+      ).filter(Boolean))];
+      const allowedEmails = new Set<string>();
+      await Promise.all(peerIds.map(async (id) => {
+        const { data } = await admin.auth.admin.getUserById(id as string);
+        const em = data?.user?.email?.toLowerCase();
+        if (em) allowedEmails.add(em);
+      }));
+      cleaned = cleaned.filter((e) => allowedEmails.has(e));
     }
 
     if (cleaned.length === 0) {
       return new Response(
-        JSON.stringify({ error: "No valid email addresses provided" }),
+        JSON.stringify({ error: "Invitations can only be sent to your accepted Kretopia connections" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
