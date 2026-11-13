@@ -1,81 +1,269 @@
-# Kretopia: technical design document
+# Technical Design Document — Kretopia
 
-> **Internal draft: not for external distribution.** Written 2026-11-13 from the repository. It names internal components and known gaps. An external version must leave out the gaps, file paths and component names, and be reviewed before sharing. It contains no secrets, credentials, project identifiers or host names, and none may be added.
+> ## INTERNAL DRAFT — NOT FOR EXTERNAL DISTRIBUTION
+> This document describes internal architecture and known weaknesses. It is **not** a production-readiness statement, a security certification, or a complete design record. A sanitised summary suitable for fundraisers is in Appendix A; share only that appendix externally.
 
-## 1. System overview
+**Version:** 0.1 (draft) · **Date:** 2026-11-13
+**Scope:** current implemented system as found in `Kretopia/kretopia-connect`.
+**Excluded:** live infrastructure identifiers, credentials, project references, provider account details, and any secret value.
 
-Kretopia is a web application for creative careers: a public profile (the Passport) with Credits (records of roles on projects), discovery (Scout for work, Match for people, events), collaboration (Studio projects with roles, chat, tasks, files, calls and money) and an AI assistant (Kreto) that can propose and, with approval, carry out actions.
+## Evidence limits
 
-| Layer | Technology | Notes |
-|---|---|---|
-| Client | React, TypeScript, Vite; a progressive web app | Built and hosted through the Lovable editor; only public configuration in the bundle |
-| API and data | Supabase: PostgreSQL with row-level security, authentication, storage, realtime | Two backends: the production ("legacy") project that holds user data, and a Lovable Cloud project for a few newer services (public web search, username sign-in links, Kreto's Cloud control and ledger). The client reaches the legacy backend through a fixed adapter |
-| Server logic | About 320 Deno edge functions; about 100 shared modules | Deployed through a manual, approval-gated workflow |
-| Payments | Stripe: Checkout, payment links, Connect payouts, webhooks | Card data never reaches Kretopia |
-| Email | Transactional email provider; Gmail through a user's own connection for outreach | |
-| Calls | Daily.co | Recordings stay in the provider's storage |
-| AI | An AI gateway in front of several model providers; a web-fetching service; a voice service | Model ids centralised in one shared module |
-| Monitoring | Sentry (masked; not configured in production at the last check), function logs, client error log table | |
+- Describes the repository, not verified production state. Deployment drift is documented in `docs/platform/REPO_AUDIT.md:14-16`.
+- No capacity, latency or availability measurements were taken.
+- Third-party contract terms and regions were not inspected.
+
+---
+
+## 1. System architecture
+
+```
+                    ┌───────────────────────────────┐
+                    │  Browser SPA (React 18 + Vite)│
+                    │  PWA / Capacitor iOS+Android  │
+                    └───────────────┬───────────────┘
+                                    │  HTTPS (publishable key + user JWT)
+              ┌─────────────────────┼──────────────────────┐
+              │                     │                      │
+      ┌───────▼────────┐   ┌────────▼─────────┐   ┌────────▼─────────┐
+      │ Managed Postgres│   │ Edge Functions   │   │ Object storage   │
+      │ + RLS + Auth    │◄──┤ (Deno, ~323)     ├──►│ public + private │
+      │ + Realtime      │   │ service role     │   │ buckets          │
+      └───────┬─────────┘   └───┬──────┬───────┘   └──────────────────┘
+              │                 │      │
+              │                 │      └────────► AI gateway ──► model provider
+              │                 ├───────────────► Payments provider (checkout, Connect, webhooks)
+              │                 ├───────────────► Email provider / SMTP
+              │                 ├───────────────► Video/call provider
+              │                 ├───────────────► Search & scraping provider, public feeds
+              │                 └───────────────► Social/music/film APIs
+              │
+       ┌──────▼──────────┐
+       │ Scheduled jobs  │  (defined in the database, not the repo)
+       └─────────────────┘
+```
+
+**Layers**
+- **Client:** single-page React app, static build, installed as a PWA and wrapped by Capacitor. Talks to Postgres/Auth/Storage directly with the publishable key plus the user's JWT, and to Edge Functions for privileged work.
+- **Data:** managed Postgres with row-level security on every public table; Auth; Realtime; object storage with a mix of public and private buckets.
+- **Compute:** Deno Edge Functions. Most run with the service-role key, so **authorisation is per-function**, not RLS.
+- **Scheduling:** database-scheduled HTTP jobs. The job list is not in the repo.
+- **Integrations:** payment, email, video, AI gateway, search/scraping, and social/music APIs.
+
+**Design consequence:** there are two authorisation models in one system (RLS for direct client access, per-function checks for service-role functions). This is the single most important fact for reviewing security: a missing check in a function is equivalent to a missing RLS policy, but is not visible in the database.
+
+---
 
 ## 2. Data flows
 
-See `data-protection-review.md` §2 for the per-feature flows. In short: the browser talks to the database directly under row-level security for most reads and the user's own writes; anything that needs the service role (payments, cross-user effects, AI, email) goes through an edge function that authenticates the caller first; third parties receive only what each feature needs.
+| Flow | Path | Trust boundary | Controls today |
+|---|---|---|---|
+| DF1 | Client → Postgres/Storage (direct) | Untrusted client | RLS + grants; publishable key only |
+| DF2 | Client → Edge Function | Untrusted client | Per-function: JWT, perimeter, cron secret, or none |
+| DF3 | Edge Function → Postgres/Storage | Trusted service role | None at the database layer; per-function checks only |
+| DF4 | Edge Function → payment provider | Third party | Server-side amounts, idempotency keys |
+| DF5 | Payment provider → webhook | Third party | HMAC + timestamp tolerance + event ledger |
+| DF6 | Edge Function → AI gateway | Third party | Session check, partial rate limits, partial prompt isolation |
+| DF7 | Edge Function → email | Third party | Shared policy for some paths; direct provider calls bypass it |
+| DF8 | Edge Function → external search/scrape | Untrusted content in | SSRF guard on fetchers; content then enters prompts |
+| DF9 | Agent → any of DF3–DF7 | Semi-trusted automation | Approval binding (partial), post-hoc audit (best effort) |
+| DF10 | MCP client → Edge Function | Third-party assistant | OAuth bearer, read-only tools |
+| DF11 | Client → error monitoring | Third party | Masked replay, disabled without a DSN |
+
+Personal-data categories and retention are catalogued in `data-protection-review.md`.
+
+---
 
 ## 3. Authentication and authorisation
 
-- **Authentication**: Supabase Auth (email and password, OAuth; usernames resolve to accounts only inside a dedicated server function that never returns the email, with atomic rate limiting). Sessions are bearer tokens in the browser's local storage; no cookies are used for API auth.
-- **Database authorisation**: row-level security on every public table. Sensitive columns are protected by column-level grants and guard triggers (money, verification, ownership); see `security-review.md` §1.
-- **Function authorisation**: each function validates the caller's token against the backend that owns the account (no fallback after a failure), then checks the specific permission: project access through a fail-closed helper (owner or accepted collaborator, unknown roles treated as the most restricted), admin functions through an admin check, cron functions through a shared secret, webhooks through signatures, public links through signed tokens, public endpoints through a rate-limiting perimeter.
-- **Service role**: used only inside functions, never sent to the client (pinned by a test).
+### 3.1 Authentication
+- **Implemented:** email/password and OAuth through the managed auth provider; a `@username` login path resolves username → email in a server-side function and returns session tokens only, never the email, with atomic rate limiting (per `AGENTS.md` and the username-auth function).
+- **Implemented:** guest access for shares, invoices, payment links and guest wallets uses unguessable tokens with bounded checks.
+- **Client:** session persisted by the Supabase client; the publishable key is embedded in the bundle (public by design).
+
+### 3.2 Authorisation
+- **RLS:** enabled on all public tables; policies are owner-scoped or access-predicate-scoped (`user_has_project_access`, `get_project_role`).
+- **Function perimeter:** `requireUser`, `requireServiceRole`, `requireAdminOrCron`, `publicPerimeter`, `requireAiCaller` (`supabase/functions/_shared/`).
+- **Caller classification:** `callerAuth.ts` distinguishes service / user / anonymous; it documents that gateway JWT verification proves only "a valid token", not a signed-in user.
+- **Role model:** project roles `member | client | creative | guest`; pending invites explicitly do not grant access.
+- **Known weaknesses:** see §9 and `security-review.md` (client-writable wallet/transaction rows; unguarded sitemap; auth bypass in one AI updater; no CI guard coverage).
+
+---
 
 ## 4. Project and company boundaries
 
-- A **project** has one owner (`projects.created_by`), who cannot be replaced by a collaborator (database trigger). Collaborators join through invitations and become accepted members with a role: collaborator, creative, client or guest. Money visibility follows the role (owner, creative and collaborator see money; client and guest do not). Payer fields are owner-only.
-- **Guests** reach a project through a share link or an invitation, with the most restricted role.
-- **Company accounts** use the same project workspace with additional hiring actions; account mode is resolved from one shared query, not from separate profile reads.
-- **Known boundary gap**: a SQL helper used by some policies admits pending invitees (`security-review.md` S-8).
+| Boundary | Rule | Evidence |
+|---|---|---|
+| Project access | Creator, match participant, or accepted collaborator | `20261009090200_studio_pending_invitees_and_collaborator_writes.sql:38-63` |
+| Pending invite | No access | same |
+| Project owner | `created_by`, immutable via API | `20261019120000_guard_project_created_by.sql` |
+| Commercial columns | Owner/service only | `20261020130000`, `20261021100000` |
+| Deliverable acceptance | **Any accepted member** (gap) | `20260211050740_*.sql:116` |
+| Company/workspace | An org workspace layer exists; it is **not** project ownership | `20260912130000_minimal_org_workspace_layer.sql:42` |
+| Cross-project isolation | Enforced by predicates and per-function checks, not by database-level tenancy | — |
+
+**Design intent (per `AGENTS.md`):** Company Studio reuses the same project workspace with additive hiring actions, so projects, invitations and permissions must remain identical across Creator and Company modes. There is no separate tenant boundary to review.
+
+---
 
 ## 5. Payment architecture
 
-- **Money in**: Stripe Checkout (event tickets, marketplace orders, invoices, payment links, wallet top-ups); the browser never handles card data.
-- **Confirmation**: only the webhook marks something paid, after signature, mode and duplicate checks; the client cannot write payment status. Issuers can record an off-platform payment manually; that record is currently stored like a verified one (gap A-4).
-- **Wallet**: one balance per member; transfers between members through a function with amount validation, an idempotency key and daily and monthly limits; debit and credit through service-only database functions.
-- **Money out**: Stripe Connect payouts, only for members whose connected account has payouts enabled.
-- **Escrow and milestones**: a state machine with service-only transitions; commission transfers are idempotent.
-- **What a buyer pays for**: a role or job on a project (milestone, invoice line, ticket), never a currency or a Credit.
-- Risks and proposed controls: `security-review.md` §3.
+```
+Client ──► create-checkout / create-invoice-checkout / create-payment-link-checkout
+              │  (server resolves Price ID / stored amount)
+              ▼
+        Payment provider Checkout  ──► provider webhook (HMAC + ledger)
+                                          │
+                                          ▼
+                    orders / milestones / wallets / entitlements
+                                          │
+                    wallet_debit / wallet_credit (SECURITY DEFINER, service role only)
+                                          │
+                                          ▼
+                             payouts via connected accounts
+```
+
+| Concern | Design | Status |
+|---|---|---|
+| Amount integrity | Server-side price/amount lookup | Implemented |
+| Duplicate payment | Stripe idempotency keys + webhook ledger | Implemented |
+| Escrow | Milestone rows with CAS state transitions | Implemented |
+| Balance integrity | `wallet_debit`/`wallet_credit` are service-role only | **Partial** — client can still INSERT a wallet/transaction row |
+| Payout eligibility | Connected-account `payouts_enabled` | Implemented |
+| Refund/dispute | Notification only | **Gap** |
+| Reconciliation | Receipt-based for AI cost only | **Gap** for payments |
+| Fee model | Hardcoded rates in the webhook | Partial |
+
+**Design principle to preserve:** no agent initiates a payment or payout today. Keep it that way.
+
+---
 
 ## 6. AI and agent architecture
 
-- **Doors**: the Kreto orchestrator (per-action risk tiers: automatic, requires approval, locked), the copilot planner and executor (whole-plan approval, registry-checked steps, one run per plan), the Desk agent in Studio (immediate for some tools: gap A-3), watchers that only draft proposals, and a read-only MCP server.
-- **Tool registry**: every tool has a risk tier and a handler; unknown, disabled and locked tools are refused; the one card-charging tool is locked.
-- **Approval**: an approved action needs an approval record by the same user with no later rejection or revocation; high-stakes collaborator and project deletion tools require a proven approval on every door.
-- **Records**: runs, actions and approvals in `orch_*` tables; plan history in `copilot_plans` (editable by its owner: gap).
-- **Data sent to model providers**: the user's prompt and the project context needed for it (tasks, chat excerpts, extracted facts, names, amounts for invoices). Untrusted content is wrapped with an injection-defence clause in several functions.
-- **Cost**: per-user limits on many AI functions, a daily tier limit on the Desk agent, a Cloud ledger with reservations and receipts for Kreto, a quota for public web search.
-- Full review: `ai-agent-governance-review.md`.
+```
+User / cron / MCP
+      │
+      ▼
+Edge Function (session or cron secret)
+      │
+      ├─► requireAiCaller / rate gate / budget  (partial coverage)
+      ├─► prompt assembly (+ promptIsolation at ~24 sites, missing at ~40)
+      ├─► AI gateway ──► model provider
+      │
+      ├─► plan / proposal tables (inert)
+      └─► tool execution
+             ├─ approval binding (3 high-stakes tools; caller-asserted otherwise)
+             ├─ service-role database writes
+             ├─ email / push
+             └─ post-hoc audit (best effort)
+```
+
+| Component | Role | Status |
+|---|---|---|
+| Kreto | Conversational assistant with resources/attachments | Implemented |
+| Orchestrator | Plans and executes registry tools | Implemented; approval partial |
+| Copilot planner/executor | Project planning and step execution | Implemented |
+| Desk/Surface/Money/Inbox watchers | Scheduled proposals | Implemented; produce proposals only |
+| Auto-resolution + moderation | Background state changes | Implemented; **no human approval** |
+| Memory / Studio Brain | `copilot_memories`, `thrive_memory`, `studio_facts`, `agent_project_context` | Implemented; no retention |
+| MCP server | Five read-only tools over OAuth | Implemented; unaudited |
+| Cost metering | Measured receipts for 4 features; default cap unlimited | Partial |
+
+Full inventory and P0 gaps: `ai-agent-governance-review.md`.
+
+---
 
 ## 7. Security controls (summary)
 
-Row-level security everywhere; column-level locks on money, verification and ownership; fail-closed project access in functions; signature-verified, mode-checked, deduplicated payment webhooks; constant-time secret comparison; SSRF guard on server-side fetches; origin allow-list for browser calls to functions; rate limits on public and many AI endpoints; masked error monitoring; guard tests for the client bundle and webhooks; git hooks that refuse SQL outside migrations and bulk staging. Details and gaps: `security-review.md`.
+| Control | Status | Reference |
+|---|---|---|
+| RLS on all public tables | Implemented | §3 |
+| Owner/payer column guards | Implemented | §4 |
+| Shared edge perimeter helpers | Implemented | `_shared/guard.ts` |
+| Constant-time secret comparison | Implemented | `guard.ts:53-68` |
+| JSON schema + 64 KB body cap | Implemented | `guard.ts:70-105` |
+| SSRF-safe fetching | Implemented on fetchers | `SECURITY_BASELINE.md:4` |
+| Webhook HMAC + tolerance + ledger | Implemented | `_shared/stripeSignature.ts`, `webhookLedger.ts` |
+| Payment entitlement checks | Implemented | `get-download-urls:69-90` |
+| Private buckets for deliverables/recordings | Implemented | `20260419162823_*.sql:3-7` |
+| Error masking helper | Implemented, unevenly applied | `guard.ts:121-126` |
+| Sentry replay masking | Implemented | `src/lib/sentryInit.ts:5-13` |
+| General audit trail | **Missing** | `AUDIT_TRAIL_DESIGN.md` |
+| Per-function JWT inventory | **Missing** | `config.toml:1-3` |
+| Release SBOM | **Missing** | `sbom-plan.md` |
+
+---
 
 ## 8. Monitoring and incident response
 
-- Signals: function logs and error rates, client error log, Stripe webhook outcomes and disputes, agent action-log review (weekly), user reports.
-- Runbooks: outages and rollback in `docs/platform/INCIDENT_RUNBOOK.md`; personal-data and security incidents in `data-protection-review.md` §6 (template).
-- Kill switches: per-tool `enabled` flag in the agent registry; the public web search activation switch; function redeploys.
-- Gap: Sentry is not configured in production; no alerting on payment reconciliation or AI spend.
+**Today:** browser error monitoring with masked replay and an optional DSN; Edge Function logs in the provider console; a documented severity model, first-15-minutes procedure, rollback, playbooks and escalation (`docs/platform/INCIDENT_RUNBOOK.md:1-40`); backup/recovery guidance; no uptime probe, no webhook-failure alert, no cron alert, no server-side error tracking, no audit table.
 
-## 9. Known limitations
+**Target (proposed):**
+1. Structured function logs with a correlation id; forward errors to the monitoring tool.
+2. Alerts on webhook 5xx, cron failure, payment reconciliation gaps, and anomalous service-role use.
+3. `audit_events` as the primary investigation record (see `AUDIT_TRAIL_DESIGN.md`).
+4. A rehearsed restore drill and a breach decision tree (`data-protection-review.md` §4).
+5. A per-release SBOM and deployed-function manifest.
 
-1. A wallet row can be created from the browser with any balance (A-1).
-2. A message's receiver can rewrite it (A-2).
-3. The Desk agent acts without per-action approval for messages, calls and tasks (A-3).
-4. Manually recorded payments look verified (A-4).
-5. The payment event ledger fails open on a write error (A-5).
-6. No self-serve data export or account deletion; no record of terms accepted; no cookie consent record.
-7. Agent plan history can be edited by its owner; no idempotency keys on agent side effects; no single append-only audit log.
-8. Some signed-in AI functions have no per-user limit.
-9. Supply chain: lockfile not enforced in CI, no SBOM, no vulnerability scan, floating versions in some function imports.
-10. The repository's migrations may not match the legacy production backend everywhere; production is the source of truth.
-11. No external security audit or penetration test has been done.
+---
+
+## 9. Known gaps (consolidated)
+
+| Area | Gap | Severity |
+|---|---|---|
+| Wallet integrity | Client can INSERT its own wallet/transaction rows with arbitrary values | P0 |
+| Agent publishing | Challenges, discovered Passport data, moderation closures applied without approval | P0 |
+| Agent audit | No intent record; post-hoc audit can be lost | P0 |
+| Account deletion | Client-side admin call; cannot succeed; UI claims success | P0 (data protection) |
+| Credit taxonomy | Three "credit" meanings; one client-writable | P0 (product/legal) |
+| Edge authorisation | No CI guard; JWT state not in repo; one auth bypass; one unguarded function | P1 |
+| AI cost | Default cap unlimited; receipt coverage on 4 features | P1 |
+| Payments | Refund/dispute notification-only; no reconciliation; missing lifecycle events | P1 |
+| Acceptance | Any member can approve a deliverable | P1 |
+| Attribution | `project_credits` self-assertion | P1 |
+| Audit | No general audit table | P1 |
+| Retention | No retention/expiry for any personal-data category | P1 |
+| Supply chain | 11 supabase-js version specifiers, floating tag, no SBOM, no scanning | P1 |
+| Mobile | Remote `server.url`, `cleartext: true` | P1 |
+| Deployment | Repo ≠ production risk; cron not versioned | P1 |
+| Hardening | CORS exceptions, error leakage, public generated images, unused in-memory limiter | P2 |
+
+Remediation order and acceptance tests: `security-review.md` §2, `ai-agent-governance-review.md` §7, `payments-credits-ip-review.md` §8, `data-protection-review.md` §5, `sbom-plan.md` §3.
+
+### 9.1 Prioritised remediation list
+
+**P0** — wallet/transaction server-only writes; server-side account deletion; human approval + intent-first audit for agent writes and publication; close `auto-epk-updater` auth bypass and the unguarded sitemap function; remove or scope orchestrator impersonation; refund/dispute state + host-only deliverable acceptance.
+
+**P1** — JWT inventory and CI guard coverage; real AI caps and budget wiring; retention schedule and complete export; audit table rollout; payment lifecycle events and reconciliation; service-key rotation drill; SBOM per release; mobile transport hardening; external penetration test.
+
+**P2** — CORS consistency, error-body cleanup, policy-less table inventory, view `security_invoker`, cron versioning, guest-link single use, private generated images, schema-drift reconciliation, observability for functions and crons.
+
+---
+
+## 10. Explicit non-claims
+
+- This is not a complete design record; several behaviours are documented only in code comments.
+- It does not establish production readiness, scalability, availability, security certification, or compliance.
+- It does not establish that the deployed system matches this description.
+
+---
+
+## Appendix A — External summary (safe to share)
+
+> **Kretopia — technical summary for partners and fundraisers**
+>
+> Kretopia is a web and mobile platform for creative professionals. It combines a public professional profile ("Passport"), project collaboration, opportunity discovery, events, and payment tooling in one product.
+>
+> **Architecture.** A React single-page application (installable as a PWA and via a mobile wrapper) talks to a managed relational database with row-level security, managed serverless functions, and object storage. Payments, email, video calling, search and AI features are delivered through established third-party providers.
+>
+> **Security approach.** Access is enforced at two layers: database row-level security for direct client access, and authenticated server-side checks for privileged operations. Payment webhooks are signature-verified and deduplicated. Private files are served through short-lived signed links. Sensitive error monitoring is masked.
+>
+> **Payments.** Users pay for defined services — subscriptions, tickets, products, invoices, and project engagements. Funds for project work can be held and released against milestones. The platform does not sell a fungible currency. Identity verification for payouts is handled by the payment provider.
+>
+> **AI.** AI features assist with drafting, discovery, matching and summarisation. AI output is generally presented as drafts or proposals for a person to accept. The platform is designed so that AI does not independently move money.
+>
+> **Current focus.** The team is closing identified gaps in payment integrity, agent approval and audit, data-subject rights, and software supply-chain visibility before expanding paid and automated features.
+>
+> *This summary is descriptive. It is not a security certification, a compliance statement, or a representation of production readiness.*
+
+**Do not attach the main body of this document to external materials.**

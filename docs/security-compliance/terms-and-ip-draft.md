@@ -1,58 +1,208 @@
-# Terms and IP: draft
+# Terms and IP — Draft Outline
 
-> **Draft. Requires legal review before any use.** This is not legal advice, it is not final wording, and nothing here has been added to the product. It is written in plain language so counsel can turn it into terms. Whether these terms are enforceable, sufficient or appropriate in a given country is for counsel to decide.
+> ## DRAFT — REQUIRES LEGAL REVIEW
+> This is a structural outline for counsel. It is **not legal advice**, not a contract, and not ready to publish. Every clause below needs review by qualified counsel in each operating jurisdiction before use. Capitalised terms are placeholders.
 
-## 1. Where users accept terms, invite, share or approve today
+**Status:** Internal draft · 2026-11-13
+**Context:** the live Terms (`src/content/legal/terms.ts`) and Privacy Policy (`src/content/legal/privacy.ts`) exist but are flagged by their own authors as not ready to publish (`docs/product/LEGAL_PUBLICATION_NOTES.md:2-26`). This outline covers the gaps most relevant to the mentor review: project ownership, contributor IP, confidentiality, acceptable use, liability, termination and disputes.
 
-| Moment | Where in the product | What the user sees about terms today |
+**How to use this document:** sections 1–7 are the outline. Section 8 lists decisions that must be made before drafting. Section 9 lists the product changes that would make the terms true.
+
+---
+
+## 1. Project ownership
+
+**Objective:** make it unambiguous that the host retains project IP unless a written agreement says otherwise.
+
+Draft headings and intent:
+
+1.1 **Definitions**
+- "Host" — the user or company that creates and owns a Studio project.
+- "Contributor" — any user granted access to a project.
+- "Project Materials" — briefs, files, deliverables, comments, and other content uploaded to or created within a project.
+- "Pre-existing Work" — anything a party owned before the project or develops outside it.
+
+1.2 **Default ownership rule**
+- The Host retains all right, title and interest in the project, its brief, and Project Materials commissioned under it, subject to Contributors' Pre-existing Work and third-party rights.
+- A Contributor assigns (or, where assignment is ineffective, grants an exclusive licence to) its project-specific deliverables to the Host **on full payment** of the agreed fee, unless the project terms state otherwise.
+- **[LEGAL REVIEW REQUIRED]** whether assignment or licence is the correct mechanism in each jurisdiction, and how moral rights are handled.
+
+1.3 **Project container vs. project output**
+- Kretopia owns the platform, the project container, templates and system-generated structure.
+- The Host owns the content inside it.
+- Deleting a project does not transfer ownership of output already delivered.
+
+1.4 **Retention and access after engagement**
+- The Host controls project retention.
+- A Contributor's access ends when removed; the Host keeps the delivered output.
+- Data export window and deletion process (see section 6).
+
+1.5 **Embedded third-party material**
+- A Contributor warrants it has cleared fonts, music, footage, stock and AI-generated assets.
+- The Host's rights are limited by those third-party licences.
+
+---
+
+## 2. Contributor IP
+
+2.1 **Pre-existing Work**
+- Each party retains ownership of its Pre-existing Work.
+- A Contributor grants the Host a non-exclusive, worldwide, royalty-free licence to use Pre-existing Work **only as embedded in the project**.
+- The Contributor must identify Pre-existing Work before delivery.
+
+2.2 **Licence back to the platform**
+- A limited licence to host, store, display, back up and process Project Materials to operate the service.
+- No ownership transfer to Kretopia.
+- Whether the licence permits model training must be stated explicitly. **[LEGAL REVIEW REQUIRED]**
+
+2.3 **AI-assisted output**
+- A Contributor must disclose material AI-generated content where required.
+- The Contributor is responsible for the rights position of AI-assisted output it delivers.
+- Kretopia does not warrant that AI output is original or non-infringing. **[LEGAL REVIEW REQUIRED]**
+
+2.4 **Moral rights**
+- To the extent permitted by law, a waiver or agreed treatment of attribution and integrity rights. **[LEGAL REVIEW REQUIRED]** (may be unwaivable in some jurisdictions.)
+
+2.5 **Contributor representations**
+- The Contributor has authority to grant the rights; the work is not infringing; no conflicting exclusivity.
+
+2.6 **Platform contributors (people who build Kretopia)**
+- A separate contributor/contractor agreement is needed if the platform accepts external code or content contributions. None exists today. **[LEGAL REVIEW REQUIRED]**
+
+---
+
+## 3. Confidentiality
+
+3.1 **Definition** — non-public project information, briefs, rates, unreleased work, personal data, credentials.
+3.2 **Obligations** — use only for the project; no disclosure except to necessary personnel or advisers under equivalent obligations.
+3.3 **Carve-outs** — public, independently developed, lawfully received, legally compelled (with notice where permitted).
+3.4 **Duration** — during the project and for a defined period after; trade secrets for as long as they remain secret.
+3.5 **Return/destruction** — on request, subject to backups and legal retention.
+3.6 **Platform confidentiality** — Kretopia's handling of project data is governed by the Privacy Policy, not this clause. **[LEGAL REVIEW REQUIRED]**
+
+---
+
+## 4. Acceptable use
+
+4.1 **Prohibited content** — unlawful, infringing, misleading, harassing, hateful, sexual content involving minors, malware.
+4.2 **Prohibited conduct** — impersonation, scraping, credential sharing, bypassing access controls, spam, fraud, sanctions evasion, money laundering.
+4.3 **AI-specific rules**
+- No using agents to send unsolicited bulk messages.
+- No attempting to extract other users' data through prompts.
+- Disclosure of automated interaction where required.
+- No use of the service to make automated decisions about individuals without a lawful basis. **[LEGAL REVIEW REQUIRED]**
+4.4 **Enforcement** — warning, removal, suspension, termination; appeal route.
+4.5 **Reporting** — abuse and IP-infringement contact and takedown process. **[LEGAL REVIEW REQUIRED]** on notice-and-takedown regime.
+
+---
+
+## 5. Liability
+
+5.1 **Service availability** — provided "as is" to the extent permitted; no uptime warranty unless separately agreed.
+5.2 **Exclusion of indirect/consequential loss** — subject to what is unenforceable.
+5.3 **Liability cap** — a defined multiple of fees paid in the preceding period, or a fixed sum. **[LEGAL REVIEW REQUIRED]**
+5.4 **Non-excludable liability** — fraud, death/personal injury, gross negligence, mandatory consumer rights. **[LEGAL REVIEW REQUIRED]**
+5.5 **User-to-user disputes** — Kretopia is not a party to engagements between users; it provides tooling only, except where it acts as a payment facilitator.
+5.6 **Payment-provider role** — the platform is not a bank; a redirect or auth is not proof of payment (already asserted at `src/content/legal/terms.ts:171-183`).
+5.7 **AI output** — no warranty of accuracy; user must review before relying.
+5.8 **Indemnity** — user indemnifies for infringing content and unlawful use. **[LEGAL REVIEW REQUIRED]**
+
+---
+
+## 6. Termination
+
+6.1 **By the user** — close the account; export window; what is deleted vs. retained.
+6.2 **By Kretopia** — breach, risk, legal requirement, inactivity; notice where practicable.
+6.3 **Effect on projects**
+- Active projects: contributors' access ends; delivered output and acceptance records retained.
+- Ongoing engagements: the parties must settle directly; Kretopia may hold funds only as documented.
+6.4 **Data after termination**
+- Export window, deletion schedule, and record-retention exceptions (payment, tax, dispute, fraud). **[LEGAL REVIEW REQUIRED]**
+- The current UI claims permanent deletion but the deletion path does not work (see `data-protection-review.md` DP-01). Do not publish a deletion promise until it is true.
+6.5 **Survival** — IP, confidentiality, liability, dispute clauses.
+
+---
+
+## 7. Dispute handling
+
+7.1 **User-to-user disputes** — direct negotiation first; platform-assisted evidence (deliverable history, messages, acceptance record) on request.
+7.2 **Payment disputes** — chargeback and provider process; account restriction during investigation.
+7.3 **Platform disputes** — notice of issue, good-faith negotiation period, then courts or arbitration.
+7.4 **Governing law and forum** — to be completed. **[LEGAL REVIEW REQUIRED]**
+7.5 **Consumer forum rights** — mandatory local rights preserved. **[LEGAL REVIEW REQUIRED]**
+7.6 **Evidence** — the audit trail required by `docs/platform/AUDIT_TRAIL_DESIGN.md` is a prerequisite for running 7.1 credibly. It does not exist yet.
+
+---
+
+## 8. Decisions required before drafting
+
+| # | Decision | Why it blocks drafting |
 |---|---|---|
-| Sign-up | authentication pages and onboarding | No acknowledgement found on the main sign-up; one onboarding claim step says "By continuing you agree to our Terms & Privacy Policy" (`src/components/onboarding/claim-flow/EmailSaveStep.tsx:224`). Nothing is recorded |
-| Marketplace listing | `src/components/marketplace/CreateListingDialog.tsx:377` | A checkbox: "I agree to the marketplace terms…" |
-| Inviting a collaborator, client or guest | invitation dialogs in Studio | No terms |
-| Accepting an invitation | `accept-project-invitation` | No terms |
-| Opening a project as a guest through a share link | `redeem-project-share` | No terms |
-| Sharing files in a project | project files and boards | No terms |
-| Approving a deliverable or a milestone | Studio money and deliverables | No statement of what approval means for ownership or payment |
-| Paying an invoice or a payment link | public pay pages, Stripe Checkout | Stripe's terms; no Kretopia statement |
-| RSVP to an event (members and guests) | event page and guest RSVP form | No terms |
+| 1 | Contracting entity, registered address, governing law, forum | Cannot identify the counterparty or the forum |
+| 2 | Liability cap and carve-outs | Core commercial term |
+| 3 | Default project IP rule and assignment mechanism | Section 1/2 cannot be written without it |
+| 4 | Whether AI output ownership/training is addressed | Section 2.3 and privacy notice |
+| 5 | Refund/withdrawal policy per product type | Consumer law and payment flows |
+| 6 | Whether the wallet balance is e-money | Determines the regulatory characterisation |
+| 7 | Data-retention periods and deletion promise | Section 6.4 and privacy policy |
+| 8 | Sanctions/eligibility restrictions and country availability | Section 4 and payment gating |
+| 9 | DPO/representative requirement | Privacy notice contact block |
 
-Recommendation: record the terms and privacy versions each person accepts, with the time (sign-up, accepting an invitation, guest access, marketplace listing).
+---
 
-## 2. Product-facing ownership explanation (draft copy)
+## 9. Product changes required to make the terms true
 
-For a "How ownership works" panel in a project's settings and the invitation screen. Short, not legalistic.
+| Proposed term | Product gap | Where |
+|---|---|---|
+| Host-only acceptance | Any member can approve a deliverable | `supabase/migrations/20260211050740_*.sql:116` |
+| Contributor IP metadata (pre-existing work disclosure) | No field or flow | contract builder only (`ContractBuilder.tsx:26-49`) |
+| Terms acceptance record | No clickwrap, no timestamp, no version | not found in `src/` or migrations |
+| Project retention and export | No retention setting or export-on-exit | not found |
+| Confidentiality enforcement | No per-project confidentiality flag | not found |
+| Real account deletion | Client-side admin call cannot succeed | `src/pages/Settings.tsx:439`; `SettingsTab.tsx:184` |
+| Dispute evidence | No general audit table | `docs/platform/AUDIT_TRAIL_DESIGN.md:1-8` |
+| Sanctions/eligibility | No screening control | see `payments-credits-ip-review.md` §5 |
 
-> **Who owns what in a project**
->
-> - **The host owns the project.** The person who created the project runs it: its settings, who is in it, what is delivered and paid. That stays with the host unless you agree something else in writing.
-> - **You keep your own work.** Anything you made before joining, your samples, presets, templates, style and know-how, stays yours. Using it in this project does not give it away.
-> - **What you make for the project** is shared as you and the host agree. If you have not agreed anything, talk about it before you deliver. Kretopia does not decide it for you.
-> - **Your Credit is yours.** The record that you did a role on this project belongs on your Passport, whoever owns the project.
-> - **Approving a deliverable** means the host accepts it as delivered. It is not, on its own, a transfer of rights.
-> - **Clients and guests** see what the host shares with them. They do not own the project or its files by being invited.
->
-> These are Kretopia's defaults, not legal advice. For anything that matters, put the deal in writing.
+---
 
-## 3. What a buyer is paying for (draft copy)
+## 10. Prioritised remediation list
 
-> When you pay on Kretopia you are paying for a role or a job on a project: a milestone, an invoice, a ticket. You are not buying a currency or a Credit. Credits are records of the work people did; they cannot be bought, sold or transferred.
+### P0
+| ID | Action | Why now |
+|---|---|---|
+| TERMS-01 | Replace the broken deletion promise with a truthful flow, and do not publish a deletion timeline until server-side erasure works | Current UI claims deletion that cannot occur |
+| TERMS-02 | Decide the default project-IP rule and record it as a product setting, not a blank contract field | Ownership is the core of the mentor's IP concern |
+| TERMS-03 | Make deliverable acceptance host-only | Any member can currently accept on the host's behalf |
 
-## 4. Collaboration terms outline (for counsel)
+### P1
+| ID | Action |
+|---|---|
+| TERMS-04 | Terms-acceptance record with version and timestamp |
+| TERMS-05 | Contributor IP / pre-existing work disclosure flow |
+| TERMS-06 | Confidentiality flag and project retention/export setting |
+| TERMS-07 | Legal review and completion of sections 1–7 |
+| TERMS-08 | Align privacy policy, terms and actual product behaviour (AI training, cookies, retention) |
 
-1. **Parties and roles**: host (project owner), collaborators and creatives, clients, guests; Kretopia as a platform, not a party to the project.
-2. **Ownership**: the host owns the project and its settings; default treatment of deliverables when nothing else is agreed (counsel to choose: assignment on payment, licence, or no default); each contributor keeps rights in pre-existing work and general know-how; moral rights and attribution (Credits).
-3. **Licences to Kretopia**: what Kretopia may do with uploaded content to run the service (store, display to the people it is shared with, process with AI features the user turns on); no use for training models unless the user opts in.
-4. **Confidentiality**: project content is confidential to its members; exceptions (already public, required by law); duration.
-5. **Acceptable use**: no unlawful content, no infringing material, no harassment, no spam, no scraping, no attempts to bypass security or approval, no use of agents to contact people who have not agreed to it; link to the community guidelines.
-6. **AI features**: AI output may be wrong; the user reviews before sending or relying on it; actions that send, publish, invite or pay require the user's approval.
-7. **Payments**: what is bought (a role or a job), fees, refunds and disputes, payouts through the payment provider, holds and limits, taxes are the users' responsibility, manually recorded payments are the issuer's statement.
-8. **Liability**: platform provided as is; limits of Kretopia's liability; each party responsible for its own deliverables and promises to others.
-9. **Termination**: leaving a project (what happens to files and Credits), removing a member (host only), closing an account (data export and deletion).
-10. **Disputes**: first between the parties; Kretopia's role (records, not a judge); payment disputes through the payment provider; governing law and venue (counsel).
-11. **Changes to terms**: notice and acceptance of new versions.
+### P2
+- Contributor/contractor agreement for platform contributors.
+- IP takedown and notice process.
+- Country availability and sanctions language aligned with payment gating.
 
-## 5. Privacy and data notes for counsel
+---
 
-- Kretopia acts as a controller for accounts and profiles, and probably as a processor for content a host puts in a project on behalf of a business client: a customer-facing data processing agreement may be needed.
-- Processors and transfers are listed in `data-protection-review.md` §1.
-- Public-presence search and AI ranking of named people need a lawful-basis assessment and probably a DPIA.
+## 11. Publication checklist (all items open)
+
+- [ ] **DRAFT — REQUIRES LEGAL REVIEW** sign-off on sections 1–7
+- [ ] Contracting entity and address inserted
+- [ ] Governing law and forum inserted
+- [ ] Liability cap inserted
+- [ ] Consumer-law carve-outs reviewed for each market
+- [ ] AI/model-training position decided and stated
+- [ ] Deletion timeline matches what the product can do
+- [ ] Cookie/analytics inventory matches the live site
+- [ ] Contact mailboxes confirmed monitored
+- [ ] Terms-acceptance capture implemented and versioned
+- [ ] Privacy policy and terms cross-referenced and consistent
+- [ ] Country availability and payment restrictions consistent with the code
+
+> **DRAFT — REQUIRES LEGAL REVIEW.** Nothing in this outline should be published or relied upon without qualified counsel.

@@ -1,107 +1,188 @@
-# AI and agent governance review
+# AI and Agent Governance Review — Kretopia
 
-Status: internal working document, 2026-11-13. Source-level review; no agent capability was enabled or changed. Tool names and risk tiers are reconstructed from the repository's migrations (`orch_tool_registry` inserts and updates); production's registry may differ and should be read before acting on §2.
+**Status:** Internal draft · **not** an AI safety certification or compliance statement
+**Review date:** 2026-11-13
+**Scope:** Kreto, agent orchestration, tools, memory, Studio Brain, watchers, the MCP server, and AI-generated actions.
+**Method:** repository inspection only. No agent was executed. No autonomous capability was enabled or changed.
 
-## 1. Agent inventory
+## Evidence limits
 
-| Agent / door | Code | Triggered by | What it can do | Approval model |
+- Agent behaviour under adversarial prompting was **not** tested. Prompt-injection conclusions are based on whether untrusted text is wrapped, not on exploit attempts.- Model-provider data-retention and training terms were not inspected. **[LEGAL REVIEW REQUIRED]**
+- Production cron definitions are not in the repo (`docs/platform/REPO_AUDIT.md:26-28`), so the live schedule of watchers cannot be confirmed.
+- Approval enforcement was reviewed in code paths, not exercised end-to-end.
+
+**Status vocabulary:** *Implemented* = verified in the repository; *Absent* = no control found in the repository; *Proposed* = recommended, not present; *Out of scope* = not assessed.
+
+---
+
+## 1. System summary
+
+- **One model provider path:** Google Gemini through an AI gateway (`supabase/functions/_shared/aiModels.ts:13-27`); 119 files reference the gateway.
+- **Tool execution is data-driven:** `orch_tool_registry` rows decide handler and `risk_level` (`safe_auto` / `requires_approval` / `locked`) at `supabase/functions/agent-orchestrator/index.ts:39,703-719`. A registry row is an executable-capability grant that is not code-reviewed.
+- **Guard modules:** `executionGuard.ts:48-86` (fail-closed approval evaluation), `agentActionBinding.ts:74-150` (target binding + 30-min freshness), `agentDmBinding.ts:75-150` (recipient + exact text), `agentAuthority.ts:71-168` (three high-stakes tools), `approvalHardening.ts:12-108` (reservation-key stripping, immutable targets).
+- **Approval binding is caller-asserted.** `_shared/agentAuthority.ts:11-16` states it covers exactly three tools; `send-outreach-draft/index.ts:83-88` states the gate "gates well-behaved agent callers, not a caller that omits them".
+- **Audit is after-the-fact and best-effort.** `recordExecutedAction` writes after the mutation and swallows failures (`agentAuthority.ts:194-255`). There is no general `audit_events` table (`docs/platform/AUDIT_TRAIL_DESIGN.md:1-8`).
+
+---
+
+## 2. Agent and tool inventory
+
+`Approval` = is a human approval record required in the write path. `Audit` = is a durable record written for the action.
+
+| Agent / function | Purpose | Data accessed | External services | Permissions | Approval | Audit | Retry | Cost control | Failure path | Drift / abuse risk |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `agent-orchestrator` (`index.ts:628-778`) | Plan and execute tools | Plans, projects, collaborators, messages | Gemini, internal functions | Service role; **impersonation via `x-internal-user-id`** (`:628-639`) | Yes for `requires_approval`; `safe_auto` runs without (`:281`) | `orch_actions` / `orch_approvals` / `orch_runs` | CAS claim; rollback to `proposed` on failure (`:773-778`) | No per-run budget; model call unmetered | Returns proposal state | Registry row can grant capability; service-key caller can act as any user with no session |
+| `desk-agent` (`index.ts:419-1080`) | Studio operator assistant | Tasks, messages, invoices, credits, project context | Gemini, `create-video-room`, copilot functions | Service role after JWT + AI cap | **Only collaborator mutations** (`:887-918`) | `orch_runs`; no audit for task/message/invoice/credit writes | Not specified | 100/day-class cap (`:425-444`) | Error returned | Can write invoices/credits and messages without approval |
+| `copilot-planner` (`:36-212`) | Draft a plan | Project context | Gemini | Service role after JWT | N/A (inert plan) | `copilot_plans` | — | None | Plan not stored on failure | Low (no execution) |
+| `copilot-executor` (`:241-316`) | Execute plan steps | Plan, registry | Internal functions | Service role after JWT | Registry risk check (`:294-304`), plan ownership (`:266,279,312`) | Plan status only | CAS claim (`:309-310`) | None | Step error surfaced | Registry row is the boundary |
+| `copilot-collaborator-tools` (`:312-514`) | Membership + project ops | Collaborators, messages, projects | — | Service role | `authorizeHighStakesAction` for add/remove/delete only (`_shared/agentAuthority.ts`) | After-the-fact `recordExecutedAction` | Best-effort | None | Partial failure not rolled back | Project delete/archive is destructive and audit can be lost |
+| `agent-send-dm` (`:89-224`) | Send a DM as the user | Recipient, message text | Push, email | Service role after JWT | **Yes** — bound recipient and text, CAS claim (`:89-118,163-174`) | Reverts claim on failure (`:190-191`) | Manual retry needed | None | Claim released | Text/recipient binding is strong; audit still post-hoc |
+| `agent-rsvp-event` (`:10-58`) | RSVP on the user's behalf | Event, ticketed flag | — | Anon-key client with user JWT | **No approval check** | **None** | None | None | Error returned | Agent can change event state without approval record |
+| `agent-vouch-credit` (`:10-29`) | Endorse a credit | Credit id | — | `requireUser` | **No approval check** | **None** | None | None | Error returned | Reputation manipulation without audit |
+| `agent-send-dm` / `send-outreach-draft` | Outbound email | Recipient, draft | Email provider | Service role / user | Bound when marker present | Partial | — | Per-actor budget in `send-outreach-email:180-192` | Error surfaced | Marker-free call bypasses binding |
+| `create-agent-proposal` | Store a proposal | Proposal text | — | JWT | N/A | `agent_proposals` | — | None | — | Low |
+| `desk-agent-watch` | Propose actions on a schedule | Project data | Gemini | `requireAdminOrCron` | Produces proposals only | `agent_proposals` (`:258-259`) | — | None | Silent cron | **Held disabled** (`AGENTS.md`; `docs/security/phase5/LOT4_ACTIVATION_BATCH1.md:14`) |
+| `surface-agent-watch` | Surface signals | Project/surface data | Gemini | Cron/admin | Proposals only | `agent_proposals` | — | None | Silent cron | Proposal quality only |
+| `money-agent-watch` | Flag money issues | Payments, milestones | Gemini | Cron/admin | Proposals only | `agent_proposals` (`:109,171`) | — | None | Silent cron | Reads financial data |
+| `inbox-triage-agent` | Classify inbox | Messages | Gemini | Cron/admin | Classification only | `inbox_triage_classifications` (`:155`) | — | None | Silent cron | Reads message content |
+| `auto-outreach-watch` | Draft outreach | Prospect/profile data | Gemini, email | Cron/admin | Draft only; send is separate | Draft rows | — | None | Silent cron | Reads third-party data |
+| `auto-resolve-disputes` (`:26-49`) | Resolve stale credit disputes | Credit rows | — | Cron/admin | **No approval** | Status update only | — | None | Silent cron | **Reassigns `credits.user_id` automatically** |
+| `gig-moderator` (`:166-214`) | Moderate listings | Opportunity text | Gemini | Cron/admin | **No approval** — AI decision applied | `gig_moderation_log` | — | None | Unknown | Auto-closes a real user's listing |
+| `generate-challenges` (`:225-252`) | Create challenges | Profile/theme data | Gemini | Cron/admin | **No approval** | Row insert | — | None | Unknown | Publishes `status:"active"` content attributed to a real user |
+| `scout-gigs` (`:487,581-593`) | Discover gigs | Public feeds, profile | Firecrawl, feeds | Cron/user + `gateAiCall` | **No approval** — publishes into the user's feed | `scout_runs` | Upsert | Gated (`:487`) | Degraded feed | Unmoderated external content shown as opportunities |
+| `auto-discover-creatives` (`:374-402`) | Enrich Passport | Other users' profiles | External sources | Cron/admin | **No approval** | None | — | None | Partial writes | **Writes credits/awards/badge into other users' profiles** |
+| `verify-credit` (`:53-151`) | Assess a credit | Credit evidence | Gemini | User (ownership re-derived from DB) | N/A | `credit_ai_verifications`, `ai_confidence` | — | None | Writes confidence only | Good: does not flip the verified badge |
+| `auto-epk-updater` (`:101-114`) | Suggest EPK refresh | Profile, credits | Gemini | **Unauthenticated when `body.user_id` supplied** | No | Suggestion rows | — | Daily counter | Error | Cross-user AI spend + writes |
+| `moderate-opportunity` (`:75-118`) | Moderate a listing | Listing text | Gemini | — | N/A | Verdict | — | None | **Fail-open: error ⇒ published** | Unsafe content can ship on provider failure |
+
+### MCP server (`supabase/functions/mcp/index.ts`)
+
+| Tool | Read/Write | Data | Evidence |
+|---|---|---|---|
+| `search_creators` | Read | Public creator profiles | `:19-45` |
+| `get_my_passport` | Read | Caller's profile | `:56-76` |
+| `list_my_studios` | Read | Caller's projects | `:88-112` |
+| `list_scouted_gigs` | Read | Caller's scouted gigs | `:124-149` |
+| `list_my_credits` | Read | Caller's credits | `:161-183` |
+
+- **Implemented:** all five tools carry `readOnlyHint: true` and `openWorldHint: false` except `list_scouted_gigs`; auth is OAuth with `authenticated` audience (`:188-195`); the client uses the caller's JWT so RLS applies.
+- **Absent:** no write/action tools, no approval surface, no per-client rate limit, no audit of MCP reads, and a single `authenticated` scope with no per-tool granularity. A connected assistant can read the whole Passport/Studio surface.
+- **Risk (P1):** third-party assistants become an unmonitored read channel for personal data. See the data-protection review, D14.
+
+---
+
+## 3. Ingress and egress map
+
+| # | Ingress | Path | Controls | Gap |
 |---|---|---|---|---|
-| Kreto orchestrator | `supabase/functions/agent-orchestrator` | the user in Kreto chat | plans with the AI gateway; runs `safe_auto` tools at once; proposes `requires_approval` tools; refuses `locked` | per action: `orch_actions` row → `orch_approvals` decision → execution; `safe_auto` runs automatically unless the user's `orch_settings.auto_run_safe` is off (default on, index.ts ~1273) |
-| Copilot planner and executor | `copilot-planner`, `copilot-executor` | the user | multi-step plans; each step is a registered tool | per plan: an explicit `approved` decision is required (no default); plan must belong to the caller; each step's tool must be registered, enabled and not locked, with the registered handler (`_shared/approvalHardening.ts`); one run per plan (compare-and-set) |
-| Desk agent (Studio) | `desk-agent` | the user in a project's Desk | `create_task`, `mark_task_done`, `send_message_to_collaborator`, `schedule_reminder`, `draft_invoice`, `draft_quote`, `start_video_call`, `add_credit` run **immediately**; `add_collaborator` and `remove_collaborator` are queued for approval | none for the immediate tools (gap, see §4); daily tier limit and a rate limit |
-| Watchers | `desk-agent-watch`, `money-agent-watch`, `surface-agent-watch`, `auto-outreach-watch`, `desk-daily-nudge`, `ep-daily-briefing` | cron (shared secret) or the user's session | write proposals (`agent_proposals`), drafts (`outreach_drafts`) and notifications; no sending found | the user acts on a proposal; `desk-agent-watch` must stay disabled on the legacy backend (AGENTS.md) |
-| Studio Brain | `studio-ingest` and extraction | uploads and project activity | extracts facts and entities into `studio_facts`, `studio_entities`; the Desk agent reads them, marking low-confidence facts as unverified | none needed (internal records) |
-| Memory | `thrive-memory-extract` | service role only | writes `thrive_memory` | none; no user control (gap) |
-| MCP server | `src/lib/mcp` (bundled into `supabase/functions/mcp`) | external MCP clients with the user's OAuth token | five read-only tools: search creators, own Passport, own studios, scouted gigs, own credits | read-only; RLS applies through the user's token |
-| Content and matching AI | e.g. `compose-magazine-article`, matching and ice-breaker functions, `transcribe-call`, public web search | the user or the service role | generate text, rank people, transcribe | no side effects beyond their own records; public web search is behind a server-side activation switch and an atomic quota (AGENTS.md) |
+| I1 | Free-text user input (chat, prompts, voice) | `kreto-*`, `thrive-*`, `desk-*`, `feedback-chat` | `requireAiCaller`; some `promptIsolation` | No global prompt-injection classifier; isolation uneven |
+| I2 | Uploaded files and images | `kreto-resources`, `studio-ingest`, image generators | Private bucket for attachments | OCR/vision content is trusted as instructions in some paths |
+| I3 | External web content | `scout-*`, `import-*`, `fetch-*`, `analyze-profile-url` | SSRF guard on fetchers | Scraped text is the largest untrusted channel; not wrapped in ~40 call sites |
+| I4 | Email/inbox content | `inbox-triage-agent`, `draft-lead-reply` | Cron/admin | Message bodies passed raw to the model |
+| I5 | Project data written by other users | `desk-agent`, `copilot-*` | Project access check | A collaborator can plant instructions the agent later reads |
+| I6 | MCP client requests | `mcp` | OAuth | Read-only, unaudited |
 
-## 2. Tool and permission matrix
+| # | Egress | Path | Controls | Gap |
+|---|---|---|---|---|
+| E1 | Model provider | 119 gateway call sites | `requireAiCaller` (35 files), rate gate (partial) | Prompt content includes personal/project data; provider retention not verified |
+| E2 | Email | Resend (17 functions), Gmail SMTP | `send-user-email` relationship proof + preferences; `transactionalEmailPolicy` | Direct Resend calls bypass policy and suppression: `verify-brand-credit:109`, `send-waitlist-invite:91`, `send-invoice-email:81`, `verify-guest-opportunity:144`, `guest-wallet-session:74` |
+| E3 | Push | `send-push-notification` | Service key or session + relationship (`:38-69`) | — |
+| E4 | Messaging (DM) | `agent-send-dm` | Bound recipient/text | Post-hoc audit |
+| E5 | Payments | Milestone/escrow functions | Auth + DB amounts | Agents do not currently initiate payments; `desk-agent` writes invoices |
+| E6 | Database writes | ~all agent functions via service role | Per-function checks | No RLS backstop; no intent record |
+| E7 | File storage | Private attachments; **public generated images** | Private buckets mostly | `generate-gig-cover:101` and peers write public objects |
+| E8 | External search/scrape | Firecrawl, job feeds, social/music APIs | SSRF guard on fetchers | No egress allowlist; any function with `fetch` can reach any host |
 
-From the registry (25 `requires_approval`, 34 `safe_auto`, 1 `locked`):
+**No egress allowlist exists.** Destination control is per-function discipline, not a platform constraint.
 
-| Tier | Tools | Concern |
-|---|---|---|
-| `locked` (never runs) | `charge_card` | none |
-| `requires_approval` | `add_collaborator`, `remove_collaborator`, `apply_to_gig`, `archive_project`, `delete_project`, `create_event`, `create_gig`, `create_project`, `spin_up_project`, `draft_invoice`, `draft_quote`, `send_payment_link`, `negotiate_rate`, `publish_credit`, `vouch_credit`, `request_vouch`, `recycle_pitch`, `rsvp_to_event`, `send_chase_email`, `send_dm`, `send_event_invite`, `send_message`, `send_message_to_collaborator`, `send_reminder`, `send_triage_reply` | Correct tier. Enforced on the orchestrator and copilot paths; **not** on the Desk path for `send_message_to_collaborator` and `draft_invoice` |
-| `safe_auto` with side effects on shared state | `create_task`, `assign_task`, `mark_task_done`, `schedule_reminder`, `start_video_call`, `chase_followups`, `mark_lead`, `generate_milestones`, `match_event_guests`, `generate_event_cover`, `add_credit`, `enrich_profile`, `refresh_profile`, `refresh_epk` | Several change what other project members see (`assign_task`, `create_task`, `mark_task_done`, `start_video_call` posts a join link, `generate_milestones`). Under the brief's rule ("modify shared project state requires explicit approval or narrowly scoped authorisation") these should be re-tiered or narrowly scoped: see §4 |
-| `safe_auto` read-only or own-records | `find_user`, `list_my_projects`, `get_project_summary`, `search_creators`, `search_scouted_gigs`, `rank_creators`, `research_web`, `summarize_opportunities`, `score_applicants`, `analyze_profile_url`, `suggest_missing_credits`, `weekly_money_summary`, `scan_receipt`, `triage_message`, `ask_clarification`, `draft_*` | Fine |
+---
 
-Server-side authority for the highest-stakes tools that several doors reach (`remove_collaborator`, `delete_project`) is shared in `_shared/agentAuthority.ts`: an agent may run them only with a proven, already-approved action (`_shared/executionGuard.ts`, fail closed).
+## 4. P0 gaps — actions an agent can take without explicit approval or a durable audit record
 
-## 3. Data ingress and egress
-
-| Direction | What | Where in code | Notes |
+| ID | Gap | Evidence | Why P0 |
 |---|---|---|---|
-| In | User prompts, project chat, tasks, briefs, documents, call transcripts, Studio Brain facts, profile data | `desk-agent` (context load ~449-491), orchestrator | Untrusted content is wrapped with an injection-defence clause in several functions (`_shared/promptIsolation.ts`); apply it everywhere project or web text enters a prompt |
-| In | Web pages and search results | Firecrawl, public web search | Treated as untrusted; ranking may only use supplied sources (AGENTS.md) |
-| Out: model providers | The prompt: user text plus project context (names, tasks, chat excerpts, facts, money figures for invoices) | AI gateway (model ids in `_shared/aiModels.ts`) | Personal data of project members and clients reaches the providers behind the gateway. Needs: a processor agreement, a no-training commitment, a region decision, and minimisation (send ids and roles, not emails) |
-| Out: email | Chase emails, outreach, invitations, notifications | `send-transactional-email`, `send-invoice-chase`, Gmail through the user's connection | Agent paths draft; sending is a separate approved action |
-| Out: messages | Project chat and DMs | `desk-agent` (immediate), orchestrator (approved) | Gap on the Desk path |
-| Out: payments | Payment links, invoices | `send_payment_link` (approval), `draft_invoice` (draft only), `charge_card` locked | No agent can move money |
-| Out: storage and database | Tasks, notes, credits, projects, proposals, memory | service role inside functions | Every write should be attributable to a run and an action (§5) |
-| Out: video | Call rooms and join links | `create-video-room` | Desk path posts the link without approval |
+| **AI-01** | **Agent publishes content without review.** Challenges are inserted `status:"active"` and attributed to a real user; discovered credits/awards/badge are written into other users' Passports; AI closes real listings. | `generate-challenges/index.ts:225-252`; `auto-discover-creatives/index.ts:374-402`; `gig-moderator/index.ts:190-196` | Published, user-attributed content and reputation changes with no human gate and no durable audit. Directly contradicts "no autonomous publishing". |
+| **AI-02** | **Agent mutates shared project state without approval.** `desk-agent` writes tasks, project messages, invoices and credits; only collaborator changes are gated. | `desk-agent/index.ts:646-797,887-918` | A compromised or drifting agent can alter a shared workspace and create financial records. |
+| **AI-03** | **Agent actions have no reliable audit.** High-stakes audit is written after the mutation and swallows failures; RSVP and credit-vouch have no audit at all. | `agentAuthority.ts:194-255`; `agent-rsvp-event/index.ts:10-58`; `agent-vouch-credit/index.ts:10-29` | No durable record means no accountability, no drift detection, no incident reconstruction. |
+| **AI-04** | **Automatic credit-ownership reassignment.** A cron rewrites `credits.user_id` with no human approval. | `auto-resolve-disputes/index.ts:26-49` | Ownership/reputation change applied by automation; the winning party may be wrong. |
+| **AI-05** | **Unauthenticated cross-user AI trigger.** `auto-epk-updater` trusts `body.user_id` and skips auth. | `auto-epk-updater/index.ts:101-114` | Anyone can spend on another account and write to it. (Also SEC-04.) |
+| **AI-06** | **Service-key impersonation with no session.** The orchestrator can act as any `x-internal-user-id` given the service key. | `agent-orchestrator/index.ts:628-639` | A single leaked key gains "act as any user" across agent tools, with no independent audit of the impersonation. |
 
-## 4. Approval requirements
+**Explicitly not a P0 gap (verified):** agents cannot currently initiate a payment or payout; no agent function calls Stripe transfer/refund paths. Message sending is bound when the agent path is used. MCP is read-only. These must be preserved.
 
-Rule from the brief, applied to the code: an agent action that sends a message, publishes content, modifies shared project state, invites people, spends money or accesses sensitive data needs either the user's explicit approval of that action, or an authorisation scoped narrowly enough that the user's own request names it.
+---
 
-| Gap | Where | Proposal (needs approval: agent behaviour change) |
-|---|---|---|
-| G-1 | Desk agent posts AI-written chat messages (`send_message_to_collaborator`, `desk-agent/index.ts:686-700`) | Queue as an `orch_actions` proposal with a preview, exactly as this function already does for `remove_collaborator`; post only after approval |
-| G-2 | Desk agent starts a call and posts the join link (`start_video_call`, 779-785) | Same as G-1 |
-| G-3 | Desk agent creates, completes and schedules tasks immediately | Decide: keep immediate (the user's own instruction names the task) but record each as an executed `orch_actions` row, or require approval. Recommended: keep immediate, record it, and show an undo |
-| G-4 | `safe_auto` tools that change shared state run automatically on the orchestrator path | Re-tier `assign_task`, `start_video_call`, `generate_milestones`, `match_event_guests` to `requires_approval`, or set `auto_run_safe` off by default for shared projects |
-| G-5 | Desk agent writes no per-action record for what it executed; its run receipt is best effort | Write one `orch_actions` row per executed tool (status `executed`, `executed_at`, result) inside the same request |
+## 5. Cost, retry and drift controls
 
-## 5. Audit requirements
+### 5.1 Cost (P1)
+- Only 4 functions use the reservation gate (`gateAiCall`): `scout-gigs:487`, `ai-talent-match:86`, `kreto-resources:92,95`, `thrive-ai-chat:179,237,692,699`.
+- Only 4 record measured receipts (`measuredModelFetch`): the same group.
+- `DEFAULT_DAILY_CAP = -1` (`_shared/aiRateLimit.ts:32-35`) — counted, not enforced.
+- `_shared/durableBudget.ts` has **zero importers**.
+- Public AI endpoints have only per-IP perimeter (`validate-waitlist-ai:43`, `public-digital-presence:21`, `verify-profile-claim:44`).
+- **Risk:** unbounded provider spend from one account or rotating IPs.
 
-What every agent action should carry, and what exists:
+### 5.2 Retry safety (P1)
+- Boundary: money functions use CAS and idempotency keys (good).
+- Agent writes: `agent-send-dm` uses a CAS claim and reverts on failure; `agentAuthority` does not roll back partial work; `desk-agent` writes multiple tables with no transaction.
+- **Risk:** a retried agent run duplicates messages, tasks or invoices.
 
-| Field | Orchestrator (`orch_runs`, `orch_actions`, `orch_approvals`) | Copilot (`copilot_plans`) | Desk agent |
+### 5.3 Drift and abuse detection (P1)
+- No anomaly detection on agent volume, recipients, spend, or tool mix.
+- No comparison of an agent's action distribution against its stated purpose.
+- No prompt-injection detection; `promptIsolation` is applied at ~24 call sites and missing at ~40, including `desk-agent:568`, `inbox-triage-agent:207`, `money-agent-watch:67`, `universal-search:253`, `auto-epk-updater:69`, `verify-credit:105`.
+- No kill switch per agent; disabling requires editing the registry or the cron.
+
+---
+
+## 6. Recommended automation (proposals only — do not enable new capabilities)
+
+| # | Automation | What it does | Where it plugs in | Does not |
+|---|---|---|---|---|
+| A1 | **Approval pre-check at the write** | Reject an agent-attributed write unless a matching approved action row exists and is unexpired | RLS policy or `SECURITY DEFINER` RPC per table; replaces caller-asserted markers | Does not grant new tools |
+| A2 | **Intent-first audit** | Insert `audit_events` with `outcome='pending'` before mutation, update to `ok`/`failed` after | `agentAuthority`, `agent-send-dm`, `desk-agent`, RSVP/vouch | Does not perform the action |
+| A3 | **Deny-by-default tool registry** | New `orch_tool_registry` row starts `locked` and requires review to move to `safe_auto` | `agent-orchestrator` registry read | Does not change existing rows |
+| A4 | **Per-agent daily budget** | Reserve/commit/release spend per agent and global; refuse at the ceiling | Wire the existing unused `durableBudget.ts` into `gateAiCall` | Does not change model choice |
+| A5 | **Anomaly rules** | Alert on: DM volume per hour, new recipients, invoice/credit writes, spend spike, tool-mix change, cross-tenant reads | Log/metric pipeline | Does not auto-suspend without a human |
+| A6 | **Drift report** | Weekly diff of agent tool usage and output types vs an allowlist per agent | Scheduled read-only job | Does not modify agent state |
+| A7 | **Retry guard** | Idempotency key per agent action; refuse duplicate execution within a window | Action tables | Does not retry automatically |
+| A8 | **Kill switch** | One config row/flag per agent, checked at entry | Function entry | Does not enable anything |
+| A9 | **Cost + provider health dashboard** | Spend, error rate, latency, receipt reconciliation gaps | Existing usage receipts | Read-only |
+
+---
+
+## 7. Prioritised remediation list
+
+### P0
+| ID | Action | Effort | Acceptance |
 |---|---|---|---|
-| Durable run id | yes (`orch_runs.id`) | yes (`copilot_plans.id`) | best-effort `orch_runs` row |
-| Actor | `user_id` | `user_id` | `user_id` |
-| Target | after the fact (`created_record_ids`) | inside step results | no |
-| Input summary | `intent_text`, `tool_args`, `preview_title`, `preview_body` | steps and args | `agent_project_context.tool_calls` |
-| Result and error | `result`, `error` | per-step `result`, failure reason | in the response only |
-| Status | `proposed`, approved, executed, failed | `proposed`, `running`, `succeeded`, `failed`, `cancelled` | run status only |
-| Approval record | `orch_approvals` (decision, edited args, time) | the request's explicit decision (not stored separately) | for collaborator tools only |
-| Tamper resistance | users can read and insert, not change (`orch_actions` has no client write policy) | **owner can update and delete** the plan | n/a |
-| Retry and recovery | `reconcile_stale_orch_runs` (service only) | halts on failure; no resume | none |
-| Idempotency key per side effect | no | no (one run per plan only) | no |
+| AI-01 | Require human approval before publishing challenges, discovered Passport data, and moderation closures; route all three through a `pending_review` state | Medium | No row reaches `active`/`published`/`closed` without an approver id and an `audit_events` row |
+| AI-02 | Gate `desk-agent` task/message/invoice/credit writes with the same approval pre-check as collaborator changes | Medium | Marker-free direct call yields `denied`, no write |
+| AI-03 | Implement intent-first audit for every agent mutation; fail closed if the audit insert fails | Medium | Every agent action has exactly one `audit_events` row; a failed audit blocks the write |
+| AI-04 | Require human confirmation for `auto-resolve-disputes` ownership changes | Small | Cron creates a proposal only; a human confirms |
+| AI-05 | Fix `auto-epk-updater` auth derivation | Small | `body.user_id` alone → 401 |
+| AI-06 | Remove or tightly scope the `x-internal-user-id` impersonation path; log every use | Small–Medium | No path can act as a user without a session or an explicit, audited internal grant |
 
-Proposed (P1-3 and P1-4 in the remediation plan): one append-only `audit_events` log (designed in `docs/platform/AUDIT_TRAIL_DESIGN.md`) written by every door, with run id, actor, target type and id, tool, input summary (hashed or truncated, no secrets), result summary, status, error, approval reference, idempotency key, attempt count. Needs a migration.
+### P1
+- Set real daily caps and a global spend ceiling (A4); wire `durableBudget`.
+- Add egress allowlist for agent functions.
+- Apply `promptIsolation` to all untrusted channels, starting with `desk-agent`, `inbox-triage-agent`, `money-agent-watch`.
+- Add approval + audit to `agent-rsvp-event` and `agent-vouch-credit`.
+- Make `moderate-opportunity` fail closed.
+- Per-client rate limit and read audit for MCP.
+- Stop direct Resend calls that bypass policy/suppression.
+- Private storage for generated images.
+- Memory retention/expiry for `copilot_memories`, `thrive_memory`, `studio_facts`, `agent_project_context`.
 
-## 6. Drift, abuse, cost, retry and recovery controls
+### P2
+- Deny-by-default registry (A3), drift report (A6), retry guard (A7), kill switch (A8), dashboard (A9).
+- Replace caller-asserted markers entirely once A1 ships.
 
-| Control | Exists | Gap |
-|---|---|---|
-| Prompt-injection defence | `_shared/promptIsolation.ts` used in several functions | Not applied everywhere project or web text enters a prompt; add a test that lists AI functions without it |
-| Tool allow-list | registry checked by copilot executor and orchestrator; locked and disabled tools refused | Desk agent has its own list (fine) but bypasses the registry tier |
-| Model drift | model ids centralised in `_shared/aiModels.ts` | No evaluation set for agent behaviour; add a small fixed set of prompts whose expected tool choice is checked before a model change |
-| Abuse and cost | per-user limits on many AI functions (`_shared/aiPerimeter.ts`), Desk daily limit, Kreto Cloud ledger with reservations and receipts (AGENTS.md), public web search quota | 8 signed-in AI functions without any limiter (remediation plan P1-2); no global spend alarm documented |
-| Retries | executor halts on failure; stale-run reconciliation | No `outcome_unknown` state; a timeout after a send can lead to a second send on retry |
-| Recovery | plans can be cancelled before running; tools can be disabled in the registry (kill switch per tool) | No undo for executed actions; document the per-tool kill switch in the incident plan (done in `data-protection-review.md` §6.4) |
-| Human visibility | approval cards in the UI; proposals | Weekly review below |
+---
 
-## 7. Agent action-log review process
+## 8. What this review does not establish
 
-Weekly, by the technical lead, 30 minutes. Read-only queries against the agent tables (run them in the database console with a read-only role; adapt names to production):
-
-1. **Side effects without approval.** Executed actions whose tool is `requires_approval` and that have no positive approval:
-
-   ```sql
-   select a.id, a.tool_name, a.user_id, a.executed_at
-   from orch_actions a
-   join orch_tool_registry t on t.tool_name = a.tool_name and t.risk_level = 'requires_approval'
-   where a.executed_at > now() - interval '7 days'
-     and not exists (select 1 from orch_approvals p where p.action_id = a.id and p.user_id = a.user_id and p.decision in ('approved', 'edited'));
-   ```
-   Expected: zero rows. Any row is a SEV-2 incident.
-2. **Desk agent activity.** Runs from the Desk door and the tools they used (`orch_runs` where the intent is a Desk run; `agent_project_context.tool_calls`): look for message and call tools, unusual volume per user, and failures.
-3. **Failures and stuck runs.** Runs in `running` or `pending` for over an hour; failed actions grouped by tool and error.
-4. **Volume and cost.** Actions per user per day; AI calls and spend per user from the Cloud ledger; outliers above ten times the median.
-5. **Registry drift.** Any change to `orch_tool_registry` (new tools, tier changes, enabled flags) since last week, compared with the reviewed list in §2.
-6. **Locked tools.** Any attempt to run `charge_card` or a disabled tool (refusals in function logs).
-
-Record each review (date, reviewer, findings, actions). Escalate per `data-protection-review.md` §6 when an action ran without the approval it needed, an agent reached data it should not, or spend jumps.
+- It does not establish that agents are safe under adversarial prompting.
+- It does not establish that the deployed registry, cron schedules or approval records match the repo.
+- It does not establish compliance with the EU AI Act or any AI regulation. **[LEGAL REVIEW REQUIRED]**
+- It does not approve enabling any new autonomous capability.
