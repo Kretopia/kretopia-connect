@@ -38,8 +38,11 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const rim = new THREE.PointLight(color("--k-g-3"), 28); rim.position.set(-3, 1, 2); scene.add(rim);
     const warm = new THREE.PointLight(color("--k-g-4"), 22); warm.position.set(3, 0, 1); scene.add(warm);
     const robot = new THREE.Group(); scene.add(robot);
+    // Every ball is the same unit sphere, scaled per use: one geometry shared by all ~18 body parts and up to 8
+    // connection markers, instead of allocating (and later disposing) a fresh 40x28 SphereGeometry per mesh.
+    const sphereGeometry = new THREE.SphereGeometry(1, 40, 28);
     const ball = (parent: THREE.Group, material: THREE.Material, scale: [number, number, number], position: [number, number, number]) => {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 40, 28), material); mesh.scale.set(...scale); mesh.position.set(...position); parent.add(mesh); return mesh;
+      const mesh = new THREE.Mesh(sphereGeometry, material); mesh.scale.set(...scale); mesh.position.set(...position); parent.add(mesh); return mesh;
     };
     ball(robot, suit, [0.61, 0.73, 0.43], [0, -0.2, 0]);
     ball(robot, black, [0.28, 0.23, 0.28], [0, 0.48, 0]);

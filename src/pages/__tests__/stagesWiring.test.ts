@@ -62,7 +62,7 @@ describe("Stages wiring", () => {
     const match = read("src/pages/Match.tsx");
     expect(match).toContain('"connected"');
     expect(match).toContain("ConnectedCollaborators");
-    expect(read("src/components/swipe/LikesYouGrid.tsx")).toContain('navigate("/match?tab=browse")');
+    expect(read("src/components/swipe/LikesYouGrid.tsx")).toContain('navigate("/match?tab=browse&view=grid")');
     expect(read("src/components/swipe/LikesYouGrid.tsx")).not.toContain('navigate("/circle")');
   });
 });

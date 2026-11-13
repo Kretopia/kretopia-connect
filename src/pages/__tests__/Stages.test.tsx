@@ -144,7 +144,7 @@ describe("Stages views", () => {
 describe("the old /circle tab links", () => {
   it.each([
     ["/circle?tab=network", "/match?tab=connected"],
-    ["/circle?tab=browse", "/match?tab=browse"],
+    ["/circle?tab=browse", "/match?tab=browse&view=grid"],
     ["/circle?tab=match", "/match?tab=discover"],
   ])("%s lands on %s", async (from, to) => {
     renderAt(from);

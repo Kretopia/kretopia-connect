@@ -30,6 +30,13 @@ interface FeatureAITutorialProps {
 }
 
 /**
+ * The look of the "How this works" sticker above a feature's title. A page's one other header action (Passport's
+ * public/private switch) wears the same class beside it (FeaturePageHeader's preTitleAction), so the two read as one unit.
+ */
+export const FEATURE_STICKER_CLASS =
+  "inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground";
+
+/**
  * Shared "AI tutorial" affordance mounted on every overhauled feature page.
  * Reuses the actual landing-page TutorialStepper (not a re-implementation)
  * inside a theme-aware panel.
@@ -97,10 +104,7 @@ export function FeatureAITutorial({
           variant="outline"
           size="sm"
           onClick={() => setOpen(true)}
-          className={cn(
-            "mt-3 inline-flex h-auto items-center gap-1.5 rounded-full border-border bg-background/80 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground hover:text-foreground",
-            className,
-          )}
+          className={cn("mt-3", FEATURE_STICKER_CLASS, className)}
         >
           {sparkle}
           How this works

@@ -28,7 +28,7 @@ describe("legacyTabTarget: the old /circle tab links keep leading somewhere real
 
   it("match, browse and network hand over to the matching Match tab", () => {
     expect(legacyTabTarget("?tab=match")).toBe("/match?tab=discover");
-    expect(legacyTabTarget("?tab=browse")).toBe("/match?tab=browse");
+    expect(legacyTabTarget("?tab=browse")).toBe("/match?tab=browse&view=grid");
     expect(legacyTabTarget("?tab=network")).toBe("/match?tab=connected");
   });
 
