@@ -6,6 +6,7 @@ import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { evaluateExecutionGuard } from "../_shared/executionGuard.ts";
 import { internalToolBody, stripReservedKeys } from "../_shared/approvalHardening.ts";
+import { deskActionRows, deskToolGate } from "../_shared/deskApproval.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
 
 import { z } from "npm:zod@^4.4.3";
@@ -516,7 +517,7 @@ DECISION RULES:
    - LOW (ambiguous) → call ask_clarification with one short question.
 4. Multi-step: chain 2 tool calls max per turn (e.g. summary + suggested task). For "wrap up project" type requests, prefer get_project_summary + one concrete next action.
 5. Never invent collaborator ids — only use ones from the list above.
-6. SAFETY: draft_invoice creates a DRAFT only — never auto-send. add_credit logs to the user's own profile (safe). start_video_call posts a join link in chat (safe). remove_collaborator and add_collaborator are NEVER executed immediately — they are queued for the user's explicit approval (tap-to-confirm), since they change who has access.
+6. SAFETY: draft_invoice creates a DRAFT only — never auto-send. add_credit logs to the user's own profile (safe). send_message_to_collaborator, start_video_call, remove_collaborator and add_collaborator are NEVER executed immediately — they are queued for the user's explicit approval (tap-to-confirm), since they speak to other people or change who has access. Say that they are waiting for approval, never that they are done.
 7. Money rule: if the user asks for an invoice without an amount, ask_clarification for amount + brief description. If the only source for an amount is a STUDIO BRAIN fact marked [UNVERIFIED], do NOT pass it straight to draft_invoice or draft_quote -- ask_clarification to have the user restate or confirm the number in this conversation first, even if they didn't ask you to double-check it.
 8. Keep tool arg \`message\` / \`title\` / \`question\` natural, friendly, under 200 chars.
 9. Treat USER FACTS as the only ground truth — never invent projects, invoices, or activity not listed.
@@ -625,6 +626,87 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
 
     // Execute tools
     const actions: Array<{ tool: ToolName; args: any; result: any; ok: boolean }> = [];
+    const callSource = body?._source;
+    const callActionId = body?._agent_action_id;
+    // The text of a message tool. A door's direct call carries it as the request's `message`, which the direct-tool
+    // shortcut above takes out of the arguments: without this fallback an approved message posted "undefined".
+    const messageText = (name: ToolName, args: Record<string, unknown> | null | undefined) =>
+      String(args?.message ?? (requestedTool === name ? message : "")).trim().slice(0, 2000);
+
+    // A tool that reaches other people waits for the person's approval (_shared/deskApproval.ts): it is queued in the same
+    // orch_runs/orch_actions ledger, with the same approval card, as remove_collaborator below. Approving it runs it through
+    // agent-orchestrator, which calls this function back with the approved action's id.
+    const queueOutwardTool = async (name: ToolName, args: Record<string, unknown>) => {
+      const projectLabel = `"${project?.title ?? "this project"}"`;
+      let toolArgs: Record<string, unknown>;
+      let previewTitle: string;
+      let previewBody: string;
+      if (name === "send_message_to_collaborator") {
+        const text = messageText(name, args);
+        if (!text) return { tool: name, args, result: { error: "There is no message to post." }, ok: false };
+        const mention = collaborators.find((c) => c.id === args?.mention_user_id);
+        toolArgs = { project_id, message: text, mention_user_id: mention ? mention.id : null };
+        previewTitle = mention ? `Message ${mention.full_name} in ${projectLabel}` : `Post in the ${projectLabel} chat`;
+        previewBody = mention ? `@${mention.full_name.split(" ")[0]} ${text}` : text;
+      } else {
+        toolArgs = { project_id };
+        previewTitle = `Start a video call in ${projectLabel}`;
+        previewBody = "A call room opens and its join link is posted in the project chat for everyone in the project.";
+      }
+      const { data: proposalRun, error: runErr } = await admin
+        .from("orch_runs")
+        .insert({
+          user_id: user.id,
+          agent_kind: "project_manager",
+          intent_text: message.slice(0, 2000),
+          intent_classified: `ThriveDesk — ${name} (needs approval)`,
+          context: { project_id, source: "desk_agent" },
+          status: "awaiting_approval",
+          source: "desk_agent",
+          model: requestedTool ? null : GEMINI_3_FLASH,
+          tool_call_count: 1,
+          tool_names: [name],
+        })
+        .select("id")
+        .single();
+      if (runErr || !proposalRun) return { tool: name, args, result: { error: "Could not queue that for approval." }, ok: false };
+      const { data: proposalAction, error: actionErr } = await admin
+        .from("orch_actions")
+        .insert({
+          run_id: proposalRun.id,
+          user_id: user.id,
+          tool_name: name,
+          tool_args: toolArgs,
+          risk_level: "requires_approval",
+          status: "proposed",
+          source: "desk_agent",
+          preview_title: previewTitle.slice(0, 200),
+          preview_body: previewBody.slice(0, 2000),
+        })
+        .select("*")
+        .single();
+      if (actionErr || !proposalAction) return { tool: name, args, result: { error: "Could not queue that for approval." }, ok: false };
+      return { tool: name, args, result: { needs_approval: true, action: proposalAction }, ok: true };
+    };
+
+    // The approved action this call executes must be the caller's, approved by them, for this tool and this project.
+    const approvedActionProven = async (actionId: string, name: ToolName): Promise<boolean> => {
+      const [actionRes, approvalsRes] = await Promise.all([
+        admin.from("orch_actions").select("id, user_id, status, tool_name, tool_args").eq("id", actionId).maybeSingle(),
+        admin.from("orch_approvals").select("action_id, user_id, decision").eq("action_id", actionId),
+      ]);
+      // A failed lookup of either record means "not proven": no side effect.
+      if (actionRes.error || approvalsRes.error) return false;
+      const verdict = evaluateExecutionGuard({
+        action: actionRes.data,
+        approvals: approvalsRes.data,
+        userId: user.id,
+        expectedTool: name,
+        actionId,
+      });
+      const approvedArgs = (actionRes.data?.tool_args ?? {}) as Record<string, unknown>;
+      return verdict.allowed && String(approvedArgs.project_id ?? approvedArgs.target_project_id ?? "") === String(project_id);
+    };
 
     for (const tc of toolCalls) {
       const name = tc.function?.name as ToolName;
@@ -639,6 +721,16 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       }
 
       try {
+        const gate = deskToolGate({ tool: name, requestedTool, source: callSource, agentActionId: callActionId });
+        if (!gate.run) {
+          actions.push(await queueOutwardTool(name, args));
+          continue;
+        }
+        if (gate.proveAction && !(await approvedActionProven(gate.proveAction, name))) {
+          actions.push({ tool: name, args, result: { error: "That approval could not be confirmed, so nothing was sent." }, ok: false });
+          continue;
+        }
+
         if (name === "create_task" || name === "schedule_reminder") {
           const title =
             name === "schedule_reminder" ? `Reminder: ${args.what}` : args.title;
@@ -684,10 +776,12 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
             }
           }
         } else if (name === "send_message_to_collaborator") {
+          const postText = messageText(name, args);
+          if (!postText) throw new Error("There is no message to post.");
           const mention = collaborators.find((c) => c.id === args.mention_user_id);
           const text = mention
-            ? `@${mention.full_name.split(" ")[0]} ${args.message}`
-            : args.message;
+            ? `@${mention.full_name.split(" ")[0]} ${postText}`
+            : postText;
           const { data, error } = await admin
             .from("project_messages")
             .insert({
@@ -1018,7 +1112,10 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       if (a.tool === "create_task" && a.ok) finalReply = `Added: "${a.result.title}".`;
       else if (a.tool === "schedule_reminder" && a.ok) finalReply = `Reminder set for ${a.args.when_iso}.`;
       else if (a.tool === "mark_task_done" && a.ok) finalReply = `Marked "${a.result.title}" done.`;
-      else if (a.tool === "send_message_to_collaborator" && a.ok) finalReply = "Message posted to project chat.";
+      else if (a.tool === "send_message_to_collaborator" && a.ok)
+        finalReply = (a.result as { needs_approval?: boolean } | null)?.needs_approval
+          ? "Your message is ready — tap Approve to post it in the project chat."
+          : "Message posted to project chat.";
       else if (a.tool === "get_project_summary" && a.ok)
         finalReply = `${a.result.open_tasks} open tasks, ${a.result.overdue} overdue.`;
       else if (a.tool === "draft_invoice" && a.ok)
@@ -1026,7 +1123,9 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
       else if (a.tool === "draft_quote" && a.ok)
         finalReply = `Draft quote ${a.result.invoice_number} for ${a.result.currency} ${a.result.total_amount} created. Review & send from Money tab.`;
       else if (a.tool === "start_video_call" && a.ok)
-        finalReply = "Video room is live and link posted in chat.";
+        finalReply = (a.result as { needs_approval?: boolean } | null)?.needs_approval
+          ? "Tap Approve to open the video room and post its link in the project chat."
+          : "Video room is live and link posted in chat.";
       else if (a.tool === "add_credit" && a.ok)
         finalReply = `Credit added: ${a.result.role} on "${a.result.project_name}".`;
       else if (a.tool === "add_collaborator" && a.ok) {
@@ -1082,23 +1181,42 @@ When you respond in natural language (after tools), keep it to 1–2 sentences, 
     // turns being invisible to that system entirely. Foundation only: not
     // shown in any UI yet, just captured. Best-effort -- must never fail
     // the actual chat turn, which has already completed by this point.
-    await admin.from("orch_runs").insert({
-      user_id: user.id,
-      agent_kind: "project_manager",
-      intent_text: message.slice(0, 2000),
-      intent_classified: requestedTool ? `direct tool: ${requestedTool}` : "ThriveDesk chat turn",
-      context: { project_id },
-      status: actions.some((a) => !a.ok) ? "failed" : "completed",
-      source: "desk_agent",
-      model: requestedTool ? null : GEMINI_3_FLASH,
-      tokens_used: turnTokens,
-      tool_call_count: actions.length,
-      tool_names: Array.from(new Set(actions.map((a) => a.tool))),
-      summary: finalReply.slice(0, 500),
-    }).then(
-      ({ error }) => { if (error) console.warn("[desk-agent] receipt insert failed (non-fatal)", error); },
-      (e) => console.warn("[desk-agent] receipt insert failed (non-fatal)", e),
-    );
+    //
+    // Each tool this function ran on its own authority also leaves one orch_actions row under that run
+    // (_shared/deskApproval.ts: deskActionRows), so what an agent did is in the ledger whose rows clients cannot write.
+    // The side effects have already happened, so a failed write is logged loudly instead of failing the turn.
+    try {
+      const { data: receipt, error: receiptErr } = await admin.from("orch_runs").insert({
+        user_id: user.id,
+        agent_kind: "project_manager",
+        intent_text: message.slice(0, 2000),
+        intent_classified: requestedTool ? `direct tool: ${requestedTool}` : "ThriveDesk chat turn",
+        context: { project_id },
+        status: actions.some((a) => !a.ok) ? "failed" : "completed",
+        source: "desk_agent",
+        model: requestedTool ? null : GEMINI_3_FLASH,
+        tokens_used: turnTokens,
+        tool_call_count: actions.length,
+        tool_names: Array.from(new Set(actions.map((a) => a.tool))),
+        summary: finalReply.slice(0, 500),
+      }).select("id").single();
+      if (receiptErr || !receipt) {
+        console.error("[desk-agent] receipt insert failed: executed tools are not in the action ledger", receiptErr);
+      } else {
+        const rows = deskActionRows({
+          runId: receipt.id,
+          userId: user.id,
+          call: { requestedTool, source: callSource, agentActionId: callActionId },
+          actions,
+        });
+        if (rows.length) {
+          const { error: rowsErr } = await admin.from("orch_actions").insert(rows);
+          if (rowsErr) console.error("[desk-agent] action ledger insert failed", { run_id: receipt.id, tools: rows.map((r) => r.tool_name) }, rowsErr);
+        }
+      }
+    } catch (e) {
+      console.error("[desk-agent] receipt or action ledger write threw", e);
+    }
 
     return new Response(
       JSON.stringify({

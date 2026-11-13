@@ -284,7 +284,8 @@ async function planTools(
           const execResp = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: authHeader },
-            body: JSON.stringify({ ...args, _tool: toolName }),
+            // Model arguments are data: a `_source` or `_agent_action_id` in them would read downstream as an approval.
+            body: JSON.stringify({ ...stripReservedKeys(args), _tool: toolName }),
           });
           const execText = await execResp.text();
           messages.push({ role: "tool", tool_call_id: c.id, content: execText.slice(0, 4000) });
