@@ -22,6 +22,9 @@ interface FeaturePageHeaderProps {
   tabs?: ReactNode;
   /** Feature key + tutorial steps -- omit to render the header with no tutorial trigger. `autoOpen: false` keeps the trigger but never opens the tour on its own. */
   tutorial?: { featureKey: string; label: string; steps: TutorialStep[]; autoOpen?: boolean };
+  /** One more sticker in the same row as the tutorial trigger, wearing FEATURE_STICKER_CLASS (Passport's public/private
+   *  switch), so a page's header actions sit together above the title instead of in a row of their own. */
+  preTitleAction?: ReactNode;
   /** Prefer one line on wider screens; defaults to wrapping for long titles. */
   oneLine?: boolean;
   /** Tighter top padding -- see CinematicHeaderPlate's own doc. Default false. */
@@ -45,7 +48,7 @@ interface FeaturePageHeaderProps {
  * regardless of the real theme. Now resolves --background itself instead,
  * so it follows Dark/Light like everything else.
  */
-export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, oneLine = false, compact = false, allowOverflow = false, scene, retainEyebrowWithTutorial = false, bannerDescription }: FeaturePageHeaderProps) {
+export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs, tutorial, preTitleAction, oneLine = false, compact = false, allowOverflow = false, scene, retainEyebrowWithTutorial = false, bannerDescription }: FeaturePageHeaderProps) {
   usePublishFeatureScene(scene, eyebrow, { title, accentTitle, subtitle });
   const { panels } = useFeatureSceneState();
   // The page's main Wrapped panel draws the banner as its head: never twice.
@@ -90,16 +93,21 @@ export function FeaturePageHeader({ eyebrow, title, accentTitle, subtitle, tabs,
         oneLine={oneLine}
         compact={compact}
         preTitle={
-          tutorial && (
+          (tutorial || preTitleAction) && (
             <div className="flex flex-col items-center gap-3">
-            <FeatureAITutorial
-              featureKey={tutorial.featureKey}
-              label={tutorial.label}
-              steps={tutorial.steps}
-              autoOpen={tutorial.autoOpen}
-              className="mt-0 relative z-10"
-            />
-            {retainEyebrowWithTutorial && <span className="landing-eyebrow">{eyebrow}</span>}
+              <div className="flex flex-wrap items-center justify-center gap-2" data-testid="feature-header-stickers">
+                {tutorial && (
+                  <FeatureAITutorial
+                    featureKey={tutorial.featureKey}
+                    label={tutorial.label}
+                    steps={tutorial.steps}
+                    autoOpen={tutorial.autoOpen}
+                    className="mt-0 relative z-10"
+                  />
+                )}
+                {preTitleAction}
+              </div>
+              {tutorial && retainEyebrowWithTutorial && <span className="landing-eyebrow">{eyebrow}</span>}
             </div>
           )
         }

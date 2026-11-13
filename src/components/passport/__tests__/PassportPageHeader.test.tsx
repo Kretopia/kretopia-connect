@@ -58,6 +58,24 @@ describe("PassportPageHeader: one header for the private and the public Passport
     expect(screen.queryByRole("link", { name: /Back to my private Passport/ })).toBeNull();
   });
 
+  it("the switch is a sticker beside 'How this works', in the same row and style, not a row of its own", () => {
+    const { container } = renderHeader({ surface: "private", viewerId: OWNER, passportOwnerId: OWNER });
+    const link = screen.getByRole("link", { name: "View my public Passport" });
+    const tour = screen.getByRole("button", { name: /How this works/i });
+    const row = container.querySelector('[data-testid="feature-header-stickers"]');
+    expect(row).not.toBeNull();
+    expect(link.parentElement).toBe(row);
+    expect(tour.parentElement).toBe(row);
+    // Same sticker look as the tour trigger.
+    for (const cls of ["rounded-full", "bg-background/80", "text-[11px]"]) {
+      expect(link.className).toContain(cls);
+      expect(tour.className).toContain(cls);
+    }
+    // And it comes before the title, not after it.
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(link.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("private view: the identity comes from the signed-in account, not from the Passport id the page holds", () => {
     renderHeader({ surface: "private", viewerId: OWNER, passportOwnerId: OTHER });
     expect(screen.getByRole("link", { name: "View my public Passport" })).toHaveAttribute("href", `/epk/${OWNER}`);
