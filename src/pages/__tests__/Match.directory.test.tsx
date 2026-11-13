@@ -20,12 +20,13 @@ describe("Match owns Passport discovery", () => {
     expect(await screen.findByText("Integrated directory")).toBeInTheDocument();
     expect(screen.queryByText("Discover people")).not.toBeInTheDocument();
   });
-  it("switches between discovery and directory without leaving Match or dropping search", async () => {
+  it("switches between browsing and directory without leaving Match or dropping search", async () => {
     draw("/match?q=designer");
     fireEvent.mouseDown(screen.getByRole("tab", { name: "Directory" }), { button: 0, ctrlKey: false });
     expect(await screen.findByText("Integrated directory")).toBeInTheDocument();
     expect(screen.getByTestId("location")).toHaveTextContent("/match?q=designer&tab=directory");
-    fireEvent.mouseDown(screen.getByRole("tab", { name: "Discover" }), { button: 0, ctrlKey: false });
+    fireEvent.mouseDown(screen.getByRole("tab", { name: "Browse" }), { button: 0, ctrlKey: false });
     expect(screen.getByText("Discover people")).toBeInTheDocument();
+    expect(screen.getByTestId("location")).toHaveTextContent("/match?q=designer&tab=browse&view=deck");
   });
 });

@@ -61,7 +61,7 @@ describe("Match deck: who is looking", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
     expect(state.navigate).toHaveBeenLastCalledWith("/auth?next=/match");
     fireEvent.click(screen.getByRole("button", { name: /Browse the grid/ }));
-    expect(state.navigate).toHaveBeenLastCalledWith("/match?tab=browse");
+    expect(state.navigate).toHaveBeenLastCalledWith("/match?tab=browse&view=grid");
   });
 
   it("while the session is still loading it shows neither message", () => {

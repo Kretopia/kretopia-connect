@@ -14,9 +14,10 @@ export function stagesViewFor(pathname: string): StagesView {
 }
 
 /**
- * /circle used to switch between Stages, Match, Browse and Network. Match and Browse are Match's own tabs and the
- * accepted-connections list is Match's "Connected" tab, so those three values hand over to /match with every other
- * query parameter kept (a shared ?join= or a welcome handoff must not be lost). Any other value stays on Stages.
+ * /circle used to switch between Stages, Match, Browse and Network. Match and Browse are now the two views of
+ * Match's own "Browse" tab (lib/matchSections.ts) and the accepted-connections list is a view of its "Connected"
+ * tab, so those three values hand over to /match with every other query parameter kept (a shared ?join= or a
+ * welcome handoff must not be lost). Any other value stays on Stages.
  */
 export function legacyTabTarget(search: string): string | null {
   const params = new URLSearchParams(search);
@@ -26,5 +27,8 @@ export function legacyTabTarget(search: string): string | null {
   if (!target) return null;
   const next = new URLSearchParams(params);
   next.set("tab", target);
+  // "browse" meant the grid here, never the deck: say so explicitly, since Match's Browse tab now defaults to
+  // its Deck view (matchTabFromParams) when no view is given.
+  if (target === "browse") next.set("view", "grid");
   return `/match?${next.toString()}`;
 }

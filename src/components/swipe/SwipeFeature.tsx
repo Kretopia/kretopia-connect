@@ -224,7 +224,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           <Button onClick={() => navigate('/auth?next=/match')} className="gap-2">
             Sign in
           </Button>
-          <Button variant="outline" onClick={() => navigate('/match?tab=browse')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="gap-2">
             <ArrowRight className="h-4 w-4" /> Browse the grid
           </Button>
         </div>
@@ -313,7 +313,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
               <RotateCcw className="h-4 w-4" /> Undo Last
             </Button>
           )}
-          <Button variant="outline" onClick={() => navigate('/match?tab=browse')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="gap-2">
             <ArrowRight className="h-4 w-4" /> Browse the grid
           </Button>
           <Button onClick={() => navigate('/profile')} className="gap-2">
