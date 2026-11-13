@@ -1,18 +1,20 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { claimWebhookEvent, releaseWebhookEvent } from "../../../supabase/functions/_shared/webhookLedger";
+import { claimWebhookEvent, classifyLedgerError, releaseWebhookEvent } from "../../../supabase/functions/_shared/webhookLedger";
 
 const read = (p: string) => readFileSync(resolve(__dirname, "../../../", p), "utf8");
 
 // An in-memory stand-in for `stripe_webhook_events`: a primary key on event_id (23505 on a duplicate).
-function fakeLedger(opts: { failInsert?: "other" | "throw"; failDelete?: boolean } = {}) {
+function fakeLedger(opts: { failInsert?: "other" | "transient" | "throw"; failDelete?: boolean } = {}) {
   const rows = new Map<string, unknown>();
   const db = {
     from(_t: string) {
       return {
         insert(row: { event_id: string }) {
           if (opts.failInsert === "other") return Promise.resolve({ error: { code: "42P01", message: "relation does not exist" } });
+          if (opts.failInsert === "transient") return Promise.resolve({ error: { message: "upstream connect error" } });
+          if (opts.failInsert === "throw") return Promise.reject(new TypeError("fetch failed"));
           if (rows.has(row.event_id)) return Promise.resolve({ error: { code: "23505", message: "duplicate key" } });
           rows.set(row.event_id, row);
           return Promise.resolve({ error: null });
@@ -41,9 +43,22 @@ describe("claimWebhookEvent / releaseWebhookEvent", () => {
     expect(await claimWebhookEvent(db, event)).toBe("duplicate");
   });
 
-  it("a ledger that cannot be written is 'unrecorded', so the event is still processed and there is nothing to release", async () => {
+  it("a ledger that is itself broken is 'unrecorded', so the event is still processed and there is nothing to release", async () => {
     const { db } = fakeLedger({ failInsert: "other" });
     expect(await claimWebhookEvent(db, event)).toBe("unrecorded");
+  });
+
+  it("a write a retry may fix is 'unavailable' (the webhook answers 5xx and processes nothing), thrown or returned", async () => {
+    expect(await claimWebhookEvent(fakeLedger({ failInsert: "transient" }).db, event)).toBe("unavailable");
+    expect(await claimWebhookEvent(fakeLedger({ failInsert: "throw" }).db, event)).toBe("unavailable");
+  });
+
+  it("classifies errors by whether every delivery would fail the same way", () => {
+    expect(classifyLedgerError({ code: "23505" })).toBe("duplicate");
+    for (const code of ["42P01", "42703", "42501", "23502", "22001", "PGRST204", "PGRST205"]) expect(classifyLedgerError({ code })).toBe("unrecorded");
+    for (const err of [{ code: "08006" }, { code: "57014" }, { code: "40001" }, { code: "PGRST000" }, { message: "timeout" }, null, new Error("x")]) {
+      expect(classifyLedgerError(err)).toBe("unavailable");
+    }
   });
 
   it("a failed event whose row is released is claimed again by Stripe's retry (it used to be dropped as 'already seen')", async () => {
@@ -98,6 +113,12 @@ describe("stripe-marketplace-webhook wiring", () => {
     expect(src).toContain('ledgerClaim === "claimed"');
   });
 
+  it("answers 500 before processing anything when the ledger is unavailable", () => {
+    const unavailable = src.slice(at('ledgerClaim === "unavailable"'), at('ledgerClaim === "unavailable"') + 400);
+    expect(unavailable).toContain("status: 500");
+    expect(at('ledgerClaim === "unavailable"')).toBeLessThan(at('if (event.type === "checkout.session.completed")'));
+  });
+
   it("gives the ledger row back before every non-2xx answer a retry can fix", () => {
     const invoice = src.slice(at("if (invoicePaidErr)"), at("if (invoicePaidErr)") + 420);
     expect(invoice.indexOf("await releaseLedger?.()")).toBeGreaterThan(-1);
@@ -138,5 +159,19 @@ describe("stripe-wallet-webhook wiring", () => {
     expect(catchBlock).toContain('if (ledgerClaim === "claimed") await releaseWebhookEvent(admin, event.id)');
     expect(catchBlock).toContain("status: 500");
     expect(catchBlock.indexOf("releaseWebhookEvent")).toBeLessThan(catchBlock.indexOf("status: 500"));
+  });
+});
+
+describe.each(["stripe-wallet-webhook", "guest-wallet-webhook"])("%s: ledger unavailable", (name) => {
+  const src = read(`supabase/functions/${name}/index.ts`);
+
+  it("uses the shared ledger claim and answers 500, before processing, when it is unavailable", () => {
+    const claim = src.indexOf("await claimWebhookEvent(admin, event)");
+    const unavailable = src.indexOf('ledgerClaim === "unavailable"');
+    expect(claim).toBeGreaterThan(-1);
+    expect(unavailable).toBeGreaterThan(claim);
+    expect(src.slice(unavailable, unavailable + 400)).toContain("500");
+    const firstWork = name === "stripe-wallet-webhook" ? src.indexOf("switch (event.type)") : src.indexOf('.from("guest_wallet_topups")');
+    expect(unavailable).toBeLessThan(firstWork);
   });
 });

@@ -69,9 +69,10 @@ describe("the shared helpers the webhooks rely on", () => {
     expect(env).toMatch(/mode === "live" && !livemode\) throw/);
   });
 
-  it("treats a unique-key conflict on the ledger as a duplicate, and gives the row back when processing fails", () => {
+  it("treats a unique-key conflict on the ledger as a duplicate, a retryable failure as 'unavailable', and gives the row back when processing fails", () => {
     const ledger = read("supabase/functions/_shared/webhookLedger.ts");
-    expect(ledger).toMatch(/"23505" \? "duplicate"/);
+    expect(ledger).toMatch(/code === "23505"\) return "duplicate"/);
+    expect(ledger).toMatch(/return "unavailable"/);
     expect(ledger).toMatch(/export async function releaseWebhookEvent/);
   });
 });

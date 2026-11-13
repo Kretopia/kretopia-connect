@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey, assertEventMatchesMode } from "../_shared/stripeEnv.ts";
 import { creditGuestWallet, guestTopupMismatch } from "../_shared/guestWalletCredit.ts";
+import { claimWebhookEvent } from "../_shared/webhookLedger.ts";
 
 
 serve(async (req) => {
@@ -65,22 +66,25 @@ serve(async (req) => {
   let claimedTopupId: string | null = null;
 
   try {
-    // Webhook-event idempotency (matches stripe-wallet-webhook pattern).
+    // Webhook-event idempotency (the shared ledger, as stripe-wallet-webhook and stripe-marketplace-webhook).
     // If we've seen this event.id before, return 200 immediately.
-    const { error: dupErr } = await admin.from("stripe_webhook_events").insert({
-      event_id: event.id,
-      type: event.type,
-      payload: event as unknown as Record<string, unknown>,
-    });
-    if (dupErr && (dupErr as { code?: string }).code === "23505") {
+    const ledgerClaim = await claimWebhookEvent(admin, event);
+    if (ledgerClaim === "duplicate") {
       return new Response(JSON.stringify({ received: true, idempotent_event: true }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     }
+    if (ledgerClaim === "unavailable") {
+      // Nothing was processed and nothing was claimed: Stripe delivers the event again (_shared/webhookLedger.ts).
+      return new Response(JSON.stringify({ error: "Event ledger unavailable; retry" }), {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     // This request now owns the event: if it fails before the credit, the row is given back below
     // so Stripe's retry is processed instead of being answered "already seen".
-    ledgerRowHeld = !dupErr;
+    ledgerRowHeld = ledgerClaim === "claimed";
 
 
 

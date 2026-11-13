@@ -117,6 +117,32 @@ describe("duplicate and retried events", () => {
   });
 });
 
+describe("the event ledger cannot be written", () => {
+  it("for a reason a retry may fix: answers 500 and processes nothing, and Stripe's retry is processed once", async () => {
+    seedInvoice();
+    let down = true;
+    world.db.hooks.failOn = (table, op) => (table === "stripe_webhook_events" && op === "insert" && down ? { message: "upstream connect error" } : null);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const e = evt("checkout.session.completed", invoiceSession());
+    expect((await deliver(e)).status).toBe(500);
+    expect(world.db.rows("invoices")[0].status).toBe("sent");
+    expect(world.db.writes("invoices", "update")).toHaveLength(0);
+
+    down = false;
+    expect((await deliver(e)).status).toBe(200);
+    expect(world.db.rows("invoices")[0]).toMatchObject({ status: "paid", stripe_payment_intent_id: "pi_inv" });
+    expect(world.db.rows("stripe_webhook_events")).toHaveLength(1);
+  });
+
+  it("because the ledger itself is broken: the payment is still recorded (refusing would stop every payment)", async () => {
+    seedInvoice();
+    world.db.hooks.failOn = (table, op) => (table === "stripe_webhook_events" && op === "insert" ? { message: "relation does not exist", code: "42P01" } : null);
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    expect((await deliver(evt("checkout.session.completed", invoiceSession()))).status).toBe(200);
+    expect(world.db.rows("invoices")[0]).toMatchObject({ status: "paid", stripe_payment_intent_id: "pi_inv" });
+  });
+});
+
 describe("decline and cancellation", () => {
   it("a declined payment writes no payment state", async () => {
     seedInvoice();
