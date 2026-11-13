@@ -49,12 +49,28 @@ describe("StudioCreateHero", () => {
     const primary = screen.getByRole("button", { name: "Open a New Room" });
     const secondary = screen.getByRole("button", { name: "Describe it out loud" });
     expect(primary).toHaveAttribute("data-testid", "studio-create-project");
-    expect(primary.parentElement).toBe(secondary.parentElement);
-    expect(primary.parentElement?.className).toContain("sm:grid-cols-2");
+    // The primary sits in its pulse wrapper, which is the grid track next to the secondary.
+    const primaryTrack = primary.closest(".k-pulse-cta");
+    expect(primaryTrack?.parentElement).toBe(secondary.parentElement);
+    expect(secondary.parentElement?.className).toContain("sm:grid-cols-2");
+    expect(primaryTrack?.className).toContain("w-full");
     // the Landing pair: glass primary, outlined secondary
     expect(primary.className).toContain("glass-cta");
     expect(secondary.className).toContain("border-border");
     expect(container.querySelectorAll('[data-testid="studio-create-project"]')).toHaveLength(1);
+  });
+
+  it("Open a New Room wears the same pulse as Scout's Scan now, as decoration only", () => {
+    setup();
+    const primary = screen.getByRole("button", { name: "Open a New Room" });
+    const pulse = primary.closest(".k-pulse-cta");
+    expect(pulse).not.toBeNull();
+    const rings = pulse!.querySelectorAll(":scope > .k-pulse-cta-ring");
+    expect(rings).toHaveLength(2);
+    rings.forEach((ring) => expect(ring).toHaveAttribute("aria-hidden"));
+    expect(primary.querySelector(".k-pulse-cta-sheen")).toHaveAttribute("aria-hidden");
+    // The secondary stays a plain outline: one pulsing action per surface.
+    expect(screen.getByRole("button", { name: "Describe it out loud" }).closest(".k-pulse-cta")).toBeNull();
   });
 
   it("both CTAs and the prompt line open the New Room flow, and nothing else", () => {

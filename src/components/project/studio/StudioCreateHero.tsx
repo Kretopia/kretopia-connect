@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Mic, FileText, ListChecks, Receipt } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { KretoScene } from "@/components/brand/KretoScene";
-import { GlassCtaButton, OutlineCtaButton } from "@/components/ui/glass-cta";
+import { OutlineCtaButton } from "@/components/ui/glass-cta";
+import { PulseGlassCtaButton } from "@/components/ui/pulse-glass-cta";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 interface StudioCreateHeroProps {
@@ -140,14 +141,16 @@ export const StudioCreateHero = ({ onCreate, onVoice, projectCount, activeCount 
 
         {/* The Landing CTA pair, equal tracks: one primary, one secondary. */}
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <GlassCtaButton
+          {/* Studio's main action wears the same pulse as Scout's Scan now. */}
+          <PulseGlassCtaButton
             size="lg"
             onClick={onCreate}
             data-testid="studio-create-project"
+            wrapperClassName="w-full"
             className="min-h-12 w-full justify-center"
           >
             Open a New Room
-          </GlassCtaButton>
+          </PulseGlassCtaButton>
           <OutlineCtaButton
             size="lg"
             onClick={onVoice}
