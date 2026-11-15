@@ -31,7 +31,7 @@ describe('same Cloud control endpoint for UI and reservations', () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ code: 'AI_BUDGET_EXHAUSTED' }), { status: 429 }));
     const onError = vi.fn();
     await streamCopilot({ messages: [{ role: 'user', content: 'brief' }], surface: 'home', conversationId: 'conv', onError, onDelta: vi.fn(), onDone: vi.fn() });
-    expect(onError).toHaveBeenCalledWith("This backend's AI ceiling is reached for today. Your draft is kept. Resets at midnight UTC.");
+    expect(onError).toHaveBeenCalledWith("Kreto has reached today's limit for everyone. Your draft is kept. It comes back at midnight UTC.");
   });
   it('deletes a retained original through the authenticated endpoint', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ deleted: true })));

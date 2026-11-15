@@ -5,6 +5,7 @@ import { gateAiCall, commitAiCredit, releaseAiCredit } from '../_shared/aiRateLi
 import { measuredModelFetch } from '../_shared/measuredModelFetch.ts';
 import { ATTACHMENT_BUCKET, ATTACHMENT_MAX_BYTES, attachmentExpiresAt, attachmentIsLive } from '../_shared/kretoAttachmentPolicy.ts';
 import { corsFor } from '../_shared/guard.ts';
+import { outputTokensFor, type KretoEffort } from '../_shared/kretoProfiles.ts';
 
 const Id = z.string().uuid();
 const Schema = z.discriminatedUnion('mode', [
@@ -15,8 +16,29 @@ const Schema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('delete_conversation'), conversation_id: Id }),
   z.object({ mode: z.literal('autocomplete'), prefix: z.string().max(600) }),
   z.object({ mode: z.literal('parse_attachment'), attachment: z.object({ name: z.string().min(1).max(200), mime: z.enum(['application/pdf', 'text/plain', 'text/markdown', 'text/csv', 'image/png', 'image/jpeg', 'image/webp']), data_base64: z.string().min(1).max(14_000_000) }) }),
-  z.object({ mode: z.literal('chat'), conversation_id: Id, surface: z.string().max(40), surface_context: z.record(z.unknown()).optional(), messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(30000) })).min(1).max(60), attachments: z.array(z.object({ id: Id })).max(3).default([]) }),
+  z.object({ mode: z.literal('chat'), conversation_id: Id, surface: z.string().max(40), surface_context: z.record(z.unknown()).optional(), messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(30000) })).min(1).max(60), attachments: z.array(z.object({ id: Id })).max(3).default([]),
+    // The Kreto model and effort the person chose, and the estimate handshake (thrive-ai-chat decides; unknown ids run as Auto there).
+    profile: z.string().max(20).optional(), effort: z.number().int().min(1).max(4).optional(),
+    confirm_supported: z.boolean().optional(), confirm_estimate: z.boolean().optional() }),
 ]);
+/** Which Kreto model and effort answered: passed through from thrive-ai-chat so the composer can say so. Never the model behind them. */
+const KRETO_ROUTE_HEADERS = ['X-Kreto-Profile', 'X-Kreto-Effort', 'X-Kreto-Suggest-Effort', 'X-Kreto-Notice', 'X-Kreto-Share'];
+/** What is left of today's token allowance on this ledger (the one the composer shows), before this request. Null when uncapped or unreadable. */
+async function tokensLeftToday(admin: Parameters<typeof gateAiCall>[0], userId: string): Promise<number | null> {
+  try {
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const [cfg, row] = await Promise.all([
+      admin.from('ai_credit_config').select('daily_allowance').eq('feature', 'kreto_tokens').maybeSingle(),
+      admin.from('ai_credit_ledger').select('used, reserved, cap').eq('user_id', userId).eq('feature', 'kreto_tokens').eq('window_key', day).maybeSingle(),
+    ]);
+    if (cfg.error || row.error) return null;
+    const cap = typeof row.data?.cap === 'number' ? row.data.cap : cfg.data?.daily_allowance;
+    if (typeof cap !== 'number' || cap < 0) return null;
+    return Math.max(0, cap - Number(row.data?.used ?? 0) - Number(row.data?.reserved ?? 0));
+  } catch {
+    return null;
+  }
+}
 const json = (corsHeaders: Record<string, string>, data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
 Deno.serve(async (request) => {
@@ -89,9 +111,14 @@ Deno.serve(async (request) => {
     const attachmentIds = [...new Set(body.attachments.map(a => a.id))];
     const { data: files, error: fileError } = attachmentIds.length ? await admin.from('kreto_attachments').select('*').eq('owner_id', identity.id).in('id', attachmentIds).gt('expires_at', new Date().toISOString()) : { data: [], error: null };
     if (fileError || (files ?? []).length !== attachmentIds.length) return json(corsHeaders, { error: 'An attachment is missing or expired. Remove it and retry.' }, 410);
+    // Read before reserving: thrive-ai-chat measures its estimate against the lower of this and its own ledger, so the
+    // question it asks ("about N% of what's left today") matches the allowance the composer shows.
+    const tokensLeft = await tokensLeftToday(admin, identity.id);
     const gate = await gateAiCall(admin, identity.id, 'kreto_message', 1);
     if (!gate.allowed) return gate.response;
-    const tokenEstimate = Math.ceil((body.messages.reduce((n, m) => n + m.content.length, 0) + (files ?? []).reduce((n, f) => n + f.extracted_text.length, 0)) / 4) + 800;
+    // Deep and Maximum can answer at length: reserve their larger output ceiling, never less than before.
+    const outputReserve = Math.max(800, outputTokensFor((body.effort ?? 2) as KretoEffort, 'strong'));
+    const tokenEstimate = Math.ceil((body.messages.reduce((n, m) => n + m.content.length, 0) + (files ?? []).reduce((n, f) => n + f.extracted_text.length, 0)) / 4) + outputReserve;
     const tokenGate = await gateAiCall(admin, identity.id, 'kreto_tokens', tokenEstimate, 0);
     if (!tokenGate.allowed) { await releaseAiCredit(admin, identity.id, 'kreto_message', 1); return tokenGate.response; }
     const release = async () => { await releaseAiCredit(admin, identity.id, 'kreto_message', 1); await releaseAiCredit(admin, identity.id, 'kreto_tokens', tokenEstimate, 0); };
@@ -104,7 +131,7 @@ Deno.serve(async (request) => {
     }
     let upstream: Response;
     try {
-      upstream = await measuredModelFetch(admin, identity.id, 'kreto_message', `${identity.url}/functions/v1/thrive-ai-chat`, { method: 'POST', headers: { Authorization: identity.authorization, apikey: identity.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, mode: undefined, messages: groundedMessages, persist: true, stream_options: { include_usage: true }, attachments: undefined }), signal: request.signal });
+      upstream = await measuredModelFetch(admin, identity.id, 'kreto_message', `${identity.url}/functions/v1/thrive-ai-chat`, { method: 'POST', headers: { Authorization: identity.authorization, apikey: identity.key, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, mode: undefined, messages: groundedMessages, persist: true, stream_options: { include_usage: true }, attachments: undefined, kreto_tokens_left: tokensLeft ?? undefined }), signal: request.signal });
     } catch {
       await release();
       return json(corsHeaders, { error: 'Chat unavailable. Your draft has been kept.' }, 503);
@@ -126,7 +153,8 @@ Deno.serve(async (request) => {
       async pull(controller) { try { const { done, value } = await reader.read(); if (done) { await settle(true); controller.close(); } else controller.enqueue(value); } catch { await settle(false); controller.error(new Error('Chat interrupted.')); } },
       async cancel() { await reader.cancel(); await settle(false); },
     });
-    return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Access-Control-Expose-Headers': 'X-Copilot-Conversation-Id', 'X-Copilot-Conversation-Id': body.conversation_id } });
+    const route = Object.fromEntries(KRETO_ROUTE_HEADERS.flatMap(h => { const v = upstream.headers.get(h); return v ? [[h, v]] : []; }));
+    return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Access-Control-Expose-Headers': ['X-Copilot-Conversation-Id', ...KRETO_ROUTE_HEADERS].join(', '), 'X-Copilot-Conversation-Id': body.conversation_id, ...route } });
   } catch (error) {
     return json(corsHeaders, { error: error instanceof Error ? error.message : 'Kreto unavailable.' }, 503);
   }

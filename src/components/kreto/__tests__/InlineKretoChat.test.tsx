@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -183,5 +183,96 @@ describe("InlineKretoChat", () => {
     mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("second attempt works"));
     fireEvent.click(screen.getByRole("button", { name: "Retry" }));
     await waitFor(() => expect(screen.getByText("second attempt works")).toBeInTheDocument());
+  });
+});
+
+describe("InlineKretoChat: Kreto model and effort", () => {
+  type KretoArgs = StreamArgs & {
+    profile?: string;
+    effort?: number;
+    confirmSupported?: boolean;
+    confirmEstimate?: boolean;
+    onRoute?: (route: { profile: string; effort: number; suggestEffort: number | null; notice: string | null; sharePct: number | null }) => void;
+    onNeedsConfirm?: (request: { message: string; sharePct: number | null; basis: "today" | "week" }) => void;
+  };
+  const lastArgs = () => mocks.stream.mock.calls.at(-1)![0] as KretoArgs;
+  const ASK = "This needs about 40% of what's left today. Run it?";
+  const picker = (name: RegExp) => screen.getByRole("button", { name });
+
+  beforeEach(() => localStorage.clear());
+
+  it("sends the remembered model and effort, says it can ask, and labels the reply with what answered", async () => {
+    localStorage.setItem("kreto:choice:v1", JSON.stringify({ profile: "forge", effort: 3 }));
+    mocks.stream.mockImplementation(async ({ onRoute, onDelta }: KretoArgs) => {
+      onRoute?.({ profile: "forge", effort: 3, suggestEffort: null, notice: null, sharePct: 4 });
+      onDelta("Here is the one-pager.");
+    });
+    render(<Harness />);
+    expect(picker(/Kreto model and effort: Kreto Forge, Deep/)).toBeInTheDocument();
+    send("Draft a one-pager for the label");
+    await screen.findByText("Here is the one-pager.");
+    expect(lastArgs()).toMatchObject({ profile: "forge", effort: 3, confirmSupported: true, confirmEstimate: false });
+    expect(screen.getByTestId("kreto-route-label")).toHaveTextContent("Kreto Forge · Deep");
+  });
+
+  it("asks before a big request: nothing shows as sent, the draft comes back, and Run it resends it confirmed", async () => {
+    mocks.stream.mockImplementationOnce(async ({ onNeedsConfirm }: KretoArgs) => onNeedsConfirm?.({ message: ASK, sharePct: 40, basis: "today" }));
+    render(<Harness />);
+    send("Summarise my whole year");
+    expect(await screen.findByTestId("kreto-confirm")).toHaveTextContent(ASK);
+    expect(screen.getByRole("textbox")).toHaveValue("Summarise my whole year");
+    expect(within(screen.getByRole("log")).queryByText("Summarise my whole year")).toBeNull();
+
+    mocks.stream.mockImplementationOnce(async ({ onDelta }: KretoArgs) => onDelta("Your year, in short."));
+    fireEvent.click(screen.getByRole("button", { name: "Run it" }));
+    await screen.findByText("Your year, in short.");
+    expect(lastArgs()).toMatchObject({ effort: 2, confirmEstimate: true });
+    expect(mocks.stream).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("kreto-confirm")).toBeNull();
+  });
+
+  it("editing the draft drops the question; Use Quick runs it lighter and remembers Quick", async () => {
+    mocks.stream.mockImplementation(async ({ onNeedsConfirm, onDelta, effort }: KretoArgs) => {
+      if (effort === 1) onDelta("The short version.");
+      else onNeedsConfirm?.({ message: ASK, sharePct: 40, basis: "today" });
+    });
+    render(<Harness />);
+    send("Summarise my whole year");
+    await screen.findByTestId("kreto-confirm");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Summarise my month" } });
+    expect(screen.queryByTestId("kreto-confirm")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await screen.findByTestId("kreto-confirm");
+    fireEvent.click(screen.getByRole("button", { name: "Use Quick" }));
+    await screen.findByText("The short version.");
+    expect(lastArgs()).toMatchObject({ effort: 1, confirmEstimate: false });
+    expect(JSON.parse(localStorage.getItem("kreto:choice:v1")!)).toEqual({ profile: "auto", effort: 1 });
+    expect(picker(/Kreto model and effort: Auto, Quick/)).toBeInTheDocument();
+  });
+
+  it("offers a deeper pass when Kreto suggests one, and never takes it by itself", async () => {
+    mocks.stream.mockImplementation(async ({ onRoute, onDelta }: KretoArgs) => {
+      onRoute?.({ profile: "vision", effort: 2, suggestEffort: 3, notice: null, sharePct: null });
+      onDelta("A first plan.");
+    });
+    render(<Harness />);
+    send("Lay out my album release over three months, with a budget and the people I need");
+    await screen.findByText("A first plan.");
+    fireEvent.click(screen.getByRole("button", { name: "Switch to Deep" }));
+    expect(picker(/Kreto model and effort: Auto, Deep/)).toBeInTheDocument();
+    expect(mocks.stream).toHaveBeenCalledTimes(1);
+  });
+
+  it("the picker lists the Kreto models, shows one that is switched off as unavailable, and remembers a pick", async () => {
+    render(<Harness />);
+    fireEvent.click(picker(/Kreto model and effort: Auto, Balanced/));
+    // Oracle stays off until the deepest tier is switched on (kretoProfilesClient.test keeps this in step with the server).
+    const oracle = await screen.findByRole("radio", { name: /Kreto Oracle/ });
+    expect(oracle).toBeDisabled();
+    expect(oracle).toHaveTextContent("Not switched on yet");
+    fireEvent.click(screen.getByRole("radio", { name: /Kreto Ledger/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Maximum" }));
+    expect(JSON.parse(localStorage.getItem("kreto:choice:v1")!)).toEqual({ profile: "ledger", effort: 4 });
   });
 });
