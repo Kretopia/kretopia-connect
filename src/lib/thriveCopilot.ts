@@ -25,6 +25,8 @@ export interface CopilotMessage {
   attachments?: ParsedAttachment[];
   /** The Kreto model and effort that answered (e.g. "Kreto Forge · Balanced"), from the server's response. */
   kreto?: string;
+  /** Live replies only: the Kretopia data the reply drew on, e.g. "Projects, Money, 3 memories". */
+  sources?: string;
 }
 
 /** What the server says about the reply it is streaming: the Kreto model and effort that ran. Never the model behind them. */
@@ -37,6 +39,26 @@ export interface KretoRouteInfo {
   notice: string | null;
   /** Share of what is left today that this request reserved, when the server could measure it. */
   sharePct: number | null;
+  /** What the reply drew on (sections seen in detail, memories used, the project's facts). Null when the server sent none. */
+  sources: KretoSources | null;
+}
+
+export interface KretoSources {
+  sections: string[];
+  memories: number;
+  projectFacts: boolean;
+}
+
+/** Parses X-Kreto-Context ("projects,money,memory:3,project-facts"). Unknown tokens are ignored. */
+export function parseKretoSources(raw: string | null): KretoSources | null {
+  if (!raw) return null;
+  const out: KretoSources = { sections: [], memories: 0, projectFacts: false };
+  for (const token of raw.split(",").map((t) => t.trim()).filter(Boolean)) {
+    if (token === "project-facts") out.projectFacts = true;
+    else if (/^memory:\d+$/.test(token)) out.memories = Number(token.slice(7));
+    else if (/^[a-z]+$/.test(token)) out.sections.push(token);
+  }
+  return out;
 }
 
 /** The server would rather ask first: this request needs a large share of what is left. */
@@ -58,7 +80,14 @@ export function readKretoRoute(headers: Headers): KretoRouteInfo | null {
   } catch {
     notice = null;
   }
-  return { profile, effort: num(headers.get("X-Kreto-Effort")) ?? 2, suggestEffort: num(headers.get("X-Kreto-Suggest-Effort")), notice, sharePct: num(headers.get("X-Kreto-Share")) };
+  return {
+    profile,
+    effort: num(headers.get("X-Kreto-Effort")) ?? 2,
+    suggestEffort: num(headers.get("X-Kreto-Suggest-Effort")),
+    notice,
+    sharePct: num(headers.get("X-Kreto-Share")),
+    sources: parseKretoSources(headers.get("X-Kreto-Context")),
+  };
 }
 
 /** An attachment already parsed server-side — only the extracted text is
@@ -118,6 +147,10 @@ interface StreamCopilotArgs {
   confirmEstimate?: boolean;
   onRoute?: (route: KretoRouteInfo) => void;
   onNeedsConfirm?: (request: KretoConfirmRequest) => void;
+  /** What Kreto may see: "auto" or a list of sections (passport, projects, money, events). Omitted: everything, as before. */
+  context?: "auto" | string[];
+  /** false: Kreto neither uses nor learns from memory for this message. */
+  memory?: boolean;
 }
 
 /**
@@ -140,6 +173,8 @@ export async function streamCopilot({
   effort,
   confirmSupported,
   confirmEstimate,
+  context,
+  memory,
   onRoute,
   onNeedsConfirm,
 }: StreamCopilotArgs) {
@@ -182,6 +217,8 @@ export async function streamCopilot({
         ...(effort ? { effort } : {}),
         ...(confirmSupported && onNeedsConfirm ? { confirm_supported: true } : {}),
         ...(confirmEstimate ? { confirm_estimate: true } : {}),
+        ...(context ? { context } : {}),
+        ...(memory === false ? { memory: false } : {}),
       }),
       signal,
     });

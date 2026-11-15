@@ -294,4 +294,32 @@ describe("InlineKretoChat: Kreto model and effort", () => {
     fireEvent.click(oracle);
     expect(JSON.parse(localStorage.getItem("kreto:choice:v1")!)).toEqual({ profile: "oracle", effort: 2 });
   });
+
+  it("sends what Kreto may see and the memory switch, and each reply says what it drew on", async () => {
+    localStorage.setItem("kreto:context:v1", JSON.stringify({ context: ["projects", "money"], memory: false }));
+    mocks.stream.mockImplementation(async ({ onRoute, onDelta }: KretoArgs & { context?: unknown; memory?: boolean }) => {
+      onRoute?.({ profile: "ledger", effort: 2, suggestEffort: null, notice: null, sharePct: null, sources: { sections: ["projects", "money"], memories: 0, projectFacts: false } } as never);
+      onDelta("Two invoices are waiting.");
+    });
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: /What Kreto can see: Projects, Money · no memory/ })).toBeInTheDocument();
+    send("Which invoices are still unpaid?");
+    await screen.findByText("Two invoices are waiting.");
+    expect(lastArgs()).toMatchObject({ context: ["projects", "money"], memory: false });
+    expect(screen.getByTestId("kreto-sources")).toHaveTextContent("From your Kretopia data: Projects, Money");
+  });
+
+  it("the context picker switches to only what I choose, ticks a part, turns memory off, and remembers it", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: /What Kreto can see: Auto/ }));
+    fireEvent.click(await screen.findByRole("radio", { name: /Only what I choose/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Money" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Use what Kreto remembers" }));
+    expect(JSON.parse(localStorage.getItem("kreto:context:v1")!)).toEqual({ context: ["money"], memory: false });
+    mocks.stream.mockImplementation(async ({ onDelta }: KretoArgs) => onDelta("ok"));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    send("What do I owe?");
+    await screen.findByText("ok");
+    expect(lastArgs()).toMatchObject({ context: ["money"], memory: false });
+  });
 });

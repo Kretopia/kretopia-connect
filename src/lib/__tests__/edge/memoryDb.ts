@@ -3,7 +3,7 @@
 // resolver and only records writes, which cannot express "the insert I just made is now visible to the
 // next read" or "the compare-and-swap lost"; edge tests about idempotency and races need that.
 //
-// Supported: select / insert / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
+// Supported: select / insert / upsert (onConflict columns) / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
 // gt / gte / lte, order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
 // a test never silently passes on a query the stand-in does not understand.
 
@@ -45,6 +45,8 @@ export class MemoryDb {
     let op: "select" | "insert" | "update" | "delete" = "select";
     let payload: any;
     let returning = false;
+    /** upsert: the onConflict columns; a row matching all of them is updated in place instead of inserted. */
+    let conflictOn: string[] | null = null;
 
     const run = (mode: "list" | "single" | "maybeSingle"): Result => {
       const failure = db.hooks.failOn?.(table, op) ?? null;
@@ -59,6 +61,20 @@ export class MemoryDb {
         }));
         const hookErr = db.hooks.beforeInsert?.(table, incoming, db);
         if (hookErr) return { data: null, error: hookErr };
+        if (conflictOn) {
+          const keys = conflictOn;
+          const fresh: Row[] = [];
+          for (const row of incoming) {
+            const existing = all.find((r) => keys.every((k) => r[k] === row[k]));
+            if (existing) {
+              const { id: _id, created_at: _created, ...changes } = row;
+              Object.assign(existing, changes);
+            } else fresh.push(row);
+          }
+          all.push(...fresh);
+          db.log.push({ table, op, payload, matched: incoming.length });
+          return shape(returning ? incoming : [], mode);
+        }
         all.push(...incoming);
         db.log.push({ table, op, payload, matched: incoming.length });
         return shape(returning ? incoming : [], mode);
@@ -108,6 +124,9 @@ export class MemoryDb {
         return chain;
       },
       insert: (p: any) => ((op = "insert"), (payload = p), chain),
+      upsert: (p: Row | Row[], opts?: { onConflict?: string }) => (
+        (op = "insert"), (payload = p), (conflictOn = (opts?.onConflict ?? "id").split(",").map((c) => c.trim())), chain
+      ),
       update: (p: any) => ((op = "update"), (payload = p), chain),
       delete: () => ((op = "delete"), chain),
       eq: (c: string, v: any) => (filters.push((r) => r[c] === v), chain),
