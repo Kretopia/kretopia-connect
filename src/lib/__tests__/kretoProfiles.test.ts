@@ -8,6 +8,9 @@ import {
   TIER_MODEL,
   WEEKLY_CREDIT_ALLOWANCE,
   autoProfile,
+  deepTierFor,
+  isPremiumSubscription,
+  weeklyAllowanceFor,
   estimateCredits,
   guardKretoRequest,
   kretoProfileName,
@@ -71,18 +74,18 @@ describe("explicit choice wins", () => {
     }
   });
 
-  it("Kreto Oracle is refused while the deepest tier is off, and Kreto Vision is offered", () => {
+  it("Kreto Oracle is refused without the deepest tier, and Kreto Vision is offered", () => {
     expect(PRO_TIER_ENABLED).toBe(false);
     const r = refusal({ requested: "oracle", effort: 4, text: "x", paidPlan: true });
     expect(r).toMatchObject({ ok: false, code: "KRETO_PROFILE_UNAVAILABLE", alternative: "vision" });
-    expect(r.message).toBe("Kreto Oracle isn't switched on yet. I can run this with Kreto Vision.");
+    expect(r.message).toBe("Kreto Oracle is on Premium for now. I can run this with Kreto Vision.");
     expect(route({ requested: "oracle", effort: 2, text: "x", paidPlan: true, proTierEnabled: true }).tier).toBe("pro");
   });
 
   it("Kreto Vision at Maximum stops at the strong tier while the deepest is off, and says so", () => {
     const r = route({ requested: "vision", effort: 4, text: "x", ...PAID });
     expect(r.tier).toBe("strong");
-    expect(r.notice).toMatch(/isn't switched on yet/);
+    expect(r.notice).toBe("The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength.");
     expect(route({ requested: "vision", effort: 4, text: "x", paidPlan: true, proTierEnabled: true }).tier).toBe("pro");
   });
 
@@ -207,8 +210,26 @@ describe("estimate and weekly allowance", () => {
     expect(estimateCredits(1000, 500, { cost_currency: "usd" })).toBeNull();
   });
 
-  it("invents no weekly amount: every plan is unset until decided", () => {
-    for (const v of Object.values(WEEKLY_CREDIT_ALLOWANCE)) expect(v).toBeNull();
+  it("weekly allowance: the decided amounts, the free amount for an unknown plan, none for admins", () => {
+    expect(WEEKLY_CREDIT_ALLOWANCE).toEqual({ free: 0.5, pro: 2, brand_pro: 2, creator_pro: 5, founder: 10, brand_enterprise: 10 });
+    expect(weeklyAllowanceFor("free", false)).toBe(0.5);
+    expect(weeklyAllowanceFor("creator_pro", false)).toBe(5);
+    expect(weeklyAllowanceFor("legacy_plan", false)).toBe(0.5);
+    expect(weeklyAllowanceFor("free", true)).toBeNull();
+  });
+
+  it("the deepest tier is on for admins and active Premium accounts only (founders are activated as active)", () => {
+    expect(isPremiumSubscription("creator_pro", "active")).toBe(true);
+    expect(isPremiumSubscription("pro", "trialing")).toBe(true);
+    expect(isPremiumSubscription("founder", "active")).toBe(true);
+    expect(isPremiumSubscription("pro", "canceled")).toBe(false);
+    expect(isPremiumSubscription("pro", null)).toBe(false);
+    expect(isPremiumSubscription("free", "active")).toBe(false);
+    expect(deepTierFor({ isAdmin: true, premium: false })).toBe(true);
+    expect(deepTierFor({ isAdmin: false, premium: true })).toBe(true);
+    expect(deepTierFor({ isAdmin: false, premium: false })).toBe(PRO_TIER_ENABLED);
+    // With it, Kreto Oracle runs on the deepest tier.
+    expect(route({ requested: "oracle", effort: 2, text: "x", paidPlan: true, proTierEnabled: deepTierFor({ isAdmin: true, premium: false }) }).tier).toBe("pro");
   });
 
   it("the week starts on Monday 00:00 UTC", () => {

@@ -12,12 +12,14 @@ import { resolveKretoIdentity } from "../_shared/kretoIdentity.ts";
 import { loadModelPricing, measuredModelFetch } from "../_shared/measuredModelFetch.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor, effectiveIsPro } from "../_shared/premiumSwitch.ts";
 import {
-  WEEKLY_CREDIT_ALLOWANCE,
+  deepTierFor,
   estimateCredits,
   guardKretoRequest,
   resolveKretoRoute,
+  isPremiumSubscription,
   sharePct,
   weekStartUtc,
+  weeklyAllowanceFor,
 } from "../_shared/kretoProfiles.ts";
 import {
   gateAiCall,
@@ -61,11 +63,11 @@ async function remainingKretoTokens(admin: ServiceClient, userId: string): Promi
 }
 
 /**
- * What is left of this week's credit allowance, from the settled receipts. Null while no weekly allowance is set for the
- * plan (none is yet: WEEKLY_CREDIT_ALLOWANCE), or when the receipts cannot be read; the daily gate still applies.
+ * What is left of this week's credit allowance, from the settled receipts. Null when the account has no weekly allowance
+ * (admins), or when the receipts cannot be read; the daily gate still applies.
  */
-async function weeklyRemainingCredits(admin: ServiceClient, userId: string, tier: string): Promise<number | null> {
-  const allowance = WEEKLY_CREDIT_ALLOWANCE[tier] ?? null;
+async function weeklyRemainingCredits(admin: ServiceClient, userId: string, tier: string, isAdmin: boolean): Promise<number | null> {
+  const allowance = weeklyAllowanceFor(tier, isAdmin);
   if (allowance === null) return null;
   try {
     const { data, error } = await admin
@@ -383,6 +385,9 @@ serve(async (req) => {
     // Filled from the profile below; used by the Kreto model choice and the daily message count.
     let subscriptionTier = "free";
     let copilotDailyCap: number | null = null;
+    // The deepest tier and the weekly allowance follow the real account: an admin role, or an active Premium plan.
+    let isAdmin = false;
+    let premium = false;
 
     if (resolvedUser) {
       try {
@@ -421,13 +426,14 @@ serve(async (req) => {
           brand_pro: 1000,
           brand_enterprise: -1,
         };
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("subscription_tier")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const [{ data: profile }, { data: adminRole }] = await Promise.all([
+          admin.from("profiles").select("subscription_tier, subscription_status").eq("user_id", user.id).maybeSingle(),
+          admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
+        ]);
         const tier = (profile?.subscription_tier as string) || "free";
         subscriptionTier = tier;
+        isAdmin = Boolean(adminRole);
+        premium = isPremiumSubscription(tier, profile?.subscription_status as string | null);
         // Premium is not enforced yet: a free account is held only by the safety ceiling.
         // Counted further down, once the request is going ahead: a request that stops at the estimate guard (or asks
         // to be confirmed) must not cost a message.
@@ -618,6 +624,7 @@ serve(async (req) => {
       projectSelected: Boolean(surfaceCtx.project_id ?? surfaceCtx.active_project_id),
       voice: channel === "voice",
       paidPlan: effectiveIsPro(subscriptionTier !== "free"),
+      proTierEnabled: deepTierFor({ isAdmin, premium }),
     });
     if (!routed.ok) {
       return new Response(
@@ -740,7 +747,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       const [remainingTokens, pricing, weeklyRemaining] = await Promise.all([
         remainingKretoTokens(admin, gateUserId),
         loadModelPricing(admin, model).catch(() => null),
-        weeklyRemainingCredits(admin, gateUserId, subscriptionTier),
+        weeklyRemainingCredits(admin, gateUserId, subscriptionTier, isAdmin),
       ]);
       const credits = estimateCredits(tokenEst - maxOutputTokens, maxOutputTokens, pricing);
       const shownLeft = typeof kretoTokensLeft === "number" && Number.isFinite(kretoTokensLeft) && kretoTokensLeft >= 0 ? kretoTokensLeft : null;

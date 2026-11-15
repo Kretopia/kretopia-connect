@@ -29,10 +29,20 @@ export const TIER_MODEL: Readonly<Record<KretoTier, string>> = {
 };
 
 /**
- * The most expensive tier stays off until the weekly allowance per plan is decided (KRETO_OVERHAUL_PLAN.md §16, item 1).
- * While it is off, Kreto Oracle is refused with Kreto Vision as the alternative, and Maximum stops at the strong tier.
+ * The most expensive tier for everyone. Off: for now it is on only for admins and Premium accounts (deepTierFor). For
+ * everyone else Kreto Oracle is refused with Kreto Vision as the alternative, and Maximum stops at the strong tier.
  */
 export const PRO_TIER_ENABLED = false;
+
+/** A Premium account for the deepest tier: a paid plan whose subscription is active or trialing (founders are activated as active). */
+export function isPremiumSubscription(tier: string | null | undefined, status: string | null | undefined): boolean {
+  return !!tier && tier !== "free" && (status === "active" || status === "trialing");
+}
+
+/** Whether this account may use the deepest tier: everyone once PRO_TIER_ENABLED is on, until then admins and Premium accounts. */
+export function deepTierFor(account: { isAdmin: boolean; premium: boolean }): boolean {
+  return PRO_TIER_ENABLED || account.isAdmin || account.premium;
+}
 
 export const KRETO_PROFILE_IDS = ["signal", "pulse", "vision", "oracle", "forge", "echo", "atlas", "ledger", "studio", "scout"] as const;
 export type KretoProfileId = (typeof KRETO_PROFILE_IDS)[number];
@@ -114,7 +124,7 @@ export interface RouteInput {
   voice?: boolean;
   /** effectiveIsPro(...) for the caller. */
   paidPlan: boolean;
-  /** Overridable for tests; defaults to PRO_TIER_ENABLED. */
+  /** This account's access to the deepest tier (deepTierFor); defaults to PRO_TIER_ENABLED. */
   proTierEnabled?: boolean;
 }
 
@@ -198,13 +208,13 @@ export function resolveKretoRoute(input: RouteInput): RouteResult {
   if (requested) {
     if (!available(requested, input.paidPlan, proOn)) {
       const alternative = nearestAvailable(requested, input.paidPlan, proOn);
-      const why = KRETO_PROFILES[requested].paid && !input.paidPlan ? "is on paid plans" : "isn't switched on yet";
+      const why = KRETO_PROFILES[requested].paid && !input.paidPlan ? "is on paid plans" : "is on Premium for now";
       return { ok: false, code: "KRETO_PROFILE_UNAVAILABLE", alternative, message: `${NAME[requested]} ${why}. I can run this with ${NAME[alternative]}.` };
     }
     const wanted = KRETO_PROFILES[requested].tiers[effort];
     // Explicit choice: its own tier at this effort, except the pro tier while it is off.
     const tier = wanted === "pro" && !proOn ? "strong" : wanted;
-    const notice = wanted === "pro" && !proOn ? `The deepest tier isn't switched on yet, so ${NAME[requested]} ran at Deep strength.` : undefined;
+    const notice = wanted === "pro" && !proOn ? `The deepest tier is on Premium for now, so ${NAME[requested]} ran at Deep strength.` : undefined;
     return { ok: true, route: build(requested, false, effort, tier, notice ? { notice } : {}) };
   }
 
@@ -229,17 +239,24 @@ export function resolveKretoRoute(input: RouteInput): RouteResult {
 export const DEFAULT_CONFIRM_SHARE = 0.25;
 
 /**
- * Weekly credit allowance per subscription tier. Null means "not set": the weekly check is off and the existing daily
- * allowances are the only limit. Amounts are a product decision (KRETO_OVERHAUL_PLAN.md §16, item 1); none is invented here.
+ * Weekly credit allowance per subscription tier, measured from settled receipts (decided 2026-11-15: the efficient
+ * option). At the measured 0.006 credits per everyday reply, free is about 80 replies a week. The daily allowances still
+ * apply on top. Null would switch the weekly check off for a tier.
  */
 export const WEEKLY_CREDIT_ALLOWANCE: Readonly<Record<string, number | null>> = {
-  free: null,
-  pro: null,
-  creator_pro: null,
-  founder: null,
-  brand_pro: null,
-  brand_enterprise: null,
+  free: 0.5,
+  pro: 2,
+  brand_pro: 2,
+  creator_pro: 5,
+  founder: 10,
+  brand_enterprise: 10,
 };
+
+/** This account's weekly allowance: none for admins (they test every tier), the free amount for a plan this table does not know. */
+export function weeklyAllowanceFor(tier: string, isAdmin: boolean): number | null {
+  if (isAdmin) return null;
+  return tier in WEEKLY_CREDIT_ALLOWANCE ? WEEKLY_CREDIT_ALLOWANCE[tier] : WEEKLY_CREDIT_ALLOWANCE.free;
+}
 
 /** Monday 00:00 UTC of the week containing `now`. */
 export function weekStartUtc(now: Date = new Date()): Date {

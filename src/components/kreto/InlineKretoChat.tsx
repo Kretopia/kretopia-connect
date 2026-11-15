@@ -11,6 +11,8 @@ import {
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
 import { KretoQuotaIndicator, KRETO_ALLOWANCE_NOTICE_ID } from "@/components/kreto/KretoQuotaIndicator";
 import { useAiAllowance } from "@/hooks/useAiAllowance";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { KretoModelPicker } from "@/components/kreto/KretoModelPicker";
@@ -134,6 +136,10 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     writeKretoChoice(next);
     setPendingConfirm(null);
   }, []);
+  // The deepest tier (Kreto Oracle) is on for admins and Premium accounts for now; the server decides either way.
+  const { isAdmin } = useUserRole();
+  const { subscriptionInfo } = useAuth();
+  const deepTier = isAdmin || (subscriptionInfo.subscribed && subscriptionInfo.tier !== "free");
   const tokensLeft = allowance?.tokens?.left ?? null;
   // A rough "about N% of what's left today" for the draft; the server's own estimate decides whether to ask.
   const preview = useMemo(
@@ -468,7 +474,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       </div>
 
       <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
-        <KretoModelPicker choice={choice} onChange={setChoice} disabled={streaming} previewShare={preview} lastRoute={lastRoute} />
+        <KretoModelPicker choice={choice} onChange={setChoice} disabled={streaming} previewShare={preview} lastRoute={lastRoute} deepTier={deepTier} />
         <div className="flex items-center justify-between gap-2 px-3 pt-2">
           <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
           <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />
