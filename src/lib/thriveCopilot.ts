@@ -23,6 +23,42 @@ export interface CopilotMessage {
   role: "user" | "assistant";
   content: string;
   attachments?: ParsedAttachment[];
+  /** The Kreto model and effort that answered (e.g. "Kreto Forge · Balanced"), from the server's response. */
+  kreto?: string;
+}
+
+/** What the server says about the reply it is streaming: the Kreto model and effort that ran. Never the model behind them. */
+export interface KretoRouteInfo {
+  profile: string;
+  effort: number;
+  /** Auto would have liked a higher effort: offered, never taken. */
+  suggestEffort: number | null;
+  /** A plain line when the route differs from what was asked (e.g. a tier that is not switched on yet). */
+  notice: string | null;
+  /** Share of what is left today that this request reserved, when the server could measure it. */
+  sharePct: number | null;
+}
+
+/** The server would rather ask first: this request needs a large share of what is left. */
+export interface KretoConfirmRequest {
+  message: string;
+  sharePct: number | null;
+  basis: "today" | "week";
+}
+
+/** Reads the Kreto route headers of a chat response (exposed by thrive-ai-chat). Null when the server sent none. */
+export function readKretoRoute(headers: Headers): KretoRouteInfo | null {
+  const profile = headers.get("X-Kreto-Profile");
+  if (!profile) return null;
+  const num = (v: string | null) => (v && /^\d+$/.test(v) ? Number(v) : null);
+  let notice: string | null = null;
+  try {
+    const raw = headers.get("X-Kreto-Notice");
+    notice = raw ? decodeURIComponent(raw) : null;
+  } catch {
+    notice = null;
+  }
+  return { profile, effort: num(headers.get("X-Kreto-Effort")) ?? 2, suggestEffort: num(headers.get("X-Kreto-Suggest-Effort")), notice, sharePct: num(headers.get("X-Kreto-Share")) };
 }
 
 /** An attachment already parsed server-side — only the extracted text is
@@ -73,6 +109,15 @@ interface StreamCopilotArgs {
   signal?: AbortSignal;
   /** Parsed attachment text to ground the reply on (max 3). */
   attachments?: ParsedAttachment[];
+  /** Kreto model ("auto" or a profile id) and effort (1-4). Omitted: Auto, Balanced. */
+  profile?: string;
+  effort?: number;
+  /** This caller can show an estimate and ask before a big request (then onNeedsConfirm is called instead of onError). */
+  confirmSupported?: boolean;
+  /** The person confirmed the estimate. */
+  confirmEstimate?: boolean;
+  onRoute?: (route: KretoRouteInfo) => void;
+  onNeedsConfirm?: (request: KretoConfirmRequest) => void;
 }
 
 /**
@@ -91,6 +136,12 @@ export async function streamCopilot({
   onError,
   signal,
   attachments,
+  profile,
+  effort,
+  confirmSupported,
+  confirmEstimate,
+  onRoute,
+  onNeedsConfirm,
 }: StreamCopilotArgs) {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
@@ -127,6 +178,10 @@ export async function streamCopilot({
         conversation_id: conversationId,
         persist: true,
         attachments: attachments?.map(a => ({ id: a.id })),
+        ...(profile ? { profile } : {}),
+        ...(effort ? { effort } : {}),
+        ...(confirmSupported && onNeedsConfirm ? { confirm_supported: true } : {}),
+        ...(confirmEstimate ? { confirm_estimate: true } : {}),
       }),
       signal,
     });
@@ -144,23 +199,33 @@ export async function streamCopilot({
 
   if (!resp.ok) {
     const data: any = await resp.json().catch(() => ({}));
-    if (resp.status === 429 && data?.code === "AI_ALLOWANCE_EXHAUSTED") {
+    if (resp.status === 409 && data?.code === "KRETO_CONFIRM" && onNeedsConfirm) {
+      // Not an error: the server would rather ask before a big request. Nothing was counted, saved or reserved.
+      onNeedsConfirm({ message: String(data.error ?? "This needs a large share of what's left. Run it?"), sharePct: typeof data?.estimate?.share_pct === "number" ? data.estimate.share_pct : null, basis: data?.basis === "week" ? "week" : "today" });
+    } else if ((resp.status === 429 && data?.code === "KRETO_ALLOWANCE_INSUFFICIENT") || (resp.status === 400 && data?.code === "KRETO_PROFILE_UNAVAILABLE")) {
+      // The server's own words: what does not fit or is not available, and what to do instead.
+      onError(String(data.error));
+    } else if (resp.status === 429 && data?.code === "AI_ALLOWANCE_EXHAUSTED") {
       // Personal allowance: what was used, when it resets.
       onError(`You've used today's ${data.used}/${data.cap} for this. Resets at midnight UTC.`);
     } else if (resp.status === 429 && data?.code === "AI_BUDGET_EXHAUSTED") {
-      // Global budget: same honesty, different wording — temporary, not personal.
-      onError("This backend's AI ceiling is reached for today. Your draft is kept. Resets at midnight UTC.");
+      // Shared daily limit: same honesty, different wording — temporary, not personal.
+      onError("Kreto has reached today's limit for everyone. Your draft is kept. It comes back at midnight UTC.");
     } else if (resp.status === 429 && data?.code === "COPILOT_DAILY_LIMIT") {
-      onError(`You've used ${data.used}/${data.cap} Copilot messages today. Upgrade your plan for more — resets at midnight UTC.`);
+      onError(typeof data?.error === "string" && data.error ? data.error : `You've used today's ${data.used} of ${data.cap} Kreto messages. They come back at midnight UTC.`);
     } else if (resp.status === 429) {
       onError("Slow down a sec — too many requests. Try again in a moment.");
     } else if (resp.status === 402) {
-      onError("Out of Copilot credits this month. Top up in Settings → Workspace → Usage.");
+      onError("Kreto can't answer right now. Your draft is kept. Try again later.");
     } else {
       onError(data?.error || `Request failed (${resp.status})`);
     }
     return;
   }
+  // Which Kreto model and effort answered (never the model behind them).
+  const route = readKretoRoute(resp.headers);
+  if (route && onRoute) onRoute(route);
+
   if (!resp.body) {
     onError("No response stream");
     return;

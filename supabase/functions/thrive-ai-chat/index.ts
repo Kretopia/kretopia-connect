@@ -6,11 +6,19 @@ import {
   getOrCreateCopilotThread,
 } from "../_shared/copilotContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
-import { GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
+import { GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
 import { resolveKretoIdentity } from "../_shared/kretoIdentity.ts";
-import { measuredModelFetch } from "../_shared/measuredModelFetch.ts";
-import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor } from "../_shared/premiumSwitch.ts";
+import { loadModelPricing, measuredModelFetch } from "../_shared/measuredModelFetch.ts";
+import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor, effectiveIsPro } from "../_shared/premiumSwitch.ts";
+import {
+  WEEKLY_CREDIT_ALLOWANCE,
+  estimateCredits,
+  guardKretoRequest,
+  resolveKretoRoute,
+  sharePct,
+  weekStartUtc,
+} from "../_shared/kretoProfiles.ts";
 import {
   gateAiCall,
   commitAiCredit,
@@ -25,6 +33,54 @@ const ANON_USER_ID = "00000000-0000-0000-0000-000000000000";
 
 /** Rough token estimate for a text blob (4 chars/token). */
 const estTokens = (s: string) => Math.ceil(s.length / 4);
+
+/** Response headers the composer reads: the thread, and the Kreto model and effort that ran (never the model behind them). */
+const KRETO_EXPOSED_HEADERS = "X-Copilot-Conversation-Id, X-Kreto-Profile, X-Kreto-Effort, X-Kreto-Suggest-Effort, X-Kreto-Notice, X-Kreto-Share";
+
+/** The service client, as the credit gate takes it. */
+type ServiceClient = Parameters<typeof gateAiCall>[0];
+
+/**
+ * What is left of today's Kreto token allowance: the same ledger row the gate reserves against (window YYYYMMDD, UTC).
+ * Null when the allowance is uncapped or cannot be read; the gate still enforces it either way.
+ */
+async function remainingKretoTokens(admin: ServiceClient, userId: string): Promise<number | null> {
+  try {
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+    const [cfg, row] = await Promise.all([
+      admin.from("ai_credit_config").select("daily_allowance").eq("feature", "kreto_tokens").maybeSingle(),
+      admin.from("ai_credit_ledger").select("used, reserved, cap").eq("user_id", userId).eq("feature", "kreto_tokens").eq("window_key", day).maybeSingle(),
+    ]);
+    if (cfg.error || row.error) return null;
+    const cap = typeof row.data?.cap === "number" ? row.data.cap : cfg.data?.daily_allowance;
+    if (typeof cap !== "number" || cap < 0) return null;
+    return Math.max(0, cap - Number(row.data?.used ?? 0) - Number(row.data?.reserved ?? 0));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What is left of this week's credit allowance, from the settled receipts. Null while no weekly allowance is set for the
+ * plan (none is yet: WEEKLY_CREDIT_ALLOWANCE), or when the receipts cannot be read; the daily gate still applies.
+ */
+async function weeklyRemainingCredits(admin: ServiceClient, userId: string, tier: string): Promise<number | null> {
+  const allowance = WEEKLY_CREDIT_ALLOWANCE[tier] ?? null;
+  if (allowance === null) return null;
+  try {
+    const { data, error } = await admin
+      .from("ai_model_calls")
+      .select("credits")
+      .eq("user_id", userId)
+      .gte("created_at", weekStartUtc().toISOString())
+      .not("credits", "is", null);
+    if (error) return null;
+    const used = (data ?? []).reduce((t: number, r: { credits: number | null }) => t + Number(r.credits ?? 0), 0);
+    return Math.max(0, allowance - used);
+  } catch {
+    return null;
+  }
+}
 
 // Bounds time-to-first-byte on the gateway call, not total streaming
 // duration (the timer clears as soon as fetch() resolves, i.e. once headers
@@ -121,6 +177,12 @@ serve(async (req) => {
       prefix,
       attachment,
       attachments = [],
+      profile: requestedProfile,
+      effort: requestedEffort,
+      confirm_estimate: confirmEstimate = false,
+      confirm_supported: confirmSupported = false,
+      kreto_tokens_left: kretoTokensLeft,
+      channel,
     } = body as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
       surface?: string;
@@ -137,6 +199,24 @@ serve(async (req) => {
       attachment?: { name?: string; mime?: string; data_base64?: string };
       /** Chat: already-parsed attachment text to ground the reply on. */
       attachments?: Array<{ name?: string; text?: string }>;
+      /** Kreto model the person picked: a profile id or "auto" (default). */
+      profile?: string;
+      /** Effort 1-4 (Quick, Balanced, Deep, Maximum); default Balanced. */
+      effort?: number;
+      /** The person confirmed the estimate the previous attempt returned (409 KRETO_CONFIRM). */
+      confirm_estimate?: boolean;
+      /**
+       * The caller can show an estimate and ask (the /kreto composer). Others (the floating Kreto, the desk rail, drafts,
+       * trusted internal callers) cannot answer a question yet, so they are not asked; the hard stop applies to everyone.
+       */
+      confirm_supported?: boolean;
+      /**
+       * What is left today on the allowance the composer shows, sent by the Kreto Cloud endpoint. It can only make the
+       * estimate guard stricter (the lower of this and this backend's own ledger counts), so a caller gains nothing by it.
+       */
+      kreto_tokens_left?: number;
+      /** "voice" when the turn comes from push-to-talk. */
+      channel?: string;
     };
 
     // ---- Auth + context ----
@@ -300,6 +380,10 @@ serve(async (req) => {
       }
     }
 
+    // Filled from the profile below; used by the Kreto model choice and the daily message count.
+    let subscriptionTier = "free";
+    let copilotDailyCap: number | null = null;
+
     if (resolvedUser) {
       try {
         const user = resolvedUser;
@@ -343,29 +427,11 @@ serve(async (req) => {
           .eq("user_id", user.id)
           .maybeSingle();
         const tier = (profile?.subscription_tier as string) || "free";
+        subscriptionTier = tier;
         // Premium is not enforced yet: a free account is held only by the safety ceiling.
-        const dailyCap = dailyCapFor(TIER_DAILY_CAPS[tier] ?? 20, ABUSE_CEILING_DAILY_MESSAGES);
-
-        const { data: capCheck, error: capErr } = await admin.rpc(
-          "consume_copilot_message",
-          { _user_id: user.id, _daily_cap: dailyCap },
-        );
-        if (capErr) {
-          console.warn("consume_copilot_message failed", capErr);
-        } else if (Array.isArray(capCheck) && capCheck[0] && !capCheck[0].allowed) {
-          const used = capCheck[0].used;
-          const cap = capCheck[0].cap;
-          return new Response(
-            JSON.stringify({
-              error: `Daily Copilot limit reached (${used}/${cap}). Come back tomorrow.`,
-              code: "COPILOT_DAILY_LIMIT",
-              tier,
-              used,
-              cap,
-            }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
-        }
+        // Counted further down, once the request is going ahead: a request that stops at the estimate guard (or asks
+        // to be confirmed) must not cost a message.
+        copilotDailyCap = dailyCapFor(TIER_DAILY_CAPS[tier] ?? 20, ABUSE_CEILING_DAILY_MESSAGES);
 
         // Load the unified context. Bounded internally; never blocks > 2s.
         const ctx = await loadCopilotContext(admin, user.id);
@@ -537,6 +603,35 @@ serve(async (req) => {
       }
     }
 
+    // ---- Kreto model and effort (docs/kreto/KRETO_MODEL_PROFILES.md) ----
+    // The person's choice wins; Auto picks from what the request is about and never above the tier the effort allows.
+    // Only the profile id and the effort go back to the browser, never the model behind them.
+    const latestUserForRoute = [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+    const surfaceCtx = surface_context && typeof surface_context === "object" ? (surface_context as Record<string, unknown>) : {};
+    const routed = resolveKretoRoute({
+      requested: requestedProfile,
+      effort: requestedEffort,
+      text: latestUserForRoute,
+      // Same test as the attachment grounding below: only attachments that carry text count.
+      hasAttachments: (Array.isArray(attachments) ? attachments : []).some((a) => a && typeof a.text === "string" && a.text.trim()),
+      surface: surface ?? null,
+      projectSelected: Boolean(surfaceCtx.project_id ?? surfaceCtx.active_project_id),
+      voice: channel === "voice",
+      paidPlan: effectiveIsPro(subscriptionTier !== "free"),
+    });
+    if (!routed.ok) {
+      return new Response(
+        JSON.stringify({ error: routed.message, code: routed.code, alternative: routed.alternative }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    const route = routed.route;
+    corsHeaders["Access-Control-Expose-Headers"] = KRETO_EXPOSED_HEADERS;
+    corsHeaders["X-Kreto-Profile"] = route.profile;
+    corsHeaders["X-Kreto-Effort"] = String(route.effort);
+    if (route.suggestEffort) corsHeaders["X-Kreto-Suggest-Effort"] = String(route.suggestEffort);
+    if (route.notice) corsHeaders["X-Kreto-Notice"] = encodeURIComponent(route.notice);
+
     // ---- Hydrate prior conversation history when we have a thread ----
     // We layer: prior persisted history (if any) BEFORE the messages the
     // client just sent. The client only sends the latest turn(s) to keep
@@ -549,7 +644,7 @@ serve(async (req) => {
           .select("role, content")
           .eq("conversation_id", conversationId)
           .order("created_at", { ascending: false })
-          .limit(40); // fetch the most recent 40 turns, then restore chronological order
+          .limit(route.historyMessages); // the most recent messages for this effort (40 from Balanced up, as before), then chronological order
         priorMessages = ((history ?? []) as Array<{ role: "user" | "assistant"; content: string }>).reverse();
       } catch (e) {
         console.warn("Could not load prior history", e);
@@ -576,7 +671,7 @@ VOICE:
 
 ${contextPreamble || "No profile loaded yet for this user. Greet with \"Hey —\" and ask what they're trying to create."}
 
-${surfaceTone}
+${surfaceTone}${route.focus ? `\n\nFOCUS: ${route.focus}` : ""}
 
 CONTINUITY: short replies ("yes", "ok", "do it") always answer your immediately preceding message — never a louder topic from USER FACTS. If unclear, ask what "yes" refers to.
 
@@ -593,63 +688,8 @@ ACTION RULES:
 
 ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payments, applications, events, collaborators. Never invent names, IDs, stages, deadlines, amounts, applicant counts, RSVPs, or past conversations. For "what's new", cite only RECENT ACTIVITY items by name; if nothing is there, say so and suggest one useful next move.`;
 
-    // Persist the latest user turn before calling the model, so it's saved
-    // even if streaming fails partway. Only the last user message is new
-    // (priorMessages already contains everything before it).
+    // The latest user turn: the only new message (priorMessages already contains everything before it).
     const latestUser = [...messages].reverse().find((m) => m.role === "user");
-    if (persist && conversationId && latestUser) {
-      try {
-        // Avoid double-insert: only insert if not already the last persisted user message.
-        const lastPersisted = priorMessages[priorMessages.length - 1];
-        const dup =
-          lastPersisted &&
-          lastPersisted.role === "user" &&
-          lastPersisted.content.trim() === latestUser.content.trim();
-        if (!dup) {
-          await admin.from("ai_messages").insert({
-            conversation_id: conversationId,
-            role: "user",
-            content: latestUser.content,
-          });
-          await admin
-            .from("ai_conversations")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", conversationId);
-        }
-      } catch (e) {
-        console.warn("Persist user turn failed", e);
-      }
-    }
-
-    const immediatePriorAssistant = [...priorMessages].reverse().find((m) => m.role === "assistant");
-    const affirmedReplay = latestUser
-      ? replayPriorActionForAffirmation(latestUser.content, immediatePriorAssistant?.content)
-      : null;
-    if (affirmedReplay) {
-      if (persist && conversationId) {
-        try {
-          await admin.from("ai_messages").insert({
-            conversation_id: conversationId,
-            role: "assistant",
-            content: affirmedReplay,
-          });
-          await admin
-            .from("ai_conversations")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", conversationId);
-        } catch (e) {
-          console.warn("Persist affirmed replay failed", e);
-        }
-      }
-      if (!stream) {
-        return new Response(
-          JSON.stringify({ content: affirmedReplay, conversation_id: conversationId }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      return streamTextResponse(affirmedReplay, conversationId, corsHeaders);
-    }
-
     // Ground the reply on already-parsed attachment text (max 3, capped) —
     // the raw file never reaches the model, only the extracted text.
     const safeAttachments = (Array.isArray(attachments) ? attachments : [])
@@ -679,26 +719,144 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
         ),
     ];
 
-    // ---- Credit gate: reserve BEFORE the model call ----
-    // Envelope first, then personal allowance. Committed on success,
-    // released on failure or abort — never left outstanding.
-    const latestUserText = (latestUser?.content ?? "") + attachmentBlock;
-    const docIntent =
-      safeAttachments.length > 0 ||
-      /deck|proposal|treatment|one[- ]?pager|rate card|moodboard|document|pdf|brief|contract/i.test(latestUserText);
-    const isShortAsk = latestUserText.length < 200 && !docIntent;
-    // Route by intent: fast small model for short asks, stronger model only
-    // for long or document requests. Output tokens capped per mode.
-    const model = isShortAsk ? GEMINI_3_FLASH : GEMINI_3_8_FLASH;
-    const maxOutputTokens = isShortAsk ? 400 : 800;
-
-    const msgGate = await gateAiCall(admin, gateUserId, "kreto_message", 1);
-    if (!msgGate.allowed) return msgGate.response;
+    // ---- What this request reserves, from the Kreto model and effort resolved above ----
+    const model = route.model;
+    const maxOutputTokens = route.outputTokens;
     const tokenEst =
       estTokens(systemPrompt) +
       priorMessages.reduce((t, m) => t + estTokens(m.content), 0) +
       modelMessages.reduce((t, m) => t + estTokens(m.content), 0) +
       maxOutputTokens;
+
+    const immediatePriorAssistant = [...priorMessages].reverse().find((m) => m.role === "assistant");
+    const affirmedReplay = latestUser
+      ? replayPriorActionForAffirmation(latestUser.content, immediatePriorAssistant?.content)
+      : null;
+    // ---- Estimate guard (docs/kreto/KRETO_MODEL_PROFILES.md §7) ----
+    // Before anything is counted, saved or reserved: a request that would use a large share of what is left asks first
+    // (409 KRETO_CONFIRM: the composer shows the estimate and resends with confirm_estimate), and one that does not fit
+    // stops (429 KRETO_ALLOWANCE_INSUFFICIENT). A replay of an already-proposed action makes no model call: not estimated.
+    if (!affirmedReplay) {
+      const [remainingTokens, pricing, weeklyRemaining] = await Promise.all([
+        remainingKretoTokens(admin, gateUserId),
+        loadModelPricing(admin, model).catch(() => null),
+        weeklyRemainingCredits(admin, gateUserId, subscriptionTier),
+      ]);
+      const credits = estimateCredits(tokenEst - maxOutputTokens, maxOutputTokens, pricing);
+      const shownLeft = typeof kretoTokensLeft === "number" && Number.isFinite(kretoTokensLeft) && kretoTokensLeft >= 0 ? kretoTokensLeft : null;
+      const decision = guardKretoRequest({
+        estimateTokens: tokenEst,
+        remainingTokens: remainingTokens === null ? shownLeft : shownLeft === null ? remainingTokens : Math.min(remainingTokens, shownLeft),
+        estimateCredits: credits,
+        weeklyRemainingCredits: weeklyRemaining,
+        confirmed: confirmEstimate === true || confirmSupported !== true,
+      });
+      // Usage per Kreto model and effort, without content (persisted per run once the run columns exist: Phase 4).
+      console.log(JSON.stringify({ kreto_route: { profile: route.profile, auto: route.auto, effort: route.effort, tier: route.tier, tokens: tokenEst, share: decision.share === null ? null : Number(decision.share.toFixed(3)), action: decision.action } }));
+      const estimate = { tokens: tokenEst, credits, share_pct: decision.share === null ? null : sharePct(decision.share) };
+      if (decision.action === "stop") {
+        const when = decision.basis === "week" ? "this week. It comes back on Monday" : "today. It comes back at midnight UTC";
+        return new Response(
+          JSON.stringify({ error: `This needs more than you have left ${when}. Quick gives a lighter answer.`, code: "KRETO_ALLOWANCE_INSUFFICIENT", basis: decision.basis, estimate }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (decision.action === "confirm") {
+        return new Response(
+          JSON.stringify({
+            error: `This needs about ${sharePct(decision.share)}% of what's left ${decision.basis === "week" ? "this week" : "today"}. Run it?`,
+            code: "KRETO_CONFIRM",
+            basis: decision.basis,
+            estimate,
+            profile: route.profile,
+            effort: route.effort,
+          }),
+          { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      if (decision.share !== null) corsHeaders["X-Kreto-Share"] = String(sharePct(decision.share));
+    }
+
+    // ---- Daily message count (per plan), now that the request is going ahead ----
+    if (copilotDailyCap !== null) {
+      const { data: capCheck, error: capErr } = await admin.rpc(
+        "consume_copilot_message",
+        { _user_id: gateUserId, _daily_cap: copilotDailyCap },
+      );
+      if (capErr) {
+        console.warn("consume_copilot_message failed", capErr);
+      } else if (Array.isArray(capCheck) && capCheck[0] && !capCheck[0].allowed) {
+        const used = capCheck[0].used;
+        const cap = capCheck[0].cap;
+        return new Response(
+          JSON.stringify({
+            error: `You've used today's ${used} of ${cap} Kreto messages. They come back at midnight UTC.`,
+            code: "COPILOT_DAILY_LIMIT",
+            tier: subscriptionTier,
+            used,
+            cap,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+
+    // Persist the latest user turn before calling the model, so it's saved even if streaming fails partway. A request
+    // that stopped at the estimate guard saved nothing, so the resend after KRETO_CONFIRM saves the turn once.
+    if (persist && conversationId && latestUser) {
+      try {
+        // Avoid double-insert: only insert if not already the last persisted user message.
+        const lastPersisted = priorMessages[priorMessages.length - 1];
+        const dup =
+          lastPersisted &&
+          lastPersisted.role === "user" &&
+          lastPersisted.content.trim() === latestUser.content.trim();
+        if (!dup) {
+          await admin.from("ai_messages").insert({
+            conversation_id: conversationId,
+            role: "user",
+            content: latestUser.content,
+          });
+          await admin
+            .from("ai_conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+        }
+      } catch (e) {
+        console.warn("Persist user turn failed", e);
+      }
+    }
+
+    if (affirmedReplay) {
+      if (persist && conversationId) {
+        try {
+          await admin.from("ai_messages").insert({
+            conversation_id: conversationId,
+            role: "assistant",
+            content: affirmedReplay,
+          });
+          await admin
+            .from("ai_conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+        } catch (e) {
+          console.warn("Persist affirmed replay failed", e);
+        }
+      }
+      if (!stream) {
+        return new Response(
+          JSON.stringify({ content: affirmedReplay, conversation_id: conversationId }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      return streamTextResponse(affirmedReplay, conversationId, corsHeaders);
+    }
+
+    // ---- Credit gate: reserve BEFORE the model call ----
+    // Envelope first, then personal allowance. Committed on success,
+    // released on failure or abort — never left outstanding.
+    const msgGate = await gateAiCall(admin, gateUserId, "kreto_message", 1);
+    if (!msgGate.allowed) return msgGate.response;
     const tokGate = await gateAiCall(admin, gateUserId, "kreto_tokens", tokenEst, 0);
     if (!tokGate.allowed) {
       await releaseAiCredit(admin, gateUserId, "kreto_message", 1);
@@ -737,9 +895,9 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            // Routed above: flash for short asks, the stronger model for long
-            // or document requests (it follows the <action>/<plan> tag protocol
-            // more reliably). Output capped per mode.
+            // Routed above by resolveKretoRoute: the Kreto model and effort the
+            // person chose (Auto never above the effort's tier). Output capped
+            // per effort.
             model,
             messages: modelMessages,
             stream: stream,
@@ -752,7 +910,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       await settleFailure();
       if (e instanceof DOMException && e.name === "AbortError") {
         return new Response(
-          JSON.stringify({ error: "AI response timed out. Please try again." }),
+          JSON.stringify({ error: "Kreto took too long to answer. Nothing was changed. Try again." }),
           { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -763,19 +921,19 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       await settleFailure();
       if (upstream.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          JSON.stringify({ error: "Kreto is busy right now. Try again in a moment." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       if (upstream.status === 402) {
         return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Top up in Settings → Workspace → Usage." }),
+          JSON.stringify({ error: "Kreto can't answer right now. Nothing was changed. Try again later." }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       const t = await upstream.text();
       console.error("AI gateway error:", upstream.status, t);
-      return new Response(JSON.stringify({ error: "AI service unavailable" }), {
+      return new Response(JSON.stringify({ error: "Kreto couldn't answer right now. Nothing was changed. Try again in a moment." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

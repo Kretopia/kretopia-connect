@@ -40,6 +40,8 @@ export default defineConfig({
       { find: /^npm:@supabase\/supabase-js@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/supabaseJsStub.ts") },
       // Any pinned spelling (`npm:zod@4`, `npm:zod@^4.4.3`): the installed zod 4 stands in for it.
       { find: /^npm:zod@[^/]+$/, replacement: path.resolve(__dirname, "./node_modules/zod/index.js") },
+      // PDF parsing, imported lazily by thrive-ai-chat for attachments: never reached by the handler tests.
+      { find: /^npm:pdfjs-dist@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/pdfjsStub.ts") },
     ],
   },
 });

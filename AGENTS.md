@@ -69,6 +69,7 @@
 - Optional username linking validates the live app user and caches only success; failed links stay retryable.
 - Use guard.ts/aiPerimeter.ts: validate the account backend without auth fallback, meter on deployment; lockdown SQL stays unapplied.
 - Share instant Kreto search routing across all chats; jobs open Scout, other terms open /search, because navigation must not wait for planning.
+- Resolve Kreto models and effort only in `_shared/kretoProfiles.ts` (the client mirrors labels, kept in step by test; Auto never exceeds the effort ceiling, the deepest tier stays off). kreto-resources must forward `profile`, `effort` and the confirm flags and return the X-Kreto-* headers, because its zod schema strips unknown fields and a dropped choice silently runs as Auto.
 - HomeEntry isolates public home from the signed-in dashboard and paints while onboarding loads; confirmed results still redirect, because slow profile requests must not block first content.
 - Bound lazy imports and stale-chunk cleanup; failures reach the error boundary, never an unresolved promise, because recovery must not leave a permanent loader.
 - Stage by explicit path (`git add -- <file>`, plus `-f` for the git-ignored `docs/`); never `git add .`, `git add -A` or `git commit -a`, because on 2026-11-03 a bulk add put 18 untracked production SQL scripts into the public history of `main`.

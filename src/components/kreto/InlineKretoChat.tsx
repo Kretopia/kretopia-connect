@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Square, Paperclip, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -6,13 +6,17 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
   streamCopilot, loadConversationMessages, createConversation, extractActions, autocompleteKreto,
-  openKretoAttachment, deleteKretoAttachment, type CopilotMessage,
+  openKretoAttachment, deleteKretoAttachment, type CopilotMessage, type KretoRouteInfo,
 } from "@/lib/thriveCopilot";
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
 import { KretoQuotaIndicator, KRETO_ALLOWANCE_NOTICE_ID } from "@/components/kreto/KretoQuotaIndicator";
 import { useAiAllowance } from "@/hooks/useAiAllowance";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
+import { KretoModelPicker } from "@/components/kreto/KretoModelPicker";
+import {
+  kretoEffortLabel, kretoModelName, previewShare, readKretoChoice, writeKretoChoice, type KretoChoice, type KretoEffort,
+} from "@/lib/kretoProfiles";
 
 // Strip <action>/<plan> tags from the live-streaming buffer, same approach
 // already proven in ThriveAgentFab.tsx — remove fully-closed tags, then hide
@@ -36,7 +40,7 @@ function stripTagsLive(raw: string): string {
 const FOLLOW_THRESHOLD_PX = 48;
 
 // Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
-const MessageBubble = memo(function MessageBubble({ role, content, attachments }: CopilotMessage) {
+const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto }: CopilotMessage) {
   const [removed, setRemoved] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState("");
   return (
@@ -51,6 +55,9 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments }
         <span className="inline-flex h-5 items-center gap-1.5 text-white/50">
           <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
         </span>
+      )}
+      {role === "assistant" && kreto && content && (
+        <span className="mt-1 block text-[10px] font-medium text-muted-foreground" data-testid="kreto-route-label">{kreto}</span>
       )}
       {attachments?.filter(a => !removed.includes(a.id)).map(a => (
         <div key={a.id} className="mt-2 flex items-center gap-2 border-t border-border pt-2 text-foreground">
@@ -117,6 +124,22 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   const blocked = allowance?.blocked ?? null;
   const ghostTimerRef = useRef<number | undefined>(undefined);
   const ghostAbortRef = useRef<AbortController | null>(null);
+  // The Kreto model and effort for the next message (remembered on this device), what answered the last one, and a
+  // request the server wanted to ask about first (nothing was counted or saved for it).
+  const [choice, setChoiceState] = useState<KretoChoice>(readKretoChoice);
+  const [lastRoute, setLastRoute] = useState<KretoRouteInfo | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<{ message: string; draft: string; effort: KretoEffort } | null>(null);
+  const setChoice = useCallback((next: KretoChoice) => {
+    setChoiceState(next);
+    writeKretoChoice(next);
+    setPendingConfirm(null);
+  }, []);
+  const tokensLeft = allowance?.tokens?.left ?? null;
+  // A rough "about N% of what's left today" for the draft; the server's own estimate decides whether to ask.
+  const preview = useMemo(
+    () => (blocked || !input.trim() ? null : previewShare({ draft: input, history: messages, effort: choice.effort, tokensLeft })),
+    [blocked, input, messages, choice.effort, tokensLeft],
+  );
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -176,9 +199,12 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     el.scrollTo({ top: el.scrollHeight, behavior: reducedMotion ? "auto" : "smooth" });
   };
 
-  const send = useCallback(async (raw: string) => {
+  // `confirmed`: the person accepted the estimate the server asked about. `effort`: this send only (Use Quick).
+  const send = useCallback(async (raw: string, opts: { confirmed?: boolean; effort?: KretoEffort } = {}) => {
     const text = raw.trim();
     if (!text || streaming) return;
+    setPendingConfirm(null);
+    const effort = opts.effort ?? choice.effort;
 
     // A new send aborts any in-flight request and any pending autocomplete.
     abortRef.current?.abort();
@@ -229,12 +255,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     // Strip <action>/<plan> tags live so raw JSON/XML never renders in the
     // bubble, even mid-stream — matches ThriveAgentFab's stripTagsLive.
     let assistantSoFar = "";
+    // The server asked first: the optimistic bubbles are gone and nothing should be painted into an earlier reply.
+    let asked = false;
     // Chunks can arrive far faster than a screen can show them. Collect them and paint at most
     // once per frame; the final flush below guarantees the full text lands even if the tab
     // was in the background (animation frames pause there).
     let frame = 0;
     const flush = () => {
       frame = 0;
+      if (asked) return;
       const visible = stripTagsLive(assistantSoFar);
       setMessages((m) => {
         const last = m[m.length - 1];
@@ -259,6 +288,32 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         surface: "home",
         conversationId: activeId ?? undefined,
         attachments: readyAttachments,
+        profile: choice.profile,
+        effort,
+        confirmSupported: true,
+        confirmEstimate: opts.confirmed === true,
+        onRoute: (route) => {
+          setLastRoute(route);
+          const label = `${kretoModelName(route.profile)} · ${kretoEffortLabel(route.effort)}`;
+          setMessages((m) => {
+            const last = m[m.length - 1];
+            if (last?.role !== "assistant") return m;
+            const next = m.slice();
+            next[next.length - 1] = { ...last, kreto: label };
+            return next;
+          });
+        },
+        onNeedsConfirm: (request) => {
+          // Not an error and not sent: take the draft back and ask, with the server's own estimate.
+          asked = true;
+          setMessages((m) => {
+            const last = m[m.length - 1];
+            const prev = m[m.length - 2];
+            return last?.role === "assistant" && !last.content && prev?.role === "user" ? m.slice(0, -2) : m;
+          });
+          setInput(text);
+          setPendingConfirm({ message: request.message, draft: text, effort });
+        },
         onConversationId: (id) => { conversationIdRef.current = id; },
         onDelta: appendDelta,
         onDone: () => {
@@ -328,7 +383,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       }
       setStreaming(false);
     }
-  }, [streaming, conversationId, onConversationCreated, attachments, navigate, blocked]);
+  }, [streaming, conversationId, onConversationCreated, attachments, navigate, blocked, choice]);
 
   // A quick-action click seeds the thread and sends immediately. Keyed on
   // seedNonce (not seedPrompt itself) so clicking the same quick action
@@ -347,6 +402,8 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // every keystroke, never under 4 characters, silent on any failure.
   const onInputChange = (value: string) => {
     setInput(value);
+    // The question was about the draft as it was; an edited draft gets a fresh estimate when it is sent.
+    setPendingConfirm(null);
     ghostAbortRef.current?.abort();
     window.clearTimeout(ghostTimerRef.current);
     setGhost("");
@@ -411,6 +468,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       </div>
 
       <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
+        <KretoModelPicker choice={choice} onChange={setChoice} disabled={streaming} previewShare={preview} lastRoute={lastRoute} />
         <div className="flex items-center justify-between gap-2 px-3 pt-2">
           <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
           <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />
@@ -426,6 +484,34 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
             >
               Retry
             </button>
+          </div>
+        )}
+
+        {pendingConfirm && (
+          <div role="status" className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2" data-testid="kreto-confirm">
+            <p className="text-xs text-foreground">{pendingConfirm.message}</p>
+            <div className="flex items-center gap-2">
+              {pendingConfirm.effort > 1 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const draft = pendingConfirm.draft;
+                    setChoice({ ...choice, effort: 1 });
+                    send(draft, { effort: 1 }).catch((err) => console.error(err));
+                  }}
+                  className="btn-glass btn-glass-outline rounded-full px-3 py-1 text-xs font-semibold"
+                >
+                  Use Quick
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => send(pendingConfirm.draft, { confirmed: true, effort: pendingConfirm.effort }).catch((err) => console.error(err))}
+                className="btn-glass btn-glass-primary rounded-full px-3 py-1 text-xs font-semibold"
+              >
+                Run it
+              </button>
+            </div>
           </div>
         )}
 
