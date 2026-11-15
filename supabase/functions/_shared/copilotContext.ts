@@ -12,6 +12,7 @@
 //    natural-language preamble (drop straight into a system prompt).
 
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2";
+import type { KretoContextPlan, KretoContextSection } from "./kretoContext.ts";
 
 export interface CopilotProject {
   id: string;
@@ -74,11 +75,20 @@ export interface CopilotContext {
     tasks_due_soon: Array<{ title: string; due_date: string; project_id: string | null }>;
     credits_added: Array<{ project_name: string; role: string; created_at: string }>;
     new_connections: number;
-    invoices_paid: Array<{ invoice_number: string; total_amount: number; currency: string; paid_at: string }>;
+    /** provider_confirmed: a payment provider settled it; otherwise only the issuer's own record says paid. */
+    invoices_paid: Array<{ invoice_number: string; total_amount: number; currency: string; paid_at: string; provider_confirmed: boolean }>;
     invoices_sent: Array<{ invoice_number: string; total_amount: number; currency: string; created_at: string; recipient: string | null }>;
     unread_notifications: number;
     last_notification_titles: string[];
   };
+}
+
+/** Paid, and a payment provider's reference vouches for it (mirrors isProviderConfirmedPaid in src/lib/invoiceProvenance.ts). */
+export function isProviderConfirmedPaid(inv: { status?: string | null; stripe_payment_intent_id?: string | null }): boolean {
+  return (
+    typeof inv.status === "string" && inv.status.trim().toLowerCase() === "paid" &&
+    typeof inv.stripe_payment_intent_id === "string" && inv.stripe_payment_intent_id.trim().length > 0
+  );
 }
 
 /** Race a promise against a timeout; returns null on timeout or error. */
@@ -254,7 +264,9 @@ export async function loadCopilotContext(
     withTimeout(
       admin
         .from("invoices")
-        .select("invoice_number, total_amount, currency, paid_at")
+        // "*", not a column list: naming stripe_payment_intent_id fails until 20261015100000 is applied, and without it
+        // every paid invoice is the issuer's own record (the same rule as src/lib/invoiceProvenance.ts).
+        .select("*")
         .eq("issued_by", userId)
         .eq("status", "paid")
         .gte("paid_at", sevenDaysAgo)
@@ -369,7 +381,7 @@ export async function loadCopilotContext(
   const tasksDue = ((tasksDueRes as any)?.data ?? []) as Array<{ title: string; due_date: string; project_id: string | null }>;
   const creditsRecent = ((creditsRecentRes as any)?.data ?? []) as Array<{ project_name: string; role: string; created_at: string }>;
   const newConnections = ((connectionsRes as any)?.count ?? 0) as number;
-  const invoicesPaid = ((invoicesPaidRes as any)?.data ?? []) as Array<{ invoice_number: string; total_amount: number; currency: string; paid_at: string }>;
+  const invoicesPaid = ((invoicesPaidRes as any)?.data ?? []) as Array<{ invoice_number: string; total_amount: number; currency: string; paid_at: string; status?: string | null; stripe_payment_intent_id?: string | null }>;
   const invoicesSent = (((invoicesSentRes as any)?.data ?? []) as Array<{ invoice_number: string; total_amount: number; currency: string; created_at: string; recipient_name: string | null }>).map((r) => ({
     invoice_number: r.invoice_number,
     total_amount: Number(r.total_amount),
@@ -406,7 +418,13 @@ export async function loadCopilotContext(
       tasks_due_soon: tasksDue.map((t) => ({ title: t.title, due_date: t.due_date, project_id: t.project_id })),
       credits_added: creditsRecent,
       new_connections: newConnections,
-      invoices_paid: invoicesPaid.map((i) => ({ ...i, total_amount: Number(i.total_amount) })),
+      invoices_paid: invoicesPaid.map((i) => ({
+        invoice_number: i.invoice_number,
+        total_amount: Number(i.total_amount),
+        currency: i.currency,
+        paid_at: i.paid_at,
+        provider_confirmed: isProviderConfirmedPaid(i),
+      })),
       invoices_sent: invoicesSent,
       unread_notifications: unreadNotifs,
       last_notification_titles: notifTitles,
@@ -423,11 +441,14 @@ export function renderContextPreamble(
   ctx: CopilotContext,
   surface?: string,
   surfaceContext?: Record<string, unknown>,
+  /** Which sections go in with details, as a summary, or not at all (kretoContext.ts). Absent: everything, as before. */
+  plan?: KretoContextPlan,
 ): string {
+  const depth = (section: KretoContextSection) => plan?.depth[section] ?? "detail";
+  const detail = (section: KretoContextSection) => depth(section) === "detail";
   const parts: string[] = [];
 
   // ---- Identity (always present) ----
-  const displayName = ctx.full_name?.trim() || ctx.username || "this creator";
   const firstName = ctx.first_name && ctx.first_name !== "there" ? ctx.first_name : null;
 
   parts.push(`=== USER FACTS (verified, from database) ===`);
@@ -442,56 +463,78 @@ export function renderContextPreamble(
   if (ctx.sub_roles?.length) parts.push(`Also: ${ctx.sub_roles.slice(0, 4).join(", ")}`);
   if (ctx.location) parts.push(`Location: ${ctx.location}`);
   if (ctx.account_type === "company") parts.push(`Account type: Company / brand account`);
-  // The Passport itself: what the person says about themselves, what they can do, and the work behind it. Drafts and advice should cite
-  // these specifics, and must not claim more evidence than a credit has.
-  if (ctx.bio?.trim()) parts.push(`Bio (written by the user, not verified): ${ctx.bio.replace(/\s+/g, " ").trim().slice(0, 500)}`);
-  if (ctx.skills?.length) parts.push(`Skills: ${ctx.skills.join(", ")}`);
-  if (ctx.top_credits?.length) {
-    const lines = ctx.top_credits
-      .map((c) => `- ${c.project_name}${c.role ? `, ${c.role}` : ""}${c.year ? ` (${c.year})` : ""}${c.client ? ` for ${c.client}` : ""}${c.project_type ? ` — ${c.project_type}` : ""} [${c.evidence}]`)
-      .join("\n");
-    parts.push(`Credits on their Passport (evidence level in brackets; never present a claimed credit as verified):\n${lines}`);
+
+  // ---- Passport: what the person says about themselves, what they can do, and the work behind it. Drafts and advice
+  // should cite these specifics, and must not claim more evidence than a credit has.
+  if (detail("passport")) {
+    if (ctx.bio?.trim()) parts.push(`Bio (written by the user, not verified): ${ctx.bio.replace(/\s+/g, " ").trim().slice(0, 500)}`);
+    if (ctx.skills?.length) parts.push(`Skills: ${ctx.skills.join(", ")}`);
+    if (ctx.top_credits?.length) {
+      const lines = ctx.top_credits
+        .map((c) => `- ${c.project_name}${c.role ? `, ${c.role}` : ""}${c.year ? ` (${c.year})` : ""}${c.client ? ` for ${c.client}` : ""}${c.project_type ? ` — ${c.project_type}` : ""} [${c.evidence}]`)
+        .join("\n");
+      parts.push(`Credits on their Passport (evidence level in brackets; never present a claimed credit as verified):\n${lines}`);
+    }
+    parts.push(`Credits added in last 30 days: ${ctx.recent_credits_count}`);
+  } else if (depth("passport") === "summary") {
+    parts.push(`Passport (summary): ${ctx.skills?.length ?? 0} skills, ${ctx.top_credits?.length ?? 0} featured credits.`);
   }
 
-  // ---- Live state (only include sections that have data) ----
-  if (ctx.active_projects.length) {
-    const list = ctx.active_projects
-      .map((p) => `- "${p.title}"${p.my_role ? ` (${p.my_role})` : ""}${p.pinned_stage ? ` (stage: ${p.pinned_stage})` : ""} [id: ${p.id}]`)
-      .join("\n");
-    parts.push(`Active projects (${ctx.active_projects.length}):\n${list}`);
-  } else {
-    parts.push(`Active projects: NONE`);
-  }
-
-  if (ctx.unpaid_invoices_count > 0) {
+  // ---- Projects ----
+  if (detail("projects")) {
+    if (ctx.active_projects.length) {
+      const list = ctx.active_projects
+        .map((p) => `- "${p.title}"${p.my_role ? ` (${p.my_role})` : ""}${p.pinned_stage ? ` (stage: ${p.pinned_stage})` : ""} [id: ${p.id}]`)
+        .join("\n");
+      parts.push(`Active projects (${ctx.active_projects.length}):\n${list}`);
+    } else {
+      parts.push(`Active projects: NONE`);
+    }
+  } else if (depth("projects") === "summary") {
     parts.push(
-      `Invoices SENT and awaiting payment (money owed TO user): ${ctx.unpaid_invoices_count} totalling ${ctx.invoice_currency ?? "USD"} ${ctx.unpaid_invoices_total.toFixed(2)}`,
+      ctx.active_projects.length
+        ? `Active projects (names only): ${ctx.active_projects.map((p) => `"${p.title}" [id: ${p.id}]`).join(", ")}`
+        : `Active projects: NONE`,
     );
-  } else {
-    parts.push(`Invoices SENT and awaiting payment: NONE`);
   }
 
-  if (ctx.draft_invoices_count > 0) {
-    parts.push(
-      `DRAFT invoices (created but NOT sent yet — user still needs to send or mark as paid): ${ctx.draft_invoices_count} totalling ${ctx.draft_invoices_currency ?? "USD"} ${ctx.draft_invoices_total.toFixed(2)}. ` +
-      `IMPORTANT: When the user asks about "outstanding payments", "unpaid invoices", or "what am I owed", mention these drafts too — they may have forgotten to mark one as paid or send it.`,
-    );
-  } else {
-    parts.push(`Draft (unsent) invoices: NONE`);
+  // ---- Money ----
+  if (detail("money")) {
+    if (ctx.unpaid_invoices_count > 0) {
+      parts.push(
+        `Invoices SENT and awaiting payment (money owed TO user): ${ctx.unpaid_invoices_count} totalling ${ctx.invoice_currency ?? "USD"} ${ctx.unpaid_invoices_total.toFixed(2)}`,
+      );
+    } else {
+      parts.push(`Invoices SENT and awaiting payment: NONE`);
+    }
+    if (ctx.draft_invoices_count > 0) {
+      parts.push(
+        `DRAFT invoices (created but NOT sent yet — user still needs to send or mark as paid): ${ctx.draft_invoices_count} totalling ${ctx.draft_invoices_currency ?? "USD"} ${ctx.draft_invoices_total.toFixed(2)}. ` +
+        `IMPORTANT: When the user asks about "outstanding payments", "unpaid invoices", or "what am I owed", mention these drafts too — they may have forgotten to mark one as paid or send it.`,
+      );
+    } else {
+      parts.push(`Draft (unsent) invoices: NONE`);
+    }
+  } else if (depth("money") === "summary") {
+    parts.push(`Money (summary, no amounts): ${ctx.unpaid_invoices_count} invoices awaiting payment, ${ctx.draft_invoices_count} drafts.`);
   }
 
-  if (ctx.upcoming_events.length) {
-    const evs = ctx.upcoming_events
-      .map((e) => `- "${e.title}"${e.start_time ? ` on ${new Date(e.start_time).toLocaleDateString()}` : ""}`)
-      .join("\n");
-    parts.push(`Upcoming events they're hosting:\n${evs}`);
-  } else {
-    parts.push(`Upcoming events they're hosting: NONE`);
+  // ---- Events ----
+  if (detail("events")) {
+    if (ctx.upcoming_events.length) {
+      const evs = ctx.upcoming_events
+        .map((e) => `- "${e.title}"${e.start_time ? ` on ${new Date(e.start_time).toLocaleDateString()}` : ""}`)
+        .join("\n");
+      parts.push(`Upcoming events they're hosting:\n${evs}`);
+    } else {
+      parts.push(`Upcoming events they're hosting: NONE`);
+    }
+  } else if (depth("events") === "summary") {
+    const next = ctx.upcoming_events[0];
+    parts.push(`Upcoming events they're hosting: ${ctx.upcoming_events.length}${next ? ` (next: "${next.title}")` : ""}.`);
   }
 
-  parts.push(`Credits added in last 30 days: ${ctx.recent_credits_count}`);
-
-  // ---- Recent activity (last 7 days) — for "catch me up" / "what's new" ----
+  // ---- Recent activity (last 7 days) — for "catch me up" / "what's new", only from the sections shared in detail ----
   const ra = ctx.recent_activity;
   const fmtDate = (iso: string) => {
     try {
@@ -508,19 +551,19 @@ export function renderContextPreamble(
   parts.push(`\n=== RECENT ACTIVITY (last 7 days) ===`);
   const activityLines: string[] = [];
 
-  if (ra.tasks_completed.length) {
+  if (detail("projects") && ra.tasks_completed.length) {
     activityLines.push(
       `Tasks completed (${ra.tasks_completed.length}):\n` +
       ra.tasks_completed.map((t) => `  - "${t.title}" (${fmtDate(t.updated_at)})`).join("\n"),
     );
   }
-  if (ra.tasks_due_soon.length) {
+  if (detail("projects") && ra.tasks_due_soon.length) {
     activityLines.push(
       `Tasks due in next 7 days (${ra.tasks_due_soon.length}):\n` +
       ra.tasks_due_soon.map((t) => `  - "${t.title}" due ${new Date(t.due_date).toLocaleDateString()}`).join("\n"),
     );
   }
-  if (ra.credits_added.length) {
+  if (detail("passport") && ra.credits_added.length) {
     activityLines.push(
       `New credits added (${ra.credits_added.length}):\n` +
       ra.credits_added.map((c) => `  - ${c.role} on "${c.project_name}" (${fmtDate(c.created_at)})`).join("\n"),
@@ -529,13 +572,15 @@ export function renderContextPreamble(
   if (ra.new_connections > 0) {
     activityLines.push(`New connections accepted: ${ra.new_connections}`);
   }
-  if (ra.invoices_paid.length) {
+  if (detail("money") && ra.invoices_paid.length) {
     activityLines.push(
-      `Invoices PAID (${ra.invoices_paid.length}):\n` +
-      ra.invoices_paid.map((i) => `  - ${i.invoice_number}: ${i.currency} ${Number(i.total_amount).toFixed(2)} (${fmtDate(i.paid_at)})`).join("\n"),
+      `Invoices marked PAID (${ra.invoices_paid.length}). Say an invoice was paid only when it is confirmed by the payment provider; for the others say the user marked it paid:\n` +
+      ra.invoices_paid
+        .map((i) => `  - ${i.invoice_number}: ${i.currency} ${Number(i.total_amount).toFixed(2)} (${fmtDate(i.paid_at)}) — ${i.provider_confirmed ? "confirmed by the payment provider" : "marked paid by the user, no payment provider confirmation"}`)
+        .join("\n"),
     );
   }
-  if (ra.invoices_sent.length) {
+  if (detail("money") && ra.invoices_sent.length) {
     activityLines.push(
       `Invoices SENT (${ra.invoices_sent.length}):\n` +
       ra.invoices_sent.map((i) => `  - ${i.invoice_number} to ${i.recipient ?? "client"}: ${i.currency} ${Number(i.total_amount).toFixed(2)} (${fmtDate(i.created_at)})`).join("\n"),
@@ -548,30 +593,45 @@ export function renderContextPreamble(
     activityLines.push(`Unread notifications: ${ra.unread_notifications}.${titles}`);
   }
 
-  if (activityLines.length === 0) {
+  const everythingShared = (["passport", "projects", "money"] as const).every(detail);
+  if (activityLines.length === 0 && everythingShared) {
     parts.push(`NOTHING happened in the last 7 days. No tasks completed, no credits added, no invoices sent or paid, no new connections, no unread notifications. If the user asks "what's new" or "catch me up", be honest that it's been quiet — then suggest ONE concrete next move based on their active projects, drafts, or upcoming events above.`);
+  } else if (activityLines.length === 0) {
+    parts.push(`No recent activity in the parts shared for this message.`);
   } else {
     parts.push(activityLines.join("\n"));
     parts.push(`When summarising "what's new" / "catch me up", reference these specific items by name (project, invoice number, task title) — never invent or generalise.`);
   }
   parts.push(`=== END RECENT ACTIVITY ===\n`);
 
-  // Surface awareness — tells the model where the user just clicked from.
+  // Surface awareness — tells the model where the user just clicked from (Kretopia's own names, never internal ones).
   if (surface) {
     const surfaceMap: Record<string, string> = {
-      desk: "ThriveDesk (project workspace)",
-      pay: "ThrivePay (invoices, payments, expenses)",
+      desk: "Studio (project workspace)",
+      studio: "Studio (project workspace)",
+      pay: "KrePay (invoices, payments, expenses)",
       match: "Match (find collaborators)",
-      gigs: "Gigs (opportunities board)",
-      home: "Home feed",
-      profile: "Profile / EPK editor",
-      credit: "Credits (resume/IMDb-style portfolio)",
+      gigs: "Scout (opportunities)",
+      home: "Home",
+      profile: "Passport editor",
+      credit: "Credits (portfolio)",
       event: "Events / Sessions",
     };
     parts.push(`Currently on surface: ${surfaceMap[surface] ?? surface}.`);
     if (surfaceContext && Object.keys(surfaceContext).length) {
       parts.push(`Surface context: ${JSON.stringify(surfaceContext).slice(0, 400)}.`);
     }
+  }
+
+  const label: Record<KretoContextSection, string> = { passport: "Passport", projects: "Projects", money: "Money", events: "Events" };
+  const sections = Object.keys(label) as KretoContextSection[];
+  const summarised = sections.filter((s) => depth(s) === "summary").map((s) => label[s]);
+  const notShared = sections.filter((s) => depth(s) === "omitted").map((s) => label[s]);
+  if (summarised.length) {
+    parts.push(`SUMMARY ONLY for this message: ${summarised.join(", ")}. Their details were not loaded: never invent names, amounts or dates beyond the summary; offer to look closer.`);
+  }
+  if (notShared.length) {
+    parts.push(`NOT SHARED for this message (the person chose not to include them): ${notShared.join(", ")}. If the answer needs them, say so and ask them to include it — never guess, and never say there is nothing there.`);
   }
 
   parts.push(`=== END USER FACTS ===`);

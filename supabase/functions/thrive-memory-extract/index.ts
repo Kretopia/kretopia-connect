@@ -15,6 +15,7 @@ import { GEMINI_3_FLASH } from "../_shared/aiModels.ts";
 
 
 import { corsFor, requireServiceRole } from '../_shared/guard.ts';
+import { memoryWriteAllowed, messageHasSecret } from "../_shared/memoryPolicy.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
@@ -42,8 +43,8 @@ const ALLOWED_FACT_KINDS = new Set([
   "fact",
 ]);
 
-const SYSTEM = `You are a silent memory extractor for a creative-industry agent named Thrive.
-You see ONE recent user message. Decide if the user just stated DURABLE FACTS that Thrive should remember next time.
+const SYSTEM = `You are a silent memory extractor for a creative-industry agent named Kreto.
+You see ONE recent user message. Decide if the user just stated DURABLE FACTS that Kreto should remember next time.
 
 DURABLE = stable for weeks/months: rates, day-rates, preferred vendors, key contacts, client details, brand preferences, recurring constraints, follow-ups due later, project budgets/deadlines.
 
@@ -148,6 +149,13 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
+  // A message carrying a password, key, card or bank number teaches Kreto nothing, not even the harmless parts.
+  if (messageHasSecret(message)) {
+    return new Response(JSON.stringify({ ok: true, skipped: "secret" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
   let extracted: Memory[] = [];
@@ -157,11 +165,29 @@ Deno.serve(async (req) => {
     console.warn("memory-extract failed", e);
   }
 
+  // The project id comes from the caller's page: write a project's facts only for a member of that project (the same
+  // check thrive-ai-chat makes before reading them).
+  let projectAllowed = false;
+  if (project_id && extracted.some((m) => m.scope === "project")) {
+    try {
+      const { data } = await admin.rpc("user_has_project_access", { project_id_param: project_id, user_id_param: user_id });
+      projectAllowed = data === true;
+    } catch (e) {
+      console.warn("user_has_project_access check failed", e);
+    }
+  }
+
   let inserted = 0;
+  let declined = 0;
   for (const mem of extracted) {
+    // Money figures and other people's contact details only when the person asked Kreto to remember them.
+    if (!memoryWriteAllowed(message, mem).allowed) {
+      declined++;
+      continue;
+    }
     const importance = Math.max(1, Math.min(5, Math.round(mem.importance ?? 3)));
     if (mem.scope === "project" && project_id) {
-      if (!ALLOWED_FACT_KINDS.has(mem.kind)) continue;
+      if (!projectAllowed || !ALLOWED_FACT_KINDS.has(mem.kind)) continue;
       const { error } = await admin.from("studio_facts").insert({
         project_id,
         kind: mem.kind,
@@ -201,7 +227,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  return new Response(JSON.stringify({ ok: true, extracted: extracted.length, inserted }), {
+  return new Response(JSON.stringify({ ok: true, extracted: extracted.length, inserted, declined }), {
     status: 200,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

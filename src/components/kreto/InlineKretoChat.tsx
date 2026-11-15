@@ -16,6 +16,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { KretoModelPicker } from "@/components/kreto/KretoModelPicker";
+import { KretoContextPicker } from "@/components/kreto/KretoContextPicker";
+import { readContextChoice, sourcesLabel, writeContextChoice, type KretoContextChoice } from "@/lib/kretoContext";
 import {
   kretoEffortLabel, kretoModelName, previewShare, readKretoChoice, writeKretoChoice, type KretoChoice, type KretoEffort,
 } from "@/lib/kretoProfiles";
@@ -42,7 +44,7 @@ function stripTagsLive(raw: string): string {
 const FOLLOW_THRESHOLD_PX = 48;
 
 // Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
-const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto }: CopilotMessage) {
+const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto, sources }: CopilotMessage) {
   const [removed, setRemoved] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState("");
   return (
@@ -60,6 +62,9 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
       )}
       {role === "assistant" && kreto && content && (
         <span className="mt-1 block text-[10px] font-medium text-muted-foreground" data-testid="kreto-route-label">{kreto}</span>
+      )}
+      {role === "assistant" && sources && content && (
+        <span className="block text-[10px] text-muted-foreground" data-testid="kreto-sources">From your Kretopia data: {sources}</span>
       )}
       {attachments?.filter(a => !removed.includes(a.id)).map(a => (
         <div key={a.id} className="mt-2 flex items-center gap-2 border-t border-border pt-2 text-foreground">
@@ -131,6 +136,12 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   const [choice, setChoiceState] = useState<KretoChoice>(readKretoChoice);
   const [lastRoute, setLastRoute] = useState<KretoRouteInfo | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<{ message: string; draft: string; effort: KretoEffort } | null>(null);
+  // What Kreto can see for the next messages, and whether it uses memory (remembered on this device).
+  const [contextChoice, setContextChoiceState] = useState<KretoContextChoice>(readContextChoice);
+  const setContextChoice = useCallback((next: KretoContextChoice) => {
+    setContextChoiceState(next);
+    writeContextChoice(next);
+  }, []);
   const setChoice = useCallback((next: KretoChoice) => {
     setChoiceState(next);
     writeKretoChoice(next);
@@ -298,14 +309,17 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         effort,
         confirmSupported: true,
         confirmEstimate: opts.confirmed === true,
+        context: contextChoice.context,
+        memory: contextChoice.memory,
         onRoute: (route) => {
           setLastRoute(route);
           const label = `${kretoModelName(route.profile)} · ${kretoEffortLabel(route.effort)}`;
+          const sources = sourcesLabel(route.sources) ?? undefined;
           setMessages((m) => {
             const last = m[m.length - 1];
             if (last?.role !== "assistant") return m;
             const next = m.slice();
-            next[next.length - 1] = { ...last, kreto: label };
+            next[next.length - 1] = { ...last, kreto: label, sources };
             return next;
           });
         },
@@ -389,7 +403,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       }
       setStreaming(false);
     }
-  }, [streaming, conversationId, onConversationCreated, attachments, navigate, blocked, choice]);
+  }, [streaming, conversationId, onConversationCreated, attachments, navigate, blocked, choice, contextChoice]);
 
   // A quick-action click seeds the thread and sends immediately. Keyed on
   // seedNonce (not seedPrompt itself) so clicking the same quick action
@@ -474,7 +488,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       </div>
 
       <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
-        <KretoModelPicker choice={choice} onChange={setChoice} disabled={streaming} previewShare={preview} lastRoute={lastRoute} deepTier={deepTier} />
+        <KretoModelPicker
+          choice={choice}
+          onChange={setChoice}
+          disabled={streaming}
+          previewShare={preview}
+          lastRoute={lastRoute}
+          deepTier={deepTier}
+          extra={<KretoContextPicker choice={contextChoice} onChange={setContextChoice} disabled={streaming} />}
+        />
         <div className="flex items-center justify-between gap-2 px-3 pt-2">
           <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
           <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />

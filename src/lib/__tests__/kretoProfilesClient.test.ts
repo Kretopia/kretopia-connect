@@ -98,7 +98,7 @@ describe("the chat client", () => {
 
   it("reads which Kreto model and effort answered, and decodes the notice", () => {
     const route = readKretoRoute(new Headers({ "X-Kreto-Profile": "vision", "X-Kreto-Effort": "4", "X-Kreto-Suggest-Effort": "3", "X-Kreto-Notice": encodeURIComponent("The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength."), "X-Kreto-Share": "12" }));
-    expect(route).toEqual({ profile: "vision", effort: 4, suggestEffort: 3, notice: "The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength.", sharePct: 12 });
+    expect(route).toEqual({ profile: "vision", effort: 4, suggestEffort: 3, notice: "The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength.", sharePct: 12, sources: null });
     expect(readKretoRoute(new Headers())).toBeNull();
   });
 

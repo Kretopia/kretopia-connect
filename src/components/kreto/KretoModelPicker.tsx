@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ChevronDown, Gauge, Layers, Sparkles, Zap } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SegmentToggle } from "@/components/features/SegmentToggle";
@@ -28,6 +28,8 @@ interface KretoModelPickerProps {
   lastRoute: KretoRouteInfo | null;
   /** This account may use the deepest tier (admins and Premium for now). */
   deepTier: boolean;
+  /** Other composer controls that sit on the same row (what Kreto can see). */
+  extra?: ReactNode;
 }
 
 /**
@@ -35,7 +37,7 @@ interface KretoModelPickerProps {
  * and one place to change either. Auto never picks a pricier model than the effort allows; a deeper pass is offered
  * (never taken) when the last answer could have used one.
  */
-export function KretoModelPicker({ choice, onChange, disabled, previewShare, lastRoute, deepTier }: KretoModelPickerProps) {
+export function KretoModelPicker({ choice, onChange, disabled, previewShare, lastRoute, deepTier, extra }: KretoModelPickerProps) {
   const [open, setOpen] = useState(false);
   const effort = KRETO_EFFORTS.find((e) => e.level === choice.effort) ?? KRETO_EFFORTS[1];
   const suggest = lastRoute?.suggestEffort && lastRoute.suggestEffort > choice.effort ? (lastRoute.suggestEffort as KretoEffort) : null;
@@ -102,6 +104,7 @@ export function KretoModelPicker({ choice, onChange, disabled, previewShare, las
             </div>
           </PopoverContent>
         </Popover>
+        {extra}
         {previewShare !== null && (
           <span className="text-[11px] text-muted-foreground" data-testid="kreto-estimate">
             About {sharePctLabel(previewShare)} of what's left today

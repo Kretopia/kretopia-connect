@@ -6,6 +6,7 @@ import { measuredModelFetch } from '../_shared/measuredModelFetch.ts';
 import { ATTACHMENT_BUCKET, ATTACHMENT_MAX_BYTES, attachmentExpiresAt, attachmentIsLive } from '../_shared/kretoAttachmentPolicy.ts';
 import { corsFor } from '../_shared/guard.ts';
 import { outputTokensFor, type KretoEffort } from '../_shared/kretoProfiles.ts';
+import { KRETO_CONTEXT_SECTIONS } from '../_shared/kretoContext.ts';
 
 const Id = z.string().uuid();
 const Schema = z.discriminatedUnion('mode', [
@@ -19,10 +20,13 @@ const Schema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('chat'), conversation_id: Id, surface: z.string().max(40), surface_context: z.record(z.unknown()).optional(), messages: z.array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(30000) })).min(1).max(60), attachments: z.array(z.object({ id: Id })).max(3).default([]),
     // The Kreto model and effort the person chose, and the estimate handshake (thrive-ai-chat decides; unknown ids run as Auto there).
     profile: z.string().max(20).optional(), effort: z.number().int().min(1).max(4).optional(),
-    confirm_supported: z.boolean().optional(), confirm_estimate: z.boolean().optional() }),
+    confirm_supported: z.boolean().optional(), confirm_estimate: z.boolean().optional(),
+    // Which Kretopia data Kreto may see for this message, and whether it may use and learn from memory.
+    context: z.union([z.literal('auto'), z.array(z.enum(KRETO_CONTEXT_SECTIONS)).max(KRETO_CONTEXT_SECTIONS.length)]).optional(),
+    memory: z.boolean().optional() }),
 ]);
-/** Which Kreto model and effort answered: passed through from thrive-ai-chat so the composer can say so. Never the model behind them. */
-const KRETO_ROUTE_HEADERS = ['X-Kreto-Profile', 'X-Kreto-Effort', 'X-Kreto-Suggest-Effort', 'X-Kreto-Notice', 'X-Kreto-Share'];
+/** Which Kreto model and effort answered, and which Kretopia data it drew on: passed through from thrive-ai-chat. Never the model behind them. */
+const KRETO_ROUTE_HEADERS = ['X-Kreto-Profile', 'X-Kreto-Effort', 'X-Kreto-Suggest-Effort', 'X-Kreto-Notice', 'X-Kreto-Share', 'X-Kreto-Context'];
 /** What is left of today's token allowance on this ledger (the one the composer shows), before this request. Null when uncapped or unreadable. */
 async function tokensLeftToday(admin: Parameters<typeof gateAiCall>[0], userId: string): Promise<number | null> {
   try {
