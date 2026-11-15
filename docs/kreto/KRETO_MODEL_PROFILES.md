@@ -47,11 +47,13 @@ Effort sets the caps on the server. The user sees the label and the estimate, ne
 | 1 | **Quick** | T1 (T0 for Signal) | 300 | 16 | asks at 25% or more of what's left today; stops when it doesn't fit |
 | 2 | **Balanced** | T1; T2 only for documents (Forge) and longer plans (Vision), as today | 400 on T1, 800 on T2 | 40 (as today) | same |
 | 3 | **Deep** | T2 | 1,200 | 40 | same |
-| 4 | **Maximum** | T3 (off: runs on T2 and says so) | 2,000 | 40 | same |
+| 4 | **Maximum** | T3 for admins and active Premium plans; T2 for everyone else, and it says so | 2,000 | 40 | same |
 
 An explicit profile choice uses that profile's own tier at the chosen effort. Auto suggests a higher effort when it capped the tier (offered, never taken).
 
-**Phase 3 targets** (not built yet): a rolling summary plus the last 4 / 8 / 12 / 20 turns instead of raw history; context scope by effort (identity + chosen sections, compact → everything chosen); tool calls 1 / 2 / 4 / 6; planner turns 1 / 2 / 3 / 3; web sources 0 / ≤ 5 / ≤ 10 / ≤ 20 once web research exists.
+**Phase 3, as built** (Kretopia/kretopia-connect#364): context is chosen in the composer, not by effort. Auto sends the sections the message or page is about in detail and the rest as a one-line summary; "only what I choose" shares the ticked sections and nothing else. A memory switch stops both reading and learning.
+
+**Still targets** (need a migration or a later phase): a rolling summary plus the last 4 / 8 / 12 / 20 turns instead of raw history (`ai_conversations.summary`); tool calls 1 / 2 / 4 / 6 and planner turns 1 / 2 / 3 / 3 (Phase 4); web sources 0 / ≤ 5 / ≤ 10 / ≤ 20 once web research exists.
 
 The existing orchestrator ceiling (`MAX_TURNS = 3`) stays the hard limit for planner turns at every level.
 
@@ -112,10 +114,10 @@ Evaluated in order by `resolveKretoRoute()`; the first match wins, then the effo
 | Daily message and token allowance | Cloud `try_reserve_ai_credit` (`kreto_message`, `kreto_tokens`) | exists |
 | Global daily envelope | `ai_credit_envelope` (0.167 credits) | exists |
 | Unsettled receipts block | `gateAiCall` | exists |
-| **Weekly credit allowance per tier** | settled receipts (`ai_model_calls.credits`) since Monday 00:00 UTC; `WEEKLY_CREDIT_ALLOWANCE` | built, unset: every plan is `null` until the amounts are decided (no migration needed to read it) |
+| **Weekly credit allowance per tier** | settled receipts (`ai_model_calls.credits`) since Monday 00:00 UTC; `WEEKLY_CREDIT_ALLOWANCE` | built (decided 2026-11-15): free 0.5, pro and brand_pro 2, creator_pro 5, founder and brand_enterprise 10; unknown plan gets free; admins uncapped |
 | **Per-request share threshold** | `DEFAULT_CONFIRM_SHARE` = 25% of what's left today (of the week once a weekly allowance is set) | built (Phase 2); composer only, other callers are not asked |
 | **Hard stop when remaining < estimate** | thrive-ai-chat, before counting, saving or reserving | built (Phase 2); applies to every caller, even when confirmed |
-| Expensive profiles opt-in | preferences | new |
+| Deepest tier (Kreto Oracle, Maximum on Vision) | admin role or an active/trialing Premium plan (`deepTierFor`) | built (decided 2026-11-15) |
 | Voice seconds per day | `consume_voice_seconds` | exists (not enforced while Premium is off) |
 
 The weekly window resets Monday 00:00 UTC (as built; the daily window resets at midnight UTC). The UI shows the reset time in the user's local time.
@@ -153,9 +155,9 @@ Voice: first person, short, no emoji, never "AI", never a provider or model id.
 - Under the threshold: a quiet "About 6% of what's left today" beside the picker.
 - Over the threshold: "This needs about 40% of what's left today. Run it?" [Run it] [Use Quick] (built; "this week" once a weekly allowance is set)
 - Over the remaining allowance: "This needs more than you have left today. It comes back at midnight UTC. Quick gives a lighter answer." (built; the week version says "It comes back on Monday")
-- Switched off: "Kreto Oracle isn't switched on yet. I can run this with Kreto Vision." (built)
+- Deepest tier not on this plan: "Kreto Oracle is on Premium for now. I can run this with Kreto Vision." (built)
 - Plan limit: "Kreto Forge is on paid plans. I can run this with Kreto Pulse." (built; only once Premium is enforced)
-- Deepest tier off: "The deepest tier isn't switched on yet, so Kreto Vision ran at Deep strength." (built)
+- Maximum without the deepest tier: "The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength." (built)
 - Fallback (Phase 3): "Kreto Vision is busy right now. I answered with Kreto Pulse."
 - Web consent: "This needs the web. Search this time, always, or never?"
 

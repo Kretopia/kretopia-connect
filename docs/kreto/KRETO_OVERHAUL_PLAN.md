@@ -291,7 +291,7 @@ Every row of §12 is a migration and needs your approval. Order: (1) additive co
 2. Which profiles each tier may use (suggest Free: Signal, Pulse, Echo, Studio, Scout; paid: all; Oracle opt-in for paid only).
 3. Default effort (suggest Balanced) and whether Maximum always confirms.
 4. Keep Kreto Forge? For creatives it fits structured outputs (decks, rate cards, JSON layouts) better than code; suggest renaming its use to "structured work" or dropping it.
-5. Which durable memory store survives (`copilot_memories` or `thrive_memory`).
+5. Which durable memory store survives (`copilot_memories` or `thrive_memory`). Until decided, both are visible and deletable on the memory page (Kretopia/kretopia-connect#364); unifying them is a migration.
 6. Desk path `draft_invoice`/`draft_quote`: keep immediate drafts (never sent) or require approval.
 7. `remove_collaborator` and `delete_project` for agents: keep approval, or lock for agents and leave them to the human UI.
 8. Web research default: Ask each time (suggested) or Off.
