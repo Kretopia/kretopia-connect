@@ -3,7 +3,7 @@
 // share of what is left, stops when the request does not fit, and in both cases counts, saves and reserves nothing.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryDb } from "./memoryDb";
-import { GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../../../../supabase/functions/_shared/aiModels";
+import { GEMINI_3_1_PRO, GEMINI_3_8_FLASH, GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../../../../supabase/functions/_shared/aiModels";
 
 const world = vi.hoisted(() => ({
   handler: null as null | ((req: Request) => Promise<Response>),
@@ -12,6 +12,7 @@ const world = vi.hoisted(() => ({
   gate: null as unknown as ReturnType<typeof import("vitest").vi.fn>,
   model: null as unknown as ReturnType<typeof import("vitest").vi.fn>,
   upstream: null as null | (() => Response),
+  render: null as null | unknown[],
 }));
 
 vi.mock("https://deno.land/std@0.168.0/http/server.ts", () => ({ serve: (h: (req: Request) => Promise<Response>) => { world.handler = h; } }));
@@ -22,7 +23,7 @@ vi.mock("../../../../supabase/functions/_shared/kretoIdentity.ts", () => ({ reso
 vi.mock("../../../../supabase/functions/_shared/embed.ts", () => ({ embedText: async () => { throw new Error("no embeddings in tests"); }, toPgVector: () => "" }));
 vi.mock("../../../../supabase/functions/_shared/copilotContext.ts", () => ({
   loadCopilotContext: async () => ({}),
-  renderContextPreamble: () => "USER FACTS: first name Maya.",
+  renderContextPreamble: (...a: unknown[]) => { world.render = a; return "USER FACTS: first name Maya."; },
   getOrCreateCopilotThread: async () => "conv-1",
 }));
 vi.mock("../../../../supabase/functions/_shared/aiRateLimit.ts", () => ({
@@ -47,10 +48,10 @@ beforeAll(async () => {
 });
 afterAll(() => vi.unstubAllGlobals());
 
-const seed = (allowance = 60000, used = 0) =>
+const seed = (allowance = 60000, used = 0, plan: Record<string, unknown> = { subscription_tier: "free" }) =>
   new MemoryDb()
     .seed("ai_conversations", [{ id: "conv-1", user_id: "user-1" }])
-    .seed("profiles", [{ user_id: "user-1", subscription_tier: "free" }])
+    .seed("profiles", [{ user_id: "user-1", ...plan }])
     .seed("ai_credit_config", [{ feature: "kreto_tokens", daily_allowance: allowance }])
     .seed("ai_credit_ledger", used ? [{ user_id: "user-1", feature: "kreto_tokens", window_key: DAY, used, reserved: 0, cap: allowance }] : []);
 
@@ -113,11 +114,57 @@ describe("Kreto model and effort decide the tier and the caps", () => {
   it("an unavailable choice is refused with a named alternative, before anything is counted, saved or reserved", async () => {
     const res = await ask("Decide my pricing for next year", { profile: "oracle", effort: 4 });
     expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ code: "KRETO_PROFILE_UNAVAILABLE", alternative: "vision", error: "Kreto Oracle isn't switched on yet. I can run this with Kreto Vision." });
+    expect(await res.json()).toMatchObject({ code: "KRETO_PROFILE_UNAVAILABLE", alternative: "vision", error: "Kreto Oracle is on Premium for now. I can run this with Kreto Vision." });
     expect(world.model).not.toHaveBeenCalled();
     expect(consumed()).toBe(0);
     expect(world.gate).not.toHaveBeenCalled();
     expect(db().writes("ai_messages", "insert")).toHaveLength(0);
+  });
+});
+
+describe("the deepest tier: admins and active Premium accounts only, for now", () => {
+  it("an admin runs Kreto Oracle on the deepest tier", async () => {
+    world.db = seed().seed("user_roles", [{ user_id: "user-1", role: "admin" }]);
+    const res = await ask("Decide my pricing for next year", { profile: "oracle", effort: 2 });
+    expect(res.status).toBe(200);
+    expect(sentBody().model).toBe(GEMINI_3_1_PRO);
+    expect(res.headers.get("X-Kreto-Profile")).toBe("oracle");
+  });
+
+  it("an active Premium plan runs it too; a cancelled one is offered Kreto Vision", async () => {
+    world.db = seed(60000, 0, { subscription_tier: "creator_pro", subscription_status: "active" });
+    expect((await ask("Decide my pricing for next year", { profile: "oracle", effort: 2 })).status).toBe(200);
+    expect(sentBody().model).toBe(GEMINI_3_1_PRO);
+    world.db = seed(60000, 0, { subscription_tier: "creator_pro", subscription_status: "canceled" });
+    const res = await ask("Decide my pricing for next year", { profile: "oracle", effort: 2 });
+    expect(res.status).toBe(400);
+    expect((await res.json()).alternative).toBe("vision");
+  });
+});
+
+describe("the weekly allowance", () => {
+  const spent = (credits: number) => [{ user_id: "user-1", feature: "kreto_message", credits, created_at: new Date().toISOString() }];
+
+  it("a free account that has used its week is stopped, and told when it comes back", async () => {
+    world.db = seed().seed("ai_model_calls", spent(0.5));
+    const res = await ask("What's due this week?", { confirm_estimate: true });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({ code: "KRETO_ALLOWANCE_INSUFFICIENT", basis: "week", error: "This needs more than you have left this week. It comes back on Monday. Quick gives a lighter answer." });
+    expect(world.model).not.toHaveBeenCalled();
+  });
+
+  it("near the end of the week it asks first, in terms of the week", async () => {
+    world.db = seed().seed("ai_model_calls", spent(0.488));
+    const res = await ask("What's due this week?", { confirm_supported: true });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "KRETO_CONFIRM", basis: "week" });
+  });
+
+  it("last week's spend does not count, and an admin has no weekly cap", async () => {
+    world.db = seed().seed("ai_model_calls", [{ user_id: "user-1", credits: 5, created_at: new Date(Date.now() - 8 * 86400000).toISOString() }]);
+    expect((await ask("What's due this week?")).status).toBe(200);
+    world.db = seed().seed("ai_model_calls", spent(50)).seed("user_roles", [{ user_id: "user-1", role: "admin" }]);
+    expect((await ask("What's due this week?")).status).toBe(200);
   });
 });
 
@@ -180,6 +227,56 @@ describe("the estimate guard", () => {
     const res = await ask("What's due this week?");
     expect(res.status).toBe(200);
     expect(world.model).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("what Kreto sees, and what it says it used", () => {
+  const plan = () => world.render?.[3] as { mode: string; depth: Record<string, string>; memory: boolean };
+  const extractorCalls = () => (fetch as unknown as ReturnType<typeof vi.fn>).mock.calls.filter(([url]) => String(url).includes("thrive-memory-extract"));
+  const noted = [
+    { user_id: "user-1", kind: "vendor", label: "Preferred DoP: Marcus", body: null, importance: 3, last_used_at: null },
+    { user_id: "user-1", kind: "follow_up", label: "Send the treatment to Lena", body: null, importance: 2, last_used_at: null },
+  ];
+  beforeEach(() => (fetch as unknown as ReturnType<typeof vi.fn>).mockClear());
+
+  it("the composer's choice reaches the facts: only the ticked parts, and the reply names what it drew on", async () => {
+    world.db = seed().seed("thrive_memory", noted);
+    const res = await ask("Where are we on the Night Shoot edit?", { context: ["projects"] });
+    expect(plan()).toMatchObject({ mode: "chosen", depth: { passport: "omitted", projects: "detail", money: "omitted", events: "omitted" }, memory: true });
+    expect(res.headers.get("X-Kreto-Context")).toBe("projects,memory:2");
+    expect(res.headers.get("Access-Control-Expose-Headers")).toMatch(/X-Kreto-Context/);
+    expect(sentBody().messages[0].content).toMatch(/Preferred DoP: Marcus/);
+  });
+
+  it("Auto sends what the message is about in detail and the rest as a summary", async () => {
+    await ask("Which invoices are still unpaid?", { context: "auto" });
+    expect(plan()).toMatchObject({ mode: "auto", depth: { money: "detail", passport: "summary", projects: "summary", events: "summary" } });
+  });
+
+  it("memory off: nothing remembered is read, nothing is learned from the message, and none is claimed", async () => {
+    world.db = seed().seed("thrive_memory", noted);
+    const res = await ask("Marcus is my go-to DoP for night shoots from now on", { context: "auto", memory: false });
+    expect(res.status).toBe(200);
+    expect(sentBody().messages[0].content).not.toMatch(/Preferred DoP|treatment to Lena/);
+    expect(extractorCalls()).toHaveLength(0);
+    expect(res.headers.get("X-Kreto-Context") ?? "").not.toMatch(/memory/);
+  });
+
+  it("memory on: the same statement is handed to the extractor", async () => {
+    await ask("Marcus is my go-to DoP for night shoots from now on", { context: "auto" });
+    expect(extractorCalls()).toHaveLength(1);
+  });
+
+  it("Projects not shared: the open project's facts are not even looked up", async () => {
+    world.db = seed().seed("studio_facts", [{ project_id: "proj-1", kind: "budget", label: "Budget", value: "12k", importance: 5 }]);
+    await ask("What should the budget be?", { context: ["money"], surface_context: { project_id: "proj-1" } });
+    expect(world.rpc.mock.calls.some(([name]) => name === "user_has_project_access")).toBe(false);
+    expect(sentBody().messages[0].content).not.toMatch(/STUDIO BRAIN/);
+  });
+
+  it("a caller with no choice keeps everything, as before", async () => {
+    await ask("What's due this week?");
+    expect(plan()).toMatchObject({ mode: "full", memory: true });
   });
 });
 

@@ -9,6 +9,7 @@ type StreamArgs = {
   signal?: AbortSignal;
 };
 const mocks = vi.hoisted(() => ({
+  account: { isAdmin: false, subscribed: false, tier: "free" },
   stream: vi.fn(),
   load: vi.fn(),
   create: vi.fn(),
@@ -16,6 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => mocks.navigate }));
+vi.mock("@/hooks/useUserRole", () => ({ useUserRole: () => ({ isAdmin: mocks.account.isAdmin }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ subscriptionInfo: { subscribed: mocks.account.subscribed, tier: mocks.account.tier } }) }));
 
 vi.mock("@/lib/thriveCopilot", () => ({
   streamCopilot: (args: StreamArgs) => mocks.stream(args),
@@ -50,6 +53,7 @@ function giveThreadLayout(thread: HTMLElement, { scrollHeight, clientHeight, scr
 }
 
 beforeEach(() => {
+  mocks.account = { isAdmin: false, subscribed: false, tier: "free" };
   mocks.stream.mockReset();
   mocks.load.mockReset().mockResolvedValue([]);
   mocks.create.mockReset().mockResolvedValue("conv-1");
@@ -264,15 +268,58 @@ describe("InlineKretoChat: Kreto model and effort", () => {
     expect(mocks.stream).toHaveBeenCalledTimes(1);
   });
 
-  it("the picker lists the Kreto models, shows one that is switched off as unavailable, and remembers a pick", async () => {
+  it("the picker lists the Kreto models, shows Oracle as Premium for a free account, and remembers a pick", async () => {
     render(<Harness />);
     fireEvent.click(picker(/Kreto model and effort: Auto, Balanced/));
-    // Oracle stays off until the deepest tier is switched on (kretoProfilesClient.test keeps this in step with the server).
+    // Oracle needs the deepest tier: admins and Premium for now (kretoProfilesClient.test keeps this in step with the server).
     const oracle = await screen.findByRole("radio", { name: /Kreto Oracle/ });
     expect(oracle).toBeDisabled();
-    expect(oracle).toHaveTextContent("Not switched on yet");
+    expect(oracle).toHaveTextContent("On Premium for now");
     fireEvent.click(screen.getByRole("radio", { name: /Kreto Ledger/ }));
     fireEvent.click(screen.getByRole("button", { name: "Maximum" }));
     expect(JSON.parse(localStorage.getItem("kreto:choice:v1")!)).toEqual({ profile: "ledger", effort: 4 });
+  });
+
+  it("an admin or an active Premium account can pick Kreto Oracle", async () => {
+    mocks.account = { isAdmin: true, subscribed: false, tier: "free" };
+    const { unmount } = render(<Harness />);
+    fireEvent.click(picker(/Kreto model and effort: Auto, Balanced/));
+    expect(await screen.findByRole("radio", { name: /Kreto Oracle/ })).toBeEnabled();
+    unmount();
+    mocks.account = { isAdmin: false, subscribed: true, tier: "creator_pro" };
+    render(<Harness />);
+    fireEvent.click(picker(/Kreto model and effort: Auto, Balanced/));
+    const oracle = await screen.findByRole("radio", { name: /Kreto Oracle/ });
+    expect(oracle).toBeEnabled();
+    fireEvent.click(oracle);
+    expect(JSON.parse(localStorage.getItem("kreto:choice:v1")!)).toEqual({ profile: "oracle", effort: 2 });
+  });
+
+  it("sends what Kreto may see and the memory switch, and each reply says what it drew on", async () => {
+    localStorage.setItem("kreto:context:v1", JSON.stringify({ context: ["projects", "money"], memory: false }));
+    mocks.stream.mockImplementation(async ({ onRoute, onDelta }: KretoArgs & { context?: unknown; memory?: boolean }) => {
+      onRoute?.({ profile: "ledger", effort: 2, suggestEffort: null, notice: null, sharePct: null, sources: { sections: ["projects", "money"], memories: 0, projectFacts: false } } as never);
+      onDelta("Two invoices are waiting.");
+    });
+    render(<Harness />);
+    expect(screen.getByRole("button", { name: /What Kreto can see: Projects, Money · no memory/ })).toBeInTheDocument();
+    send("Which invoices are still unpaid?");
+    await screen.findByText("Two invoices are waiting.");
+    expect(lastArgs()).toMatchObject({ context: ["projects", "money"], memory: false });
+    expect(screen.getByTestId("kreto-sources")).toHaveTextContent("From your Kretopia data: Projects, Money");
+  });
+
+  it("the context picker switches to only what I choose, ticks a part, turns memory off, and remembers it", async () => {
+    render(<Harness />);
+    fireEvent.click(screen.getByRole("button", { name: /What Kreto can see: Auto/ }));
+    fireEvent.click(await screen.findByRole("radio", { name: /Only what I choose/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Money" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Use what Kreto remembers" }));
+    expect(JSON.parse(localStorage.getItem("kreto:context:v1")!)).toEqual({ context: ["money"], memory: false });
+    mocks.stream.mockImplementation(async ({ onDelta }: KretoArgs) => onDelta("ok"));
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    send("What do I owe?");
+    await screen.findByText("ok");
+    expect(lastArgs()).toMatchObject({ context: ["money"], memory: false });
   });
 });

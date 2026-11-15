@@ -21,8 +21,10 @@ export interface KretoModelOption {
   description: string;
   /** On paid plans once Premium is enforced. */
   paid: boolean;
-  /** False while the server has this profile switched off. */
+  /** False while the server has this profile switched off for everyone. */
   available: boolean;
+  /** Runs only on the deepest tier: for now, admins and Premium accounts (the server decides; this only sets expectations). */
+  deepTier?: boolean;
   unavailableReason?: string;
 }
 
@@ -31,7 +33,7 @@ export const KRETO_MODELS: readonly KretoModelOption[] = [
   { id: "signal", name: "Kreto Signal", description: "Quick answers and one-line edits.", paid: false, available: true },
   { id: "pulse", name: "Kreto Pulse", description: "Everyday production help: tasks, drafts, summaries.", paid: false, available: true },
   { id: "vision", name: "Kreto Vision", description: "Plans and strategy that take several steps.", paid: true, available: true },
-  { id: "oracle", name: "Kreto Oracle", description: "Long research and high-stakes decisions. Uses more of your allowance.", paid: true, available: false, unavailableReason: "Not switched on yet" },
+  { id: "oracle", name: "Kreto Oracle", description: "Long research and high-stakes decisions. Uses more of your allowance.", paid: true, available: true, deepTier: true, unavailableReason: "On Premium for now" },
   { id: "forge", name: "Kreto Forge", description: "Decks, rate cards and structured documents.", paid: true, available: true },
   { id: "echo", name: "Kreto Echo", description: "Short spoken replies for voice.", paid: false, available: true },
   { id: "atlas", name: "Kreto Atlas", description: "Keeps your Kretopia data apart from what would need the web.", paid: false, available: true },
@@ -48,6 +50,9 @@ export const KRETO_EFFORTS: readonly { level: KretoEffort; label: string; descri
 ];
 
 export const DEFAULT_KRETO_CHOICE: KretoChoice = { profile: "auto", effort: 2 };
+
+/** Whether this account can pick the model: switched on, and on the deepest tier only for admins and Premium accounts. */
+export const kretoModelAvailable = (model: KretoModelOption, deepTier: boolean): boolean => model.available && (!model.deepTier || deepTier);
 
 /** Whether to show the "paid plans" tag at all: not while Premium is off, when every account can use every profile. */
 export const SHOW_PAID_TAGS = PREMIUM_ENFORCED;

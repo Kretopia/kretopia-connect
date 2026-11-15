@@ -9,6 +9,7 @@ import {
   KRETO_EFFORTS,
   KRETO_MODELS,
   KRETO_PROFILE_IDS,
+  kretoModelAvailable,
   previewShare,
   readKretoChoice,
   sharePctLabel,
@@ -31,8 +32,12 @@ describe("labels in step with the server", () => {
       const label = KRETO_MODELS.find((m) => m.id === id)!;
       const server = KRETO_PROFILES[id];
       expect(label.paid).toBe(server.paid);
-      const runnable = PRO_TIER_ENABLED || !Object.values(server.tiers).every((t) => t === "pro");
-      expect(label.available).toBe(runnable);
+      // Switched on for everyone, except a profile that only runs on the deepest tier (admins and Premium for now).
+      const deepOnly = Object.values(server.tiers).every((t) => t === "pro");
+      expect(label.available).toBe(true);
+      expect(Boolean(label.deepTier)).toBe(deepOnly && !PRO_TIER_ENABLED);
+      expect(kretoModelAvailable(label, false)).toBe(!deepOnly || PRO_TIER_ENABLED);
+      expect(kretoModelAvailable(label, true)).toBe(true);
     }
     expect(KRETO_MODELS[0].id).toBe("auto");
   });
@@ -60,10 +65,9 @@ describe("the remembered choice", () => {
     expect(readKretoChoice()).toEqual(DEFAULT_KRETO_CHOICE);
     localStorage.setItem("kreto:choice:v1", JSON.stringify({ profile: "made-up", effort: 9 }));
     expect(readKretoChoice()).toEqual(DEFAULT_KRETO_CHOICE);
-    if (!PRO_TIER_ENABLED) {
-      localStorage.setItem("kreto:choice:v1", JSON.stringify({ profile: "oracle", effort: 4 }));
-      expect(readKretoChoice()).toEqual({ profile: "auto", effort: 4 });
-    }
+    // Kreto Oracle is kept: whether this account may run it is the server's call (it answers with Kreto Vision if not).
+    localStorage.setItem("kreto:choice:v1", JSON.stringify({ profile: "oracle", effort: 4 }));
+    expect(readKretoChoice()).toEqual({ profile: "oracle", effort: 4 });
   });
 });
 
@@ -93,8 +97,8 @@ describe("the chat client", () => {
   const sse = (headers: Record<string, string> = {}) => new Response("data: [DONE]\n\n", { status: 200, headers: { "Content-Type": "text/event-stream", ...headers } });
 
   it("reads which Kreto model and effort answered, and decodes the notice", () => {
-    const route = readKretoRoute(new Headers({ "X-Kreto-Profile": "vision", "X-Kreto-Effort": "4", "X-Kreto-Suggest-Effort": "3", "X-Kreto-Notice": encodeURIComponent("The deepest tier isn't switched on yet."), "X-Kreto-Share": "12" }));
-    expect(route).toEqual({ profile: "vision", effort: 4, suggestEffort: 3, notice: "The deepest tier isn't switched on yet.", sharePct: 12 });
+    const route = readKretoRoute(new Headers({ "X-Kreto-Profile": "vision", "X-Kreto-Effort": "4", "X-Kreto-Suggest-Effort": "3", "X-Kreto-Notice": encodeURIComponent("The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength."), "X-Kreto-Share": "12" }));
+    expect(route).toEqual({ profile: "vision", effort: 4, suggestEffort: 3, notice: "The deepest tier is on Premium for now, so Kreto Vision ran at Deep strength.", sharePct: 12, sources: null });
     expect(readKretoRoute(new Headers())).toBeNull();
   });
 
@@ -122,11 +126,11 @@ describe("the chat client", () => {
     const onError = vi.fn();
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ code: "KRETO_ALLOWANCE_INSUFFICIENT", error: "This needs more than you have left today. It comes back at midnight UTC. Quick gives a lighter answer." }), { status: 429 }));
     await streamCopilot({ messages: [{ role: "user", content: "brief" }], surface: "home", conversationId: "conv", onError, onDelta: vi.fn(), onDone: vi.fn() });
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ code: "KRETO_PROFILE_UNAVAILABLE", error: "Kreto Oracle isn't switched on yet. I can run this with Kreto Vision." }), { status: 400 }));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ code: "KRETO_PROFILE_UNAVAILABLE", error: "Kreto Oracle is on Premium for now. I can run this with Kreto Vision." }), { status: 400 }));
     await streamCopilot({ messages: [{ role: "user", content: "brief" }], surface: "home", conversationId: "conv", profile: "oracle", onError, onDelta: vi.fn(), onDone: vi.fn() });
     expect(onError.mock.calls.map((c) => c[0])).toEqual([
       "This needs more than you have left today. It comes back at midnight UTC. Quick gives a lighter answer.",
-      "Kreto Oracle isn't switched on yet. I can run this with Kreto Vision.",
+      "Kreto Oracle is on Premium for now. I can run this with Kreto Vision.",
     ]);
   });
 

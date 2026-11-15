@@ -54,6 +54,15 @@ const KIND_COLOR: Record<string, string> = {
   fact: "bg-muted text-muted-foreground",
 };
 
+/** What Kreto noted on its own from chats: people, vendors, follow-ups (thrive_memory, readable and deletable by the owner). */
+type NotedMemory = {
+  id: string;
+  kind: string;
+  label: string;
+  body: string | null;
+  created_at: string;
+};
+
 export default function CopilotMemory() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +71,7 @@ export default function CopilotMemory() {
   const [adding, setAdding] = useState(false);
   const [newKind, setNewKind] = useState("preference");
   const [newContent, setNewContent] = useState("");
+  const [noted, setNoted] = useState<NotedMemory[]>([]);
 
   const load = async () => {
     if (!user) return;
@@ -77,6 +87,14 @@ export default function CopilotMemory() {
     } else {
       setMemories((data ?? []) as Memory[]);
     }
+    // What Kreto noted by itself. Kreto reads these in chats, so they belong on this page with the rest.
+    const { data: notedRows } = await supabase
+      .from("thrive_memory")
+      .select("id, kind, label, body, created_at")
+      .eq("user_id", user.id)
+      .order("importance", { ascending: false })
+      .order("updated_at", { ascending: false });
+    setNoted((notedRows ?? []) as NotedMemory[]);
     setLoading(false);
   };
 
@@ -112,6 +130,17 @@ export default function CopilotMemory() {
       toast.error("Couldn't delete");
     } else {
       setMemories((m) => m.filter((x) => x.id !== id));
+      toast.success("Forgotten");
+    }
+  };
+
+  const deleteNoted = async (id: string) => {
+    if (!confirm("Delete this note? Kreto will forget it.")) return;
+    const { error } = await supabase.from("thrive_memory").delete().eq("id", id);
+    if (error) {
+      toast.error("Couldn't delete");
+    } else {
+      setNoted((n) => n.filter((x) => x.id !== id));
       toast.success("Forgotten");
     }
   };
@@ -228,6 +257,51 @@ export default function CopilotMemory() {
               </Card>
             ))}
           </div>
+        )}
+
+        {!loading && (
+          <section className="mt-8" aria-labelledby="noted-heading">
+            <h2 id="noted-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              Noted from your chats ({noted.length})
+            </h2>
+            <p className="mt-1 mb-3 text-xs text-muted-foreground">
+              People, vendors and follow-ups Kreto picked up. Money figures and contact details are kept only when you
+              say &ldquo;remember&rdquo;, and nothing is noted from a chat with memory switched off.
+            </p>
+            {noted.length === 0 ? (
+              <Card>
+                <CardContent className="py-6 text-center text-sm text-muted-foreground">Nothing noted yet.</CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-2">
+                {noted.map((n) => (
+                  <Card key={n.id} className="group">
+                    <CardContent className="p-3 flex items-start gap-3">
+                      <Badge variant="secondary" className={`shrink-0 ${KIND_COLOR[n.kind] ?? KIND_COLOR.fact}`}>
+                        {n.kind.replace("_", " ")}
+                      </Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground">{n.label}</p>
+                        {n.body && <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Noted {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100"
+                        onClick={() => deleteNoted(n.id)}
+                        aria-label={`Delete note: ${n.label}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </section>
         )}
 
         <p className="text-xs text-muted-foreground text-center mt-8">

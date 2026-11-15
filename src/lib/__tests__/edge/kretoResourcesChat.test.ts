@@ -96,6 +96,22 @@ describe("kreto-resources chat: Kreto model and effort", () => {
     expect(world.commit).not.toHaveBeenCalled();
   });
 
+  it("what Kreto may see and the memory switch reach the chat function, and the sources come back readable", async () => {
+    world.upstream = vi.fn(async () => new Response("data: [DONE]\n\n", { status: 200, headers: { "Content-Type": "text/event-stream", "X-Kreto-Profile": "pulse", "X-Kreto-Context": "projects,memory:2" } }));
+    const res = await chat({ context: ["projects", "money"], memory: false });
+    expect(forwarded()).toMatchObject({ context: ["projects", "money"], memory: false });
+    expect(res.headers.get("X-Kreto-Context")).toBe("projects,memory:2");
+    expect(res.headers.get("Access-Control-Expose-Headers")).toMatch(/X-Kreto-Context/);
+    await chat({ context: "auto" });
+    expect(forwarded().context).toBe("auto");
+  });
+
+  it("an unknown section is refused before anything is reserved", async () => {
+    const res = await chat({ context: ["wallet"] });
+    expect(res.status).toBe(400);
+    expect(world.gate).not.toHaveBeenCalled();
+  });
+
   it("an effort outside 1 to 4 is refused before anything is reserved", async () => {
     const res = await chat({ effort: 5 });
     expect(res.status).toBe(400);

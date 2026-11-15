@@ -5,6 +5,7 @@ import {
   renderContextPreamble,
   getOrCreateCopilotThread,
 } from "../_shared/copilotContext.ts";
+import { contextSourcesHeader, planKretoContext } from "../_shared/kretoContext.ts";
 import { embedText, toPgVector } from "../_shared/embed.ts";
 import { GEMINI_3_FLASH, GEMINI_FLASH_LITE } from "../_shared/aiModels.ts";
 import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
@@ -12,12 +13,14 @@ import { resolveKretoIdentity } from "../_shared/kretoIdentity.ts";
 import { loadModelPricing, measuredModelFetch } from "../_shared/measuredModelFetch.ts";
 import { ABUSE_CEILING_DAILY_MESSAGES, dailyCapFor, effectiveIsPro } from "../_shared/premiumSwitch.ts";
 import {
-  WEEKLY_CREDIT_ALLOWANCE,
+  deepTierFor,
   estimateCredits,
   guardKretoRequest,
   resolveKretoRoute,
+  isPremiumSubscription,
   sharePct,
   weekStartUtc,
+  weeklyAllowanceFor,
 } from "../_shared/kretoProfiles.ts";
 import {
   gateAiCall,
@@ -35,7 +38,7 @@ const ANON_USER_ID = "00000000-0000-0000-0000-000000000000";
 const estTokens = (s: string) => Math.ceil(s.length / 4);
 
 /** Response headers the composer reads: the thread, and the Kreto model and effort that ran (never the model behind them). */
-const KRETO_EXPOSED_HEADERS = "X-Copilot-Conversation-Id, X-Kreto-Profile, X-Kreto-Effort, X-Kreto-Suggest-Effort, X-Kreto-Notice, X-Kreto-Share";
+const KRETO_EXPOSED_HEADERS = "X-Copilot-Conversation-Id, X-Kreto-Profile, X-Kreto-Effort, X-Kreto-Suggest-Effort, X-Kreto-Notice, X-Kreto-Share, X-Kreto-Context";
 
 /** The service client, as the credit gate takes it. */
 type ServiceClient = Parameters<typeof gateAiCall>[0];
@@ -61,11 +64,11 @@ async function remainingKretoTokens(admin: ServiceClient, userId: string): Promi
 }
 
 /**
- * What is left of this week's credit allowance, from the settled receipts. Null while no weekly allowance is set for the
- * plan (none is yet: WEEKLY_CREDIT_ALLOWANCE), or when the receipts cannot be read; the daily gate still applies.
+ * What is left of this week's credit allowance, from the settled receipts. Null when the account has no weekly allowance
+ * (admins), or when the receipts cannot be read; the daily gate still applies.
  */
-async function weeklyRemainingCredits(admin: ServiceClient, userId: string, tier: string): Promise<number | null> {
-  const allowance = WEEKLY_CREDIT_ALLOWANCE[tier] ?? null;
+async function weeklyRemainingCredits(admin: ServiceClient, userId: string, tier: string, isAdmin: boolean): Promise<number | null> {
+  const allowance = weeklyAllowanceFor(tier, isAdmin);
   if (allowance === null) return null;
   try {
     const { data, error } = await admin
@@ -182,6 +185,8 @@ serve(async (req) => {
       confirm_estimate: confirmEstimate = false,
       confirm_supported: confirmSupported = false,
       kreto_tokens_left: kretoTokensLeft,
+      context: contextChoice,
+      memory: memoryChoice,
       channel,
     } = body as {
       messages: Array<{ role: "user" | "assistant"; content: string }>;
@@ -215,6 +220,10 @@ serve(async (req) => {
        * estimate guard stricter (the lower of this and this backend's own ledger counts), so a caller gains nothing by it.
        */
       kreto_tokens_left?: number;
+      /** Which of the person's Kretopia data Kreto may see: "auto" or a list of sections (kretoContext.ts). Absent: all, as before. */
+      context?: unknown;
+      /** false: Kreto neither reads nor learns from long-term memory for this message. */
+      memory?: boolean;
       /** "voice" when the turn comes from push-to-talk. */
       channel?: string;
     };
@@ -224,6 +233,17 @@ serve(async (req) => {
     const internalUserId = req.headers.get("x-internal-user-id");
     let userId: string | null = null;
     let contextPreamble = "";
+    // What this reply may draw on, and what it did draw on (reported back in X-Kreto-Context: sources, never content).
+    const surfaceSel = surface_context && typeof surface_context === "object" ? (surface_context as Record<string, unknown>) : {};
+    const contextPlan = planKretoContext({
+      include: contextChoice,
+      memory: memoryChoice,
+      text: [...messages].reverse().find((m) => m.role === "user")?.content ?? "",
+      surface: surface ?? null,
+      projectSelected: Boolean(surfaceSel.project_id ?? surfaceSel.active_project_id),
+    });
+    let memoriesUsed = 0;
+    let projectFactsLoaded = false;
     let conversationId: string | null = clientConvId ?? null;
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
 
@@ -383,6 +403,9 @@ serve(async (req) => {
     // Filled from the profile below; used by the Kreto model choice and the daily message count.
     let subscriptionTier = "free";
     let copilotDailyCap: number | null = null;
+    // The deepest tier and the weekly allowance follow the real account: an admin role, or an active Premium plan.
+    let isAdmin = false;
+    let premium = false;
 
     if (resolvedUser) {
       try {
@@ -421,13 +444,14 @@ serve(async (req) => {
           brand_pro: 1000,
           brand_enterprise: -1,
         };
-        const { data: profile } = await admin
-          .from("profiles")
-          .select("subscription_tier")
-          .eq("user_id", user.id)
-          .maybeSingle();
+        const [{ data: profile }, { data: adminRole }] = await Promise.all([
+          admin.from("profiles").select("subscription_tier, subscription_status").eq("user_id", user.id).maybeSingle(),
+          admin.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle(),
+        ]);
         const tier = (profile?.subscription_tier as string) || "free";
         subscriptionTier = tier;
+        isAdmin = Boolean(adminRole);
+        premium = isPremiumSubscription(tier, profile?.subscription_status as string | null);
         // Premium is not enforced yet: a free account is held only by the safety ceiling.
         // Counted further down, once the request is going ahead: a request that stops at the estimate guard (or asks
         // to be confirmed) must not cost a message.
@@ -435,12 +459,12 @@ serve(async (req) => {
 
         // Load the unified context. Bounded internally; never blocks > 2s.
         const ctx = await loadCopilotContext(admin, user.id);
-        contextPreamble = renderContextPreamble(ctx, surface, surface_context);
+        contextPreamble = renderContextPreamble(ctx, surface, surface_context, contextPlan);
 
         // ---- Thrive Brain: retrieve relevant long-term memories ----
         try {
           const latestForMem = [...messages].reverse().find((m) => m.role === "user")?.content;
-          if (latestForMem && latestForMem.length > 3) {
+          if (contextPlan.memory && latestForMem && latestForMem.length > 3) {
             const qEmb = await embedText(latestForMem);
             if (qEmb) {
               const { data: mems } = await admin.rpc("match_copilot_memories", {
@@ -450,6 +474,7 @@ serve(async (req) => {
                 p_min_similarity: 0.55,
               });
               if (Array.isArray(mems) && mems.length) {
+                memoriesUsed += mems.length;
                 const lines = mems
                   .map((m: any) => `- [${m.kind}] ${m.content}`)
                   .join("\n");
@@ -471,7 +496,8 @@ serve(async (req) => {
         // and commands.
         try {
           const latestUserMsg = [...messages].reverse().find((m) => m.role === "user")?.content;
-          if (latestUserMsg && latestUserMsg.trim().length >= 12) {
+          // Memory off for this message: nothing is learned from it either.
+          if (contextPlan.memory && latestUserMsg && latestUserMsg.trim().length >= 12) {
             const projectId =
               (surface_context && typeof surface_context === "object"
                 ? ((surface_context as Record<string, unknown>).project_id ??
@@ -505,16 +531,20 @@ serve(async (req) => {
         }
 
 
-        // ---- Thrive long-term memory ----
+        // ---- Saved people, vendors and follow-ups (memory off: skipped). The composer's choice keeps the 10 most
+        // important instead of 20 on every message.
         try {
-          const { data: tm } = await admin
-            .from("thrive_memory")
-            .select("kind, label, body, importance")
-            .eq("user_id", user.id)
-            .order("importance", { ascending: false })
-            .order("last_used_at", { ascending: false, nullsFirst: false })
-            .limit(20);
+          const { data: tm } = contextPlan.memory
+            ? await admin
+              .from("thrive_memory")
+              .select("kind, label, body, importance")
+              .eq("user_id", user.id)
+              .order("importance", { ascending: false })
+              .order("last_used_at", { ascending: false, nullsFirst: false })
+              .limit(contextPlan.mode === "full" ? 20 : 10)
+            : { data: null };
           if (Array.isArray(tm) && tm.length) {
+            memoriesUsed += tm.length;
             const lines = tm
               .map((m: any) => `- [${m.kind}] ${m.label}${m.body ? ` — ${m.body}` : ""}`)
               .join("\n");
@@ -542,7 +572,8 @@ serve(async (req) => {
           // function in this codebase already uses, gating the fetch, not
           // just the response.
           let hasProjectAccess = false;
-          if (projectId && typeof projectId === "string" && userId) {
+          // Projects not shared for this message: the project's facts stay out too.
+          if (contextPlan.depth.projects !== "omitted" && projectId && typeof projectId === "string" && userId) {
             try {
               const { data } = await admin.rpc("user_has_project_access", {
                 project_id_param: projectId,
@@ -583,6 +614,7 @@ serve(async (req) => {
                   return `- [${e.kind}] ${e.name}${aliases}`;
                 })
                 .join("\n");
+              projectFactsLoaded = true;
               contextPreamble += `\n\nSTUDIO BRAIN (everything dropped into this project — brief facts, budgets, dates, vendors, contacts, references). Treat as ground truth for this Studio. Use naturally, never say "according to Studio Brain":${factLines ? `\nFacts:\n${factLines}` : ""}${entLines ? `\nPeople & vendors:\n${entLines}` : ""}\n`;
             }
           }
@@ -618,6 +650,7 @@ serve(async (req) => {
       projectSelected: Boolean(surfaceCtx.project_id ?? surfaceCtx.active_project_id),
       voice: channel === "voice",
       paidPlan: effectiveIsPro(subscriptionTier !== "free"),
+      proTierEnabled: deepTierFor({ isAdmin, premium }),
     });
     if (!routed.ok) {
       return new Response(
@@ -631,6 +664,8 @@ serve(async (req) => {
     corsHeaders["X-Kreto-Effort"] = String(route.effort);
     if (route.suggestEffort) corsHeaders["X-Kreto-Suggest-Effort"] = String(route.suggestEffort);
     if (route.notice) corsHeaders["X-Kreto-Notice"] = encodeURIComponent(route.notice);
+    const sources = contextSourcesHeader(contextPlan, { memories: memoriesUsed, projectFacts: projectFactsLoaded });
+    if (sources) corsHeaders["X-Kreto-Context"] = sources;
 
     // ---- Hydrate prior conversation history when we have a thread ----
     // We layer: prior persisted history (if any) BEFORE the messages the
@@ -740,7 +775,7 @@ ANTI-HALLUCINATION: USER FACTS is the only source of truth about projects, payme
       const [remainingTokens, pricing, weeklyRemaining] = await Promise.all([
         remainingKretoTokens(admin, gateUserId),
         loadModelPricing(admin, model).catch(() => null),
-        weeklyRemainingCredits(admin, gateUserId, subscriptionTier),
+        weeklyRemainingCredits(admin, gateUserId, subscriptionTier, isAdmin),
       ]);
       const credits = estimateCredits(tokenEst - maxOutputTokens, maxOutputTokens, pricing);
       const shownLeft = typeof kretoTokensLeft === "number" && Number.isFinite(kretoTokensLeft) && kretoTokensLeft >= 0 ? kretoTokensLeft : null;
