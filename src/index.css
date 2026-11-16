@@ -2388,3 +2388,601 @@ svg.k-gradient-icon {
   text-decoration: none;
   text-decoration-line: none;
 }
+/* =========================================================
+   CHROME NOIR V5 — KRETОPIA HERO
+   Scoped implementation of the supplied HTML reference.
+   ========================================================= */
+
+.chrome-noir-hero {
+  isolation: isolate;
+  background: #030304;
+  padding-top: 0;
+}
+
+.chrome-noir-hero > div[aria-hidden] [data-hero-vignette] {
+  background:
+    radial-gradient(ellipse 52% 22% at 50% 0%, rgba(168,85,247,.055), transparent 74%),
+    radial-gradient(ellipse 34% 18% at 4% 42%, rgba(236,72,153,.045), transparent 76%),
+    radial-gradient(ellipse 34% 18% at 96% 70%, rgba(236,72,153,.035), transparent 78%),
+    linear-gradient(180deg, #030304 0%, #020203 100%) !important;
+}
+
+.chrome-noir-hero .landing-h1 {
+  max-width: 850px;
+  margin: 21px auto 15px;
+  font-family: "Satoshi", var(--font-family-brand), Inter, sans-serif;
+  font-size: clamp(42px, 6.4vw, 78px);
+  line-height: .98;
+  font-weight: 800;
+  letter-spacing: -.07em;
+  color: #fff;
+  text-shadow: 0 0 34px rgba(168,85,247,.10);
+}
+
+.chrome-noir-hero p {
+  font-family: "Satoshi", Inter, sans-serif;
+}
+
+.chrome-noir-hero .k-search-hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  padding: 1px;
+  overflow: visible;
+  border: 0;
+  border-radius: 20px;
+  background: linear-gradient(
+    105deg,
+    rgba(255,255,255,.82),
+    rgba(143,149,158,.25) 18%,
+    rgba(255,255,255,.38) 43%,
+    rgba(255,255,255,.88) 52%,
+    rgba(150,157,168,.22) 75%,
+    rgba(255,255,255,.65)
+  );
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.06),
+    0 0 25px rgba(236,72,153,.12),
+    0 16px 42px rgba(0,0,0,.52);
+}
+
+.chrome-noir-hero .k-search-hero::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  left: 23%;
+  right: 23%;
+  top: -2px;
+  height: 2px;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(90deg,#a855f7,#ec4899,#f97316);
+  filter: blur(5px);
+  opacity: .7;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.chrome-noir-hero .k-search-hero::after {
+  content: none;
+}
+
+.chrome-noir-hero .k-search-hero input {
+  box-sizing: border-box;
+  height: 64px;
+  min-height: 64px;
+  padding-left: 62px;
+  padding-right: 112px;
+  border: 0;
+  border-radius: 19px;
+  background: linear-gradient(165deg,#1a1b20 0%,#090a0c 42%,#121318 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.11);
+  color: #fff;
+  font-family: "Satoshi", Inter, sans-serif;
+  font-size: 15px;
+}
+
+.chrome-noir-hero .k-search-hero input::placeholder {
+  color: #9298a2;
+  opacity: 1;
+}
+
+.chrome-noir-hero .k-search-hero > svg {
+  left: 21px;
+  width: 22px;
+  height: 22px;
+  color: #e9edf2;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+  right: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(112deg,#a855f7 0%,#ec4899 54%,#f97316 100%);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] svg {
+  width: 22px;
+  height: 22px;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"]:hover {
+  box-shadow: 0 0 26px rgba(236,72,153,.38);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search by voice"] {
+  right: 66px;
+  width: 42px;
+  height: 42px;
+  color: #e8ebf0;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Clear search"] {
+  right: 66px;
+}
+
+.chrome-noir-hero [aria-label="Explore the creative network"] {
+  gap: 28px;
+  margin-top: 24px;
+  color: #e1e3e8;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.chrome-noir-hero [aria-label="Explore the creative network"] > span:not([aria-hidden]) {
+  gap: 10px;
+}
+
+.chrome-noir-hero .hero-passport-cta {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    0 9px 26px rgba(236,72,153,.17);
+}
+
+.chrome-noir-hero .hero-passport-cta:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.42),
+    0 12px 32px rgba(236,72,153,.3);
+}
+
+@media (max-width: 640px) {
+  .chrome-noir-hero .landing-h1 {
+    font-size: clamp(38px, 10vw, 54px);
+    letter-spacing: -.065em;
+  }
+
+  .chrome-noir-hero .k-search-hero input {
+    height: 60px;
+    min-height: 60px;
+    padding-left: 48px;
+    padding-right: 92px;
+    font-size: 13px;
+  }
+
+  .chrome-noir-hero .k-search-hero > svg {
+    left: 15px;
+    width: 19px;
+    height: 19px;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+    width: 44px;
+    height: 44px;
+    right: 8px;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search by voice"],
+  .chrome-noir-hero .k-search-hero button[aria-label="Clear search"] {
+    right: 56px;
+  }
+
+  .chrome-noir-hero [aria-label="Explore the creative network"] {
+    gap: 12px;
+  }
+}
+
+
+/* CHROME NOIR V5 — Search field geometry and finish */
+.chrome-noir-hero .k-search-hero {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 68px;
+  padding: 1px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: linear-gradient(
+    105deg,
+    rgba(255,255,255,.82),
+    rgba(143,149,158,.25) 18%,
+    rgba(255,255,255,.38) 43%,
+    rgba(255,255,255,.88) 52%,
+    rgba(150,157,168,.22) 75%,
+    rgba(255,255,255,.65)
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.07),
+    0 0 25px rgba(236,72,153,.12),
+    0 16px 42px rgba(0,0,0,.52) !important;
+}
+
+.chrome-noir-hero .k-search-hero input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px !important;
+  min-height: 66px !important;
+  padding: 9px 112px 9px 62px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  outline: none;
+  background: linear-gradient(165deg,#1a1b20 0%,#090a0c 42%,#121318 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.11) !important;
+  color: #fff !important;
+  font-family: "Satoshi", Inter, sans-serif;
+  font-size: 15px !important;
+}
+
+.chrome-noir-hero .k-search-hero input::placeholder {
+  color: #9298a2 !important;
+  opacity: 1;
+}
+
+.chrome-noir-hero .k-search-hero > svg {
+  left: 21px !important;
+  width: 22px !important;
+  height: 22px !important;
+  color: #e9edf2 !important;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search by voice"] {
+  right: 66px !important;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  color: #e8ebf0;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search by voice"]::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  top: 6px;
+  width: 1px;
+  height: 30px;
+  background: rgba(226,231,239,.42);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+  right: 10px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border: 0;
+  border-radius: 14px !important;
+  background: linear-gradient(112deg,#a855f7 0%,#ec4899 54%,#f97316 100%) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 640px) {
+  .chrome-noir-hero .k-search-hero {
+    min-height: 62px;
+  }
+
+  .chrome-noir-hero .k-search-hero input {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding: 8px 94px 8px 48px !important;
+    font-size: 13px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero > svg {
+    left: 15px !important;
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+    right: 8px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search by voice"] {
+    right: 56px !important;
+  }
+}
+
+/* CHROME NOIR V5 — Search field geometry and finish */
+.chrome-noir-hero .k-search-hero {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 68px;
+  padding: 1px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: linear-gradient(
+    105deg,
+    rgba(255,255,255,.82),
+    rgba(143,149,158,.25) 18%,
+    rgba(255,255,255,.38) 43%,
+    rgba(255,255,255,.88) 52%,
+    rgba(150,157,168,.22) 75%,
+    rgba(255,255,255,.65)
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.07),
+    0 0 25px rgba(236,72,153,.12),
+    0 16px 42px rgba(0,0,0,.52) !important;
+}
+
+.chrome-noir-hero .k-search-hero input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px !important;
+  min-height: 66px !important;
+  padding: 9px 112px 9px 62px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  outline: none;
+  background: linear-gradient(165deg,#1a1b20 0%,#090a0c 42%,#121318 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.11) !important;
+  color: #fff !important;
+  font-family: "Satoshi", Inter, sans-serif;
+  font-size: 15px !important;
+}
+
+.chrome-noir-hero .k-search-hero input::placeholder {
+  color: #9298a2 !important;
+  opacity: 1;
+}
+
+.chrome-noir-hero .k-search-hero > svg {
+  left: 21px !important;
+  width: 22px !important;
+  height: 22px !important;
+  color: #e9edf2 !important;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search by voice"] {
+  right: 66px !important;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  color: #e8ebf0;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search by voice"]::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  top: 6px;
+  width: 1px;
+  height: 30px;
+  background: rgba(226,231,239,.42);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+  right: 10px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border: 0;
+  border-radius: 14px !important;
+  background: linear-gradient(112deg,#a855f7 0%,#ec4899 54%,#f97316 100%) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 640px) {
+  .chrome-noir-hero .k-search-hero {
+    min-height: 62px;
+  }
+
+  .chrome-noir-hero .k-search-hero input {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding: 8px 94px 8px 48px !important;
+    font-size: 13px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero > svg {
+    left: 15px !important;
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+    right: 8px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .chrome-noir-hero .k-search-hero button[aria-label="Search by voice"] {
+    right: 56px !important;
+  }
+}
+
+
+/* HERO — grille technique et gradient officiel Kretopia */
+.chrome-noir-hero > div[aria-hidden="true"] > div[class*="opacity-\\[0.16\\]"] {
+  opacity: 1;
+}
+
+.chrome-noir-hero .k-search-hero button[aria-label="Search"] {
+  background: var(--k-text-gradient) !important;
+}
+
+
+/* HERO — grille technique visible */
+.chrome-noir-hero [data-hero-grid] {
+  opacity: 1 !important;
+  background-image:
+    linear-gradient(to right, rgba(205, 213, 226, .105) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(205, 213, 226, .105) 1px, transparent 1px) !important;
+  background-size: 72px 72px !important;
+  background-position: center center !important;
+  -webkit-mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 12%, rgba(0,0,0,.8) 52%, transparent 100%);
+  mask-image: radial-gradient(ellipse 76% 72% at 50% 45%, #000 12%, rgba(0,0,0,.8) 52%, transparent 100%);
+  pointer-events: none;
+}
+
+/* CHROME NOIR — Navbar search overlay: mirrors the landing Hero field. */
+.chrome-noir-search-context .k-search-hero {
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 68px;
+  padding: 1px !important;
+  border: 0 !important;
+  border-radius: 20px !important;
+  background: linear-gradient(
+    105deg,
+    rgba(255,255,255,.82),
+    rgba(143,149,158,.25) 18%,
+    rgba(255,255,255,.38) 43%,
+    rgba(255,255,255,.88) 52%,
+    rgba(150,157,168,.22) 75%,
+    rgba(255,255,255,.65)
+  ) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.07),
+    0 0 25px rgba(236,72,153,.12),
+    0 16px 42px rgba(0,0,0,.52) !important;
+}
+
+.chrome-noir-search-context .k-search-hero::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  left: 23%;
+  right: 23%;
+  top: -2px;
+  height: 2px;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(90deg,#a855f7,#ec4899,#f97316);
+  filter: blur(5px);
+  opacity: .7;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.chrome-noir-search-context .k-search-hero::after {
+  content: none;
+}
+
+.chrome-noir-search-context .k-search-hero input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 66px !important;
+  min-height: 66px !important;
+  padding: 9px 112px 9px 62px !important;
+  border: 0 !important;
+  border-radius: 19px !important;
+  outline: none;
+  background: linear-gradient(165deg,#1a1b20 0%,#090a0c 42%,#121318 100%) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.11) !important;
+  color: #fff !important;
+  font-family: "Satoshi", Inter, sans-serif;
+  font-size: 15px !important;
+}
+
+.chrome-noir-search-context .k-search-hero input::placeholder {
+  color: #9298a2 !important;
+  opacity: 1;
+}
+
+.chrome-noir-search-context .k-search-hero > svg {
+  left: 21px !important;
+  width: 22px !important;
+  height: 22px !important;
+  color: #e9edf2 !important;
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Search by voice"] {
+  right: 66px !important;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  color: #e8ebf0;
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Search by voice"]::after {
+  content: "";
+  position: absolute;
+  right: -9px;
+  top: 6px;
+  width: 1px;
+  height: 30px;
+  background: rgba(226,231,239,.42);
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Search"] {
+  right: 10px !important;
+  width: 48px !important;
+  height: 48px !important;
+  border: 0;
+  border-radius: 14px !important;
+  background: var(--k-text-gradient) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Search"] svg {
+  width: 22px;
+  height: 22px;
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Search"]:hover {
+  box-shadow: 0 0 26px rgba(236,72,153,.38);
+}
+
+.chrome-noir-search-context .k-search-hero button[aria-label="Clear search"] {
+  right: 66px !important;
+}
+
+@media (max-width: 640px) {
+  .chrome-noir-search-context .k-search-hero {
+    min-height: 62px;
+  }
+
+  .chrome-noir-search-context .k-search-hero input {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding: 8px 94px 8px 48px !important;
+    font-size: 13px !important;
+  }
+
+  .chrome-noir-search-context .k-search-hero > svg {
+    left: 15px !important;
+    width: 19px !important;
+    height: 19px !important;
+  }
+
+  .chrome-noir-search-context .k-search-hero button[aria-label="Search"] {
+    right: 8px !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  .chrome-noir-search-context .k-search-hero button[aria-label="Search by voice"] {
+    right: 56px !important;
+  }
+}
