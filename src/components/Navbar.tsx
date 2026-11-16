@@ -211,7 +211,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
     >
       <UnifiedSearchDropdown
         variant="hero"
-        placeholder="People, projects, gigs…"
+        placeholder="Search projects, roles, people, or opportunities…"
         autoFocus
         resultsMaxHeight="var(--k-search-room)"
         onSelect={!user ? (result) => navigate(

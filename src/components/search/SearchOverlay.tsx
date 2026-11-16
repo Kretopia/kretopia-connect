@@ -43,7 +43,7 @@ export function SearchOverlay({ open, onOpenChange, trigger, title = "Search Kre
           style={style}
           className={cn(
             // Centred with auto margins, not a translate: the open animation drives `transform` and would knock a translate off centre.
-            "k-search-overlay fixed inset-x-0 z-50 mx-auto w-[min(calc(34rem+2cm),calc(100vw-2rem))]",
+            "k-search-overlay chrome-noir-search-context fixed inset-x-0 z-50 mx-auto w-[min(930px,calc(100vw-2rem))]",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-150",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:duration-100",
             "motion-reduce:animate-none focus-visible:outline-none",
