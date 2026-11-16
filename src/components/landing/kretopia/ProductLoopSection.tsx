@@ -1,205 +1,154 @@
+/**
+ * ProductLoopSection — "Your Passport does more." Ties Passport, Scout,
+ * Match, Studio and completed work together as one closed loop instead of
+ * five unrelated chapters. Real <button> elements, keyboard-operable,
+ * hover or click sets the active stage; explanation text is fixed (no
+ * fake data, no per-stage metrics). Mobile falls back to a vertical step
+ * list — the same six stages, same copy, no horizontal loop geometry to
+ * fight on narrow screens.
+ */
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
+import { analytics } from "@/lib/analytics";
+import { cn } from "@/lib/utils";
 
-const STEPS = [
-  {
-    key: "passport",
-    label: "Passport",
-    destination: "/profile",
-    icon: "passport",
-    description: "Your professional identity",
-  },
-  {
-    key: "scout",
-    label: "Scout",
-    destination: "/scout",
-    icon: "scout",
-    description: "Discover opportunities",
-  },
-  {
-    key: "match",
-    label: "Match",
-    destination: "/match",
-    icon: "match",
-    description: "Connect with people",
-  },
-  {
-    key: "studio",
-    label: "Studio",
-    destination: "/desk",
-    icon: "studio",
-    description: "Build and deliver projects",
-  },
-  {
-    key: "completed-work",
-    label: "Completed Work",
-    destination: "/credits",
-    icon: "success",
-    description: "Turn work into proof",
-  },
-  {
-    key: "stronger-passport",
-    label: "Stronger Passport",
-    destination: "/profile",
-    icon: "generate",
-    description: "Grow your professional record",
-  },
+const STAGES = [
+  { key: "passport", icon: "passport", label: "Passport", body: "Your record of what you've actually done." },
+  { key: "scout", icon: "scout", label: "Scout", body: "Finds the gigs and briefs that fit your record." },
+  { key: "match", icon: "match", label: "Match", body: "Connects you with the right collaborators." },
+  { key: "studio", icon: "studio", label: "Studio", body: "Where the work happens, start to finish." },
+  { key: "completed", icon: "success", label: "Completed Work", body: "Real outcomes — credits, payment, proof." },
+  { key: "stronger", icon: "passport", label: "Stronger Passport", body: "Every finished project adds to your record." },
 ] as const;
 
+const stageAppearance = (active: boolean) => active
+  ? "border-foreground/20 bg-foreground/10 text-foreground"
+  : "border-foreground/10 bg-foreground/[0.025] text-muted-foreground";
+
 export const ProductLoopSection = () => {
+  const [active, setActive] = useState(0);
+
+  const setStage = (i: number) => {
+    setActive(i);
+    analytics.featureUsed("landing_product_loop_stage", { stage: STAGES[i].key });
+  };
+
   return (
     <section
       id="chapter-loop"
-      className="landing-section relative overflow-hidden"
+      className="landing-section relative"
       aria-labelledby="product-loop-title"
     >
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-40 top-12 h-[420px] w-[420px] rounded-full blur-[120px]"
-        style={{ background: "hsl(var(--foreground) / 0.035)" }}
-      />
-
       <div className="relative mx-auto max-w-[1320px]">
         <motion.div
           initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7 }}
-          className="grid items-end gap-6 lg:grid-cols-12 lg:gap-16"
+          className="max-w-xl"
         >
-          <div className="lg:col-span-7">
-            <p className="landing-eyebrow mb-4">One connected ecosystem</p>
-            <h2
-              id="product-loop-title"
-              data-kreto-backflip
-              className="landing-h2 landing-glow"
-            >
-              Your work creates
-              <br />
-              <span className="landing-accent">what comes next</span>
-            </h2>
-          </div>
-
-          <p className="landing-sub max-w-xl lg:col-span-5 lg:pb-1">
-            Kretopia connects your professional identity, the opportunities
-            and people you discover, the projects you build and the outcomes
-            you can prove. Each part gives the next one more meaning.
+          <p className="landing-eyebrow mb-4">Your Passport does more</p>
+          <h2 id="product-loop-title" data-kreto-backflip className="landing-h2 landing-glow">
+            {/* Two-line title contract: plain line + gradient line, no
+                trailing period (landing-wide rule). */}
+            Your past work should help create<br />
+            <span className="landing-accent">your next opportunity</span>
+          </h2>
+          <p className="landing-sub mt-5">
+            As your Passport grows, Kretopia understands more about what you do, who you've worked with and where you
+            want to go next. That powers everything around it.
           </p>
         </motion.div>
 
+        {/* Desktop: horizontal chain with a loop-back cue */}
         <motion.div
           initial={false}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.7, delay: 0.1 }}
-          className="mt-12"
+          className="mt-12 hidden lg:flex items-center gap-1"
         >
-          <div
-            className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6 xl:gap-4"
-            aria-label="The Kretopia product journey"
-          >
-            {STEPS.map((step, index) => (
-              <div key={step.key} className="relative min-w-0">
-                <motion.div
-                  initial={false}
-                  whileHover="hover"
-                  className="group relative flex min-h-[132px] w-full flex-col items-center justify-center overflow-hidden rounded-[16px] border border-white/[0.12] bg-[linear-gradient(150deg,#1A1B20_7.74%,#0B0C10_92.26%)] px-3 py-5 text-center transition-colors duration-300 ease-out hover:border-white/25 hover:bg-[linear-gradient(150deg,#22232A_7.74%,#101116_92.26%)] hover:shadow-[0_16px_38px_-22px_rgba(180,38,220,0.4)]"
-                  variants={{
-                    rest: { y: 0 },
-                    hover: { y: -3 },
-                  }}
-                  animate="rest"
+          {STAGES.map(({ key, icon, label }, i) => {
+            const isActive = i === active;
+            return (
+              <div key={key} className="flex items-center gap-1 flex-1">
+                <button
+                  type="button"
+                  onMouseEnter={() => setStage(i)}
+                  onFocus={() => setStage(i)}
+                  onClick={() => setStage(i)}
+                  aria-pressed={isActive}
+                  className={cn(
+                    "flex w-full flex-col items-center gap-2 rounded-2xl border p-4 text-center transition-colors",
+                    stageAppearance(isActive),
+                  )}
                 >
+                  <KretopiaIcon name={icon} size={20} className="h-5 w-5" />
                   <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-x-5 top-0 h-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                    style={{ backgroundImage: "var(--k-text-gradient)" }}
-                  />
-
-                  <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035] transition-all duration-300 group-hover:border-white/[0.14] group-hover:bg-white/[0.07]">
-                    <KretopiaIcon
-                      name={step.icon}
-                      size={25}
-                      paint="gradient"
-                      className="transition-transform duration-300 group-hover:scale-110"
-                    />
-                  </span>
-
-                  <span className="relative grid min-h-[32px] w-full place-items-center">
-                    <motion.span
-                      variants={{
-                        rest: { opacity: 1, y: 0, filter: "blur(0px)" },
-                        hover: { opacity: 0, y: -7, filter: "blur(3px)" },
-                      }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
-                      className="col-start-1 row-start-1 text-[10px] font-semibold uppercase leading-4 tracking-[1.15px] text-[#E0E0E8] sm:text-[11px]"
-                      style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-                    >
-                      {step.label}
-                    </motion.span>
-
-                    <motion.span
-                      variants={{
-                        rest: { opacity: 0, y: 7, filter: "blur(3px)" },
-                        hover: { opacity: 1, y: 0, filter: "blur(0px)" },
-                      }}
-                      transition={{ duration: 0.28, delay: 0.04, ease: "easeOut" }}
-                      className="col-start-1 row-start-1 text-[10px] font-semibold leading-4 text-white sm:text-[11px]"
-                      style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-                    >
-                      {step.description}
-                    </motion.span>
-                  </span>
-
-                  <motion.span
-                    variants={{
-                      rest: { opacity: 1, y: 0 },
-                      hover: { opacity: 0, y: 5 },
-                    }}
-                    transition={{ duration: 0.2 }}
-                    className="mt-1.5 text-[10px] leading-4 text-[#858591]"
+                    className="text-[10px] font-bold uppercase tracking-[0.14em]"
                     style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
                   >
-                    {step.description}
-                  </motion.span>
-                </motion.div>
-
-                {index < STEPS.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute -right-[11px] top-1/2 z-10 hidden h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full border border-white/[0.09] bg-[#0A0A0D] text-white/45 xl:flex"
-                  >
-                    <KretopiaIcon name="arrow-right" size={11} />
+                    {label}
                   </span>
+                </button>
+                {i < STAGES.length - 1 ? (
+                  <KretopiaIcon name="arrow-right" size={16} className="shrink-0 text-muted-foreground" />
+                ) : (
+                  <KretopiaIcon name="refresh" size={16} className="shrink-0 text-muted-foreground" />
                 )}
               </div>
-            ))}
-          </div>
-
-          <div className="mt-6 flex flex-col items-center justify-center gap-2 text-center">
-            <div className="flex items-center gap-2">
-              <KretopiaIcon
-                name="refresh"
-                size={15}
-                paint="gradient"
-                aria-hidden="true"
-              />
-              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/65">
-                Every completed project strengthens your Passport.
-              </p>
-            </div>
-            <div
-              aria-hidden="true"
-              className="h-px w-24 opacity-50"
-              style={{ backgroundImage: "var(--k-text-gradient)" }}
-            />
-          </div>
+            );
+          })}
         </motion.div>
 
-        <p className="mt-7 text-center text-xs text-muted-foreground/60">
-          Kreto accompanies the journey — from the first connection to the
-          completed work.
-        </p>
+        {/* Mobile: vertical step list */}
+        <motion.div
+          initial={false}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7, delay: 0.1 }}
+          className="mt-10 flex lg:hidden flex-col gap-2"
+        >
+          {STAGES.map(({ key, icon, label, body }, i) => {
+            const isActive = i === active;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setStage(isActive ? active : i)}
+                aria-pressed={isActive}
+                className={cn(
+                  "flex items-start gap-3 rounded-2xl border p-4 text-left transition-colors",
+                  stageAppearance(isActive),
+                )}
+              >
+                <KretopiaIcon name={icon} size={20} className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>
+                  <p
+                    className="w-fit text-[10px] font-bold uppercase tracking-[0.14em] mb-1"
+                    style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+                  >
+                    {label}
+                  </p>
+                  <p className="text-xs text-muted-foreground" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+                    {body}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </motion.div>
+
+        {/* Active stage explanation — desktop only, mobile shows it inline per-card above */}
+        <div className="hidden lg:block mt-6 min-h-[3.5rem]">
+          <p className="text-sm text-muted-foreground max-w-lg" style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}>
+            <span className="k-gradient-text" style={{ fontWeight: 700 }}>
+              {STAGES[active].label}.
+            </span>{" "}
+            {STAGES[active].body}
+          </p>
+        </div>
       </div>
     </section>
   );

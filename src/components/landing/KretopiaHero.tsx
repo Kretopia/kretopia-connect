@@ -66,8 +66,8 @@ import kretoArmUrl from "@/assets/brand/kreto/hero-wave-hd-arm.webp";
 /** Headline, split into words per line so each can resolve out of a blur on
  *  load. Spacing between words comes from a margin on every span but the
  *  line's last, not a text-node space (which is what was collapsing). */
-const LINE_1 = ["Find", "the", "work"];
-const LINE_2 = ["that", "moves", "you"];
+const LINE_1 = ["Find", "work", "that", "fits"];
+const LINE_2 = ["what", "you", "do"];
 
 // Sampled from /logokretopia-removebg-preview.png — see file header. The
 // stops now live once in index.css (--k-text-gradient) because every
@@ -328,7 +328,7 @@ export const KretopiaHero = () => {
   return (
     <section
       id="kretopia-hero"
-      className="chrome-noir-hero relative flex min-h-0 items-center overflow-visible"
+      className="relative flex min-h-[calc(100svh-4rem)] items-center sm:min-h-[calc(100svh-5rem)]"
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
@@ -354,11 +354,11 @@ export const KretopiaHero = () => {
             plastered across the background. */}
         <motion.div className="absolute inset-0 flex items-center justify-center" style={{ x: fieldX, y: fieldY }}>
           <div
-            className="h-[390px] w-[76%] max-w-none rounded-none blur-[28px]"
+            className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
             style={{
               background:
-                "radial-gradient(ellipse at 50% 38%, rgba(168,85,247,.08), rgba(236,72,153,.035) 40%, transparent 73%)",
-              opacity: 1,
+                "radial-gradient(circle, #4012F8 0%, #A516C5 30%, #F62489 60%, #FFA722 85%, transparent 100%)",
+              opacity: 0.32,
             }}
           />
         </motion.div>
@@ -366,41 +366,40 @@ export const KretopiaHero = () => {
         {/* Faint signal grid, masked to fade out — the "machine" layer */}
         <div
           className="absolute inset-0 opacity-[0.16]"
-          data-hero-grid
           style={{
             backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px)",
-            backgroundSize: "72px 72px",
+              "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)",
+            backgroundSize: "64px 64px",
             maskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
             WebkitMaskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
           }}
         />
       </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[1240px] flex-col items-center px-5 pb-[37px] pt-[66px] text-center sm:px-8">
+      <div className="relative z-[1] mx-auto flex w-full max-w-[900px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-5"
+        >
+          <BrandLogo size="md" showBeta />
+        </motion.div>
+
         <motion.p
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-0 inline-flex items-center gap-[9px] rounded-full border border-white/30 bg-gradient-to-b from-white/[0.09] to-white/[0.015] px-[17px] py-2 text-[9px] font-extrabold uppercase tracking-[0.29em] text-[#e9ebef] shadow-[inset_0_1px_0_rgba(255,255,255,0.11),0_6px_22px_rgba(0,0,0,0.25)] backdrop-blur-md"
+          className="landing-eyebrow mb-6"
         >
-          <span className="h-2 w-2 rounded-full bg-gradient-to-r from-[#A516C5] to-[#F62489] shadow-[0_0_12px_rgba(246,36,137,0.7)]" />
-          THE CREATIVE NETWORK
+          For creative professionals
         </motion.p>
 
         {/* Headline — line 2 is the exact logo gradient, self-contained
             (own lineHeight + vertical padding) so it can't be clipped by
             the H1's own shared line-height. Words still spaced with a
             margin on each span, not a trailing space character. */}
-        <h1
-          className="landing-h1 landing-glow mx-auto w-full max-w-[850px] mt-[21px] mb-[15px]"
-          style={{
-            fontSize: "clamp(42px, 6.4vw, 78px)",
-            fontWeight: 800,
-            lineHeight: 0.98,
-            letterSpacing: "-0.07em",
-          }}
-        >
+        <h1 className="landing-h1 landing-glow max-w-full mx-auto" style={{ lineHeight: 1.25 }}>
           <motion.span
             className="block"
             initial="hidden"
@@ -418,7 +417,7 @@ export const KretopiaHero = () => {
                 </motion.span>
               ))}
             </span>
-            <span className="block" style={{ lineHeight: 1.12, paddingTop: "0.04em", paddingBottom: "0.12em" }}>
+            <span className="block" style={{ lineHeight: 1.3, paddingTop: "0.05em", paddingBottom: "0.2em" }}>
               <span
                 style={{
                   display: "inline-block",
@@ -460,26 +459,21 @@ export const KretopiaHero = () => {
         {/* "Works" search — the app's real UnifiedSearchDropdown,
             untouched internally; its own focus-ring color isn't
             overridden here (see note below on why). */}
-        <motion.p
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, delay: 0.12 }}
-          className="mx-auto mb-[25px] w-full max-w-[760px] px-0 text-center text-[clamp(14px,1.35vw,17px)] leading-[1.7] text-[#c4c7ce]"
-          style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-        >
-          Search creative work, opportunities, people, and brands across Kretopia.
-        </motion.p>
-
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.18 }}
-          className="relative mx-auto w-full max-w-[930px]"
+          transition={{ duration: 0.2 }}
+          // The CTA pair below is 34rem wide: the field stands 1 cm (37.8 px) past it on each side, where there is room.
+          className="relative mt-9 sm:mt-10 w-full max-w-[calc(34rem+2cm)] mx-auto"
         >
-          <UnifiedSearchDropdown
-            variant="hero"
-            placeholder="Search projects, roles, people, or opportunities…"
-          />
+          {/* The designer's label over the field: 11px, bold, uppercase, 0.32em apart, muted. */}
+          <p
+            className="mb-4 text-center text-[11px] font-bold uppercase leading-[1.5] tracking-[0.32em] text-foreground/60"
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+          >
+            Find work on Kretopia
+          </p>
+          <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" />
         </motion.div>
 
         {/* Neutral secondary action follows the active theme; the title
@@ -488,40 +482,40 @@ export const KretopiaHero = () => {
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="mt-7 flex w-full flex-col items-center gap-4"
+          className="mt-6 sm:mt-7 flex w-full flex-col items-center gap-4"
         >
           {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
               so the pair stays level whatever the labels' widths. */}
-          <div className="grid w-full max-w-[430px] grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
             {/* One entry per feature: Match owns people discovery; Scout owns work discovery. */}
             <GlassCta
-              to="/discover"
+              to="/match"
               size="md"
               data-cta="primary"
               onClick={() =>
-                trackLandingCta("hero_explore_discover", "hero", {
-                  label: "Explore Discover",
+                trackLandingCta("hero_build_passport", "hero", {
+                  label: "Explore Match",
                   variant: "signal_field",
                 })
               }
               className="hero-passport-cta k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
-              Explore Discover
+              Explore Match
             </GlassCta>
 
             <OutlineCta
-              to="/auth?next=/profile"
+              to={SCOUT_PATH}
               size="md"
               data-cta="secondary"
               onClick={() =>
-                trackLandingCta("hero_create_passport", "hero", {
-                  label: "Create Your Passport",
+                trackLandingCta("hero_explore_opportunities", "hero", {
+                  label: "Explore Scout",
                   variant: "signal_field",
                 })
               }
               className="k-cta-future w-full rounded-[var(--k-hero-radius)]"
             >
-              Create Your Passport
+              Explore Scout
             </OutlineCta>
           </div>
         </motion.div>
