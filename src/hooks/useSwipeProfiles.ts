@@ -85,15 +85,20 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   const lastFetchedAt = useRef(0);
   const inFlight = useRef(false);
   const removedIds = useRef(new Set<string>());
+  const interestedIds = useRef(new Set<string>());
 
   // `silent` tops the deck up in the background: no spinner, no blank frame, and the
   // current order is kept (see the cached-order branch below).
-  const fetchProfiles = useCallback(async (forceRescan = false, silent = false) => {
+  const fetchProfiles = useCallback(async (forceRescan = false, silent = false, restoredUserId?: string) => {
     if (!currentUserId) {
       setLoading(false);
       return;
     }
     if (inFlight.current) return;
+    if (restoredUserId) {
+      removedIds.current.delete(restoredUserId);
+      interestedIds.current.delete(restoredUserId);
+    }
     inFlight.current = true;
     lastFetchedAt.current = Date.now();
 
@@ -104,11 +109,12 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // Step 1: Get users already swiped on
       const { data: swipedData } = await supabase
         .from('swipes')
-        .select('target_id')
+        .select('target_id, direction')
         .eq('user_id', currentUserId)
         .eq('target_type', 'profile');
 
       const swipedIds = new Set(swipedData?.map(s => s.target_id) || []);
+      const pendingIds = new Set(swipedData?.filter(s => s.direction !== 'left').map(s => s.target_id) || []);
 
       // Step 1b: Get blocked users
       const { data: blockedData } = await supabase
@@ -196,16 +202,16 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       const fetchedProfiles = Array.from(merged.values());
       const likedYouIds = new Set<string>(((likedYouRes.data as any[]) || []).map((r) => r.user_id));
 
-      // Step 4: Filter out swiped, connected, blocked. Deliberately NOT
+      // Step 4: Filter out pending interests, connected, blocked. Deliberately NOT
       // filtering on bio length, portfolio/credits/awards count anymore --
       // "no artificial gating" is a hard product requirement (a brand new
       // user with zero credits must still be discoverable), those signals
       // now only affect ranking (see the tie-break score below), never
       // eligibility. What's left here is "is there anything real to show",
       // not "have they done enough to deserve visibility".
-      let filtered = (fetchedProfiles || []).filter(p => {
-        if (p.user_id === currentUserId || removedIds.current.has(p.user_id)) return false;
-        if (swipedIds.has(p.user_id)) return false;
+      const eligible = (fetchedProfiles || []).filter(p => {
+        if (p.user_id === currentUserId || interestedIds.current.has(p.user_id)) return false;
+        if (pendingIds.has(p.user_id)) return false;
         if (connectedIds.has(p.user_id)) return false;
         if (blockedIds.has(p.user_id)) return false;
         // Hide non-ODOS unclaimed profiles from discovery
@@ -224,6 +230,13 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         if (!p.role || p.role === '') return false;
         return true;
       });
+      let filtered = eligible.filter(p => !swipedIds.has(p.user_id) && !removedIds.current.has(p.user_id));
+      // Only reconsider passes once every unseen candidate is exhausted. Never
+      // recycle pending interests, connections or blocked accounts.
+      if (filtered.length === 0 && (forceRescan || removedIds.current.size === 0)) {
+        filtered = eligible;
+        removedIds.current.clear();
+      }
 
       // Step 5: Portfolio/credits/awards counts — kept as a ranking
       // tie-break signal only (see scoreProfile below), not a filter.
@@ -442,7 +455,9 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         .sort((a, b) => ((b.xp || 0) + (b.level || 1) * 100) - ((a.xp || 0) + (a.level || 1) * 100));
     }
 
-    setProfiles(filtered);
+    // Criteria are preferences: retain the ranked, eligible pool when no exact
+    // fit exists rather than leaving the deck empty.
+    setProfiles(filtered.length > 0 ? filtered : [...allProfiles]);
   }, [allProfiles, filters]);
 
   // Auto-fetch
@@ -469,6 +484,10 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   }, [currentUserId, hasFetched, fetchProfiles]);
 
   useEffect(() => {
+    if (hasFetched && !loading && profiles.length === 0 && removedIds.current.size > 0) {
+      void fetchProfiles(true, true);
+      return;
+    }
     if (hasFetched && !loading && profiles.length <= 2 && Date.now() - lastFetchedAt.current > 30_000) {
       void fetchProfiles(false, true);
     }
@@ -499,7 +518,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     }
   }, [loading, hasFetched, profiles.length, error]);
 
-  const removeProfile = useCallback((userId: string) => {
+  const removeProfile = useCallback((userId: string, direction: 'left' | 'right' = 'left') => {
+    if (direction === 'right') interestedIds.current.add(userId);
     removedIds.current.add(userId);
     setProfiles(prev => prev.filter(p => p.user_id !== userId));
     setAllProfiles(prev => {

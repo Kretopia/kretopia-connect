@@ -7,6 +7,8 @@ const db = vi.hoisted(() => ({
   safeProfiles: [] as Row[],
   mySwipes: [] as Row[],
   likedMe: [] as Row[],
+  blocks: [] as Row[],
+  connections: [] as Row[],
   me: { role: "Photographer", location: "Lagos", professional_skills: ["lighting"] } as Row,
 }));
 
@@ -19,6 +21,8 @@ vi.mock("@/integrations/supabase/client", () => {
       if (table === "swipes") return { data: "target_id" in eqs ? db.likedMe : db.mySwipes, error: null };
       if (table === "profiles") return { data: page(db.rawProfiles), error: null };
       if (table === "public_profiles_safe") return { data: page(db.safeProfiles), error: null };
+      if (table === "user_blocks") return { data: db.blocks, error: null };
+      if (table === "connections") return { data: db.connections, error: null };
       return { data: [], error: null };
     };
     const api: any = new Proxy(
@@ -41,6 +45,7 @@ vi.mock("@/integrations/supabase/client", () => {
 });
 
 import { SAFE_VIEW_SELECT, fromSafeRow, useSwipeProfiles } from "../useSwipeProfiles";
+import { DEFAULT_SWIPE_FILTERS } from "@/components/circle/SwipeFilters";
 
 const member = (user_id: string, extra: Row = {}): Row => ({
   user_id,
@@ -59,6 +64,8 @@ describe("useSwipeProfiles", () => {
     db.safeProfiles = [];
     db.mySwipes = [];
     db.likedMe = [];
+    db.blocks = [];
+    db.connections = [];
     sessionStorage.clear();
   });
 
@@ -141,6 +148,60 @@ describe("useSwipeProfiles", () => {
     expect(result.current.profiles.map(p => p.user_id)).toEqual(["b"]);
     expect(result.current.loading).toBe(false);
   });
+
+  it("broadens criteria to ranked real users when no exact role fits", async () => {
+    db.safeProfiles = [member("stylist", { role: "Fashion stylist" }), member("chef", { role: "Chef" })];
+    const filters = { ...DEFAULT_SWIPE_FILTERS, roles: ["Astronaut"] };
+    const { result } = renderHook(() => useSwipeProfiles("me", filters));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["stylist", "chef"]);
+  });
+
+  it("prioritizes exact criteria, then broadens once those cards are consumed", async () => {
+    db.safeProfiles = [member("similar"), member("other", { role: "Fashion stylist" })];
+    const filters = { ...DEFAULT_SWIPE_FILTERS, roles: ["Photographer"] };
+    const { result } = renderHook(() => useSwipeProfiles("me", filters));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["similar"]);
+    act(() => result.current.removeProfile("similar"));
+    await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["other"]));
+  });
+
+  it("reconsiders passes after unseen users run out, never pending interests", async () => {
+    db.safeProfiles = [member("passed"), member("pending")];
+    db.mySwipes = [{ target_id: "passed", direction: "left" }, { target_id: "pending", direction: "right" }];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["passed"]);
+  });
+
+  it("automatically refreshes after the last pass but does not recycle a local interest", async () => {
+    db.safeProfiles = [member("passed"), member("interested")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.removeProfile("interested", "right"));
+    act(() => result.current.removeProfile("passed", "left"));
+    await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["passed"]));
+  });
+
+  it("keeps blocked accounts, accepted connections and yourself out of fallback", async () => {
+    db.safeProfiles = [member("me"), member("blocked"), member("connected"), member("passed")];
+    db.mySwipes = [{ target_id: "passed", direction: "left" }];
+    db.blocks = [{ blocked_user_id: "blocked", blocker_id: "blocked" }];
+    db.connections = [{ connected_user_id: "connected", user_id: "connected" }];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["passed"]);
+  });
+
+  it("restores a local interest only after explicit undo", async () => {
+    db.safeProfiles = [member("a"), member("b")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.removeProfile("a", "right"));
+    await act(async () => { await result.current.fetchProfiles(false, false, "a"); });
+    expect(result.current.profiles.map(p => p.user_id).sort()).toEqual(["a", "b"]);
+  });
 });
 
 describe("useSwipeProfiles: similar and complementary collaborators", () => {
@@ -149,6 +210,8 @@ describe("useSwipeProfiles: similar and complementary collaborators", () => {
     db.safeProfiles = [];
     db.mySwipes = [];
     db.likedMe = [];
+    db.blocks = [];
+    db.connections = [];
     sessionStorage.clear();
   });
 

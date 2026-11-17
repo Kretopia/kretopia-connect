@@ -71,11 +71,11 @@ describe("Match deck: who is looking", () => {
     expect(screen.queryByText(/All Caught Up/)).toBeNull();
   });
 
-  it("a signed-in member with an empty deck keeps the existing All Caught Up state", () => {
+  it("a signed-in member can explicitly rescan an empty eligible pool", () => {
     state.auth = { user: { id: "u1" }, loading: false };
     renderDeck();
-    expect(screen.getByRole("heading", { name: "All Caught Up!" })).toBeInTheDocument();
-    expect(screen.queryByText("Sign in to get your deck")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
+    expect(state.fetchProfiles).toHaveBeenCalledWith(true);
   });
 
   it("a signed-in member still gets the deck when there are profiles to show", () => {

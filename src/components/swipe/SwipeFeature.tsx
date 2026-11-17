@@ -99,7 +99,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     setProfilesSinceOffer(n => n + 1);
 
     // Remove from stack
-    removeProfile(profile.user_id);
+    removeProfile(profile.user_id, 'right');
 
     // Record the swipe as a right swipe with context
     
@@ -206,7 +206,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
 
     setSwipeHistory(prev => prev.slice(1));
     setProfilesSinceOffer(n => Math.max(0, n - 1));
-    fetchProfiles();
+    fetchProfiles(false, false, last.profile.user_id);
     toast.success('Undo successful!');
   }, [swipeHistory, user?.id, fetchProfiles, restoreOffer]);
 
@@ -313,13 +313,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
          <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
            <Heart className="k-gradient-icon h-10 w-10" />
         </div>
-        <h3 className="text-xl font-semibold mb-2">All Caught Up!</h3>
-        <p className="text-muted-foreground mb-1 max-w-sm">
-          You've seen everyone available right now.
-        </p>
-        <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-          No matches yet? Explore the full Kretopia network in the grid, or complete your Passport so better matches keep finding you.
-        </p>
+        <h3 className="text-xl font-semibold mb-2">Explore more creators</h3>
         <div className="flex flex-wrap items-center justify-center gap-2">
           {swipeHistory.length > 0 && (
             <Button variant="outline" onClick={handleUndo} className="gap-2">
@@ -329,8 +323,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="gap-2">
             <ArrowRight className="h-4 w-4" /> Browse the grid
           </Button>
-          <Button onClick={() => navigate('/profile')} className="gap-2">
-            Complete your Passport
+          <Button onClick={() => fetchProfiles(true)} className="gap-2">
+            Scan now
           </Button>
         </div>
       </div>

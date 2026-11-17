@@ -153,11 +153,11 @@ describe("Match deck with offers: the order", () => {
     expect(screen.queryByText(/All Caught Up/)).not.toBeInTheDocument();
   });
 
-  it("with nothing at all the existing 'All Caught Up' state shows", () => {
+  it("with no eligible candidates offers a manual rescan", () => {
     state.people = [];
     state.offers = [];
     renderDeck();
-    expect(screen.getByRole("heading", { name: "All Caught Up!" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Scan now" })).toBeEnabled();
   });
 
   it("the counter says how many offers found outside Kretopia are in the deck, and nothing when there are none", () => {
