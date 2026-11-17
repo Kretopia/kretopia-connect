@@ -27,7 +27,7 @@ export interface SwipeFeatureProps {
   onProfilesCountChange?: (count: number) => void;
   /**
    * Also show offers found outside Kretopia (gigs a curator approved against their source) between the people. Off by default:
-   * the deck is people only unless a surface turns it on (see MatchDeck, which does it for creator accounts).
+   * the deck is people only unless a surface turns it on. MatchDeck always disables offers.
    */
   offers?: boolean;
   /** How the profile card is drawn (see HingeStyleCard). Default: unchanged. */

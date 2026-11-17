@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-/** Who sees offers found outside Kretopia in the Match deck: a creator account does, a company does not, and nobody while the mode is unknown. */
+/** Match must only show users in every account mode. */
 const tone = vi.hoisted(() => ({ isBusiness: false, loading: false }));
 const seen = vi.hoisted(() => ({ props: [] as Record<string, unknown>[] }));
 
@@ -19,9 +19,9 @@ beforeEach(() => {
 const last = () => seen.props[seen.props.length - 1];
 
 describe("MatchDeck", () => {
-  it("a creator account gets offers between the people", () => {
+  it("a creator account only gets users, never jobs or opportunities", () => {
     render(<MatchDeck />);
-    expect(last().offers).toBe(true);
+    expect(last().offers).toBe(false);
   });
 
   it("a company account keeps people only", () => {
@@ -41,5 +41,11 @@ describe("MatchDeck", () => {
     const filters = { gender: "any" } as never;
     render(<MatchDeck onMatch={onMatch} filters={filters} />);
     expect(last()).toMatchObject({ onMatch, filters });
+  });
+
+  it("cannot enable opportunities through forwarded runtime props", () => {
+    const props = { offers: true, cardVariant: "shell" as const };
+    render(<MatchDeck {...props} />);
+    expect(last()).toMatchObject({ offers: false, cardVariant: "shell" });
   });
 });
