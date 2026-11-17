@@ -27,6 +27,17 @@ describe("Match discovery controls", () => {
     fireEvent.click(screen.getByRole("button", { name: "Pass" }));
     expect(pass).not.toHaveBeenCalled();
   });
+  it("uses both original photo URLs and reveals all supplied profile skills", () => {
+    const detailed = { ...profile, avatar_url: '/original-portrait.jpg', cover_image_url: '/original-cover.jpg', professional_skills: ['UX', 'Research', 'Prototyping', 'Accessibility'], passion_skills: ['Photography'], level: 12, credits_count: 7, awards_count: 2 };
+    render(<MemoryRouter><MatchProfileCard profile={detailed} busy={false} onLike={vi.fn()} onPass={vi.fn()} onViewProfile={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByRole('img', { name: 'Ava Chen, photo 1' })).toHaveAttribute('src', '/original-portrait.jpg');
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }));
+    expect(screen.getByRole('img', { name: 'Ava Chen, photo 2' })).toHaveAttribute('src', '/original-cover.jpg');
+    fireEvent.click(screen.getByRole('button', { name: 'Quick look' }));
+    const details = screen.getByRole('group', { name: 'Ava Chen: profile details' });
+    expect(details).toHaveTextContent(/accessibility/i); expect(details).toHaveTextContent(/photography/i);
+    expect(details).toHaveTextContent('Credits7'); expect(details).toHaveTextContent('Awards2');
+  });
   it("dispatches one Match scan, disables repeats and allows retry after a real error", () => {
     const listener = vi.fn(); window.addEventListener("match:scan", listener);
     render(<MemoryRouter><MatchPulse /></MemoryRouter>);

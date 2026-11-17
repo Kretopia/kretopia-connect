@@ -18,6 +18,8 @@ export const clampClass = (lines: number) => CLAMP[lines] ?? CLAMP[2];
 export const CARD_RADIUS = "rounded-2xl";
 export const CARD_SHADOW = "shadow-[0_18px_44px_-20px_rgba(0,0,0,0.65),0_2px_0_0_rgba(255,255,255,0.06)_inset]";
 export const CARD_COVER_RATIO = "aspect-[16/9]";
+export const CARD_PORTRAIT_COVER = "aspect-[4/5] max-h-[420px]";
+export const CARD_PORTRAIT_DECK = "mx-auto w-full max-w-[460px]";
 
 // Faces. Front and back share one grid cell; the back is turned away by backface-visibility.
 export const CARD_FACE = `relative flex min-w-0 flex-col overflow-hidden ${CARD_RADIUS} border border-border bg-card [grid-area:1/1]`;

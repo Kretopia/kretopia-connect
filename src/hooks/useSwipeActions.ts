@@ -28,7 +28,22 @@ export function useSwipeActions(currentUserId: string | undefined) {
     try {
       console.log('[useSwipeActions] Recording swipe:', direction, 'on', targetId, 'by', currentUserId);
 
-      // 1. Record the swipe
+      // Re-scans can surface a prior pass. Existing permissions allow owner
+      // reads/deletes/inserts, not updates: replace only a confirmed own pass.
+      const ownSwipe = () => supabase.from('swipes').select('id, direction')
+        .eq('user_id', currentUserId).eq('target_id', targetId)
+        .eq('target_type', 'profile').maybeSingle();
+      const { data: previous, error: readError } = await ownSwipe();
+      if (readError) throw readError;
+      if (previous?.direction === direction || previous?.direction === 'right') {
+        return { success: true, isMatch: false };
+      }
+      if (previous) {
+        const { error: deleteError } = await supabase.from('swipes').delete()
+          .eq('id', previous.id).eq('user_id', currentUserId)
+          .eq('target_id', targetId).eq('target_type', 'profile').eq('direction', 'left');
+        if (deleteError) throw deleteError;
+      }
       const { error: swipeError } = await supabase
         .from('swipes')
         .insert({
@@ -39,6 +54,13 @@ export function useSwipeActions(currentUserId: string | undefined) {
         });
 
       if (swipeError) {
+        // Another tab may have answered the same card during the request.
+        if (swipeError.code === '23505') {
+          const { data: saved, error: savedError } = await ownSwipe();
+          if (!savedError && saved && (saved.direction === direction || saved.direction === 'right')) {
+            return { success: true, isMatch: false };
+          }
+        }
         console.error('[useSwipeActions] Swipe error:', swipeError);
         throw swipeError;
       }

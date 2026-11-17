@@ -5,7 +5,7 @@ import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
 import {
   CARD_ABOVE, CARD_BACK_LABEL, CARD_BACK_SCROLL, CARD_BODY, CARD_BODY_BACK, CARD_BTN, CARD_BTN_PRIMARY, CARD_BTN_PRIMARY_STYLE, CARD_BUDGET, CARD_COVER, CARD_COVER_OVERLAY,
-  CARD_COVER_SCRIM, CARD_DESCRIPTION, CARD_FACE, CARD_FACE_BACK, CARD_FACE_STYLE, CARD_FLIP_INNER, CARD_FLIP_OUTER, CARD_FOOTER, CARD_ICON_BTN,
+  CARD_COVER_SCRIM, CARD_PORTRAIT_COVER, CARD_DESCRIPTION, CARD_FACE, CARD_FACE_BACK, CARD_FACE_STYLE, CARD_FLIP_INNER, CARD_FLIP_OUTER, CARD_FOOTER, CARD_ICON_BTN,
   CARD_ICON_BTN_ON, CARD_META, CARD_PILL, CARD_PILL_TONE, CARD_STRETCH, CARD_TAGS, CARD_TEXT_ACTION, CARD_TITLE, CARD_TRUST, clampClass,
   type CardPillTone,
 } from "./cardTokens";
@@ -53,6 +53,7 @@ export interface CardBack {
 export interface CardShellProps {
   /** Same Scout surface, with cover and body side by side on wide decks. */
   landscape?: boolean;
+  portrait?: boolean;
   onFlipChange?: (flipped: boolean) => void;
   testId?: string;
   /** Render a static Kretopia surface without the pointer-tracked HoloCard shell. */
@@ -138,7 +139,7 @@ export function CardTextButton({ className, ...props }: React.ButtonHTMLAttribut
  *
  * Long text, extra fields and anything else a surface wants to show belong on the back (`back`) or on the detail view, never on the front.
  */
-export function CardShell({ landscape = false, onFlipChange, testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
+export function CardShell({ landscape = false, portrait = false, onFlipChange, testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
   const backId = useId();
   const [flipped, setFlipped] = useState(false);
   const [backBuilt, setBackBuilt] = useState(false);
@@ -220,7 +221,7 @@ export function CardShell({ landscape = false, onFlipChange, testId, flat = fals
         <div className={CARD_FLIP_INNER} style={{ transform: flipped ? "rotateY(180deg)" : undefined }}>
           {/* FRONT */}
           <div ref={front} className={cn(CARD_FACE, landscape && "lg:grid lg:grid-cols-2")} style={CARD_FACE_STYLE} aria-hidden={flipped || undefined}>
-            <div className={cn(CARD_COVER, landscape && "lg:aspect-auto lg:min-h-[350px]")} data-card-part="cover">
+            <div className={cn(CARD_COVER, portrait && CARD_PORTRAIT_COVER, landscape && "lg:aspect-auto lg:min-h-[350px]")} data-card-part="cover">
               {cover}
               <div className={CARD_COVER_SCRIM} />
               <div className={CARD_COVER_OVERLAY}>

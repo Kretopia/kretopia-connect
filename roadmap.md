@@ -15,6 +15,7 @@
 - [ ] Verify an organizer-created event against production storage: blocked by unavailable legacy authenticated session; the observed November 12 record is explicitly completed and has no timezone, requiring organizer review rather than automatic data correction.
 
 # Match overhaul
+- [x] Handle existing swipes without duplicate inserts or permission changes; use portrait cards, original photos, round controls and fuller profile details. 56 tests pass; desktop/mobile inspected with control data, production authenticated verification remains unavailable.
 - [x] Widen profile criteria when exact fits run out; reconsider passes only after unseen candidates, preserving blocks, connections and pending interests. Focused tests pass; production signed-in verification remains blocked below.
 - [x] Reuse Scout CardShell and ScoutScanButton in Match with safe deck controls and honest scan states.
 - [x] Categorize paginated Directory rails with gated profile actions; preserve accepted, received and sent interest distinctions and enhance existing Kreto arcs/rotation.
