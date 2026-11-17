@@ -49,4 +49,20 @@ describe("PassportDirectoryCard", () => {
     expect(screen.getByText("You")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Message/ })).not.toBeInTheDocument();
   });
+  it("does not message or start a project without an accepted connection", () => {
+    const onProject = vi.fn();
+    const { onMessage } = setup({ connected: false, onProject });
+    expect(screen.getByRole("button", { name: "Message Sam Rivera" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Quick look" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start a project" }));
+    expect(onProject).not.toHaveBeenCalled();
+    expect(onMessage).not.toHaveBeenCalled();
+  });
+  it("opens project preparation with the accepted collaborator, never a different user", () => {
+    const onProject = vi.fn();
+    setup({ connected: true, onProject });
+    fireEvent.click(screen.getByRole("button", { name: "Quick look" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start a project" }));
+    expect(onProject).toHaveBeenCalledWith(person);
+  });
 });

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { MatchProfileCard } from './MatchProfileCard';
 import { useAuth } from '@/hooks/useAuth';
 import { useSwipeProfiles, SwipeProfile } from '@/hooks/useSwipeProfiles';
 import { useSwipeActions } from '@/hooks/useSwipeActions';
@@ -62,6 +63,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const [swipeHistory, setSwipeHistory] = useState<Answered[]>([]);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
 
   // Get current user's profile for the match modal + check completion
   useEffect(() => {
@@ -83,7 +86,13 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   }, [user?.id]);
 
   const handleLike = useCallback(async (profile: SwipeProfile, context: { type: string; label: string }) => {
-    console.log('[SwipeFeature] Liked', profile.full_name, 'context:', context);
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    const result = await recordSwipe(profile.user_id, 'right');
+    savingRef.current = false;
+    setSaving(false);
+    if (!result.success) return;
     
     // Add to history for undo
     setSwipeHistory(prev => [{ type: 'profile' as const, profile }, ...prev].slice(0, 5));
@@ -93,7 +102,6 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     removeProfile(profile.user_id);
 
     // Record the swipe as a right swipe with context
-    const result = await recordSwipe(profile.user_id, 'right');
     
     if (result.isMatch && result.matchedProfile) {
       console.log('[SwipeFeature] MATCH!', result.matchedProfile);
@@ -109,12 +117,18 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
         });
       }
     } else {
-      toast.success(`Liked ${context.label}!`, { duration: 1500 });
+      toast.success('Interest saved', { description: 'A connection is mutual only after both people respond.', duration: 2500 });
     }
   }, [recordSwipe, removeProfile, onMatch]);
 
   const handlePass = useCallback(async (profile: SwipeProfile) => {
-    console.log('[SwipeFeature] Passed', profile.full_name);
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    const result = await recordSwipe(profile.user_id, 'left');
+    savingRef.current = false;
+    setSaving(false);
+    if (!result.success) return;
 
     setProfilesSinceOffer(n => n + 1);
     setSwipeHistory(prev => {
@@ -134,7 +148,6 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
       return next;
     });
     removeProfile(profile.user_id);
-    await recordSwipe(profile.user_id, 'left');
   }, [recordSwipe, removeProfile, navigate]);
 
   const handleViewProfile = useCallback((profile: SwipeProfile) => {
@@ -348,6 +361,8 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           onPass={handleOfferPass}
           variant={cardVariant}
         />
+      ) : cardVariant === 'shell' ? (
+        <MatchProfileCard key={current.item.user_id} profile={current.item} busy={saving} onLike={handleLike} onPass={handlePass} onViewProfile={handleViewProfile} />
       ) : (
         <HingeStyleCard
           key={current.item.user_id}

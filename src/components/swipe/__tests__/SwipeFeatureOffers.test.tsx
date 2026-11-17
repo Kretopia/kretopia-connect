@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
@@ -73,6 +73,7 @@ vi.mock("@/components/discover/HingeStyleCard", () => ({
     </div>
   ),
 }));
+vi.mock("../MatchProfileCard", () => ({ MatchProfileCard: ({ profile, onLike, onPass }: any) => <div data-variant="shell"><p>card:{profile.full_name}</p><button onClick={() => onLike(profile, { type: "profile", label: "their profile" })}>like {profile.full_name}</button><button onClick={() => onPass(profile)}>pass {profile.full_name}</button></div> }));
 vi.mock("../ExternalOfferCard", () => ({
   ExternalOfferCard: ({ offer, onInterested, onPass, variant }: { offer: { title: string }; onInterested: (o: unknown) => void; onPass: (o: unknown) => void; variant?: string }) => (
     <div data-variant={variant ?? "default"}>
@@ -88,13 +89,13 @@ import { SwipeFeature } from "../SwipeFeature";
 const person = (n: string) => ({ user_id: `p-${n}`, full_name: n });
 const offer = (id: string) => ({ id, title: `Offer ${id}`, apply_url: `https://acme.example/${id}` });
 const renderDeck = (offers = true) => render(<MemoryRouter><SwipeFeature offers={offers} /></MemoryRouter>);
-const answerPerson = (name: string) => fireEvent.click(screen.getByRole("button", { name: `pass ${name}` }));
+const answerPerson = async (name: string) => { await act(async () => { fireEvent.click(screen.getByRole("button", { name: `pass ${name}` })); }); };
 
 beforeEach(() => {
   state.auth = { user: { id: "u1" }, loading: false };
   state.people = ["Ada", "Bo", "Cy", "Di", "Ed", "Flo"].map(person);
   state.offers = [offer("o1"), offer("o2")];
-  state.recordSwipe.mockReset();
+  state.recordSwipe.mockReset().mockResolvedValue({ success: true, isMatch: false });
   state.resolve.mockReset();
   state.restore.mockReset();
   state.toastSuccess.mockReset();
@@ -110,7 +111,7 @@ describe("Match deck with offers: one card shape", () => {
   it("hands the deck's card variant to the person's card and to the offer card alike", async () => {
     render(<MemoryRouter><SwipeFeature offers cardVariant="shell" /></MemoryRouter>);
     expect(variantOf("card:Ada")).toBe("shell");
-    for (const name of ["Ada", "Bo", "Cy", "Di"]) answerPerson(name);
+    for (const name of ["Ada", "Bo", "Cy", "Di"]) await answerPerson(name);
     await screen.findByText("offer:Offer o1");
     expect(variantOf("offer:Offer o1")).toBe("shell");
   });
@@ -118,7 +119,7 @@ describe("Match deck with offers: one card shape", () => {
   it("without a variant, neither card is asked for the shared shape", async () => {
     renderDeck();
     expect(variantOf("card:Ada")).toBe("default");
-    for (const name of ["Ada", "Bo", "Cy", "Di"]) answerPerson(name);
+    for (const name of ["Ada", "Bo", "Cy", "Di"]) await answerPerson(name);
     await screen.findByText("offer:Offer o1");
     expect(variantOf("offer:Offer o1")).toBe("default");
   });
@@ -130,7 +131,7 @@ describe("Match deck with offers: the order", () => {
     for (const name of ["Ada", "Bo", "Cy", "Di"]) {
       expect(screen.getByText(`card:${name}`)).toBeInTheDocument();
       expect(screen.queryByText(/^offer:/)).not.toBeInTheDocument();
-      answerPerson(name);
+      await answerPerson(name);
     }
     expect(await screen.findByText("offer:Offer o1")).toBeInTheDocument();
     expect(screen.queryByText(/^card:/)).not.toBeInTheDocument();
@@ -138,10 +139,10 @@ describe("Match deck with offers: the order", () => {
     expect(await screen.findByText("card:Ed")).toBeInTheDocument();
   });
 
-  it("without the offers switch the deck is people only, and the offers are never even requested", () => {
+  it("without the offers switch the deck is people only, and the offers are never even requested", async () => {
     renderDeck(false);
     expect(state.enabledSeen.every((e) => e === false)).toBe(true);
-    for (const name of ["Ada", "Bo", "Cy", "Di", "Ed"]) { expect(screen.getByText(`card:${name}`)).toBeInTheDocument(); answerPerson(name); }
+    for (const name of ["Ada", "Bo", "Cy", "Di", "Ed"]) { expect(screen.getByText(`card:${name}`)).toBeInTheDocument(); await answerPerson(name); }
     expect(screen.queryByText(/^offer:/)).not.toBeInTheDocument();
   });
 
@@ -171,7 +172,7 @@ describe("Match deck with offers: the order", () => {
 
 describe("Match deck with offers: answering an offer", () => {
   const reachOffer = async (title = "Offer o1") => {
-    for (const name of ["Ada", "Bo", "Cy", "Di"]) answerPerson(name);
+    for (const name of ["Ada", "Bo", "Cy", "Di"]) await answerPerson(name);
     await screen.findByText(`offer:${title}`);
     state.recordSwipe.mockClear();
   };
@@ -215,9 +216,9 @@ describe("Match deck with offers: answering an offer", () => {
     await reachOffer();
     fireEvent.click(screen.getByRole("button", { name: "pass offer Offer o1" }));
     expect(await screen.findByText("card:Ed")).toBeInTheDocument();
-    answerPerson("Ed");
+    await answerPerson("Ed");
     expect(await screen.findByText("card:Flo")).toBeInTheDocument();
-    answerPerson("Flo");
+    await answerPerson("Flo");
     // no people left: the remaining offer is shown rather than 'All Caught Up'
     expect(await screen.findByText("offer:Offer o2")).toBeInTheDocument();
   });
@@ -227,16 +228,16 @@ describe("Match deck with offers: answering an offer", () => {
     renderDeck();
     await reachOffer();                                                          // four people answered: offer o1
     fireEvent.click(screen.getByRole("button", { name: "pass offer Offer o1" })); // zero people since an offer
-    answerPerson("Ed");                                                          // 1
-    answerPerson("Flo");                                                         // 2
+    await answerPerson("Ed");                                                          // 1
+    await answerPerson("Flo");                                                         // 2
     await screen.findByText("card:Gus");
     fireEvent.click(screen.getByRole("button", { name: /undo/i }));              // Flo is back: 1
     await screen.findByText("card:Flo");
-    answerPerson("Flo");                                                         // 2
-    answerPerson("Gus");                                                         // 3: still a person (an offer here would be one card early)
+    await answerPerson("Flo");                                                         // 2
+    await answerPerson("Gus");                                                         // 3: still a person (an offer here would be one card early)
     expect(await screen.findByText("card:Hal")).toBeInTheDocument();
     expect(screen.queryByText(/^offer:/)).not.toBeInTheDocument();
-    answerPerson("Hal");                                                         // 4: now the offer
+    await answerPerson("Hal");                                                         // 4: now the offer
     expect(await screen.findByText("offer:Offer o2")).toBeInTheDocument();
   });
 
@@ -255,10 +256,26 @@ describe("Match deck with offers: people are answered exactly as before", () => 
   it("liking a person still records a right swipe on that profile, and an offer in between changes nothing about it", async () => {
     state.recordSwipe.mockResolvedValue({ success: true, isMatch: false });
     renderDeck();
-    fireEvent.click(screen.getByRole("button", { name: "like Ada" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "like Ada" })); });
     await waitFor(() => expect(state.recordSwipe).toHaveBeenCalledWith("p-Ada", "right"));
-    fireEvent.click(screen.getByRole("button", { name: "pass Bo" }));
+    await answerPerson("Bo");
     await waitFor(() => expect(state.recordSwipe).toHaveBeenCalledWith("p-Bo", "left"));
     expect(state.resolve).not.toHaveBeenCalled();
+  });
+});
+
+ describe("Confirmed deck answers", () => {
+  it("keeps a profile and announces no success when its interest fails", async () => {
+    state.recordSwipe.mockResolvedValue({ success: false, isMatch: false });
+    renderDeck();
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "like Ada" })); });
+    expect(screen.getByText("card:Ada")).toBeInTheDocument();
+    expect(state.toastSuccess).not.toHaveBeenCalled();
+  });
+  it("keeps a profile when passing fails", async () => {
+    state.recordSwipe.mockResolvedValue({ success: false, isMatch: false });
+    renderDeck();
+    await answerPerson("Ada");
+    expect(screen.getByText("card:Ada")).toBeInTheDocument();
   });
 });

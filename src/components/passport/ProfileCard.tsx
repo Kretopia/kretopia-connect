@@ -2,9 +2,13 @@ import { useState, type ReactNode } from "react";
 import { ShieldCheck } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KretoScene } from "@/components/brand/KretoScene";
-import { CardPill, CardShell, type CardAction, type CardIconAction, type CardTarget } from "@/components/cards/CardShell";
+import { CardPill, CardShell, CardActionButton, CardIconButton, type CardAction, type CardIconAction, type CardTarget } from "@/components/cards/CardShell";
 
 export interface ProfileCardProps {
+  landscape?: boolean;
+  onFlipChange?: (flipped: boolean) => void;
+  backContent?: ReactNode;
+  backActions?: ReactNode;
   testId?: string;
   name: string;
   /** One line under the name: handle, role, place. */
@@ -31,18 +35,19 @@ export interface ProfileCardProps {
  * one line about who and where they are, two lines of bio, three skills or counts, and the reasons they are suggested when there are any. Every
  * surface that shows a person (Browse, Likes you, the Passport directory) is this card; what differs is the action it offers.
  */
-export function ProfileCard({ testId, name, meta, coverUrl, avatarUrl, standing, badge, bio, tags, reasons, open, primary, secondary }: ProfileCardProps) {
+export function ProfileCard({ landscape, onFlipChange, backContent, backActions, testId, name, meta, coverUrl, avatarUrl, standing, badge, bio, tags, reasons, open, primary, secondary }: ProfileCardProps) {
   const [broken, setBroken] = useState(false);
   const showCover = !!coverUrl && !broken;
   return (
     <CardShell
+      landscape={landscape}
+      onFlipChange={onFlipChange}
       testId={testId}
       title={name}
-      stretch
       open={open}
       cover={
         <>
-          {showCover ? <img src={coverUrl!} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" onError={() => setBroken(true)} /> : <KretoScene scene="talent-search" size="thumb" className="h-full w-full" />}
+          {showCover && coverUrl ? <img src={coverUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" onError={() => setBroken(true)} /> : <KretoScene scene="talent-search" size="thumb" className="h-full w-full" />}
           <Avatar className="absolute bottom-3 left-3 h-12 w-12 ring-2 ring-card">
             <AvatarImage src={avatarUrl ?? undefined} alt="" />
             <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
@@ -55,6 +60,7 @@ export function ProfileCard({ testId, name, meta, coverUrl, avatarUrl, standing,
           {badge}
         </>
       }
+      coverControls={secondary ? <CardIconButton action={secondary} /> : undefined}
       meta={meta}
       description={bio}
       tags={tags}
@@ -66,7 +72,12 @@ export function ProfileCard({ testId, name, meta, coverUrl, avatarUrl, standing,
         ) : null
       }
       primary={primary}
-      secondary={secondary}
+      back={{
+        label: "profile details",
+        eyebrow: "Creative Passport",
+        children: <>{bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{bio}</p>}{tags?.length ? <div className="flex flex-wrap gap-2">{tags}</div> : null}{backContent}</>,
+        actions: <><CardActionButton action={{ label: "View profile", ...open }} />{backActions}</>,
+      }}
     />
   );
 }

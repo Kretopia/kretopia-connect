@@ -1,6 +1,8 @@
 import { MessageCircle } from "lucide-react";
 import { CardPill } from "@/components/cards/CardShell";
 import { ProfileCard } from "./ProfileCard";
+import { Button } from "@/components/ui/button";
+import { extractSkillsArray } from "@/lib/matchScoring";
 
 export interface DirectoryPassport {
   user_id: string;
@@ -12,6 +14,8 @@ export interface DirectoryPassport {
   location: string | null;
   verification_tier: string | null;
   level: number | null;
+  bio?: string | null;
+  professional_skills?: unknown;
 }
 
 const STANDING_LABEL: Record<string, string> = {
@@ -32,6 +36,8 @@ interface PassportDirectoryCardProps {
   /** The signed-in person's own card: goes to /profile, no Message. */
   isMe?: boolean;
   onMessage: (passport: DirectoryPassport) => void;
+  connected?: boolean;
+  onProject?: (passport: DirectoryPassport) => void;
 }
 
 const Count = ({ value, label }: { value: number; label: string }) => (
@@ -42,7 +48,7 @@ const Count = ({ value, label }: { value: number; label: string }) => (
  * One person in the Passport Directory: the profile card with their record. The whole card opens the Passport, a labelled primary action repeats
  * it, and Message is the one secondary. Counts are real rows, never a guess; a Passport with no cover wears a scene from the Kreto library.
  */
-export function PassportDirectoryCard({ passport: p, credits, cosigns, isMe = false, onMessage }: PassportDirectoryCardProps) {
+export function PassportDirectoryCard({ passport: p, credits, cosigns, isMe = false, onMessage, connected, onProject }: PassportDirectoryCardProps) {
   const name = p.full_name || p.username || "Creative";
   const handle = p.username ? `@${p.username.replace(/^@/, "")}` : null;
   const href = isMe ? "/profile" : passportHref(p);
@@ -53,6 +59,7 @@ export function PassportDirectoryCard({ passport: p, credits, cosigns, isMe = fa
       meta={[handle, p.role, p.location].filter(Boolean).map((part, i) => <span key={i}>{i > 0 ? " · " : ""}{part}</span>)}
       coverUrl={p.cover_image_url}
       avatarUrl={p.avatar_url}
+      bio={p.bio}
       standing={tier ? STANDING_LABEL[tier] : null}
       badge={isMe ? <CardPill tone="origin">You</CardPill> : null}
       tags={[
@@ -62,7 +69,13 @@ export function PassportDirectoryCard({ passport: p, credits, cosigns, isMe = fa
       ]}
       open={{ to: href, ariaLabel: `Open ${isMe ? "your" : `${name}'s`} Passport` }}
       primary={{ label: isMe ? "Open my Passport" : "Open Passport", to: href }}
-      secondary={isMe ? undefined : { icon: <MessageCircle className="h-4 w-4" aria-hidden />, label: `Message ${name}`, onClick: () => onMessage(p) }}
+      secondary={isMe ? undefined : { icon: <MessageCircle className="h-4 w-4" aria-hidden />, label: `Message ${name}`, onClick: () => onMessage(p), disabled: connected === false }}
+      backContent={<div className="flex flex-wrap gap-2">{extractSkillsArray(p.professional_skills).map(skill => <CardPill key={skill}>{skill}</CardPill>)}</div>}
+      backActions={isMe ? undefined : <>
+        <Button variant="outline" size="sm" className="min-h-11" disabled={connected === false} onClick={() => onMessage(p)}>Message</Button>
+        {!connected && <Button variant="outline" size="sm" className="min-h-11" asChild><a href={href}>Connect</a></Button>}
+        {onProject && <Button variant="outline" size="sm" className="min-h-11" disabled={!connected} onClick={() => onProject(p)}>Start a project</Button>}
+      </>}
     />
   );
 }

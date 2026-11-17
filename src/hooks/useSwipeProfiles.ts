@@ -494,10 +494,10 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   }, [fetchProfiles]);
 
   useEffect(() => {
-    if (!loading && hasFetched) {
-      window.dispatchEvent(new CustomEvent('match:scanned', { detail: { count: allProfiles.length } }));
+    if (!loading && (hasFetched || error)) {
+      window.dispatchEvent(new CustomEvent('match:scanned', { detail: { count: profiles.length, error } }));
     }
-  }, [loading, hasFetched, allProfiles.length]);
+  }, [loading, hasFetched, profiles.length, error]);
 
   const removeProfile = useCallback((userId: string) => {
     removedIds.current.add(userId);

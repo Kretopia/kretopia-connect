@@ -94,7 +94,7 @@ export default function Match() {
   useEffect(() => {
     if (searchParams.get("welcome") !== "match") return;
     import("sonner")
-      .then(({ toast }) => toast.success("We found you a match!", { description: "Tap the first card to say hi.", duration: 5000 }))
+      .then(({ toast }) => toast("Your discovery deck is ready", { description: "Explore profiles and express your interest.", duration: 5000 }))
       .catch(() => {});
     const next = new URLSearchParams(searchParams);
     next.delete("welcome");
@@ -115,7 +115,7 @@ export default function Match() {
             label="Browse view"
           />
           {browseView === BROWSE_VIEW_IDS.deck ? (
-            <MatchDeck cardVariant="shell" />
+            <><MatchPulse /><MatchDeck cardVariant="shell" /></>
           ) : (
             <Suspense fallback={loadingRow("Loading creators…")}>
               <BrowseCreators />
@@ -156,7 +156,7 @@ export default function Match() {
             // `connections` table). Labeled for what this view actually shows rather than a dating-app
             // "Likes you".
             <Suspense fallback={loadingRow("Loading…")}>
-              <LikesYouGrid />
+              <LikesYouGrid key={connectedView} direction={connectedView === CONNECTED_VIEW_IDS.sent ? "sent" : "received"} />
             </Suspense>
           )}
         </div>
@@ -180,7 +180,6 @@ export default function Match() {
       />
 
       <StudioFeatureShell wrapped={{ name: "Match" }}>
-        <MatchPulse />
         <FeatureSectionNav
           items={matchTabs.map((t) => ({ id: t.id, label: t.label, icon: t.icon || LayoutGrid }))}
           value={activeTab}

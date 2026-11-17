@@ -26,7 +26,7 @@ interface Liker {
  * "Likes you" — creators who swiped right on you and are still waiting on a reply.
  * Liking back records the mutual swipe, exactly like the deck does.
  */
-export function LikesYouGrid() {
+export function LikesYouGrid({ direction = "received" }: { direction?: "sent" | "received" }) {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -34,6 +34,7 @@ export function LikesYouGrid() {
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +44,22 @@ export function LikesYouGrid() {
         return;
       }
       setLoading(true);
+      setLoadError(false);
       try {
+        if (direction === "sent") {
+          const [sent, accepted] = await Promise.all([
+            supabase.from("swipes").select("target_id").eq("user_id", user.id).eq("target_type", "profile").eq("direction", "right").limit(60),
+            supabase.from("connections").select("user_id,connected_user_id").eq("status", "accepted").or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`),
+          ]);
+          if (sent.error || accepted.error) throw sent.error ?? accepted.error;
+          const connected = new Set((accepted.data ?? []).flatMap(c => [c.user_id, c.connected_user_id]));
+          const ids = [...new Set((sent.data ?? []).map(s => s.target_id))].filter(id => !connected.has(id));
+          if (!ids.length) { if (!cancelled) setLikers([]); return; }
+          const result = await supabase.from("public_profiles_safe").select("user_id,full_name,role,location,avatar_url").in("user_id", ids);
+          if (result.error) throw result.error;
+          if (!cancelled) setLikers((result.data ?? []) as Liker[]);
+          return;
+        }
         const [incoming, outgoing] = await Promise.all([
           supabase
             .from("swipes")
@@ -55,6 +71,7 @@ export function LikesYouGrid() {
             .limit(60),
           supabase.from("swipes").select("target_id").eq("user_id", user.id),
         ]);
+        if (incoming.error || outgoing.error) throw incoming.error ?? outgoing.error;
 
         const already = new Set((outgoing.data ?? []).map((s: any) => s.target_id));
         const ids = [...new Set((incoming.data ?? []).map((s: any) => s.user_id))].filter(
@@ -65,15 +82,16 @@ export function LikesYouGrid() {
           return;
         }
 
-        const { data: profiles } = await supabase
+        const { data: profiles, error } = await supabase
           .from("profiles")
           .select("user_id, full_name, role, location, avatar_url")
           .in("user_id", ids);
+        if (error) throw error;
 
         if (!cancelled) setLikers((profiles ?? []) as Liker[]);
       } catch (e) {
         console.error("LikesYouGrid load failed:", e);
-        if (!cancelled) setLikers([]);
+        if (!cancelled) setLoadError(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,10 +100,10 @@ export function LikesYouGrid() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, direction]);
 
   const respond = async (targetId: string, direction: "left" | "right") => {
-    if (!user) return;
+    if (!user || busyId) return;
     setBusyId(targetId);
     try {
       const { error } = await supabase.from("swipes").insert({
@@ -97,7 +115,7 @@ export function LikesYouGrid() {
       if (error) throw error;
       setLikers((l) => l.filter((p) => p.user_id !== targetId));
       // A saved answer is all this write proves: it creates no connection, so it must not announce a match.
-      if (direction === "right") toast({ title: "Interest saved", description: "Your answer is saved. You can say hello in Messages." });
+      if (direction === "right") toast({ title: "Interest saved", description: "An interest is not an accepted connection." });
     } catch (e: any) {
       toast({ title: "Couldn't save that", description: e?.message, variant: "destructive" });
     } finally {
@@ -113,14 +131,15 @@ export function LikesYouGrid() {
     );
   }
 
+  if (loadError) return <div role="alert" className="py-8 text-center"><p className="text-sm text-destructive">Couldn't load interests.</p><Button variant="outline" onClick={() => navigate("/match?tab=connected")}>Return to connections</Button></div>;
   if (!likers.length) {
     return (
       <div className="py-6">
         <EmptyState
           icon={Sparkles}
           eyebrow="Interested"
-          title="No one waiting yet"
-          description="When a creator swipes right on you, they land here so you can answer in one tap."
+          title={direction === "sent" ? "No outstanding sent interests" : "No one waiting yet"}
+          description={direction === "sent" ? "Your sent interests appear here until you connect." : "When a creator expresses interest, they appear here for your response."}
           accent="lime"
           action={{ label: "Browse creators", icon: Heart, onClick: () => navigate("/match?tab=browse&view=grid") }}
         />
@@ -149,7 +168,7 @@ export function LikesYouGrid() {
                   <CreatorPassportCard
                     profile={p}
                     onOpen={() => navigate(`/profile/${p.user_id}`)}
-                    reply={{ onMatch: () => respond(p.user_id, "right"), onPass: () => respond(p.user_id, "left"), busy: busyId === p.user_id }}
+                    reply={direction === "sent" ? undefined : { onMatch: () => respond(p.user_id, "right"), onPass: () => respond(p.user_id, "left"), busy: busyId !== null }}
                   />
                 </li>
               ))}

@@ -33,7 +33,7 @@ export function CreatorPassportCard({ profile: p, onOpen, reply }: { profile: Cr
       tags={extractSkillsArray(p.professional_skills).map((skill) => <CardPill key={skill}>{skill}</CardPill>)}
       reasons={p.match_reasons}
       open={{ onClick: onOpen }}
-      primary={reply ? { label: "Match", onClick: reply.onMatch, disabled: reply.busy } : { label: "View Passport", onClick: onOpen, ariaLabel: `View Passport — ${name}` }}
+      primary={reply ? { label: "Interested", onClick: reply.onMatch, disabled: reply.busy } : { label: "View Passport", onClick: onOpen, ariaLabel: `View Passport — ${name}` }}
       secondary={reply ? { icon: <X className="h-4 w-4" aria-hidden />, label: "Pass", onClick: reply.onPass, disabled: reply.busy } : undefined}
     />
   );

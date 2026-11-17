@@ -13,3 +13,9 @@
 - [x] Use UTC start/end boundaries consistently and label public event times accurately.
 - [x] Verify Bali scheduling, edit round trips, and status boundaries with 78 tests; inspect a real public event on desktop/mobile. No migration or publication.
 - [ ] Verify an organizer-created event against production storage: blocked by unavailable legacy authenticated session; the observed November 12 record is explicitly completed and has no timezone, requiring organizer review rather than automatic data correction.
+
+# Match overhaul
+- [x] Reuse Scout CardShell and ScoutScanButton in Match with safe deck controls and honest scan states.
+- [x] Categorize paginated Directory rails with gated profile actions; preserve accepted, received and sent interest distinctions and enhance existing Kreto arcs/rotation.
+- [x] Run focused tests and responsive public browser verification without sending messages, interests or invitations.
+- [ ] Verify signed-in deck and 3D rendering against production: blocked by unavailable legacy session. No official volumetric mascot asset is available; the existing procedural renderer was retained, not replaced with a rotated image.

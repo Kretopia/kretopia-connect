@@ -35,7 +35,7 @@ export function ScoutFieldCarousel({ label, children, heading }: { label: string
         </div>
       </div>
       <ul ref={rail} role="region" aria-roledescription="carousel" aria-label={label} tabIndex={0}
-        className="flex min-w-0 gap-3 overflow-x-auto overscroll-x-contain pb-3 pt-1 [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy [&>li]:w-[min(82vw,320px)] [&>li]:max-w-full [&>li]:shrink-0"
+        className="flex min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain pb-3 pt-1 [scrollbar-width:thin] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-energy [&>li]:snap-start [&>li]:w-[min(82vw,320px)] [&>li]:max-w-full [&>li]:shrink-0"
         onScroll={update} onPointerLeave={stop} onPointerDown={stop} onFocusCapture={stop}
         onKeyDown={(e) => { if (e.target !== e.currentTarget) return; if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); step(e.key === "ArrowLeft" ? -1 : 1); } }}
         onPointerMove={(e) => {

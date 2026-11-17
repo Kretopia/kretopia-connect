@@ -1,64 +1,67 @@
 import { useEffect, useRef, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ScoutScanButton } from "@/components/scout/ScoutScanButton";
 import { KretoMark } from "@/components/brand/KretoMark";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
-const AUTO_SCAN_MS = 5 * 60 * 1000;
 
 /**
  * Match's Pulse: same Scan now pattern as Scout. Re-ranks every member by
  * shared interests on demand, and automatically every 5 minutes.
  */
 export function MatchPulse() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [scanning, setScanning] = useState(false);
   const [count, setCount] = useState<number | null>(null);
   const [lastScan, setLastScan] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const scanningRef = useRef(false);
+  const timeout = useRef<ReturnType<typeof setTimeout>>();
 
   const scan = () => {
+    if (!user) { navigate("/auth?next=/match"); return; }
     if (scanningRef.current) return;
     scanningRef.current = true;
     setScanning(true);
+    setError(null);
     window.dispatchEvent(new CustomEvent("match:scan"));
+    timeout.current = setTimeout(() => { scanningRef.current = false; setScanning(false); setError("timeout"); }, 25000);
   };
 
   useEffect(() => {
     const onDone = (e: Event) => {
-      setCount((e as CustomEvent<{ count: number }>).detail.count);
-      setLastScan(new Date());
+      clearTimeout(timeout.current);
+      const detail = (e as CustomEvent<{ count: number; error?: string | null }>).detail;
+      setError(detail.error ?? null);
+      if (!detail.error) { setCount(detail.count); setLastScan(new Date()); }
       scanningRef.current = false;
       setScanning(false);
     };
     window.addEventListener("match:scanned", onDone);
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") scan();
-    }, AUTO_SCAN_MS);
     return () => {
       window.removeEventListener("match:scanned", onDone);
-      window.clearInterval(id);
+      clearTimeout(timeout.current);
     };
   }, []);
 
   return (
     <section
       aria-label="Match Pulse"
-      className="mb-4 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3"
+      className="mb-4 flex flex-col gap-3 py-3 sm:flex-row sm:items-center"
     >
       <KretoMark size="sm" state={scanning ? "active" : "idle"} />
       <div className="min-w-0 flex-1" aria-live="polite">
         <p className="text-sm font-semibold text-foreground">
-          {scanning ? "Scanning members…" : count === null ? "Pulse" : `${count} people share your interests`}
+          {scanning ? "Scanning creators…" : error ? "Scan unavailable" : "Discover your next collaborator"}
         </p>
         <p className="text-xs text-muted-foreground">
-          {lastScan
-            ? `Last scan ${lastScan.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} · auto every 5 min`
-            : "Ranked by shared roles, skills and passions, close or distant"}
+          {error ? "Couldn't refresh profiles. Try again." : count === 0 ? "No profiles available. Adjust your filters or browse the directory." : lastScan
+            ? `${count} profiles available · checked ${lastScan.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+            : "Find people by craft and skills, then express your interest."}
         </p>
       </div>
-      <Button size="sm" variant="outline" onClick={scan} disabled={scanning} className="min-h-11 shrink-0">
-        {scanning ? <KretoMark size="xs" state="active" /> : <RefreshCw className="h-3.5 w-3.5" />}
-        <span className="ml-1.5 text-xs">Scan now</span>
-      </Button>
+      <ScoutScanButton finitePulse label={scanning ? "Scanning creators…" : error ? "Try again" : "Scan now"} busy={scanning} onClick={scan} />
     </section>
   );
 }

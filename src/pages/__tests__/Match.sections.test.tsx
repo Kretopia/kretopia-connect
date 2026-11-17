@@ -99,4 +99,10 @@ describe("Match: Browse and Connected each hold their old second tab as a view, 
     expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=directory");
     expect(screen.getByTestId("location")).not.toHaveTextContent("view=");
   });
+  it("sent interests remain distinct from accepted connections and incoming interests", async () => {
+    draw("/match?tab=connected&view=sent");
+    expect(screen.getByRole("button", { name: "Sent interests" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Connected" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: "Interested" })).toHaveAttribute("aria-pressed", "false");
+  });
 });

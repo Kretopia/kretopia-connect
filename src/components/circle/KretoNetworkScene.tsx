@@ -73,9 +73,17 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
       const row = Math.floor(index / 2);
       return new THREE.Vector3(side * (2.4 + (row % 2) * 0.12), 2.1 - row * 1.4, -0.3);
     });
+    const arcs: THREE.Line[] = [];
     positions.forEach((position, index) => {
       ball(graph, index % 2 ? amber : pink, [0.05, 0.05, 0.05], [position.x, position.y, position.z]);
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -0.1, -0.4), position]), new THREE.LineBasicMaterial({ color: color(index % 2 ? "--k-g-4" : "--k-g-3"), transparent: true, opacity: 0.4 })); graph.add(line);
+      const origin = new THREE.Vector3(0, -0.1, -0.4);
+      const points = Array.from({ length: 20 }, (_, step) => {
+        const t = step / 19;
+        const point = origin.clone().lerp(position, t);
+        point.y += Math.sin(t * Math.PI) * Math.sin(step * 2.1) * 0.07;
+        return point;
+      });
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: color(index % 2 ? "--k-g-4" : "--k-g-3"), transparent: true, opacity: 0.4 })); graph.add(line); arcs.push(line);
     });
     const resize = () => { const width = mount.clientWidth; const height = mount.clientHeight; renderer.setSize(width, height); camera.aspect = width / height; camera.position.z = width < 550 ? 14 : 10.5; camera.updateProjectionMatrix(); };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
@@ -86,13 +94,14 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
       yaw += (targetYaw - yaw) * 0.08; robot.rotation.y = yaw; robot.rotation.x = pitch;
       robot.position.y = reduce.matches ? 0 : Math.sin(now * 0.0014) * 0.065;
       head.rotation.z = reduce.matches ? 0 : Math.sin(now * 0.0008) * 0.025;
+      arcs.forEach((line, i) => { const material = line.material as THREE.LineBasicMaterial; material.opacity = reduce.matches ? 0.4 : 0.3 + 0.25 * Math.max(0, Math.sin(now * 0.001 - i * 0.8)); });
       renderer.render(scene, camera);
       positions.forEach((position, i) => { const element = labels.current.get(people[i].user_id); if (!element) return; const screen = position.clone().project(camera); element.style.left = `${(screen.x + 1) * 50}%`; element.style.top = `${(1 - screen.y) * 50}%`; });
       frame = requestAnimationFrame(draw);
     };
     const intersection = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? false; cancelAnimationFrame(frame); if (visible) frame = requestAnimationFrame(draw); }); intersection.observe(mount);
     const down = (e: PointerEvent) => { dragging = true; previousX = e.clientX; renderer.domElement.setPointerCapture(e.pointerId); };
-    const move = (e: PointerEvent) => { if (dragging) { targetYaw += (e.clientX - previousX) * 0.009; previousX = e.clientX; } else if (e.pointerType === "mouse" && !reduce.matches) { const box = mount.getBoundingClientRect(); targetYaw = (e.clientX - box.left - box.width / 2) / box.width * 0.5; pitch = -(e.clientY - box.top - box.height / 2) / box.height * 0.15; } };
+    const move = (e: PointerEvent) => { if (dragging) { targetYaw += (e.clientX - previousX) * 0.009; previousX = e.clientX; } };
     const up = () => { dragging = false; };
     reset.current = () => { targetYaw = -0.1; pitch = 0; };
     renderer.domElement.style.touchAction = "pan-y";

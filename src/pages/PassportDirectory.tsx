@@ -16,11 +16,15 @@ import { KretoMark } from "@/components/brand/KretoMark";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { WrappedStatus } from "@/components/wrapped/WrappedStatus";
-import { PassportDirectoryCard, type DirectoryPassport } from "@/components/passport/PassportDirectoryCard";
+import { PassportDirectoryCard, passportHref, type DirectoryPassport } from "@/components/passport/PassportDirectoryCard";
 import { DirectMessageDialog } from "@/components/DirectMessageDialog";
 import type { TutorialStep } from "@/components/landing/kretopia/FeatureTutorial";
 import { BRAND } from "@/lib/brandLexicon";
 import { APP_URL } from "@/lib/constants";
+import { ScoutFieldCarousel } from "@/components/scout/ScoutFieldCarousel";
+import { groupCreatorsByCraft } from "@/components/discover/creatorCategories";
+import { lazy, Suspense } from "react";
+const StartProjectDialog = lazy(() => import("@/components/project/StartProjectFromMatchDialog").then(m => ({ default: m.StartProjectFromMatchDialog })));
 
 const DIRECTORY_TUTORIAL: TutorialStep[] = [
   { icon: SearchIcon, title: "Search the record", body: "Find a creative by name, @handle, role or city, then narrow by profession, place or standing." },
@@ -50,21 +54,49 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
   const [creditsByUser, setCreditsByUser] = useState<Record<string, number>>({});
   const [cosignsByUser, setCosignsByUser] = useState<Record<string, number>>({});
   const [messageTarget, setMessageTarget] = useState<DirectoryPassport | null>(null);
+  const [projectTarget, setProjectTarget] = useState<DirectoryPassport | null>(null);
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    setConnectedIds(new Set());
+    if (!user?.id) return;
+    Promise.all([
+      supabase.from("connections").select("connected_user_id,status").eq("user_id", user.id),
+      supabase.from("connections").select("user_id,status").eq("connected_user_id", user.id),
+    ]).then(([outgoing, incoming]) => {
+      if (cancelled || outgoing.error || incoming.error) return;
+      setConnectedIds(new Set([
+        ...(outgoing.data ?? []).filter(c => c.status === "accepted").map(c => c.connected_user_id),
+        ...(incoming.data ?? []).filter(c => c.status === "accepted").map(c => c.user_id),
+      ]));
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
+      setLoading(true);
+      setLoadError(false);
+      const { data, error } = await supabase
         .from("public_profiles_safe")
-        .select("user_id,username,full_name,role,avatar_url,cover_image_url,location,verification_tier,level")
+        .select("user_id,username,full_name,role,avatar_url,cover_image_url,location,verification_tier,level,bio,professional_skills")
         .not("username", "is", null)
         .order("level", { ascending: false, nullsFirst: false })
-        .limit(120);
+        .order("user_id")
+        .range((page - 1) * 36, page * 36);
       if (cancelled) return;
+      if (error) throw error;
+      setHasMore((data?.length ?? 0) > 36);
       const list = ((data as Array<Omit<DirectoryPassport, "user_id"> & { user_id: string | null }>) || []).filter(
         (r): r is DirectoryPassport => !!r.user_id,
       );
-      setRows(list);
+      setRows(previous => [...new Map([...(page === 1 ? [] : previous), ...list.slice(0, 36)].map(p => [p.user_id, p])).values()]);
       setLoading(false);
 
       // Real credits and co-sign counts: one batched tally each over every
@@ -78,15 +110,15 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
       if (cancelled) return;
       const credits: Record<string, number> = {};
       for (const row of creditsRes.data || []) credits[row.user_id] = (credits[row.user_id] ?? 0) + 1;
-      setCreditsByUser(credits);
+      setCreditsByUser(previous => ({ ...previous, ...credits }));
       const cosigns: Record<string, number> = {};
       for (const row of reviewsRes.data || []) cosigns[row.company_id] = (cosigns[row.company_id] ?? 0) + 1;
-      setCosignsByUser(cosigns);
-    })().catch(() => !cancelled && setLoading(false));
+      setCosignsByUser(previous => ({ ...previous, ...cosigns }));
+    })().catch(() => { if (!cancelled) { setLoading(false); setLoadError(true); } });
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [page, retry]);
 
   // Option lists come from the fetched rows: this directory spans every
   // discipline on Kretopia, so there is no fixed enum to guess.
@@ -226,7 +258,7 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
           </div>
         </div>
 
-        {loading ? (
+        {loadError ? <div role="alert" className="py-8 text-center"><p className="text-sm text-destructive">Couldn't load the directory.</p><Button variant="outline" onClick={() => setRetry(p => p + 1)}>Try again</Button></div> : loading ? (
           <div className="flex justify-center py-16">
             <KretopiaLoader label="Loading the record" />
           </div>
@@ -234,6 +266,7 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
           <div className="flex flex-col items-center gap-3 py-12 text-center">
             <KretoScene scene="talent-search" size="thumb" className="h-24 w-44 rounded-2xl border border-border" />
             <p className="text-sm text-muted-foreground">No Passports match that search yet.</p>
+            {hasMore && <Button variant="outline" onClick={() => setPage(p => p + 1)}>Search more Passports</Button>}
             <div className="flex flex-wrap justify-center gap-2">
               {query && (
                 <Button type="button" variant="outline" size="sm" onClick={() => setQuery("")}>Clear search</Button>
@@ -245,17 +278,23 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
+          <div className="space-y-6">
+            {groupCreatorsByCraft(filtered).map(group => <section key={group.id} className="min-w-0" aria-label={group.label}>
+            <ScoutFieldCarousel label={group.label} heading={<h2 className="text-sm font-bold">{group.label} <span className="ml-2 font-normal tabular-nums text-muted-foreground">{group.creators.length}</span></h2>}>
+            {group.creators.map((p) => <li key={p.user_id}>
               <PassportDirectoryCard
                 key={p.user_id}
                 passport={p}
                 credits={creditsByUser[p.user_id] ?? 0}
                 cosigns={cosignsByUser[p.user_id] ?? 0}
                 isMe={p.user_id === user?.id}
-                onMessage={setMessageTarget}
+                connected={connectedIds.has(p.user_id)}
+                onMessage={p => { if (connectedIds.has(p.user_id)) setMessageTarget(p); else navigate(user ? passportHref(p) : `/auth?next=${encodeURIComponent(passportHref(p))}`); }}
+                onProject={p => { if (connectedIds.has(p.user_id)) setProjectTarget(p); }}
               />
-            ))}
+            </li>)}
+            </ScoutFieldCarousel></section>)}
+            {hasMore && <Button variant="outline" onClick={() => setPage(p => p + 1)} disabled={loading}>Load more Passports</Button>}
           </div>
         )}
       </ContentShell>
@@ -269,6 +308,7 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
           recipientAvatar={messageTarget.avatar_url}
         />
       )}
+      {projectTarget && <Suspense fallback={<KretopiaLoader size="sm" label="Opening project" />}><StartProjectDialog open onOpenChange={open => { if (!open) setProjectTarget(null); }} matchedUser={{ id: projectTarget.user_id, name: projectTarget.full_name || projectTarget.username || "Creator", role: projectTarget.role || "Creator", avatar: projectTarget.avatar_url }} /></Suspense>}
     </div>
   );
 };

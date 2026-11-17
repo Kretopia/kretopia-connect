@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Eye, ExternalLink, RotateCcw } from "lucide-react";
+import { ArrowRight, Eye, ExternalLink } from "lucide-react";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
 import {
@@ -51,6 +51,9 @@ export interface CardBack {
 }
 
 export interface CardShellProps {
+  /** Same Scout surface, with cover and body side by side on wide decks. */
+  landscape?: boolean;
+  onFlipChange?: (flipped: boolean) => void;
   testId?: string;
   /** Render a static Kretopia surface without the pointer-tracked HoloCard shell. */
   flat?: boolean;
@@ -135,7 +138,7 @@ export function CardTextButton({ className, ...props }: React.ButtonHTMLAttribut
  *
  * Long text, extra fields and anything else a surface wants to show belong on the back (`back`) or on the detail view, never on the front.
  */
-export function CardShell({ testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
+export function CardShell({ landscape = false, onFlipChange, testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
   const backId = useId();
   const [flipped, setFlipped] = useState(false);
   const [backBuilt, setBackBuilt] = useState(false);
@@ -167,6 +170,7 @@ export function CardShell({ testId, flat = false, title, open, stretch = false, 
       back?.onOpen?.();
     }
     setFlipped(on);
+    onFlipChange?.(on);
   };
 
   // The face that is turned away is inert (no focus, no clicks), and focus follows the flip.
@@ -215,8 +219,8 @@ export function CardShell({ testId, flat = false, title, open, stretch = false, 
       >
         <div className={CARD_FLIP_INNER} style={{ transform: flipped ? "rotateY(180deg)" : undefined }}>
           {/* FRONT */}
-          <div ref={front} className={CARD_FACE} style={CARD_FACE_STYLE} aria-hidden={flipped || undefined}>
-            <div className={CARD_COVER} data-card-part="cover">
+          <div ref={front} className={cn(CARD_FACE, landscape && "lg:grid lg:grid-cols-2")} style={CARD_FACE_STYLE} aria-hidden={flipped || undefined}>
+            <div className={cn(CARD_COVER, landscape && "lg:aspect-auto lg:min-h-[350px]")} data-card-part="cover">
               {cover}
               <div className={CARD_COVER_SCRIM} />
               <div className={CARD_COVER_OVERLAY}>
@@ -268,7 +272,7 @@ export function CardShell({ testId, flat = false, title, open, stretch = false, 
                 </div>
                 <footer className={CARD_FOOTER}>
                   <button ref={flipBackButton} type="button" className={CARD_TEXT_ACTION} onClick={() => flipTo(false)} data-testid="flip-back">
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden />Flip back
+                    <Eye className="h-3.5 w-3.5" aria-hidden />Flip back
                   </button>
                   <div className="flex flex-wrap items-center justify-end gap-2">{back.actions}</div>
                 </footer>

@@ -12,7 +12,7 @@ export type MatchTabId = (typeof MATCH_TAB_IDS)[number];
 export const BROWSE_VIEW_IDS = { deck: "deck", grid: "grid" } as const;
 export type BrowseViewId = (typeof BROWSE_VIEW_IDS)[keyof typeof BROWSE_VIEW_IDS];
 
-export const CONNECTED_VIEW_IDS = { connected: "connected", interested: "interested" } as const;
+export const CONNECTED_VIEW_IDS = { connected: "connected", interested: "interested", sent: "sent" } as const;
 export type ConnectedViewId = (typeof CONNECTED_VIEW_IDS)[keyof typeof CONNECTED_VIEW_IDS];
 
 export const BROWSE_SEGMENT_OPTIONS = [
@@ -23,6 +23,7 @@ export const BROWSE_SEGMENT_OPTIONS = [
 export const CONNECTED_SEGMENT_OPTIONS = [
   { value: CONNECTED_VIEW_IDS.connected, label: "Connected", icon: UserCheck },
   { value: CONNECTED_VIEW_IDS.interested, label: "Interested", icon: Users },
+  { value: CONNECTED_VIEW_IDS.sent, label: "Sent interests", icon: Sparkles },
 ] as const;
 
 /** A tab/view pair that is always valid: a real tab id, and a view that belongs to it (or "" for Directory, which has none). */
@@ -51,7 +52,8 @@ export function matchTabFromParams(tabParam: string | null, viewParam: string | 
     discover: { tab: "browse", view: BROWSE_VIEW_IDS.deck },
     interested: { tab: "connected", view: CONNECTED_VIEW_IDS.interested },
   };
-  if (tabParam && legacy[tabParam]) return legacy[tabParam]!;
+  const legacySection = tabParam ? legacy[tabParam] : undefined;
+  if (legacySection) return legacySection;
 
   const tab: MatchTabId = (MATCH_TAB_IDS as readonly string[]).includes(tabParam ?? "") ? (tabParam as MatchTabId) : "browse";
   const validViews: Record<MatchTabId, readonly string[]> = {
