@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Eye, ExternalLink } from "lucide-react";
+import { ArrowRight, BookOpen, Eye, ExternalLink, RotateCcw } from "lucide-react";
 import { HoloCard } from "@/components/passport/HoloCard";
 import { cn } from "@/lib/utils";
 import {
@@ -194,16 +194,16 @@ export function CardShell({ landscape = false, portrait = false, onFlipChange, t
     <button
       ref={flipButton}
       type="button"
-      className={cn(CARD_ICON_BTN, CARD_ABOVE)}
+      className={cn(portrait ? CARD_BTN : CARD_ICON_BTN, CARD_ABOVE)}
       data-card-part="secondary"
       aria-controls={backId}
       aria-expanded={flipped}
-      aria-label="Quick look"
-      title="Quick look"
+      aria-label={portrait ? "View full Passport" : "Quick look"}
+      title={portrait ? "View full Passport" : "Quick look"}
       onClick={() => flipTo(true)}
       data-testid="quick-look"
     >
-      <Eye className="h-[15px] w-[15px]" aria-hidden />
+      {portrait ? <><BookOpen className="h-4 w-4" aria-hidden />Full Passport</> : <Eye className="h-[15px] w-[15px]" aria-hidden />}
     </button>
   ) : secondary ? (
     <CardIconButton action={secondary} className={CARD_ABOVE} part="secondary" />
@@ -276,8 +276,8 @@ export function CardShell({ landscape = false, portrait = false, onFlipChange, t
                   {back.children}
                 </div>
                 <footer className={CARD_FOOTER}>
-                  <button ref={flipBackButton} type="button" className={CARD_TEXT_ACTION} onClick={() => flipTo(false)} data-testid="flip-back">
-                    <Eye className="h-3.5 w-3.5" aria-hidden />Flip back
+                  <button ref={flipBackButton} type="button" className={CARD_TEXT_ACTION} onClick={() => flipTo(false)} data-testid="flip-back" aria-label={portrait ? "Back to Passport photos" : "Flip back"}>
+                    {portrait ? <RotateCcw className="h-3.5 w-3.5" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}{portrait ? "Passport photos" : "Flip back"}
                   </button>
                   <div className="flex flex-wrap items-center justify-end gap-2">{back.actions}</div>
                 </footer>

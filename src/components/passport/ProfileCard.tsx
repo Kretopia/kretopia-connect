@@ -75,7 +75,6 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
       meta={meta}
       description={bio}
       tags={tags}
-      details={portrait ? backContent : undefined}
       trust={
         reasons && reasons.length > 0 ? (
           portrait ? <ul aria-label={`Why ${name} is suggested`} className="space-y-1">
@@ -86,11 +85,11 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
         ) : null
       }
       primary={primary}
-      back={portrait ? undefined : {
-        label: "profile details",
-        eyebrow: "Creative Passport",
+      back={{
+        label: portrait ? "full public Passport" : "profile details",
+        eyebrow: "Kretopia · Creative Passport",
         children: <>{bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{bio}</p>}{tags?.length ? <div className="flex flex-wrap gap-2">{tags}</div> : null}{backContent}</>,
-        actions: <><CardActionButton action={{ label: "View profile", ...open }} />{backActions}</>,
+        actions: portrait ? backActions : <><CardActionButton action={{ label: "View profile", ...open }} />{backActions}</>,
       }}
     />
   );

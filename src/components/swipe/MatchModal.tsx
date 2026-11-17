@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { MessageCircle, Sparkles, Rocket, Send, Check } from 'lucide-react';
@@ -201,14 +201,14 @@ export function MatchModal({
             <div className="mb-6">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-3">
                 <Sparkles className="h-5 w-5" />
-                <span className="font-semibold">It's a Match!</span>
+                <span className="font-semibold">Mutual connection</span>
               </div>
-              <h2 className="text-2xl font-bold">
-                You matched with {matchedProfile.full_name?.split(' ')[0]}!
-              </h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Tap an icebreaker to start the conversation now
-              </p>
+              <DialogTitle className="text-2xl font-bold">
+                Congratulations — you have a match!
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm mt-1">
+                You and {matchedProfile.full_name} chose each other. Start a conversation or create something together.
+              </DialogDescription>
             </div>
 
             {/* Avatars */}
@@ -272,19 +272,20 @@ export function MatchModal({
 
             {/* Secondary actions */}
             <div className="space-y-2">
-              <Button variant="outline" className="w-full gap-2" size="lg" onClick={handleOpenChat}>
-                <MessageCircle className="h-4 w-4" />
-                Write your own message
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full gap-2 text-primary hover:bg-primary/5"
-                size="sm"
-                onClick={handleStartProject}
-              >
-                <Rocket className="h-4 w-4" />
-                Or start a project together
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" className="h-12 w-full gap-2" onClick={handleOpenChat}>
+                  <MessageCircle className="h-4 w-4" />
+                  Message
+                </Button>
+                <Button
+                  variant="outline"
+                  className="h-12 w-full gap-2"
+                  onClick={handleStartProject}
+                >
+                  <Rocket className="h-4 w-4" />
+                  Create & collaborate
+                </Button>
+              </div>
               <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => onOpenChange(false)}>
                 Continue browsing
               </Button>

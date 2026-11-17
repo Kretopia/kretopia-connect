@@ -15,6 +15,9 @@
 - [ ] Verify an organizer-created event against production storage: blocked by unavailable legacy authenticated session; the observed November 12 record is explicitly completed and has no timezone, requiring organizer review rather than automatic data correction.
 
 # Match overhaul
+- [x] Restore a fixed-size Passport front/back flip with every available public profile field, equal Pass/Connect controls, reciprocal-match celebration and collaboration actions.
+- [x] Make Kreto Match visibly interactive with the official animated Scout and instant local guidance, without paid AI calls. 75 tests and TypeScript pass; browser checks confirm stable card dimensions, identical buttons, working flip/modal and no mobile overflow or runtime errors using control data.
+- [ ] Verify reciprocal matching, messaging and project invitation with two real production accounts: blocked by unavailable legacy authenticated sessions. No publication.
 - [x] Fit the complete Match card and Pass/Connect actions within the viewport; remove the eye/profile-preview path from Match, expose every available public profile field directly, use original-resolution photos and subtle factual match reasons.
 - [x] Remove the redundant empty-state copy/actions and give pending interests a branded confirmation with a Sent interests shortcut. Four viewport checks (390×667, 390×844, 662×697, 1280×900) found no page/internal overflow; original 1024×1280 image used. No publication.
 - [x] Remove matching completion gates; include genuine unfinished/roleless accounts, verify three pass cycles and preserve blocks, connections and pending interests.
