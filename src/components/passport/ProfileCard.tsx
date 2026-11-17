@@ -47,7 +47,7 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
     <CardShell
       landscape={landscape}
       portrait={portrait}
-      flat={portrait}
+      className={portrait ? "k-match-card" : undefined}
       onFlipChange={onFlipChange}
       testId={testId}
       title={name}
@@ -67,6 +67,7 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
       }
       coverStart={
         <>
+          {portrait ? <CardPill tone="origin">Kretopia · Passport</CardPill> : null}
           {standing ? <CardPill tone="origin"><ShieldCheck className="h-3 w-3" aria-hidden />{standing}</CardPill> : null}
           {badge}
         </>

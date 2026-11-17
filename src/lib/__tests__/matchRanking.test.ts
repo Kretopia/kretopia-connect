@@ -51,7 +51,7 @@ describe("isPositivelyRealMember", () => {
     // what create_unclaimed_profile produces: onboarding true, no XP, no ID check
     expect(isPositivelyRealMember({ onboarding_completed: true, xp: 0, id_verified: false })).toBe(false);
     expect(isPositivelyRealMember({ onboarding_completed: true })).toBe(false);
-    expect(isPositivelyRealMember({ onboarding_completed: false, xp: 500 })).toBe(false);
+    expect(isPositivelyRealMember({ onboarding_completed: false, xp: 500 })).toBe(true);
   });
 });
 

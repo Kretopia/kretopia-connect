@@ -58,10 +58,10 @@ export function recencyBoost(updatedAt: string | null | undefined, now: number):
  * The view does not expose `is_claimed`, and imported (unclaimed) profiles are
  * created with `onboarding_completed = true` but never any XP or ID check, so
  * "finished onboarding" alone would let imports into the deck. XP and identity
- * verification can only come from a real account.
+ * verification establish a real account independently of onboarding completion.
  */
 export function isPositivelyRealMember(row: { onboarding_completed?: boolean | null; xp?: number | null; id_verified?: boolean | null }): boolean {
-  return row.onboarding_completed === true && ((row.xp ?? 0) > 0 || row.id_verified === true);
+  return (row.xp ?? 0) > 0 || row.id_verified === true;
 }
 
 export interface RankableCandidate {

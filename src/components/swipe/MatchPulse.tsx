@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ScoutScanButton } from "@/components/scout/ScoutScanButton";
-import { KretoMark } from "@/components/brand/KretoMark";
+import { MatchBrand } from "./MatchBrand";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
@@ -48,17 +48,17 @@ export function MatchPulse() {
   return (
     <section
       aria-label="Match Pulse"
-      className="mb-4 flex flex-col gap-3 py-3 sm:flex-row sm:items-center"
+      className="mb-4 flex min-h-24 flex-col gap-3 border-b border-border py-4 sm:flex-row sm:items-center"
     >
-      <KretoMark size="sm" state={scanning ? "active" : "idle"} />
+      <MatchBrand iconOnly />
       <div className="min-w-0 flex-1" aria-live="polite">
         <p className="text-sm font-semibold text-foreground">
           {scanning ? "Scanning creators…" : error ? "Scan unavailable" : "Discover your next collaborator"}
         </p>
         <p className="text-xs text-muted-foreground">
-          {error ? "Couldn't refresh profiles. Try again." : count === 0 ? "No profiles available. Adjust your filters or browse the directory." : lastScan
+          {error ? "Couldn't refresh profiles. Try again." : count === 0 ? "Your next connection starts here." : lastScan
             ? `${count} profiles available · checked ${lastScan.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
-            : "Find people by craft and skills, then express your interest."}
+            : "People. Possibilities. Kretopia."}
         </p>
       </div>
       <ScoutScanButton finitePulse label={scanning ? "Scanning creators…" : error ? "Try again" : "Scan now"} busy={scanning} onClick={scan} />

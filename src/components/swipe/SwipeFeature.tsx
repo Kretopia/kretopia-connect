@@ -16,10 +16,9 @@ import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/Sw
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { getDiscoveryMissingFields } from '@/lib/profileCompletion';
 import { Button } from '@/components/ui/button';
-import { EyeOff, Camera, FileText, Image as ImageIcon, ArrowRight, Heart, RotateCcw } from 'lucide-react';
-import { KretopiaSpinner } from '@/components/brand/KretopiaLoader';
+import { ArrowRight, RotateCcw } from 'lucide-react';
+import { MatchStateCard } from './MatchStateCard';
 
 export interface SwipeFeatureProps {
   onMatch?: (profile: any) => void;
@@ -41,7 +40,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
-  const { profiles, allProfilesCount, loading, error, fetchProfiles, removeProfile } = useSwipeProfiles(user?.id, filters);
+  const { profiles, loading, error, fetchProfiles, removeProfile } = useSwipeProfiles(user?.id, filters);
   const { recordSwipe } = useSwipeActions(user?.id);
   const { offers: externalOffers, resolve: resolveOffer, restore: restoreOffer } = useExternalOffers(user?.id, offers);
   const [profilesSinceOffer, setProfilesSinceOffer] = useState(0);
@@ -61,26 +60,14 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const [matchedProfile, setMatchedProfile] = useState<any>(null);
   const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const [swipeHistory, setSwipeHistory] = useState<Answered[]>([]);
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-  const [missingFields, setMissingFields] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
 
   // Get current user's profile for the match modal + check completion
   useEffect(() => {
     if (user?.id) {
-      Promise.all([
-        supabase.from('profiles').select('avatar_url, full_name, bio').eq('user_id', user.id).single(),
-        supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('credits').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-      ]).then(([profileRes, portfolioRes, creditsRes]) => {
-        if (profileRes.data) {
-          setCurrentUserProfile(profileRes.data);
-          const workCount = (portfolioRes.count || 0) + (creditsRes.count || 0);
-          const missing = getDiscoveryMissingFields(profileRes.data as any, workCount);
-          setProfileIncomplete(missing.length > 0);
-          setMissingFields(missing);
-        }
+      supabase.from('profiles').select('avatar_url, full_name, bio').eq('user_id', user.id).single().then(({ data }) => {
+        if (data) setCurrentUserProfile(data);
       });
     }
   }, [user?.id]);
@@ -214,9 +201,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   // a member whose session is still loading.
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <KretopiaSpinner className="h-8 w-8" />
-      </div>
+      <MatchStateCard title="Finding your people" description="Discovering real Kretopia profiles." busy />
     );
   }
 
@@ -225,74 +210,19 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   // seen no one, so say what is needed and point at the grid, which works without an account.
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-        <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
-          <Heart className="k-gradient-icon h-10 w-10" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Sign in to get your deck</h3>
-        <p className="text-muted-foreground mb-4 max-w-sm">
-          Your deck is ranked around your Passport. You can browse every creator in the grid without an account.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <Button onClick={() => navigate('/auth?next=/match')} className="gap-2">
-            Sign in
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="gap-2">
-            <ArrowRight className="h-4 w-4" /> Browse the grid
-          </Button>
-        </div>
-      </div>
+      <MatchStateCard title="Sign in to get your deck" description="Your next creative connection starts here.">
+        <Button onClick={() => navigate('/auth?next=/match')} variant="hero" className="min-h-12 gap-2">Sign in <ArrowRight className="h-4 w-4" /></Button>
+        <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="min-h-12 gap-2">Browse the grid</Button>
+      </MatchStateCard>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <p className="text-destructive mb-4">{error}</p>
-         <Button variant="link"
-          onClick={() => fetchProfiles()}
-           className="text-foreground underline"
-        >
-          Try again
-         </Button>
-      </div>
-    );
-  }
-
-  // Block swiping for incomplete profiles
-  if (profileIncomplete) {
-    const fieldIcons: Record<string, React.ReactNode> = {
-      'Profile Picture': <Camera className="h-4 w-4" />,
-      'Bio (20+ characters)': <FileText className="h-4 w-4" />,
-      'At least 1 Work Item (Portfolio or Credit)': <ImageIcon className="h-4 w-4" />,
-    };
-
-    return (
-      <div className="w-full flex flex-col items-center justify-center py-12 px-4 text-center space-y-5">
-         <div className="k-gradient-chip flex h-16 w-16 items-center justify-center rounded-full">
-           <EyeOff className="k-gradient-icon h-8 w-8" />
-        </div>
-        <div className="space-y-2">
-          <h3 className="text-lg font-bold">Complete Your Profile to Connect</h3>
-          <p className="text-sm text-muted-foreground max-w-sm">
-            Other creators can't see you until your profile meets quality standards. Complete these items to unlock matching:
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 w-full max-w-xs">
-          {missingFields.map((field) => (
-             <div key={field} className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 text-sm text-foreground [&_svg]:stroke-foreground">
-              {fieldIcons[field] || <EyeOff className="h-4 w-4" />}
-              <span>{field}</span>
-            </div>
-          ))}
-        </div>
-        <Button onClick={() => navigate('/profile')} className="gap-2 mt-2">
-          Complete Profile <ArrowRight className="h-4 w-4" />
-        </Button>
-        <p className="text-xs text-muted-foreground">
-           You can still <Button variant="link" onClick={() => navigate('/circle?tab=browse')} className="h-auto p-0 text-foreground underline">browse creators</Button> while you complete your profile.
-        </p>
-      </div>
+      <MatchStateCard title="Let's reconnect" description="Profiles couldn't be refreshed. Your interests are safe.">
+        <Button variant="hero" className="min-h-12" onClick={() => fetchProfiles()}>Try again</Button>
+        <Button variant="outline" className="min-h-12" onClick={() => navigate('/match?tab=browse&view=grid')}>Browse the grid</Button>
+      </MatchStateCard>
     );
   }
 
@@ -301,40 +231,24 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <KretopiaSpinner className="h-8 w-8" />
-      </div>
+      <MatchStateCard title="Finding your people" description="Discovering real Kretopia profiles." busy />
     );
   }
 
   if (!current) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
-         <div className="k-gradient-chip mb-4 flex h-20 w-20 items-center justify-center rounded-full">
-           <Heart className="k-gradient-icon h-10 w-10" />
-        </div>
-        <h3 className="text-xl font-semibold mb-2">Explore more creators</h3>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {swipeHistory.length > 0 && (
-            <Button variant="outline" onClick={handleUndo} className="gap-2">
-              <RotateCcw className="h-4 w-4" /> Undo Last
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => navigate('/match?tab=browse&view=grid')} className="gap-2">
-            <ArrowRight className="h-4 w-4" /> Browse the grid
-          </Button>
-          <Button onClick={() => fetchProfiles(true)} className="gap-2">
-            Scan now
-          </Button>
-        </div>
-      </div>
+      <MatchStateCard title="Your next connection awaits" description="Passed profiles return after new discoveries. Pending interests and existing connections stay in Connected.">
+        {swipeHistory.length > 0 ? <Button variant="outline" className="min-h-12 gap-2" onClick={handleUndo}><RotateCcw className="h-4 w-4" /> Undo Last</Button> : null}
+        <Button variant="hero" className="min-h-12 gap-2" onClick={() => fetchProfiles(true)}>Scan now <ArrowRight className="h-4 w-4" /></Button>
+        <Button variant="outline" className="min-h-12" onClick={() => navigate('/match?tab=browse&view=grid')}>Browse the grid</Button>
+      </MatchStateCard>
     );
   }
 
   return (
-    <div className="w-full space-y-4">
+    <div className="k-match-stage w-full space-y-4">
       {/* Counter + Undo */}
-      <div className="flex items-center justify-between px-2">
+      <div className="mx-auto flex h-9 w-full max-w-[460px] items-center justify-between gap-2 px-2">
         <p className="text-xs text-muted-foreground">
           {profiles.length} creator{profiles.length !== 1 ? 's' : ''} to discover
           {externalOffers.length > 0 && ` · ${externalOffers.length} offer${externalOffers.length !== 1 ? 's' : ''} found outside Kretopia`}

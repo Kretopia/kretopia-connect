@@ -93,7 +93,7 @@ describe("useSwipeProfiles", () => {
     db.safeProfiles = [member("seen"), member("nameless", { full_name: "" }), member("roleless", { role: "" }), member("ok")];
     const { result } = renderHook(() => useSwipeProfiles("me"));
     await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.profiles.map((p) => p.user_id)).toEqual(["ok"]);
+    expect(result.current.profiles.map((p) => p.user_id).sort()).toEqual(["ok", "roleless"]);
   });
 
   it("puts anyone who already swiped right on you first", async () => {
@@ -182,6 +182,24 @@ describe("useSwipeProfiles", () => {
     act(() => result.current.removeProfile("interested", "right"));
     act(() => result.current.removeProfile("passed", "left"));
     await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["passed"]));
+  });
+
+  it("offers genuine users without onboarding, photo, role or work requirements", async () => {
+    db.safeProfiles = [member("new", { onboarding_completed: false, role: "", avatar_url: null, bio: null })];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id)).toEqual(["new"]);
+  });
+
+  it("continues through three exhausted pass cycles without recycling interest", async () => {
+    db.safeProfiles = [member("pass"), member("interest")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => result.current.removeProfile("interest", "right"));
+    for (let cycle = 0; cycle < 3; cycle++) {
+      act(() => result.current.removeProfile("pass", "left"));
+      await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["pass"]));
+    }
   });
 
   it("keeps blocked accounts, accepted connections and yourself out of fallback", async () => {

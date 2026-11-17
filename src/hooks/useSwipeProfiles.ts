@@ -173,14 +173,12 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
             latitude, longitude, updated_at
           `)
           .neq('user_id', currentUserId)
-          .eq('onboarding_completed', true)
           .order('user_id', { ascending: true })
           .range(from, to)),
         readDiscoveryPages((from, to) => supabase
           .from('public_profiles_safe')
           .select(SAFE_VIEW_SELECT)
           .neq('user_id', currentUserId)
-          .eq('onboarding_completed', true)
           .order('user_id', { ascending: true })
           .range(from, to)),
         supabase
@@ -216,18 +214,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         if (blockedIds.has(p.user_id)) return false;
         // Hide non-ODOS unclaimed profiles from discovery
         if (p.is_claimed === false && p.badge !== 'odos') return false;
-        // Hide incomplete profiles
+        // Only identity is required; role, photo and work are ranking signals.
         if (!p.full_name || p.full_name === 'New User' || p.full_name === '') return false;
-        // Was also excluding role === 'Creator' -- but that's the exact
-        // default Onboarding.tsx silently assigns when a user leaves role
-        // blank during manual setup (a deliberate friction-reducing
-        // default, not a placeholder meaning "never really set up").
-        // Directly contradicted this file's own "no artificial gating"
-        // stance above: the one friction-reduction meant to get someone
-        // through onboarding faster was also the one thing making them
-        // invisible to everyone else's deck. Only a genuinely empty role
-        // is excluded now.
-        if (!p.role || p.role === '') return false;
         return true;
       });
       let filtered = eligible.filter(p => !swipedIds.has(p.user_id) && !removedIds.current.has(p.user_id));
@@ -237,6 +225,8 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         filtered = eligible;
         removedIds.current.clear();
       }
+      // A fully excluded pool must not trigger an endless empty-deck rescan.
+      if (eligible.length === 0) removedIds.current.clear();
 
       // Step 5: Portfolio/credits/awards counts — kept as a ranking
       // tie-break signal only (see scoreProfile below), not a filter.

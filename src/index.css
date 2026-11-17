@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* One portrait footprint for Match profiles, scans and recovery states. */
+.k-match-card { height: 660px; }
+.k-match-card [data-card-part="cover"] { height: 52%; max-height: none; aspect-ratio: auto; }
+.k-match-card [data-card-part="cover"] + div { min-height: 0; overflow: hidden; }
+.k-match-stage { height: 792px; }
+@media (min-width: 640px) {
+  .k-match-card { height: 720px; }
+  .k-match-stage { height: 852px; }
+}
+
 /* One viewport height for every call screen. `dvh` follows the browser's moving toolbars; an engine that does not know it keeps the
    `vh` line above it, instead of dropping the whole height (which collapses the screen and lets the page's own bars show through). */
 .k-call-vh { height: 100vh; height: 100dvh; }

@@ -53,14 +53,14 @@ export function MatchProfileCard({ profile, busy, onLike, onPass, onViewProfile 
           ].filter(([, value]) => typeof value === 'number').map(([label, value]) => <div key={String(label)}><dt className="text-xs text-muted-foreground">{label}</dt><dd className="font-semibold text-foreground">{Number(value).toLocaleString()}</dd></div>)}</dl>
         </>}
         open={{ onClick: () => onViewProfile(profile) }}
-        backActions={<Button variant="outline" size="sm" disabled={locked} className="min-h-11" onClick={interested}>Interested</Button>}
+        backActions={<Button size="sm" disabled={locked} variant="hero" className="min-h-11" onClick={interested}>Connect <Heart className="ml-2 h-4 w-4" /></Button>}
         onFlipChange={value => { gestures.resetSwipe(); setFlipped(value); }}
       />
     </div>
     <div className="mt-3 flex items-center justify-center gap-5" role="group" aria-label="Discovery actions">
       <Button variant="outline" size="icon" onClick={pass} disabled={locked} className="h-14 w-14 rounded-full" aria-label="Pass" title="Pass"><X className="h-6 w-6" /></Button>
       <Button variant="ghost" size="icon" onClick={() => onViewProfile(profile)} className="h-11 w-11 rounded-full" aria-label="View profile" title="View profile"><Eye className="h-5 w-5" /></Button>
-      <Button size="icon" onClick={interested} disabled={locked} className="h-14 w-14 rounded-full" aria-label="Interested" title="Interested"><Heart className="h-6 w-6" /></Button>
+      <Button onClick={interested} disabled={locked} variant="hero" className="h-14 gap-2 rounded-full px-6" aria-label="Interested" title="Express interest"><Heart className="h-6 w-6" /> Connect</Button>
     </div>
   </div>;
 }
