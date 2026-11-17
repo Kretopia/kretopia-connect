@@ -15,6 +15,8 @@
 - [ ] Verify an organizer-created event against production storage: blocked by unavailable legacy authenticated session; the observed November 12 record is explicitly completed and has no timezone, requiring organizer review rather than automatic data correction.
 
 # Match overhaul
+- [x] Fit the complete Match card and Pass/Connect actions within the viewport; remove the eye/profile-preview path from Match, expose every available public profile field directly, use original-resolution photos and subtle factual match reasons.
+- [x] Remove the redundant empty-state copy/actions and give pending interests a branded confirmation with a Sent interests shortcut. Four viewport checks (390×667, 390×844, 662×697, 1280×900) found no page/internal overflow; original 1024×1280 image used. No publication.
 - [x] Remove matching completion gates; include genuine unfinished/roleless accounts, verify three pass cycles and preserve blocks, connections and pending interests.
 - [x] Use Passport HoloCard for profiles and scan/recovery states with local Kretopia identity and strong CTAs. Browser checks confirm identical 852px desktop / 792px mobile footprints, stable flip, rendered logos and no runtime errors using control data. 96 focused tests passed; production sign-in remains unavailable.
 - [x] Handle existing swipes without duplicate inserts or permission changes; use portrait cards, original photos, round controls and fuller profile details. 56 tests pass; desktop/mobile inspected with control data, production authenticated verification remains unavailable.

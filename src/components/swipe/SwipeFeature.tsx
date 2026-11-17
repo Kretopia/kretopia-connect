@@ -104,9 +104,14 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
         });
       }
     } else {
-      toast.success('Interest saved', { description: 'A connection is mutual only after both people respond.', duration: 2500 });
+      toast.success('Kretopia interest sent', {
+        description: 'Pending for now — if they connect too, your new connection will appear in Connected.',
+        icon: <img src="/brand/kretopia-identity/mark/kretopia-mark-transparent.webp" alt="" className="h-5 w-5" />,
+        action: { label: 'View sent', onClick: () => navigate('/match?tab=connected&view=sent') },
+        duration: 4500,
+      });
     }
-  }, [recordSwipe, removeProfile, onMatch]);
+  }, [recordSwipe, removeProfile, onMatch, navigate]);
 
   const handlePass = useCallback(async (profile: SwipeProfile) => {
     if (savingRef.current) return;
@@ -236,19 +241,14 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   }
 
   if (!current) {
-    return (
-      <MatchStateCard title="Your next connection awaits" description="Passed profiles return after new discoveries. Pending interests and existing connections stay in Connected.">
-        {swipeHistory.length > 0 ? <Button variant="outline" className="min-h-12 gap-2" onClick={handleUndo}><RotateCcw className="h-4 w-4" /> Undo Last</Button> : null}
-        <Button variant="hero" className="min-h-12 gap-2" onClick={() => fetchProfiles(true)}>Scan now <ArrowRight className="h-4 w-4" /></Button>
-        <Button variant="outline" className="min-h-12" onClick={() => navigate('/match?tab=browse&view=grid')}>Browse the grid</Button>
-      </MatchStateCard>
-    );
+    // Scan now and Grid already sit directly above the deck. Keep only the branded visual here.
+    return <MatchStateCard />;
   }
 
   return (
-    <div className="k-match-stage w-full space-y-4">
+    <div className="k-match-stage w-full space-y-2">
       {/* Counter + Undo */}
-      <div className="mx-auto flex h-9 w-full max-w-[460px] items-center justify-between gap-2 px-2">
+      <div className="mx-auto flex h-7 w-full max-w-[460px] items-center justify-between gap-2 px-2">
         <p className="text-xs text-muted-foreground">
           {profiles.length} creator{profiles.length !== 1 ? 's' : ''} to discover
           {externalOffers.length > 0 && ` · ${externalOffers.length} offer${externalOffers.length !== 1 ? 's' : ''} found outside Kretopia`}
@@ -270,7 +270,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           variant={cardVariant}
         />
       ) : cardVariant === 'shell' ? (
-        <MatchProfileCard key={current.item.user_id} profile={current.item} busy={saving} onLike={handleLike} onPass={handlePass} onViewProfile={handleViewProfile} />
+        <MatchProfileCard key={current.item.user_id} profile={current.item} busy={saving} onLike={handleLike} onPass={handlePass} />
       ) : (
         <HingeStyleCard
           key={current.item.user_id}

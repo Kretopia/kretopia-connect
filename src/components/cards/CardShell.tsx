@@ -70,10 +70,12 @@ export interface CardShellProps {
   coverControls?: ReactNode;
   /** One line, cut off with an ellipsis. */
   meta?: ReactNode;
-  /** Two lines at most; the rest stays on the detail view. */
+  /** Two lines at most outside the complete Match portrait; the rest stays on the detail view. */
   description?: ReactNode;
-  /** Three at most; the rest are not drawn. */
+  /** Three at most outside the complete Match portrait. */
   tags?: ReactNode[];
+  /** Extra public Passport fields on Match's single front; other cards keep these on their back. */
+  details?: ReactNode;
   /** What this is and who stands behind it (an outside listing says so here). Two lines at most, always on the front. */
   trust?: ReactNode;
   primary?: CardAction;
@@ -137,9 +139,9 @@ export function CardTextButton({ className, ...props }: React.ButtonHTMLAttribut
  * up to three tags, and a footer with one primary action and at most one secondary icon action. Nothing a surface passes can make it grow:
  * the budget is applied here, not asked of the caller. The tilt, the foil, the radius, the elevation and the flip come with it.
  *
- * Long text, extra fields and anything else a surface wants to show belong on the back (`back`) or on the detail view, never on the front.
+ * Long text and extra fields normally belong on the back (`back`) or detail view; the complete Match portrait is the deliberate single-front exception.
  */
-export function CardShell({ landscape = false, portrait = false, onFlipChange, testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, trust, primary, action, secondary, back, className }: CardShellProps) {
+export function CardShell({ landscape = false, portrait = false, onFlipChange, testId, flat = false, title, open, stretch = false, cover, coverStart, coverControls, meta, description, tags, details, trust, primary, action, secondary, back, className }: CardShellProps) {
   const backId = useId();
   const [flipped, setFlipped] = useState(false);
   const [backBuilt, setBackBuilt] = useState(false);
@@ -186,7 +188,8 @@ export function CardShell({ landscape = false, portrait = false, onFlipChange, t
     ? <Target target={open} part="title" className={cn(titleClass, open.onClick && !open.to && !open.href && "w-full")}><span>{title}</span></Target>
     : <span data-card-part="title" className={titleClass}>{title}</span>;
 
-  const shownTags = (tags ?? []).filter(Boolean).slice(0, CARD_BUDGET.tags);
+  const availableTags = (tags ?? []).filter(Boolean);
+  const shownTags = portrait ? availableTags : availableTags.slice(0, CARD_BUDGET.tags);
   const trigger = back ? (
     <button
       ref={flipButton}
@@ -229,14 +232,15 @@ export function CardShell({ landscape = false, portrait = false, onFlipChange, t
                 <div className={cn("flex shrink-0 items-start gap-1.5", CARD_ABOVE)}>{coverControls}</div>
               </div>
             </div>
-            <div className={CARD_BODY}>
+            <div className={CARD_BODY} tabIndex={portrait ? 0 : undefined} role={portrait ? "region" : undefined} aria-label={portrait ? `${title}: Passport details` : undefined}>
               <div>
                 {heading}
                 {meta ? <p data-card-part="meta" className={cn("mt-1.5", CARD_META)}>{meta}</p> : null}
               </div>
-              {description ? <div data-card-part="description" className={cn(CARD_DESCRIPTION, clampClass(CARD_BUDGET.descriptionLines))}>{description}</div> : null}
+              {description ? <div data-card-part="description" className={cn(CARD_DESCRIPTION, !portrait && clampClass(CARD_BUDGET.descriptionLines))}>{description}</div> : null}
               {shownTags.length > 0 ? <div data-card-part="tags" className={CARD_TAGS}>{shownTags}</div> : null}
-              {trust ? <div data-card-part="trust" className={cn(CARD_TRUST, clampClass(CARD_BUDGET.trustLines))}>{trust}</div> : null}
+              {trust ? <div data-card-part="trust" className={cn(CARD_TRUST, !portrait && clampClass(CARD_BUDGET.trustLines))}>{trust}</div> : null}
+              {details}
               {trigger || primary || action ? (
                 <footer data-card-part="footer" className={CARD_FOOTER}>
                   <div className="flex items-center gap-1.5">{trigger}</div>

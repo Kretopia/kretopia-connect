@@ -153,11 +153,13 @@ describe("Match deck with offers: the order", () => {
     expect(screen.queryByText(/All Caught Up/)).not.toBeInTheDocument();
   });
 
-  it("with no eligible candidates offers a manual rescan", () => {
+  it("with no eligible candidates keeps the branded visual without duplicating Scan or Grid", () => {
     state.people = [];
     state.offers = [];
     renderDeck();
-    expect(screen.getByRole("button", { name: "Scan now" })).toBeEnabled();
+    expect(screen.getByRole("article", { name: "Kretopia Match" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "Scan now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Browse the grid" })).toBeNull();
   });
 
   it("the counter says how many offers found outside Kretopia are in the deck, and nothing when there are none", () => {
@@ -258,6 +260,12 @@ describe("Match deck with offers: people are answered exactly as before", () => 
     renderDeck();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "like Ada" })); });
     await waitFor(() => expect(state.recordSwipe).toHaveBeenCalledWith("p-Ada", "right"));
+    await waitFor(() => expect(state.toastSuccess).toHaveBeenCalled());
+    const [title, options] = state.toastSuccess.mock.calls.at(-1)!;
+    expect(title).toBe("Kretopia interest sent");
+    expect(options.description).toMatch(/Pending for now/);
+    expect(options.description).toMatch(/if they connect too/i);
+    expect(options.action.label).toBe("View sent");
     await answerPerson("Bo");
     await waitFor(() => expect(state.recordSwipe).toHaveBeenCalledWith("p-Bo", "left"));
     expect(state.resolve).not.toHaveBeenCalled();

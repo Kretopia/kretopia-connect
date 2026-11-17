@@ -2,14 +2,39 @@
 @tailwind components;
 @tailwind utilities;
 
-/* One portrait footprint for Match profiles, scans and recovery states. */
-.k-match-card { height: 660px; }
-.k-match-card [data-card-part="cover"] { height: 52%; max-height: none; aspect-ratio: auto; }
-.k-match-card [data-card-part="cover"] + div { min-height: 0; overflow: hidden; }
-.k-match-stage { height: 792px; }
+/* Match fits the card and its two answers into the available viewport. The card itself never changes size
+   between profile, waiting and recovery states; unusually long public profiles scroll inside their details, not the page. */
+.k-match-stage {
+  --match-card-height: clamp(360px, calc(100vh - 140px), 600px);
+  --match-card-height: clamp(360px, calc(100dvh - 140px), 600px);
+  height: calc(var(--match-card-height) + 96px);
+}
+.k-match-card { height: var(--match-card-height, 480px); }
+.k-match-card [data-card-part="cover"] { height: 34%; max-height: none; aspect-ratio: auto; }
+.k-match-card [data-card-part="cover"] + div {
+  min-height: 0;
+  gap: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 16px;
+  scrollbar-width: thin;
+}
+.k-match-card [data-card-part="title"] { font-size: 18px; line-height: 1.25; }
+.k-match-card [data-card-part="meta"] { overflow: visible; text-overflow: clip; white-space: normal; }
+.k-match-card [data-card-part="description"] { line-height: 1.4; white-space: pre-line; }
 @media (min-width: 640px) {
-  .k-match-card { height: 720px; }
-  .k-match-stage { height: 852px; }
+  .k-match-stage {
+    --match-card-height: clamp(420px, calc(100vh - 140px), 620px);
+    --match-card-height: clamp(420px, calc(100dvh - 140px), 620px);
+  }
+}
+@media (max-height: 740px) {
+  .k-match-card [data-card-part="cover"] { height: 29%; }
+  .k-match-card [data-card-part="cover"] + div { gap: 7px; }
+}
+@media (max-height: 620px) {
+  .k-match-stage { --match-card-height: clamp(360px, calc(100dvh - 120px), 500px); }
+  .k-match-card [data-card-part="cover"] { height: 26%; }
 }
 
 /* One viewport height for every call screen. `dvh` follows the browser's moving toolbars; an engine that does not know it keeps the

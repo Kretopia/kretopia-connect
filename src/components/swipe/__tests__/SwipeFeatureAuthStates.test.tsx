@@ -71,11 +71,14 @@ describe("Match deck: who is looking", () => {
     expect(screen.queryByText(/All Caught Up/)).toBeNull();
   });
 
-  it("a signed-in member can explicitly rescan an empty eligible pool", () => {
+  it("an empty eligible pool keeps only the branded visual because Scan and Grid already sit above it", () => {
     state.auth = { user: { id: "u1" }, loading: false };
     renderDeck();
-    fireEvent.click(screen.getByRole("button", { name: "Scan now" }));
-    expect(state.fetchProfiles).toHaveBeenCalledWith(true);
+    expect(screen.getByRole("article", { name: "Kretopia Match" })).toBeVisible();
+    expect(screen.queryByText("Your next connection awaits")).toBeNull();
+    expect(screen.queryByText(/Passed profiles return/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Scan now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Browse the grid" })).toBeNull();
   });
 
   it("a signed-in member still gets the deck when there are profiles to show", () => {

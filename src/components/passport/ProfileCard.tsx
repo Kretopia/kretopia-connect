@@ -22,7 +22,7 @@ export interface ProfileCardProps {
   /** Another label on the cover ("You"). */
   badge?: ReactNode;
   bio?: string | null;
-  /** Skills, or counts: three are drawn. */
+  /** Skills, or counts: three are drawn outside the complete Match portrait. */
   tags?: ReactNode[];
   /** Why this person is suggested, strongest first. A list on the front, nothing invented when there is none. */
   reasons?: Array<{ key: string; label: string }>;
@@ -33,9 +33,8 @@ export interface ProfileCardProps {
 }
 
 /**
- * A person, as the profile variant of CardShell: the cover (their picture, or Kreto's talent-search scene) with their avatar on it, their name,
- * one line about who and where they are, two lines of bio, three skills or counts, and the reasons they are suggested when there are any. Every
- * surface that shows a person (Browse, Likes you, the Passport directory) is this card; what differs is the action it offers.
+ * A person, as the profile variant of CardShell. The shared card keeps its compact summary and optional back;
+ * Match's portrait instead puts every supplied public detail on one front, with only its external Pass/Connect answers.
  */
 export function ProfileCard({ landscape, portrait, onFlipChange, backContent, backActions, testId, name, meta, coverUrl, avatarUrl, standing, badge, bio, tags, reasons, open, primary, secondary }: ProfileCardProps) {
   const [broken, setBroken] = useState(false);
@@ -76,15 +75,18 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
       meta={meta}
       description={bio}
       tags={tags}
+      details={portrait ? backContent : undefined}
       trust={
         reasons && reasons.length > 0 ? (
-          <ul aria-label={`Why ${name} is suggested`} className="flex flex-wrap gap-1">
+          portrait ? <ul aria-label={`Why ${name} is suggested`} className="space-y-1">
+            {reasons.slice(0, 1).map(reason => <li key={reason.key} className="flex items-start gap-1.5"><span aria-hidden className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70" /><span>{reason.label}</span></li>)}
+          </ul> : <ul aria-label={`Why ${name} is suggested`} className="flex flex-wrap gap-1">
             {reasons.map((reason) => <li key={reason.key}><CardPill>{reason.label}</CardPill></li>)}
           </ul>
         ) : null
       }
       primary={primary}
-      back={{
+      back={portrait ? undefined : {
         label: "profile details",
         eyebrow: "Creative Passport",
         children: <>{bio && <p className="whitespace-pre-line text-sm leading-relaxed text-foreground/85">{bio}</p>}{tags?.length ? <div className="flex flex-wrap gap-2">{tags}</div> : null}{backContent}</>,
