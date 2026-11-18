@@ -78,7 +78,6 @@ const DisputeManage = lazy(() => import("./pages/DisputeManage"));
 // One surface for every live-room view (Sound Stages, curated stages, speed nights, event backstage).
 const Stages = lazy(() => import("./pages/Stages"));
 const Discover = lazy(() => import("./pages/Discover"));
-const SearchResults = lazy(() => import("./pages/SearchResults"));
 import { SearchEntry } from "./components/search/SearchEntry";
 
 const Match = lazy(() => import("./pages/Match"));
@@ -525,8 +524,8 @@ const AppContent = () => {
             <Route path="/credits/project/:projectId" element={<ICDBProjectPage />} />
             <Route path="/credits/discover" element={<Navigate to="/discover" replace />} />
             <Route path="/verify-credit" element={<BrandVerify />} />
-            {/* /search with a term is the results page; without one it is the old generic landing, which Discover replaces. */}
-            <Route path="/search" element={<SearchEntry><SearchResults /></SearchEntry>} />
+            {/* Keep old links usable; Scout owns the search experience. */}
+            <Route path="/search" element={<SearchEntry />} />
             <Route path="/directory" element={<Navigate to="/discover" replace />} />
 
             <Route path="/discover" element={<Discover />} />

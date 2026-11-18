@@ -1,3 +1,7 @@
+# Hero search → Scout
+- [x] Route Hero searches and old /search links to Scout with the original query; show miniature real-user matches and reuse completed searches without paid calls.
+- [x] Verify targeted tests and the public desktop/mobile flow: a real UX Designer appears in the Hero dropdown and Scout; opportunity search is prefilled, old links redirect and mobile has no horizontal overflow. No publication.
+
 # Sidebar organization
 - [x] Show Creator/Company identity first, Kreto in Workspace, categories of at most three cards, and shared account controls last without adjacent dividers.
 - [x] Verify both modes with 32 focused tests and successful preview compilation; no publication.

@@ -13,8 +13,8 @@ const renderAt = (url: string) =>
   render(
     <MemoryRouter initialEntries={[url]}>
       <Routes>
-        <Route path="/search" element={<SearchEntry><p>results page</p></SearchEntry>} />
-        <Route path="/discover" element={<p>discover page</p>} />
+        <Route path="/search" element={<SearchEntry />} />
+        <Route path="/scout" element={<p>scout page</p>} />
       </Routes>
       <Where />
     </MemoryRouter>,
@@ -23,26 +23,26 @@ const renderAt = (url: string) =>
 describe("the /search route", () => {
   it("resolves the generic search address to Discover", () => {
     renderAt("/search");
-    expect(screen.getByText("discover page")).toBeInTheDocument();
+    expect(screen.getByText("scout page")).toBeInTheDocument();
     expect(screen.queryByText("results page")).toBeNull();
-    expect(screen.getByTestId("where")).toHaveTextContent("/discover");
+    expect(screen.getByTestId("where")).toHaveTextContent("/scout");
   });
 
   it("keeps tab and mode on the way", () => {
     renderAt("/search?tab=people&mode=sourced&utm_source=footer");
-    expect(screen.getByText("discover page")).toBeInTheDocument();
-    expect(screen.getByTestId("where")).toHaveTextContent("/discover?tab=people&mode=sourced");
+    expect(screen.getByText("scout page")).toBeInTheDocument();
+    expect(screen.getByTestId("where")).toHaveTextContent("/scout");
   });
 
   it("keeps a search with a term on the results page, with its term", () => {
     renderAt("/search?q=ux%20designer");
-    expect(screen.getByText("results page")).toBeInTheDocument();
-    expect(screen.queryByText("discover page")).toBeNull();
-    expect(screen.getByTestId("where")).toHaveTextContent("/search?q=ux%20designer");
+    expect(screen.getByText("scout page")).toBeInTheDocument();
+    expect(screen.queryByText("results page")).toBeNull();
+    expect(screen.getByTestId("where")).toHaveTextContent("/scout?q=ux%20designer");
   });
 
   it("sends a blank term to Discover", () => {
     renderAt("/search?q=%20");
-    expect(screen.getByText("discover page")).toBeInTheDocument();
+    expect(screen.getByText("scout page")).toBeInTheDocument();
   });
 });

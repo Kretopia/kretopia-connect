@@ -20,6 +20,7 @@ import { ScoutResultsWrapped } from "@/components/scout/ScoutResultsWrapped";
 import type { ScoutTab } from "@/components/scout/scout.types";
 import { SCOUT_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { Button } from "@/components/ui/button";
+import { ScoutPeopleResults } from "@/components/scout/ScoutPeopleResults";
 
 type Tab = ScoutTab;
 
@@ -110,11 +111,12 @@ const Scout = () => {
           <div className="rounded-xl border border-border bg-card p-3 text-xs flex items-start gap-2">
             <Radar className="h-3.5 w-3.5 mt-0.5 text-foreground shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground">From your Studio:</p>
+              <p className="font-semibold text-foreground">Search:</p>
               <p className="text-muted-foreground truncate">{contextQuery}</p>
             </div>
           </div>
         )}
+        {contextQuery && <ScoutPeopleResults query={contextQuery} />}
         {tab === "scouted" && <ScoutedGigsSection scanSurface="wrapped" />}
         {tab === "all" && <ScoutAllSources initialQuery={contextQuery} />}
         {tab === "shortlist" && <div className="space-y-4">

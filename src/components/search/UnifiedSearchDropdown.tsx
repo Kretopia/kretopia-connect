@@ -14,6 +14,7 @@ import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { PublicWebSearchResults } from "./PublicWebSearchResults";
 import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
 import { Button } from "@/components/ui/button";
+import { searchScoutPeople, scoutSearchTarget, SCOUT_PEOPLE_PAGE_SIZE } from "@/lib/scoutPeopleSearch";
 
 interface SearchResult {
   type: "creator" | "credit" | "gig";
@@ -149,14 +150,14 @@ export function UnifiedSearchDropdown({
     }
     setOpen(true);
     onOpenChange?.(true);
-    if (usersOnly) {
+    if (usersOnly || variant === "hero") {
       setResults([]);
       setHasMoreUsers(false);
       setLoading(true);
     }
-    const timer = setTimeout(() => doSearch(trimmedQuery), usersOnly ? 150 : 350);
+    const timer = setTimeout(() => doSearch(trimmedQuery), usersOnly || variant === "hero" ? 150 : 350);
     return () => { clearTimeout(timer); abortRef.current?.abort(); };
-  }, [query, usersOnly, user?.id]);
+  }, [query, usersOnly, user?.id, variant]);
 
   const doSearch = useCallback(async (q: string, appendUsers = false) => {
     abortRef.current?.abort();
@@ -168,6 +169,17 @@ export function UnifiedSearchDropdown({
     setHighlightedCreator(null);
 
     try {
+      if (variant === "hero" && !usersOnly) {
+        const offset = appendUsers ? usersOffsetRef.current : 0;
+        const page = await searchScoutPeople(q, offset);
+        if (controller.signal.aborted) return;
+        const matches: SearchResult[] = page.users.map(p => ({ type: "creator", id: p.user_id, title: p.full_name || "Kretopia user", subtitle: [p.role, p.location].filter(Boolean).join(" · "), avatar: p.avatar_url }));
+        setResults(previous => appendUsers ? [...previous, ...matches.filter(r => !previous.some(p => p.id === r.id))] : matches);
+        usersOffsetRef.current = offset + SCOUT_PEOPLE_PAGE_SIZE;
+        setHasMoreUsers(page.hasMore);
+        setLoading(false);
+        return;
+      }
       if (usersOnly) {
         const offset = appendUsers ? usersOffsetRef.current : 0;
         const page = await searchVerificationUsers(q, user?.id, offset, controller.signal);
@@ -318,7 +330,7 @@ export function UnifiedSearchDropdown({
         setLoading(false);
       }
     }
-  }, [user?.id, usersOnly]);
+  }, [user?.id, usersOnly, variant]);
 
   const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
 
@@ -333,6 +345,7 @@ export function UnifiedSearchDropdown({
   };
 
   const handleCatalogSelect = (entry: CatalogEntry) => {
+    if (variant === "hero") { submitQuery(query); return; }
     const target = `/search?q=${encodeURIComponent(entry.label)}`;
     if (requireAuthFor(target)) return;
     setOpen(false);
@@ -343,7 +356,7 @@ export function UnifiedSearchDropdown({
 
   const handleSelect = (r: SearchResult) => {
     if (disabled) return;
-    if (catalogEnabled && !onSelect) {
+    if (catalogEnabled && variant !== "hero" && !onSelect) {
       const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
       if (requireAuthFor(target)) return;
     }
@@ -380,7 +393,7 @@ export function UnifiedSearchDropdown({
     }
 
     setQuery("");
-    navigate(`/search?q=${encodeURIComponent(trimmedQuery)}`);
+    navigate(scoutSearchTarget(rawQuery));
   }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -634,13 +647,16 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
+            {isHero && !usersOnly && <Button variant="ghost" className="order-1 h-auto w-full justify-between gap-2 whitespace-normal p-3 text-left" data-search-result onKeyDown={handleResultKeyDown} onClick={() => submitQuery(query)}>
+              <span className="min-w-0"><span className="block text-xs text-muted-foreground">Search Scout</span><span className="block break-words font-semibold">{query}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+            </Button>}
             {catalogMatches.length > 0 && (
               <div className="order-3 border-b border-border px-2 py-2">
                 <div className="flex items-center justify-between px-2 pb-1.5">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Explore Kretopia
                   </p>
-                  {!user && (
+                  {!user && !isHero && (
                     <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                       <Lock className="h-2.5 w-2.5" />
                       Sign up to see people and details
@@ -882,7 +898,7 @@ export function UnifiedSearchDropdown({
                             <p className="text-[11px] text-muted-foreground truncate">{r.subtitle}</p>
                           )}
                         </div>
-                        {usersOnly ? (
+                        {usersOnly || isHero ? (
                           <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-primary" />
                         ) : r.type === "creator" && r.is_connected ? (
                           <span className="shrink-0 text-[10px] font-semibold text-energy">Connected · View Passport</span>
@@ -923,12 +939,12 @@ export function UnifiedSearchDropdown({
               );
             })}
 
-            {usersOnly && hasMoreUsers && (
+            {(usersOnly || isHero) && hasMoreUsers && (
               <Button variant="ghost" className="order-3 w-full shrink-0" disabled={loading || disabled} onClick={() => doSearch(query.trim(), true)}>
                 {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Show more users"}
               </Button>
             )}
-            {!usersOnly && <PublicWebSearchResults query={query} />}
+            {!usersOnly && !isHero && <PublicWebSearchResults query={query} />}
 
             {/* Error state — distinct from "no results" so a failed search
                 isn't mistaken for a genuinely empty result set. */}
