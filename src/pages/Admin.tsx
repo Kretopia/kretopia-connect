@@ -25,6 +25,7 @@ import { BankTransfersTab } from "@/components/admin/BankTransfersTab";
 import { BounceRateTab } from "@/components/admin/BounceRateTab";
 import { AmbassadorsTab } from "@/components/admin/AmbassadorsTab";
 import { ProductDashboardTab } from "@/components/admin/ProductDashboardTab";
+import { TractionAuditTab } from "@/components/admin/TractionAuditTab";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { loadAiCreditOverview } from "@/lib/thriveCopilot";
@@ -105,6 +106,7 @@ const TAB_GROUPS: AdminTabGroup[] = [
   {
     label: "Product & Analytics",
     tabs: [
+      { value: "traction", label: "Traction audit", icon: ShieldCheck },
       { value: "product", label: "Product", icon: Sparkles },
       { value: "analytics", label: "Hosting", icon: Activity },
     ],
@@ -614,6 +616,10 @@ export default function Admin() {
 
         <TabsContent value="ambassadors" className="mt-4 sm:mt-6">
           <AmbassadorsTab />
+        </TabsContent>
+
+        <TabsContent value="traction" className="mt-4 sm:mt-6">
+          <TractionAuditTab />
         </TabsContent>
 
         <TabsContent value="product" className="mt-4 sm:mt-6">

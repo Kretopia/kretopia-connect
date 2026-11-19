@@ -1,0 +1,17 @@
+{
+  "executedAt": "2026-11-19T07:48:57.484126Z",
+  "kind": "read-only-audit-snapshot",
+  "productionOriginConfirmed": true,
+  "productionSource": "Legacy application data service",
+  "accessibleSource": "Separate Lovable Cloud database",
+  "databaseVersion": "PostgreSQL 17.6",
+  "databaseTimezone": "UTC",
+  "historicalContinuity": "NOT VERIFIED",
+  "cloudAuthAccounts": 0,
+  "cloudAuthCountScope": "Accessible Cloud only; not Kretopia lifetime users",
+  "missingSources": ["analytics_events", "connections", "credit_endorsements", "credits", "invoices", "matches", "opportunities", "profiles", "projects", "saved_opportunities", "scouted_gigs", "swipes", "user_roles"],
+  "availablePublicTables": ["ai_credit_config", "ai_credit_envelope", "ai_credit_ledger", "ai_feature_usage", "ai_model_calls", "ai_model_pricing", "kreto_attachments", "public_presence_search_quota", "username_auth_attempts", "username_login_links"],
+  "productionProbe": "Published website made legacy public-profile requests with HTTP 200. No personal records were retained.",
+  "exclusions": "NOT VERIFIED: production account roles, flags and email classification are inaccessible. No account is assumed external.",
+  "release": "Not deployed or published"
+}

@@ -1,3 +1,9 @@
+# Production traction audit
+- [x] Verify published data origin against the accessible read-only database and inspect its schema: production calls legacy; accessible Cloud lacks the required product tables.
+- [x] Add evidence-only Traction tab to the existing Admin dashboard, with explicit unavailable metrics and no simulated charts.
+- [x] Deliver reproducible SELECT queries, exclusion methodology and a timestamped CTO report; 3 tests pass, presentation and null exports verified at 390/662/1280px with no runtime errors. Actual signed-in Admin check is blocked by unavailable legacy session; no publication.
+- [ ] Calculate external-only production lifetime and time-series metrics: blocked until read-only access to the published app's actual database is available.
+
 # Hero search → Scout
 - [x] Route Hero searches and old /search links to Scout with the original query; show miniature real-user matches and reuse completed searches without paid calls.
 - [x] Verify targeted tests and the public desktop/mobile flow: a real UX Designer appears in the Hero dropdown and Scout; opportunity search is prefilled, old links redirect and mobile has no horizontal overflow. No publication.
