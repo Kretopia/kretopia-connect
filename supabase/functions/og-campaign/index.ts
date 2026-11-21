@@ -1,33 +1,28 @@
+import { publicReadBoundary, publicSlug } from "../_shared/publicBoundary.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-import { corsFor, safeError } from '../_shared/guard.ts';
-import { publicPerimeter } from '../_shared/publicPerimeter.ts';
 const SITE = "https://www.kretopia.com";
 const FALLBACK_OG_IMAGE = `${SITE}/og-image.png`;
 
 Deno.serve(async (req) => {
-  const corsHeaders = corsFor(req);
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-  // Public, unauthenticated and backed by a service-role read: rate-limited per caller before any database work.
-  try {
-    await publicPerimeter(req, "og-campaign", 60);
-  } catch (perimeterError) {
-    return safeError(perimeterError, req);
-  }
+  const boundary = await publicReadBoundary(req, corsHeaders, false);
+  if (boundary) return boundary;
 
   const url = new URL(req.url);
   // Support both ?slug=... and trailing path /og-campaign/<slug>
   let slug = url.searchParams.get("slug");
-  if (!slug) {
+  if (!publicSlug(slug)) {
     const parts = url.pathname.split("/").filter(Boolean);
     slug = parts[parts.length - 1] || null;
     if (slug === "og-campaign") slug = null;
   }
 
-  if (!slug) {
+  if (!publicSlug(slug)) {
     return new Response("Missing slug", { status: 400 });
   }
 
@@ -35,13 +30,16 @@ Deno.serve(async (req) => {
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const { data: c } = await supabase
+  const { data: c, error: campaignError } = await supabase
     .from("campaigns")
     .select("slug,title,tagline,story,cover_image_url,goal_amount,total_raised,backer_count,currency,deadline,status")
     .eq("slug", slug)
+    .eq("moderation_status", "approved")
+    .in("status", ["active", "funded", "failed", "completed"])
     .maybeSingle();
+  if (campaignError) return new Response("Preview unavailable", { status: 503, headers: { ...corsHeaders, "Cache-Control": "no-store" } });
 
-  const canonicalUrl = `${SITE}/fund/${slug}`;
+  const canonicalUrl = `${SITE}/fund/${encodeURIComponent(slug)}`;
 
   if (!c) {
     return Response.redirect(`${SITE}/fund`, 302);
@@ -78,7 +76,7 @@ Deno.serve(async (req) => {
   <meta property="og:type" content="website" />
   <meta property="og:title" content="${escapeHtml(title)}" />
   <meta property="og:description" content="${escapeHtml(ctaDescription)}" />
-  <meta property="og:url" content="${canonicalUrl}" />
+  <meta property="og:url" content="${escapeHtml(canonicalUrl)}" />
   <meta property="og:site_name" content="Kretopia" />
   <meta property="og:image" content="${escapeHtml(image)}" />
   <meta property="og:image:width" content="1200" />
@@ -89,14 +87,14 @@ Deno.serve(async (req) => {
   <meta name="twitter:description" content="${escapeHtml(ctaDescription)}" />
   <meta name="twitter:image" content="${escapeHtml(image)}" />
 
-  <link rel="canonical" href="${canonicalUrl}" />
-  <meta http-equiv="refresh" content="0;url=${canonicalUrl}" />
+  <link rel="canonical" href="${escapeHtml(canonicalUrl)}" />
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(canonicalUrl)}" />
 </head>
 <body>
   <h1>${escapeHtml(c.title)}</h1>
   <p>${escapeHtml(stat)}</p>
   <p>${escapeHtml(tagline)}</p>
-  <a href="${canonicalUrl}">Back this campaign on Kretopia</a>
+  <a href="${escapeHtml(canonicalUrl)}">Back this campaign on Kretopia</a>
 </body>
 </html>`;
 
