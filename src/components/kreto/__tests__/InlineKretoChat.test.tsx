@@ -11,12 +11,19 @@ type StreamArgs = {
 const mocks = vi.hoisted(() => ({
   account: { isAdmin: false, subscribed: false, tier: "free" },
   stream: vi.fn(),
+  extract: vi.fn(),
+  intent: vi.fn(),
+  decide: vi.fn(),
   load: vi.fn(),
   create: vi.fn(),
   navigate: vi.fn(),
 }));
 
 vi.mock("react-router-dom", () => ({ useNavigate: () => mocks.navigate }));
+vi.mock("@/lib/agentOrchestrator", () => ({
+  sendAgentIntent: (...a: unknown[]) => mocks.intent(...a),
+  decideAgentAction: (...a: unknown[]) => mocks.decide(...a),
+}));
 vi.mock("@/hooks/useUserRole", () => ({ useUserRole: () => ({ isAdmin: mocks.account.isAdmin }) }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ subscriptionInfo: { subscribed: mocks.account.subscribed, tier: mocks.account.tier } }) }));
 
@@ -24,7 +31,7 @@ vi.mock("@/lib/thriveCopilot", () => ({
   streamCopilot: (args: StreamArgs) => mocks.stream(args),
   loadConversationMessages: (id: string) => mocks.load(id),
   createConversation: () => mocks.create(),
-  extractActions: () => ({ actions: [], plans: [] }),
+  extractActions: (raw: string) => mocks.extract(raw),
   // Silent-failure side modes: no suggestion, no quota data in tests.
   autocompleteKreto: () => Promise.resolve(""),
   loadAiCreditOverview: () => Promise.resolve(null),
@@ -55,6 +62,9 @@ function giveThreadLayout(thread: HTMLElement, { scrollHeight, clientHeight, scr
 beforeEach(() => {
   mocks.account = { isAdmin: false, subscribed: false, tier: "free" };
   mocks.stream.mockReset();
+  mocks.extract.mockReset().mockReturnValue({ actions: [], plans: [] });
+  mocks.intent.mockReset();
+  mocks.decide.mockReset();
   mocks.load.mockReset().mockResolvedValue([]);
   mocks.create.mockReset().mockResolvedValue("conv-1");
   mocks.navigate.mockReset();
@@ -321,5 +331,58 @@ describe("InlineKretoChat: Kreto model and effort", () => {
     send("What do I owe?");
     await screen.findByText("ok");
     expect(lastArgs()).toMatchObject({ context: ["money"], memory: false });
+  });
+});
+
+describe("InlineKretoChat: actions are approved here, never sent somewhere else", () => {
+  const action = (over: Record<string, unknown>) => ({ run_id: "r1", user_id: "u1", tool_args: {}, risk_level: "requires_approval", preview_body: null, ...over });
+
+  it("a proposed action becomes an approval card under the reply; what ran or is not allowed is said plainly", async () => {
+    mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("On it."));
+    mocks.extract.mockReturnValue({ actions: [{ intent: "assign the colour pass to Lena and add a task" }], plans: [] });
+    mocks.intent.mockResolvedValue({
+      run_id: "r1", status: "awaiting_approval", agent_kind: "project_manager", awaiting_approval: true,
+      actions: [
+        action({ id: "a1", tool_name: "assign_task", status: "proposed", preview_title: "Assign the colour pass to Lena" }),
+        action({ id: "a2", tool_name: "create_task", status: "auto_executed", risk_level: "safe_auto", preview_title: "Create task \"Colour pass\"" }),
+        action({ id: "a3", tool_name: "delete_project", status: "rejected", risk_level: "locked", preview_title: "Delete a project", preview_body: "Deleting a project is yours to do in the project's settings; I can't do it for you." }),
+      ],
+    });
+    render(<Harness />);
+    send("Assign the colour pass to Lena");
+    expect(await screen.findByText("Assign the colour pass to Lena")).toBeInTheDocument();
+    expect(mocks.intent).toHaveBeenCalledWith("assign the colour pass to Lena and add a task", { surface: "home" });
+    const notes = screen.getAllByTestId("kreto-action-note").map((n) => n.textContent);
+    expect(notes).toEqual([
+      "Done: Create task \"Colour pass\".",
+      "Delete a project: Deleting a project is yours to do in the project's settings; I can't do it for you.",
+    ]);
+    expect(screen.queryByText(/bottom navigation/)).toBeNull();
+  });
+
+  it("approving says what really happened, including when it could not be confirmed", async () => {
+    mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("Ready when you are."));
+    mocks.extract.mockReturnValue({ actions: [{ intent: "message the crew" }], plans: [] });
+    mocks.intent.mockResolvedValue({ run_id: "r1", status: "awaiting_approval", agent_kind: "talent", awaiting_approval: true, actions: [action({ id: "a1", tool_name: "send_message", status: "proposed", preview_title: "Message the crew" })] });
+    mocks.decide.mockResolvedValue({ ok: false, outcome: "unknown", message: "I couldn't confirm whether this went through. Check before trying again, so nothing happens twice." });
+    render(<Harness />);
+    send("Tell the crew we wrap at 6");
+    fireEvent.click(await screen.findByRole("button", { name: /Approve/ }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull());
+    expect(mocks.decide).toHaveBeenCalledWith("a1", "approved");
+    expect(screen.getByTestId("kreto-action-note")).toHaveTextContent("Message the crew: I couldn't confirm whether this went through. Check before trying again, so nothing happens twice.");
+  });
+
+  it("a plan says nothing was started; a setup failure says so; neither claims success", async () => {
+    mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("Here's how I'd do it."));
+    mocks.extract.mockReturnValue({ actions: [{ intent: "book the studio" }], plans: [{ goal: "launch the album" }] });
+    mocks.intent.mockRejectedValue(new Error("Agents disabled in your settings"));
+    render(<Harness />);
+    send("Plan the album launch and book the studio");
+    await waitFor(() => expect(screen.getAllByTestId("kreto-action-note")).toHaveLength(2));
+    expect(screen.getAllByTestId("kreto-action-note").map((n) => n.textContent)).toEqual([
+      "I've sketched a multi-step plan, but I can't run plans from this page yet, so nothing was started.",
+      "I couldn't set that up: Agents disabled in your settings.",
+    ]);
   });
 });

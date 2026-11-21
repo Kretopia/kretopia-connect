@@ -6,6 +6,7 @@
 // client only needs to send the latest user message — server hydrates the
 // rest from ai_messages.
 
+import type { OrchAction } from "@/lib/agentOrchestrator";
 import { supabase } from "@/integrations/supabase/client";
 
 export type CopilotSurface =
@@ -27,6 +28,12 @@ export interface CopilotMessage {
   kreto?: string;
   /** Live replies only: the Kretopia data the reply drew on, e.g. "Projects, Money, 3 memories". */
   sources?: string;
+  /** Live replies only: actions this reply proposed, waiting for the person's approval. */
+  actions?: OrchAction[];
+  /** Live replies only: what happened to this reply's actions (done, blocked, didn't go through). */
+  notes?: string[];
+  /** Live replies only: actions still being prepared. */
+  preparing?: number;
 }
 
 /** What the server says about the reply it is streaming: the Kreto model and effort that ran. Never the model behind them. */

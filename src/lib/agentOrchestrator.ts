@@ -57,8 +57,9 @@ async function callOrchestrator<T>(body: Record<string, unknown>): Promise<T> {
   try { parsed = JSON.parse(text); } catch { /* keep text */ }
 
   if (!resp.ok) {
-    const msg = (parsed as { error?: string })?.error || `Orchestrator error (${resp.status})`;
-    throw new Error(msg);
+    // Prefer the Kretopia-worded message (why a tool is locked, for instance) over the internal error text.
+    const body = parsed as { error?: string; message?: string };
+    throw new Error(body?.message || body?.error || `Orchestrator error (${resp.status})`);
   }
   return parsed as T;
 }
@@ -70,13 +71,23 @@ export async function sendAgentIntent(
   return callOrchestrator<OrchRunResponse>({ intent, context });
 }
 
+/** The outcome of approving an action. On failure: "failed" (it did not go through) or "unknown" (it may have). */
+export interface AgentDecisionResult {
+  ok: boolean;
+  result?: unknown;
+  /** Raw error, kept for the record. Show `message` to people. */
+  error?: string;
+  outcome?: "failed" | "unknown";
+  message?: string;
+}
+
 export async function decideAgentAction(
   actionId: string,
   decision: "approved" | "rejected" | "edited",
   editedArgs?: Record<string, unknown>,
   note?: string,
-): Promise<{ ok: boolean; result?: unknown; error?: string }> {
-  const res = await callOrchestrator<{ ok: boolean; result?: unknown; error?: string }>({
+): Promise<AgentDecisionResult> {
+  const res = await callOrchestrator<AgentDecisionResult>({
     action_id: actionId,
     decision,
     edited_args: editedArgs,

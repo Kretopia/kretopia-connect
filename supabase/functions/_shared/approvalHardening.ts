@@ -8,6 +8,8 @@
 // handler has no approval check of its own. The rule below is that only server code writes those fields, and it writes
 // them last.
 
+import { governedTier } from "./kretoToolPolicy.ts";
+
 /** A field that carries authority (which tool, which caller kind, which approval). Only server code may set it. */
 export const isReservedKey = (key: string): boolean => key.startsWith("_");
 
@@ -127,12 +129,14 @@ export function checkPlanStep(
   const tool = registry.get(name);
   if (!tool) return { ok: false, reason: "unknown_tool" };
   if (tool.enabled === false) return { ok: false, reason: "disabled_tool" };
-  if (tool.risk_level === "locked") return { ok: false, reason: "locked_tool" };
+  // The governed tier (kretoToolPolicy): a tool the policy locks never runs from a plan either, whatever its row says.
+  const risk = governedTier(name, tool.risk_level ?? "safe_auto");
+  if (risk === "locked") return { ok: false, reason: "locked_tool" };
   const registered = tool.handler ?? null;
   const claimed = typeof step.handler === "string" && step.handler ? step.handler : null;
   if (claimed !== registered) return { ok: false, reason: "handler_mismatch" };
   if (registered !== null && registered !== "inline" && registered !== "inline_bundle" && !HANDLER_PATTERN.test(registered)) {
     return { ok: false, reason: "bad_handler" };
   }
-  return { ok: true, handler: registered, risk: tool.risk_level ?? "safe_auto" };
+  return { ok: true, handler: registered, risk };
 }
