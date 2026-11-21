@@ -11,6 +11,12 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  // Public, unauthenticated and backed by a service-role read: rate-limited per caller before any database work.
+  try {
+    await publicPerimeter(req, "og-campaign", 60);
+  } catch (perimeterError) {
+    return safeError(perimeterError, req);
+  }
 
   const url = new URL(req.url);
   // Support both ?slug=... and trailing path /og-campaign/<slug>
@@ -105,11 +111,6 @@ Deno.serve(async (req) => {
 
 function formatMoney(amount: number, currency: string) {
   try {
-    try {
-      await publicPerimeter(req, "og-campaign", 60);
-    } catch (perimeterError) {
-      return safeError(perimeterError, req);
-    }
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: currency || "USD",
