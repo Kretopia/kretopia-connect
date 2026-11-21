@@ -69,7 +69,8 @@ export function makeDiscoveryDb(init: { admins?: string[]; settings?: Partial<{ 
       if (!p_user) return { ok: false, reason: "sign_in_required" };
       const l = listings.get(p_listing);
       if (!l || l.status !== "published") return { ok: false, reason: "unavailable" };
-      const t = tokens.find((x) => x.hash === p_token_hash && x.listing_id === p_listing && !x.used && !x.revoked && x.expires_at.getTime() > Date.now());
+      // The database's own clock, like `expires_at > now()` in the SQL: the same clock the caller used to set the expiry.
+      const t = tokens.find((x) => x.hash === p_token_hash && x.listing_id === p_listing && !x.used && !x.revoked && x.expires_at.getTime() > nowFn().getTime());
       if (!t) return { ok: false, reason: "invalid_or_used" };
       t.used = true;
       const c = { id: id("c"), listing_id: p_listing, claimant_user_id: p_user, status: "pending" };

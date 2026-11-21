@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeDiscoveryDb } from "./fakeDiscoveryDb";
+import { makeDiscoveryDb as makeDiscoveryDbWithClock } from "./fakeDiscoveryDb";
 import {
   AI_EXTRACTION_CENTS, claimStatus, createClaimLink, decideClaim, disputeListing, ingest, ownerUpdate, redeemClaim, requestAdminReview, reviewListing, runDiscovery,
   setApplications, startVerification, validateImage, verifyDomain, listFeedDrafts, FEED_DRAFTS_LIMIT, type PipelineDeps,
@@ -8,6 +8,8 @@ import { safeFetchBounded } from "../../../../supabase/functions/_shared/ssrf";
 import { domainChallenge, challengeLine } from "../../../../supabase/functions/_shared/discovery/claim";
 
 const NOW = new Date("2026-10-28T12:00:00Z");
+// One clock for the code under test (deps.now) and the database (token expiry), so these tests never depend on today's date.
+const makeDiscoveryDb = (init: Parameters<typeof makeDiscoveryDbWithClock>[0] = {}) => makeDiscoveryDbWithClock({ now: () => NOW, ...init });
 const ADMIN = "admin-1";
 const USER = "user-1";
 const SECRET = "claim-secret-never-in-a-prompt";
@@ -259,7 +261,7 @@ describe("the claim handoff: an invitation to verify, never proof of ownership",
     expect((await redeemClaim(deps(db), "c1", id, token)).status).toBe(410); // replay
     expect((await redeemClaim(deps(db), "c2", id, token)).status).toBe(410); // another user, same link
     const expired = (await createClaimLink(deps(db), ADMIN, other, "https://k.test")).data!.link.split("/").pop()!;
-    db.tokens.find((t) => t.listing_id === other)!.expires_at = new Date(Date.now() - 1000);
+    db.tokens.find((t) => t.listing_id === other)!.expires_at = new Date(NOW.getTime() - 1000);
     expect((await redeemClaim(deps(db), "c3", other, expired)).status).toBe(410);
     expect(db.listings.get(id)!.owner_user_id).toBeNull();
   });
