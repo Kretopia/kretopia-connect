@@ -12,6 +12,7 @@ import {
   type KretoContextSection,
 } from "@/lib/kretoContext";
 import { cn } from "@/lib/utils";
+import { COMPOSER_CHIP } from "@/components/kreto/composerStyles";
 
 interface KretoContextPickerProps {
   choice: KretoContextChoice;
@@ -42,7 +43,7 @@ export function KretoContextPicker({ choice, onChange, disabled }: KretoContextP
           type="button"
           disabled={disabled}
           aria-label={`What Kreto can see: ${label}. Change`}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          className={COMPOSER_CHIP}
         >
           <Eye className="h-3 w-3" aria-hidden />
           {label}

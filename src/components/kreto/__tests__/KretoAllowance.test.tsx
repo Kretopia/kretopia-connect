@@ -4,7 +4,7 @@ import { allowanceFrom } from "@/lib/aiAllowance";
 import type { AiCreditOverview } from "@/lib/thriveCopilot";
 
 const h = vi.hoisted(() => ({ overview: null as unknown, stream: vi.fn(), navigate: vi.fn() }));
-vi.mock("react-router-dom", () => ({ useNavigate: () => h.navigate }));
+vi.mock("react-router-dom", () => ({ useNavigate: () => h.navigate, Link: ({ to, children }: { to: string; children?: React.ReactNode }) => <a href={to}>{children}</a> }));
 vi.mock("@/lib/thriveCopilot", () => ({
   streamCopilot: (args: unknown) => h.stream(args),
   loadConversationMessages: () => Promise.resolve([]),
@@ -42,6 +42,8 @@ describe("KretoQuotaIndicator", () => {
     const line = screen.getByTestId("kreto-allowance");
     expect(line).toHaveTextContent("15 of 20 messages left today");
     expect(line).toHaveTextContent("resets in 5 h 12 min (midnight UTC)");
+    // People's terms only (G14): no token counts, no "backend".
+    expect(line.textContent).not.toMatch(/tokens|backend|ceiling/i);
     expect(screen.queryByTestId("kreto-allowance-blocked")).toBeNull();
   });
 

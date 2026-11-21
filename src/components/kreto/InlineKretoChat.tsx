@@ -6,7 +6,7 @@ import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BRAND } from "@/lib/brandLexicon";
 import {
   streamCopilot, loadConversationMessages, createConversation, extractActions, autocompleteKreto,
-  openKretoAttachment, deleteKretoAttachment, type CopilotMessage, type KretoRouteInfo,
+  openKretoAttachment, deleteKretoAttachment, type CopilotMessage, type KretoActionNote, type KretoRouteInfo,
 } from "@/lib/thriveCopilot";
 import { KretoComposerAttach, type ComposerAttachment } from "@/components/kreto/KretoComposerAttach";
 import { KretoQuotaIndicator, KRETO_ALLOWANCE_NOTICE_ID } from "@/components/kreto/KretoQuotaIndicator";
@@ -15,13 +15,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
-import { KretoModelPicker } from "@/components/kreto/KretoModelPicker";
+import { KretoModelPicker, KretoRouteHints } from "@/components/kreto/KretoModelPicker";
+import { cn } from "@/lib/utils";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { sendAgentIntent, type OrchAction } from "@/lib/agentOrchestrator";
 import { KretoContextPicker } from "@/components/kreto/KretoContextPicker";
-import { readContextChoice, sourcesLabel, writeContextChoice, type KretoContextChoice } from "@/lib/kretoContext";
+import { KretoSettings } from "@/components/kreto/KretoSettings";
+import { DEFAULT_CONTEXT_CHOICE, readContextChoice, sourcesLabel, writeContextChoice, type KretoContextChoice } from "@/lib/kretoContext";
 import {
-  kretoEffortLabel, kretoModelName, previewShare, readKretoChoice, writeKretoChoice, type KretoChoice, type KretoEffort,
+  DEFAULT_KRETO_CHOICE, kretoEffortLabel, kretoModelName, previewShare, readKretoChoice, sharePctLabel, writeKretoChoice, type KretoChoice, type KretoEffort,
 } from "@/lib/kretoProfiles";
 
 // Strip <action>/<plan> tags from the live-streaming buffer, same approach
@@ -45,24 +47,46 @@ function stripTagsLive(raw: string): string {
 /** Close enough to the bottom that the reader is "following" the stream. */
 const FOLLOW_THRESHOLD_PX = 48;
 
-// Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
 /** A plan needs the step-by-step approval flow, which this page does not have yet: say so instead of pointing elsewhere. */
-const PLAN_NOTE = "I've sketched a multi-step plan, but I can't run plans from this page yet, so nothing was started.";
+const PLAN_NOTE: KretoActionNote = { tone: "info", title: "I've sketched a multi-step plan, but I can't run plans from this page yet, so nothing was started." };
 
-/** What happened to an action that is not waiting for approval, in plain words. Null for one that is. */
-function actionNote(a: OrchAction): string | null {
+/** What happened to an action that is not waiting for approval. Null for one that is. Only what the server recorded. */
+function actionNote(a: OrchAction): KretoActionNote | null {
   const title = a.preview_title || "That";
-  const message = (a.result as { message?: string } | null | undefined)?.message;
-  if (a.status === "auto_executed" || a.status === "executed") return `Done: ${title}.`;
-  if (a.status === "failed") return `${title}: ${message ?? "This didn't go through."}`;
-  if (a.status === "rejected") return `${title}: ${a.preview_body || "I can't do this for you."}`;
+  const result = (a.result ?? null) as { message?: string; outcome?: string } | null;
+  if (a.status === "auto_executed" || a.status === "executed") return { tone: "done", title };
+  if (a.status === "failed") return { tone: result?.outcome === "unknown" ? "unknown" : "failed", title, detail: result?.message ?? "This didn't go through." };
+  if (a.status === "rejected") return { tone: "blocked", title, detail: a.preview_body || "I can't do this for you." };
   return null;
+}
+
+/** Status chip words and colours (semantic tokens only). */
+const NOTE_CHIP: Record<KretoActionNote["tone"], { label: string; className: string } | null> = {
+  done: { label: "Done", className: "border-border bg-muted text-foreground" },
+  failed: { label: "Didn't go through", className: "border-destructive/30 bg-destructive/10 text-destructive" },
+  unknown: { label: "Not confirmed", className: "border-destructive/30 bg-destructive/10 text-destructive" },
+  blocked: { label: "Not allowed", className: "border-border bg-muted text-muted-foreground" },
+  dismissed: { label: "Dismissed", className: "border-border bg-muted text-muted-foreground" },
+  info: null,
+};
+
+function ActionNoteLine({ note }: { note: KretoActionNote }) {
+  const chip = NOTE_CHIP[note.tone];
+  return (
+    <p className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 whitespace-normal text-xs text-muted-foreground" data-testid="kreto-action-note">
+      {chip && <span className={cn("rounded-full border px-1.5 py-px text-[10px] font-semibold", chip.className)}>{chip.label}</span>}
+      <span className="text-foreground">{note.title}</span>
+      {note.detail && <span>{note.detail}</span>}
+    </p>
+  );
 }
 
 type BubbleProps = CopilotMessage & {
   /** An approval card was decided: hide it and say what happened. */
-  onActionResolved?: (actionId: string, status: "executed" | "failed" | "rejected", note: string) => void;
+  onActionResolved?: (actionId: string, status: "executed" | "failed" | "rejected", note: KretoActionNote) => void;
 };
+
+// Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
 
 const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto, sources, actions, notes, preparing, onActionResolved }: BubbleProps) {
   const [removed, setRemoved] = useState<string[]>([]);
@@ -71,20 +95,26 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
     <div
       className={
         role === "user"
-          ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-[hsl(var(--energy)/0.15)] border border-[hsl(var(--energy)/0.25)] px-3.5 py-2 text-sm text-white break-words"
-          : "mr-auto max-w-[92%] rounded-2xl rounded-bl-sm bg-white/[0.05] border border-white/10 px-3.5 py-2 text-sm text-white/90 whitespace-pre-wrap break-words"
+          ? "ml-auto max-w-[85%] rounded-2xl rounded-br-sm border border-[hsl(var(--energy)/0.25)] bg-[hsl(var(--energy)/0.12)] px-3.5 py-2 text-sm text-foreground break-words"
+          : "mr-auto max-w-[92%] rounded-2xl rounded-bl-sm border border-border bg-muted/40 px-3.5 py-2 text-sm text-foreground whitespace-pre-wrap break-words"
       }
     >
       {content || (
-        <span className="inline-flex h-5 items-center gap-1.5 text-white/50">
+        <span className="inline-flex h-5 items-center gap-1.5 text-muted-foreground">
           <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
         </span>
       )}
-      {role === "assistant" && kreto && content && (
-        <span className="mt-1 block text-[10px] font-medium text-muted-foreground" data-testid="kreto-route-label">{kreto}</span>
-      )}
-      {role === "assistant" && sources && content && (
-        <span className="block text-[10px] text-muted-foreground" data-testid="kreto-sources">From your Kretopia data: {sources}</span>
+      {role === "assistant" && content && (kreto || sources) && (
+        // The answer first; what answered and what it drew on stay one quiet line, the sources one tap away.
+        <div className="mt-1.5 whitespace-normal text-[10px] text-muted-foreground">
+          {kreto && <span className="font-medium" data-testid="kreto-route-label">{kreto}</span>}
+          {sources && (
+            <details className="mt-0.5" data-testid="kreto-sources">
+              <summary className="w-fit cursor-pointer select-none font-medium hover:text-foreground">Sources</summary>
+              <p className="mt-0.5">From your Kretopia data: {sources}</p>
+            </details>
+          )}
+        </div>
       )}
       {attachments?.filter(a => !removed.includes(a.id)).map(a => (
         <div key={a.id} className="mt-2 flex items-center gap-2 border-t border-border pt-2 text-foreground">
@@ -100,9 +130,7 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
           <KretopiaSpinner className="h-3 w-3" /> Getting that ready for your approval
         </span>
       )}
-      {role === "assistant" && notes?.map((n, i) => (
-        <p key={i} className="mt-2 text-xs text-muted-foreground" data-testid="kreto-action-note">{n}</p>
-      ))}
+      {role === "assistant" && notes?.map((n, i) => <ActionNoteLine key={i} note={n} />)}
       {role === "assistant" && actions?.some((a) => a.status === "proposed") && (
         <div className="mt-2 space-y-2 whitespace-normal">
           {actions.filter((a) => a.status === "proposed").map((a) => (
@@ -112,9 +140,9 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
               compact
               onResolved={(decision, _result, outcome) => {
                 const title = a.preview_title || "That";
-                if (decision === "rejected") onActionResolved?.(a.id, "rejected", `Dismissed: ${title}.`);
-                else if (outcome?.ok) onActionResolved?.(a.id, "executed", `Done: ${title}.`);
-                else onActionResolved?.(a.id, "failed", `${title}: ${outcome?.message ?? "This didn't go through."}`);
+                if (decision === "rejected") onActionResolved?.(a.id, "rejected", { tone: "dismissed", title });
+                else if (outcome?.ok) onActionResolved?.(a.id, "executed", { tone: "done", title });
+                else onActionResolved?.(a.id, "failed", { tone: outcome?.outcome === "unknown" ? "unknown" : "failed", title, detail: outcome?.message ?? "This didn't go through." });
               }}
             />
           ))}
@@ -162,7 +190,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // Numbers the live replies (live-1, live-2…) so actions and notes attach to the right one.
   const liveSeqRef = useRef(0);
   // An approval card was decided: hide it and leave a plain note of what happened.
-  const onActionResolved = useCallback((actionId: string, status: "executed" | "failed" | "rejected", note: string) => {
+  const onActionResolved = useCallback((actionId: string, status: "executed" | "failed" | "rejected", note: KretoActionNote) => {
     setMessages((m) =>
       m.map((msg) =>
         msg.actions?.some((a) => a.id === actionId)
@@ -427,15 +455,15 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         patch((msg) => ({ ...msg, preparing: actions.length, notes: plans.length ? [...(msg.notes ?? []), PLAN_NOTE] : msg.notes }));
         for (const parsed of actions) {
           let proposed: OrchAction[] = [];
-          let notes: string[] = [];
+          let notes: KretoActionNote[] = [];
           try {
             const run = await sendAgentIntent(parsed.intent, { surface: parsed.surface ?? "home" });
             proposed = (run.actions ?? []).filter((a) => a.status === "proposed");
-            notes = (run.actions ?? []).map(actionNote).filter((n): n is string => Boolean(n));
-            if (!run.actions?.length) notes.push("I looked, but there was nothing for me to do there.");
+            notes = (run.actions ?? []).map(actionNote).filter((n): n is KretoActionNote => Boolean(n));
+            if (!run.actions?.length) notes.push({ tone: "info", title: "I looked, but there was nothing for me to do there." });
           } catch (err) {
-            const reason = err instanceof Error && err.message ? err.message.replace(/\.$/, "") : "try again";
-            notes = [`I couldn't set that up: ${reason}.`];
+            const reason = err instanceof Error && err.message ? err.message.replace(/\.$/, "") : "Try again";
+            notes = [{ tone: "failed", title: "I couldn't set that up", detail: `${reason}.` }];
           }
           patch((msg) => ({
             ...msg,
@@ -525,7 +553,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
     // One fixed height from the first paint to the last token: the thread scrolls inside the
     // card, so streaming text can never push the page (or the cards below it) around. The
     // height comes from KretoTab (--kreto-h) so the history rail can match it.
-    <div className="flex h-[var(--kreto-h,32rem)] flex-col overflow-hidden rounded-2xl border border-[hsl(var(--energy)/0.3)] bg-white/[0.03] backdrop-blur-sm">
+    <div className="flex h-[var(--kreto-h,32rem)] flex-col overflow-hidden rounded-2xl border border-[hsl(var(--energy)/0.3)] bg-card text-card-foreground">
       <div className="relative min-h-0 flex-1">
         <div
           ref={threadRef}
@@ -536,12 +564,12 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
           className="h-full space-y-3 overflow-y-auto overscroll-contain px-4 py-4"
         >
           {!historyLoaded && messages.length === 0 ? (
-            <div className="flex items-center gap-1.5 text-xs text-white/40">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <KretopiaSpinner className="h-3 w-3" /> Loading your conversation…
             </div>
           ) : messages.length === 0 ? (
             emptyState ?? (
-              <p className="py-6 text-center text-sm text-white/50">Ask {BRAND.agentName} anything to get started.</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">Ask {BRAND.agentName} anything to get started.</p>
             )
           ) : (
             messages.map((m, i) => <MessageBubble key={m.id ?? i} {...m} onActionResolved={onActionResolved} />)
@@ -559,24 +587,11 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         )}
       </div>
 
-      <div className="shrink-0 border-t border-white/10 bg-white/[0.02]">
-        <KretoModelPicker
-          choice={choice}
-          onChange={setChoice}
-          disabled={streaming}
-          previewShare={preview}
-          lastRoute={lastRoute}
-          deepTier={deepTier}
-          extra={<KretoContextPicker choice={contextChoice} onChange={setContextChoice} disabled={streaming} />}
-        />
-        <div className="flex items-center justify-between gap-2 px-3 pt-2">
-          <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
-          <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />
-        </div>
-
+      <div className="shrink-0 space-y-2 border-t border-border px-3 pb-2.5 pt-2.5">
+        {/* What needs a decision comes first: a failed send to retry, or a big request to confirm. */}
         {lastError && (
-          <div className="flex items-center justify-between gap-2 px-3 pt-2">
-            <p className="text-xs text-white/50">That didn't go through — your draft is back in the composer.</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">That didn't go through. Your draft is back in the composer.</p>
             <button
               type="button"
               onClick={() => send(lastError.draft).catch((err) => console.error(err))}
@@ -588,7 +603,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
         )}
 
         {pendingConfirm && (
-          <div role="status" className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2" data-testid="kreto-confirm">
+          <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2" data-testid="kreto-confirm">
             <p className="text-xs text-foreground">{pendingConfirm.message}</p>
             <div className="flex items-center gap-2">
               {pendingConfirm.effort > 1 && (
@@ -615,11 +630,8 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
           </div>
         )}
 
-        <form
-          onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}
-          className="flex items-end gap-2 p-3 pt-2"
-        >
-          <div className="relative flex-1">
+        <form onSubmit={(e) => { e.preventDefault(); send(input).catch((err) => console.error(err)); }}>
+          <div className="relative">
             <textarea
               ref={inputRef}
               value={input}
@@ -637,40 +649,61 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
               rows={1}
               placeholder={blocked ? `${BRAND.agentName} is paused until the allowance resets` : `Ask ${BRAND.agentName} anything…`}
               aria-describedby={blocked ? KRETO_ALLOWANCE_NOTICE_ID : undefined}
-              className="relative z-10 w-full resize-none bg-transparent text-sm text-white placeholder:text-white/40 outline-none py-2 max-h-32"
+              className="relative z-10 max-h-32 w-full resize-none bg-transparent py-1.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             {ghost && (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre py-2 text-sm"
-              >
+              <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden whitespace-pre py-1.5 text-sm">
                 <span className="invisible">{input}</span>
-                <span className="text-white/35">{ghost}</span>
-                <span className="ml-1 rounded border border-white/15 px-1 text-[9px] uppercase tracking-wider text-white/30">Tab</span>
+                <span className="text-muted-foreground/70">{ghost}</span>
+                <span className="ml-1 rounded border border-border px-1 text-[9px] uppercase tracking-wider text-muted-foreground">Tab</span>
               </div>
             )}
           </div>
-          {streaming ? (
-            <button
-              type="button"
-              onClick={stop}
-              className="h-9 w-9 shrink-0 rounded-full bg-white/10 text-white flex items-center justify-center"
-              aria-label="Stop"
-            >
-              <Square className="h-3.5 w-3.5" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={!input.trim() || !!blocked}
-              aria-describedby={blocked ? KRETO_ALLOWANCE_NOTICE_ID : undefined}
-              className="btn-glass btn-glass-primary h-9 w-9 shrink-0 rounded-full text-white flex items-center justify-center disabled:opacity-40"
-              aria-label="Send"
-            >
-              <ArrowUp className="h-4 w-4" />
-            </button>
-          )}
+
+          {/* One quiet control row: what to attach, which Kreto, what it may see, then the cost and Send. */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <KretoComposerAttach attachments={attachments} onChange={setAttachments} disabled={streaming} />
+            <KretoModelPicker choice={choice} onChange={setChoice} disabled={streaming} deepTier={deepTier} />
+            <KretoContextPicker choice={contextChoice} onChange={setContextChoice} disabled={streaming} />
+            <KretoSettings
+              disabled={streaming}
+              onResetDefaults={() => {
+                setChoice(DEFAULT_KRETO_CHOICE);
+                setContextChoice(DEFAULT_CONTEXT_CHOICE);
+              }}
+            />
+            <div className="ml-auto flex items-center gap-2">
+              {preview !== null && (
+                <span className="text-[11px] text-muted-foreground" data-testid="kreto-estimate">
+                  About {sharePctLabel(preview)} of today
+                </span>
+              )}
+              {streaming ? (
+                <button
+                  type="button"
+                  onClick={stop}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-foreground"
+                  aria-label="Stop"
+                >
+                  <Square className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim() || !!blocked}
+                  aria-describedby={blocked ? KRETO_ALLOWANCE_NOTICE_ID : undefined}
+                  className="btn-glass btn-glass-primary flex h-8 w-8 shrink-0 items-center justify-center rounded-full disabled:opacity-40"
+                  aria-label="Send"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
         </form>
+
+        <KretoRouteHints choice={choice} onChange={setChoice} lastRoute={lastRoute} />
+        <KretoQuotaIndicator allowance={allowance} now={allowanceNow} />
       </div>
     </div>
   );

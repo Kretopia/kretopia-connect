@@ -19,6 +19,13 @@ export type CopilotSurface =
   | "credit"
   | "event";
 
+/** One outcome under a reply, shown as a status chip and plain words. `info` has no chip (a plan, nothing to do). */
+export interface KretoActionNote {
+  tone: "done" | "failed" | "unknown" | "blocked" | "dismissed" | "info";
+  title: string;
+  detail?: string;
+}
+
 export interface CopilotMessage {
   id?: string;
   role: "user" | "assistant";
@@ -31,7 +38,7 @@ export interface CopilotMessage {
   /** Live replies only: actions this reply proposed, waiting for the person's approval. */
   actions?: OrchAction[];
   /** Live replies only: what happened to this reply's actions (done, blocked, didn't go through). */
-  notes?: string[];
+  notes?: KretoActionNote[];
   /** Live replies only: actions still being prepared. */
   preparing?: number;
 }
