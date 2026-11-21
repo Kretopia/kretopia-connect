@@ -1,29 +1,21 @@
-// Who is calling this edge function? Independent of the gateway's "Verify JWT"
-// switch, which only proves the bearer is *a* valid JWT: the public anon key
-// is one, so "verify_jwt = true" never meant "signed-in".
+// Verified caller identity for edge functions.
 //
-//   service   -> the bearer IS the project's service-role key (server to server)
-//   user      -> a real session, verified against Auth (getUser), not decoded
-//   anonymous -> everything else, including the public anon key
-//
-// Kept free of URL imports so it can be unit-tested with vitest.
+// Never trusts a decoded-but-unverified JWT: a service caller must present the
+// exact service-role secret configured for this function, and a user caller
+// must present a token the auth server accepts (auth.getUser). The publishable
+// (anon) key is NOT an identity — it resolves to no user and is refused.
 
 export type Caller =
   | { kind: "service" }
-  | { kind: "user"; userId: string; email: string | null }
-  | { kind: "anonymous" };
+  | { kind: "user"; userId: string; email: string | null };
 
-type AuthClient = {
-  auth: {
-    getUser: (jwt: string) => Promise<{
-      data: { user: { id: string; email?: string | null } | null } | null;
-      error: unknown;
-    }>;
-  };
+export type CallerDeps = {
+  env: (name: string) => string | undefined;
+  getUser?: (token: string) => Promise<{ id: string; email?: string | null } | null>;
 };
 
-/** Constant-time string comparison (length is not hidden, content is). */
-export function timingSafeEqualStr(a: string, b: string): boolean {
+export function timingSafeEqualString(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
   const enc = new TextEncoder();
   const x = enc.encode(a);
   const y = enc.encode(b);
@@ -33,28 +25,61 @@ export function timingSafeEqualStr(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function bearerToken(req: Request): string | null {
-  const m = /^Bearer\s+([^\s,]+)$/i.exec(req.headers.get("Authorization") ?? "");
-  return m ? m[1] : null;
+function bearer(req: Request): string | null {
+  const h = req.headers.get("Authorization") ?? req.headers.get("authorization") ?? "";
+  if (!h.startsWith("Bearer ")) return null;
+  const t = h.slice(7).trim();
+  return t.length > 0 && t.length <= 8192 ? t : null;
 }
 
-export async function identifyCaller(
-  req: Request,
-  deps: { serviceRoleKey: string | undefined | null; admin: AuthClient },
-): Promise<Caller> {
-  const token = bearerToken(req);
-  if (!token) return { kind: "anonymous" };
+const defaultDeps = (): CallerDeps => ({
+  env: (n) => (globalThis as unknown as { Deno: { env: { get(k: string): string | undefined } } }).Deno.env.get(n),
+});
 
-  if (deps.serviceRoleKey && timingSafeEqualStr(token, deps.serviceRoleKey)) {
-    return { kind: "service" };
-  }
+export async function resolveCaller(req: Request, deps: CallerDeps = defaultDeps()): Promise<Caller | null> {
+  const token = bearer(req);
+  if (!token) return null;
+  const serviceKey = deps.env("SUPABASE_SERVICE_ROLE_KEY");
+  if (serviceKey && timingSafeEqualString(token, serviceKey)) return { kind: "service" };
+  const anonKey = deps.env("SUPABASE_ANON_KEY");
+  if (anonKey && timingSafeEqualString(token, anonKey)) return null;
 
+  // Default: ask the auth server to validate the token (signature, expiry,
+  // revocation). A locally decoded payload is never accepted.
+  const getUser = deps.getUser ?? (async (t: string) => {
+    const base = deps.env("SUPABASE_URL");
+    if (!base || !anonKey) return null;
+    const res = await fetch(`${base}/auth/v1/user`, {
+      headers: { apikey: anonKey, Authorization: `Bearer ${t}` },
+    });
+    if (!res.ok) return null;
+    const u = await res.json().catch(() => null) as { id?: string; email?: string | null } | null;
+    return u?.id ? { id: u.id, email: u.email ?? null } : null;
+  });
   try {
-    const { data, error } = await deps.admin.auth.getUser(token);
-    const user = data?.user;
-    if (!error && user?.id) return { kind: "user", userId: user.id, email: user.email ?? null };
+    const user = await getUser(token);
+    return user?.id ? { kind: "user", userId: user.id, email: user.email ?? null } : null;
   } catch {
-    // fall through: an unverifiable token is anonymous, never trusted
+    return null;
   }
-  return { kind: "anonymous" };
+}
+
+/**
+ * Subject authorization for service-role handlers that act on a user_id.
+ * - service caller: refused by default; route must opt into its internal subject contract
+ * - user caller: only their own user_id (an omitted id means "self")
+ * - otherwise: refused (callers may still fall back to admin/cron guards)
+ */
+export function authorizeSubject(
+  caller: Caller | null,
+  requestedUserId: unknown,
+  options: { allowService?: boolean } = {},
+): { ok: true; userId: string | null } | { ok: false; status: 401 | 403 } {
+  if (!caller) return { ok: false, status: 401 };
+  if (caller.kind === "service") {
+    if (!options.allowService) return { ok: false, status: 403 };
+    return { ok: true, userId: typeof requestedUserId === "string" ? requestedUserId : null };
+  }
+  if (requestedUserId != null && requestedUserId !== caller.userId) return { ok: false, status: 403 };
+  return { ok: true, userId: caller.userId };
 }

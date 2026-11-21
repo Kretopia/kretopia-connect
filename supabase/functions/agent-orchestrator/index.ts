@@ -16,22 +16,36 @@
 // AgentApprovalCard, user taps Approve, client calls /functions/v1/agent-orchestrator
 // with { action_id, decision: 'approved' } to execute.
 
+import { resolveCaller } from "../_shared/callerAuth.ts";
+import { readJsonObject } from "../_shared/requestBody.ts";
+import { destructiveBlocked, sameApprovedArgs } from "../_shared/destructiveApproval.ts";
+import { validateToolArgs } from "../_shared/toolArgs.ts";
+import { classifyToolFailure, governedTier, governTool, toolPolicy, type ToolOutcome } from "../_shared/kretoToolPolicy.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { GEMINI_FLASH_LITE, GEMINI_3_FLASH } from "../_shared/aiModels.ts";
-import { fetchWithTimeout } from "../_shared/fetchWithTimeout.ts";
-import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
-import { z } from "npm:zod@^4.4.3";
-import { corsFor, constantTimeEqual, readJson } from '../_shared/guard.ts';
-import { editedArgsKeepTargets, stripReservedKeys } from '../_shared/approvalHardening.ts';
-import { classifyToolFailure, governTool, toolPolicy, type ToolOutcome } from '../_shared/kretoToolPolicy.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+// Wrap a fetch with a hard timeout so we never hang the 150s edge budget.
+async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
+  const ac = new AbortController();
+  const id = setTimeout(() => ac.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 type Tool = {
   tool_name: string;
@@ -42,6 +56,7 @@ type Tool = {
   /** The registry row's own tier, kept for the audit log. */
   registry_risk_level?: unknown;
   args_schema: Record<string, unknown>;
+  enabled?: boolean;
   handler: string;
 };
 
@@ -62,27 +77,33 @@ function governRegistry(rows: unknown[] | null | undefined): Tool[] {
 /** Read-only lookups the planner may run to resolve names and ids. They change nothing and stay out of the action list. */
 const SILENT_LOOKUPS = new Set(["find_user", "list_my_projects", "list_my_clients", "list_recent_credits"]);
 
-// Receipt data for this run -- which model(s) were called, how many tokens
-// they burned. Accumulated across classifyIntent + every planTools turn and
-// persisted onto orch_runs at the end (see 20260915100000 migration). This
-// is foundation/audit data only; no caps or pricing are derived from it here.
-interface UsageAccumulator {
-  totalTokens: number;
-  primaryModel: string | null;
-}
-function addUsage(acc: UsageAccumulator, json: any, model: string) {
-  const u = json?.usage;
-  const total = typeof u?.total_tokens === "number"
-    ? u.total_tokens
-    : (Number(u?.prompt_tokens || 0) + Number(u?.completion_tokens || 0));
-  if (total > 0) acc.totalTokens += total;
-  if (!acc.primaryModel) acc.primaryModel = model;
-}
+/** Planner results: a proposal, or a tool the planner already ran (already_executed true/false, with the tool's HTTP status). */
+type PlannedAction = { tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean; auto_status?: number | null };
+
+/** What a run of a tool returned. outcome/message say truthfully what a failure means for the person (kretoToolPolicy). */
+type ToolRunResult = { ok: boolean; result?: unknown; error?: string; outcome?: ToolOutcome; message?: string };
+
+/** What a failed run leaves on its action row besides the raw error: the outcome and the words people saw. */
+const failureResult = (r: { outcome?: ToolOutcome; message?: string }) => (r.outcome ? { outcome: r.outcome, message: r.message ?? null } : null);
+
+/** A refusal before anything was sent: it did not go through (kretoToolPolicy wording). */
+const refusedBeforeRun = (error: string): ToolRunResult => ({ ok: false, error, ...classifyToolFailure({ status: 409 }) });
+
+/** Kreto's words for the refusals people can meet; the `error` field keeps the technical reason for logs and callers. */
+const KRETO = {
+  decided: "This was already decided, so nothing ran twice.",
+  disabled: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue.",
+  limit: (n: number) => `You've reached ${n} Kreto actions in the last 24 hours. Try again later.`,
+  destructive: "Kreto can't do this for you yet. You can do it yourself in the project's settings.",
+  argsChanged: "This changed since it was proposed, so it needs a new proposal before it can run.",
+  unavailable: "This action isn't available any more, so nothing ran.",
+  approvalNotRecorded: "I couldn't record your approval, so nothing ran. Try again.",
+  wentWrong: "Something went wrong while I set that up. Check your recent actions before trying again.",
+} as const;
 
 async function classifyIntent(
   intent: string,
   tools: Tool[],
-  usage: UsageAccumulator,
 ): Promise<{ agent_kind: string; reasoning: string }> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -112,7 +133,7 @@ async function classifyIntent(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: GEMINI_FLASH_LITE,
+          model: "google/gemini-2.5-flash-lite",
           messages: [
             {
               role: "system",
@@ -133,7 +154,6 @@ async function classifyIntent(
             { role: "user", content: intent },
           ],
           response_format: { type: "json_object" },
-          max_tokens: TOKENS_SHORT_LABEL,
         }),
       },
       20000,
@@ -147,7 +167,6 @@ async function classifyIntent(
     return { agent_kind: "project_manager", reasoning: "classifier unavailable" };
   }
   const j = await resp.json();
-  addUsage(usage, j, GEMINI_FLASH_LITE);
   try {
     const parsed = JSON.parse(j.choices?.[0]?.message?.content ?? "{}");
     if (kinds.includes(parsed.agent_kind)) return parsed;
@@ -168,10 +187,9 @@ async function planTools(
   context: Record<string, unknown>,
   userId: string,
   authHeader: string,
-  usage: UsageAccumulator,
   /** orch_settings.auto_run_safe: when off, only the silent lookups run without asking. */
   autoRunSafe = true,
-): Promise<Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean; auto_status?: number | null }>> {
+): Promise<PlannedAction[]> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
   // Always-available toolkit: ask_clarification + person/project resolution +
@@ -245,7 +263,7 @@ async function planTools(
     { role: "user", content: intent },
   ];
 
-  const proposals: Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean; auto_status?: number | null }> = [];
+  const proposals: PlannedAction[] = [];
   const MAX_TURNS = 3;
   const plannerStart = Date.now();
   const PLANNER_BUDGET_MS = 110_000; // leave headroom under the 150s edge limit
@@ -262,7 +280,7 @@ async function planTools(
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: GEMINI_3_FLASH,
+          model: "google/gemini-3-flash-preview",
           messages,
           tools: toolDefs,
           tool_choice: turn === 0 ? "auto" : "auto",
@@ -280,7 +298,6 @@ async function planTools(
     }
 
     const data = await resp.json();
-    addUsage(usage, data, GEMINI_3_FLASH);
     const msg = data.choices?.[0]?.message;
     const calls = msg?.tool_calls ?? [];
 
@@ -293,11 +310,11 @@ async function planTools(
     for (const c of calls) {
       let args: Record<string, unknown> = {};
       try { args = JSON.parse(c.function?.arguments ?? "{}"); } catch { args = {}; }
-      const preview = (args._preview as { title?: string; body?: string }) ?? {};
+      const preview = (args._preview as { title?: string; body?: string; avatar_url?: string; subtitle?: string; context_line?: string }) ?? {};
       delete args._preview;
       const toolName = c.function?.name as string;
       const tool = toolsForAgent.find((t) => t.tool_name === toolName);
-      if (!tool) {
+      if (!tool || tool.enabled !== true) {
         messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify({ error: `Unknown tool: ${toolName}` }) });
         continue;
       }
@@ -311,8 +328,7 @@ async function planTools(
           const execResp = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: authHeader },
-            // Model arguments are data: a `_source` or `_agent_action_id` in them would read downstream as an approval.
-            body: JSON.stringify({ ...stripReservedKeys(args), _tool: toolName }),
+            body: JSON.stringify({ ...args, _tool: toolName }),
           });
           const execText = await execResp.text();
           messages.push({ role: "tool", tool_call_id: c.id, content: execText.slice(0, 4000) });
@@ -334,7 +350,7 @@ async function planTools(
           }
         } catch (e) {
           messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify({ error: String(e) }) });
-          // The call may have reached the tool before it broke: keep it on the record as not confirmed.
+          // The call may have reached the tool before it broke: keep it on the record as not confirmed, never run it again.
           if (!SILENT_LOOKUPS.has(toolName)) {
             proposals.push({
               tool_name: toolName,
@@ -496,7 +512,17 @@ async function executeAction(
   tool: Tool,
   args: Record<string, unknown>,
   authHeader: string,
-): Promise<{ ok: boolean; result?: unknown; error?: string; outcome?: ToolOutcome; message?: string }> {
+): Promise<ToolRunResult> {
+  // Every refusal below happens before anything is sent, so each one reads "didn't go through".
+  if (destructiveBlocked(tool.tool_name)) return refusedBeforeRun("Destructive execution blocked pending durable target-bound approval transaction");
+  const { data: current, error: registryError } = await admin.from("orch_tool_registry").select("*").eq("tool_name", tool.tool_name).eq("enabled", true).maybeSingle();
+  // The re-read is governed too: a tool the policy locks never runs, whatever its row says now.
+  if (registryError || !current || governedTier(current.tool_name ?? tool.tool_name, current.risk_level) === "locked" || current.handler !== tool.handler) return refusedBeforeRun("Tool unavailable or changed; propose again");
+  if (!args || typeof args !== "object" || Array.isArray(args)) return refusedBeforeRun("Invalid tool arguments");
+  const { _preview: _ignoredPreview, ...effectArgs } = args;
+  if (Object.keys(effectArgs).some(k => k.startsWith("_")) || !validateToolArgs(effectArgs, current.args_schema)) return refusedBeforeRun("Invalid tool arguments");
+  args = effectArgs;
+
   // ask_clarification doesn't run anything — it surfaces the question to the user
   if (tool.handler === "inline") {
     return { ok: true, result: { question: args.question } };
@@ -505,7 +531,7 @@ async function executeAction(
   // Cross-agent bundle: spin_up_project executes 3 things atomically server-side
   // (create project → invite collaborator → send kickoff DM).
   if (tool.handler === "inline_bundle" && tool.tool_name === "spin_up_project") {
-    return await executeSpinUpProject(userId, args, authHeader, actionId);
+    return await executeSpinUpProject(userId, args, authHeader);
   }
 
   // Invoke the underlying edge function as the user (so RLS applies correctly)
@@ -517,12 +543,7 @@ async function executeAction(
         "Content-Type": "application/json",
         Authorization: authHeader, // pass through the user's JWT
       },
-      body: JSON.stringify({
-        ...args,
-        _tool: tool.tool_name,
-        _agent_action_id: actionId,
-        _source: "agent_orchestrator",
-      }),
+      body: JSON.stringify({ ...args, _tool: tool.tool_name, _agent_action_id: actionId }),
     });
     const text = await resp.text();
     let parsed: unknown = text;
@@ -542,9 +563,6 @@ async function executeAction(
   }
 }
 
-/** What a failed run leaves on its action row besides the raw error: the outcome and the words people saw. */
-const failureResult = (r: { outcome?: ToolOutcome; message?: string }) => (r.outcome ? { outcome: r.outcome, message: r.message ?? null } : null);
-
 /**
  * Cross-agent bundle: Talent → Project handoff.
  * Atomically: 1) creates a project owned by the user, 2) inserts a pending
@@ -556,7 +574,6 @@ async function executeSpinUpProject(
   userId: string,
   args: Record<string, unknown>,
   authHeader: string,
-  actionId: string,
 ): Promise<{ ok: boolean; result?: unknown; error?: string }> {
   try {
     const projectTitle = String(args.project_title ?? "Untitled project").slice(0, 200);
@@ -629,12 +646,6 @@ async function executeSpinUpProject(
           to_user_id: creatorUserId,
           body: kickoff,
           context: `Project kickoff: ${project.title}`,
-          // agent-send-dm now requires proof of a human-approved action
-          // before it will send anything -- see the gate added there and
-          // _shared/agentAuthority.ts. This bundle's own action_id (already
-          // transitioned to 'approved' by the CAS in the approval branch
-          // above, before executeAction ever runs) satisfies it.
-          _agent_action_id: actionId,
         }),
       });
       if (!dmResp.ok) {
@@ -662,13 +673,11 @@ async function executeSpinUpProject(
 }
 
 serve(async (req) => {
-  const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  if (req.method !== "POST") return new Response(null, { status: 405, headers: corsHeaders });
 
-  // Hoisted so the catch block below can fail the run instead of leaving it
-  // stuck at 'running' forever -- set once the run row actually exists.
+  // The intent path's run row, so that an error after it is created marks it failed instead of leaving it 'running'.
   let runId: string | undefined;
-
   try {
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
@@ -678,52 +687,11 @@ serve(async (req) => {
       });
     }
 
-    // Internal call path: trusted callers (e.g. telegram-webhook) pass the
-    // service-role key + x-internal-user-id header to act on a user's behalf
-    // without holding their session JWT.
-    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const caller = await resolveCaller(req);
     const internalUserId = req.headers.get("x-internal-user-id");
-    const isInternal =
-      internalUserId &&
-      (await constantTimeEqual(authHeader, `Bearer ${SERVICE_KEY}`));
-
-    let userId: string | undefined;
-    if (isInternal) {
-      userId = internalUserId!;
-    } else {
-      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData, error: userErr } = await userClient.auth.getClaims(token);
-      userId = claimsData?.claims?.sub as string | undefined;
-      if (userErr || !userId) {
-        console.error("[orchestrator] auth failed:", userErr?.message);
-        return new Response(JSON.stringify({ error: "Invalid session" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
-    const BodySchema = z.object({
-      // The intent path's own fields. Without them `.strip()` removed every intent, so each request to propose an action
-      // was refused with "intent (string) is required".
-      intent: z.string().max(8_000).optional(),
-      context: z.record(z.string(), z.unknown()).optional(),
-      action_id: z.string().uuid().optional(),
-      decision: z.enum(["approved", "rejected"]).optional(),
-      edited_args: z.record(z.string(), z.unknown()).optional(),
-      note: z.string().max(2000).optional(),
-      mode: z.enum(["draft_outreach_batch", "spin_up_project"]).optional(),
-      brief: z.string().max(10_000).optional(),
-      creators: z.array(z.record(z.string(), z.unknown())).max(8).optional(),
-      creator_user_id: z.string().uuid().optional(),
-      creator_name: z.string().max(200).optional(),
-      creator_avatar_url: z.string().url().max(2000).optional(),
-      project_title: z.string().max(200).optional(),
-    }).strip();
-    const body = await readJson(req, BodySchema, 64_000);
+    const userId = caller?.kind === "user" ? caller.userId : caller?.kind === "service" && internalUserId && /^[0-9a-f-]{36}$/i.test(internalUserId) ? internalUserId : null;
+    if (!userId || (caller?.kind === "user" && internalUserId && internalUserId !== userId)) return new Response(JSON.stringify({ error: "Invalid actor" }), { status: 401, headers: corsHeaders });
+    const body = await readJsonObject(req);
 
     // ============ APPROVAL PATH ============
     // Client calls back with { action_id, decision } to execute a previously-proposed action.
@@ -742,107 +710,74 @@ serve(async (req) => {
         });
       }
       if (action.status !== "proposed") {
-        return new Response(JSON.stringify({ error: "Action already decided", message: "This was already decided, so nothing ran twice." }), {
+        return new Response(JSON.stringify({ error: "Action already decided", message: KRETO.decided }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Validate before claiming, not after: the compare-and-swap below is
-      // effectively a one-way door into "approved" (or "rejected"), so any
-      // check that can still fail afterward must run first -- otherwise a
-      // failed lookup would leave the action stuck at "approved" with
-      // nothing to ever move it to a terminal state, the exact class of bug
-      // this fix is closing on the orch_runs side.
-      let tool: Tool | null = null;
-      if (decision !== "rejected") {
-        const { data: t } = await admin
-          .from("orch_tool_registry")
-          .select("*")
-          .eq("tool_name", action.tool_name)
-          .single();
-        if (!t) {
-          return new Response(JSON.stringify({ error: "Tool no longer available" }), {
-            status: 410,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        // The governed tier decides, so an action proposed before a tool was locked can no longer be approved into running.
-        const [governed] = governRegistry([t]);
-        if (governed.risk_level === "locked") {
-          return new Response(JSON.stringify({ error: "Tool is locked and cannot run", message: toolPolicy(governed.tool_name).reason ?? "Kreto can't do this for you." }), {
-            status: 403,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        tool = governed;
+      // Every decision leaves an approval record (orch_approvals, written with the service role). The handlers of the
+      // irreversible tools re-check that record before acting, so an approval that was not recorded must not run.
+      const recordDecision = (d: "approved" | "rejected") =>
+        admin.from("orch_approvals").insert({ action_id, user_id: userId, decision: d, edited_args: null, note: typeof note === "string" ? note.slice(0, 2000) : null });
 
-        // An approval may edit what a tool says, not what a destructive tool acts on: "remove Alice" approved with the person
-        // changed to Bob would run something nobody was shown. Checked before the claim, like the lookups above.
-        const edit = editedArgsKeepTargets(action.tool_name, action.tool_args, edited_args);
-        if (!edit.ok) {
-          return new Response(JSON.stringify({ error: `This action's ${edit.field} cannot be changed when approving it` }), {
-            status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-      }
-
-      // The status check above is a fast, friendly early-out -- it isn't the
-      // real guard. Two concurrent approval requests for the same action_id
-      // (a double-tap, two tabs, a client retry after a dropped response)
-      // could both read status='proposed' before either has written
-      // anything, and previously both would have gone on to call
-      // executeAction -- firing whatever the tool does (a payment, a message
-      // send) twice. This UPDATE ... WHERE status = 'proposed' is the actual
-      // compare-and-swap: only the request whose UPDATE affects a row
-      // proceeds; the loser sees 0 rows back and stops here.
-      const claimStatus = decision === "rejected" ? "rejected" : "approved";
-      const { data: claimed } = await admin
-        .from("orch_actions")
-        .update({ status: claimStatus, decided_at: new Date().toISOString() })
-        .eq("id", action_id)
-        .eq("status", "proposed")
-        .select("id");
-      if (!claimed || claimed.length === 0) {
-        return new Response(JSON.stringify({ error: "Action already decided", message: "This was already decided, so nothing ran twice." }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      // Edited arguments are data: no field in them carries authority downstream (_tool, _source, _agent_action_id).
-      const cleanEdited = edited_args ? stripReservedKeys(edited_args) : null;
-      const { error: approvalErr } = await admin.from("orch_approvals").insert({
-        action_id,
-        user_id: userId,
-        decision,
-        edited_args: cleanEdited,
-        note: note ?? null,
-      });
-
+      if (decision !== "approved" && decision !== "rejected") return new Response(null, { status: 400, headers: corsHeaders });
       if (decision === "rejected") {
-        return new Response(JSON.stringify({ ok: true, status: "rejected" }), {
+        const { data: rejected, error } = await admin.from("orch_actions").update({ status: "rejected", decided_at: new Date().toISOString() }).eq("id", action_id).eq("user_id", userId).eq("status", "proposed").select("id").maybeSingle();
+        if (!error && rejected) {
+          const { error: recordErr } = await recordDecision("rejected");
+          if (recordErr) console.error("[orchestrator] rejection not recorded in orch_approvals", recordErr);
+        }
+        return new Response(JSON.stringify({ ok: !error && !!rejected, status: "rejected", ...(error || !rejected ? { message: KRETO.decided } : {}) }), { status: error || !rejected ? 409 : 200, headers: corsHeaders });
+      }
+      // Neither UI source labels nor edited args can authorize another effect.
+      if (destructiveBlocked(action.tool_name)) return new Response(JSON.stringify({ error: "Destructive approval transaction not activated", message: KRETO.destructive }), { status: 428, headers: corsHeaders });
+      if (edited_args != null && !sameApprovedArgs(action.tool_args, edited_args)) return new Response(JSON.stringify({ error: "Arguments changed; a new proposal is required", message: KRETO.argsChanged }), { status: 409, headers: corsHeaders });
+
+      // Approved — execute now
+      const { data: registryTool } = await admin
+        .from("orch_tool_registry")
+        .select("*")
+        .eq("tool_name", action.tool_name)
+        .single();
+      if (!registryTool || registryTool.enabled !== true) {
+        return new Response(JSON.stringify({ error: "Tool no longer available", message: KRETO.unavailable }), {
+          status: 410,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // The governed tier decides, so an action proposed before a tool was locked can no longer be approved into running.
+      const [tool] = governRegistry([registryTool]);
+      if (tool.risk_level === "locked") {
+        return new Response(JSON.stringify({ error: "Tool is locked and cannot run", message: toolPolicy(tool.tool_name).reason ?? "Kreto can't do this for you." }), {
+          status: 403,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // The handlers of the irreversible tools re-check the approval RECORD. If it was not written, nothing may run on a
-      // status alone: put the action back so it can be approved again, instead of leaving it 'approved' with no record.
+      const argsToRun = action.tool_args;
+      // The claim is bound to the arguments that were shown. jsonb equality is @> plus <@ (contains + containedBy, which
+      // send JSON): `.eq("tool_args", object)` sends the text "[object Object]", which Postgres refuses, so every claim
+      // failed and no approval could ever run.
+      const { data: claimed, error: claimError } = await admin
+        .from("orch_actions")
+        .update({ status: "approved", decided_at: new Date().toISOString() })
+        .eq("id", action_id).eq("user_id", userId).eq("status", "proposed")
+        .contains("tool_args", action.tool_args ?? {}).containedBy("tool_args", action.tool_args ?? {}).eq("tool_name", action.tool_name)
+        .select("id").maybeSingle();
+      if (claimError || !claimed) return new Response(JSON.stringify({ error: "Action claim unavailable or already consumed", message: KRETO.decided }), { status: 409, headers: corsHeaders });
+
+      // No record, no run: put the action back so it can be approved again, instead of leaving it 'approved' with no record.
+      const { error: approvalErr } = await recordDecision("approved");
       if (approvalErr) {
         await admin.from("orch_actions").update({ status: "proposed", decided_at: null }).eq("id", action_id).eq("status", "approved");
-        return new Response(JSON.stringify({ error: "Could not record the approval; nothing was run", message: "I couldn't record your approval, so nothing ran. Try again." }), {
+        return new Response(JSON.stringify({ error: "Could not record the approval; nothing was run", message: KRETO.approvalNotRecorded }), {
           status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Approved (possibly edited) — execute now. This request holds the
-      // claim (status is 'approved', not 'proposed') so it's the only one
-      // that will ever call executeAction for this action_id.
-      const argsToRun = cleanEdited ?? action.tool_args;
-
-      const result = await executeAction(action_id, userId, tool as Tool, argsToRun, authHeader);
+      const result = await executeAction(String(action_id), userId, tool, argsToRun, authHeader);
       await admin
         .from("orch_actions")
         .update({
@@ -890,7 +825,7 @@ serve(async (req) => {
         .maybeSingle();
       if (settingsRow && settingsRow.agents_enabled === false) {
         return new Response(
-          JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }),
+          JSON.stringify({ error: "Agents disabled in your settings", message: KRETO.disabled }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -903,7 +838,7 @@ serve(async (req) => {
       const remaining = Math.max(0, dailyCap - (usedToday ?? 0));
       if (remaining <= 0) {
         return new Response(
-          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: `You've reached ${dailyCap} Kreto actions in the last 24 hours. Try again later.` }),
+          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: KRETO.limit(dailyCap) }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -911,7 +846,6 @@ serve(async (req) => {
 
       // Draft messages with one Lovable AI call (cheap, fast)
       let drafts: Array<{ user_id: string; body: string }> = [];
-      const draftBatchUsage = { totalTokens: 0 };
       try {
         if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
         const aiResp = await fetch(
@@ -923,7 +857,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: GEMINI_FLASH_LITE,
+              model: "google/gemini-2.5-flash-lite",
               messages: [
                 {
                   role: "system",
@@ -993,7 +927,6 @@ serve(async (req) => {
         }
         if (!aiResp.ok) throw new Error(`AI gateway ${aiResp.status}`);
         const aiJson = await aiResp.json();
-        draftBatchUsage.totalTokens += Number(aiJson?.usage?.total_tokens || 0);
         const argsStr =
           aiJson.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments ?? "{}";
         const parsed = JSON.parse(argsStr);
@@ -1024,10 +957,6 @@ serve(async (req) => {
           intent_classified: "Talent Copilot — draft outreach to shortlist",
           context: { creator_count: targets.length },
           status: "awaiting_approval",
-          tokens_used: draftBatchUsage.totalTokens,
-          model: GEMINI_FLASH_LITE,
-          tool_call_count: targets.length,
-          tool_names: ["send_dm"],
         })
         .select("id")
         .single();
@@ -1095,7 +1024,7 @@ serve(async (req) => {
         .maybeSingle();
       if (settingsRow && settingsRow.agents_enabled === false) {
         return new Response(
-          JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }),
+          JSON.stringify({ error: "Agents disabled in your settings", message: KRETO.disabled }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -1108,7 +1037,7 @@ serve(async (req) => {
         .gte("proposed_at", since24);
       if ((usedToday ?? 0) >= dailyCap) {
         return new Response(
-          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: `You've reached ${dailyCap} Kreto actions in the last 24 hours. Try again later.` }),
+          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: KRETO.limit(dailyCap) }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -1133,7 +1062,7 @@ serve(async (req) => {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: GEMINI_FLASH_LITE,
+                model: "google/gemini-2.5-flash-lite",
                 messages: [
                   {
                     role: "system",
@@ -1244,7 +1173,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (settings && !settings.agents_enabled) {
-      return new Response(JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }), {
+      return new Response(JSON.stringify({ error: "Agents disabled in your settings", message: KRETO.disabled }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1259,22 +1188,10 @@ serve(async (req) => {
       .gte("proposed_at", since);
     if ((usedToday ?? 0) >= dailyLimit) {
       return new Response(
-        JSON.stringify({ error: `Daily agent action limit (${dailyLimit}) reached`, message: `You've reached ${dailyLimit} Kreto actions in the last 24 hours. Try again later.` }),
+        JSON.stringify({ error: `Daily agent action limit (${dailyLimit}) reached`, message: KRETO.limit(dailyLimit) }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
-
-    // Self-heal: a previous invocation for this user may have died between
-    // creating its orch_runs row and updating it to a final status (killed
-    // process, platform timeout past the 150s edge budget) -- nothing else
-    // ever revisits that row, so left alone it stays 'running' forever and
-    // permanently occupies the "pending/running" slot the UI shows as an
-    // in-flight run. Cheap (single indexed UPDATE scoped to this user) and
-    // safe to run on every call.
-    await admin.rpc("reconcile_stale_orch_runs", { _user_id: userId }).then(
-      ({ error }) => { if (error) console.warn("[orchestrator] stale-run reconcile failed (non-fatal)", error); },
-      (e) => console.warn("[orchestrator] stale-run reconcile failed (non-fatal)", e),
-    );
 
     const t0 = Date.now();
     const { data: registryRows } = await admin
@@ -1285,13 +1202,7 @@ serve(async (req) => {
     const tools = governRegistry(registryRows);
     const autoRunSafe = settings?.auto_run_safe ?? true;
 
-    // Receipt data (item: work-unit estimates and receipts) -- accumulated
-    // across the classifier + planner AI calls below and persisted onto
-    // orch_runs at the end of this handler. Foundation only: no caps, no
-    // pricing, just capturing what actually happened for future visibility.
-    const usage: UsageAccumulator = { totalTokens: 0, primaryModel: null };
-
-    const { agent_kind, reasoning } = await classifyIntent(intent, tools as Tool[], usage);
+    const { agent_kind, reasoning } = await classifyIntent(intent, tools);
 
     const { data: run } = await admin
       .from("orch_runs")
@@ -1307,12 +1218,12 @@ serve(async (req) => {
       .single();
     runId = run?.id;
 
-    const planned = await planTools(intent, agent_kind, tools as Tool[], context, userId, authHeader, usage, autoRunSafe);
+    const planned = await planTools(intent, agent_kind, tools, context && typeof context === "object" && !Array.isArray(context) ? context as Record<string, unknown> : {}, userId, authHeader, autoRunSafe);
 
     // Insert action rows; auto-execute safe_auto, leave requires_approval as proposed
     const actionRows: Array<Record<string, unknown>> = [];
     for (const p of planned) {
-      const tool = (tools as Tool[]).find((t) => t.tool_name === p.tool_name);
+      const tool = tools.find((t) => t.tool_name === p.tool_name);
       if (!tool) continue;
       if (tool.risk_level === "locked") {
         // Never runs, but never disappears either: the attempt and the reason stay on the record.
@@ -1353,10 +1264,10 @@ serve(async (req) => {
         .single();
 
       // A tool the planner already ran is recorded as run, whatever happens next: a row must never say "proposed" for
-      // something that already happened.
+      // something that already happened, and a planner run that failed is never run a second time.
       if (p.already_executed !== undefined || (tool.risk_level === "safe_auto" && autoRunSafe)) {
         // If the planner already ran this safe_auto tool inline, reuse the result instead of double-firing.
-        const result: { ok: boolean; result?: unknown; error?: string; outcome?: ToolOutcome; message?: string } =
+        const result: ToolRunResult =
           p.already_executed === true
             ? { ok: true, result: p.auto_result }
             : p.already_executed === false
@@ -1392,11 +1303,6 @@ serve(async (req) => {
         summary: planned.length
           ? `Planned ${planned.length} action(s) in ${agent_kind}.`
           : "No action needed.",
-        // Receipt data -- see 20260915100000 migration + module doc above.
-        tokens_used: usage.totalTokens,
-        model: usage.primaryModel,
-        tool_call_count: planned.length,
-        tool_names: Array.from(new Set(planned.map((p) => p.tool_name))),
       })
       .eq("id", run!.id);
 
@@ -1413,24 +1319,20 @@ serve(async (req) => {
     );
   } catch (e) {
     console.error("agent-orchestrator error:", e);
-    const message = e instanceof Error ? e.message : "Unknown error";
-    // Without this, a run row created just above (status 'running') would be
-    // left there forever the moment anything after its INSERT throws --
-    // classifyIntent/planTools hitting the AI gateway, a DB write failing,
-    // etc. -- since nothing else ever revisits a row once it's created.
-    // reconcile_stale_orch_runs (see 20260914*.sql) is the backstop for a
-    // hard process kill that skips this catch entirely; this covers every
-    // ordinary caught error immediately instead of waiting out that timeout.
+    const detail = e instanceof Error ? e.message : "Unknown error";
+    // A run row created above (status 'running') would otherwise stay there for good once anything after its insert
+    // throws; reconcile_stale_orch_runs is only the backstop for a killed process.
     if (runId) {
       await admin
         .from("orch_runs")
-        .update({ status: "failed", error: message.slice(0, 2000) })
+        .update({ status: "failed", error: detail.slice(0, 2000) })
         .eq("id", runId)
         .eq("status", "running")
         .then(({ error }) => { if (error) console.error("[orchestrator] failed to mark run as failed", error); });
     }
+    // The technical detail stays in the log and on the run row; the caller gets Kreto's words, never internals.
     return new Response(
-      JSON.stringify({ error: "Something went wrong", message: "Something went wrong while I set that up. Check your recent actions before trying again." }),
+      JSON.stringify({ error: "Something went wrong", message: KRETO.wentWrong }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

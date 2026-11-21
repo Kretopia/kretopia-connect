@@ -3,7 +3,7 @@ import { renderAsync } from 'npm:@react-email/components@0.0.22'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { TEMPLATES } from '../_shared/transactional-email-templates/registry.ts'
 import { SENDER_DOMAIN, FROM_DOMAIN } from '../_shared/emailSender.ts'
-import { identifyCaller } from '../_shared/callerAuth.ts'
+import { identifyCaller } from '../_shared/identifyCaller.ts'
 import { authorizeTransactionalSend, type EmailPolicyDeps } from '../_shared/transactionalEmailPolicy.ts'
 
 import { corsFor } from '../_shared/guard.ts';

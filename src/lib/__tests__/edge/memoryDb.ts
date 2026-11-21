@@ -4,8 +4,9 @@
 // next read" or "the compare-and-swap lost"; edge tests about idempotency and races need that.
 //
 // Supported: select (with { count, head }) / insert / upsert (onConflict columns) / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
-// gt / gte / lte, order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
-// a test never silently passes on a query the stand-in does not understand.
+// gt / gte / lte, contains / containedBy (jsonb), order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
+// a test never silently passes on a query the stand-in does not understand. Like PostgREST, eq/neq with an object value fails:
+// supabase-js sends it as the text "[object Object]", which Postgres rejects; compare jsonb with contains + containedBy.
 
 type Row = Record<string, any>;
 type Result = { data: any; error: { message: string; code?: string } | null };
@@ -49,10 +50,27 @@ export class MemoryDb {
     let countMode: { head: boolean } | null = null;
     /** upsert: the onConflict columns; a row matching all of them is updated in place instead of inserted. */
     let conflictOn: string[] | null = null;
+    /** A filter PostgREST itself would refuse (see eq below): the query fails with its error instead of matching. */
+    let filterError: { message: string; code?: string } | null = null;
+    /** eq/neq send `${value}`: an object becomes "[object Object]" and the database refuses the filter. */
+    const scalarOnly = (c: string, v: unknown) => {
+      if (v !== null && typeof v === "object") filterError = { message: `invalid input syntax for filter on ${c}: "[object Object]"`, code: "22P02" };
+    };
+    /** jsonb @>: every key/element of `inner` is in `outer` (arrays: each element contained by some element). */
+    const jsonContains = (outer: unknown, inner: unknown): boolean => {
+      if (Array.isArray(inner)) return Array.isArray(outer) && inner.every((i) => outer.some((o) => jsonContains(o, i)));
+      if (inner !== null && typeof inner === "object") {
+        if (outer === null || typeof outer !== "object" || Array.isArray(outer)) return false;
+        const o = outer as Record<string, unknown>;
+        return Object.entries(inner as Record<string, unknown>).every(([k, v]) => k in o && jsonContains(o[k], v));
+      }
+      return outer === inner;
+    };
 
     const run = (mode: "list" | "single" | "maybeSingle"): Result => {
       const failure = db.hooks.failOn?.(table, op) ?? null;
       if (failure) return { data: null, error: failure };
+      if (filterError) return { data: null, error: filterError };
       const all = (db.tables[table] ??= []);
 
       if (op === "insert") {
@@ -135,8 +153,10 @@ export class MemoryDb {
       ),
       update: (p: any) => ((op = "update"), (payload = p), chain),
       delete: () => ((op = "delete"), chain),
-      eq: (c: string, v: any) => (filters.push((r) => r[c] === v), chain),
-      neq: (c: string, v: any) => (filters.push((r) => r[c] !== v), chain),
+      eq: (c: string, v: any) => (scalarOnly(c, v), filters.push((r) => r[c] === v), chain),
+      neq: (c: string, v: any) => (scalarOnly(c, v), filters.push((r) => r[c] !== v), chain),
+      contains: (c: string, v: unknown) => (filters.push((r) => jsonContains(r[c], v)), chain),
+      containedBy: (c: string, v: unknown) => (filters.push((r) => jsonContains(v, r[c])), chain),
       in: (c: string, v: any[]) => (filters.push((r) => v.includes(r[c])), chain),
       is: (c: string, v: any) => (filters.push((r) => (v === null ? r[c] == null : r[c] === v)), chain),
       not: (c: string, o: string, v: any) => {

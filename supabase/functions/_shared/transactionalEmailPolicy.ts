@@ -19,7 +19,7 @@
 // Pure decision logic: every database read comes in through `deps` so it can be
 // unit-tested without a database.
 
-import type { Caller } from "./callerAuth.ts";
+import type { Caller } from "./identifyCaller.ts";
 
 export const CLIENT_TEMPLATES = [
   "event-registration-confirmation",

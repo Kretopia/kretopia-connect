@@ -20,28 +20,39 @@ vi.mock("https://esm.sh/@supabase/supabase-js@2.39.3", () => ({
     auth: { getClaims: async () => ({ data: { claims: { sub: "user-1" } }, error: null }) },
   }),
 }));
-// The model: the classifier answers first, then each planner turn takes the next scripted list of tool calls.
-vi.mock("../../../../supabase/functions/_shared/fetchWithTimeout.ts", () => ({
-  fetchWithTimeout: async (_url: string, init: RequestInit) => {
-    const body = JSON.parse(String(init.body));
-    if (!body.tools) return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ agent_kind: "project_manager", reasoning: "test" }) } }] }));
-    world.plannerBodies.push(body);
-    const calls = (world.planner.shift() ?? []).map((c, i) => ({ id: `c${i}`, function: { name: c.name, arguments: JSON.stringify(c.args ?? {}) } }));
-    return new Response(JSON.stringify({ choices: [{ message: { content: "", tool_calls: calls } }], usage: { total_tokens: 10 } }));
-  },
-}));
 
 const env: Record<string, string> = { SUPABASE_URL: "https://legacy.test", SUPABASE_SERVICE_ROLE_KEY: "service-key", SUPABASE_ANON_KEY: "anon-key", LOVABLE_API_KEY: "gateway-key" };
 const REGISTRY = [
-  { tool_name: "assign_task", agent_kind: "project_manager", description: "Assign a task to a member in ThriveDesk", risk_level: "safe_auto", handler: "desk-agent", args_schema: { type: "object" }, enabled: true },
-  { tool_name: "create_task", agent_kind: "project_manager", description: "Create a task", risk_level: "safe_auto", handler: "desk-agent", args_schema: { type: "object" }, enabled: true },
-  { tool_name: "find_user", agent_kind: "orchestrator", description: "Find a user", risk_level: "safe_auto", handler: "copilot-collaborator-tools", args_schema: { type: "object" }, enabled: true },
-  { tool_name: "delete_project", agent_kind: "project_manager", description: "Delete a project", risk_level: "requires_approval", handler: "copilot-collaborator-tools", args_schema: { type: "object" }, enabled: true },
+  // Production checks arguments against args_schema before running (toolArgs.ts, fails closed), so schemas name their fields.
+  { tool_name: "assign_task", agent_kind: "project_manager", description: "Assign a task to a member in ThriveDesk", risk_level: "safe_auto", handler: "desk-agent", args_schema: { type: "object", properties: { task_id: { type: "string" }, assignee_id: { type: "string" } } }, enabled: true },
+  { tool_name: "create_task", agent_kind: "project_manager", description: "Create a task", risk_level: "safe_auto", handler: "desk-agent", args_schema: { type: "object", properties: { title: { type: "string" } } }, enabled: true },
+  { tool_name: "find_user", agent_kind: "orchestrator", description: "Find a user", risk_level: "safe_auto", handler: "copilot-collaborator-tools", args_schema: { type: "object", properties: { query: { type: "string" } } }, enabled: true },
+  { tool_name: "delete_project", agent_kind: "project_manager", description: "Delete a project", risk_level: "requires_approval", handler: "copilot-collaborator-tools", args_schema: { type: "object", properties: { project_id: { type: "string" } } }, enabled: true },
+  { tool_name: "refresh_profile", agent_kind: "project_manager", description: "Refresh a profile", risk_level: "safe_auto", handler: "refresh-my-universe", args_schema: { type: "object", properties: { user_id: { type: "string" } } }, enabled: true },
 ];
+
+// Every outbound call goes through fetch, as in production: the auth server answers resolveCaller, the model gateway answers
+// the classifier (first) and then each planner turn with the next scripted list of tool calls, and anything else is a tool.
+const USER = { id: "user-1", email: "me@example.com" };
+const route = async (url: unknown, init?: RequestInit): Promise<Response> => {
+  const u = String(url);
+  if (u === "https://legacy.test/auth/v1/user") {
+    const token = new Headers(init?.headers).get("Authorization");
+    return token === "Bearer user-token" ? new Response(JSON.stringify(USER)) : new Response("{}", { status: 401 });
+  }
+  if (u === "https://ai.gateway.lovable.dev/v1/chat/completions") return gateway(JSON.parse(String(init?.body)));
+  return world.tool(url, init);
+};
+const gateway = (body: { tools?: unknown }): Response => {
+  if (!body.tools) return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ agent_kind: "project_manager", reasoning: "test" }) } }] }));
+  world.plannerBodies.push(body as Record<string, unknown>);
+  const calls = (world.planner.shift() ?? []).map((c, i) => ({ id: `c${i}`, function: { name: c.name, arguments: JSON.stringify(c.args ?? {}) } }));
+  return new Response(JSON.stringify({ choices: [{ message: { content: "", tool_calls: calls } }], usage: { total_tokens: 10 } }));
+};
 
 beforeAll(async () => {
   vi.stubGlobal("Deno", { env: { get: (k: string) => env[k] } });
-  vi.stubGlobal("fetch", vi.fn((...a: unknown[]) => world.tool(...a)));
+  vi.stubGlobal("fetch", vi.fn(route));
   vi.spyOn(console, "log").mockImplementation(() => {});
   vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -94,11 +105,30 @@ describe("the governance policy decides what runs", () => {
   });
 
   it("an old proposal for a tool that is now locked cannot be approved into running", async () => {
-    db().seed("orch_actions", [{ id: "11111111-1111-4111-8111-111111111111", user_id: "user-1", tool_name: "delete_project", tool_args: { project_id: "p1" }, status: "proposed", risk_level: "requires_approval" }]);
+    // refresh_profile: the registry still says safe_auto, the policy locks it.
+    db().seed("orch_actions", [{ id: "11111111-1111-4111-8111-111111111111", user_id: "user-1", tool_name: "refresh_profile", tool_args: { user_id: "u2" }, status: "proposed", risk_level: "safe_auto" }]);
     const res = await post({ action_id: "11111111-1111-4111-8111-111111111111", decision: "approved" });
     expect(res.status).toBe(403);
-    expect((await res.json()).message).toMatch(/yours to do in the project's settings/);
+    expect((await res.json()).message).toMatch(/other people's Passports/);
     expect(actions()[0].status).toBe("proposed");
+    expect(toolCalls()).toHaveLength(0);
+  });
+
+  it("production's destructive block holds first: an old delete proposal is refused before any lookup, and nothing runs", async () => {
+    db().seed("orch_actions", [{ id: "44444444-4444-4444-8444-444444444444", user_id: "user-1", tool_name: "delete_project", tool_args: { project_id: "p1" }, status: "proposed", risk_level: "requires_approval" }]);
+    const res = await post({ action_id: "44444444-4444-4444-8444-444444444444", decision: "approved" });
+    expect(res.status).toBe(428);
+    expect((await res.json()).message).toMatch(/do it yourself in the project's settings/);
+    expect(actions()[0].status).toBe("proposed");
+    expect(db().rows("orch_approvals")).toHaveLength(0);
+    expect(toolCalls()).toHaveLength(0);
+  });
+
+  it("a tool the policy locks never runs from a new request, even while its registry row still says safe_auto", async () => {
+    // (executeAction's registry re-read applies the same governed tier as a last gate; both public paths stop it earlier.)
+    world.planner = [[{ name: "refresh_profile", args: { user_id: "u2" } }]];
+    const body = await (await post({ intent: "Refresh Lena's profile" })).json();
+    expect(body.actions[0]).toMatchObject({ tool_name: "refresh_profile", status: "rejected", risk_level: "locked" });
     expect(toolCalls()).toHaveLength(0);
   });
 });
