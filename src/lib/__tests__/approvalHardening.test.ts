@@ -233,12 +233,16 @@ describe("wiring: the doors that run agent-chosen tools use the shared rules", (
     expect(add).toContain("await authz.release?.()");
   });
 
-  it("agent-orchestrator refuses a retargeted edit before it claims the action, and records the approval or puts the action back", () => {
+  it("agent-orchestrator refuses any edited arguments before it claims the action, and records the approval or puts the action back", () => {
+    // Production's rule, stricter than editedArgsKeepTargets: an approval must carry exactly the proposed arguments
+    // (sameApprovedArgs, _shared/destructiveApproval.ts); a change needs a new proposal, so no edit ever reaches a tool.
     const src = read("agent-orchestrator/index.ts");
     const approval = src.slice(src.indexOf("// ============ APPROVAL PATH"), src.indexOf("// ============ DRAFT OUTREACH BATCH"));
-    expect(approval.indexOf("editedArgsKeepTargets(")).toBeGreaterThan(-1);
-    expect(approval.indexOf("editedArgsKeepTargets(")).toBeLessThan(approval.indexOf('.eq("status", "proposed")'));
-    expect(approval).toContain("stripReservedKeys(edited_args)");
+    const claim = approval.indexOf('.update({ status: "approved"');
+    expect(approval.indexOf("sameApprovedArgs(action.tool_args, edited_args)")).toBeGreaterThan(-1);
+    expect(approval.indexOf("sameApprovedArgs(action.tool_args, edited_args)")).toBeLessThan(claim);
+    expect(approval.indexOf("destructiveBlocked(action.tool_name)")).toBeLessThan(claim);
+    expect(approval).toContain("const argsToRun = action.tool_args;");
     expect(approval).toContain("approvalErr");
     expect(approval).toMatch(/status: "proposed", decided_at: null/);
   });
