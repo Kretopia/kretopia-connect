@@ -742,7 +742,7 @@ serve(async (req) => {
         });
       }
       if (action.status !== "proposed") {
-        return new Response(JSON.stringify({ error: "Action already decided" }), {
+        return new Response(JSON.stringify({ error: "Action already decided", message: "This was already decided, so nothing ran twice." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -805,7 +805,7 @@ serve(async (req) => {
         .eq("status", "proposed")
         .select("id");
       if (!claimed || claimed.length === 0) {
-        return new Response(JSON.stringify({ error: "Action already decided" }), {
+        return new Response(JSON.stringify({ error: "Action already decided", message: "This was already decided, so nothing ran twice." }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -831,7 +831,7 @@ serve(async (req) => {
       // status alone: put the action back so it can be approved again, instead of leaving it 'approved' with no record.
       if (approvalErr) {
         await admin.from("orch_actions").update({ status: "proposed", decided_at: null }).eq("id", action_id).eq("status", "approved");
-        return new Response(JSON.stringify({ error: "Could not record the approval; nothing was run" }), {
+        return new Response(JSON.stringify({ error: "Could not record the approval; nothing was run", message: "I couldn't record your approval, so nothing ran. Try again." }), {
           status: 503,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -890,7 +890,7 @@ serve(async (req) => {
         .maybeSingle();
       if (settingsRow && settingsRow.agents_enabled === false) {
         return new Response(
-          JSON.stringify({ error: "Agents disabled in your settings" }),
+          JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -903,7 +903,7 @@ serve(async (req) => {
       const remaining = Math.max(0, dailyCap - (usedToday ?? 0));
       if (remaining <= 0) {
         return new Response(
-          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached` }),
+          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: `You've reached ${dailyCap} Kreto actions in the last 24 hours. Try again later.` }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -1095,7 +1095,7 @@ serve(async (req) => {
         .maybeSingle();
       if (settingsRow && settingsRow.agents_enabled === false) {
         return new Response(
-          JSON.stringify({ error: "Agents disabled in your settings" }),
+          JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }),
           { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -1108,7 +1108,7 @@ serve(async (req) => {
         .gte("proposed_at", since24);
       if ((usedToday ?? 0) >= dailyCap) {
         return new Response(
-          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached` }),
+          JSON.stringify({ error: `Daily agent action limit (${dailyCap}) reached`, message: `You've reached ${dailyCap} Kreto actions in the last 24 hours. Try again later.` }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
@@ -1244,7 +1244,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (settings && !settings.agents_enabled) {
-      return new Response(JSON.stringify({ error: "Agents disabled in your settings" }), {
+      return new Response(JSON.stringify({ error: "Agents disabled in your settings", message: "Kreto actions are off in your settings. Turn them on in Kreto settings to continue." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -1259,7 +1259,7 @@ serve(async (req) => {
       .gte("proposed_at", since);
     if ((usedToday ?? 0) >= dailyLimit) {
       return new Response(
-        JSON.stringify({ error: `Daily agent action limit (${dailyLimit}) reached` }),
+        JSON.stringify({ error: `Daily agent action limit (${dailyLimit}) reached`, message: `You've reached ${dailyLimit} Kreto actions in the last 24 hours. Try again later.` }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -1430,7 +1430,7 @@ serve(async (req) => {
         .then(({ error }) => { if (error) console.error("[orchestrator] failed to mark run as failed", error); });
     }
     return new Response(
-      JSON.stringify({ error: "Something went wrong" }),
+      JSON.stringify({ error: "Something went wrong", message: "Something went wrong while I set that up. Check your recent actions before trying again." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }

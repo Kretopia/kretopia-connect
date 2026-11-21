@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { ChevronDown, Gauge, Layers, Sparkles, Zap } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SegmentToggle } from "@/components/features/SegmentToggle";
@@ -9,12 +9,12 @@ import {
   kretoEffortLabel,
   kretoModelAvailable,
   kretoModelName,
-  sharePctLabel,
   type KretoChoice,
   type KretoEffort,
 } from "@/lib/kretoProfiles";
 import type { KretoRouteInfo } from "@/lib/thriveCopilot";
 import { cn } from "@/lib/utils";
+import { COMPOSER_CHIP } from "@/components/kreto/composerStyles";
 
 const EFFORT_ICON = { 1: Zap, 2: Gauge, 3: Layers, 4: Sparkles } as const;
 
@@ -22,36 +22,26 @@ interface KretoModelPickerProps {
   choice: KretoChoice;
   onChange: (choice: KretoChoice) => void;
   disabled?: boolean;
-  /** Rough share of what is left today the next message will take (previewShare). */
-  previewShare: number | null;
-  /** What answered the last message, if the server said. */
-  lastRoute: KretoRouteInfo | null;
   /** This account may use the deepest tier (admins and Premium for now). */
   deepTier: boolean;
-  /** Other composer controls that sit on the same row (what Kreto can see). */
-  extra?: ReactNode;
 }
 
 /**
- * The Kreto model and effort for the next message, always visible above the composer with what it will roughly cost,
- * and one place to change either. Auto never picks a pricier model than the effort allows; a deeper pass is offered
- * (never taken) when the last answer could have used one.
+ * The Kreto model and effort for the next message: one chip in the composer's control row, and one place to change
+ * either. Auto never picks a pricier model than the effort allows.
  */
-export function KretoModelPicker({ choice, onChange, disabled, previewShare, lastRoute, deepTier, extra }: KretoModelPickerProps) {
+export function KretoModelPicker({ choice, onChange, disabled, deepTier }: KretoModelPickerProps) {
   const [open, setOpen] = useState(false);
   const effort = KRETO_EFFORTS.find((e) => e.level === choice.effort) ?? KRETO_EFFORTS[1];
-  const suggest = lastRoute?.suggestEffort && lastRoute.suggestEffort > choice.effort ? (lastRoute.suggestEffort as KretoEffort) : null;
 
   return (
-    <div className="space-y-1 px-3 pt-2" data-testid="kreto-model-picker">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
               disabled={disabled}
               aria-label={`Kreto model and effort: ${kretoModelName(choice.profile)}, ${effort.label}. Change`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+              className={COMPOSER_CHIP}
             >
               {kretoModelName(choice.profile)} · {effort.label}
               <ChevronDown className="h-3 w-3" aria-hidden />
@@ -104,13 +94,18 @@ export function KretoModelPicker({ choice, onChange, disabled, previewShare, las
             </div>
           </PopoverContent>
         </Popover>
-        {extra}
-        {previewShare !== null && (
-          <span className="text-[11px] text-muted-foreground" data-testid="kreto-estimate">
-            About {sharePctLabel(previewShare)} of what's left today
-          </span>
-        )}
-      </div>
+  );
+}
+
+/**
+ * Lines under the composer about the last answer: why it ran differently from what was asked, and a deeper pass that
+ * would have covered it fully (offered, never taken).
+ */
+export function KretoRouteHints({ choice, onChange, lastRoute }: { choice: KretoChoice; onChange: (choice: KretoChoice) => void; lastRoute: KretoRouteInfo | null }) {
+  const suggest = lastRoute?.suggestEffort && lastRoute.suggestEffort > choice.effort ? (lastRoute.suggestEffort as KretoEffort) : null;
+  if (!lastRoute?.notice && !suggest) return null;
+  return (
+    <div className="space-y-1">
       {lastRoute?.notice && <p className="text-[11px] text-muted-foreground">{lastRoute.notice}</p>}
       {suggest && (
         <p className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">

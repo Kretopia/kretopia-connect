@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   action: OrchAction;
   /** `outcome`: whether an approved action went through, and the words to show (absent for a dismissal). */
-  onResolved?: (status: "approved" | "rejected", result?: unknown, outcome?: { ok: boolean; message?: string }) => void;
+  onResolved?: (status: "approved" | "rejected", result?: unknown, outcome?: { ok: boolean; message?: string; outcome?: "failed" | "unknown" }) => void;
   compact?: boolean;
 }
 
@@ -42,7 +42,7 @@ export const AgentApprovalCard = ({ action, onResolved, compact }: Props) => {
       } else if (decision === "approved") {
         toast({ title: "Done", description: action.preview_title ?? "Action completed." });
       }
-      onResolved?.(decision, res.result, decision === "approved" ? { ok: res.ok, message: res.message } : undefined);
+      onResolved?.(decision, res.result, decision === "approved" ? { ok: res.ok, message: res.message, outcome: res.outcome } : undefined);
     } catch (e) {
       toast({
         title: "Something went wrong",
