@@ -3,7 +3,7 @@
 // resolver and only records writes, which cannot express "the insert I just made is now visible to the
 // next read" or "the compare-and-swap lost"; edge tests about idempotency and races need that.
 //
-// Supported: select / insert / upsert (onConflict columns) / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
+// Supported: select (with { count, head }) / insert / upsert (onConflict columns) / update / delete, eq / neq / in / is / not / ilike / or (eq + ilike terms) /
 // gt / gte / lte, order (several, stable), limit, single / maybeSingle, and awaiting the chain. Anything else throws, so
 // a test never silently passes on a query the stand-in does not understand.
 
@@ -45,6 +45,8 @@ export class MemoryDb {
     let op: "select" | "insert" | "update" | "delete" = "select";
     let payload: any;
     let returning = false;
+    /** select(…, { count: "exact" }): the result also carries `count`; with `head: true`, no rows. */
+    let countMode: { head: boolean } | null = null;
     /** upsert: the onConflict columns; a row matching all of them is updated in place instead of inserted. */
     let conflictOn: string[] | null = null;
 
@@ -107,7 +109,10 @@ export class MemoryDb {
     };
 
     const shape = (rows: Row[], mode: "list" | "single" | "maybeSingle"): Result => {
-      if (mode === "list") return { data: rows.map((r) => ({ ...r })), error: null };
+      if (mode === "list") {
+        if (countMode) return { data: countMode.head ? null : rows.map((r) => ({ ...r })), error: null, count: rows.length } as Result;
+        return { data: rows.map((r) => ({ ...r })), error: null };
+      }
       if (rows.length > 1 && mode === "maybeSingle") {
         return { data: null, error: { message: "JSON object requested, multiple (or no) rows returned", code: "PGRST116" } };
       }
@@ -119,8 +124,9 @@ export class MemoryDb {
       new RegExp("^" + pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/%/g, ".*") + "$", "i");
 
     const chain: any = {
-      select: () => {
+      select: (_cols?: string, opts?: { count?: string; head?: boolean }) => {
         if (op !== "select") returning = true;
+        if (opts?.count) countMode = { head: opts.head === true };
         return chain;
       },
       insert: (p: any) => ((op = "insert"), (payload = p), chain),

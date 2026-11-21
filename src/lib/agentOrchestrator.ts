@@ -40,7 +40,7 @@ const ORCH_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/agent-orches
 async function callOrchestrator<T>(body: Record<string, unknown>): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   const token = session?.access_token;
-  if (!token) throw new Error("Please sign in to use Copilot actions.");
+  if (!token) throw new Error("Sign in to let Kreto act for you.");
 
   const resp = await fetch(ORCH_URL, {
     method: "POST",
