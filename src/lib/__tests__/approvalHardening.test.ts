@@ -121,7 +121,8 @@ describe("checkPlanStep: the registry decides what a stored plan may run", () =>
 
   it("accepts a step whose handler is the registry's", () => {
     expect(checkPlanStep({ tool_name: "create_task", handler: "desk-agent" }, registry)).toEqual({ ok: true, handler: "desk-agent", risk: "safe_auto" });
-    expect(checkPlanStep({ tool_name: "delete_project", handler: "copilot-collaborator-tools" }, registry)).toMatchObject({ ok: true, risk: "requires_approval" });
+    // delete_project is approval in the registry but locked for agents by the governance policy: a plan cannot run it.
+    expect(checkPlanStep({ tool_name: "delete_project", handler: "copilot-collaborator-tools" }, registry)).toEqual({ ok: false, reason: "locked_tool" });
     expect(checkPlanStep({ tool_name: "ask_clarification", handler: "inline" }, registry)).toMatchObject({ ok: true });
     expect(checkPlanStep({ tool_name: "noop", handler: null }, registry)).toMatchObject({ ok: true, handler: null });
   });

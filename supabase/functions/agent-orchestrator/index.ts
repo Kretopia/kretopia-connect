@@ -26,6 +26,7 @@ import { TOKENS_SHORT_LABEL } from "../_shared/aiLimits.ts";
 import { z } from "npm:zod@^4.4.3";
 import { corsFor, constantTimeEqual, readJson } from '../_shared/guard.ts';
 import { editedArgsKeepTargets, stripReservedKeys } from '../_shared/approvalHardening.ts';
+import { classifyToolFailure, governTool, toolPolicy, type ToolOutcome } from '../_shared/kretoToolPolicy.ts';
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -36,10 +37,30 @@ type Tool = {
   tool_name: string;
   agent_kind: string;
   description: string;
+  /** The governed tier (kretoToolPolicy): never looser than the registry row. */
   risk_level: "safe_auto" | "requires_approval" | "locked";
+  /** The registry row's own tier, kept for the audit log. */
+  registry_risk_level?: unknown;
   args_schema: Record<string, unknown>;
   handler: string;
 };
+
+/**
+ * Registry rows as Kreto acts on them: each tool's tier is the stricter of its row and the governance policy, and its
+ * description carries Kretopia's names. Every tightening is logged, so the audit shows why a tool asked first.
+ */
+function governRegistry(rows: unknown[] | null | undefined): Tool[] {
+  return (rows ?? []).map((row) => {
+    const governed = governTool(row as Tool);
+    if (governed.registry_risk_level !== governed.risk_level) {
+      console.log(JSON.stringify({ kreto_tool_policy: { tool: governed.tool_name, registry: governed.registry_risk_level, governed: governed.risk_level, reason: toolPolicy(governed.tool_name).reason ?? null } }));
+    }
+    return governed as Tool;
+  });
+}
+
+/** Read-only lookups the planner may run to resolve names and ids. They change nothing and stay out of the action list. */
+const SILENT_LOOKUPS = new Set(["find_user", "list_my_projects", "list_my_clients", "list_recent_credits"]);
 
 // Receipt data for this run -- which model(s) were called, how many tokens
 // they burned. Accumulated across classifyIntent + every planTools turn and
@@ -148,7 +169,9 @@ async function planTools(
   userId: string,
   authHeader: string,
   usage: UsageAccumulator,
-): Promise<Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean }>> {
+  /** orch_settings.auto_run_safe: when off, only the silent lookups run without asking. */
+  autoRunSafe = true,
+): Promise<Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean; auto_status?: number | null }>> {
   if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
   // Always-available toolkit: ask_clarification + person/project resolution +
@@ -166,6 +189,8 @@ async function planTools(
     "research_web",
     "find_sponsors",
   ]);
+  // Locked tools stay visible (tagged [locked]) so that asking for one leaves a blocked record with the reason, instead of
+  // nothing at all; they never run.
   const toolsForAgent = tools.filter(
     (t) =>
       t.agent_kind === agentKind ||
@@ -220,7 +245,7 @@ async function planTools(
     { role: "user", content: intent },
   ];
 
-  const proposals: Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean }> = [];
+  const proposals: Array<{ tool_name: string; tool_args: Record<string, unknown>; preview_title: string; preview_body: string; auto_result?: unknown; already_executed?: boolean; auto_status?: number | null }> = [];
   const MAX_TURNS = 3;
   const plannerStart = Date.now();
   const PLANNER_BUDGET_MS = 110_000; // leave headroom under the 150s edge limit
@@ -277,8 +302,10 @@ async function planTools(
         continue;
       }
 
-      // safe_auto with no preview required → execute now and feed result back so the model can chain
-      if (tool.risk_level === "safe_auto" && tool.handler !== "inline" && tool.handler !== "inline_bundle") {
+      // safe_auto with no preview required → execute now and feed result back so the model can chain. With auto-run off in
+      // the person's settings, only the silent lookups run; everything else waits like an approval.
+      const runsNow = tool.risk_level === "safe_auto" && (autoRunSafe || SILENT_LOOKUPS.has(toolName));
+      if (runsNow && tool.handler !== "inline" && tool.handler !== "inline_bundle") {
         try {
           const url = `${SUPABASE_URL}/functions/v1/${tool.handler}`;
           const execResp = await fetch(url, {
@@ -292,24 +319,44 @@ async function planTools(
           didAutoExecute = true;
           // Surface user-facing safe_auto tools as visible action rows so users see what ran.
           // Internal lookups (find_user, list_my_projects, list_my_clients) stay silent.
-          const SILENT_LOOKUPS = new Set(["find_user", "list_my_projects", "list_my_clients", "list_recent_credits"]);
           if (!SILENT_LOOKUPS.has(toolName)) {
             let parsedResult: unknown = execText;
             try { parsedResult = JSON.parse(execText); } catch { /* keep text */ }
             proposals.push({
               tool_name: toolName,
               tool_args: args,
-              preview_title: preview.title ?? toolName,
+              preview_title: preview.title ?? toolPolicy(toolName).label,
               preview_body: preview.body ?? "",
               auto_result: parsedResult,
               already_executed: execResp.ok,
+              auto_status: execResp.status,
             });
           }
         } catch (e) {
           messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify({ error: String(e) }) });
+          // The call may have reached the tool before it broke: keep it on the record as not confirmed.
+          if (!SILENT_LOOKUPS.has(toolName)) {
+            proposals.push({
+              tool_name: toolName,
+              tool_args: args,
+              preview_title: preview.title ?? toolPolicy(toolName).label,
+              preview_body: preview.body ?? "",
+              auto_result: String(e),
+              already_executed: false,
+              auto_status: null,
+            });
+          }
         }
       } else {
-        // requires_approval / locked / inline → record as a proposal and tell the model it's queued
+        // A locked tool: no lookups, no preview work. Record the attempt (the main loop stores it as blocked, with the
+        // reason) and tell the model it cannot run, so the reply does not promise it.
+        if (tool.risk_level === "locked") {
+          const policy = toolPolicy(toolName);
+          proposals.push({ tool_name: toolName, tool_args: args, preview_title: policy.label, preview_body: policy.reason ?? "" });
+          messages.push({ role: "tool", tool_call_id: c.id, content: JSON.stringify({ ok: false, blocked: true, reason: policy.reason ?? "Kreto can't do this." }) });
+          continue;
+        }
+        // requires_approval / inline → record as a proposal and tell the model it's queued
         let pTitle = preview.title ?? "";
         let pBody = preview.body ?? "";
         // Always fetch person+project metadata for collaborator actions so the
@@ -424,7 +471,7 @@ async function planTools(
             };
           } catch (_) { /* fallback below */ }
         }
-        if (!pTitle) pTitle = toolName.replace(/_/g, " ");
+        if (!pTitle) pTitle = toolPolicy(toolName).label;
         proposals.push({
           tool_name: toolName,
           tool_args: args,
@@ -449,7 +496,7 @@ async function executeAction(
   tool: Tool,
   args: Record<string, unknown>,
   authHeader: string,
-): Promise<{ ok: boolean; result?: unknown; error?: string }> {
+): Promise<{ ok: boolean; result?: unknown; error?: string; outcome?: ToolOutcome; message?: string }> {
   // ask_clarification doesn't run anything — it surfaces the question to the user
   if (tool.handler === "inline") {
     return { ok: true, result: { question: args.question } };
@@ -485,13 +532,18 @@ async function executeAction(
       // keep as text
     }
     if (!resp.ok) {
-      return { ok: false, error: typeof parsed === "string" ? parsed : JSON.stringify(parsed) };
+      // The raw error stays in the audit row; people get what it means (and whether it may have run anyway).
+      return { ok: false, error: typeof parsed === "string" ? parsed : JSON.stringify(parsed), ...classifyToolFailure({ status: resp.status }) };
     }
     return { ok: true, result: parsed };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    // The request may have reached the tool before the connection dropped: not confirmed, not "failed".
+    return { ok: false, error: e instanceof Error ? e.message : String(e), ...classifyToolFailure({ thrown: true }) };
   }
 }
+
+/** What a failed run leaves on its action row besides the raw error: the outcome and the words people saw. */
+const failureResult = (r: { outcome?: ToolOutcome; message?: string }) => (r.outcome ? { outcome: r.outcome, message: r.message ?? null } : null);
 
 /**
  * Cross-agent bundle: Talent → Project handoff.
@@ -655,6 +707,10 @@ serve(async (req) => {
     }
 
     const BodySchema = z.object({
+      // The intent path's own fields. Without them `.strip()` removed every intent, so each request to propose an action
+      // was refused with "intent (string) is required".
+      intent: z.string().max(8_000).optional(),
+      context: z.record(z.string(), z.unknown()).optional(),
       action_id: z.string().uuid().optional(),
       decision: z.enum(["approved", "rejected"]).optional(),
       edited_args: z.record(z.string(), z.unknown()).optional(),
@@ -711,13 +767,15 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        if (t.risk_level === "locked") {
-          return new Response(JSON.stringify({ error: "Tool is locked and cannot run" }), {
+        // The governed tier decides, so an action proposed before a tool was locked can no longer be approved into running.
+        const [governed] = governRegistry([t]);
+        if (governed.risk_level === "locked") {
+          return new Response(JSON.stringify({ error: "Tool is locked and cannot run", message: toolPolicy(governed.tool_name).reason ?? "Kreto can't do this for you." }), {
             status: 403,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        tool = t as Tool;
+        tool = governed;
 
         // An approval may edit what a tool says, not what a destructive tool acts on: "remove Alice" approved with the person
         // changed to Bob would run something nobody was shown. Checked before the claim, like the lookups above.
@@ -789,14 +847,14 @@ serve(async (req) => {
         .from("orch_actions")
         .update({
           status: result.ok ? "executed" : "failed",
-          result: result.ok ? (result.result as object) : null,
+          result: result.ok ? (result.result as object) : failureResult(result),
           error: result.ok ? null : result.error,
           executed_at: new Date().toISOString(),
         })
         .eq("id", action_id);
 
       return new Response(
-        JSON.stringify({ ok: result.ok, action_id, result: result.result, error: result.error }),
+        JSON.stringify({ ok: result.ok, action_id, result: result.result, error: result.error, outcome: result.outcome, message: result.message }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
@@ -1219,11 +1277,13 @@ serve(async (req) => {
     );
 
     const t0 = Date.now();
-    const { data: tools } = await admin
+    const { data: registryRows } = await admin
       .from("orch_tool_registry")
       .select("*")
       .eq("enabled", true);
-    if (!tools?.length) throw new Error("Tool registry is empty");
+    if (!registryRows?.length) throw new Error("Tool registry is empty");
+    const tools = governRegistry(registryRows);
+    const autoRunSafe = settings?.auto_run_safe ?? true;
 
     // Receipt data (item: work-unit estimates and receipts) -- accumulated
     // across the classifier + planner AI calls below and persisted onto
@@ -1247,14 +1307,35 @@ serve(async (req) => {
       .single();
     runId = run?.id;
 
-    const planned = await planTools(intent, agent_kind, tools as Tool[], context, userId, authHeader, usage);
+    const planned = await planTools(intent, agent_kind, tools as Tool[], context, userId, authHeader, usage, autoRunSafe);
 
     // Insert action rows; auto-execute safe_auto, leave requires_approval as proposed
     const actionRows: Array<Record<string, unknown>> = [];
     for (const p of planned) {
       const tool = (tools as Tool[]).find((t) => t.tool_name === p.tool_name);
       if (!tool) continue;
-      if (tool.risk_level === "locked") continue;
+      if (tool.risk_level === "locked") {
+        // Never runs, but never disappears either: the attempt and the reason stay on the record.
+        const policy = toolPolicy(tool.tool_name);
+        const { data: blocked } = await admin
+          .from("orch_actions")
+          .insert({
+            run_id: run!.id,
+            user_id: userId,
+            tool_name: p.tool_name,
+            tool_args: p.tool_args,
+            risk_level: "locked",
+            status: "rejected",
+            decided_at: new Date().toISOString(),
+            preview_title: policy.label,
+            preview_body: policy.reason ?? "Kreto can't do this for you.",
+            result: { outcome: "blocked", message: policy.reason ?? "Kreto can't do this for you." },
+          })
+          .select()
+          .single();
+        if (blocked) actionRows.push(blocked);
+        continue;
+      }
 
       const { data: action } = await admin
         .from("orch_actions")
@@ -1271,16 +1352,21 @@ serve(async (req) => {
         .select()
         .single();
 
-      if (tool.risk_level === "safe_auto" && (settings?.auto_run_safe ?? true)) {
+      // A tool the planner already ran is recorded as run, whatever happens next: a row must never say "proposed" for
+      // something that already happened.
+      if (p.already_executed !== undefined || (tool.risk_level === "safe_auto" && autoRunSafe)) {
         // If the planner already ran this safe_auto tool inline, reuse the result instead of double-firing.
-        const result = p.already_executed
-          ? { ok: true, result: p.auto_result }
-          : await executeAction(action!.id, userId, tool, p.tool_args, authHeader);
+        const result: { ok: boolean; result?: unknown; error?: string; outcome?: ToolOutcome; message?: string } =
+          p.already_executed === true
+            ? { ok: true, result: p.auto_result }
+            : p.already_executed === false
+              ? { ok: false, error: typeof p.auto_result === "string" ? p.auto_result : JSON.stringify(p.auto_result ?? null), ...classifyToolFailure({ status: p.auto_status ?? null, thrown: p.auto_status == null }) }
+              : await executeAction(action!.id, userId, tool, p.tool_args, authHeader);
         await admin
           .from("orch_actions")
           .update({
             status: result.ok ? "auto_executed" : "failed",
-            result: result.ok ? (result.result as object) : null,
+            result: result.ok ? (result.result as object) : failureResult(result),
             error: result.ok ? null : result.error,
             executed_at: new Date().toISOString(),
           })
@@ -1288,7 +1374,7 @@ serve(async (req) => {
         actionRows.push({
           ...action,
           status: result.ok ? "auto_executed" : "failed",
-          result: result.result,
+          result: result.ok ? result.result : failureResult(result),
         });
       } else {
         actionRows.push(action!);

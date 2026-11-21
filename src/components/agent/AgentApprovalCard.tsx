@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   action: OrchAction;
-  onResolved?: (status: "approved" | "rejected", result?: unknown) => void;
+  /** `outcome`: whether an approved action went through, and the words to show (absent for a dismissal). */
+  onResolved?: (status: "approved" | "rejected", result?: unknown, outcome?: { ok: boolean; message?: string }) => void;
   compact?: boolean;
 }
 
@@ -32,15 +33,16 @@ export const AgentApprovalCard = ({ action, onResolved, compact }: Props) => {
     try {
       const res = await decideAgentAction(action.id, decision);
       if (!res.ok && decision === "approved") {
+        // Truthful: "not confirmed" when it may have run anyway, so nobody retries a send twice.
         toast({
-          title: "Couldn't run that",
-          description: res.error ?? "The agent action failed.",
+          title: res.outcome === "unknown" ? "Not confirmed" : "Didn't go through",
+          description: res.message ?? "This didn't go through.",
           variant: "destructive",
         });
       } else if (decision === "approved") {
         toast({ title: "Done", description: action.preview_title ?? "Action completed." });
       }
-      onResolved?.(decision, res.result);
+      onResolved?.(decision, res.result, decision === "approved" ? { ok: res.ok, message: res.message } : undefined);
     } catch (e) {
       toast({
         title: "Something went wrong",

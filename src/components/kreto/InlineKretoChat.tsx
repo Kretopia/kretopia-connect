@@ -16,6 +16,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { KretoModelPicker } from "@/components/kreto/KretoModelPicker";
+import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
+import { sendAgentIntent, type OrchAction } from "@/lib/agentOrchestrator";
 import { KretoContextPicker } from "@/components/kreto/KretoContextPicker";
 import { readContextChoice, sourcesLabel, writeContextChoice, type KretoContextChoice } from "@/lib/kretoContext";
 import {
@@ -44,7 +46,25 @@ function stripTagsLive(raw: string): string {
 const FOLLOW_THRESHOLD_PX = 48;
 
 // Memoised so a streamed token re-renders only the bubble that changed, not the whole thread.
-const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto, sources }: CopilotMessage) {
+/** A plan needs the step-by-step approval flow, which this page does not have yet: say so instead of pointing elsewhere. */
+const PLAN_NOTE = "I've sketched a multi-step plan, but I can't run plans from this page yet, so nothing was started.";
+
+/** What happened to an action that is not waiting for approval, in plain words. Null for one that is. */
+function actionNote(a: OrchAction): string | null {
+  const title = a.preview_title || "That";
+  const message = (a.result as { message?: string } | null | undefined)?.message;
+  if (a.status === "auto_executed" || a.status === "executed") return `Done: ${title}.`;
+  if (a.status === "failed") return `${title}: ${message ?? "This didn't go through."}`;
+  if (a.status === "rejected") return `${title}: ${a.preview_body || "I can't do this for you."}`;
+  return null;
+}
+
+type BubbleProps = CopilotMessage & {
+  /** An approval card was decided: hide it and say what happened. */
+  onActionResolved?: (actionId: string, status: "executed" | "failed" | "rejected", note: string) => void;
+};
+
+const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto, sources, actions, notes, preparing, onActionResolved }: BubbleProps) {
   const [removed, setRemoved] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState("");
   return (
@@ -75,6 +95,31 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
         </div>
       ))}
       {attachmentError && <p role="alert" className="mt-2 text-xs text-destructive">{attachmentError}</p>}
+      {role === "assistant" && (preparing ?? 0) > 0 && (
+        <span className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <KretopiaSpinner className="h-3 w-3" /> Getting that ready for your approval
+        </span>
+      )}
+      {role === "assistant" && notes?.map((n, i) => (
+        <p key={i} className="mt-2 text-xs text-muted-foreground" data-testid="kreto-action-note">{n}</p>
+      ))}
+      {role === "assistant" && actions?.some((a) => a.status === "proposed") && (
+        <div className="mt-2 space-y-2 whitespace-normal">
+          {actions.filter((a) => a.status === "proposed").map((a) => (
+            <AgentApprovalCard
+              key={a.id}
+              action={a}
+              compact
+              onResolved={(decision, _result, outcome) => {
+                const title = a.preview_title || "That";
+                if (decision === "rejected") onActionResolved?.(a.id, "rejected", `Dismissed: ${title}.`);
+                else if (outcome?.ok) onActionResolved?.(a.id, "executed", `Done: ${title}.`);
+                else onActionResolved?.(a.id, "failed", `${title}: ${outcome?.message ?? "This didn't go through."}`);
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 });
@@ -114,6 +159,18 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
   // Whether the reader is at the bottom (and so wants new text kept in view). Scrolling up to
   // read pauses it; sending a message or pressing "Latest" resumes it.
   const followRef = useRef(true);
+  // Numbers the live replies (live-1, live-2…) so actions and notes attach to the right one.
+  const liveSeqRef = useRef(0);
+  // An approval card was decided: hide it and leave a plain note of what happened.
+  const onActionResolved = useCallback((actionId: string, status: "executed" | "failed" | "rejected", note: string) => {
+    setMessages((m) =>
+      m.map((msg) =>
+        msg.actions?.some((a) => a.id === actionId)
+          ? { ...msg, actions: msg.actions.map((a) => (a.id === actionId ? { ...a, status } : a)), notes: [...(msg.notes ?? []), note] }
+          : msg,
+      ),
+    );
+  }, []);
   const [showLatest, setShowLatest] = useState(false);
   // The id of a conversation this component just created itself: its live messages are already
   // on screen, so the history effect must not wipe and reload them mid-stream.
@@ -250,7 +307,9 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
 
     setInput("");
     followRef.current = true;
-    setMessages((m) => [...m, { role: "user", content: text, attachments: readyAttachments }, { role: "assistant", content: "" }]);
+    // A local id for this reply, so its approval cards and notes find it after later messages arrive.
+    const liveId = `live-${++liveSeqRef.current}`;
+    setMessages((m) => [...m, { role: "user", content: text, attachments: readyAttachments }, { role: "assistant", content: "", id: liveId }]);
     setStreaming(true);
 
     // A draft conversation doesn't exist server-side until the first
@@ -359,19 +418,32 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
       });
       flushNow();
 
-      // The model proposed an action/plan (tags were stripped from the
-      // visible text above). This page has no approval-card UI yet — never
-      // pretend the action happened; point the user at the surface that
-      // actually can execute and approve it.
+      // The reply proposed actions (tags were stripped from the visible text above). Each goes to the orchestrator, which
+      // applies the tool policy: what needs approval comes back as a card under this reply; anything that ran, failed or
+      // is not allowed comes back as a plain note. Nothing is claimed that the server did not report.
       const { actions, plans } = extractActions(assistantSoFar);
       if (actions.length > 0 || plans.length > 0) {
-        setMessages((m) => [
-          ...m,
-          {
-            role: "assistant",
-            content: "I've got a suggested action ready — open Kreto from the bottom navigation to review and approve it.",
-          },
-        ]);
+        const patch = (fn: (msg: CopilotMessage) => CopilotMessage) => setMessages((m) => m.map((msg) => (msg.id === liveId ? fn(msg) : msg)));
+        patch((msg) => ({ ...msg, preparing: actions.length, notes: plans.length ? [...(msg.notes ?? []), PLAN_NOTE] : msg.notes }));
+        for (const parsed of actions) {
+          let proposed: OrchAction[] = [];
+          let notes: string[] = [];
+          try {
+            const run = await sendAgentIntent(parsed.intent, { surface: parsed.surface ?? "home" });
+            proposed = (run.actions ?? []).filter((a) => a.status === "proposed");
+            notes = (run.actions ?? []).map(actionNote).filter((n): n is string => Boolean(n));
+            if (!run.actions?.length) notes.push("I looked, but there was nothing for me to do there.");
+          } catch (err) {
+            const reason = err instanceof Error && err.message ? err.message.replace(/\.$/, "") : "try again";
+            notes = [`I couldn't set that up: ${reason}.`];
+          }
+          patch((msg) => ({
+            ...msg,
+            preparing: Math.max(0, (msg.preparing ?? 1) - 1),
+            actions: [...(msg.actions ?? []), ...proposed],
+            notes: [...(msg.notes ?? []), ...notes],
+          }));
+        }
       }
     } catch (e) {
       flushNow();
@@ -472,7 +544,7 @@ export function InlineKretoChat({ seedPrompt, seedNonce, conversationId, onConve
               <p className="py-6 text-center text-sm text-white/50">Ask {BRAND.agentName} anything to get started.</p>
             )
           ) : (
-            messages.map((m, i) => <MessageBubble key={m.id ?? i} {...m} />)
+            messages.map((m, i) => <MessageBubble key={m.id ?? i} {...m} onActionResolved={onActionResolved} />)
           )}
         </div>
 
