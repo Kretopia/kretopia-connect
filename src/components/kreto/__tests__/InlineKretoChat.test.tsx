@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn(),
 }));
 
-vi.mock("react-router-dom", () => ({ useNavigate: () => mocks.navigate }));
+vi.mock("react-router-dom", () => ({ useNavigate: () => mocks.navigate, Link: ({ to, children }: { to: string; children?: React.ReactNode }) => <a href={to}>{children}</a> }));
 vi.mock("@/lib/agentOrchestrator", () => ({
   sendAgentIntent: (...a: unknown[]) => mocks.intent(...a),
   decideAgentAction: (...a: unknown[]) => mocks.decide(...a),
@@ -336,6 +336,8 @@ describe("InlineKretoChat: Kreto model and effort", () => {
 
 describe("InlineKretoChat: actions are approved here, never sent somewhere else", () => {
   const action = (over: Record<string, unknown>) => ({ run_id: "r1", user_id: "u1", tool_args: {}, risk_level: "requires_approval", preview_body: null, ...over });
+  /** A note as its parts: status chip, what, why ("Done | Create task"). */
+  const notes = () => screen.getAllByTestId("kreto-action-note").map((n) => [...n.children].map((c) => c.textContent).join(" | "));
 
   it("a proposed action becomes an approval card under the reply; what ran or is not allowed is said plainly", async () => {
     mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => onDelta("On it."));
@@ -352,10 +354,9 @@ describe("InlineKretoChat: actions are approved here, never sent somewhere else"
     send("Assign the colour pass to Lena");
     expect(await screen.findByText("Assign the colour pass to Lena")).toBeInTheDocument();
     expect(mocks.intent).toHaveBeenCalledWith("assign the colour pass to Lena and add a task", { surface: "home" });
-    const notes = screen.getAllByTestId("kreto-action-note").map((n) => n.textContent);
-    expect(notes).toEqual([
-      "Done: Create task \"Colour pass\".",
-      "Delete a project: Deleting a project is yours to do in the project's settings; I can't do it for you.",
+    expect(notes()).toEqual([
+      "Done | Create task \"Colour pass\"",
+      "Not allowed | Delete a project | Deleting a project is yours to do in the project's settings; I can't do it for you.",
     ]);
     expect(screen.queryByText(/bottom navigation/)).toBeNull();
   });
@@ -370,7 +371,7 @@ describe("InlineKretoChat: actions are approved here, never sent somewhere else"
     fireEvent.click(await screen.findByRole("button", { name: /Approve/ }));
     await waitFor(() => expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull());
     expect(mocks.decide).toHaveBeenCalledWith("a1", "approved");
-    expect(screen.getByTestId("kreto-action-note")).toHaveTextContent("Message the crew: I couldn't confirm whether this went through. Check before trying again, so nothing happens twice.");
+    expect(notes()).toEqual(["Not confirmed | Message the crew | I couldn't confirm whether this went through. Check before trying again, so nothing happens twice."]);
   });
 
   it("a plan says nothing was started; a setup failure says so; neither claims success", async () => {
@@ -380,9 +381,9 @@ describe("InlineKretoChat: actions are approved here, never sent somewhere else"
     render(<Harness />);
     send("Plan the album launch and book the studio");
     await waitFor(() => expect(screen.getAllByTestId("kreto-action-note")).toHaveLength(2));
-    expect(screen.getAllByTestId("kreto-action-note").map((n) => n.textContent)).toEqual([
+    expect(notes()).toEqual([
       "I've sketched a multi-step plan, but I can't run plans from this page yet, so nothing was started.",
-      "I couldn't set that up: Agents disabled in your settings.",
+      "Didn't go through | I couldn't set that up | Agents disabled in your settings.",
     ]);
   });
 });

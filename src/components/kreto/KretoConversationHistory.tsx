@@ -71,7 +71,7 @@ export function KretoConversationHistory(props: KretoConversationHistoryProps) {
   }
 
   return (
-    <div className="w-64 shrink-0 border-r border-white/10 flex flex-col h-[var(--kreto-h,32rem)]">
+    <div className="w-64 shrink-0 border-r border-border flex flex-col h-[var(--kreto-h,32rem)]">
       <ConversationListBody {...props} />
     </div>
   );
@@ -137,17 +137,17 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 space-y-2 border-b border-white/10">
+      <div className="p-3 space-y-2 border-b border-border">
         <Button type="button" size="sm" className="w-full gap-1.5 justify-start" onClick={onNew}>
           <Plus className="h-3.5 w-3.5" /> New conversation
         </Button>
         <div className="relative">
-          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-white/40" />
+          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search conversations…"
-            className="h-8 pl-8 text-xs bg-white/[0.03] border-white/10"
+            className="h-8 pl-8 text-xs bg-background border-border"
           />
         </div>
       </div>
@@ -156,8 +156,8 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
         {loading ? (
           <KretopiaLoader size="sm" label="Loading…" className="p-4" />
         ) : filtered.length === 0 ? (
-          <div className="p-4 text-xs text-white/40 flex flex-col items-center text-center gap-1.5 mt-4">
-            <MessageSquare className="h-5 w-5 text-white/20" />
+          <div className="p-4 text-xs text-muted-foreground flex flex-col items-center text-center gap-1.5 mt-4">
+            <MessageSquare className="h-5 w-5 text-muted-foreground/50" />
             {query ? "No conversations match that search." : "No conversations yet — start one above."}
           </div>
         ) : (
@@ -174,7 +174,7 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
                         if (e.key === "Enter") commitRename(c.id);
                         if (e.key === "Escape") setRenamingId(null);
                       }}
-                      className="h-7 text-xs bg-white/[0.05] border-white/10"
+                      className="h-7 text-xs bg-background border-border"
                       maxLength={120}
                     />
                     <Button type="button" size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => commitRename(c.id)} aria-label="Save name">
@@ -188,14 +188,14 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
                   <button
                     type="button"
                     onClick={() => onSelect(c.id)}
-                    className={`w-full text-left px-3 py-2 flex items-start justify-between gap-2 hover:bg-white/[0.04] transition-colors ${
-                      activeConversationId === c.id ? "bg-white/[0.06]" : ""
+                    className={`w-full text-left px-3 py-2 flex items-start justify-between gap-2 hover:bg-muted/60 transition-colors ${
+                      activeConversationId === c.id ? "bg-muted" : ""
                     }`}
                     aria-current={activeConversationId === c.id ? "true" : undefined}
                   >
                     <span className="min-w-0 flex-1">
-                      <span className="block text-sm text-white truncate">{c.title}</span>
-                      <span className="block text-[11px] text-white/40">
+                      <span className="block text-sm text-foreground truncate">{c.title}</span>
+                      <span className="block text-[11px] text-muted-foreground">
                         {formatDistanceToNow(new Date(c.updated_at), { addSuffix: true })}
                       </span>
                     </span>
@@ -205,7 +205,7 @@ function ConversationListBody({ activeConversationId, onSelect, onNew, refreshKe
                           <span
                             role="button"
                             tabIndex={0}
-                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 h-6 w-6 rounded flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10"
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0 h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
                             onClick={(e) => e.stopPropagation()}
                             onKeyDown={(e) => e.stopPropagation()}
                             aria-label={`Options for ${c.title}`}

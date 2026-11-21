@@ -13,6 +13,7 @@ import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureS
 import { KRETO_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { InlineKretoChat } from "@/components/kreto/InlineKretoChat";
 import { KretoConversationHistory } from "@/components/kreto/KretoConversationHistory";
+import { recordedOutcome } from "@/lib/kretoActionOutcome";
 import { summarizeRunApproval, type ApprovalTone } from "../../supabase/functions/_shared/executionGuard";
 
 const QUICK_ACTIONS = [
@@ -51,6 +52,8 @@ interface RecentAction {
   runLabel: string;
   approvalLabel: string;
   tone: ApprovalTone;
+  /** What happened, from the recorded status and outcome only: Done, Didn't go through, Not confirmed. */
+  outcomeLabel: string | null;
 }
 
 const TONE_CLASS: Record<ApprovalTone, string> = {
@@ -105,7 +108,7 @@ export default function KretoTab() {
           .limit(1),
         supabase
           .from("orch_actions")
-          .select("id, preview_title, tool_name, status, orch_runs(status), orch_approvals(decision, user_id)")
+          .select("id, preview_title, tool_name, status, result, orch_runs(status), orch_approvals(decision, user_id)")
           .eq("user_id", user.id)
           .order("proposed_at", { ascending: false })
           .limit(3),
@@ -123,13 +126,16 @@ export default function KretoTab() {
             actionStatus: r.status,
             approvals: r.orch_approvals ?? [],
           });
+          // A policy block is not the person rejecting it; a failure that may have acted is "not confirmed".
+          const { label: outcomeLabel, blocked } = recordedOutcome(r.status, r.result);
           return {
             id: r.id,
             title: r.preview_title || r.tool_name,
             status: r.status,
             runLabel: summary.runLabel,
-            approvalLabel: summary.approvalLabel,
+            approvalLabel: blocked ? "Not allowed for Kreto" : summary.approvalLabel,
             tone: summary.tone,
+            outcomeLabel,
           };
         }),
       );
@@ -147,7 +153,7 @@ export default function KretoTab() {
           eyebrow="Executive Producer"
           title={`${BRAND.agentName}.`}
           accentTitle="Your creative career, run point."
-          subtitle={`${BRAND.agentRole}. Finds opportunities, drafts pitches, keeps your Passport sharp, and closes the loop from search to paid credit — with your approval at every step.`}
+          subtitle={`${BRAND.agentRole}. Finds opportunities, drafts pitches and keeps your Passport sharp. Anything that reaches other people, goes public or involves money waits for your approval.`}
           tutorial={{ featureKey: "kreto", label: "How Kreto works", steps: KRETO_TUTORIAL }}
         />
       </div>
@@ -176,8 +182,8 @@ export default function KretoTab() {
               emptyState={
                 <div className="flex min-h-full flex-col justify-center gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-white">What should we work on?</p>
-                    <p className="mt-0.5 text-xs text-white/50">
+                    <p className="text-sm font-semibold text-foreground">What should we work on?</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       {BRAND.agentName} drafts, searches and prepares. Anything that goes out waits for your approval.
                     </p>
                   </div>
@@ -263,7 +269,7 @@ export default function KretoTab() {
                           <span className="text-[10px] uppercase tracking-wider text-foreground/40 shrink-0">{a.status}</span>
                         </div>
                         <p className={`pl-6 text-[11px] ${TONE_CLASS[a.tone]}`}>
-                          Run: {a.runLabel} · Approval: {a.approvalLabel}
+                          Run: {a.runLabel} · Approval: {a.approvalLabel}{a.outcomeLabel ? ` · ${a.outcomeLabel}` : ""}
                         </p>
                       </div>
                     );
