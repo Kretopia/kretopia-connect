@@ -5,7 +5,7 @@ import {
   safeAppUrl,
   type EmailPolicyDeps,
 } from "../../../supabase/functions/_shared/transactionalEmailPolicy";
-import { bearerToken, identifyCaller, timingSafeEqualStr } from "../../../supabase/functions/_shared/callerAuth";
+import { bearerToken, identifyCaller, timingSafeEqualStr } from "../../../supabase/functions/_shared/identifyCaller";
 
 const EVENT = "11111111-1111-4111-8111-111111111111";
 const OPP = "22222222-2222-4222-8222-222222222222";

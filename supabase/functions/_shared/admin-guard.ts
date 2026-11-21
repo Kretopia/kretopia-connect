@@ -11,7 +11,7 @@
 // Returns a Response with proper CORS + JSON when the caller is unauthorized.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
-import { timingSafeEqualStr } from "./callerAuth.ts";
+import { timingSafeEqualStr } from "./identifyCaller.ts";
 import { corsFor } from "./guard.ts";
 
 
