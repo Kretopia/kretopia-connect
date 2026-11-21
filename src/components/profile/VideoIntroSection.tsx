@@ -1,10 +1,17 @@
-import { useState } from "react";
-import { Play, Video, Upload, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { Pencil, Play, Scissors, Trash2, Upload } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { parseIntroVideo, withIntroTrim } from "@/lib/passport/introVideoTrim";
 
 interface VideoIntroSectionProps {
   videoUrl?: string | null;
@@ -12,11 +19,30 @@ interface VideoIntroSectionProps {
   onRefresh: () => void;
 }
 
+const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/** The Passport's intro video, shown where the work videos are, with replace, trim and delete for its owner. */
 export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIntroSectionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [uploading, setUploading] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [url, setUrl] = useState<string | null>(videoUrl ?? null);
+  const [busy, setBusy] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [trimOpen, setTrimOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [range, setRange] = useState<[number, number]>([0, 0]);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const trimVideoRef = useRef<HTMLVideoElement>(null);
+
+  const save = async (next: string | null) => {
+    if (!user) return false;
+    const { error } = await supabase.from("profiles").update({ video_intro_url: next }).eq("user_id", user.id);
+    if (error) { toast({ title: "Could not save", description: error.message, variant: "destructive" }); return false; }
+    setUrl(next);
+    onRefresh();
+    return true;
+  };
 
   const handleUpload = async (file: File) => {
     if (!user) return;
@@ -24,117 +50,161 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
       toast({ title: "File too large", description: "Max 50MB for video intro", variant: "destructive" });
       return;
     }
-
-    setUploading(true);
+    setBusy(true);
     try {
       const ext = file.name.split(".").pop();
       const path = `${user.id}/video-intro.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("portfolio")
-        .upload(path, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage.from("portfolio").getPublicUrl(path);
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ video_intro_url: urlData.publicUrl })
-        .eq("user_id", user.id);
-
+      const { error } = await supabase.storage.from("portfolio").upload(path, file, { upsert: true });
       if (error) throw error;
-
-      toast({ title: "Video intro uploaded!" });
-      onRefresh();
+      const { data } = supabase.storage.from("portfolio").getPublicUrl(path);
+      if (await save(`${data.publicUrl}?v=${Date.now()}`)) toast({ title: url ? "Video intro replaced" : "Video intro added" });
+      setPlaying(false);
     } catch (err: any) {
       toast({ title: "Upload failed", description: err.message, variant: "destructive" });
     } finally {
-      setUploading(false);
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
   const handleRemove = async () => {
-    if (!user) return;
-    try {
-      await supabase.from("profiles").update({ video_intro_url: null }).eq("user_id", user.id);
-      toast({ title: "Video intro removed" });
-      onRefresh();
-    } catch {
-      toast({ title: "Failed to remove", variant: "destructive" });
-    }
+    setBusy(true);
+    if (await save(null)) toast({ title: "Video intro removed" });
+    setBusy(false);
+    setPlaying(false);
   };
 
-  if (!videoUrl && !isOwnProfile) return null;
+  const openTrim = () => {
+    if (!url) return;
+    const { trim } = parseIntroVideo(url);
+    setRange([trim.start, trim.end ?? 0]);
+    setDuration(0);
+    setTrimOpen(true);
+  };
+
+  const saveTrim = async () => {
+    if (!url) return;
+    setBusy(true);
+    if (await save(withIntroTrim(url, { start: range[0], end: range[1] }, duration))) toast({ title: "Video intro trimmed" });
+    setBusy(false);
+    setTrimOpen(false);
+    setPlaying(false);
+  };
+
+  if (!url && !isOwnProfile) return null;
+  const parsed = url ? parseIntroVideo(url) : null;
+
+  /** Stops playback at the cut's end; the start comes from the URL fragment. */
+  const stopAtEnd = (end: number | null) => (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (end !== null && e.currentTarget.currentTime >= end) e.currentTarget.pause();
+  };
+
+  const input = (
+    <input ref={fileRef} type="file" accept="video/*" className="hidden" disabled={busy}
+      onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])} />
+  );
 
   return (
-    <div className="rounded-xl border bg-card overflow-hidden mb-6">
-      {videoUrl ? (
-        <div className="relative">
-          {isPlaying ? (
-            <video
-              src={videoUrl}
-              controls
-              autoPlay
-              className="w-full max-h-[400px] bg-black"
-              onEnded={() => setIsPlaying(false)}
-            />
-          ) : (
-            <button
-              onClick={() => setIsPlaying(true)}
-              className="relative w-full group"
-            >
-              <video
-                src={videoUrl}
-                className="w-full max-h-[300px] object-cover"
-                muted
-                playsInline
-              />
-              <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                <div className="h-16 w-16 rounded-full bg-primary/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Play className="h-7 w-7 text-primary-foreground ml-1" />
-                </div>
-              </div>
-              <div className="absolute bottom-3 left-3">
-                <span className="text-xs font-medium text-white bg-black/50 px-2 py-1 rounded-full flex items-center gap-1">
-                  <Video className="h-3 w-3" />
-                  Video Intro
+    <section aria-labelledby="passport-intro-video">
+      <h3 id="passport-intro-video" className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Video intro</h3>
+      {input}
+      {url && parsed ? (
+        <div className="space-y-2">
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
+            {playing ? (
+              <video src={url} controls autoPlay playsInline className="h-full w-full bg-background object-contain"
+                onTimeUpdate={stopAtEnd(parsed.trim.end)} onEnded={() => setPlaying(false)} />
+            ) : (
+              <button type="button" onClick={() => setPlaying(true)} aria-label="Play video intro"
+                className="group relative block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <video src={`${parsed.src}#t=${parsed.trim.start || 0.1}`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                <span className="absolute left-3 bottom-3 grid h-11 w-11 place-items-center rounded-full bg-background/90 text-foreground shadow transition-transform group-hover:scale-105 motion-reduce:transition-none">
+                  <Play className="h-5 w-5" aria-hidden />
                 </span>
-              </div>
-            </button>
-          )}
+              </button>
+            )}
+            {busy && <div className="absolute inset-0 grid place-items-center bg-background/60"><KretopiaSpinner className="h-6 w-6 text-primary" /></div>}
+          </div>
           {isOwnProfile && (
-            <div className="absolute top-2 right-2 flex gap-1">
-              <Button size="icon" variant="secondary" className="h-7 w-7" onClick={handleRemove}>
-                <X className="h-3.5 w-3.5" />
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => fileRef.current?.click()}>
+                <Pencil className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Replace
+              </Button>
+              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={openTrim}>
+                <Scissors className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Trim
+              </Button>
+              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => setConfirmDelete(true)} className="text-destructive">
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" aria-hidden /> Delete
               </Button>
             </div>
           )}
         </div>
-      ) : isOwnProfile ? (
-        <label className="flex flex-col items-center gap-3 p-8 cursor-pointer hover:bg-muted/50 transition-colors">
-          <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-            {uploading ? (
-              <KretopiaSpinner className="h-6 w-6 text-primary" />
-            ) : (
-              <Upload className="h-6 w-6 text-primary" />
-            )}
-          </div>
-          <div className="text-center">
-            <p className="font-semibold text-sm">Add a Video Intro</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              30-60s showreel to increase profile engagement by up to 3x
-            </p>
-          </div>
-          <input
-            type="file"
-            accept="video/*"
-            className="hidden"
-            disabled={uploading}
-            onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
-          />
-        </label>
-      ) : null}
-    </div>
+      ) : (
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={busy}
+          className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/40 transition-colors hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
+            {busy ? <KretopiaSpinner className="h-5 w-5" /> : <Upload className="h-5 w-5" aria-hidden />}
+          </span>
+          <span className="text-sm font-semibold">Add a video intro</span>
+          <span className="text-xs text-muted-foreground">30–60s, max 50MB</span>
+        </button>
+      )}
+
+      <Dialog open={trimOpen} onOpenChange={setTrimOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Trim video intro</DialogTitle>
+            <DialogDescription>Choose where your intro starts and ends. Your original file is kept.</DialogDescription>
+          </DialogHeader>
+          {parsed && (
+            <div className="space-y-4">
+              <video ref={trimVideoRef} src={parsed.src} controls playsInline preload="metadata"
+                className="aspect-video w-full rounded-lg bg-muted object-contain"
+                onLoadedMetadata={(e) => {
+                  const d = e.currentTarget.duration || 0;
+                  setDuration(d);
+                  setRange(([s, en]) => [Math.min(s, d), en > 0 && en <= d ? en : d]);
+                }}
+                onTimeUpdate={(e) => { if (e.currentTarget.currentTime >= range[1] && range[1] > 0) e.currentTarget.pause(); }} />
+              {duration > 0 ? (
+                <>
+                  <Slider min={0} max={duration} step={0.1} minStepsBetweenThumbs={1} value={range}
+                    aria-label="Trim range"
+                    onValueChange={(v) => {
+                      const next: [number, number] = [v[0], v[1]];
+                      if (trimVideoRef.current) trimVideoRef.current.currentTime = next[0] !== range[0] ? next[0] : next[1];
+                      setRange(next);
+                    }} />
+                  <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
+                    <span>Start {fmt(range[0])}</span>
+                    <span>{fmt(range[1] - range[0])} kept</span>
+                    <span>End {fmt(range[1])}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex justify-center py-2"><KretopiaSpinner className="h-5 w-5 text-primary" /></div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTrimOpen(false)}>Cancel</Button>
+            <Button onClick={saveTrim} disabled={busy || duration === 0}>Save trim</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete your video intro?</AlertDialogTitle>
+            <AlertDialogDescription>It will no longer appear on your Passport. You can add a new one anytime.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleRemove}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </section>
   );
 };

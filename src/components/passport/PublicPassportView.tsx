@@ -710,6 +710,15 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           {/* Expertise, CV-style, from what the record already holds: roles, skills, credentials, awards and where the work was featured. */}
           <PassportExpertise expertise={expertise} onEditRoles={heroOwner ? owner?.onEdit : undefined} />
           {/* The credits, once: the cards below are the record, and each opens its project. */}
+          {/* Intro video sits with the work videos, where visitors look for a demo. */}
+          {(profile.video_intro_url || isOwner) && (
+            <VideoIntroSection
+              key={profile.video_intro_url || "none"}
+              videoUrl={profile.video_intro_url || null}
+              isOwnProfile={isOwner}
+              onRefresh={() => {}}
+            />
+          )}
           <PassportShowcase
             pieces={portfolioItems}
             credits={credits}
@@ -718,18 +727,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
           />
           <PassportOriginalEPK userId={profile.user_id} />
           {/* Availability is said once, on the card (its indicator carries the note too). */}
-{/* Video Intro — pinned high so the EPK feels alive */}
-        {(profile.video_intro_url || isOwner) && (
-          <div className="mb-8">
-            <VideoIntroSection
-              videoUrl={profile.video_intro_url || null}
-              isOwnProfile={isOwner}
-              onRefresh={() => window.location.reload()}
-            />
-          </div>
-        )}
-
-        {/* Model strip — casting-grade info, only when sub_roles includes model */}
+{/* Model strip — casting-grade info, only when sub_roles includes model */}
         {((profile as any).sub_roles || []).includes?.('model') && (
           <ModelStrip
             userId={userId || ''}
