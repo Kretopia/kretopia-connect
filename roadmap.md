@@ -1,7 +1,8 @@
 # Kreto binoculars 3D
 - [x] Refine the shared Match / Connected volumetric mascot against the existing binoculars pose: rounded helmet, inset visor, raised gloves, optical barrels, iridescent lenses and chest mark; shared geometry and deduplicated disposal, no generated media or relationship writes.
 - [x] Verify real WebGL rendering in public Match, drag/reset at 1198×697, shared profile callback with explicit control data, and 390×844 framing; 3 geometry tests pass, build OK, no page errors or overflow. Authenticated Connected remains unverified because legacy sessions are unavailable.
-- [ ] Compare with the exact worldwide master: the user reports attaching it, but neither upload mount contains kreto-worldwide.png or a new corresponding file. The procedural model is an approximation, not a verified pixel-perfect recreation; source attachment is required.
+- [x] Compare against the received kreto-worldwide.png top-right pose; refine helmet curvature/depth, narrower torso, longer outward legs, three-quarter default view, optical reflections and local studio environment without generated media. Three tests and real WebGL drag/reset checks pass; 1198×697, 662×697 and 390×844 render without page errors or overflow. The 3d-game verifier also reports no failed requests.
+- [ ] Pixel-identical volumetric recreation remains blocked by the absence of the original 3D model: the supplied PNG establishes one view only. The current model is explicitly approximate; production Connected sessions and real-device performance remain unverified.
 
 # Search and worldwide Match
 - [x] Put Explore Kretopia first, then Roles, Users and Scouts; preserve every real result behind expansion and exact-query Scout navigation.

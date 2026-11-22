@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RotateCcw } from "lucide-react";
@@ -26,12 +27,18 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     renderer.toneMappingExposure = 1.15;
     mount.prepend(renderer.domElement);
     const scene = new THREE.Scene();
+    // Locally generated studio reflections: no remote HDR, model transfer or paid generation.
+    const environmentGenerator = new THREE.PMREMGenerator(renderer);
+    const environmentRoom = new RoomEnvironment();
+    const environmentTarget = environmentGenerator.fromScene(environmentRoom, 0.04);
+    scene.environment = environmentTarget.texture;
+    environmentRoom.dispose(); environmentGenerator.dispose();
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
     camera.position.set(0, 0.45, 12);
     const css = getComputedStyle(mount);
     const color = (token: string) => new THREE.Color(css.getPropertyValue(token).trim().startsWith("#") ? css.getPropertyValue(token).trim() : `hsl(${css.getPropertyValue(token).trim().replace(/\s+/g, ", ")})`);
-    const suit = new THREE.MeshPhysicalMaterial({ color: color("--qr-paper"), roughness: 0.24, metalness: 0.18, clearcoat: 1 });
-    const black = new THREE.MeshPhysicalMaterial({ color: color("--qr-ink"), roughness: 0.23, metalness: 0.35, clearcoat: 1 });
+    const suit = new THREE.MeshPhysicalMaterial({ color: color("--qr-paper"), roughness: 0.26, metalness: 0.12, clearcoat: 1, envMapIntensity: 0.55 });
+    const black = new THREE.MeshPhysicalMaterial({ color: color("--qr-ink"), roughness: 0.18, metalness: 0.25, clearcoat: 1, envMapIntensity: 0.7 });
     const trim = new THREE.MeshPhysicalMaterial({ color: color("--muted-foreground"), roughness: 0.22, metalness: 0.8, clearcoat: 1 });
     const pink = new THREE.MeshStandardMaterial({ color: color("--k-g-3"), emissive: color("--k-g-3"), emissiveIntensity: 1.2, roughness: 0.3 });
     const amber = new THREE.MeshStandardMaterial({ color: color("--k-g-4"), emissive: color("--k-g-4"), emissiveIntensity: 0.7 });
@@ -60,13 +67,13 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
       geometry.translate(0, 0, -depth / 2); geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, material); mesh.position.set(...position); parent.add(mesh); return mesh;
     };
-    ball(robot, black, [0.53, 0.62, 0.37], [0, -0.23, 0]);
-    ball(robot, suit, [0.57, 0.66, 0.4], [0, -0.15, 0.08]);
+    ball(robot, black, [0.48, 0.59, 0.37], [0, -0.23, 0]);
+    ball(robot, suit, [0.52, 0.6, 0.4], [0, -0.15, 0.08]);
     ball(robot, black, [0.27, 0.14, 0.26], [0, 0.46, 0]);
     const head = new THREE.Group(); head.position.set(0, 1.08, 0); robot.add(head);
-    shell(head, suit, 1.92, 1.35, 0.76, 0.52, [0, 0, 0]);
-    shell(head, trim, 1.69, 1.13, 0.12, 0.42, [0, -0.02, 0.45]);
-    shell(head, black, 1.6, 1.04, 0.14, 0.4, [0, -0.02, 0.51]);
+    shell(head, suit, 1.92, 1.42, 0.88, 0.64, [0, 0, 0]);
+    shell(head, black, 1.7, 1.19, 0.12, 0.51, [0, -0.02, 0.5]);
+    shell(head, black, 1.61, 1.1, 0.14, 0.49, [0, -0.02, 0.56]);
     const barrelGeometry = new THREE.CylinderGeometry(1, 1, 1, 48);
     const ringGeometry = new THREE.TorusGeometry(1, 0.065, 12, 64);
     const barrel = (parent: THREE.Group, material: THREE.Material, radius: number, length: number, position: [number, number, number]) => {
@@ -78,9 +85,11 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const glassCanvas = document.createElement("canvas"); glassCanvas.width = glassCanvas.height = 256;
     const glassContext = glassCanvas.getContext("2d");
     if (glassContext) {
-      const gradient = glassContext.createLinearGradient(40, 256, 216, 0);
-      gradient.addColorStop(0, color("--k-g-4").getStyle()); gradient.addColorStop(0.32, color("--k-g-3").getStyle()); gradient.addColorStop(0.64, color("--k-g-1").getStyle()); gradient.addColorStop(1, color("--qr-ink").getStyle());
+      const gradient = glassContext.createLinearGradient(0, 256, 256, 0);
+      gradient.addColorStop(0, color("--k-g-4").getStyle()); gradient.addColorStop(0.24, color("--k-g-3").getStyle()); gradient.addColorStop(0.46, color("--qr-ink").getStyle()); gradient.addColorStop(0.74, color("--k-g-1").getStyle()); gradient.addColorStop(1, color("--qr-ink").getStyle());
       glassContext.fillStyle = gradient; glassContext.fillRect(0, 0, 256, 256);
+      glassContext.fillStyle = color("--k-g-3").getStyle(); glassContext.globalAlpha = 0.35;
+      glassContext.beginPath(); glassContext.ellipse(175, 75, 45, 65, -0.4, 0, Math.PI * 2); glassContext.fill();
     }
     const glassTexture = new THREE.CanvasTexture(glassCanvas); glassTexture.colorSpace = THREE.SRGBColorSpace;
     const glass = new THREE.MeshPhysicalMaterial({ map: glassTexture, emissiveMap: glassTexture, emissive: color("--qr-paper"), emissiveIntensity: 0.28, metalness: 0.55, roughness: 0.12, clearcoat: 1 });
@@ -105,9 +114,9 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
       ball(robot, black, [0.235, 0.27, 0.25], [side * 0.69, 0.93, 0.85]);
       for (let finger = 0; finger < 3; finger++) ball(robot, black, [0.07, 0.145, 0.105], [side * (0.55 + finger * 0.075), 1.055, 1.02]);
       ball(robot, black, [0.21, 0.22, 0.24], [side * 0.31, -0.65, 0]);
-      const leg = ball(robot, suit, [0.26, 0.42, 0.29], [side * 0.4, -0.98, 0.04]); leg.rotation.z = -side * 0.2;
-      ball(robot, black, [0.31, 0.19, 0.39], [side * 0.48, -1.3, 0.15]);
-      shell(robot, black, 0.52, 0.065, 0.61, 0.08, [side * 0.48, -1.43, 0.16]);
+      const leg = ball(robot, suit, [0.27, 0.48, 0.29], [side * 0.4, -1.04, 0.04]); leg.rotation.z = -side * 0.22;
+      ball(robot, black, [0.29, 0.19, 0.36], [side * 0.5, -1.43, 0.15]);
+      shell(robot, black, 0.5, 0.045, 0.57, 0.1, [side * 0.5, -1.56, 0.16]);
     }
     const logoMaterial = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
     const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.38), logoMaterial); logo.position.set(0, -0.05, 0.487); robot.add(logo);
@@ -134,7 +143,7 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     });
     const resize = () => { const width = mount.clientWidth; const height = mount.clientHeight; renderer.setSize(width, height); camera.aspect = width / height; camera.position.z = width < 550 ? 14 : 10.5; camera.updateProjectionMatrix(); };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
-    let frame = 0; let visible = true; let yaw = -0.28; let targetYaw = -0.28; let pitch = 0; let dragging = false; let previousX = 0;
+    let frame = 0; let visible = true; let yaw = 0.48; let targetYaw = 0.48; let pitch = 0; let dragging = false; let previousX = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const draw = (now: number) => {
       if (!visible) return;
@@ -142,6 +151,7 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
       robot.position.y = reduce.matches ? 0 : Math.sin(now * 0.0014) * 0.065;
       arcs.forEach((line, i) => { const material = line.material as THREE.LineBasicMaterial; material.opacity = reduce.matches ? 0.4 : 0.3 + 0.25 * Math.max(0, Math.sin(now * 0.001 - i * 0.8)); });
       renderer.render(scene, camera);
+      mount.dataset.sceneReady = "true";
       positions.forEach((position, i) => { const element = labels.current.get(people[i].user_id); if (!element) return; const screen = position.clone().project(camera); element.style.left = `${(screen.x + 1) * 50}%`; element.style.top = `${(1 - screen.y) * 50}%`; });
       frame = requestAnimationFrame(draw);
     };
@@ -149,11 +159,11 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const down = (e: PointerEvent) => { dragging = true; previousX = e.clientX; renderer.domElement.setPointerCapture(e.pointerId); };
     const move = (e: PointerEvent) => { if (dragging) { targetYaw += (e.clientX - previousX) * 0.009; previousX = e.clientX; } };
     const up = () => { dragging = false; };
-    reset.current = () => { targetYaw = -0.28; pitch = 0; };
+    reset.current = () => { targetYaw = 0.48; pitch = 0; };
     renderer.domElement.style.touchAction = "pan-y";
     renderer.domElement.addEventListener("pointerdown", down); renderer.domElement.addEventListener("pointermove", move); renderer.domElement.addEventListener("pointerup", up); renderer.domElement.addEventListener("pointercancel", up);
     frame = requestAnimationFrame(draw);
-    return () => { disposed = true; cancelAnimationFrame(frame); intersection.disconnect(); observer.disconnect(); const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>(); scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { geometries.add(object.geometry); (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => materials.add(material)); } }); geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()); glassTexture.dispose(); logoMaterial.map?.dispose(); renderer.dispose(); renderer.domElement.remove(); };
+    return () => { disposed = true; delete mount.dataset.sceneReady; cancelAnimationFrame(frame); intersection.disconnect(); observer.disconnect(); const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>(); scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { geometries.add(object.geometry); (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => materials.add(material)); } }); geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()); environmentTarget.dispose(); glassTexture.dispose(); logoMaterial.map?.dispose(); renderer.dispose(); renderer.domElement.remove(); };
   }, [connections]);
   return <div className="relative h-[390px] w-full min-w-0 overflow-hidden sm:h-[420px]" ref={host} role="region" aria-label="Kreto 3D connection map">
     {failed && <div className="absolute inset-0 flex items-center justify-center"><BrandLogo size="lg" iconOnly /></div>}
