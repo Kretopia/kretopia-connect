@@ -112,6 +112,8 @@ export const analytics = {
     trackEvent({ eventName: 'intro_video_upload', eventCategory: EventCategory.PROFILE, properties: { outcome, ...(category ? { category } : {}) } }),
   creditSaved: (source: string) =>
     trackEvent({ eventName: 'credit_saved', eventCategory: EventCategory.PROFILE, properties: { source } }),
+  nextActionUsed: (move: string, choice: 'open' | 'later' | 'not_relevant') =>
+    trackEvent({ eventName: 'next_action_used', eventCategory: EventCategory.ENGAGEMENT, properties: { move, choice } }),
 
   // Auth events
   signUp: (method: string = 'email') =>

@@ -10,7 +10,9 @@ export type FeatureFlag =
   | "FEATURE_AI_DRAFTS"
   | "FEATURE_ACTIVATION_CENTER_V2"
   | "FEATURE_RECOMMENDATIONS"
-  | "FEATURE_OPPORTUNITIES_V2";
+  | "FEATURE_OPPORTUNITIES_V2"
+  // Pilot, off until product approval: the owner's one deterministic next move (Passport Live -> First Proof -> Co-Signed).
+  | "FEATURE_PILOT_NEXT_MOVE";
 
 function readFlag(flag: FeatureFlag): boolean {
   return import.meta.env[`VITE_${flag}`] === "true";

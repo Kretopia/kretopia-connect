@@ -52,6 +52,9 @@ import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportShareSheet } from "@/components/passport/PassportShareSheet";
 import { PassportOverview } from "@/components/passport/PassportOverview";
 import { ICDBCreditForm } from "@/components/profile/ICDBCreditForm";
+import { NextUsefulMoveCard } from "@/components/passport/NextUsefulMoveCard";
+import { useCosignRequests } from "@/hooks/useCosignRequests";
+import { isFeatureEnabled } from "@/lib/featureFlags";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { KretoPassportBuilder } from "@/components/passport/KretoPassportBuilder";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -135,6 +138,9 @@ const ProfileContent = () => {
   // One Add credit entry point on the owner's Passport. `/profile?add=credit` (from the record page and its empty states)
   // opens it, and the parameter is dropped at once so a reload or Back does not reopen it, and no page bounces to another.
   const [addCreditOpen, setAddCreditOpen] = useState(false);
+  // Pilot, off by default: the owner's one next move, from their own record and the co-sign requests they sent.
+  const nextMoveEnabled = isFeatureEnabled("FEATURE_PILOT_NEXT_MOVE");
+  const { byCredit: cosignByCredit } = useCosignRequests(nextMoveEnabled && profile?.user_id === user?.id ? profile?.user_id : undefined);
   useEffect(() => {
     if (searchParams.get("add") !== "credit") return;
     setAddCreditOpen(true);
@@ -537,6 +543,17 @@ const ProfileContent = () => {
       privateBand: (
         <>
           <div className="space-y-6">
+            {nextMoveEnabled && (
+              <NextUsefulMoveCard
+                userId={profile.user_id}
+                input={{
+                  profile,
+                  creditCount: credits?.length || 0,
+                  cosignStates: [...cosignByCredit.values()].flat().map((r) => r.state),
+                }}
+                onUse={(move, choice) => void import("@/lib/analytics").then(({ analytics }) => analytics.nextActionUsed(move, choice))}
+              />
+            )}
             <PassportKretoEntry />
             <div className="empty:hidden"><SocialStatsInline userId={profile.user_id} /></div>
           </div>
