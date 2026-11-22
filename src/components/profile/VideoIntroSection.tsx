@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Pencil, Play, Scissors, Trash2, Upload } from "lucide-react";
+import { Pencil, Play, RotateCcw, Scissors, Trash2, Upload } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { parseIntroVideo, withIntroTrim } from "@/lib/passport/introVideoTrim";
+import { checkIntroVideoFile, formatMb, INTRO_VIDEO_MAX_BYTES, introUploadError, introUploadStatus, type IntroUploadPhase } from "@/lib/passport/introVideoUpload";
 
 interface VideoIntroSectionProps {
   videoUrl?: string | null;
@@ -34,6 +35,12 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
   const [range, setRange] = useState<[number, number]>([0, 0]);
   const fileRef = useRef<HTMLInputElement>(null);
   const trimVideoRef = useRef<HTMLVideoElement>(null);
+  // Upload status, shown in words: selected file, uploading, saving, saved or failed (with a retry that keeps the file).
+  const [phase, setPhase] = useState<IntroUploadPhase>("idle");
+  const [pending, setPending] = useState<File | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [playbackError, setPlaybackError] = useState(false);
+  const inFlight = useRef(false);
 
   const save = async (next: string | null) => {
     if (!user) return false;
@@ -45,27 +52,47 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
   };
 
   const handleUpload = async (file: File) => {
-    if (!user) return;
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: "File too large", description: "Max 50MB for video intro", variant: "destructive" });
+    if (!user || inFlight.current) return; // one upload at a time: a double tap or a second pick is ignored
+    const check = checkIntroVideoFile(file);
+    if (!check.ok) {
+      setPending(null);
+      setFailure(check.message);
+      setPhase("failed");
+      if (fileRef.current) fileRef.current.value = "";
       return;
     }
+    inFlight.current = true;
     setBusy(true);
+    setPending(file);
+    setFailure(null);
+    setPhase("uploading");
     try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/video-intro.${ext}`;
-      const { error } = await supabase.storage.from("portfolio").upload(path, file, { upsert: true });
+      const path = `${user.id}/video-intro.${check.ext}`;
+      const { error } = await supabase.storage.from("portfolio").upload(path, file, { upsert: true, contentType: file.type || undefined });
       if (error) throw error;
+      setPhase("saving");
       const { data } = supabase.storage.from("portfolio").getPublicUrl(path);
-      if (await save(`${data.publicUrl}?v=${Date.now()}`)) toast({ title: url ? "Video intro replaced" : "Video intro added" });
+      // Success is only shown once the Passport row points at the new file.
+      if (!(await save(`${data.publicUrl}?v=${Date.now()}`))) {
+        setFailure("The video uploaded, but it couldn't be saved to your Passport.");
+        setPhase("failed");
+        return;
+      }
+      setPending(null);
+      setPlaybackError(false);
+      setPhase("saved");
       setPlaying(false);
-    } catch (err: any) {
-      toast({ title: "Upload failed", description: err.message, variant: "destructive" });
+    } catch (err) {
+      setFailure(introUploadError(err));
+      setPhase("failed");
     } finally {
+      inFlight.current = false;
       setBusy(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   };
+
+  const status = introUploadStatus(phase, pending, failure);
 
   const handleRemove = async () => {
     setBusy(true);
@@ -113,15 +140,23 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
           <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
             {playing ? (
               <video src={url} controls autoPlay playsInline className="h-full w-full bg-background object-contain"
-                onTimeUpdate={stopAtEnd(parsed.trim.end)} onEnded={() => setPlaying(false)} />
+                onTimeUpdate={stopAtEnd(parsed.trim.end)} onEnded={() => setPlaying(false)} onError={() => setPlaybackError(true)} />
             ) : (
               <button type="button" onClick={() => setPlaying(true)} aria-label="Play video intro"
                 className="group relative block h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                <video src={`${parsed.src}#t=${parsed.trim.start || 0.1}`} muted playsInline preload="metadata" className="h-full w-full object-cover" />
+                <video src={`${parsed.src}#t=${parsed.trim.start || 0.1}`} muted playsInline preload="metadata" className="h-full w-full object-cover"
+                  onError={() => setPlaybackError(true)} onLoadedData={() => setPlaybackError(false)} />
                 <span className="absolute left-3 bottom-3 grid h-11 w-11 place-items-center rounded-full bg-background/90 text-foreground shadow transition-transform group-hover:scale-105 motion-reduce:transition-none">
                   <Play className="h-5 w-5" aria-hidden />
                 </span>
               </button>
+            )}
+            {playbackError && !busy && (
+              <div className="absolute inset-0 grid place-items-center bg-muted p-4 text-center text-sm text-muted-foreground">
+                {isOwnProfile
+                  ? "This video is saved, but this browser can't play it. MP4 (H.264) plays everywhere: replace it if viewers can't see it."
+                  : "This video can't play in this browser."}
+              </div>
             )}
             {busy && <div className="absolute inset-0 grid place-items-center bg-background/60"><KretopiaSpinner className="h-6 w-6 text-primary" /></div>}
           </div>
@@ -145,9 +180,20 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
           <span className="grid h-12 w-12 place-items-center rounded-full bg-primary/10 text-primary">
             {busy ? <KretopiaSpinner className="h-5 w-5" /> : <Upload className="h-5 w-5" aria-hidden />}
           </span>
-          <span className="text-sm font-semibold">Add a video intro</span>
-          <span className="text-xs text-muted-foreground">30–60s, max 50MB</span>
+          <span className="text-sm font-semibold">{busy ? "Uploading your video intro…" : "Add a video intro"}</span>
+          <span className="text-xs text-muted-foreground">30–60s, max {formatMb(INTRO_VIDEO_MAX_BYTES)}</span>
         </button>
+      )}
+      {isOwnProfile && status && (
+        <div role="status" aria-live="polite" className={`mt-2 flex flex-wrap items-center gap-2 text-xs ${phase === "failed" ? "text-destructive" : "text-muted-foreground"}`}>
+          {(phase === "uploading" || phase === "saving") && <KretopiaSpinner className="h-3.5 w-3.5" />}
+          <span>{status}</span>
+          {phase === "failed" && pending && (
+            <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => handleUpload(pending)}>
+              <RotateCcw className="mr-1 h-3 w-3" aria-hidden /> Retry
+            </Button>
+          )}
+        </div>
       )}
 
       <Dialog open={trimOpen} onOpenChange={setTrimOpen}>

@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, AlertCircle, Save, Sparkles, Search, Video, Upload, X, RefreshCw } from "lucide-react";
+import { CheckCircle2, AlertCircle, Save, Sparkles, Search, Upload, X, RefreshCw } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { VideoIntroSection } from "@/components/profile/VideoIntroSection";
 import { checkProfileCompletion } from "@/lib/profileCompletion";
 import { normalizeUsername, validateUsername, usernameValidationMessage } from "@/lib/username";
 import { checkUsernameAvailability, type UsernameAvailability } from "@/lib/usernameAuth";
@@ -898,63 +899,8 @@ export function ProfileEditDialog({
                 )}
               </div>
 
-              {/* Video Intro */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                  <Video className="h-4 w-4" /> Video Intro
-                </h3>
-                {profile?.video_intro_url ? (
-                  <div className="relative rounded-lg overflow-hidden border bg-muted">
-                    <video
-                      src={profile.video_intro_url}
-                      controls
-                      className="w-full max-h-40 object-cover"
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2 h-7 text-xs"
-                      onClick={async () => {
-                        await supabase.from("profiles").update({ video_intro_url: null }).eq("user_id", profile.user_id);
-                        toast({ title: "Video intro removed" });
-                        onProfileUpdate();
-                      }}
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Remove
-                    </Button>
-                  </div>
-                ) : (
-                  <label className="flex flex-col items-center gap-2 p-4 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 cursor-pointer transition-colors">
-                    <Upload className="h-6 w-6 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">Upload a 30-60s video intro (max 50MB)</span>
-                    <input
-                      type="file"
-                      accept="video/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (file.size > 50 * 1024 * 1024) {
-                          toast({ title: "File too large", description: "Max 50MB", variant: "destructive" });
-                          return;
-                        }
-                        try {
-                          const ext = file.name.split(".").pop();
-                          const path = `${profile.user_id}/video-intro.${ext}`;
-                          await supabase.storage.from("avatars").upload(path, file, { upsert: true });
-                          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-                          await supabase.from("profiles").update({ video_intro_url: urlData.publicUrl }).eq("user_id", profile.user_id);
-                          toast({ title: "Video intro uploaded!" });
-                          onProfileUpdate();
-                        } catch (err: any) {
-                          toast({ title: "Upload failed", description: err.message, variant: "destructive" });
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
+              {/* Video Intro: the same uploader as the Passport (status in words, errors checked, retry, playback fallback). */}
+              <VideoIntroSection videoUrl={profile?.video_intro_url ?? null} isOwnProfile onRefresh={onProfileUpdate} />
             </TabsContent>
 
             {/* ===================== RATES ===================== */}
