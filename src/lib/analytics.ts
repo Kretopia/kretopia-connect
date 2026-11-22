@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { hasAnalyticsConsent } from "@/lib/cookieConsent";
 import { createAnalyticsThrottle } from "@/lib/analyticsThrottle";
 
 // One per tab. A loop that calls trackEvent over and over is cut down here, before it costs a network
@@ -32,6 +33,8 @@ export const trackEvent = async ({
   properties = {},
   userId,
 }: TrackEventParams) => {
+  // Optional measurement: only after the person said yes on this device (cookie consent).
+  if (!hasAnalyticsConsent()) return;
   try {
     const decision = throttle.check(eventName, window.location.pathname, properties);
     if (decision !== "allow") {

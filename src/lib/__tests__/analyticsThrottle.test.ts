@@ -93,6 +93,8 @@ describe("trackEvent", () => {
 
   beforeEach(() => {
     vi.resetModules();
+    // trackEvent records only with analytics consent on this device.
+    localStorage.setItem("kretopia:cookie-consent", JSON.stringify({ version: 1, analytics: true, decidedAt: "2026-10-20T10:00:00Z" }));
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-20T10:00:00Z"));
     insert.mockReset().mockResolvedValue({ error: null });

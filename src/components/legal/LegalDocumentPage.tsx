@@ -1,5 +1,5 @@
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
-import { useEffect, type MouseEvent } from "react";
+import { useEffect, type MouseEvent, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 
@@ -74,6 +74,8 @@ interface LegalDocumentPageProps {
   doc: LegalDocument;
   /** The Kreto scene beside the panel title. */
   scene: KretoSceneId;
+  /** Optional action under the sections (Privacy: "Cookie settings"). */
+  after?: ReactNode;
 }
 
 /**
@@ -127,7 +129,7 @@ const LEGAL_PUBLIC_TUTORIALS: Record<string, { title: string; body: string }[]> 
   ]
 };
 
-export function LegalDocumentPage({ doc, scene }: LegalDocumentPageProps) {
+export function LegalDocumentPage({ doc, scene, after }: LegalDocumentPageProps) {
   const { hash } = useLocation();
 
   // A link that arrives with #s05 lands on that section once the page is laid out.
@@ -203,6 +205,8 @@ export function LegalDocumentPage({ doc, scene }: LegalDocumentPageProps) {
               </section>
             ))}
           </div>
+
+          {after}
 
           <div className="space-y-4 text-center">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">{doc.closing.eyebrow}</p>

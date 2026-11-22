@@ -1,3 +1,5 @@
+import { hasAnalyticsConsent } from "@/lib/cookieConsent";
+
 /**
  * Session Replay records the DOM. Calls, messages, invoices, wallets and Passport data are all on screen,
  * so every replay is masked: text and inputs become `*`, images, video and other media are blocked, and
@@ -25,9 +27,10 @@ export async function initSentry() {
       dsn,
       environment: import.meta.env.MODE,
       enabled: import.meta.env.PROD,
+      // Error reports always (operation and security); the masked session replay only with analytics consent on this device.
       integrations: [
         Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration(SENTRY_REPLAY_OPTIONS),
+        ...(hasAnalyticsConsent() ? [Sentry.replayIntegration(SENTRY_REPLAY_OPTIONS)] : []),
       ],
       tracesSampleRate: 1.0,
       replaysSessionSampleRate: 0.1,

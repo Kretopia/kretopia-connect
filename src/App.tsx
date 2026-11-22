@@ -1,6 +1,7 @@
 import { AppFooter } from "@/components/layout/AppFooter";
 import { SharedFooterProvider } from "@/components/layout/sharedFooter";
 import { ScrollToTopButton } from "@/components/landing/kretopia/ScrollToTopButton";
+import { CookieConsentDialog } from "@/components/consent/CookieConsentDialog";
  // GUIDE_V2_REACTIVATION_2026
 import { Suspense, lazy as _reactLazy, useEffect, useMemo } from "react";
 import { lazyWithRetry as lazy } from "./lib/lazyWithRetry";
@@ -589,6 +590,8 @@ const AppContent = () => {
       </main>
       {footer && <AppFooter variant={footer} reserve={footerBottomReserve(location.pathname, showBottomNav)} />}
       <ScrollToTopButton />
+      {/* First visit on a device (or "Cookie settings"): the cookie choice, centred. */}
+      <CookieConsentDialog />
     </div>
   );
 };

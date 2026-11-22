@@ -28,6 +28,8 @@ const DSN = "https://public@o0.ingest.sentry.io/1";
 
 describe("Sentry Replay privacy", () => {
   beforeEach(async () => {
+    // The masked replay runs only with analytics consent on this device.
+    localStorage.setItem("kretopia:cookie-consent", JSON.stringify({ version: 1, analytics: true, decidedAt: "2026-11-22T00:00:00Z" }));
     vi.stubEnv("VITE_SENTRY_DSN", DSN);
     vi.stubEnv("PROD", true);
     vi.mocked(Sentry.init).mockClear();
@@ -96,5 +98,19 @@ describe("Sentry loading", () => {
     const source = readFileSync(resolve(__dirname, "../sentryInit.ts"), "utf8");
     expect(source).not.toMatch(/^import (?!type)[^;]*from\s+["']@sentry/m);
     expect(source).toMatch(/await import\("@sentry\/react"\)/);
+  });
+});
+
+describe("Sentry Replay and cookie consent", () => {
+  afterEach(() => { vi.unstubAllEnvs(); localStorage.clear(); });
+  it("without analytics consent, errors are still reported but no session replay is installed", async () => {
+    localStorage.clear();
+    vi.stubEnv("VITE_SENTRY_DSN", DSN);
+    vi.stubEnv("PROD", true);
+    vi.mocked(Sentry.init).mockClear();
+    await initSentry();
+    const config = vi.mocked(Sentry.init).mock.calls[0]?.[0];
+    expect(config).toBeTruthy();
+    expect((config?.integrations as { name: string }[]).some((i) => i.name === "Replay")).toBe(false);
   });
 });
