@@ -1,0 +1,46 @@
+# Activation loop handoff (2026-11-22)
+
+Branch `claude/activation-loop-20261121`, local only: **not pushed, not merged, nothing deployed or applied**. Four commits on
+`origin/main` at `4011ea2a1`. The pilot PDF was not available in this environment.
+
+## Findings
+
+| Issue | Evidence | Status | Fix |
+|---|---|---|---|
+| 46 MB video: completion unclear | `ProfileEditDialog.tsx` (old 938–950): storage `upload()` error ignored (supabase-js returns it, never throws), URL saved and "Video intro uploaded!" shown anyway; no state during upload. `VideoIntroSection` empty state said "Add a video intro" while uploading | Confirmed (feedback gap). Storage/public-render failure: unverified (bucket limits are not in migrations) | Dialog reuses `VideoIntroSection`; explicit uploading → saving → saved/failed, retry with same file, double-submit guard, playback fallback. Same bucket, same 50 MB limit |
+| "Add credit" loop | `ICDBCreditForm` mounted only in `ViewProfileTabs`, which is mounted nowhere; Passport → "Your record" (`/credits`) → "Add your first credit" → `/profile?add=credit`, read by nothing | Confirmed | Add credit button in the owner's Passport overview; `?add=credit` opens the same form and drops the param; save refreshes data, no reload |
+| Kreto import "Load failed" | Safari's text for a fetch with no HTTP answer, shown raw (`thriveCopilot.ts:240`, import dialog toast). `analyze-profile-url`: scraper and extraction calls had no timeout | Raw message: confirmed. Root cause (timeout past platform limit): **hypothesis**, no logs | 20 s / 45 s bounds; `{ success:false, code }` categories; `src/lib/importFailure.ts`; inline error keeps the link + "Add work manually" |
+| Credit confirmed → owner | Trigger `notify_credit_owner_on_endorsement` links `/profile?tab=credits` (dead tab), says "verified your work"; no push/email for it | Confirmed | `/credits?credit=<id>` focuses the credit; paste script A1 fixes link/wording (**not applied**) |
+| Incoming co-sign request | `cosignNotifications.ts`: in-app + push to the exact request | Already works (members) | — |
+
+## Prepared, disabled, pending approval
+- `FEATURE_PILOT_NEXT_MOVE` (env `VITE_FEATURE_PILOT_NEXT_MOVE=true`): one deterministic next move, steps Passport Live / First Proof /
+  Co-Signed derived from real state, Later / Not relevant per browser. No awards, no storage, nothing public.
+- `docs/security/activation/A1_cosign_notification_link/`: 01–04, rehearsed on scratch Postgres 16. Apply after the app build with
+  `/credits?credit=` is published (older builds still land on `/credits`).
+
+## Web Push / email (inventory, no changes)
+- Push already: tap-only permission (`enablePush`), honest unavailable/blocked/not-configured states, sign-out release, 404/410
+  subscription cleanup, no lock-screen detail. `VITE_VAPID_PUBLIC_KEY` is not in repo env files: production configuration **unverified**.
+- Not done: push/email for "credit confirmed" (needs DB→function delivery, e.g. a database webhook on `notifications` insert of
+  type `credit_cosigned` → `send-push-notification`); email delivery trace (production `send-transactional-email` hard-codes the
+  `thrivein.io` sender; check the sender domain status in kretopia-app before any change).
+
+## Measurement (existing `analytics_events`, categories only)
+New events: `intro_video_upload` (outcome, category), `import_failed` (category), `credit_saved` (source), `next_action_used`
+(move, choice). Authoritative signals stay in tables: credits, `credit_endorsements.status`. Cohort = accounts whose first
+`credit_saved` falls in the week; W1/W4 = accepted confirmation or new credit within 7/28 days; exclude cohorts younger than the
+window; report raw counts with rates; notification opens alone are not returns.
+
+## Tests
+Focused: 4 new files + updated (video 7, add credit 3, import 8, next move/link 8); related suites 23 files / 129 and 27 / 220 pass;
+`tsc -p tsconfig.app.json` pass; lint at baseline on every touched file; `vite build` pass; edge function type-checked with Deno-only
+errors filtered. **Not tested:** real uploads to production storage, real browsers' playback, live import against real sites, push
+delivery, email delivery, the A1 script against production.
+
+## Approvals needed
+Push/PR of this branch · apply A1 · enable the pilot flag · VAPID/sender-domain check · P2 (QR, promo access, Founding OG: plan
+mapping, eligibility, 100 vs 500, lifetime terms undecided — nothing built).
+
+## Next action
+Review and push this branch as a draft PR; publish; apply A1; then add push for `credit_cosigned` behind a flag.
