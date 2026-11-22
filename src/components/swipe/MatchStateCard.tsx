@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { MatchBrand } from "./MatchBrand";
 import { HoloCard } from "@/components/passport/HoloCard";
-import { KretoScene } from "@/components/brand/KretoScene";
+import { MatchKretoArtwork } from "./MatchKretoArtwork";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { CARD_PORTRAIT_DECK } from "@/components/cards/cardTokens";
 
@@ -18,7 +18,7 @@ export function MatchStateCard({ title, description, busy = false, children }: {
           <MatchBrand /><span className="text-xs font-semibold text-muted-foreground">MATCH</span>
         </header>
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          <KretoScene scene="talent-search" size="thumb" className="h-full w-full" />
+          <MatchKretoArtwork className="mx-auto max-w-[280px]" />
         </div>
         {hasMessage ? <div className="space-y-3 border-t border-border p-4 text-center" aria-live="polite">
           {busy ? <KretopiaSpinner className="mx-auto h-8 w-8" /> : null}

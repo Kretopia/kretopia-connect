@@ -3,6 +3,7 @@ import { ShieldCheck, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KretoScene } from "@/components/brand/KretoScene";
+import { MatchKretoArtwork } from "@/components/swipe/MatchKretoArtwork";
 import { CardPill, CardShell, CardActionButton, CardIconButton, type CardAction, type CardIconAction, type CardTarget } from "@/components/cards/CardShell";
 
 export interface ProfileCardProps {
@@ -39,6 +40,7 @@ export interface ProfileCardProps {
 export function ProfileCard({ landscape, portrait, onFlipChange, backContent, backActions, testId, name, meta, coverUrl, avatarUrl, standing, badge, bio, tags, reasons, open, primary, secondary }: ProfileCardProps) {
   const [broken, setBroken] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
+  const [smallPhoto, setSmallPhoto] = useState(false);
   const photos = Array.from(new Set((portrait ? [avatarUrl, coverUrl] : [coverUrl]).filter((url): url is string => !!url)));
   const photo = photos[photoIndex % Math.max(photos.length, 1)];
   const showCover = !!photo && !broken;
@@ -53,7 +55,7 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
       open={open}
       cover={
         <>
-          {showCover ? <img src={photo} alt={portrait ? `${name}, photo ${photoIndex + 1}` : ""} loading={portrait ? "eager" : "lazy"} decoding="async" draggable={false} className="h-full w-full object-cover" onError={() => { if (photos.length > 1 && photoIndex === 0) setPhotoIndex(1); else setBroken(true); }} /> : <KretoScene scene="talent-search" size="thumb" className="h-full w-full" />}
+          {showCover ? <div className="flex h-full w-full items-center justify-center bg-muted"><img src={photo} alt={portrait ? `${name}, photo ${photoIndex + 1}` : ""} loading={portrait ? "eager" : "lazy"} decoding="async" draggable={false} className={portrait && smallPhoto ? "h-auto max-h-full w-auto max-w-full object-contain" : "h-full w-full object-cover"} onLoad={event => { if (portrait) setSmallPhoto(event.currentTarget.naturalWidth < (event.currentTarget.parentElement?.clientWidth ?? 0) * 1.5); }} onError={() => { if (photos.length > 1 && photoIndex === 0) setPhotoIndex(1); else setBroken(true); }} /></div> : portrait ? <MatchKretoArtwork className="mx-auto max-w-[260px]" /> : <KretoScene scene="talent-search" size="thumb" className="h-full w-full" />}
           {portrait && photos.length > 1 ? <div className="absolute inset-x-3 bottom-3 z-10 flex items-center justify-end gap-2">
             <Button variant="secondary" size="icon" className="h-11 w-11 rounded-full" aria-label="Previous photo" title="Previous photo" onClick={() => { setBroken(false); setPhotoIndex(i => (i + photos.length - 1) % photos.length); }}><ChevronLeft className="h-5 w-5" /></Button>
             <Button variant="secondary" size="icon" className="h-11 w-11 rounded-full" aria-label="Next photo" title="Next photo" onClick={() => { setBroken(false); setPhotoIndex(i => (i + 1) % photos.length); }}><ChevronRight className="h-5 w-5" /></Button>
@@ -62,6 +64,7 @@ export function ProfileCard({ landscape, portrait, onFlipChange, backContent, ba
             <AvatarImage src={avatarUrl ?? undefined} alt="" />
             <AvatarFallback>{name.slice(0, 1).toUpperCase()}</AvatarFallback>
           </Avatar>
+          {portrait && showCover && <div className="absolute right-3 top-14 h-12 w-12 overflow-hidden rounded-full border border-border bg-card"><MatchKretoArtwork /></div>}
         </>
       }
       coverStart={

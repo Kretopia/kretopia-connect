@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-import { LayoutGrid, UserCheck, IdCard } from "lucide-react";
+import { LayoutGrid, UserCheck, IdCard, Heart, Send } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { MatchDeck } from "@/components/swipe";
 import { MatchPulse } from "@/components/swipe/MatchPulse";
@@ -9,11 +9,8 @@ import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { FeatureSectionNav } from "@/components/features/FeatureSectionNav";
-import { SegmentToggle } from "@/components/features/SegmentToggle";
 import {
-  BROWSE_SEGMENT_OPTIONS,
   BROWSE_VIEW_IDS,
-  CONNECTED_SEGMENT_OPTIONS,
   CONNECTED_VIEW_IDS,
   matchTabFromParams,
   type BrowseViewId,
@@ -42,23 +39,6 @@ const loadingRow = (label: string) => (
   </div>
 );
 
-/**
- * Match — Browse (the one-card-at-a-time deck, or the filterable grid: a SegmentToggle picks which, see
- * lib/matchSections.ts) + Directory (every public Passport) + Connected (accepted connections, or who is
- * interested in you, again by SegmentToggle) -- not dating-app labels. Connected is the old /circle Network
- * tab, which is where /circle?tab=network now lands.
- *
- * Discover used to be its own top-level tab (the deck) and Interested its own (people who swiped right on you);
- * both now live as the second segment of Browse and Connected respectively, since each pair is two views of the
- * same kind of thing (find people vs. people already found you) rather than two unrelated destinations. An old
- * link to ?tab=discover or ?tab=interested still lands in the right place (matchTabFromParams).
- *
- * The deck itself (SwipeFeature -> HingeStyleCard, real server-authoritative swipe/match via useSwipeActions) and
- * the HoloCard visual treatment are a separate, more involved pass: HingeStyleCard almost certainly owns its own
- * pointer-based drag gesture for the swipe motion, and HoloCard also tracks pointer events for its tilt effect on
- * the same element -- wrapping one in the other needs that gesture code read first to confirm they don't fight
- * over the same pointer events, not a blind wrap. See STUDIO_REFERENCE_SURFACE_AUDIT.md.
- */
 export default function Match() {
   // StudioSectionTabs' uncontrolled mode only reads ?tab= once, at mount
   // (Radix's defaultValue semantics) -- a same-page navigate("/match?tab=
@@ -108,14 +88,8 @@ export default function Match() {
       icon: LayoutGrid,
       content: (
         <div className="w-full min-w-0 space-y-4">
-          <SegmentToggle
-            value={browseView}
-            onChange={(v) => goTo("browse", v)}
-            options={BROWSE_SEGMENT_OPTIONS}
-            label="Browse view"
-          />
           {browseView === BROWSE_VIEW_IDS.deck ? (
-            <><MatchPulse /><MatchDeck cardVariant="shell" /></>
+            <div className="grid min-w-0 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,460px)]"><MatchPulse /><MatchDeck cardVariant="shell" /></div>
           ) : (
             <Suspense fallback={loadingRow("Loading creators…")}>
               <BrowseCreators />
@@ -140,12 +114,6 @@ export default function Match() {
       icon: UserCheck,
       content: (
         <div className="w-full min-w-0 space-y-4">
-          <SegmentToggle
-            value={connectedView}
-            onChange={(v) => goTo("connected", v)}
-            options={CONNECTED_SEGMENT_OPTIONS}
-            label="Connected view"
-          />
           {connectedView === CONNECTED_VIEW_IDS.connected ? (
             <Suspense fallback={loadingRow("Loading…")}>
               <ConnectedCollaborators />
@@ -175,19 +143,25 @@ export default function Match() {
         eyebrow="Collaborators"
         title="Match."
         accentTitle="Find your people."
-        subtitle="Discover the deck or browse the grid — connect by skill, city, and the people you've already made things with."
+        subtitle="Creative connections without borders. Find familiar ground — or a whole new perspective."
         tutorial={{ featureKey: "match", label: "How Match works", steps: MATCH_TUTORIAL }}
       />
 
       <StudioFeatureShell wrapped={{ name: "Match" }}>
         <FeatureSectionNav
-          items={matchTabs.map((t) => ({ id: t.id, label: t.label, icon: t.icon || LayoutGrid }))}
-          value={activeTab}
+          items={[
+            { id: "browse:deck", label: "Browse", icon: LayoutGrid },
+            { id: "browse:grid", label: "Grid", icon: LayoutGrid },
+            { id: "directory:", label: "Directory", icon: IdCard },
+            { id: "connected:connected", label: "Connected", icon: UserCheck },
+            { id: "connected:interested", label: "Interested", icon: Heart },
+            { id: "connected:sent", label: "Sent interests", icon: Send },
+          ]}
+          value={`${activeTab}:${activeView}`}
           label="Match sections"
           onChange={(id) => {
-            const tab = id as MatchTabId;
-            const defaultView = tab === "browse" ? BROWSE_VIEW_IDS.deck : tab === "connected" ? CONNECTED_VIEW_IDS.connected : "";
-            goTo(tab, defaultView);
+            const [tab, view = ""] = id.split(":");
+            goTo(tab as MatchTabId, view);
           }}
         />
         <div role="tabpanel" aria-label={matchTabs.find((t) => t.id === activeTab)?.label} className="mt-4 min-w-0">

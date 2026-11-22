@@ -1,3 +1,9 @@
+# Search and worldwide Match
+- [x] Put Explore Kretopia first, then Roles, Users and Scouts; preserve every real result behind expansion and exact-query Scout navigation.
+- [x] Consolidate Match into one scrolling rail, retain Passport flip and equal decisions, avoid stretching small portraits, rotate four 2048px Kreto poses from a native 4096px master and foreground interactive Kreto 3D.
+- [x] Diversify eligible profiles across public locations and crafts without losing candidates or changing exclusions. 76 tests pass; public search, query handoff, tabs, rendered CDN art and interactive 3D verified at 1280/662/390px with no overflow or runtime errors. Local asset requests used the existing hosted asset path because localhost does not serve the asset gateway. No publication.
+- [ ] Verify worldwide deck decisions and mutual matches with real production accounts: blocked by unavailable legacy authenticated sessions; public browsing and deterministic ranking tests are verified, not a signed-in production match.
+
 # Production traction audit
 - [x] Verify published data origin against the accessible read-only database and inspect its schema: production calls legacy; accessible Cloud lacks the required product tables.
 - [x] Add evidence-only Traction tab to the existing Admin dashboard, with explicit unavailable metrics and no simulated charts.

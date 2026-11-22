@@ -20,7 +20,7 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); }
     catch { setFailed(true); return; }
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     mount.prepend(renderer.domElement);
     const scene = new THREE.Scene();

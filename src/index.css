@@ -10,7 +10,7 @@
   height: calc(var(--match-card-height) + 96px);
 }
 .k-match-card { height: var(--match-card-height, 480px); }
-.k-match-card [data-card-part="cover"] { height: 34%; max-height: none; aspect-ratio: auto; }
+.k-match-card [data-card-part="cover"] { height: 46%; max-height: none; aspect-ratio: auto; }
 .k-match-card [data-card-part="cover"] + div {
   min-height: 0;
   gap: 8px;
@@ -29,12 +29,12 @@
   }
 }
 @media (max-height: 740px) {
-  .k-match-card [data-card-part="cover"] { height: 29%; }
+  .k-match-card [data-card-part="cover"] { height: 40%; }
   .k-match-card [data-card-part="cover"] + div { gap: 7px; }
 }
 @media (max-height: 620px) {
   .k-match-stage { --match-card-height: clamp(360px, calc(100dvh - 120px), 500px); }
-  .k-match-card [data-card-part="cover"] { height: 26%; }
+  .k-match-card [data-card-part="cover"] { height: 36%; }
 }
 
 /* One viewport height for every call screen. `dvh` follows the browser's moving toolbars; an engine that does not know it keeps the

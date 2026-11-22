@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diversifyByRole,
+  diversifyWorldwide,
   interestTokens,
   isPositivelyRealMember,
   orderCandidates,
@@ -11,6 +12,19 @@ import {
 const NOW = Date.parse("2026-10-16T12:00:00Z");
 const daysAgo = (d: number) => new Date(NOW - d * 86_400_000).toISOString();
 const c = (user_id: string, score: number, extra: Record<string, unknown> = {}) => ({ user_id, score, role: "Photographer", ...extra });
+
+describe("worldwide discovery", () => {
+  it("brings a creator from a different place into every third discovery without dropping local users", () => {
+    const input = [c("bali-1", 90, { location: "Bali" }), c("bali-2", 80, { location: "Bali" }), c("bali-3", 70, { location: "Bali" }), c("paris", 2, { location: "Paris" }), c("tokyo", 1, { location: "Tokyo" })];
+    const result = diversifyWorldwide(input);
+    expect(result.slice(0, 3).map(p => p.user_id)).toEqual(["bali-1", "bali-2", "paris"]);
+    expect(result.map(p => p.user_id).sort()).toEqual(input.map(p => p.user_id).sort());
+    expect(input[2].user_id).toBe("bali-3");
+  });
+  it("explores a different craft when public locations are unavailable", () => {
+    expect(diversifyWorldwide([c("photo-1", 90), c("photo-2", 80), c("photo-3", 70), c("music", 1, { role: "Musician" })])[2].user_id).toBe("music");
+  });
+});
 
 describe("stableUnit", () => {
   it("is deterministic, in [0, 1) and seed-sensitive", () => {

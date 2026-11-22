@@ -106,6 +106,7 @@ export function UnifiedSearchDropdown({
   const [highlightedCreator, setHighlightedCreator] = useState<SearchResult | null>(null);
   const [error, setError] = useState(false);
   const [hasMoreUsers, setHasMoreUsers] = useState(false);
+  const [expandHeroUsers, setExpandHeroUsers] = useState(false);
   const usersOffsetRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -140,6 +141,7 @@ export function UnifiedSearchDropdown({
     abortRef.current?.abort();
     setLoading(false);
     const trimmedQuery = query.trim();
+    setExpandHeroUsers(false);
     if (trimmedQuery.length < minChars) {
       setOpen(false);
       onOpenChange?.(false);
@@ -171,10 +173,16 @@ export function UnifiedSearchDropdown({
     try {
       if (variant === "hero" && !usersOnly) {
         const offset = appendUsers ? usersOffsetRef.current : 0;
-        const page = await searchScoutPeople(q, offset);
+        const [page, scoutResults] = await Promise.all([
+          searchScoutPeople(q, offset),
+          appendUsers ? Promise.resolve({ data: [] }) : supabase.from("opportunities")
+            .select("id, title, type, location").eq("status", "active")
+            .ilike("title", `%${q}%`).limit(3),
+        ]);
         if (controller.signal.aborted) return;
         const matches: SearchResult[] = page.users.map(p => ({ type: "creator", id: p.user_id, title: p.full_name || "Kretopia user", subtitle: [p.role, p.location].filter(Boolean).join(" · "), avatar: p.avatar_url }));
-        setResults(previous => appendUsers ? [...previous, ...matches.filter(r => !previous.some(p => p.id === r.id))] : matches);
+        const scouts: SearchResult[] = (scoutResults.data ?? []).map(p => ({ type: "gig", id: p.id, title: p.title, subtitle: [p.type, p.location].filter(Boolean).join(" · ") }));
+        setResults(previous => appendUsers ? [...previous.filter(r => r.type === "creator"), ...matches.filter(r => !previous.some(p => p.id === r.id)), ...previous.filter(r => r.type !== "creator")] : [...matches, ...scouts]);
         usersOffsetRef.current = offset + SCOUT_PEOPLE_PAGE_SIZE;
         setHasMoreUsers(page.hasMore);
         setLoading(false);
@@ -647,14 +655,12 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
-            {isHero && !usersOnly && <Button variant="ghost" className="order-1 h-auto w-full justify-between gap-2 whitespace-normal p-3 text-left" data-search-result onKeyDown={handleResultKeyDown} onClick={() => submitQuery(query)}>
-              <span className="min-w-0"><span className="block text-xs text-muted-foreground">Search Scout</span><span className="block break-words font-semibold">{query}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-            </Button>}
+            {isHero && !usersOnly && <div className="order-first border-b border-border px-4 py-3 text-left"><p className="text-xs font-semibold text-foreground">Explore Kretopia</p></div>}
             {catalogMatches.length > 0 && (
-              <div className="order-3 border-b border-border px-2 py-2">
+              <div className={cn("border-b border-border px-2 py-3", isHero ? "order-1" : "order-3")}>
                 <div className="flex items-center justify-between px-2 pb-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                    Explore Kretopia
+                  <p className="text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    {isHero ? "Roles" : "Explore Kretopia"}
                   </p>
                   {!user && !isHero && (
                     <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
@@ -663,14 +669,14 @@ export function UnifiedSearchDropdown({
                     </span>
                   )}
                 </div>
-                <div className="grid gap-x-2 sm:grid-cols-2">
-                  {(["role", "skill", "location", "work"] as const).map((kind) => {
+                <div className={cn("grid gap-x-2", !isHero && "sm:grid-cols-2")}>
+                  {(isHero ? ["role"] as const : ["role", "skill", "location", "work"] as const).map((kind) => {
                     const items = catalogMatches.filter((e) => e.kind === kind);
                     if (items.length === 0) return null;
                     const Icon = CATALOG_ICON[kind];
                     return (
                       <div key={kind} className="py-1">
-                        <p className="px-2 pb-0.5 text-[10px] font-medium text-muted-foreground/70">
+                        <p className={cn("px-2 pb-0.5 text-[10px] font-medium text-muted-foreground/70", isHero && "sr-only")}>
                           {CATALOG_KIND_LABEL[kind]}
                         </p>
                         {items.map((e) => (
@@ -864,11 +870,11 @@ export function UnifiedSearchDropdown({
               });
               if (items.length === 0) return null;
               return (
-                <div key={groupType} className="order-2 border-b border-border last:border-b-0">
-                  <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                    {RESULT_GROUP_LABEL[groupType]}
+                <div key={groupType} className={cn("border-b border-border last:border-b-0 py-2", isHero && groupType === "gig" ? "order-4" : "order-2")}>
+                  <p className="px-4 pt-1 pb-2 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    {isHero && groupType === "gig" ? "Scouts" : RESULT_GROUP_LABEL[groupType]}
                   </p>
-                  {items.map((r, i) => {
+                  {(isHero && groupType === "creator" && !expandHeroUsers ? items.slice(0, 4) : items).map((r, i) => {
                     const meta = TYPE_META[r.type];
                     return (
                       <button
@@ -935,15 +941,22 @@ export function UnifiedSearchDropdown({
                       </button>
                     );
                   })}
+                  {isHero && groupType === "creator" && items.length > 4 && !expandHeroUsers && <Button variant="ghost" className="w-full justify-start px-4 text-xs text-primary" data-search-result onKeyDown={handleResultKeyDown} onClick={() => setExpandHeroUsers(true)}>Show all {items.length} users <ArrowRight className="ml-2 h-3 w-3" /></Button>}
                 </div>
               );
             })}
 
             {(usersOnly || isHero) && hasMoreUsers && (
-              <Button variant="ghost" className="order-3 w-full shrink-0" disabled={loading || disabled} onClick={() => doSearch(query.trim(), true)}>
+              <Button variant="ghost" className="order-3 w-full shrink-0" data-search-result onKeyDown={handleResultKeyDown} disabled={loading || disabled} onClick={() => { setExpandHeroUsers(true); void doSearch(query.trim(), true); }}>
                 {loading ? <KretopiaSpinner className="h-4 w-4" /> : "Show more users"}
               </Button>
             )}
+            {isHero && !usersOnly && <div className="order-4 px-2 py-3">
+              {!results.some(r => r.type === "gig") && <p className="px-2 pb-2 text-[10px] font-semibold uppercase text-muted-foreground">Scouts</p>}
+              <Button variant="ghost" className="h-auto w-full justify-between gap-3 whitespace-normal rounded-lg px-2 py-2 text-left" data-search-result onKeyDown={handleResultKeyDown} onClick={() => submitQuery(query)}>
+                <span className="min-w-0"><span className="block text-xs text-muted-foreground">Search Scout</span><span className="block break-words font-semibold">{query}</span></span><ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+              </Button>
+            </div>}
             {!usersOnly && !isHero && <PublicWebSearchResults query={query} />}
 
             {/* Error state — distinct from "no results" so a failed search

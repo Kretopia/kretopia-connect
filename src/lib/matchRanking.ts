@@ -67,8 +67,31 @@ export function isPositivelyRealMember(row: { onboarding_completed?: boolean | n
 export interface RankableCandidate {
   user_id: string;
   role?: string | null;
+  location?: string | null;
   updated_at?: string | null;
   score: number;
+}
+
+/** Every third discovery explores a different place or craft, without losing a candidate. */
+export function diversifyWorldwide<T extends { role?: string | null; location?: string | null }>(sorted: T[]): T[] {
+  const pool = [...sorted];
+  const result: T[] = [];
+  const normalize = (value?: string | null) => value?.trim().toLowerCase() ?? "";
+  while (pool.length) {
+    let pick = 0;
+    if (result.length > 0 && result.length % 3 === 2) {
+      const recent = result.slice(-2);
+      const places = new Set(recent.map(p => normalize(p.location)).filter(Boolean));
+      const crafts = new Set(recent.map(p => normalize(p.role)).filter(Boolean));
+      const abroad = pool.findIndex(p => !!normalize(p.location) && !places.has(normalize(p.location)));
+      const differentCraft = pool.findIndex(p => !!normalize(p.role) && !crafts.has(normalize(p.role)));
+      if (abroad >= 0) pick = abroad;
+      else if (differentCraft >= 0) pick = differentCraft;
+    }
+    const candidate = pool.splice(pick, 1)[0];
+    if (candidate) result.push(candidate);
+  }
+  return result;
 }
 
 const byRankThenStable = <T extends RankableCandidate>(a: T, b: T) =>
@@ -115,5 +138,5 @@ export function orderCandidates<T extends RankableCandidate>(
   const liked = opts.likedYouIds ?? new Set<string>();
   const scored = items.map((it) => ({ ...it, score: it.score + recencyBoost(it.updated_at, now) }));
   scored.sort(byRankThenStable);
-  return [...scored.filter((it) => liked.has(it.user_id)), ...diversifyByRole(scored.filter((it) => !liked.has(it.user_id)))];
+  return [...scored.filter((it) => liked.has(it.user_id)), ...diversifyWorldwide(diversifyByRole(scored.filter((it) => !liked.has(it.user_id))))];
 }

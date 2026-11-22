@@ -29,42 +29,35 @@ const draw = (path: string) => render(
 const click = (role: string, name: string) => fireEvent.mouseDown(screen.getByRole(role, { name }), { button: 0, ctrlKey: false });
 
 describe("Match: Browse and Connected each hold their old second tab as a view, not a tab of their own", () => {
-  it("there is no top-level Discover or Interested tab any more", () => {
-    draw("/match");
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Browse", "Directory", "Connected"]);
-    expect(screen.queryByRole("tab", { name: "Discover" })).toBeNull();
-    expect(screen.queryByRole("tab", { name: "Interested" })).toBeNull();
-  });
-
-  it("a bare /match still opens the deck by default, same as before the merge", () => {
+  it("a bare /match still opens the deck by default, preserving the default discovery view", () => {
     draw("/match");
     expect(screen.getByText("the deck")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Deck" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Grid" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Grid" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("Browse's Grid segment shows the grid and writes the URL, without leaving the Browse tab", async () => {
     draw("/match");
-    fireEvent.click(screen.getByRole("button", { name: "Grid" }));
+    click("tab", "Grid");
     expect(await screen.findByText("the grid")).toBeInTheDocument();
     expect(screen.queryByText("the deck")).toBeNull();
-    expect(screen.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Grid" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=browse&view=grid");
   });
 
-  it("the Connected tab opens on accepted connections, with its own segment toggle", async () => {
+  it("the Connected tab opens on accepted connections, without duplicate navigation", async () => {
     draw("/match");
     click("tab", "Connected");
     expect(await screen.findByText("accepted connections")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Connected" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Interested" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "false");
   });
 
   it("Connected's Interested segment shows who is interested, and writes the URL", async () => {
     draw("/match");
     click("tab", "Connected");
     await screen.findByText("accepted connections");
-    fireEvent.click(screen.getByRole("button", { name: "Interested" }));
+    click("tab", "Interested");
     expect(await screen.findByText("people interested in you")).toBeInTheDocument();
     expect(screen.queryByText("accepted connections")).toBeNull();
     expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=connected&view=interested");
@@ -88,8 +81,8 @@ describe("Match: Browse and Connected each hold their old second tab as a view, 
   it("an old link to the Interested tab opens Connected on that same view", async () => {
     draw("/match?tab=interested");
     expect(await screen.findByText("people interested in you")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("button", { name: "Interested" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "true");
   });
 
   it("Directory keeps its own clean URL, with no leftover view param", async () => {
@@ -101,8 +94,8 @@ describe("Match: Browse and Connected each hold their old second tab as a view, 
   });
   it("sent interests remain distinct from accepted connections and incoming interests", async () => {
     draw("/match?tab=connected&view=sent");
-    expect(screen.getByRole("button", { name: "Sent interests" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Connected" })).toHaveAttribute("aria-pressed", "false");
-    expect(screen.getByRole("button", { name: "Interested" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("tab", { name: "Sent interests" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "false");
   });
 });

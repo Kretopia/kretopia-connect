@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SwipeFiltersState, DEFAULT_SWIPE_FILTERS } from '@/components/circle/SwipeFilters';
 import { locationMatchesFilter } from '@/lib/locationGroups';
 import { buildMyMatchContext, computeMatchScore, extractSkillsArray, fetchPastCollaboratorIds, type MatchSignals } from '@/lib/matchScoring';
-import { interestTokens, isPositivelyRealMember, orderCandidates } from '@/lib/matchRanking';
+import { interestTokens, isPositivelyRealMember, orderCandidates, diversifyWorldwide } from '@/lib/matchRanking';
 import { readDiscoveryPages } from '@/lib/discoveryPages';
 
 export interface SwipeProfile {
@@ -310,7 +310,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
           const stable = [...orderedFromCache, ...orderCandidates(newProfiles, { likedYouIds })];
           ordered = [
             ...stable.filter(p => likedYouIds.has(p.user_id)),
-            ...stable.filter(p => !likedYouIds.has(p.user_id)),
+            ...diversifyWorldwide(stable.filter(p => !likedYouIds.has(p.user_id))),
           ];
         } catch {
           ordered = orderCandidates(scored, { likedYouIds });
