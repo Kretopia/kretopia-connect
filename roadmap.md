@@ -1,3 +1,8 @@
+# Kreto binoculars 3D
+- [x] Refine the shared Match / Connected volumetric mascot against the existing binoculars pose: rounded helmet, inset visor, raised gloves, optical barrels, iridescent lenses and chest mark; shared geometry and deduplicated disposal, no generated media or relationship writes.
+- [x] Verify real WebGL rendering in public Match, drag/reset at 1198×697, shared profile callback with explicit control data, and 390×844 framing; 3 geometry tests pass, build OK, no page errors or overflow. Authenticated Connected remains unverified because legacy sessions are unavailable.
+- [ ] Compare with the exact worldwide master: the user reports attaching it, but neither upload mount contains kreto-worldwide.png or a new corresponding file. The procedural model is an approximation, not a verified pixel-perfect recreation; source attachment is required.
+
 # Search and worldwide Match
 - [x] Put Explore Kretopia first, then Roles, Users and Scouts; preserve every real result behind expansion and exact-query Scout navigation.
 - [x] Consolidate Match into one scrolling rail, retain Passport flip and equal decisions, avoid stretching small portraits, rotate four 2048px Kreto poses from a native 4096px master and foreground interactive Kreto 3D.

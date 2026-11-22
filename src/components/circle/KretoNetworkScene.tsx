@@ -8,7 +8,7 @@ import kMark from "@/assets/brand/kretopia-k-mark.png.asset.json";
 
 export interface NetworkPerson { user_id: string; full_name: string; avatar_url: string | null; role: string | null }
 
-/** A real volumetric mascot; lines show accepted links to the viewer, never invented peer-to-peer links. */
+/** Volumetric binoculars Kreto; accepted links only, with no relationship writes. */
 export function KretoNetworkScene({ connections, onProfile }: { connections: NetworkPerson[]; onProfile: (id: string) => void }) {
   const host = useRef<HTMLDivElement>(null);
   const reset = useRef<() => void>(() => {});
@@ -22,21 +22,24 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     catch { setFailed(true); return; }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
     mount.prepend(renderer.domElement);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 60);
     camera.position.set(0, 0.45, 12);
     const css = getComputedStyle(mount);
     const color = (token: string) => new THREE.Color(css.getPropertyValue(token).trim().startsWith("#") ? css.getPropertyValue(token).trim() : `hsl(${css.getPropertyValue(token).trim().replace(/\s+/g, ", ")})`);
-    const suit = new THREE.MeshPhysicalMaterial({ color: color("--qr-paper"), roughness: 0.23, metalness: 0.32, clearcoat: 1 });
-    const black = new THREE.MeshPhysicalMaterial({ color: color("--qr-ink"), roughness: 0.2, metalness: 0.5, clearcoat: 1 });
+    const suit = new THREE.MeshPhysicalMaterial({ color: color("--qr-paper"), roughness: 0.24, metalness: 0.18, clearcoat: 1 });
+    const black = new THREE.MeshPhysicalMaterial({ color: color("--qr-ink"), roughness: 0.23, metalness: 0.35, clearcoat: 1 });
+    const trim = new THREE.MeshPhysicalMaterial({ color: color("--muted-foreground"), roughness: 0.22, metalness: 0.8, clearcoat: 1 });
     const pink = new THREE.MeshStandardMaterial({ color: color("--k-g-3"), emissive: color("--k-g-3"), emissiveIntensity: 1.2, roughness: 0.3 });
     const amber = new THREE.MeshStandardMaterial({ color: color("--k-g-4"), emissive: color("--k-g-4"), emissiveIntensity: 0.7 });
     const violet = new THREE.MeshStandardMaterial({ color: color("--k-g-1"), emissive: color("--k-g-1"), emissiveIntensity: 0.8 });
-    scene.add(new THREE.HemisphereLight(color("--qr-paper"), color("--k-g-1"), 2.8));
-    const key = new THREE.DirectionalLight(color("--qr-paper"), 5); key.position.set(3, 5, 5); scene.add(key);
-    const rim = new THREE.PointLight(color("--k-g-3"), 28); rim.position.set(-3, 1, 2); scene.add(rim);
-    const warm = new THREE.PointLight(color("--k-g-4"), 22); warm.position.set(3, 0, 1); scene.add(warm);
+    scene.add(new THREE.HemisphereLight(color("--qr-paper"), color("--k-g-1"), 2.2));
+    const key = new THREE.DirectionalLight(color("--qr-paper"), 4); key.position.set(3, 5, 5); scene.add(key);
+    const rim = new THREE.PointLight(color("--k-g-3"), 20); rim.position.set(-3, 1, 2); scene.add(rim);
+    const warm = new THREE.PointLight(color("--k-g-4"), 16); warm.position.set(3, 0, 1); scene.add(warm);
     const robot = new THREE.Group(); scene.add(robot);
     // Every ball is the same unit sphere, scaled per use: one geometry shared by all ~18 body parts and up to 8
     // connection markers, instead of allocating (and later disposing) a fresh 40x28 SphereGeometry per mesh.
@@ -44,26 +47,70 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const ball = (parent: THREE.Group, material: THREE.Material, scale: [number, number, number], position: [number, number, number]) => {
       const mesh = new THREE.Mesh(sphereGeometry, material); mesh.scale.set(...scale); mesh.position.set(...position); parent.add(mesh); return mesh;
     };
-    ball(robot, suit, [0.61, 0.73, 0.43], [0, -0.2, 0]);
-    ball(robot, black, [0.28, 0.23, 0.28], [0, 0.48, 0]);
-    const head = new THREE.Group(); head.position.set(0, 1.05, 0); robot.add(head);
-    ball(head, suit, [1.02, 0.82, 0.68], [0, 0, 0]);
-    ball(head, black, [0.88, 0.63, 0.2], [0, -0.02, 0.57]);
+    // Rounded rectangular helmet and inset visor: the original silhouette is not an oval sphere.
+    const shell = (parent: THREE.Group, material: THREE.Material, width: number, height: number, depth: number, radius: number, position: [number, number, number]) => {
+      const x = -width / 2, y = -height / 2;
+      const shape = new THREE.Shape();
+      shape.moveTo(x + radius, y); shape.lineTo(x + width - radius, y);
+      shape.quadraticCurveTo(x + width, y, x + width, y + radius);
+      shape.lineTo(x + width, y + height - radius); shape.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      shape.lineTo(x + radius, y + height); shape.quadraticCurveTo(x, y + height, x, y + height - radius);
+      shape.lineTo(x, y + radius); shape.quadraticCurveTo(x, y, x + radius, y);
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelSegments: 5, steps: 1, bevelSize: 0.075, bevelThickness: 0.075, curveSegments: 16 });
+      geometry.translate(0, 0, -depth / 2); geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material); mesh.position.set(...position); parent.add(mesh); return mesh;
+    };
+    ball(robot, black, [0.53, 0.62, 0.37], [0, -0.23, 0]);
+    ball(robot, suit, [0.57, 0.66, 0.4], [0, -0.15, 0.08]);
+    ball(robot, black, [0.27, 0.14, 0.26], [0, 0.46, 0]);
+    const head = new THREE.Group(); head.position.set(0, 1.08, 0); robot.add(head);
+    shell(head, suit, 1.92, 1.35, 0.76, 0.52, [0, 0, 0]);
+    shell(head, trim, 1.69, 1.13, 0.12, 0.42, [0, -0.02, 0.45]);
+    shell(head, black, 1.6, 1.04, 0.14, 0.4, [0, -0.02, 0.51]);
+    const barrelGeometry = new THREE.CylinderGeometry(1, 1, 1, 48);
+    const ringGeometry = new THREE.TorusGeometry(1, 0.065, 12, 64);
+    const barrel = (parent: THREE.Group, material: THREE.Material, radius: number, length: number, position: [number, number, number]) => {
+      const mesh = new THREE.Mesh(barrelGeometry, material); mesh.rotation.x = Math.PI / 2; mesh.scale.set(radius, length, radius); mesh.position.set(...position); parent.add(mesh); return mesh;
+    };
+    const ring = (parent: THREE.Group, material: THREE.Material, radius: number, position: [number, number, number]) => {
+      const mesh = new THREE.Mesh(ringGeometry, material); mesh.scale.setScalar(radius); mesh.position.set(...position); parent.add(mesh);
+    };
+    const glassCanvas = document.createElement("canvas"); glassCanvas.width = glassCanvas.height = 256;
+    const glassContext = glassCanvas.getContext("2d");
+    if (glassContext) {
+      const gradient = glassContext.createLinearGradient(40, 256, 216, 0);
+      gradient.addColorStop(0, color("--k-g-4").getStyle()); gradient.addColorStop(0.32, color("--k-g-3").getStyle()); gradient.addColorStop(0.64, color("--k-g-1").getStyle()); gradient.addColorStop(1, color("--qr-ink").getStyle());
+      glassContext.fillStyle = gradient; glassContext.fillRect(0, 0, 256, 256);
+    }
+    const glassTexture = new THREE.CanvasTexture(glassCanvas); glassTexture.colorSpace = THREE.SRGBColorSpace;
+    const glass = new THREE.MeshPhysicalMaterial({ map: glassTexture, emissiveMap: glassTexture, emissive: color("--qr-paper"), emissiveIntensity: 0.28, metalness: 0.55, roughness: 0.12, clearcoat: 1 });
+    const binoculars = new THREE.Group(); binoculars.position.set(0, -0.08, 0.9); head.add(binoculars);
+    shell(binoculars, black, 0.55, 0.16, 0.3, 0.06, [0, 0.08, 0]);
     for (const side of [-1, 1]) {
-      ball(head, black, [0.16, 0.4, 0.4], [side * 0.96, -0.02, 0]);
-      ball(head, side < 0 ? violet : amber, [0.075, 0.32, 0.29], [side * 1.07, 0, 0.06]);
-      // Curved happy lenses, not a flat painted face.
-      const points = Array.from({ length: 25 }, (_, i) => new THREE.Vector3(side * 0.36 - 0.18 + i / 24 * 0.36, 0.03 + Math.sin(i / 24 * Math.PI) * 0.14, 0.755));
-      const lens = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, 0.045, 10, false), side < 0 ? violet : pink); head.add(lens);
-      ball(robot, black, [0.22, 0.25, 0.25], [side * 0.62, 0.1, 0]);
-      const arm = new THREE.Group(); arm.position.set(side * 0.66, 0.06, 0); arm.rotation.z = side < 0 ? -0.36 : 0.85; robot.add(arm);
-      ball(arm, suit, [0.2, 0.39, 0.22], [0, -0.28, 0]);
-      ball(arm, black, [0.23, 0.23, 0.25], [0, -0.66, 0.04]);
-      ball(robot, suit, [0.25, 0.4, 0.27], [side * 0.32, -0.94, 0]);
-      ball(robot, black, [0.3, 0.2, 0.4], [side * 0.34, -1.26, 0.12]);
+      const ear = new THREE.Group(); ear.position.set(side * 1.02, 0, 0); ear.rotation.y = side * Math.PI / 2; head.add(ear);
+      barrel(ear, black, 0.37, 0.16, [0, 0, 0]); barrel(ear, side < 0 ? violet : amber, 0.32, 0.05, [0, 0, 0.1]);
+      barrel(ear, black, 0.25, 0.065, [0, 0, 0.14]); ring(ear, side < 0 ? pink : amber, 0.31, [0, 0, 0.145]);
+      const x = side * 0.39;
+      barrel(binoculars, black, 0.33, 0.65, [x, 0, 0]);
+      barrel(binoculars, trim, 0.347, 0.06, [x, 0, 0.33]);
+      barrel(binoculars, black, 0.302, 0.045, [x, 0, 0.367]);
+      ball(binoculars, glass, [0.274, 0.274, 0.065], [x, 0, 0.397]);
+      ring(binoculars, trim, 0.3, [x, 0, 0.407]);
+      ball(binoculars, suit, [0.036, 0.065, 0.014], [x - 0.08, 0.12, 0.46]);
+      // Raised segmented arms, gloves wrapped around the two optical barrels.
+      ball(robot, black, [0.21, 0.23, 0.23], [side * 0.57, 0.16, 0]);
+      const upper = ball(robot, suit, [0.22, 0.32, 0.23], [side * 0.73, 0.13, 0.23]); upper.rotation.z = side * 0.62;
+      ball(robot, black, [0.23, 0.21, 0.24], [side * 0.85, 0.27, 0.43]);
+      const forearm = ball(robot, suit, [0.23, 0.42, 0.23], [side * 0.8, 0.59, 0.64]); forearm.rotation.z = -side * 0.25;
+      ball(robot, black, [0.235, 0.27, 0.25], [side * 0.69, 0.93, 0.85]);
+      for (let finger = 0; finger < 3; finger++) ball(robot, black, [0.07, 0.145, 0.105], [side * (0.55 + finger * 0.075), 1.055, 1.02]);
+      ball(robot, black, [0.21, 0.22, 0.24], [side * 0.31, -0.65, 0]);
+      const leg = ball(robot, suit, [0.26, 0.42, 0.29], [side * 0.4, -0.98, 0.04]); leg.rotation.z = -side * 0.2;
+      ball(robot, black, [0.31, 0.19, 0.39], [side * 0.48, -1.3, 0.15]);
+      shell(robot, black, 0.52, 0.065, 0.61, 0.08, [side * 0.48, -1.43, 0.16]);
     }
     const logoMaterial = new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false });
-    const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.38), logoMaterial); logo.position.set(0, -0.12, 0.44); robot.add(logo);
+    const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.34, 0.38), logoMaterial); logo.position.set(0, -0.05, 0.487); robot.add(logo);
     let disposed = false;
     new THREE.TextureLoader().load(kMark.url, texture => { if (disposed) { texture.dispose(); return; } texture.colorSpace = THREE.SRGBColorSpace; logoMaterial.map = texture; logoMaterial.needsUpdate = true; });
     const graph = new THREE.Group(); scene.add(graph);
@@ -87,13 +134,12 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     });
     const resize = () => { const width = mount.clientWidth; const height = mount.clientHeight; renderer.setSize(width, height); camera.aspect = width / height; camera.position.z = width < 550 ? 14 : 10.5; camera.updateProjectionMatrix(); };
     const observer = new ResizeObserver(resize); observer.observe(mount); resize();
-    let frame = 0; let visible = true; let yaw = -0.1; let targetYaw = -0.1; let pitch = 0; let dragging = false; let previousX = 0;
+    let frame = 0; let visible = true; let yaw = -0.28; let targetYaw = -0.28; let pitch = 0; let dragging = false; let previousX = 0;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     const draw = (now: number) => {
       if (!visible) return;
       yaw += (targetYaw - yaw) * 0.08; robot.rotation.y = yaw; robot.rotation.x = pitch;
       robot.position.y = reduce.matches ? 0 : Math.sin(now * 0.0014) * 0.065;
-      head.rotation.z = reduce.matches ? 0 : Math.sin(now * 0.0008) * 0.025;
       arcs.forEach((line, i) => { const material = line.material as THREE.LineBasicMaterial; material.opacity = reduce.matches ? 0.4 : 0.3 + 0.25 * Math.max(0, Math.sin(now * 0.001 - i * 0.8)); });
       renderer.render(scene, camera);
       positions.forEach((position, i) => { const element = labels.current.get(people[i].user_id); if (!element) return; const screen = position.clone().project(camera); element.style.left = `${(screen.x + 1) * 50}%`; element.style.top = `${(1 - screen.y) * 50}%`; });
@@ -103,11 +149,11 @@ export function KretoNetworkScene({ connections, onProfile }: { connections: Net
     const down = (e: PointerEvent) => { dragging = true; previousX = e.clientX; renderer.domElement.setPointerCapture(e.pointerId); };
     const move = (e: PointerEvent) => { if (dragging) { targetYaw += (e.clientX - previousX) * 0.009; previousX = e.clientX; } };
     const up = () => { dragging = false; };
-    reset.current = () => { targetYaw = -0.1; pitch = 0; };
+    reset.current = () => { targetYaw = -0.28; pitch = 0; };
     renderer.domElement.style.touchAction = "pan-y";
     renderer.domElement.addEventListener("pointerdown", down); renderer.domElement.addEventListener("pointermove", move); renderer.domElement.addEventListener("pointerup", up); renderer.domElement.addEventListener("pointercancel", up);
     frame = requestAnimationFrame(draw);
-    return () => { disposed = true; cancelAnimationFrame(frame); intersection.disconnect(); observer.disconnect(); scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { object.geometry.dispose(); const materials = Array.isArray(object.material) ? object.material : [object.material]; materials.forEach(material => material.dispose()); } }); logoMaterial.map?.dispose(); renderer.dispose(); renderer.domElement.remove(); };
+    return () => { disposed = true; cancelAnimationFrame(frame); intersection.disconnect(); observer.disconnect(); const geometries = new Set<THREE.BufferGeometry>(); const materials = new Set<THREE.Material>(); scene.traverse(object => { if (object instanceof THREE.Mesh || object instanceof THREE.Line) { geometries.add(object.geometry); (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => materials.add(material)); } }); geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose()); glassTexture.dispose(); logoMaterial.map?.dispose(); renderer.dispose(); renderer.domElement.remove(); };
   }, [connections]);
   return <div className="relative h-[390px] w-full min-w-0 overflow-hidden sm:h-[420px]" ref={host} role="region" aria-label="Kreto 3D connection map">
     {failed && <div className="absolute inset-0 flex items-center justify-center"><BrandLogo size="lg" iconOnly /></div>}
