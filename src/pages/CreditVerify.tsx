@@ -305,7 +305,7 @@ export default function CreditVerify() {
               <h1 className="text-xl font-bold">{accepted ? "Credit confirmed" : "Response recorded"}</h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 {accepted
-                  ? `Thank you. ${requesterName} is notified, and your confirmation now shows on their verified record.`
+                  ? `Thank you. ${requesterName} is notified, and your confirmation now shows on that credit.`
                   : "Thanks, your answer has been noted. Nothing is shown on their record for this credit."}
               </p>
             </div>

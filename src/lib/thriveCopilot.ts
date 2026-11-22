@@ -8,6 +8,7 @@
 
 import type { OrchAction } from "@/lib/agentOrchestrator";
 import { supabase } from "@/integrations/supabase/client";
+import { describeKretoNetworkFailure } from "@/lib/importFailure";
 
 export type CopilotSurface =
   | "desk"
@@ -237,7 +238,8 @@ export async function streamCopilot({
       signal,
     });
   } catch (e) {
-    onError(e instanceof Error ? e.message : "Network error");
+    // A request that never got an answer: Safari says "Load failed", which tells nobody what to do.
+    onError(describeKretoNetworkFailure(e));
     return;
   }
 

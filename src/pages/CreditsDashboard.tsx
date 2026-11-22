@@ -101,6 +101,20 @@ export default function CreditsDashboard() {
     if (wantsCoSign && !loading) document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [wantsCoSign, loading]);
 
+  // A notification about one credit ("Lena confirmed your credit on Night Shoot") arrives as /credits?credit=<id> and opens on
+  // that credit. Only the owner's own credits are listed here, so an id that is not theirs simply finds nothing to show.
+  const focusCredit = searchParams.get("credit");
+  useEffect(() => {
+    if (!focusCredit || loading || !/^[0-9a-f-]{36}$/i.test(focusCredit)) return;
+    const el = document.getElementById(`credit-${focusCredit}`);
+    if (!el) {
+      document.getElementById("stamps")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    el.setAttribute("data-focus", "true");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusCredit, loading]);
+
   const record = useMemo(() => {
     const checks = [
       Boolean(profile?.full_name),

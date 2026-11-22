@@ -118,8 +118,8 @@ export function CreditsStampsPanel({ credits, loading, query, index, missingEvid
             const request = leadingCosignRequest(requestsByCredit.get(c.id));
             const canAsk = Boolean(user) && status !== "verified" && request?.state !== "pending" && request?.state !== "accepted";
             return (
-              <li key={c.id}>
-                <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 transition-colors hover:border-primary/40">
+              <li key={c.id} id={`credit-${c.id}`} className="group scroll-mt-24">
+                <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 p-3 transition-colors hover:border-primary/40 group-data-[focus=true]:border-primary group-data-[focus=true]:bg-primary/5">
                   {img ? (
                     <img src={img} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-lg object-cover" />
                   ) : (
