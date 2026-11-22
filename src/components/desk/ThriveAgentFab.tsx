@@ -10,7 +10,7 @@ import {
   synthesizeReply,
   stopPlayback,
 } from "@/lib/thriveVoice";
-import ReactMarkdown from "react-markdown";
+import { kretoReplyText } from "@/lib/kretoReplyText";
 
 /** Kreto answers in Markdown; drop any stray HTML tags so none show as text. */
 const stripHtml = (t: string) =>
@@ -617,7 +617,7 @@ export const ThriveAgentFab = () => {
       } finally {
         abortRef.current = null;
       }
-      return assistantSoFar;
+      return kretoReplyText(assistantSoFar);
     },
     [text, sending, messages, surface, surfaceContext, conversationId, navigate],
   );
@@ -881,7 +881,7 @@ export const ThriveAgentFab = () => {
                 >
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_pre]:my-1 [&_pre]:text-xs">
-                      <ReactMarkdown>{stripHtml(extractActions(m.content).visible) || "…"}</ReactMarkdown>
+                      <p className="whitespace-pre-wrap">{kretoReplyText(stripHtml(extractActions(m.content).visible))}</p>
                     </div>
                   ) : (
                     <div className="whitespace-pre-wrap">{m.content}</div>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ReactMarkdown from "react-markdown";
+import { kretoReplyText } from "@/lib/kretoReplyText";
 import { Send, ChevronRight, Maximize2, Minimize2, CheckCircle2, AlertCircle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { KretoMark } from "@/components/brand/KretoMark";
@@ -395,7 +395,7 @@ export function DesktopCopilotRail() {
               >
                 {m.role === "assistant" ? (
                   <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-1.5 prose-li:my-0">
-                    <ReactMarkdown>{visible || (streaming && i === messages.length - 1 ? "…" : "")}</ReactMarkdown>
+                    <p className="whitespace-pre-wrap">{kretoReplyText(visible)}</p>
                   </div>
                 ) : (
                   <p className="whitespace-pre-wrap">{visible}</p>

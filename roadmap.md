@@ -1,3 +1,8 @@
+# Kreto natural replies
+- [x] Remove raw Markdown handoffs and internal URLs from all three chat presentations, streamed prefixes, reloaded history and spoken replies; preserve raw action extraction and the user's own text. 36 focused tests pass, including integration coverage for history/new replies, and build OK.
+- [x] Replace the authored document-handoff instruction with substantive human prose and honest document outcomes; save the lasting voice preference. No model calls, data changes or publication.
+- [ ] Activate the revised generation instruction on the legacy production endpoint and verify a real signed-in reply: this environment cannot deploy there or access a legacy authenticated session. The preview's presentation filter prevents handoffs but cannot invent substantive content when the old endpoint returns only a link.
+
 # Kreto binoculars 3D
 - [x] Remove separate soles, deepen helmet/torso/limbs and soften material reflections; add frame-independent unrestricted yaw, momentum, limited pitch, keyboard control and subtle upper-body breathing with planted feet. Six tests pass; real public Match drag/reset/full keyboard turn render, reduced-motion screenshots are identical, 390×844 verifier reports ready/no overflow/no page errors. No generated assets. Real-GPU fluidity and exact pixel fidelity remain unverified.
 - [x] Refine the shared Match / Connected volumetric mascot against the existing binoculars pose: rounded helmet, inset visor, raised gloves, optical barrels, iridescent lenses and chest mark; shared geometry and deduplicated disposal, no generated media or relationship writes.

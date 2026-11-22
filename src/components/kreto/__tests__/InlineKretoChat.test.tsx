@@ -72,6 +72,26 @@ beforeEach(() => {
 });
 
 describe("InlineKretoChat", () => {
+  it("filters routing handoffs in live replies and reloaded history without changing the user's message", async () => {
+    const link = "[Open in Executive Producer →](/thrive/generate?intent=pitch_deck&prompt=Pitch%20deck%20for%20Kretopia)";
+    mocks.load.mockResolvedValue([{ role: "assistant", content: "Previous answer.\n" + link }]);
+    mocks.stream.mockImplementation(async ({ onDelta }: StreamArgs) => {
+      onDelta("The answer is grounded in the information provided.\n");
+      for (const char of link) onDelta(char);
+    });
+    render(<InlineKretoChat conversationId="existing" />);
+    await waitFor(() => expect(mocks.load).toHaveBeenCalledWith("existing"));
+    send("Explain this link: " + link);
+    await waitFor(() => expect(mocks.stream).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByRole("log").children).toHaveLength(3));
+    const bubbles = Array.from(screen.getByRole("log").children);
+    expect(bubbles[0].textContent).not.toContain("/thrive/generate");
+    expect(bubbles[1].textContent).toContain(link);
+    expect(bubbles[2].textContent).not.toContain("Open in Executive Producer");
+    expect(bubbles[2].textContent).not.toContain("/thrive/generate");
+    expect(bubbles[2].textContent?.trim().length).toBeGreaterThan(0);
+  });
+
   it("navigates Search for UX Designers without planning, chatting or creating a thread", async () => {
     render(<Harness />);
     send("Search for UX Designers");

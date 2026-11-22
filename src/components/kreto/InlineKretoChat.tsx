@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import { matchKretoRoute } from "@/lib/kretoInstantRoute";
 import { KretoModelPicker, KretoRouteHints } from "@/components/kreto/KretoModelPicker";
 import { cn } from "@/lib/utils";
+import { kretoReplyText } from "@/lib/kretoReplyText";
 import { AgentApprovalCard } from "@/components/agent/AgentApprovalCard";
 import { sendAgentIntent, type OrchAction } from "@/lib/agentOrchestrator";
 import { KretoContextPicker } from "@/components/kreto/KretoContextPicker";
@@ -91,6 +92,7 @@ type BubbleProps = CopilotMessage & {
 const MessageBubble = memo(function MessageBubble({ role, content, attachments, kreto, sources, actions, notes, preparing, onActionResolved }: BubbleProps) {
   const [removed, setRemoved] = useState<string[]>([]);
   const [attachmentError, setAttachmentError] = useState("");
+  const reply = role === "assistant" ? kretoReplyText(content) : content;
   return (
     <div
       className={
@@ -99,11 +101,11 @@ const MessageBubble = memo(function MessageBubble({ role, content, attachments, 
           : "mr-auto max-w-[92%] rounded-2xl rounded-bl-sm border border-border bg-muted/40 px-3.5 py-2 text-sm text-foreground whitespace-pre-wrap break-words"
       }
     >
-      {content || (
+      {reply || (!content && (
         <span className="inline-flex h-5 items-center gap-1.5 text-muted-foreground">
           <KretopiaSpinner className="h-3 w-3" /> {BRAND.agentName} is thinking…
         </span>
-      )}
+      ))}
       {role === "assistant" && content && (kreto || sources) && (
         // The answer first; what answered and what it drew on stay one quiet line, the sources one tap away.
         <div className="mt-1.5 whitespace-normal text-[10px] text-muted-foreground">
