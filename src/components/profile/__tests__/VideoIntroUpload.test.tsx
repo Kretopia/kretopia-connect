@@ -10,6 +10,7 @@ const toast = vi.fn();
 vi.mock("@/hooks/use-toast", () => ({ useToast: () => ({ toast }) }));
 const me = { id: "user-1" };
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: me }) }));
+vi.mock("@/lib/analytics", () => ({ analytics: { introVideoUpload: vi.fn() } }));
 
 const state = vi.hoisted(() => ({
   upload: null as unknown as (path: string, file: File) => Promise<{ error: unknown }>,

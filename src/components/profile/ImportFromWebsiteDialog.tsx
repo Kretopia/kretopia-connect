@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Globe, CheckCircle2, ExternalLink, ImageIcon } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { classifyImportFailure, type ImportFailure } from "@/lib/importFailure";
+import { analytics } from "@/lib/analytics";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,14 +18,18 @@ interface ImportFromWebsiteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onImport: (data: any) => void;
+  /** The manual way forward when an import cannot work (opens Add credit). */
+  onAddManually?: () => void;
 }
 
-export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: ImportFromWebsiteDialogProps) => {
+export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport, onAddManually }: ImportFromWebsiteDialogProps) => {
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
   const [selectedPortfolioIdx, setSelectedPortfolioIdx] = useState<Set<number>>(new Set());
   const { toast } = useToast();
+  // A failed import stays on screen with what it means and the manual path; the link stays in the field.
+  const [failure, setFailure] = useState<ImportFailure | null>(null);
 
   const handleAnalyze = async () => {
     if (!url) {
@@ -32,21 +38,19 @@ export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: Import
     }
 
     setIsLoading(true);
+    setFailure(null);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-profile-url', { body: { url } });
+      const result = await supabase.functions.invoke('analyze-profile-url', { body: { url } });
+      const { data } = result;
 
-      if (data?.isLinkedInBlock) {
-        toast({
-          title: "LinkedIn Restricted",
-          description: data.error || "LinkedIn blocks scraping. Try another URL.",
-          variant: "destructive", duration: 8000,
-        });
+      if (result.error || !data?.success || !data.data) {
+        const f = await classifyImportFailure(result);
+        setFailure(f);
+        analytics.importFailed(f.code);
         return;
       }
 
-      if (error) throw error;
-
-      if (data?.success && data.data) {
+      {
         setExtractedData(data.data);
         // Pre-select all valid portfolio items by default
         const items = data.data.portfolio_items || [];
@@ -55,16 +59,11 @@ export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: Import
           title: "Found " + (items.length || 0) + " items",
           description: items.length > 0 ? "Review and uncheck anything you don't want" : "No portfolio items detected — profile fields still imported",
         });
-      } else {
-        throw new Error(data?.error || "Failed to extract");
       }
-    } catch (error: any) {
-      console.error("Error analyzing URL:", error);
-      toast({
-        title: "Analysis Failed",
-        description: error?.message || "Could not extract from this URL",
-        variant: "destructive", duration: 5000,
-      });
+    } catch (error: unknown) {
+      const f = await classifyImportFailure({ error });
+      setFailure(f);
+      analytics.importFailed(f.code);
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +143,16 @@ export const ImportFromWebsiteDialog = ({ open, onOpenChange, onImport }: Import
             <p className="text-xs text-muted-foreground">
               Works with personal sites, IMDb, Behance, YouTube, Vimeo, SoundCloud, GitHub, and more
             </p>
+            {failure && (
+              <div role="alert" className="flex flex-wrap items-center gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-foreground">
+                <span className="min-w-0 flex-1">{failure.message}</span>
+                {onAddManually && (
+                  <Button type="button" size="sm" variant="outline" className="h-7" onClick={() => { onOpenChange(false); onAddManually(); }}>
+                    Add work manually
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {extractedData && (

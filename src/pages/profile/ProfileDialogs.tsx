@@ -28,6 +28,8 @@ interface ProfileDialogsProps {
   setTempImageUrl: (url: string) => void;
   // Handlers
   onImportData: (data: any) => void;
+  /** When an import cannot work: the manual path (opens Add credit on the Passport). */
+  onAddCreditManually?: () => void;
   onCropComplete: (blob: Blob) => void;
   isUploadingAvatar: boolean;
   onProfileUpdate: () => void;
@@ -53,6 +55,7 @@ export const ProfileDialogs = ({
   tempImageUrl,
   setTempImageUrl,
   onImportData,
+  onAddCreditManually,
   onCropComplete,
   isUploadingAvatar,
   onProfileUpdate,
@@ -70,6 +73,7 @@ export const ProfileDialogs = ({
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
         onImport={onImportData}
+        onAddManually={onAddCreditManually}
       />
 
       <ProfileEditDialog

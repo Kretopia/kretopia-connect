@@ -704,6 +704,7 @@ const ProfileContent = () => {
         tempImageUrl={tempImageUrl}
         setTempImageUrl={setTempImageUrl}
         onImportData={handleImportData}
+        onAddCreditManually={() => setAddCreditOpen(true)}
         onCropComplete={handleCropComplete}
         isUploadingAvatar={isUploadingAvatar}
         onProfileUpdate={fetchData}
@@ -712,7 +713,7 @@ const ProfileContent = () => {
       {/* Add credit: manual entry always available, a found credit fills the details for review, nothing saves until "Add Credit".
           A successful save reloads the owner's data, which refreshes the Passport without a page reload. */}
       {profile?.user_id && (
-        <ICDBCreditForm open={addCreditOpen} onOpenChange={setAddCreditOpen} userId={profile.user_id} onSuccess={fetchData} />
+        <ICDBCreditForm open={addCreditOpen} onOpenChange={setAddCreditOpen} userId={profile.user_id} onSuccess={() => { void import("@/lib/analytics").then(({ analytics }) => analytics.creditSaved("passport")); fetchData(); }} />
       )}
 
       {/* EPK PDF Editor */}

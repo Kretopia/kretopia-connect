@@ -105,6 +105,14 @@ export const EventCategory = {
 
 // Common event tracking functions
 export const analytics = {
+  // Activation loop (non-sensitive: categories and outcomes only, never URLs, file names or content)
+  importFailed: (category: string) =>
+    trackEvent({ eventName: 'import_failed', eventCategory: EventCategory.PROFILE, properties: { category } }),
+  introVideoUpload: (outcome: 'success' | 'failure', category?: string) =>
+    trackEvent({ eventName: 'intro_video_upload', eventCategory: EventCategory.PROFILE, properties: { outcome, ...(category ? { category } : {}) } }),
+  creditSaved: (source: string) =>
+    trackEvent({ eventName: 'credit_saved', eventCategory: EventCategory.PROFILE, properties: { source } }),
+
   // Auth events
   signUp: (method: string = 'email') =>
     trackEvent({

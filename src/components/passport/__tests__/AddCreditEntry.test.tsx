@@ -44,7 +44,7 @@ describe("one obvious Add credit entry point", () => {
     expect(profile).toMatch(/searchParams\.get\("add"\) !== "credit"/);
     expect(profile).toContain("setAddCreditOpen(true)");
     expect(profile).toContain('next.delete("add")');
-    expect(profile).toMatch(/<ICDBCreditForm open=\{addCreditOpen\}[^>]*onSuccess=\{fetchData\}/);
+    expect(profile).toMatch(/<ICDBCreditForm open=\{addCreditOpen\}[^\n]*fetchData\(\)/);
     for (const linker of ["src/pages/CreditsDashboard.tsx", "src/components/credits/CreditsStampsPanel.tsx"]) {
       expect(readFileSync(resolve(root, linker), "utf8")).toContain('"/profile?add=credit"');
     }

@@ -11,6 +11,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { analytics } from "@/lib/analytics";
 import { parseIntroVideo, withIntroTrim } from "@/lib/passport/introVideoTrim";
 import { checkIntroVideoFile, formatMb, INTRO_VIDEO_MAX_BYTES, introUploadError, introUploadStatus, type IntroUploadPhase } from "@/lib/passport/introVideoUpload";
 
@@ -54,7 +55,7 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
   const handleUpload = async (file: File) => {
     if (!user || inFlight.current) return; // one upload at a time: a double tap or a second pick is ignored
     const check = checkIntroVideoFile(file);
-    if (!check.ok) {
+    if ("message" in check) {
       setPending(null);
       setFailure(check.message);
       setPhase("failed");
@@ -76,15 +77,18 @@ export const VideoIntroSection = ({ videoUrl, isOwnProfile, onRefresh }: VideoIn
       if (!(await save(`${data.publicUrl}?v=${Date.now()}`))) {
         setFailure("The video uploaded, but it couldn't be saved to your Passport.");
         setPhase("failed");
+        analytics.introVideoUpload("failure", "save");
         return;
       }
       setPending(null);
       setPlaybackError(false);
       setPhase("saved");
+      analytics.introVideoUpload("success");
       setPlaying(false);
     } catch (err) {
       setFailure(introUploadError(err));
       setPhase("failed");
+      analytics.introVideoUpload("failure", "upload");
     } finally {
       inFlight.current = false;
       setBusy(false);
