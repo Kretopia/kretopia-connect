@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { hasAnalyticsConsent } from "@/lib/cookieConsent";
 
 export interface ProfileViewStats {
   total: number;
@@ -14,6 +15,8 @@ export async function trackProfileView(
   profileUserId: string, 
   source: 'match' | 'public' | 'search' | 'message' | 'circle' = 'public'
 ) {
+  // A visitor's view is counted only with their analytics consent on this device.
+  if (!hasAnalyticsConsent()) return;
   try {
     const { data: { user } } = await supabase.auth.getUser();
     

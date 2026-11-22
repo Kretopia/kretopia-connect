@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   save: vi.fn(),
   claim: vi.fn(),
   toast: vi.fn(),
+  updateUser: vi.fn(),
   auth: { user: { id: "creator-1", email: "", user_metadata: {}, app_metadata: {} } },
 }));
 vi.mock("@/lib/onboardingUsername", async original => ({
@@ -29,6 +30,7 @@ vi.mock("@/integrations/supabase/client", () => ({ supabase: {
   // Intentionally never resolves: optional enrichment cannot block Passport.
   rpc: () => new Promise(() => {}),
   functions: { invoke: async () => ({ data: null, error: null }) },
+  auth: { updateUser: (arg: unknown) => state.updateUser(arg) },
 } }));
 vi.mock("@/lib/analytics", () => ({ analytics: { onboardingStart: vi.fn(), onboardingStep: vi.fn(), onboardingComplete: vi.fn() } }));
 vi.mock("@/components/profile/ProfileEditDialog", () => ({ ROLE_OPTIONS: [{ value: "Creator", label: "Creator" }] }));
@@ -50,13 +52,21 @@ beforeEach(() => {
   localStorage.clear();
   state.save.mockResolvedValue({ user_id: "creator-1", onboarding_completed: true });
   state.claim.mockResolvedValue("fresh_handle");
+  state.updateUser.mockResolvedValue({ error: null });
+  state.auth.user.user_metadata = {};
 });
 
 async function launch() {
   render(<MemoryRouter><Onboarding /></MemoryRouter>);
   await screen.findByDisplayValue("Creator Test");
   fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
-  fireEvent.click(await screen.findByRole("button", { name: /Launch my .*Passport/ }));
+  await clickLaunch();
+}
+
+/** Accepts the Terms and Conditions (required once per version), then launches. */
+async function clickLaunch() {
+  fireEvent.click(await screen.findByRole("checkbox", { name: /Terms and Conditions/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Launch my .*Passport/ }));
 }
 
 describe("creator onboarding completion", () => {
@@ -71,7 +81,7 @@ describe("creator onboarding completion", () => {
     expect(state.navigate).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("Claim your @handle"), { target: { value: "fresh_handle" } });
     fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
-    fireEvent.click(await screen.findByRole("button", { name: /Launch my .*Passport/ }));
+    await clickLaunch();
     await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true, state: { passportWelcome: true } }));
     expect(state.claim).toHaveBeenLastCalledWith("creator-1", "fresh_handle");
   });
@@ -85,5 +95,49 @@ describe("creator onboarding completion", () => {
     await launch();
     await screen.findByText("Profile not saved yet. Try again.");
     expect(state.navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("Terms and Conditions at onboarding", () => {
+  const openLaunchStep = async () => {
+    render(<MemoryRouter><Onboarding /></MemoryRouter>);
+    await screen.findByDisplayValue("Creator Test");
+    fireEvent.click(screen.getByRole("button", { name: "Set up manually — it's quick" }));
+    return screen.findByRole("button", { name: /Launch my .*Passport/ });
+  };
+
+  it("Launch stays disabled until the Terms are accepted, with links that open in a new tab", async () => {
+    const launchButton = await openLaunchStep();
+    expect(launchButton).toBeDisabled();
+    expect(screen.getByRole("link", { name: "Terms and Conditions" })).toHaveAttribute("href", "/terms");
+    expect(screen.getByRole("link", { name: "Terms and Conditions" })).toHaveAttribute("target", "_blank");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Terms and Conditions/ }));
+    expect(launchButton).toBeEnabled();
+  });
+
+  it("records the accepted version on the account before saving the Passport", async () => {
+    await openLaunchStep();
+    await clickLaunch();
+    await waitFor(() => expect(state.save).toHaveBeenCalled());
+    expect(state.updateUser).toHaveBeenCalledWith({ data: { terms_version: "2026-10-07", terms_accepted_at: expect.any(String) } });
+    expect(state.updateUser.mock.invocationCallOrder[0]).toBeLessThan(state.save.mock.invocationCallOrder[0]);
+  });
+
+  it("if the acceptance cannot be recorded, nothing is saved and the person stays in onboarding", async () => {
+    state.updateUser.mockResolvedValue({ error: { message: "network" } });
+    await openLaunchStep();
+    await clickLaunch();
+    await waitFor(() => expect(state.toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Couldn't record your acceptance" })));
+    expect(state.save).not.toHaveBeenCalled();
+    expect(state.navigate).not.toHaveBeenCalled();
+  });
+
+  it("someone who already accepted this version is not asked again", async () => {
+    state.auth.user.user_metadata = { terms_version: "2026-10-07" };
+    const launchButton = await openLaunchStep();
+    expect(screen.queryByRole("checkbox", { name: /Terms and Conditions/ })).not.toBeInTheDocument();
+    fireEvent.click(launchButton);
+    await waitFor(() => expect(state.save).toHaveBeenCalled());
+    expect(state.updateUser).not.toHaveBeenCalled();
   });
 });

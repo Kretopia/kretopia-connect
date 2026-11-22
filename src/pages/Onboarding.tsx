@@ -16,6 +16,8 @@ import { ToastAction } from "@/components/ui/toast";
 import { Camera, Upload, CheckCircle2, ArrowRight, Mail, X, Sparkles, Search, Globe, Link2, Edit3, AlertCircle, IdCard } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { hasAcceptedCurrentTerms, recordTermsAcceptance } from "@/lib/termsAcceptance";
 import { SEO } from "@/components/SEO";
 import { ImageCropDialog } from "@/components/ImageCropDialog";
 import { FirstStampReveal } from "@/components/onboarding/FirstStampReveal";
@@ -47,6 +49,9 @@ export default function Onboarding() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+  // Kretopia's Terms and Conditions: accepted once per version, recorded on the account before the Passport launches.
+  const termsAlreadyAccepted = hasAcceptedCurrentTerms(user);
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const [phase, setPhase] = useState<OnboardingPhase>("discover");
   const [loading, setLoading] = useState(false);
@@ -536,9 +541,25 @@ export default function Onboarding() {
       setRole("Creator");
     }
 
+    if (!termsAlreadyAccepted && !termsChecked) {
+      toast({ title: "Please accept the Terms and Conditions to continue", variant: "destructive" });
+      return;
+    }
+
     setLoading(true);
     setSaveStatus("saving");
     try {
+      // The acceptance is recorded first: without it nothing is launched.
+      if (!termsAlreadyAccepted) {
+        const termsError = await recordTermsAcceptance();
+        if (termsError) {
+          toast({ title: "Couldn't record your acceptance", description: "Nothing was saved. Try again.", variant: "destructive" });
+          setSaveStatus("error");
+          setLoading(false);
+          return;
+        }
+      }
+
       // Step 4: user submitted profile save
       try {
         const { analytics } = await import("@/lib/analytics");
@@ -1231,8 +1252,21 @@ export default function Onboarding() {
                   </p>
                 </div>
 
+                {/* Terms and Conditions: required once per version, links open in a new tab so the draft is kept. */}
+                {!termsAlreadyAccepted && (
+                  <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-3">
+                    <Checkbox id="accept-terms" checked={termsChecked} onCheckedChange={(v) => setTermsChecked(v === true)} className="mt-0.5" />
+                    <Label htmlFor="accept-terms" className="text-xs font-normal leading-relaxed text-muted-foreground">
+                      I agree to Kretopia's{" "}
+                      <a href="/terms" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline underline-offset-2">Terms and Conditions</a>
+                      {" "}and have read the{" "}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline underline-offset-2">Privacy Policy</a>.
+                    </Label>
+                  </div>
+                )}
+
                 {/* Launch profile (Step 3) */}
-                <Button onClick={handleSaveProfile} disabled={loading} className="w-full h-12 text-base gap-2" size="lg">
+                <Button onClick={handleSaveProfile} disabled={loading || (!termsAlreadyAccepted && !termsChecked)} className="w-full h-12 text-base gap-2" size="lg">
                   {loading ? (
                     <><KretopiaSpinner className="h-5 w-5" /> Launching your {BRAND.passport}...</>
                   ) : (
