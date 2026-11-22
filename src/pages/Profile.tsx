@@ -51,6 +51,7 @@ import { EPKPdfEditor } from "@/components/epk/EPKPdfEditor";
 import { PassportOriginalEPK } from "@/components/epk/PassportOriginalEPK";
 import { PassportShareSheet } from "@/components/passport/PassportShareSheet";
 import { PassportOverview } from "@/components/passport/PassportOverview";
+import { ICDBCreditForm } from "@/components/profile/ICDBCreditForm";
 import { PassportCollaborationCta } from "@/components/passport/PassportCollaborationCta";
 import { KretoPassportBuilder } from "@/components/passport/KretoPassportBuilder";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -130,7 +131,17 @@ const ProfileContent = () => {
   // Read once on mount: ClaimedProfileGlow also reads ?claimed=true and strips
   // it shortly after, but every component reading the un-stripped param on its
   // own first render still sees "true" regardless of strip order.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // One Add credit entry point on the owner's Passport. `/profile?add=credit` (from the record page and its empty states)
+  // opens it, and the parameter is dropped at once so a reload or Back does not reopen it, and no page bounces to another.
+  const [addCreditOpen, setAddCreditOpen] = useState(false);
+  useEffect(() => {
+    if (searchParams.get("add") !== "credit") return;
+    setAddCreditOpen(true);
+    const next = new URLSearchParams(searchParams);
+    next.delete("add");
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
   useRestoreReturnScroll();
   const [justClaimed] = useState(() => searchParams.get("claimed") === "true");
   const [isQRDialogOpen, setIsQRDialogOpen] = useState(false);
@@ -538,6 +549,7 @@ const ProfileContent = () => {
               cosigns={cosigns}
               standing={standing}
               onReviewCredits={() => navigate('/credits')}
+              onAddCredit={() => setAddCreditOpen(true)}
             />
           </div>
           <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
@@ -696,6 +708,12 @@ const ProfileContent = () => {
         isUploadingAvatar={isUploadingAvatar}
         onProfileUpdate={fetchData}
       />
+
+      {/* Add credit: manual entry always available, a found credit fills the details for review, nothing saves until "Add Credit".
+          A successful save reloads the owner's data, which refreshes the Passport without a page reload. */}
+      {profile?.user_id && (
+        <ICDBCreditForm open={addCreditOpen} onOpenChange={setAddCreditOpen} userId={profile.user_id} onSuccess={fetchData} />
+      )}
 
       {/* EPK PDF Editor */}
       {profile && (

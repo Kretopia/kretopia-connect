@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Fingerprint, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Fingerprint, Plus, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SurfaceProactiveCards } from "@/components/agent/SurfaceProactiveCards";
 import { analytics } from "@/lib/analytics";
@@ -20,11 +20,13 @@ interface PassportOverviewProps {
   cosigns: number;
   standing: Standing;
   onReviewCredits: () => void;
+  /** The owner's one obvious way to add a credit (opens the credit form in place). */
+  onAddCredit?: () => void;
   embedded?: boolean;
 }
 
 /** One compact, data-driven surface for next steps, trust and the full record. */
-export function PassportOverview({ userId, credits, verified, cosigns, standing, onReviewCredits, embedded = false }: PassportOverviewProps) {
+export function PassportOverview({ userId, credits, verified, cosigns, standing, onReviewCredits, onAddCredit, embedded = false }: PassportOverviewProps) {
   const needsCosign = credits.filter((credit) => (credit.endorsement_count || 0) === 0 && credit.verification_status !== "verified").length;
 
   return (
@@ -37,9 +39,16 @@ export function PassportOverview({ userId, credits, verified, cosigns, standing,
             <p className="text-[11px] text-muted-foreground">Your next move and your creative record</p>
           </div>
         </div>
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
-          <Link to="/credits">Your record <ArrowRight className="h-3.5 w-3.5" /></Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onAddCredit && (
+            <Button size="sm" className="gap-1.5" onClick={onAddCredit}>
+              <Plus className="h-3.5 w-3.5" aria-hidden /> Add credit
+            </Button>
+          )}
+          <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Link to="/credits">Your record <ArrowRight className="h-3.5 w-3.5" /></Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-3 text-center">
