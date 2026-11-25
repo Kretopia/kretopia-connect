@@ -107,3 +107,17 @@ Gaps found, not changed:
 - Verified: 4 tests on the real handler, stageTicket wiring updated; edge suite and circle/pages suites pass except 3 page
   tests that fail on main too (EventPage, EventsCards, noOrphanPages); tsc; lint at baseline.
 - Not covered: a paid order refused for a private Stage stays `pending` (refund by hand).
+
+## Frontend follow-ups, while kretopia-app is blocked (2026-11-25, branch `claude/frontend-followups-20261125`)
+- main's test suite back to green: 22 failing tests were tests that missed deliberate changes (event times in the event's zone,
+  /search redirect, event ticket fulfilment moved to the webhook, Scout at /scout, legal numbering, "Interested", signed-out
+  Discover). Full suite: 541 files / 5719 tests pass. Removed the retired SearchResults page and its only component.
+- Footer "Cookie settings" link: **not done**. The shared footer is the Landing page's own (EditorialFooter), and landing pages
+  are preserved; needs an explicit decision. The cookie choice can already be reopened from the Privacy page.
+- **Production findings for kretopia-app (backend, blocked on credits):**
+  1. Paid Stage tickets are not seated (see above); fix = the four files after #383.
+  2. Production `verify-event-ticket` seats paid event buyers with jam_participants status "rsvp", which the repository records
+     as rejected by `jam_participants_status_check` (unchecked error), so paid buyers likely never join the guest list. The
+     repository uses "going". Not verified against production data.
+  3. Same drift risk as Stage tickets: the repository's `verify-event-ticket` is read-only and relies on a webhook branch
+     production does not have. Never paste it alone into kretopia-app.
