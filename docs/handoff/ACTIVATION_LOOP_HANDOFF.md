@@ -80,3 +80,15 @@ Gaps found, not changed:
   `_shared/stageRegistrationEmail.ts`; in production's own `rsvp-curated-stage` (it differs from the repository's), add
   `title, starts_at, ends_at, host_user_id` to the stage select, the previous-status read before the upsert and the send block after
   it, exactly as in this branch. Deploy `rsvp-curated-stage` and `send-transactional-email` (which bundles the registry).
+
+## Paid Stage ticket confirmation email (2026-11-25, branch `claude/stage-ticket-email-20261125`)
+- The same template in a ticket form: "Your ticket is confirmed", the amount Stripe reported ("12.00 EUR"), the calendar link,
+  no "free up your spot" and nothing about refunds. Idempotency key `stage-ticket:<stage>:<user>`.
+- Sent once, when the seat is new: a retried webhook or a reloaded return page finds the seat and sends nothing. Best effort.
+- Repository: `finalizeStageTicket` (Stripe webhook) sends it via `sendStageTicketEmail` in `_shared/stageRegistrationEmail.ts`.
+- **Production differs:** kretopia-app seats paid buyers in `verify-stage-ticket` (no webhook fulfilment, and no private-Stage
+  entry check there, unlike the repository). The production copy to paste adds only the previous-seat read, the seat-error check
+  and the email call. Prepared and tested outside the repository; deploy needs that file plus the updated helper and template,
+  then `verify-stage-ticket`, `send-transactional-email` and `preview-transactional-email`.
+- Verified: 6 webhook tests, 1 template test, 2 tests against the production copy; edge suite 47 files pass; tsc; lint at baseline.
+- Not tested: real Stripe payment, real delivery.

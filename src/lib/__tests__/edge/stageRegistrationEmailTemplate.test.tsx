@@ -1,5 +1,6 @@
 // Renders the Stage registration email with stand-ins for the react-email components (vitest.config.ts aliases): a spot says it is saved and offers the
-// calendar and "free up your spot"; the waitlist says nothing is reserved and offers neither, so the email never promises a place.
+// calendar and "free up your spot"; the waitlist says nothing is reserved and offers neither, so the email never promises a place; a paid
+// ticket says it is paid, with the amount, and offers no way to give the spot up.
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
@@ -26,6 +27,18 @@ describe("Stage registration email", () => {
     expect(html).not.toContain("is saved");
     expect(html).not.toContain("Google Calendar");
     expect(html).not.toContain("Free up your spot");
+  });
+
+  it("a paid ticket: says it is paid and shows the amount; no refund promise, no 'free up your spot'", async () => {
+    const t = await load();
+    const html = renderToStaticMarkup(<t.component {...data} status="rsvp" ticket paidAmount="12.00 EUR" />);
+    expect(t.subject({ ...data, status: "rsvp", ticket: true })).toBe("Your ticket for Night Shoot Showcase");
+    expect(html).toContain("Your ticket is confirmed");
+    expect(html).toContain("is paid and your spot is saved");
+    expect(html).toContain("12.00 EUR");
+    expect(html).toContain("Add it to Google Calendar");
+    expect(html).not.toContain("Free up your spot");
+    expect(html.toLowerCase()).not.toContain("refund");
   });
 
   it("is registered under the name rsvp-curated-stage sends", async () => {

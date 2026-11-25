@@ -13,9 +13,16 @@ interface Props {
   hostName?: string | null
   stageUrl?: string
   googleCalendarUrl?: string
+  /** A paid ticket: the email says it is paid. No "free up your spot" link: cancelling does not refund it. */
+  ticket?: boolean
+  /** "12.00 EUR", as Stripe reported the payment. */
+  paidAmount?: string
 }
 
-/** Sent once when someone registers for a scheduled Stage (or joins its waitlist). Says what is true: no spot is promised to the waitlist. */
+/**
+ * Sent once when someone registers for a scheduled Stage (or joins its waitlist), and once when a paid ticket seats them.
+ * Says what is true: no spot is promised to the waitlist, and nothing is said about refunds.
+ */
 const StageRegistrationConfirmation = ({
   attendeeName,
   stageTitle = 'the Stage',
@@ -24,14 +31,16 @@ const StageRegistrationConfirmation = ({
   hostName,
   stageUrl = 'https://www.kretopia.com/circle',
   googleCalendarUrl,
+  ticket = false,
+  paidAmount,
 }: Props) => {
   const link = { color: K.white, textDecoration: 'underline' } as const
-  const waitlist = status === 'waitlist'
+  const waitlist = !ticket && status === 'waitlist'
   return (
     <KretopiaEmail
-      preview={waitlist ? `You're on the waitlist for ${stageTitle}` : `You're in for ${stageTitle} · ${startsWhen}`}
-      eyebrow="Stage"
-      title={waitlist ? "You're on the waitlist" : "You're in"}
+      preview={waitlist ? `You're on the waitlist for ${stageTitle}` : `${ticket ? 'Ticket confirmed' : "You're in"} for ${stageTitle} · ${startsWhen}`}
+      eyebrow={ticket ? 'Stage ticket' : 'Stage'}
+      title={waitlist ? "You're on the waitlist" : ticket ? 'Your ticket is confirmed' : "You're in"}
       actions={
         <>
           <Cta href={stageUrl}>Open the Stage</Cta>
@@ -46,8 +55,10 @@ const StageRegistrationConfirmation = ({
         <>
           {waitlist
             ? "We'll let you know in Kretopia if a spot opens. "
-            : "Kretopia reminds you 24 h, 1 h and 15 min before. Can't make it? "}
-          {!waitlist && <Link href={stageUrl} style={link}>Free up your spot</Link>}
+            : ticket
+              ? 'Kretopia reminds you 24 h, 1 h and 15 min before.'
+              : "Kretopia reminds you 24 h, 1 h and 15 min before. Can't make it? "}
+          {!waitlist && !ticket && <Link href={stageUrl} style={link}>Free up your spot</Link>}
         </>
       }
     >
@@ -55,10 +66,13 @@ const StageRegistrationConfirmation = ({
         {attendeeName ? `${attendeeName}, ` : ''}
         {waitlist
           ? <>the Stage <B>{stageTitle}</B> is full right now, so you're on its waitlist. Nothing is reserved yet.</>
-          : <>your spot at <B>{stageTitle}</B> is saved.</>}
+          : ticket
+            ? <>your ticket for <B>{stageTitle}</B> is paid and your spot is saved.</>
+            : <>your spot at <B>{stageTitle}</B> is saved.</>}
       </P>
       <Panel>
         <Fact label="When">{startsWhen}</Fact>
+        {ticket && paidAmount && <Fact label="Paid">{paidAmount}</Fact>}
         {hostName && <Fact label="Host">{hostName}</Fact>}
         <Fact label="Where">Online, on Kretopia. The doors open when the host goes live.</Fact>
       </Panel>
@@ -69,9 +83,11 @@ const StageRegistrationConfirmation = ({
 export const template = {
   component: StageRegistrationConfirmation,
   subject: (data: Record<string, unknown>) =>
-    data.status === 'waitlist'
-      ? `You're on the waitlist for ${data.stageTitle || 'the Stage'}`
-      : `You're in for ${data.stageTitle || 'the Stage'}`,
+    data.ticket
+      ? `Your ticket for ${data.stageTitle || 'the Stage'}`
+      : data.status === 'waitlist'
+        ? `You're on the waitlist for ${data.stageTitle || 'the Stage'}`
+        : `You're in for ${data.stageTitle || 'the Stage'}`,
   displayName: 'Stage registration confirmed',
   previewData: {
     attendeeName: 'Dee',
