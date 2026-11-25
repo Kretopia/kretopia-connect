@@ -273,6 +273,10 @@ export function SoundStageRoom({
     }
   }, [stageId, isHost, openingDoors, toast]);
 
+  // Set when Daily ended the call by itself (ejected, room expired, connection not recoverable). Closing the view then must
+  // not end the stage for everyone: a host whose Wi-Fi dropped re-enters from the stage list, and the stage keeps running.
+  const connectionLostRef = useRef(false);
+
   const cleanupCall = useCallback((endStage: boolean) => {
     const call = callRef.current;
     callRef.current = null;
@@ -460,7 +464,9 @@ export function SoundStageRoom({
   // cleanup, or the freshly joined room immediately leaves/destroys itself.
   useEffect(() => {
     if (!open) {
-      cleanupCall(true);
+      const lost = connectionLostRef.current;
+      connectionLostRef.current = false;
+      cleanupCall(!lost);
       return;
     }
     return () => cleanupCall(false);
@@ -514,6 +520,24 @@ export function SoundStageRoom({
           }
         }
         callRef.current = call;
+
+        // The call can end without anyone choosing it: the person is ejected, the room's time runs out, or the connection
+        // cannot be recovered. Without this the screen stays on a dead room with no word. Our own teardown detaches
+        // callRef first, so a deliberate leave never reaches here.
+        const onConnectionEnded = () => {
+          if (callRef.current !== call || connectionLostRef.current) return;
+          connectionLostRef.current = true;
+          toast({
+            title: "You were disconnected",
+            description: isHostRef.current
+              ? "Your stage is still open. Re-enter it from the stage list."
+              : "The stage may still be live. Re-enter it from the stage list.",
+            variant: "destructive",
+          });
+          onOpenChange(false);
+        };
+        call.on("left-meeting", onConnectionEnded);
+        call.on("error", onConnectionEnded);
 
         // Daily fires participant-joined/updated/left and track-started/
         // stopped independently per track per participant -- a group join
