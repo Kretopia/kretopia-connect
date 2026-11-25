@@ -61,5 +61,22 @@ Not tested / needs a real rehearsal before 17 December:
   echo cancellation, no music mode). Likely causes to check live: speakers without headphones, one person in two tabs/devices.
 - Capacity (audience Stages are capped at 200 by `create-sound-stage`), devices, mobile audio, reconnect behaviour.
 Gaps found, not changed:
-- Stage registration (`rsvp-curated-stage`) sends no confirmation; reminders (`stage-reminders`: 24 h, 1 h, 15 min) are in-app
+- Stage registration (`rsvp-curated-stage`) sent no confirmation (added below); reminders (`stage-reminders`: 24 h, 1 h, 15 min) are in-app
   only, linking to `/circle/stage/<id>`. Whether its 15-minute schedule runs in production is not visible in the repo.
+
+## Stage registration confirmation email (2026-11-25, branch `claude/stage-rsvp-email-20261125`, local, not pushed)
+- `rsvp-curated-stage` now queues `curated-stage-registration-confirmation` through `send-transactional-email` (service role;
+  that function resolves the address, checks suppressions and queues). Helper: `_shared/stageRegistrationEmail.ts`.
+- Once per state: new spot, new waitlist place, waitlist -> spot. A repeat RSVP sends nothing; idempotency key
+  `stage-registration:<stage>:<user>:<status>`. Best effort: a failed send never fails the registration.
+- Waitlist copy says nothing is reserved (no calendar link, no "free up your spot"). Time is stated in UTC; the Stage page shows
+  the reader's zone. A private Stage's link keeps the invite the person used.
+- Also fixed: a repeat RSVP on a full Stage moved someone who held a spot to the waitlist.
+- Verified: 12 tests (handler with mocked backend and fetch, rendered template); edge suite 46 files pass; tsc pass; lint at
+  baseline. Test-only aliases in `vitest.config.ts` render templates (React + a react-email stand-in).
+- **Not tested:** real delivery, the Deno type check (no Deno here), email-client rendering.
+- **Not covered:** paid tickets (`verify-stage-ticket`); reminders stay in-app.
+- **Production (kretopia-app), after approval:** add the template file, its `registry.ts` line and
+  `_shared/stageRegistrationEmail.ts`; in production's own `rsvp-curated-stage` (it differs from the repository's), add
+  `title, starts_at, ends_at, host_user_id` to the stage select, the previous-status read before the upsert and the send block after
+  it, exactly as in this branch. Deploy `rsvp-curated-stage` and `send-transactional-email` (which bundles the registry).

@@ -42,6 +42,9 @@ export default defineConfig({
       { find: /^npm:zod@[^/]+$/, replacement: path.resolve(__dirname, "./node_modules/zod/index.js") },
       // PDF parsing, imported lazily by thrive-ai-chat for attachments: never reached by the handler tests.
       { find: /^npm:pdfjs-dist@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/pdfjsStub.ts") },
+      // Email templates: the installed React renders them; react-email's components are stood in for by plain elements.
+      { find: /^npm:react@18[^/]*$/, replacement: path.resolve(__dirname, "./node_modules/react/index.js") },
+      { find: /^npm:@react-email\/components@.*$/, replacement: path.resolve(__dirname, "./src/lib/__tests__/edge/reactEmailStub.tsx") },
     ],
   },
 });
