@@ -50,6 +50,7 @@ import { publicPassportPath } from "@/lib/passport/passportNav";
 import { addToKretopiaCalendar, fetchCalendarEntries, removeFromKretopiaCalendar } from "@/lib/eventCalendar";
 import { emptySections, fetchEventSections, viewSection, type EventSectionKey, type FetchedSections } from "@/lib/eventSections";
 import { APP_URL } from "@/lib/constants";
+import { ensurePaidBuyerOnGuestList } from "@/lib/paidTicketGuestList";
 
 const EventPage = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -123,7 +124,7 @@ const EventPage = () => {
     const sessionId = params.get("session_id");
     const orderId = params.get("order");
     const verificationId = sessionId || orderId;
-    if (ticketStatus === "success" && verificationId && verifiedTicketRef.current !== verificationId) {
+    if (ticketStatus === "success" && verificationId && !authLoading && verifiedTicketRef.current !== verificationId) {
       verifiedTicketRef.current = verificationId;
       (async () => {
         try {
@@ -131,7 +132,13 @@ const EventPage = () => {
             body: { sessionId, orderId },
           });
           if (data?.status === "paid") {
-            setRsvpNotice({ tone: "success", text: "Ticket confirmed. You're on the guest list." });
+            // The backend may not have added the buyer (see paidTicketGuestList.ts): make sure they are on the list.
+            const seat = user ? await ensurePaidBuyerOnGuestList(supabase, eventId as string, user.id) : "failed";
+            setRsvpNotice(seat === "waitlisted"
+              ? { tone: "info", text: "Payment received. The event is full, so you're on the waitlist; the host can let you in." }
+              : seat === "failed"
+                ? { tone: "info", text: "Payment received. We couldn't add you to the guest list yet; please refresh in a moment." }
+                : { tone: "success", text: "Ticket confirmed. You're on the guest list." });
             fetchEvent();
           } else {
             setRsvpNotice({ tone: "info", text: "Processing your payment. We'll confirm shortly." });
@@ -147,7 +154,7 @@ const EventPage = () => {
       setRsvpNotice({ tone: "error", text: "Checkout cancelled." });
       window.history.replaceState({}, "", `/event/${eventId}`);
     }
-  }, [eventId]);
+  }, [eventId, authLoading, user]);
 
   // A guest lands here from the RSVP form with ?rsvp=confirmed: that is the same one message, not a banner of its own. The message is
   // kept in the page and the address is cleaned at once, so the guest's name, email and pass token are not left in the address bar to be
