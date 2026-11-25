@@ -44,3 +44,22 @@ mapping, eligibility, 100 vs 500, lifetime terms undecided — nothing built).
 
 ## Next action
 Review and push this branch as a draft PR; publish; apply A1; then add push for `credit_cosigned` behind a flag.
+
+## SoundStages readiness (2026-11-25, branch `claude/soundstage-readiness-20261125`, local, not pushed)
+Fixed (commit `5b88834fd`):
+- False "This Stage has ended": `LiveCallsPanel` treated `is_live = false` as ended, but `create-sound-stage` creates backstage
+  Stages with `is_live = false`. Ended now means `ended_at` set; otherwise "This Stage hasn't opened yet" (`src/lib/stageLinkState.ts`).
+- Shared `?join=` links wait for the session, and a signed-out visitor goes to `/auth?redirect=/circle?join=<id>` (it did nothing).
+- Curated Stage: countdown at zero said "Doors are open" while still scheduled; now "Waiting for the host to open the doors"
+  (countdown expiry is not the session starting). Header "Starts 5 minutes ago" is now "Waiting for the host". Start time shows the
+  viewer's time zone. The page waits for auth before loading; a signed-out visitor to a private Stage gets Sign in (link kept).
+Verified: 8 new tests (`StageLinkStates.test.tsx`); Stages, stagesWiring, LiveCallsPanel suites pass; tsc pass; lint at baseline.
+`DiscoverPage.test.tsx` fails on main too (3 with main's code, 2 with this change): pre-existing.
+
+Not tested / needs a real rehearsal before 17 December:
+- Echo: no duplicate playback found in code (video tiles carry only video; one `<audio>` per remote session; Daily's default
+  echo cancellation, no music mode). Likely causes to check live: speakers without headphones, one person in two tabs/devices.
+- Capacity (audience Stages are capped at 200 by `create-sound-stage`), devices, mobile audio, reconnect behaviour.
+Gaps found, not changed:
+- Stage registration (`rsvp-curated-stage`) sends no confirmation; reminders (`stage-reminders`: 24 h, 1 h, 15 min) are in-app
+  only, linking to `/circle/stage/<id>`. Whether its 15-minute schedule runs in production is not visible in the repo.
