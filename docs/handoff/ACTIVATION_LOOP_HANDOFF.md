@@ -92,3 +92,18 @@ Gaps found, not changed:
   then `verify-stage-ticket`, `send-transactional-email` and `preview-transactional-email`.
 - Verified: 6 webhook tests, 1 template test, 2 tests against the production copy; edge suite 47 files pass; tsc; lint at baseline.
 - Not tested: real Stripe payment, real delivery.
+
+## Paid Stage tickets: seating in production (2026-11-25, branch `claude/stage-ticket-seat-20261125`)
+- **Incident:** kretopia-app received the repository's read-only `verify-stage-ticket` (about 03:09 UTC). Production's
+  `stripe-marketplace-webhook` has no Stage ticket branch, so a paid ticket is charged but never seated. Not fixed in
+  production yet: Lovable credits ran out, and Claude has no write path to kretopia-app.
+- **Immediate fix (3 files, prepared, sent to the user):** production's previous `verify-stage-ticket` plus the email, and the
+  updated helper and template.
+- **Lasting fix (this branch):** the repository's `verify-stage-ticket` seats an unseated paid buyer itself through
+  `finalizeStageTicket` (the webhook's fulfilment: entry rule, paid order, seat, one email). Safe to repeat; nothing is trusted
+  from the caller (the session is read from Stripe). A private Stage without an invitation answers `reason: "invite_required"` and
+  the page says so. After merge, production needs `verify-stage-ticket`, `_shared/stageCircleActivation.ts` (new there), and
+  the updated helper and template.
+- Verified: 4 tests on the real handler, stageTicket wiring updated; edge suite and circle/pages suites pass except 3 page
+  tests that fail on main too (EventPage, EventsCards, noOrphanPages); tsc; lint at baseline.
+- Not covered: a paid order refused for a private Stage stays `pending` (refund by hand).

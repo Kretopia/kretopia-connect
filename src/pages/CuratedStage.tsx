@@ -136,7 +136,9 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
       supabase.functions.invoke("verify-stage-ticket", { body: { session_id: sessionId, stage_id: id } })
         .then(({ data, error }) => {
           if (error) throw error;
-          if (data?.paid && !data?.pending) {
+          if (data?.reason === "invite_required") {
+            toast({ title: "Payment received, but this Stage is invitation-only", description: "Ask the host for an invitation. Your seat isn't confirmed yet.", variant: "destructive" });
+          } else if (data?.paid && !data?.pending) {
             setMyRsvp({ status: "rsvp" });
             toast({ title: "Ticket confirmed", description: "You're in. We'll remind you before it starts." });
           } else if (data?.pending) {
