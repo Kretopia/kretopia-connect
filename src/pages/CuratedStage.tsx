@@ -31,10 +31,17 @@ type Stage = {
   description?: string | null;
 };
 
+/** The viewer's own time zone, short (e.g. "CET", "GMT+1"), so a start time is never read in the wrong zone. */
+function viewerTimeZone(): string {
+  try {
+    return new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(new Date()).find((p) => p.type === "timeZoneName")?.value ?? "";
+  } catch { return ""; }
+}
+
 const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
   const { id } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -60,7 +67,8 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
   const myName = useMemo(() => user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Guest", [user]);
 
   useEffect(() => {
-    if (!id) return;
+    // Wait for the session: loading as a visitor first made private Stages flash "not found" for their own guests.
+    if (!id || authLoading) return;
     let mounted = true;
     const load = async () => {
       let { data: s } = await supabase.from("curated_stages").select("*").eq("id", id).maybeSingle();
@@ -100,7 +108,7 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
       .subscribe();
 
     return () => { mounted = false; supabase.removeChannel(channel); };
-  }, [id, user]);
+  }, [id, user, authLoading]);
 
   // Listen for host promoting a raised hand → swap in speaker token
   useEffect(() => {
@@ -226,8 +234,17 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
     if (!open) setBackstageMode(false);
   };
 
-  if (loading) return <div className="container max-w-3xl mx-auto p-6 space-y-4"><Skeleton className="h-48 w-full rounded-2xl" /><Skeleton className="h-8 w-2/3" /></div>;
-  if (!stage) return <div className="container max-w-3xl mx-auto p-12 text-center"><p className="text-muted-foreground">Stage not found.</p></div>;
+  if (loading || authLoading) return <div className="container max-w-3xl mx-auto p-6 space-y-4"><Skeleton className="h-48 w-full rounded-2xl" /><Skeleton className="h-8 w-2/3" /></div>;
+  if (!stage) {
+    // A private Stage is hidden from visitors: signed out, offer sign-in and come back to this exact link (invite included).
+    const back = `${window.location.pathname}${window.location.search}`;
+    return (
+      <div className="container max-w-3xl mx-auto p-12 text-center space-y-3">
+        <p className="text-muted-foreground">{user ? "This Stage doesn't exist, or it's private and your account isn't invited." : "This Stage is private or doesn't exist. Sign in to see it."}</p>
+        {!user && <Button onClick={() => navigate(`/auth?redirect=${encodeURIComponent(back)}`)}>Sign in</Button>}
+      </div>
+    );
+  }
 
   const isLive = stage.status === "live";
   const isEnded = stage.status === "ended";
@@ -271,9 +288,11 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
           <Title className="text-2xl font-bold leading-tight">{stage.title}</Title>
           {stage.blurb && <p className="text-sm text-muted-foreground">{stage.blurb}</p>}
           <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground pt-1">
-            <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{format(new Date(stage.starts_at), "EEE, MMM d · h:mma")}</span>
+            <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{format(new Date(stage.starts_at), "EEE, MMM d · h:mma")} {viewerTimeZone()}</span>
             <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" />{stage.rsvp_count}/{stage.capacity}</span>
-            {!isLive && !isEnded && <span>Starts {formatDistanceToNowStrict(new Date(stage.starts_at), { addSuffix: true })}</span>}
+            {!isLive && !isEnded && (
+              <span>{new Date(stage.starts_at).getTime() > Date.now() ? `Starts ${formatDistanceToNowStrict(new Date(stage.starts_at), { addSuffix: true })}` : "Waiting for the host"}</span>
+            )}
           </div>
           {stage.type === "scout" && stage.description && (
             <Card className="p-4 mt-2 bg-muted/30">
