@@ -121,3 +121,10 @@ Gaps found, not changed:
      repository uses "going". Not verified against production data.
   3. Same drift risk as Stage tickets: the repository's `verify-event-ticket` is read-only and relies on a webhook branch
      production does not have. Never paste it alone into kretopia-app.
+
+## Paid events: entry rule (2026-11-25, branch `claude/rsvp-ticketed-events-20261125`)
+- Found: `rsvp_to_event` and the join policy on `jam_participants` let any member seat themselves on an event that sells paid
+  tickets, for free (the agent function already refuses ticketed events; nothing else does).
+- Prepared, not applied: `docs/security/events/T1_ticketed_event_entry/` (01 preflight, 02 apply, 03 verify, 04 rollback, README),
+  rehearsed on a scratch Postgres 16. Needs the SQL Editor of kretopia-app (no credits needed, no deployment).
+- #386 (the paid buyer is put on the list by the page) keeps working under the rule: a paid order passes it.
