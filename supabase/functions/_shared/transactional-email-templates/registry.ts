@@ -29,6 +29,7 @@ import { template as speedSessionReminder } from './speed-session-reminder.tsx'
 import { template as speedSessionRsvpConfirmed } from './speed-session-rsvp-confirmed.tsx'
 import { template as creditChainInvite } from './credit-chain-invite.tsx'
 import { template as curatedStageInvite } from './curated-stage-invite.tsx'
+import { template as curatedStageRegistrationConfirmation } from './curated-stage-registration-confirmation.tsx'
 
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'welcome': welcome,
@@ -51,4 +52,5 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'speed-session-rsvp-confirmed': speedSessionRsvpConfirmed,
   'credit-chain-invite': creditChainInvite,
   'curated-stage-invite': curatedStageInvite,
+  'curated-stage-registration-confirmation': curatedStageRegistrationConfirmation,
 }
