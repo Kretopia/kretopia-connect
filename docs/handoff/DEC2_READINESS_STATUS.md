@@ -28,6 +28,8 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | Open the Passport's public link signed out: name, handle, credit show; Message / Start a project / Claim Credits and Sign in are offered | Working |
 | Co-Sign: "Ask for a co-sign" creates a one-tap link (no account needed) | Working |
 | Recipient opens that link signed out: sees the request, three answers (Yes / Yes and I want my credit too / Not me) | Working |
+| SoundStage, two accounts, fake camera and microphone: host opens a Stage, backstage soundcheck shows the video, "Open doors & go live" | Working |
+| Second account finds the live Stage in the list, joins it, hears the host; leaves; host leaves and the Stage ends (`end-sound-stage` 200, list reads "Nothing live right now") | Working |
 | **Recipient presses an accepting answer** | **Fails.** The database refuses it: `verification_status cannot be escalated to peer directly` (HTTP 400). The recipient sees an error and the credit stays self-declared |
 
 ## The four release priorities
@@ -36,7 +38,7 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 1 | Direct Passport entry and signup | **Working** for email sign-up. **Blocked** for Google/Apple | Phone pass above. `/start` is live. Google and Apple are off by design (`OAUTH_TEMPORARILY_DISABLED = true` in `Auth.tsx`) | Turning them on needs the providers configured in kretopia-app: Noé to confirm they exist there |
 | 2 | First Passport, first credit and share: release gate | **Not ready for release** | Sign-up → Passport → reopen → first credit → public link signed out all seen working. The chain stops at "recipient responds" (Co-Sign accept fails) | Apply the Co-Sign repair (below), then rerun "send for Co-Sign → recipient responds → starts their own Passport". First matches and opportunities were not checked |
 | 3 | Source and trust labels | **Not ready for release** | Seen live: a new Passport shows **"Available for work"** to visitors although nobody chose it (the database column defaults to `available`, and the page displayed that default). Code fix in this PR: no status on the profile, no claim shown. New accounts still carry the stored default (see decision 3) | Backend-side items (import suggestions, same-name matches) cannot change without the Lovable credits. Frontend labelling of identity / claimed credit / Co-Sign is still to do |
-| 4 | SoundStages guests and two-sided flows | **Not ready for release** | Signed-out visitor now sees "Sign in to see what's live" (live). A dropped call says so and never ends the stage for everyone (#388) | Two-account call pass not run (needs a camera and microphone on two devices). Rehearse by 10 December with `STAGE_REHEARSAL_CHECKLIST.md` |
+| 4 | SoundStages guests and two-sided flows | **Not ready for release** | Signed-out visitor now sees "Sign in to see what's live" (live). A dropped call says so and never ends the stage for everyone (#388). Two-account pass on the live site with fake devices: create, soundcheck, go live, guest joins and hears the host, guest leaves, host ends (see table above) | Not seen: real people hearing and seeing each other both ways; the guest speaking; mute and camera off (Mute is shown only once live; the guest has neither as a listener); declined camera or microphone permission. In a **Group** Stage the guest joins as a listener with "Raise hand" only, and the host must promote them: confirm this is intended for "Group". The Stage card kept saying "Live now 2" with fewer people in. The browser console says `daily-js 0.89.1 is no longer supported`. Rehearse by 10 December with `STAGE_REHEARSAL_CHECKLIST.md` |
 
 ## The fifteen items
 | # | Item | Status | Evidence / what is left |
@@ -54,7 +56,7 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 11 | Company pages and permissions | **Not ready for release** | Not run |
 | 12 | Inbox and messages | **Not ready for release** | Not run |
 | 13 | Events | **Not ready for release** | In place: free RSVP and its email; a paid event is entered only with a paid ticket (#387, applied); a paid buyer is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
-| 14 | SoundStages | **Not ready for release** | See priority 4 |
+| 14 | SoundStages | **Not ready for release** | See priority 4: the technical path works with two accounts; the human audio/video check and the listener-only guest question are open |
 | 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385). kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
 
 ## Decisions for Noé (everything else is already decided)
@@ -65,11 +67,11 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 
 ## Blocked, and by what
 - **Lovable credits (kretopia-app is the backend):** `verify-stage-ticket` and `verify-event-ticket` fixes, `send-transactional-email`, import and search functions, the Stage card counter, the capacity limit on `create-curated-stage`.
-- **Cameras:** the two-device SoundStage pass.
+- **People with real devices:** the audio/video check between two real people (the fake-device pass cannot judge sound or picture).
 
 ## Retest order (after the Co-Sign repair is applied)
 1. Fresh phone: `/start` → sign-up → confirm → Passport → credit → public link. **Done once, passed.**
 2. Send a Co-Sign request; the recipient accepts signed out, then starts their own Passport and lands on it, not on the first Passport page.
 3. Signed-out Stages: "Sign in to see what's live"; Sign in returns to the Stages.
-4. Two accounts, two devices: host opens a SoundStage, guest joins; audio and video both ways; mute, camera off, leave, host end.
+4. Two real devices: host opens a SoundStage, guest joins; audio and video both ways; the guest raises a hand and is promoted; mute, camera off, leave, host end. (Fake-device version passed once.)
 5. Company posts a brief → creator applies → interview and accept → one correctly configured Studio project opens.
