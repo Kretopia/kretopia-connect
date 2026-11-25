@@ -183,10 +183,12 @@ describe("verify-stage-ticket wiring", () => {
     expect(src).toContain('throw new Error("Buyer mismatch")');
   });
 
-  it("is read-only: never writes orders or seats", () => {
+  it("writes only through the webhook's fulfilment (entry rule included), never directly", () => {
     expect(src).not.toContain(".update(");
     expect(src).not.toContain(".insert(");
     expect(src).not.toContain(".upsert(");
+    expect(src).toContain("finalizeStageTicket(admin, session)");
+    expect(at("Buyer mismatch")).toBeLessThan(at("finalizeStageTicket(admin, session)"));
   });
 });
 

@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { isStageTicketSession } from "../_shared/stageTicket.ts";
+import { finalizeStageTicket } from "../_shared/stageCircleActivation.ts";
 
 
 import { corsFor, safeError } from '../_shared/guard.ts';
@@ -40,16 +41,23 @@ serve(async (req) => {
       });
     }
 
-    // Read-only: fulfillment happens only in the signature-verified Stripe webhook.
     if (!isStageTicketSession(session.metadata as Record<string, string> | null)) throw new Error("Missing metadata");
     const stageId = session.metadata!.stage_id;
     if (session.metadata!.user_id !== user.id) throw new Error("Buyer mismatch");
+    const json = (body: Record<string, unknown>, status = 200) =>
+      new Response(JSON.stringify(body), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
     const { data: rsvp } = await admin.from("curated_stage_rsvps")
       .select("status").eq("stage_id", stageId).eq("user_id", user.id).maybeSingle();
-    const seated = !!rsvp && rsvp.status === "rsvp";
-    return new Response(JSON.stringify(seated ? { paid: true } : { paid: true, pending: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: seated ? 200 : 202,
-    });
+    if (rsvp?.status === "rsvp") return json({ paid: true });
+
+    // Not seated yet: seat the buyer through the same fulfilment as the Stripe webhook (entry rule, paid order, seat, one
+    // confirmation email). The session was just read from Stripe with the secret key, so this trusts nothing from the caller,
+    // and repeating it changes nothing. Without this a paid ticket stays unseated wherever the webhook has no Stage ticket
+    // branch, as in production on 2026-11-25.
+    const result = await finalizeStageTicket(admin, session);
+    if (result === "paid") return json({ paid: true });
+    if (result === "invite_required") return json({ paid: true, seated: false, reason: "invite_required" });
+    return json({ paid: true, pending: true }, 202);
   } catch (e) {
     console.error("[verify-stage-ticket]", e);
     return new Response(JSON.stringify({ error: "Could not verify the ticket" }), {
