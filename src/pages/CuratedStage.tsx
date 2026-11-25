@@ -17,6 +17,7 @@ import { StageDoorsCountdown } from "@/components/circle/StageDoorsCountdown";
 import { Calendar, Users, Radio, Mic2, Search, CheckCircle2, Hand, Lock, Link2, Send, Sparkles, Circle } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { formatDistanceToNowStrict, format } from "date-fns";
+import { isFeatureEnabled } from "@/lib/featureFlags";
 
 type Stage = {
   id: string; type: "scout" | "showcase"; title: string; blurb: string | null;
@@ -162,6 +163,8 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
     if (!user) { navigate("/auth"); return; }
     if (!stage) return;
     if (stage.is_paid) {
+      // Paused until the backend seats paid buyers: never send anyone to pay for a seat they would not get.
+      if (!isFeatureEnabled("FEATURE_PAID_STAGE_TICKETS")) return;
       setRsvping(true);
       try {
         const { data, error } = await supabase.functions.invoke("checkout-stage-ticket", {
@@ -391,10 +394,17 @@ const CuratedStage = ({ embedded = false }: { embedded?: boolean }) => {
                 </p>
               </Card>
             ) : (
-              <Button onClick={handleRsvp} disabled={rsvping} size="lg" className="w-full">
-                {rsvping ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
-                {stage.is_paid ? `Get ticket — $${((stage.price_cents ?? 0) / 100).toFixed(0)}` : isFull ? "Join the waitlist" : "Save my spot"}
-              </Button>
+              stage.is_paid && !isFeatureEnabled("FEATURE_PAID_STAGE_TICKETS") ? (
+                <Card className="p-4 text-center bg-muted/30">
+                  <Button disabled size="lg" className="w-full">Tickets open soon</Button>
+                  <p className="mt-2 text-xs text-muted-foreground">Ticket sales for this Stage haven't opened yet. Nothing has been charged.</p>
+                </Card>
+              ) : (
+                <Button onClick={handleRsvp} disabled={rsvping} size="lg" className="w-full">
+                  {rsvping ? <KretopiaSpinner className="h-4 w-4 mr-2" /> : null}
+                  {stage.is_paid ? `Get ticket — $${((stage.price_cents ?? 0) / 100).toFixed(0)}` : isFull ? "Join the waitlist" : "Save my spot"}
+                </Button>
+              )
             )}
 
             {stage.type === "scout" && stage.application_required && (

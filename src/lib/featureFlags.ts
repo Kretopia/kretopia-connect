@@ -12,7 +12,10 @@ export type FeatureFlag =
   | "FEATURE_RECOMMENDATIONS"
   | "FEATURE_OPPORTUNITIES_V2"
   // Pilot, off until product approval: the owner's one deterministic next move (Passport Live -> First Proof -> Co-Signed).
-  | "FEATURE_PILOT_NEXT_MOVE";
+  | "FEATURE_PILOT_NEXT_MOVE"
+  // Off until kretopia-app seats paid Stage buyers (its verify-stage-ticket, 2026-11-25): while off, no paid Stage ticket is
+  // sold, so nobody is charged for a seat they would not get. Turn on with VITE_FEATURE_PAID_STAGE_TICKETS=true.
+  | "FEATURE_PAID_STAGE_TICKETS";
 
 function readFlag(flag: FeatureFlag): boolean {
   return import.meta.env[`VITE_${flag}`] === "true";
