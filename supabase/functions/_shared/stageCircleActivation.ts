@@ -1,6 +1,7 @@
 // Stage-ticket and paid-circle fulfillment: called ONLY from the signature-verified
 // stripe-marketplace-webhook (checkout.session.completed). Return pages are read-only.
 import { canEnterStage, entryWasChecked, isStageTicketSession } from "./stageTicket.ts";
+import { sendStageTicketEmail } from "./stageRegistrationEmail.ts";
 
 // deno-lint-ignore no-explicit-any
 type Admin = any;
@@ -16,7 +17,7 @@ export async function finalizeStageTicket(admin: Admin, session: any): Promise<"
   if (!stageId || !buyerId) return "skipped";
 
   const { data: stage } = await admin.from("curated_stages")
-    .select("id, visibility, invite_token, host_user_id").eq("id", stageId).maybeSingle();
+    .select("id, title, starts_at, ends_at, visibility, invite_token, host_user_id").eq("id", stageId).maybeSingle();
   if (!stage) return "skipped";
   if (!entryWasChecked(md)) {
     const { data: u } = await admin.auth.admin.getUserById(buyerId);
@@ -42,10 +43,18 @@ export async function finalizeStageTicket(admin: Admin, session: any): Promise<"
     if (ins.error) throw new Error("Could not record stage payment");
     order = ins.data;
   }
+  // Whether the buyer already held the seat: Stripe retries a delivered event, and then no second confirmation goes out.
+  const { data: previous } = await admin.from("curated_stage_rsvps")
+    .select("status").eq("stage_id", stageId).eq("user_id", buyerId).maybeSingle();
   const { error: rsvpErr } = await admin.from("curated_stage_rsvps").upsert({
     stage_id: stageId, user_id: buyerId, status: "rsvp", ticket_order_id: order?.id ?? null,
   }, { onConflict: "stage_id,user_id" });
   if (rsvpErr) throw new Error("Could not record stage seat");
+  if (previous?.status !== "rsvp") {
+    await sendStageTicketEmail(admin, {
+      stage, userId: buyerId, ticket: { amountCents: session.amount_total ?? null, currency: session.currency ?? null },
+    });
+  }
   return "paid";
 }
 
