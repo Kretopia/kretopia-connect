@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { STAGE_LINK_COPY, stageJoinSignInPath, stageLinkState } from "@/lib/stageLinkState";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ interface LiveCallsPanelProps {
  * surface instead of a stack of independently-styled sections.
  */
 export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -136,29 +137,34 @@ export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
   // ended stage id fails there with a normal error toast, not a silent hang.
   const joinedFromLinkRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!joinStageId || !user) return;
+    // Wait for the session: deciding while it loads would send a signed-in member to sign in.
+    if (!joinStageId || authLoading) return;
+    // Signed out: sign in first, then come back to this exact Stage (the link is kept in the redirect).
+    if (!user) { navigate(stageJoinSignInPath(joinStageId)); return; }
     if (joinedFromLinkRef.current === joinStageId) return;
     joinedFromLinkRef.current = joinStageId;
     (async () => {
       const { data, error } = await supabase
         .from("sound_stages")
-        .select("id, host_user_id, title, vibe_tag, mode, format, participant_count, started_at, is_live")
+        .select("id, host_user_id, title, vibe_tag, mode, format, participant_count, started_at, is_live, ended_at")
         .eq("id", joinStageId)
         .maybeSingle();
       if (error || !data) {
         joinedFromLinkRef.current = null;
-        toast({ title: "Couldn't find that Stage", description: "The link may be expired.", variant: "destructive" });
+        toast({ title: "Couldn't open that Stage", description: "It may be private to its Circle, or the link has expired.", variant: "destructive" });
         return;
       }
-      if (!data.is_live) {
+      // Only a Stage the host ended is "ended"; one still backstage has simply not opened yet.
+      const state = stageLinkState(data);
+      if (state !== "live") {
         joinedFromLinkRef.current = null;
-        toast({ title: "This Stage has ended" });
+        toast(STAGE_LINK_COPY[state]);
         return;
       }
       handleJoinStage(data as SoundStage);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [joinStageId, user]);
+  }, [joinStageId, user, authLoading]);
 
   const handleCallClose = async (next: boolean) => {
     setCallOpen(next);
