@@ -5,9 +5,8 @@ import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { isStageTicketSession } from "../_shared/stageTicket.ts";
 import { finalizeStageTicket } from "../_shared/stageCircleActivation.ts";
 
-
-import { corsFor, safeError } from '../_shared/guard.ts';
-import { publicPerimeter } from '../_shared/publicPerimeter.ts';
+import { corsFor, safeError } from "../_shared/guard.ts";
+import { publicPerimeter } from "../_shared/publicPerimeter.ts";
 serve(async (req) => {
   const corsHeaders = corsFor(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -25,7 +24,9 @@ serve(async (req) => {
 
     const anon = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: { user } } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
+    const {
+      data: { user },
+    } = await anon.auth.getUser(authHeader.replace("Bearer ", ""));
     if (!user) throw new Error("Not authenticated");
 
     const body = await req.json().catch(() => null);
@@ -37,7 +38,8 @@ serve(async (req) => {
 
     if (session.payment_status !== "paid") {
       return new Response(JSON.stringify({ paid: false, status: session.payment_status }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
       });
     }
 
@@ -46,8 +48,12 @@ serve(async (req) => {
     if (session.metadata!.user_id !== user.id) throw new Error("Buyer mismatch");
     const json = (body: Record<string, unknown>, status = 200) =>
       new Response(JSON.stringify(body), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status });
-    const { data: rsvp } = await admin.from("curated_stage_rsvps")
-      .select("status").eq("stage_id", stageId).eq("user_id", user.id).maybeSingle();
+    const { data: rsvp } = await admin
+      .from("curated_stage_rsvps")
+      .select("status")
+      .eq("stage_id", stageId)
+      .eq("user_id", user.id)
+      .maybeSingle();
     if (rsvp?.status === "rsvp") return json({ paid: true });
 
     // Not seated yet: seat the buyer through the same fulfilment as the Stripe webhook (entry rule, paid order, seat, one
@@ -61,7 +67,8 @@ serve(async (req) => {
   } catch (e) {
     console.error("[verify-stage-ticket]", e);
     return new Response(JSON.stringify({ error: "Could not verify the ticket" }), {
-      status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 400,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
