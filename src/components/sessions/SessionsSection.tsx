@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SessionCard } from "./SessionCard";
 import { CreateSessionDialog } from "./CreateSessionDialog";
 import { SessionsGuestGate } from "./SessionsGuestGate";
+import { ensurePaidBuyerOnGuestList } from "@/lib/paidTicketGuestList";
 
 interface Session {
   id: string;
@@ -215,6 +216,8 @@ export const SessionsSection = ({ userLocation }: SessionsSectionProps) => {
         if (error) throw error;
 
         if (data?.status === 'paid') {
+          // The backend may not have added the buyer (see paidTicketGuestList.ts): make sure they are on the list.
+          await ensurePaidBuyerOnGuestList(supabase, ticketSuccess, user.id);
           if (!existing) {
             const { data: participant } = await supabase
               .from('jam_participants')
