@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dotColor: st
 };
 
 export const AvailabilityIndicator = ({
-  status = "available",
+  status,
   note,
   availableFrom,
   isOwnProfile,
@@ -34,10 +34,13 @@ export const AvailabilityIndicator = ({
 }: AvailabilityIndicatorProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [editStatus, setEditStatus] = useState(status);
+  const [editStatus, setEditStatus] = useState(status ?? "available");
   const [editNote, setEditNote] = useState(note || "");
 
-  const config = STATUS_CONFIG[status] || STATUS_CONFIG.available;
+  // A visitor is only told what the member chose: no status on the profile means no claim, never "Available for work".
+  const known = status ? STATUS_CONFIG[status] : undefined;
+  if (!isOwnProfile && !known) return null;
+  const config = known || STATUS_CONFIG.available;
 
   const handleSave = async () => {
     if (!user) return;
