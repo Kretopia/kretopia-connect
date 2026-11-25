@@ -40,13 +40,14 @@ function CalendarHarness({ onSelectEvent }: { onSelectEvent: (event: EventItem) 
 }
 
 describe("event cards and calendar", () => {
-  it("uses the shared flat card, honest availability, local timezone, and a real event action", () => {
+  it("uses the shared flat card, honest availability, the event's own time zone, and a real event action", () => {
     const onClick = vi.fn();
     render(<EventCard event={event} onClick={onClick} />);
 
     expect(screen.getByRole("button", { name: /view event & rsvp: ceramic studio/i })).toBeEnabled();
     expect(screen.getByText("By Maya")).toBeInTheDocument();
-    expect(screen.getByText(/Your time/)).toBeInTheDocument();
+    // The time is the event's, in its own zone (0bbb798ce); an event with no zone is shown in UTC, and says so.
+    expect(screen.getByText(formatEventTime(event.start_time))).toHaveAttribute("title", "Event time zone: UTC");
     expect(screen.getByText(/Places available/)).toBeInTheDocument();
     expect(screen.getByTestId("brand-event-cover")).toBeInTheDocument();
     expect(document.querySelector(".ai-scan-line")).toBeNull();
