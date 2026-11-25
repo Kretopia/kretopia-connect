@@ -136,8 +136,11 @@ describe("claimOrderPaid", () => {
   });
 });
 
-describe("verify-event-ticket wiring", () => {
-  const src = readFileSync(resolve(__dirname, "../../../supabase/functions/verify-event-ticket/index.ts"), "utf8");
+// Since 8c9bfa608 the paid transition lives in the webhook's fulfilment (_shared/eventTicketActivation.ts), and the return page's
+// verify-event-ticket only reads. The same ordering rules now hold there.
+describe("event ticket fulfilment wiring (_shared/eventTicketActivation.ts)", () => {
+  const src = readFileSync(resolve(__dirname, "../../../supabase/functions/_shared/eventTicketActivation.ts"), "utf8");
+  const verify = readFileSync(resolve(__dirname, "../../../supabase/functions/verify-event-ticket/index.ts"), "utf8");
   const at = (needle: string) => {
     const i = src.indexOf(needle);
     expect(i, `missing: ${needle}`).toBeGreaterThan(-1);
@@ -145,12 +148,12 @@ describe("verify-event-ticket wiring", () => {
   };
 
   it("imports the shared claim", () => {
-    expect(src).toContain('from "../_shared/orderConfirmation.ts"');
+    expect(src).toContain('from "./orderConfirmation.ts"');
   });
 
-  it("still asks Stripe and requires a paid session before it claims anything", () => {
-    expect(at("checkout.sessions.retrieve(")).toBeLessThan(at('session.payment_status !== "paid"'));
+  it("requires a paid session that is the order's own before it claims anything", () => {
     expect(at('session.payment_status !== "paid"')).toBeLessThan(at("claimOrderPaid(admin"));
+    expect(at("order.stripe_session_id !== session.id")).toBeLessThan(at("claimOrderPaid(admin"));
   });
 
   it("claims the paid transition before the capacity reservation and the promo increment", () => {
@@ -170,10 +173,15 @@ describe("verify-event-ticket wiring", () => {
     expect(afterClaim).toContain("capacity_exceeded: true");
   });
 
-  it("leaves the Stripe retrieval, the capacity RPC arguments and the seating untouched", () => {
-    expect(src).toContain("apiVersion: \"2025-08-27.basil\"");
+  it("keeps the capacity RPC arguments and the seating", () => {
     expect(src).toContain('{ _tier_id: order.tier_id, _quantity: order.quantity }');
     expect(src).toContain('status: "going"');
     expect(src).toContain('{ onConflict: "jam_id,user_id" }');
+  });
+
+  it("leaves verify-event-ticket read-only: it never claims, counts or seats", () => {
+    expect(verify).not.toContain("claimOrderPaid");
+    expect(verify).not.toContain("reserve_event_ticket_capacity");
+    expect(verify).not.toContain("jam_participants");
   });
 });

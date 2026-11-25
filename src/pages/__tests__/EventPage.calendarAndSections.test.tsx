@@ -120,6 +120,7 @@ vi.mock("@/components/messages/ShareToMessageDialog", () => ({ ShareToMessageDia
 
 import EventPage from "../EventPage";
 import { sendEventConfirmationEmail } from "@/utils/eventConfirmationEmail";
+import { formatEventTime } from "@/lib/eventTime";
 
 const DAY = 86_400_000;
 const baseEvent = () => ({
@@ -546,7 +547,7 @@ describe("Event page: one wrapper, one booking block", () => {
     expect(occurrences(/Admission|Event options/)).toBe(0);
     expect(screen.queryByRole("heading", { name: /event options/i })).not.toBeInTheDocument();
     // One date line (the calendar's agenda is another feature and is not drawn until it is opened).
-    const when = formatEventTimeForTest(m.event.start_time as string);
+    const when = formatEventTime(m.event.start_time as string, m.event.timezone as string | null | undefined);
     expect(occurrences(when)).toBe(1);
   });
 
@@ -830,6 +831,3 @@ describe("Event page: who is going", () => {
 });
 
 // The same one-line time the block prints; computed here so the test does not repeat the format.
-function formatEventTimeForTest(value: string) {
-  return new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(value));
-}

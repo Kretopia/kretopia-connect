@@ -46,7 +46,7 @@ beforeEach(() => {
 describe("LikesYouGrid answers", () => {
   it("a right answer saves one swipe and says interest was saved, never that it is a match", async () => {
     renderGrid();
-    fireEvent.click(await screen.findByRole("button", { name: /match/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^interested$/i }));
     await waitFor(() => expect(toast).toHaveBeenCalledTimes(1));
     expect(inserts).toEqual([{ user_id: "me", target_id: "p1", target_type: "profile", direction: "right" }]);
     expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Interest saved" }));
@@ -57,7 +57,7 @@ describe("LikesYouGrid answers", () => {
   it("a failed write is reported and the person stays in the list", async () => {
     insertResult = { error: { message: "denied" } };
     renderGrid();
-    fireEvent.click(await screen.findByRole("button", { name: /match/i }));
+    fireEvent.click(await screen.findByRole("button", { name: /^interested$/i }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.objectContaining({ title: "Couldn't save that", variant: "destructive" })));
     expect(screen.getByText("Priya Rao")).toBeInTheDocument();
   });

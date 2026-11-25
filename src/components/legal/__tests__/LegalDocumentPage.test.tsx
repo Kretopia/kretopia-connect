@@ -6,7 +6,6 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import CommunityGuidelines from "@/pages/CommunityGuidelines";
 import { COMMUNITY } from "@/content/legal/community";
-import { toRoman } from "@/lib/toRoman";
 import { TERMS } from "@/content/legal/terms";
 import { PRIVACY } from "@/content/legal/privacy";
 import type { LegalBlock, LegalDocument, LegalPart } from "@/content/legal/types";
@@ -74,7 +73,8 @@ describe.each([
       const row = document.getElementById(s.id);
       expect(row, s.id).not.toBeNull();
       expect(within(row as HTMLElement).getByRole("heading", { level: 3, name: s.title })).toBeInTheDocument();
-      expect(within(row as HTMLElement).getByText(toRoman(Number(s.num)))).toBeInTheDocument();
+      // Numbered "01", "02"… since 418d690ee (the Roman numerals were dropped there).
+      expect(within(row as HTMLElement).getByText(s.num)).toBeInTheDocument();
       const firstText = s.blocks.map(textOf).find(Boolean)!.slice(0, 40);
       expect(row?.textContent).toContain(firstText);
     }
@@ -87,8 +87,7 @@ describe.each([
     expect(links).toHaveLength(doc.sections.length);
     links.forEach((link, i) => {
       expect(link).toHaveAttribute("href", `#${doc.sections[i].id}`);
-      expect(within(link).getByText(doc.sections[i].title)).toBeInTheDocument();
-      expect(within(link).getByText(toRoman(i + 1))).toBeInTheDocument();
+      expect(link).toHaveTextContent(doc.sections[i].title);
     });
 
     fireEvent.click(links[4]);

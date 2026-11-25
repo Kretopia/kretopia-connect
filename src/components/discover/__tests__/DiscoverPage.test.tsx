@@ -95,12 +95,20 @@ describe("Discover page", () => {
     expect(screen.queryByText("The Hub")).not.toBeInTheDocument();
   });
 
-  it("opens on People and Swipe, with the four lanes in one switcher", () => {
+  it("opens on People and Swipe for a member, with the four lanes in one switcher", () => {
+    auth.user = { id: "u1" };
     renderDiscover();
     expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["People", "Gigs", "Live", "Events"]);
     expect(lane("People")).toHaveAttribute("data-state", "active");
     expect(screen.getByText("swipe deck")).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 2, name: /creatives to meet/i })).toBeInTheDocument();
+  });
+
+  it("opens on Browse for a signed-out visitor: the Swipe deck needs an account (since 418d690ee)", () => {
+    renderDiscover();
+    expect(lane("People")).toHaveAttribute("data-state", "active");
+    expect(screen.queryByText("swipe deck")).not.toBeInTheDocument();
+    expect(screen.getByText("browse grid")).toBeInTheDocument();
   });
 
   it("switches lane from the switcher and keeps it in the URL", () => {
@@ -208,6 +216,7 @@ describe("Discover page", () => {
 
     it("the Studio's links open the right lane once, for a company, and the parameter is then gone", async () => {
       tone.business = true;
+      auth.user = { id: "u1" };
       renderDiscover("/discover?tab=events&mode=sourced");
       expect(await screen.findByText("sourced event")).toBeInTheDocument();
       expect(screen.getByTestId("where")).toHaveTextContent("/discover?tab=events");
@@ -247,6 +256,7 @@ describe("Discover page", () => {
     });
 
     it("a creator who opens a Sourced link is simply shown the ordinary lane", () => {
+      auth.user = { id: "u1" };
       renderDiscover("/discover?tab=people&mode=sourced");
       expect(screen.getByText("swipe deck")).toBeInTheDocument();
       expect(screen.queryByText("sourced talent")).not.toBeInTheDocument();

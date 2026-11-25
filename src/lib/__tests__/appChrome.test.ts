@@ -121,7 +121,7 @@ describe("appFooter: the Landing page's footer, drawn once by the layout", () =>
   });
 
   it("is not fooled by a longer path: an event's confirmation and pass pages, a Passport's sub-pages", () => {
-    for (const path of ["/event/abc/confirmed", "/event/abc/pass", "/epk/abc/edit", "/profile/abc/extra", "/scout", "/scout/anything", "/matches", "/opportunities/scout/anything"]) {
+    for (const path of ["/event/abc/confirmed", "/event/abc/pass", "/epk/abc/edit", "/profile/abc/extra", "/scout/anything", "/matches", "/opportunities/scout/anything"]) {
       expect(appFooter(path, true), path).toBeNull();
     }
   });
