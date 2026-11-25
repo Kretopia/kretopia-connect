@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Search, Mic2, Mic, Video, Globe, Lock, Link2 } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
+import { STAGE_MAX_CAPACITY, clampStageCapacity } from "@/lib/stageCapacity";
 import { AIStageBriefGenerator } from "./AIStageBriefGenerator";
 
 interface CreateStageSheetProps {
@@ -64,7 +65,7 @@ export function CreateStageSheet({ open, onOpenChange, onCreated }: CreateStageS
           mode,
           visibility,
           starts_at: new Date(startsAt).toISOString(),
-          capacity: Number(capacity),
+          capacity: clampStageCapacity(capacity),
           is_paid: isPaid,
           price_cents: isPaid ? Math.round(Number(priceUsd) * 100) : 0,
           currency: "USD",
@@ -168,8 +169,8 @@ export function CreateStageSheet({ open, onOpenChange, onCreated }: CreateStageS
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Capacity">
-              <Input type="number" min={1} max={1000} value={capacity}
+            <Field label={`Capacity (up to ${STAGE_MAX_CAPACITY})`}>
+              <Input type="number" min={1} max={STAGE_MAX_CAPACITY} value={capacity}
                 onChange={(e) => setCapacity(e.target.value)} />
             </Field>
             <Field label="Ticket price (USD)">
