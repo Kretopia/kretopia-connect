@@ -87,6 +87,7 @@ const CircleChatView = lazy(() => import("./pages/CircleChatView"));
 const Circles = lazy(() => import("./pages/Circles"));
 import { CircleToCrewRedirect } from "./components/CircleToCrewRedirect";
 import { RedirectKeepingSearch } from "./components/RedirectKeepingSearch";
+import { StartMyPassport } from "./components/auth/StartMyPassport";
 import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 import { FOUNDING_STATUS_PATH } from "@/lib/foundingMember";
 const Messages = lazy(() => import("./pages/Messages"));
@@ -369,6 +370,7 @@ const AppContent = () => {
             {/* Passport Directory + vanity routes — public, SEO-indexed.
                 Static "/passport/comp-card" must come BEFORE "/passport/:passportId". */}
             <Route path="/passport" element={<RedirectKeepingSearch to="/match?tab=directory" />} />
+            <Route path="/start" element={<StartMyPassport />} />
             <Route path="/passport/comp-card" element={<ProtectedRoute><CompCardBuilder /></ProtectedRoute>} />
             <Route path="/passport/:passportId" element={<HandleResolver mode="passportId" />} />
             {/* React Router v6 doesn't support literal-prefix param segments like "/@:handle"

@@ -98,6 +98,36 @@ describe("creator onboarding completion", () => {
   });
 });
 
+describe("where the person was going when they signed up", () => {
+  it("continues there once the Passport is saved (this browser remembered it), not to the Passport", async () => {
+    sessionStorage.setItem("thrivein_post_auth_redirect", "/cosign/tok_1");
+    await launch();
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/cosign/tok_1", { replace: true }));
+    expect(state.navigate).not.toHaveBeenCalledWith("/profile", expect.anything());
+    expect(sessionStorage.getItem("thrivein_post_auth_redirect")).toBeNull();
+  });
+
+  it("continues there when only the account remembered it (the confirmation email was opened on another device), and forgets it", async () => {
+    state.auth.user.user_metadata = { post_signup_next: "/opportunities/9" };
+    await launch();
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/opportunities/9", { replace: true }));
+    expect(state.updateUser).toHaveBeenCalledWith({ data: { post_signup_next: null } });
+  });
+
+  it("does not continue to an address outside the app: the Passport opens, as before", async () => {
+    state.auth.user.user_metadata = { post_signup_next: "https://evil.example" };
+    await launch();
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true, state: { passportWelcome: true } }));
+    expect(state.navigate).not.toHaveBeenCalledWith("https://evil.example", expect.anything());
+  });
+
+  it("has nowhere to continue to: the Passport opens with its welcome, and the account is not touched", async () => {
+    await launch();
+    await waitFor(() => expect(state.navigate).toHaveBeenCalledWith("/profile", { replace: true, state: { passportWelcome: true } }));
+    expect(state.updateUser).not.toHaveBeenCalledWith({ data: { post_signup_next: null } });
+  });
+});
+
 describe("Terms and Conditions at onboarding", () => {
   const openLaunchStep = async () => {
     render(<MemoryRouter><Onboarding /></MemoryRouter>);

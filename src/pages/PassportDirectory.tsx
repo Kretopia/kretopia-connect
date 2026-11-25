@@ -197,7 +197,7 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
             <CtaButton
               size="sm"
               className="w-full gap-1.5 sm:w-auto"
-              onClick={() => navigate(user ? "/profile" : "/auth?next=/profile")}
+              onClick={() => navigate(user ? "/profile" : "/start?src=passport_directory")}
             >
               <Fingerprint className="h-4 w-4" aria-hidden />
               {user ? "Open my Passport" : "Create my Passport"}

@@ -19,6 +19,7 @@ import { AuthBrandingPanel } from "@/components/auth/AuthBrandingPanel";
 import { SignInForm } from "@/components/auth/SignInForm";
 import { SignUpWizard } from "@/components/auth/SignUpWizard";
 import { PublicPresenceSearch } from "@/components/search/PublicPresenceSearch";
+import { POST_SIGNUP_STASH_KEY, signupDestinationData, usableDestination } from "@/lib/postSignupDestination";
 import { getAuthOrigin, getPostSignupUrl } from "@/lib/authRedirect";
 import { passwordPolicyError } from "@/lib/passwordPolicy";
 import { RATE_LIMIT_NOTICE, classifySignupError } from "@/lib/authErrors";
@@ -89,7 +90,11 @@ const Auth = () => {
   const reducedMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<string>("signin");
   // Discovery precedes account creation; explicit classic entry remains available.
-  const [signupMode, setSignupMode] = useState<"claim" | "classic">(new URLSearchParams(window.location.search).get("mode") === "classic" ? "classic" : "claim");
+  // Sign-up opens on the account options. The public-source search ("one-tap claim") is the other way in: ?mode=claim, or a search already typed (?q=).
+  const [signupMode, setSignupMode] = useState<"claim" | "classic">(() => {
+    const p = new URLSearchParams(window.location.search);
+    return p.get("mode") === "claim" || p.get("q") ? "claim" : "classic";
+  });
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -559,6 +564,11 @@ const Auth = () => {
       trackEvent({ eventName: 'signup_attempt', eventCategory: EventCategory.AUTH, properties: { time_on_page_ms: Date.now() - authLoadTime, account_type: accountType, has_invite_code: !!inviteCode } });
       trackSignupAttempt(authEntrySource, "email");
 
+      // Remember where the person was going (see lib/postSignupDestination): the confirmation email opens /onboarding, which ends on the
+      // new Passport. This browser keeps it in the session; the account keeps a copy for a confirmation opened on another device.
+      const heading = usableDestination(redirectTo);
+      if (heading) { try { sessionStorage.setItem(POST_SIGNUP_STASH_KEY, heading); } catch { /* the account's copy still carries it */ } }
+
       const { data: signUpData, error } = await supabase.auth.signUp({
         email: normalizedEmail, password,
         options: {
@@ -566,7 +576,7 @@ const Auth = () => {
           // always on kretopia.com (never a *.lovable.app preview host). The profile page
           // invites them to finish setup if they haven't yet.
           emailRedirectTo: getPostSignupUrl(),
-          data: { account_type: accountType, invite_code: inviteCode },
+          data: { account_type: accountType, invite_code: inviteCode, ...signupDestinationData(redirectTo) },
         },
       });
 
@@ -869,7 +879,7 @@ const Auth = () => {
                         onClick={() => setSignupMode("claim")}
                         className="text-xs text-foreground hover:text-[#A516C5] hover:underline font-semibold transition-colors"
                       >
-                        ← Back to one-tap claim
+                        Find my public profile first instead
                       </button>
                     </div>
                   </>

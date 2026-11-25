@@ -31,6 +31,7 @@ import { getPostSignupUrl } from "@/lib/authRedirect";
 import { canJoinDirectly } from "@/lib/eventEntry";
 import { normalizeUsername, validateUsername, USERNAME_MAX } from "@/lib/username";
 import { claimOnboardingUsername, isOnboardingUsernameTaken, UsernameTakenError } from "@/lib/onboardingUsername";
+import { POST_SIGNUP_META_KEY, takePostSignupDestination } from "@/lib/postSignupDestination";
 
 // Wave 1 reframe: Find your work → Confirm credits → Launch profile
 // (internal phase ids unchanged for analytics continuity)
@@ -608,7 +609,13 @@ export default function Onboarding() {
       // Passport opens as soon as the owner row is confirmed. All remaining
       // work is optional and must never hold the welcome screen open. The
       // state asks the Passport for its one-time congratulations.
-      navigate(ONBOARDING_PASSPORT_PATH, { replace: true, state: { passportWelcome: true } });
+      // Where the person was going when they had to sign up (a Co-Sign request, an invitation, an opportunity) comes before the
+      // Passport; with nowhere to continue to, the Passport opens with its welcome, as before.
+      const resumeTo = takePostSignupDestination(user, () => {
+        void Promise.resolve(supabase.auth.updateUser({ data: { [POST_SIGNUP_META_KEY]: null } })).catch(() => undefined);
+      });
+      if (resumeTo) navigate(resumeTo, { replace: true });
+      else navigate(ONBOARDING_PASSPORT_PATH, { replace: true, state: { passportWelcome: true } });
 
       void (async () => {
 
