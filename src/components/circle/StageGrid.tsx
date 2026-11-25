@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { AlertCircle, RefreshCw, Radio } from "lucide-react";
 import { StageCard, type StageCardData } from "./StageCard";
@@ -18,6 +19,7 @@ interface StageGridProps {
  */
 export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState<StageCardData[] | null>(null);
   const [error, setError] = useState(false);
   const soundStagesRef = useRef<Record<string, SoundStage>>({});
@@ -114,6 +116,32 @@ export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
     }
     navigate(`/circle/stage/${stage.id}`);
   };
+
+  // A visitor who is not signed in can't read the live list: say so and offer the way in, instead of a load error with a Retry
+  // that can never work. A member's load error stays a load error.
+  if (error && !user && !authLoading) {
+    return (
+      <div className="rounded-2xl border border-border bg-card p-6 text-center space-y-3">
+        <Radio className="h-6 w-6 text-muted-foreground mx-auto" aria-hidden />
+        <p className="text-sm font-semibold">Sign in to see what's live</p>
+        <p className="text-sm text-muted-foreground">Live Stages are shown to members. Sign in or join Kretopia to see who's on air and step into a room.</p>
+        <div className="flex flex-col justify-center gap-2 pt-1 sm:flex-row">
+          <Link
+            to="/auth?tab=signin&redirect=%2Fcircle%3Ftab%3Dlive"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Sign in
+          </Link>
+          <Link
+            to="/start?next=%2Fcircle%3Ftab%3Dlive&src=stages"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Join Kretopia
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
