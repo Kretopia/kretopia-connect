@@ -12,6 +12,7 @@ import { ClaimProfileDialog } from "@/components/profile/ClaimProfileDialog";
 import { EPKShareToolbar } from "@/components/epk/EPKShareToolbar";
 import { PassportExpertise } from "@/components/passport/PassportExpertise";
 import { PassportPageHeader } from "@/components/passport/PassportPageHeader";
+import { passportNavFor } from "@/lib/passport/passportNav";
 import { PassportClaimCreditsDialog } from "@/components/passport/PassportClaimCreditsDialog";
 import { PassportPrivateBand } from "@/components/passport/PassportPrivateBand";
 import { useEpkPdfDownload } from "@/hooks/useEpkPdfDownload";
@@ -601,7 +602,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
       />}
 
       {/* The same header as the owner's private page (PassportPageHeader): one implementation, two surfaces. */}
-      {!embedded && <PassportPageHeader surface="public" viewerId={currentUserId} passportOwnerId={profile.user_id} />}
+      {!embedded && <PassportPageHeader surface="public" />}
 
       <div className={embedded ? "mx-auto max-w-7xl px-4 pb-8 pt-2" : "mx-auto max-w-7xl px-4 pb-16 pt-6"}>
         <PublicProfileWrapped
@@ -613,6 +614,7 @@ export const PublicPassportView = ({ userId, embedded = false, refreshKey, owner
             profile={profile}
             owner={heroOwner}
             bookingPath={bookable && profile.username ? `/@${profile.username}/book` : null}
+            viewSwitch={passportNavFor({ surface: heroOwner ? "private" : "public", viewerId: currentUserId, passportOwnerId: profile.user_id })}
             glance={
               <div className="space-y-3">
                 <PassportHiringGlance
