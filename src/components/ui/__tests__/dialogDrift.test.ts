@@ -18,6 +18,7 @@ const ALLOWED: Record<string, string> = {
   "src/components/NewsletterPopup.tsx": "a visitor's popup, never shown to a signed-in member",
   "src/components/scene/MagazineArticleModal.tsx": "the public magazine reader keeps its own frame",
   "src/components/project/VideoCallSheet.tsx": "the video call surface (k-call-surface) is the call's own frame",
+  "src/pages/Events.tsx": "the availability calendar fills a phone's screen (no border or corners there) and is a centred card from md",
 };
 
 /** A class that paints the surface: a background, a border colour (or none), a shadow, or a gradient stop. A border on one side is layout. */
