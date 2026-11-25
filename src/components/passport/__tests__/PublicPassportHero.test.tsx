@@ -1,3 +1,4 @@
+import { passportNavFor, type PassportNavAction } from "@/lib/passport/passportNav";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -127,10 +128,10 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
     onEdit: vi.fn(), onShowQR: vi.fn(), onDownloadEPK: vi.fn(), onChangePhoto: vi.fn(),
     ...over,
   });
-  const draw = (owner: PublicPassportOwner | undefined, { isOwner = true, onShare = vi.fn(), children }: { isOwner?: boolean; onShare?: () => void; children?: React.ReactNode } = {}) => ({
+  const draw = (owner: PublicPassportOwner | undefined, { isOwner = true, onShare = vi.fn(), children, viewSwitch, showActions = false }: { isOwner?: boolean; onShare?: () => void; children?: React.ReactNode; viewSwitch?: PassportNavAction | null; showActions?: boolean } = {}) => ({
     onShare,
     ...render(
-      <PublicPassportHero
+      <MemoryRouter><PublicPassportHero
         profile={profile}
         owner={owner}
         connectionStatus="none"
@@ -143,8 +144,9 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
         onAddToProject={() => {}}
         onShare={onShare}
         onJoin={() => {}}
-        showActions={false}
-      >{children}</PublicPassportHero>,
+        showActions={showActions}
+        viewSwitch={viewSwitch}
+      >{children}</PublicPassportHero></MemoryRouter>,
     ),
   });
 
@@ -190,6 +192,27 @@ describe("the owner's card: the owner card's controls, grafted onto the Passport
     expect(tiles.getAllByRole("listitem")).toHaveLength(5);
     fireEvent.click(tiles.getByRole("button", { name: "Download PDF" }));
     expect(pdf.onDownload).toHaveBeenCalledOnce();
+  });
+
+  it("puts 'View my public Passport' on the card, directly under the owner's action line, never in the page header", () => {
+    draw(controls(), { viewSwitch: passportNavFor({ surface: "private", viewerId: "u1", passportOwnerId: "u1" }) });
+    const link = screen.getByRole("link", { name: "View my public Passport" });
+    expect(link).toHaveAttribute("href", "/epk/u1");
+    const actions = screen.getByRole("list", { name: "Passport actions" });
+    expect(link.parentElement).toBe(actions.parentElement);
+    expect(actions.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("on the owner's public view the card offers 'View my private Passport' next to Share", () => {
+    draw(undefined, { showActions: true, viewSwitch: passportNavFor({ surface: "public", viewerId: "u1", passportOwnerId: "u1" }) });
+    expect(screen.getByRole("link", { name: "View my private Passport" })).toHaveAttribute("href", "/profile");
+    expect(screen.getAllByRole("button", { name: "Share Passport" }).length).toBeGreaterThan(0);
+  });
+
+  it("draws no switch for anybody who is not the owner", () => {
+    const { container } = draw(undefined, { isOwner: false, viewSwitch: passportNavFor({ surface: "public", viewerId: "u2", passportOwnerId: "u1" }) });
+    expect(screen.queryByRole("link", { name: /Passport$/ })).toBeNull();
+    expect(container.innerHTML).not.toMatch(/View my (public|private) Passport/);
   });
 
   it("has no PDF button until the document gives it one", () => {

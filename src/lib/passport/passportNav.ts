@@ -1,3 +1,5 @@
+import { ArrowLeft, Eye, type LucideIcon } from "lucide-react";
+
 /**
  * Moving between a member's private Passport and the public one that anybody can open. The decision is made from two ids, never from
  * what a page happens to show or hide: the id of the signed-in account (validated by the auth backend) and the id of the Passport being
@@ -13,7 +15,7 @@ export const publicPassportPath = (userId: string) => `/epk/${userId}`;
 export type PassportSurface = "private" | "public";
 export type PassportNavAction =
   | { kind: "view-public"; label: "View my public Passport"; to: string }
-  | { kind: "back-to-private"; label: "Back to my private Passport"; to: string };
+  | { kind: "back-to-private"; label: "View my private Passport"; to: string };
 
 /**
  * The one link the Passport header offers, or null.
@@ -28,5 +30,8 @@ export function passportNavFor(input: { surface: PassportSurface; viewerId: stri
   if (input.surface === "private") return { kind: "view-public", label: "View my public Passport", to: publicPassportPath(viewer) };
   const owner = input.passportOwnerId?.trim();
   if (!owner || owner !== viewer) return null;
-  return { kind: "back-to-private", label: "Back to my private Passport", to: PRIVATE_PASSPORT_PATH };
+  return { kind: "back-to-private", label: "View my private Passport", to: PRIVATE_PASSPORT_PATH };
 }
+
+/** The icon that goes with the link: an eye to look at the public Passport, an arrow to go back to the private one. */
+export const passportViewSwitchIcon = (nav: PassportNavAction): LucideIcon => (nav.kind === "view-public" ? Eye : ArrowLeft);

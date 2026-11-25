@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { passportViewSwitchIcon, type PassportNavAction } from "@/lib/passport/passportNav";
 import { Button } from "@/components/ui/button";
 import { FramedAvatar } from "@/components/ui/framed-avatar";
 import { HoloCard } from "./HoloCard";
@@ -88,6 +89,24 @@ interface PublicPassportHeroProps {
   showActions?: boolean;
   /** The creative's booking page, set only when they have active booking hours; no path, no booking action. */
   bookingPath?: string | null;
+  /**
+   * The owner's switch between the two views of this Passport ("View my public Passport" / "View my private Passport"), from
+   * passportNavFor. Null for everybody else: for them the link is not in the page at all.
+   */
+  viewSwitch?: PassportNavAction | null;
+}
+
+/** The switch between the private and the public Passport, drawn on the card as one of its actions. */
+function PassportViewSwitch({ nav, className }: { nav: PassportNavAction; className?: string }) {
+  const Icon = passportViewSwitchIcon(nav);
+  return (
+    <Button asChild variant="outline" className={cn("w-full gap-2", className)}>
+      <Link to={nav.to}>
+        <Icon className="h-4 w-4" aria-hidden />
+        {nav.label}
+      </Link>
+    </Button>
+  );
 }
 
 export function PublicPassportHero({
@@ -108,6 +127,7 @@ export function PublicPassportHero({
   showBio = true,
   showActions = true,
   bookingPath = null,
+  viewSwitch = null,
 }: PublicPassportHeroProps) {
   const passportId = useMemo(
     () => profile.user_id ? `KRT-${profile.user_id.replace(/-/g, "").slice(0, 5).toUpperCase()}` : "KRT-—",
@@ -197,13 +217,17 @@ export function PublicPassportHero({
 
           {/* The owner's controls, on the card they edit: Edit, Share, QR, press kit and PDF on one line. */}
           {ownerMode && (
-            <PassportSmartActions
-              pdf={ownerMode.pdf}
-              onEdit={ownerMode.onEdit}
-              onShare={ownerMode.onShare ?? onShare}
-              onShowQR={ownerMode.onShowQR}
-              onDownloadEPK={ownerMode.onDownloadEPK}
-            />
+            <div className="space-y-2">
+              <PassportSmartActions
+                pdf={ownerMode.pdf}
+                onEdit={ownerMode.onEdit}
+                onShare={ownerMode.onShare ?? onShare}
+                onShowQR={ownerMode.onShowQR}
+                onDownloadEPK={ownerMode.onDownloadEPK}
+              />
+              {/* How the public sees it: the same Passport, one press away, directly under the actions that change or share it. */}
+              {viewSwitch && <PassportViewSwitch nav={viewSwitch} />}
+            </div>
           )}
 
           {/* No Instagram, LinkedIn, X, YouTube, Spotify, personal-site or booking
@@ -237,7 +261,12 @@ export function PublicPassportHero({
             </div>
           )}
 
-           {showActions && isOwner && !ownerMode && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
+           {isOwner && !ownerMode && (showActions || viewSwitch) && (
+            <div className={cn("grid gap-2", showActions && viewSwitch ? "sm:grid-cols-2" : "grid-cols-1")}>
+              {showActions && <Button onClick={onShare} variant="outline" className="w-full gap-2"><Share2 className="h-4 w-4" />Share Passport</Button>}
+              {viewSwitch && <PassportViewSwitch nav={viewSwitch} />}
+            </div>
+          )}
            {children && <div className="space-y-5 border-t border-border pt-5">{children}</div>}
         </div>
 

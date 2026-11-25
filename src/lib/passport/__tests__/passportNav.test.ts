@@ -28,7 +28,7 @@ describe("passportNavFor", () => {
   it("offers the way back to the private Passport only to the owner of this public Passport", () => {
     expect(passportNavFor({ surface: "public", viewerId: ME, passportOwnerId: ME })).toEqual({
       kind: "back-to-private",
-      label: "Back to my private Passport",
+      label: "View my private Passport",
       to: PRIVATE_PASSPORT_PATH,
     });
   });

@@ -268,7 +268,7 @@ describe("the public Passport page: the shared header, and a link back only for 
   it("offers the owner the way back to the private Passport, and no redundant 'view public' action", async () => {
     world.signedInAs = "u1";
     renderPage();
-    const back = await screen.findByRole("link", { name: "Back to my private Passport" });
+    const back = await screen.findByRole("link", { name: "View my private Passport" });
     expect(back).toHaveAttribute("href", "/profile");
     expect(screen.queryByText(/View (my|your) public Passport/)).toBeNull();
   });
@@ -424,7 +424,7 @@ describe("At a glance: the visitor's actions, not a second list of the credits",
     world.signedInAs = "u1";
     world.rows = {};
     renderPage();
-    await screen.findByRole("link", { name: "Back to my private Passport" });
+    await screen.findByRole("link", { name: "View my private Passport" });
     expect(screen.queryByRole("region", { name: "Dee at a glance" })).toBeNull();
     expect(screen.queryByText("At a glance")).toBeNull();
   });
@@ -494,7 +494,7 @@ describe("what a visitor can do from somebody else's Passport, and what the owne
     world.signedInAs = "u1";
     world.rows = { credits, connections: [{ status: "accepted" }] };
     renderPage();
-    await screen.findByRole("link", { name: "Back to my private Passport" });
+    await screen.findByRole("link", { name: "View my private Passport" });
     expect(screen.queryByRole("group", { name: /Work with/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Claim Credits" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Collaborate on Kretopia" })).toBeNull();

@@ -592,7 +592,7 @@ const ProfileContent = () => {
       <div className="relative">
 
         {/* The same header as the public Passport (one implementation, two surfaces), with the link to the member's own public Passport. */}
-        <PassportPageHeader surface="private" viewerId={user?.id} passportOwnerId={profile?.user_id} />
+        <PassportPageHeader surface="private" />
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 md:px-6 max-w-3xl">
