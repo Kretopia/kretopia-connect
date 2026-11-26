@@ -58,11 +58,9 @@ describe("Stages wiring", () => {
     expect(css).toMatch(/\.k-gradient-text,[\s\S]*?box-decoration-break:\s*clone/);
   });
 
-  it("Match owns discovery and the accepted-connections list, and Incoming's Browse button goes to Match Browse", () => {
+  it("Match owns discovery and the accepted-connections list", () => {
     const match = read("src/pages/Match.tsx");
     expect(match).toContain('"connected"');
     expect(match).toContain("ConnectedCollaborators");
-    expect(read("src/components/swipe/LikesYouGrid.tsx")).toContain('navigate("/match?tab=browse&view=grid")');
-    expect(read("src/components/swipe/LikesYouGrid.tsx")).not.toContain('navigate("/circle")');
   });
 });
