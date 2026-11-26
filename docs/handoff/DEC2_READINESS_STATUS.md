@@ -30,13 +30,14 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | Recipient opens that link signed out: sees the request, three answers (Yes / Yes and I want my credit too / Not me) | Working |
 | SoundStage, two accounts, fake camera and microphone: host opens a Stage, backstage soundcheck shows the video, "Open doors & go live" | Working |
 | Second account finds the live Stage in the list, joins it, hears the host; leaves; host leaves and the Stage ends (`end-sound-stage` 200, list reads "Nothing live right now") | Working |
-| **Recipient presses an accepting answer** | **Fails.** The database refuses it: `verification_status cannot be escalated to peer directly` (HTTP 400). The recipient sees an error and the credit stays self-declared |
+| Recipient presses an accepting answer | Working **after the repair was run in kretopia-app** (26 Nov). Before it: refused with `verification_status cannot be escalated to peer directly` (HTTP 400). Now: `{"status":"accepted","success":true,"endorsement_count":1}`; the credit reads "Co-signed by 1 collaborator" |
+| Recipient picks "Yes, and I want my credit too", signs up, confirms the email in a new tab, finishes onboarding | Working: lands on their own Passport and the claimed credit is on it |
 
 ## The four release priorities
 | # | Priority | Status | Evidence | What is left |
 |---|---|---|---|---|
 | 1 | Direct Passport entry and signup | **Working** for email sign-up. **Blocked** for Google/Apple | Phone pass above. `/start` is live. Google and Apple are off by design (`OAUTH_TEMPORARILY_DISABLED = true` in `Auth.tsx`) | Turning them on needs the providers configured in kretopia-app: Noé to confirm they exist there |
-| 2 | First Passport, first credit and share: release gate | **Not ready for release** | Sign-up → Passport → reopen → first credit → public link signed out all seen working. The chain stops at "recipient responds" (Co-Sign accept fails) | Apply the Co-Sign repair (below), then rerun "send for Co-Sign → recipient responds → starts their own Passport". First matches and opportunities were not checked |
+| 2 | First Passport, first credit and share: release gate | **Not ready for release** (one step unchecked) | Sign-up → Passport → reopen → first credit → public link signed out → send for Co-Sign → recipient responds → recipient starts their own Passport: all seen working on the live site | "See first matches and opportunities" was not checked on a fresh account |
 | 3 | Source and trust labels | **Not ready for release** | Seen live: a new Passport shows **"Available for work"** to visitors although nobody chose it (the database column defaults to `available`, and the page displayed that default). Code fix in this PR: no status on the profile, no claim shown. New accounts still carry the stored default (see decision 3) | Backend-side items (import suggestions, same-name matches) cannot change without the Lovable credits. Frontend labelling of identity / claimed credit / Co-Sign is still to do |
 | 4 | SoundStages guests and two-sided flows | **Not ready for release** | Signed-out visitor now sees "Sign in to see what's live" (live). A dropped call says so and never ends the stage for everyone (#388). Two-account pass on the live site with fake devices: create, soundcheck, go live, guest joins and hears the host, guest leaves, host ends (see table above) | Not seen: real people hearing and seeing each other both ways; the guest speaking; mute and camera off (Mute is shown only once live; the guest has neither as a listener); declined camera or microphone permission. In a **Group** Stage the guest joins as a listener with "Raise hand" only, and the host must promote them: confirm this is intended for "Group". The Stage card kept saying "Live now 2" with fewer people in. The browser console says `daily-js 0.89.1 is no longer supported`. Rehearse by 10 December with `STAGE_REHEARSAL_CHECKLIST.md` |
 
@@ -45,7 +46,7 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 |---|---|---|---|
 | 01 | Landing and fast signup | **Working** (email) / **Blocked** (Google, Apple) | Landing buttons go to sign-up or the right feature; sign-up seen working on a phone. A fresh account is met by three stacked first-view pop-ups (who's using Kretopia, the tour, the look) and answering the first one leaves the Passport for Creative Circle: confusing, not blocking |
 | 02 | Build and finish a Passport | **Not ready for release** | Manual build and first credit work. Import path not retested. Availability label issue (priority 3) |
-| 03 | Identity and Co-Sign | **Blocked** | Request and recipient screens work; **accepting fails** because kretopia-app's database still has the first, uncorrected `submit_credit_endorsement_by_token`. The fix exists: `supabase/migrations/20261106130000_cosign_submit_raises_guard_flag.sql`, one function, no data change. ID/selfie verification is not enforced (earlier decision) |
+| 03 | Identity and Co-Sign | **Working** for Co-Sign; identity check not enforced | Request, recipient answer and the recipient's own Passport all work since the repair (see table above). ID/selfie verification is not enforced (earlier decision). To check: once a credit has one co-sign, its card no longer offers "Ask for a co-sign", yet two are needed to reach Verified: confirm where a second request is made |
 | 04 | A reason to stay | **Not ready for release** | Not run |
 | 05 | Share the Passport and EPK | **Not ready for release** | Public link seen working signed out. Not run: QR scan, WhatsApp, X, LinkedIn, Story asset, tailored EPK, Pro website |
 | 06 | Scout from brief to Studio | **Not ready for release** | Needs a company account and a second creator: not run |
@@ -60,7 +61,7 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385). kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
 
 ## Decisions for Noé (everything else is already decided)
-1. **Run the Co-Sign repair in kretopia-app's SQL Editor** (free, no credits): paste `supabase/migrations/20261106130000_cosign_submit_raises_guard_flag.sql`, then `docs/security/VERIFY_PENDING_MIGRATIONS_20261106.sql`; the Co-Sign line must read OK. Claude then reruns the recipient pass. This is the one thing between the first-run journey and green.
+1. **Co-Sign repair: done** (26 Nov, run in kretopia-app's SQL Editor; the function now raises the credits guard flag). Nothing left.
 2. **Paid event tickets** (affects one live paid event): `verify-event-ticket` writes `"rsvp"`, which the guest-list table does not allow, so a buyer may not be seated by it. Either keep selling and let the page seat the buyer (#386), or pause paid event tickets like paid Stage tickets. Recommendation: pause until the function is fixed.
 3. **Availability default:** to stop new accounts being stored as "Available", run `ALTER TABLE public.profiles ALTER COLUMN availability_status DROP DEFAULT;` in the SQL Editor. It changes no existing row. Existing "available" values cannot be told apart from chosen ones, so they are left alone.
 4. **Sender name on the confirmation email** (`thrivein.io` today): needs the sender domain changed in kretopia-app.
@@ -69,9 +70,9 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 - **Lovable credits (kretopia-app is the backend):** `verify-stage-ticket` and `verify-event-ticket` fixes, `send-transactional-email`, import and search functions, the Stage card counter, the capacity limit on `create-curated-stage`.
 - **People with real devices:** the audio/video check between two real people (the fake-device pass cannot judge sound or picture).
 
-## Retest order (after the Co-Sign repair is applied)
+## Retest order
 1. Fresh phone: `/start` → sign-up → confirm → Passport → credit → public link. **Done once, passed.**
-2. Send a Co-Sign request; the recipient accepts signed out, then starts their own Passport and lands on it, not on the first Passport page.
+2. Send a Co-Sign request; the recipient accepts signed out, then starts their own Passport. **Done, passed (26 Nov).**
 3. Signed-out Stages: "Sign in to see what's live"; Sign in returns to the Stages.
 4. Two real devices: host opens a SoundStage, guest joins; audio and video both ways; the guest raises a hand and is promoted; mute, camera off, leave, host end. (Fake-device version passed once.)
 5. Company posts a brief → creator applies → interview and accept → one correctly configured Studio project opens.
