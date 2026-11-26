@@ -801,7 +801,6 @@
 │   │   │   └── SellerOrderCard.tsx
 │   │   ├── passport
 │   │   │   ├── __tests__
-│   │   │   │   ├── PassportDirectoryCard.test.tsx
 │   │   │   │   ├── PassportKretoEntry.test.tsx
 │   │   │   │   ├── PassportPreviewCard.test.tsx
 │   │   │   │   ├── PassportSmartActions.test.tsx
@@ -821,7 +820,6 @@
 │   │   │   ├── PassportAnchorStrip.tsx
 │   │   │   ├── PassportCommandCenter.tsx
 │   │   │   ├── PassportCreditsCta.tsx
-│   │   │   ├── PassportDirectoryCard.tsx
 │   │   │   ├── PassportHero.tsx
 │   │   │   ├── PassportHiringGlance.tsx
 │   │   │   ├── PassportKretoEntry.tsx
@@ -1278,7 +1276,6 @@
 │   │   │   ├── __tests__
 │   │   │   │   └── SwipeFeatureAuthStates.test.tsx
 │   │   │   ├── GuestSwipePreview.tsx
-│   │   │   ├── LikesYouGrid.tsx
 │   │   │   ├── MatchModal.tsx
 │   │   │   ├── MatchPulse.tsx
 │   │   │   ├── ProfilePreviewSheet.tsx
@@ -2002,7 +1999,6 @@
 │   │   ├── OpportunityDetail.tsx
 │   │   ├── PartnerDirectory.tsx
 │   │   ├── PartnerSubmit.tsx
-│   │   ├── PassportDirectory.tsx
 │   │   ├── PayInvoice.tsx
 │   │   ├── PayLink.tsx
 │   │   ├── PaymentCanceled.tsx
