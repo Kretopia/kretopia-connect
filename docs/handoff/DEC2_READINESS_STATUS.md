@@ -56,9 +56,9 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 10 | Manage work and create inside Studio | **Not ready for release** | Ethan's Nov 25 pass only confirms an existing project opens |
 | 11 | Company pages and permissions | **Not ready for release** | Not run |
 | 12 | Inbox and messages | **Not ready for release** | Not run |
-| 13 | Events | **Not ready for release** | In place: free RSVP and its email; a paid event is entered only with a paid ticket (#387, applied); a paid buyer is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
+| 13 | Events | **Not ready for release** | In place: free RSVP and its email; paid event tickets paused (see decision 2); a paid event is entered only with a paid ticket (#387, applied); a paid buyer returning from an earlier checkout is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
 | 14 | SoundStages | **Not ready for release** | See priority 4: the technical path works with two accounts; the human audio/video check and the listener-only guest question are open |
-| 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385). kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
+| 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385) and so are paid event tickets. kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
 
 ## Decisions for Noé (everything else is already decided)
 1. **Co-Sign repair: done** (26 Nov, run in kretopia-app's SQL Editor; the function now raises the credits guard flag). Nothing left.

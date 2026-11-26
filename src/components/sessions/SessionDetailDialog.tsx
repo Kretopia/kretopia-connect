@@ -136,18 +136,6 @@ export const SessionDetailDialog = ({
         toast({ title: "This event needs a ticket", description: "Opening the event page to get yours." });
         onOpenChange(false);
         navigate(`/event/${session.id}`);
-      } else if (session.is_ticketed && session.ticket_price && session.ticket_price > 0) {
-        // Ticketed event — redirect to Stripe checkout
-        const { data, error } = await supabase.functions.invoke('purchase-event-ticket', {
-          body: { eventId: session.id }
-        });
-        if (error) throw error;
-        if (data?.url) {
-          const opened = window.open(data.url, '_blank');
-          if (!opened) window.location.href = data.url;
-        } else {
-          throw new Error("No checkout URL received");
-        }
       } else {
         const { data: result, error } = await supabase.rpc("rsvp_to_event", { p_event_id: session.id });
         if (error) throw error;
