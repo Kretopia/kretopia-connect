@@ -30,7 +30,9 @@ export const searchIntentMeta = (intent: SearchIntent): SearchIntentMeta =>
   SEARCH_INTENTS.find((i) => i.id === intent) ?? SEARCH_INTENTS[0];
 
 /** What the field says before anything is typed. */
-export const HERO_SEARCH_PLACEHOLDER = "Search a name, a skill or an opportunity";
+export const HERO_SEARCH_PLACEHOLDER = "Search people, skills and opportunities";
+/** The same words for a phone, where the field is narrow: it fits on one line instead of being cut off. */
+export const HERO_SEARCH_PLACEHOLDER_COMPACT = "Search people, skills, opportunities";
 
 /** Match's Grid: where people are searched. The words travel as ?q= and arrive typed into the Grid's own search bar. */
 const MATCH_GRID = "/match?tab=browse&view=grid";

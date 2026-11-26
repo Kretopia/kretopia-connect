@@ -57,7 +57,7 @@ describe("hero search: one field, no mode to pick", () => {
     renderHero();
     expect(screen.queryByRole("tablist")).toBeNull();
     expect(screen.queryByRole("tab")).toBeNull();
-    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search a name, a skill or an opportunity");
+    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search people, skills and opportunities");
   });
 
   it("is off unless asked for: the navbar and share dialog keep their own search", () => {
