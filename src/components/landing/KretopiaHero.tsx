@@ -1,6 +1,13 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
+ * v13: "Twilight". The planet lost its orbit and satellites and gained a real dusk: a horizon band and atmosphere whose colour
+ * cools with height along the logo's own gradient (orange, magenta, violet, blue), a low sun that drifts along a softly lit limb,
+ * clusters of city lights on the dark side and stars that thin out towards the glow. The journeys and the three actions merged
+ * into one panel (HeroDock). Motion is choreographed: sky, planet, atmosphere, sun and lights arrive in that order, then slow idle
+ * loops; the pointer parallaxes three depths, scrolling sinks the planet slower than the page, using the search lifts the glow and
+ * hovering a journey tints the horizon. The headline's two words come in one after the other.
+ *
  * v12: "Dark planet". The sky became a planet at dusk (HeroUniverse): a huge dark sphere rising from the bottom edge, its limb lit
  * by the logo gradient (violet, magenta, orange), slow clouds, three satellites on a dashed orbit, a low sun glint and a rare
  * shooting star; movement is transform and opacity only, one ~75 KB tileable cloud texture is the only image. The journeys are
@@ -62,19 +69,17 @@
  * Its own padding preserves the gradient's glyph edges.
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
-import { ArrowUpRight } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "framer-motion";
+import { motion, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { HERO_SEARCH_PLACEHOLDER } from "@/lib/searchIntent";
-import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 import { HeroUniverse } from "@/components/landing/kretopia/HeroUniverse";
-import { HeroJourneyLinks } from "@/components/landing/kretopia/HeroJourneyLinks";
+import { HeroDock } from "@/components/landing/kretopia/HeroDock";
 import { HeroPromptRotator } from "@/components/landing/kretopia/HeroPromptRotator";
-import { HERO_SECONDARY_CTAS, type HeroPrompt } from "@/lib/heroJourneys";
+import type { HeroPrompt, JourneyId } from "@/lib/heroJourneys";
 import { HERO_SEARCH_PLACEHOLDER_COMPACT } from "@/lib/searchIntent";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
@@ -307,6 +312,11 @@ export const KretopiaHero = () => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [finePointer, setFinePointer] = useState(false);
   const [narrow, setNarrow] = useState(isNarrowViewport);
+  /** The dock's journey under the pointer or focus: the horizon above the planet takes its colour. */
+  const [tint, setTint] = useState<JourneyId | null>(null);
+
+  // How far the hero has scrolled out of view: the planet sinks a little slower than the page.
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
 
   // Pointer response, shared by the planet and Kreto: one smoothed 0..1 position across the section.
   const pointerX = useMotionValue(0.5);
@@ -347,6 +357,15 @@ export const KretopiaHero = () => {
       ? { initial: false as const }
       : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.55, delay, ease: RISE_EASE } };
 
+  const word = (delay: number) =>
+    reducedMotion
+      ? { initial: false as const }
+      : {
+          initial: { opacity: 0, y: "0.3em", filter: "blur(10px)" },
+          animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+          transition: { duration: 0.9, delay, ease: RISE_EASE },
+        };
+
   const pickPrompt = (prompt: HeroPrompt) => {
     trackLandingCta("hero_example_search", "hero", { label: prompt.label });
     setQuery(prompt.query);
@@ -377,10 +396,10 @@ export const KretopiaHero = () => {
         />
 
         {/* The dark planet at the bottom, its limb lit in the logo gradient, with the sky above it. */}
-        <HeroUniverse reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} parallax={finePointer} energized={searchFocused} />
+        <HeroUniverse reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} scroll={scrollYProgress} parallax={finePointer} energized={searchFocused} tint={tint} />
       </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-24 pt-8 text-center sm:px-8 sm:pb-20 sm:pt-10 lg:px-12">
+      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-28 pt-8 text-center sm:px-8 sm:pb-20 sm:pt-10 lg:px-12">
         {/* The mark and the tagline on one line: the brand first, then the headline. */}
         <motion.div {...rise(0)} className="mb-4 flex items-center justify-center gap-3">
           <BrandLogo iconOnly size="sm" />
@@ -391,21 +410,26 @@ export const KretopiaHero = () => {
         {/* "People." wears the logo gradient through the shared .k-gradient-text, which carries the clipping slack
             (inline padding, box-decoration-break) a gradient word needs, and a slow sweep of the gradient across it.
             One line from `sm`; it wraps on a phone. */}
-        <motion.div {...rise(0.08)} className="max-w-full">
+        <div className="max-w-full">
           <h1
             aria-label="Find Your People."
             className="landing-h1 landing-glow mx-auto max-w-full font-bold sm:whitespace-nowrap"
             style={{ lineHeight: 1.08, letterSpacing: "-0.035em", fontSize: "clamp(2.5rem, 11vw, 5.5rem)" }}
           >
-            Find Your{" "}
-            <span
-              className="k-gradient-text"
-              style={{ ...SHIMMER_STYLE, animation: reducedMotion ? "none" : "k-shimmer 10s ease-in-out infinite" }}
-            >
-              People.
-            </span>
+            {/* Two words come in one after the other, each rising out of a soft blur; the sweep on "People." starts afterwards. */}
+            <motion.span aria-hidden className="inline-block" {...word(0.1)}>
+              Find Your
+            </motion.span>{" "}
+            <motion.span aria-hidden className="inline-block" {...word(0.34)}>
+              <span
+                className="k-gradient-text"
+                style={{ ...SHIMMER_STYLE, animation: reducedMotion ? "none" : "k-shimmer 10s ease-in-out 1.6s infinite" }}
+              >
+                People.
+              </span>
+            </motion.span>
           </h1>
-        </motion.div>
+        </div>
 
         <motion.p {...rise(0.18)} className="landing-sub mx-auto mt-4 max-w-xl">
           Discover people, skills and opportunities across the creative economy.
@@ -431,31 +455,9 @@ export const KretopiaHero = () => {
           </div>
         </motion.div>
 
-        {/* One column, one width: the search, the three journeys and the three actions share the same edges and the same gaps. */}
-        <motion.div {...rise(0.42)} className="mt-4 w-full max-w-[46rem]">
-          <HeroJourneyLinks />
-        </motion.div>
-
-        <motion.div {...rise(0.54)} className="mt-4 grid w-full max-w-[46rem] grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-3.5">
-          {HERO_SECONDARY_CTAS.map((cta, i) => {
-            const common = {
-              to: cta.to,
-              size: "md" as const,
-              icon: <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" aria-hidden />,
-              onClick: () => trackLandingCta(cta.analyticsId, "hero", { label: cta.label, variant: "kreto_universe" }),
-            };
-            const cell = `k-cta-future w-full justify-center whitespace-nowrap rounded-[var(--k-hero-radius)] px-3 text-[0.8125rem] sm:px-6 sm:text-sm${i === 0 ? " col-span-2 sm:col-span-1" : ""}`;
-            // The first is the open door (the glass finish with its orbiting ring); the other two are its quieter siblings.
-            return i === 0 ? (
-              <GlassCta key={cta.analyticsId} {...common} data-cta="primary" className={cell}>
-                {cta.label}
-              </GlassCta>
-            ) : (
-              <OutlineCta key={cta.analyticsId} {...common} data-cta="secondary" className={cell}>
-                {cta.label}
-              </OutlineCta>
-            );
-          })}
+        {/* One block, one width: the three journeys and the three actions share a single panel under the search. */}
+        <motion.div {...rise(0.48)} className="mt-5 w-full max-w-[46rem]">
+          <HeroDock onActiveChange={setTint} />
         </motion.div>
       </div>
 

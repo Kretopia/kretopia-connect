@@ -97,21 +97,40 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(trackLandingCta).toHaveBeenCalledWith("hero_journey_skills", "hero", { label: "Skills", destination: "Match" });
   });
 
-  it("has three actions in equal grid tracks on the navbar's own routes: one open door, two quieter siblings", () => {
-    renderHero();
+  it("merges the journeys and the three actions into one panel: one corner, the same columns, one filled primary", () => {
+    const { container } = renderHero();
+    const dock = container.querySelector("[data-hero-dock]") as HTMLElement;
+    expect(dock).not.toBeNull();
+    expect(dock.className).toContain("rounded-[var(--k-hero-radius)]");
+    // Every journey and every action lives inside the one panel.
+    const inDock = dock.querySelectorAll("a");
+    expect(inDock).toHaveLength(HERO_JOURNEYS.length + 3);
     const labels = ["Explore Kretopia", "For Creatives", "For Companies"];
     const hrefs = ["/discover", "/passport", "/post-opportunity"];
     labels.forEach((label, i) => {
       const link = screen.getByRole("link", { name: label });
+      expect(dock.contains(link)).toBe(true);
       expect(link).toHaveAttribute("href", hrefs[i]);
-      expect(link.className).toContain("rounded-[var(--k-hero-radius)]");
-      expect(link.className).toContain("k-cta-future");
       expect(link).toHaveAttribute("data-cta", i === 0 ? "primary" : "secondary");
     });
-    const grid = screen.getByRole("link", { name: "For Creatives" }).parentElement as HTMLElement;
-    expect(grid.className).toMatch(/\bgrid\b/);
-    expect(grid.className).toContain("sm:grid-cols-3");
+    // The actions sit in three equal columns (two on a phone, where the primary takes the full row).
+    const row = screen.getByRole("link", { name: "For Creatives" }).parentElement as HTMLElement;
+    expect(row.className).toMatch(/\bgrid\b/);
+    expect(row.className).toContain("sm:grid-cols-3");
     expect(document.querySelectorAll('[data-cta="primary"]')).toHaveLength(1);
+    // The primary is white on the logo gradient in both themes, so it is set inline.
+    expect(screen.getByRole("link", { name: "Explore Kretopia" })).toHaveStyle({ color: "#fff" });
+  });
+
+  it("tells the sky which journey is under the pointer, and clears it on leave", () => {
+    const { container } = renderHero();
+    const sky = container.querySelector("[data-universe]") as HTMLElement;
+    expect(sky).not.toHaveAttribute("data-tint");
+    const skills = screen.getByRole("link", { name: /^Skills/ }).closest("li") as HTMLElement;
+    fireEvent.mouseEnter(skills);
+    expect(sky).toHaveAttribute("data-tint", "skills");
+    fireEvent.mouseLeave(skills);
+    expect(sky).not.toHaveAttribute("data-tint");
   });
 
   it("clicking a secondary action fires exactly one analytics event", () => {
@@ -158,6 +177,15 @@ describe("KretopiaHero — Kreto Universe", () => {
     const sky = container.querySelector("[data-universe]") as HTMLElement;
     expect(sky.querySelector("svg")).not.toBeNull();
     expect(sky.querySelector("img, image, canvas, video")).toBeNull();
+  });
+
+  it("has no orbit line and no satellites: the planet stands on its own", () => {
+    const { container } = renderHero();
+    const sky = container.querySelector("[data-universe]") as HTMLElement;
+    expect(sky.querySelector(".k-orbit, .k-sat")).toBeNull();
+    expect(sky.innerHTML).not.toMatch(/dashed/);
+    // The twilight is laid out in layers: atmosphere, limb, sun, city lights.
+    for (const cls of [".k-atm", ".k-limb", ".k-sunbloom", ".k-cities"]) expect(sky.querySelector(cls), cls).not.toBeNull();
   });
 
   it("under prefers-reduced-motion the sky is still and the hero is complete", () => {
