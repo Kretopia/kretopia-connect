@@ -20,7 +20,7 @@ describe("search sections", () => {
   });
 
   it("the field says what it finds before anything is typed", () => {
-    expect(HERO_SEARCH_PLACEHOLDER).toBe("Search a name, a skill or an opportunity");
+    expect(HERO_SEARCH_PLACEHOLDER).toBe("Search people, skills and opportunities");
   });
 
   it("People and Skills land on Match's Grid, Opportunities on Scout, with the words carried as ?q=", () => {

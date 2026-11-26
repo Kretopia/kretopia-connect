@@ -1,23 +1,15 @@
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { KretopiaHero } from "../KretopiaHero";
 import { SCOUT_PATH } from "@/lib/opportunityRoutes";
+import { HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS } from "@/lib/heroJourneys";
 
 /**
- * Regression coverage for the Verified Creative Signal Field rollout
- * (LANDING_HERO_SIGNAL_FIELD_AUDIT.md / LANDING_HERO_VISUAL_OVERHAUL_REPORT.md):
- * the background effect changed entirely, but the copy, CTA destinations,
- * analytics event shape, and accessibility contract must not have moved.
- *
- * jsdom performs no real layout or CSS painting, so this suite cannot assert
- * the field's actual colors, blur, or pointer-driven motion pixel-by-pixel --
- * that was verified live against the running app this session (screenshots,
- * computed-transform checks under dispatched mousemove events, axe-core with
- * zero violations). What this suite guards instead is the structural
- * contract: exact CTA text and hrefs, one analytics event per click with the
- * exact property shape, exactly one H1, and every decorative background
- * layer staying aria-hidden.
+ * The "Kreto Universe" hero. jsdom performs no layout or painting, so this suite cannot judge the sky itself; that was checked in a
+ * real browser. What it guards is the structural contract: the words and their order, one H1, the search kept as the app's own
+ * search, the three journeys and the secondary actions on their existing routes with one analytics event per click, every
+ * decorative layer aria-hidden, and a static, complete hero under prefers-reduced-motion.
  */
 
 const trackLandingCta = vi.fn();
@@ -27,6 +19,17 @@ vi.mock("@/lib/landingFunnel", () => ({
 
 vi.mock("@/lib/analytics", () => ({
   analytics: { featureUsed: vi.fn() },
+}));
+
+vi.mock("@/lib/scoutPeopleSearch", () => ({
+  SCOUT_PEOPLE_PAGE_SIZE: 50,
+  scoutSearchTarget: (q: string) => `/scout?q=${encodeURIComponent(q)}`,
+  searchScoutPeople: () => Promise.resolve({ users: [], hasMore: false }),
+}));
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: () => ({ select: () => ({ eq: () => ({ ilike: () => ({ limit: () => Promise.resolve({ data: [], error: null }) }) }) }) }),
+  },
 }));
 
 let reducedMotion = false;
@@ -42,109 +45,130 @@ function renderHero() {
   );
 }
 
-describe("KretopiaHero — Verified Creative Signal Field", () => {
+describe("KretopiaHero — Kreto Universe", () => {
   beforeEach(() => {
     trackLandingCta.mockClear();
     reducedMotion = false;
   });
-
-  it("renders exactly one H1", () => {
-    renderHero();
-    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Findworkthatfitswhatyoudo");
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it("primary CTA has the exact text, the canonical glass CTA class, and its route", () => {
+  it("says it in order: eyebrow, 'Find Your People.', one supporting line", () => {
     renderHero();
-    const primary = screen.getByRole("link", { name: /explore match/i });
-    // "Explore Match" opens Match (people matched to you); the Passport directory itself stays at /passport.
-    expect(primary).toHaveAttribute("href", "/match");
-    // CtaButton = the same btn-glass-primary as "Explore Verified Credits".
-    expect(primary.className).toMatch(/\bbtn-glass\b/);
-    expect(primary.className).toMatch(/\bbtn-glass-primary\b/);
+    expect(screen.getByText("The Creative Economy OS")).toBeInTheDocument();
+    const h1 = screen.getAllByRole("heading", { level: 1 });
+    expect(h1).toHaveLength(1);
+    expect(h1[0].textContent).toBe("Find Your People.");
+    expect(h1[0]).toHaveAttribute("aria-label", "Find Your People.");
+    expect(h1[0].querySelector(".k-gradient-text")).toHaveTextContent("People.");
+    const sub = screen.getByText("Discover people, skills and opportunities across the creative economy.");
+    expect(h1[0].compareDocumentPosition(sub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("the search field stands 1 cm past the CTA pair on each side (34rem + 2cm), where there is room", () => {
+  it("keeps the app's own search as the one thing to do, with the requested placeholder", () => {
     renderHero();
-    const field = screen.getByRole("combobox").closest(".k-search-hero") as HTMLElement;
-    // field > form > the dropdown's own root > the hero's search column
-    const searchColumn = field.closest("form")!.parentElement!.parentElement as HTMLElement;
-    expect(searchColumn.className).toContain("max-w-[calc(34rem+2cm)]");
-    const ctaColumn = screen.getByRole("link", { name: /explore match/i }).parentElement as HTMLElement;
-    expect(ctaColumn.className).toContain("max-w-[34rem]");
-  });
-
-  it("puts the designer's \"Find work on Kretopia\" label right above the search field", () => {
-    renderHero();
-    const label = screen.getByText("Find work on Kretopia");
-    expect(label.tagName).toBe("P");
-    expect(label.className).toMatch(/uppercase/);
-    expect(label.className).toContain("tracking-[0.32em]");
     const field = screen.getByRole("combobox");
-    // The label precedes the field in the document, in the same search column.
-    expect(label.compareDocumentPosition(field) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(label.parentElement).toBe(field.closest("form")!.parentElement!.parentElement);
+    expect(field).toHaveAttribute("placeholder", "Search people, skills and opportunities");
+    expect(field.className).toContain("rounded-[var(--k-hero-radius)]");
+    expect(field.closest(".k-search-hero")).not.toBeNull();
+    expect(screen.queryByRole("tab")).toBeNull();
   });
 
-  it("gives the search field and both CTAs the same corner, and the CTAs a medium size", () => {
+  it("offers People, Skills and Opportunities as links to existing routes", () => {
     renderHero();
-    const ctas = [screen.getByRole("link", { name: /explore match/i }), screen.getByRole("link", { name: /explore scout/i })];
-    for (const cta of ctas) {
-      expect(cta.className).toContain("rounded-[var(--k-hero-radius)]");
-      expect(cta.className).not.toMatch(/\brounded-full\b/);
-      // "md" (px-6 py-3), not the previous "lg" (px-7 py-3.5).
-      expect(cta.className).toMatch(/\bpy-3\b/);
-      expect(cta.className).not.toMatch(/py-3\.5/);
-    }
-    expect(screen.getByRole("combobox").className).toContain("rounded-[var(--k-hero-radius)]");
+    const nav = screen.getByRole("navigation", { name: "Start with" });
+    const links = Array.from(nav.querySelectorAll("a"));
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/match?tab=browse&view=grid", "/match", SCOUT_PATH]);
+    expect(links.map((a) => a.textContent)).toEqual(["PeoplePassport", "SkillsMatch", "OpportunitiesScout"]);
   });
 
-  it("secondary CTA has the exact text and preserved route, and is deliberately NOT the glass CTA", () => {
+  it("clicking a journey fires exactly one analytics event naming it", () => {
     renderHero();
-    const secondary = screen.getByRole("link", { name: /explore scout/i });
-    // "Explore Scout" opens Scout, which lives inside Opportunities (the old /opportunities feed is one click further, from Scout's page).
-    expect(secondary).toHaveAttribute("href", SCOUT_PATH);
-    // Restrained plain outline (CDO audit: no gradient on a default secondary control).
-    expect(secondary.className).not.toMatch(/\bbtn-glass\b/);
-  });
-
-  it("clicking the primary CTA fires exactly one analytics event with the signal_field variant", () => {
-    renderHero();
-    fireEvent.click(screen.getByRole("link", { name: /explore match/i }));
+    fireEvent.click(screen.getByRole("link", { name: /^Skills/ }));
     expect(trackLandingCta).toHaveBeenCalledTimes(1);
-    expect(trackLandingCta).toHaveBeenCalledWith(
-      "hero_build_passport",
-      "hero",
-      { label: "Explore Match", variant: "signal_field" },
-    );
+    expect(trackLandingCta).toHaveBeenCalledWith("hero_journey_skills", "hero", { label: "Skills", destination: "Match" });
   });
 
-  it("clicking the secondary CTA fires exactly one analytics event with the signal_field variant", () => {
+  it("has three secondary actions, outlined (not the glass CTA), in equal grid tracks, on the navbar's own routes", () => {
     renderHero();
-    fireEvent.click(screen.getByRole("link", { name: /explore scout/i }));
+    const labels = ["Explore Kretopia", "For Creatives", "For Companies"];
+    const hrefs = ["/discover", "/passport", "/post-opportunity"];
+    labels.forEach((label, i) => {
+      const link = screen.getByRole("link", { name: label });
+      expect(link).toHaveAttribute("href", hrefs[i]);
+      expect(link.className).not.toMatch(/\bbtn-glass\b/);
+      expect(link.className).toContain("rounded-[var(--k-hero-radius)]");
+    });
+    const grid = screen.getByRole("link", { name: "For Creatives" }).parentElement as HTMLElement;
+    expect(grid.className).toMatch(/\bgrid\b/);
+    expect(grid.className).toContain("sm:grid-cols-3");
+    // None of them is a primary: the search is.
+    expect(document.querySelector('[data-cta="primary"]')).toBeNull();
+  });
+
+  it("clicking a secondary action fires exactly one analytics event", () => {
+    renderHero();
+    fireEvent.click(screen.getByRole("link", { name: "For Companies" }));
     expect(trackLandingCta).toHaveBeenCalledTimes(1);
-    expect(trackLandingCta).toHaveBeenCalledWith(
-      "hero_explore_opportunities",
-      "hero",
-      { label: "Explore Scout", variant: "signal_field" },
-    );
+    expect(trackLandingCta).toHaveBeenCalledWith("hero_for_companies", "hero", { label: "For Companies", variant: "kreto_universe" });
   });
 
-  it("every decorative background layer is aria-hidden -- no fake data exposed to assistive tech", () => {
-    const { container } = renderHero();
-    const hiddenLayers = container.querySelectorAll('[aria-hidden="true"]');
-    // Background effects share one hidden ancestor; mascot and dissolve are hidden too.
-    expect(hiddenLayers.length).toBeGreaterThanOrEqual(3);
-    expect(container.querySelector('[data-kreto-wave]')).toHaveAttribute('aria-hidden', 'true');
+  it("shows one example search under the field, and picking it puts its words in the search", () => {
+    renderHero();
+    const first = HERO_PROMPTS[0];
+    fireEvent.click(screen.getByRole("button", { name: `Try searching: ${first.label}` }));
+    expect(screen.getByRole("combobox")).toHaveValue(first.query);
+    expect(trackLandingCta).toHaveBeenCalledWith("hero_example_search", "hero", { label: first.label });
   });
 
-  it("does not throw and still renders the field under prefers-reduced-motion", () => {
+  it("rotates the example every few seconds, then stops under reduced motion", () => {
+    vi.useFakeTimers();
+    const { unmount } = renderHero();
+    expect(screen.getByRole("button", { name: `Try searching: ${HERO_PROMPTS[0].label}` })).toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(HERO_PROMPT_INTERVAL_MS + 400); });
+    expect(screen.getByRole("button", { name: `Try searching: ${HERO_PROMPTS[1].label}` })).toBeInTheDocument();
+    unmount();
+
     reducedMotion = true;
     renderHero();
-    expect(screen.getByRole("link", { name: /explore match/i })).toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(HERO_PROMPT_INTERVAL_MS * 3); });
+    expect(screen.getByRole("button", { name: `Try searching: ${HERO_PROMPTS[0].label}` })).toBeInTheDocument();
+  });
+
+  it("every decorative layer is aria-hidden -- no fake data exposed to assistive tech", () => {
+    const { container } = renderHero();
+    const hiddenLayers = container.querySelectorAll('[aria-hidden="true"]');
+    expect(hiddenLayers.length).toBeGreaterThanOrEqual(3);
+    expect(container.querySelector("[data-kreto-wave]")).toHaveAttribute("aria-hidden", "true");
+    // The sky lives inside the hidden background layer.
+    const sky = container.querySelector("[data-universe]") as HTMLElement;
+    expect(sky.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  it("draws the sky as SVG, with no image to download", () => {
+    const { container } = renderHero();
+    const sky = container.querySelector("[data-universe]") as HTMLElement;
+    expect(sky.querySelector("svg")).not.toBeNull();
+    expect(sky.querySelector("img, image, canvas, video")).toBeNull();
+  });
+
+  it("under prefers-reduced-motion the sky is still and the hero is complete", () => {
+    reducedMotion = true;
+    const { container } = renderHero();
+    expect(container.querySelectorAll("[data-universe] [data-anim]")).toHaveLength(0);
+    expect(container.querySelector("[data-universe] [style*='animation']")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore Kretopia" })).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
     const section = screen.getByRole("heading", { level: 1 }).closest("section");
     if (!section) throw new Error("Hero section missing");
     expect(() => fireEvent.mouseMove(section, { clientX: 10, clientY: 10 })).not.toThrow();
+  });
+
+  it("with motion allowed the sky has its slow loops", () => {
+    const { container } = renderHero();
+    expect(container.querySelectorAll("[data-universe] [data-anim]").length).toBeGreaterThan(0);
   });
 });

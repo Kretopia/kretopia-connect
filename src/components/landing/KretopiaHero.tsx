@@ -1,6 +1,12 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
+ * v11: "Kreto Universe". Eyebrow, "Find Your People.", one supporting line, the existing search (placeholder "Search people,
+ * skills and opportunities", with an example search that rotates under it), the three journeys (People, Skills, Opportunities)
+ * as quiet chips, and three outlined secondary actions. Behind it a restrained night sky (HeroUniverse): stars, slow orbits and
+ * a small constellation of connection nodes, drawn as one SVG with transform and opacity loops only. Kreto below keeps the
+ * greeting and the turn toward the pointer described in v10. Under prefers-reduced-motion the hero is static and complete.
+ *
  * v10: Waving is the official 3D render, in HD. The 768px chibi art it used before
  * was a different character from the base Kreto (smaller head, finger gloves) and was
  * stretched past its resolution, which showed as pixels and mismatched colours. The two
@@ -54,39 +60,18 @@ import { motion, useMotionValue, useSpring, useTransform, type MotionValue } fro
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
-import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
 import { HERO_SEARCH_PLACEHOLDER } from "@/lib/searchIntent";
-import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
-import { SCOUT_PATH } from "@/lib/opportunityRoutes";
+import { OutlineCta } from "@/components/ui/glass-cta";
+import { HeroUniverse } from "@/components/landing/kretopia/HeroUniverse";
+import { HeroJourneyLinks } from "@/components/landing/kretopia/HeroJourneyLinks";
+import { HeroPromptRotator } from "@/components/landing/kretopia/HeroPromptRotator";
+import { HERO_SECONDARY_CTAS, type HeroPrompt } from "@/lib/heroJourneys";
+import { HERO_SEARCH_PLACEHOLDER_COMPACT } from "@/lib/searchIntent";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
 import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
 import kretoArmUrl from "@/assets/brand/kreto/hero-wave-hd-arm.webp";
-
-/** Headline, split into words per line so each can resolve out of a blur on
- *  load. Spacing between words comes from a margin on every span but the
- *  line's last, not a text-node space (which is what was collapsing). */
-const LINE_1 = ["Find", "work", "that", "fits"];
-const LINE_2 = ["what", "you", "do"];
-
-// Sampled from /logokretopia-removebg-preview.png — see file header. The
-// stops now live once in index.css (--k-text-gradient) because every
-// coloured text on the landing page wears this same gradient; the hero
-// reads it from there instead of keeping its own copy, so it can't drift.
-const KRETO_LOGO_GRADIENT = "var(--k-text-gradient)";
-
-const wordVariants = (reducedMotion: boolean, _gradientText = false) =>
-  reducedMotion
-    ? { hidden: {}, show: {} }
-    : {
-        hidden: { opacity: 1, y: 4 },
-        show: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.18, ease: [0.2, 0.65, 0.3, 0.95] as const },
-        },
-      };
 
 /* -------------------------------------------------------------------------- */
 /*  Kreto mascot — the official 3D render, waving: still body, waving hand     */
@@ -297,10 +282,22 @@ const KretoWave = memo(function KretoWave({
   );
 });
 
+const RISE_EASE = [0.2, 0.65, 0.3, 0.95] as const;
+
+/** The mouse or trackpad kind of pointer: the only one the background drifts against. */
+const isNarrowViewport = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 639px)").matches;
+const hasFinePointer = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
 export const KretopiaHero = () => {
   const reducedMotion = useReducedMotion();
+  const sectionRef = useRef<HTMLElement>(null);
+  const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [finePointer, setFinePointer] = useState(false);
+  const [narrow, setNarrow] = useState(isNarrowViewport);
 
-  // Signal field pointer response — unchanged.
+  // Pointer response, shared by the background layers and Kreto: one smoothed 0..1 position across the section.
   const pointerX = useMotionValue(0.5);
   const pointerY = useMotionValue(0.5);
   const smoothX = useSpring(pointerX, { stiffness: 40, damping: 22, mass: 0.6 });
@@ -320,205 +317,137 @@ export const KretopiaHero = () => {
   };
 
   useEffect(() => {
+    setFinePointer(hasFinePointer());
+    if (typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(max-width: 639px)");
+    const onChange = () => setNarrow(mq.matches);
+    mq.addEventListener?.("change", onChange);
+    return () => mq.removeEventListener?.("change", onChange);
+  }, []);
+
+  useEffect(() => {
     analytics.featureUsed("landing_hero_viewed", { location: "hero" });
     // Section-view tracking for "kretopia-hero" is handled generically by
     // LandingFunnelTracker (observes every real section[id] in the DOM) --
     // not duplicated here.
   }, []);
 
+  // Entrance: a short staggered rise, about 1.1 s in all, every block usable from the first frame. Nothing waits on it.
+  const rise = (delay: number) =>
+    reducedMotion
+      ? { initial: false as const }
+      : { initial: { opacity: 0, y: 14 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, delay, ease: RISE_EASE } };
+
+  const pickPrompt = (prompt: HeroPrompt) => {
+    trackLandingCta("hero_example_search", "hero", { label: prompt.label });
+    setQuery(prompt.query);
+    sectionRef.current?.querySelector<HTMLInputElement>('input[role="combobox"]')?.focus();
+  };
+
   return (
     <section
       id="kretopia-hero"
+      ref={sectionRef}
       className="relative flex min-h-[calc(100svh-4rem)] items-center sm:min-h-[calc(100svh-5rem)]"
       onMouseMove={handlePointerMove}
       onMouseLeave={handlePointerLeave}
     >
       {/* Decorative background layer only -- overflow-hidden stays scoped
-          here so it clips the vignette/blur/grid to the hero's bounds
-          without also clipping UnifiedSearchDropdown's results panel
-          below (z-[100], already high enough — this was a clipping bug,
-          not a stacking one). */}
+          here so it clips the scene to the hero's bounds without also
+          clipping UnifiedSearchDropdown's results panel below (z-[100],
+          already high enough -- this was a clipping bug, not a stacking one). */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* warm vignette — barely there (dropped in Daylight via data-hero-vignette) */}
+        {/* A calm vignette (dropped in Daylight via data-hero-vignette). */}
         <div
           data-hero-vignette
           className="absolute inset-0"
           style={{
             background:
-              "radial-gradient(120% 80% at 80% 20%, rgba(96, 52, 190, 0.14), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.6), transparent 60%)",
+              "radial-gradient(120% 80% at 80% 20%, rgba(96, 52, 190, 0.12), transparent 55%), radial-gradient(80% 60% at 0% 100%, rgba(0,0,0,0.55), transparent 60%)",
           }}
         />
 
-        {/* Verified Creative Signal Field — now the exact logo gradient
-            (see file header), heavily blurred and dimmed via opacity so
-            it still reads as an ambient glow, not a literal logo replica
-            plastered across the background. */}
+        {/* One soft Kretopia-gradient glow behind the headline: dimmer than before, brighter only while the search is in use. */}
         <motion.div className="absolute inset-0 flex items-center justify-center" style={{ x: fieldX, y: fieldY }}>
           <div
-            className="h-[70vh] w-[70vh] max-h-[560px] max-w-[560px] rounded-full blur-[90px]"
+            className="h-[60vh] w-[60vh] max-h-[460px] max-w-[460px] rounded-full blur-[90px] transition-opacity duration-500"
             style={{
               background:
                 "radial-gradient(circle, #4012F8 0%, #A516C5 30%, #F62489 60%, #FFA722 85%, transparent 100%)",
-              opacity: 0.32,
+              opacity: searchFocused ? 0.26 : 0.17,
             }}
           />
         </motion.div>
 
-        {/* Faint signal grid, masked to fade out — the "machine" layer */}
-        <div
-          className="absolute inset-0 opacity-[0.16]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-            maskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
-            WebkitMaskImage: "radial-gradient(70% 55% at 50% 35%, #000 0%, transparent 75%)",
-          }}
-        />
+        {/* The Kreto Universe: stars, slow orbits and a small constellation of connection nodes. */}
+        <div className={`absolute inset-0 transition-opacity duration-500 ${searchFocused ? "opacity-90 sm:opacity-100" : "opacity-55 sm:opacity-80"}`}>
+          <HeroUniverse reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} parallax={finePointer} />
+        </div>
       </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[900px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-5"
-        >
-          <BrandLogo size="md" showBeta />
-        </motion.div>
-
-        <motion.p
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="landing-eyebrow mb-6"
-        >
-          For creative professionals
+      <div className="relative z-[1] mx-auto flex w-full max-w-[1040px] flex-col items-center px-5 py-12 text-center sm:px-8 sm:py-16 lg:px-12">
+        <motion.p {...rise(0)} className="landing-eyebrow mb-6 inline-flex items-center gap-2">
+          <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-foreground/50" />
+          The Creative Economy OS
         </motion.p>
 
-        {/* Headline — line 2 is the exact logo gradient, self-contained
-            (own lineHeight + vertical padding) so it can't be clipped by
-            the H1's own shared line-height. Words still spaced with a
-            margin on each span, not a trailing space character. */}
-        <h1 className="landing-h1 landing-glow max-w-full mx-auto" style={{ lineHeight: 1.25 }}>
-          <motion.span
-            className="block"
-            initial="hidden"
-            animate="show"
-            variants={{ show: { transition: { staggerChildren: 0 } } }}
+        {/* "People." wears the logo gradient through the shared .k-gradient-text, which carries the clipping slack
+            (inline padding, box-decoration-break) a gradient word needs. One line from `sm`; it wraps on a phone. */}
+        <motion.div {...rise(0.08)} className="max-w-full">
+          <h1
+            aria-label="Find Your People."
+            className="landing-h1 landing-glow mx-auto max-w-full sm:whitespace-nowrap"
+            style={{ lineHeight: 1.15, fontSize: "clamp(2.1rem, 9.2vw, 4.75rem)" }}
           >
-            <span className="block">
-              {LINE_1.map((word, wi) => (
-                <motion.span
-                  key={wi}
-                  className={`inline-block${wi < LINE_1.length - 1 ? " mr-[0.28em]" : ""}`}
-                  variants={wordVariants(reducedMotion)}
-                >
-                  {word}
-                </motion.span>
-              ))}
+            Find Your{" "}
+            <span className="k-gradient-text" style={{ marginLeft: "-0.16em" }}>
+              People.
             </span>
-            <span className="block" style={{ lineHeight: 1.3, paddingTop: "0.05em", paddingBottom: "0.2em" }}>
-              <span
-                style={{
-                  display: "inline-block",
-                  backgroundImage: KRETO_LOGO_GRADIENT,
-                  WebkitBackgroundClip: "text",
-                  backgroundClip: "text",
-                  color: "transparent",
-                  // Same fix as .k-gradient-text/.landing-accent's own
-                  // shared CSS rule (index.css), applied directly since
-                  // this span uses raw inline styles, not those classes.
-                  // Confirmed live at 320px: with zero padding, "do" (the
-                  // last word, no trailing margin) sits flush against
-                  // this box's right edge and Chromium fails to paint
-                  // background-clip:text right at that boundary -- the
-                  // word silently disappears while "what"/"you" (which
-                  // have breathing room from their own trailing margin)
-                  // render fine. padding-inline gives the clip area
-                  // slack; margin-inline cancels the size increase.
-                  paddingInline: "0.16em",
-                  marginInline: "-0.16em",
-                  paddingBlock: "0.22em",
-                  marginBlock: "-0.22em",
-                }}
-              >
-                {LINE_2.map((word, wi) => (
-                  <motion.span
-                    key={wi}
-                    className={`inline-block${wi < LINE_2.length - 1 ? " mr-[0.28em]" : ""}`}
-                    variants={wordVariants(reducedMotion, true)}
-                  >
-                    {word}
-                  </motion.span>
-                ))}
-              </span>
-            </span>
-          </motion.span>
-        </h1>
-
-        {/* "Works" search — the app's real UnifiedSearchDropdown,
-            untouched internally; its own focus-ring color isn't
-            overridden here (see note below on why). */}
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          // The CTA pair below is 34rem wide: the field stands 1 cm (37.8 px) past it on each side, where there is room.
-          className="relative mt-9 sm:mt-10 w-full max-w-[calc(34rem+2cm)] mx-auto"
-        >
-          {/* The designer's label over the field: 11px, bold, uppercase, 0.32em apart, muted. */}
-          <p
-            className="mb-4 text-center text-[11px] font-bold uppercase leading-[1.5] tracking-[0.32em] text-foreground/60"
-            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-          >
-            Find work on Kretopia
-          </p>
-          <UnifiedSearchDropdown variant="hero" intentSearch placeholder={HERO_SEARCH_PLACEHOLDER} />
+          </h1>
         </motion.div>
 
-        {/* Neutral secondary action follows the active theme; the title
-            remains the only gradient text in this hero. */}
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="mt-6 sm:mt-7 flex w-full flex-col items-center gap-4"
-        >
-          {/* Equal grid tracks: one column on a phone, two equal columns from `sm`,
-              so the pair stays level whatever the labels' widths. */}
-          <div className="grid w-full max-w-[34rem] grid-cols-1 gap-3 sm:grid-cols-2">
-            {/* One entry per feature: Match owns people discovery; Scout owns work discovery. */}
-            <GlassCta
-              to="/match"
-              size="md"
-              data-cta="primary"
-              onClick={() =>
-                trackLandingCta("hero_build_passport", "hero", {
-                  label: "Explore Match",
-                  variant: "signal_field",
-                })
-              }
-              className="hero-passport-cta k-cta-future w-full rounded-[var(--k-hero-radius)]"
-            >
-              Explore Match
-            </GlassCta>
+        <motion.p {...rise(0.18)} className="landing-sub mx-auto mt-5 max-w-xl">
+          Discover people, skills and opportunities across the creative economy.
+        </motion.p>
 
-            <OutlineCta
-              to={SCOUT_PATH}
-              size="md"
-              data-cta="secondary"
-              onClick={() =>
-                trackLandingCta("hero_explore_opportunities", "hero", {
-                  label: "Explore Scout",
-                  variant: "signal_field",
-                })
-              }
-              className="k-cta-future w-full rounded-[var(--k-hero-radius)]"
-            >
-              Explore Scout
-            </OutlineCta>
+        {/* The search is the app's real UnifiedSearchDropdown: its results, routing and accessibility are untouched. */}
+        <motion.div
+          {...rise(0.3)}
+          className="relative mt-9 w-full max-w-[40rem] sm:mt-10"
+          onFocusCapture={() => setSearchFocused(true)}
+          onBlurCapture={() => setSearchFocused(false)}
+        >
+          <UnifiedSearchDropdown
+            variant="hero"
+            intentSearch
+            placeholder={narrow ? HERO_SEARCH_PLACEHOLDER_COMPACT : HERO_SEARCH_PLACEHOLDER}
+            value={query}
+            onValueChange={setQuery}
+            onOpenChange={setSearchOpen}
+          />
+          <div className="mt-3">
+            <HeroPromptRotator reducedMotion={reducedMotion} paused={searchOpen || searchFocused} onPick={pickPrompt} />
           </div>
+        </motion.div>
+
+        <motion.div {...rise(0.42)} className="mt-5 w-full max-w-[40rem]">
+          <HeroJourneyLinks />
+        </motion.div>
+
+        {/* Secondary actions: outlined and small, so the search stays the one thing to do. Equal grid tracks keep them level. */}
+        <motion.div {...rise(0.54)} className="mt-8 grid w-full max-w-[40rem] grid-cols-2 gap-3 sm:grid-cols-3">
+          {HERO_SECONDARY_CTAS.map((cta, i) => (
+            <OutlineCta
+              key={cta.analyticsId}
+              to={cta.to}
+              size="sm"
+              data-cta="secondary"
+              onClick={() => trackLandingCta(cta.analyticsId, "hero", { label: cta.label, variant: "kreto_universe" })}
+              className={`w-full rounded-[var(--k-hero-radius)] text-muted-foreground hover:text-foreground${i === 0 ? " col-span-2 sm:col-span-1" : ""}`}
+            >
+              {cta.label}
+            </OutlineCta>
+          ))}
         </motion.div>
       </div>
 
