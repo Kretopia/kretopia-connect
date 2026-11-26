@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, Heart, ScanSearch, Users, Globe2, Orbit } from "lucide-react";
+import { ArrowRight, ScanSearch, Users, Globe2, Orbit } from "lucide-react";
 import { ScoutScanButton } from "@/components/scout/ScoutScanButton";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -70,16 +70,13 @@ export function MatchPulse() {
     const query = question.trim();
     if (!query) return;
     const normalized = query.toLowerCase();
-    if (/interest|like me|received|who.*me/.test(normalized)) {
-      setAnswer("People who already chose Connect are waiting in Received interests. A mutual Connect creates the match.");
-      navigate("/match?tab=connected&view=interested");
-    } else if (/connect|network|people|creator|collab|project/.test(normalized)) {
+    if (/connect|network|people|creator|collab|project|interest|like me|received|who.*me/.test(normalized)) {
       setAnswer("Start with a full Passport, check the facts you share, then Pass or Connect. I never auto-connect anyone.");
       scan();
     } else if (/message|talk|chat/.test(normalized)) {
       setAnswer("Messaging opens after a mutual match. That way, interest never becomes unwanted contact.");
     } else {
-      setAnswer("I can help you refresh your deck, review received interests, or understand how mutual matching works.");
+      setAnswer("I can help you refresh your deck, search the grid, or understand how mutual matching works.");
     }
     setQuestion("");
   };
@@ -106,9 +103,6 @@ export function MatchPulse() {
       </div>
       <div className="border-t border-border py-4">
         <div className="mb-3 flex flex-wrap gap-2">
-          <Button type="button" variant="outline" className="h-10 justify-start gap-2 text-xs" onClick={() => navigate("/match?tab=connected&view=interested")}>
-            <Heart className="h-4 w-4 text-primary" aria-hidden /> Who’s interested in me?
-          </Button>
           <Button type="button" variant="outline" className="h-10 justify-start gap-2 text-xs" onClick={() => navigate("/match?tab=browse&view=grid")}>
             <Users className="h-4 w-4 text-primary" aria-hidden /> Explore every creator
           </Button>

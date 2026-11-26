@@ -265,7 +265,8 @@ describe("Match deck with offers: people are answered exactly as before", () => 
     expect(title).toBe("Kretopia interest sent");
     expect(options.description).toMatch(/Pending for now/);
     expect(options.description).toMatch(/if they connect too/i);
-    expect(options.action.label).toBe("View sent");
+    // "Sent interests" is not a Match section any more, so there is nothing to open from this toast.
+    expect(options.action).toBeUndefined();
     await answerPerson("Bo");
     await waitFor(() => expect(state.recordSwipe).toHaveBeenCalledWith("p-Bo", "left"));
     expect(state.resolve).not.toHaveBeenCalled();

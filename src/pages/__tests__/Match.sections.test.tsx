@@ -3,8 +3,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 
-// Browse (Discover's deck merged in) and Connected (Interested merged in) each hold two views behind one
-// SegmentToggle instead of being two tabs apiece -- see src/lib/matchSections.ts.
+// Match has three sections: Browse (the deck), Grid (the searchable grid, a second view of Browse) and Connected. Directory,
+// Interested and Sent interests are gone -- see src/lib/matchSections.ts.
 vi.mock("@/components/SEO", () => ({ SEO: () => null }));
 vi.mock("@/components/features/FeaturePageHeader", () => ({ FeaturePageHeader: () => null }));
 vi.mock("@/components/studio-reference/StudioFeatureShell", () => ({ StudioFeatureShell: ({ children }: { children: ReactNode }) => <>{children}</> }));
@@ -12,8 +12,6 @@ vi.mock("@/components/swipe", () => ({ MatchDeck: () => <p>the deck</p> }));
 vi.mock("@/components/swipe/MatchPulse", () => ({ MatchPulse: () => null }));
 vi.mock("@/components/discover/BrowseCreators", () => ({ BrowseCreators: () => <p>the grid</p> }));
 vi.mock("@/components/circle/ConnectedCollaborators", () => ({ ConnectedCollaborators: () => <p>accepted connections</p> }));
-vi.mock("@/components/swipe/LikesYouGrid", () => ({ LikesYouGrid: () => <p>people interested in you</p> }));
-vi.mock("@/pages/PassportDirectory", () => ({ default: () => <p>directory</p> }));
 import Match from "../Match";
 
 const Where = () => {
@@ -28,7 +26,15 @@ const draw = (path: string) => render(
 );
 const click = (role: string, name: string) => fireEvent.mouseDown(screen.getByRole(role, { name }), { button: 0, ctrlKey: false });
 
-describe("Match: Browse and Connected each hold their old second tab as a view, not a tab of their own", () => {
+describe("Match: Browse, Grid and Connected, and nothing else", () => {
+  it("offers exactly three sections", () => {
+    draw("/match");
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Browse", "Grid", "Connected"]);
+    for (const gone of ["Directory", "Interested", "Sent interests"]) {
+      expect(screen.queryByRole("tab", { name: gone })).toBeNull();
+    }
+  });
+
   it("a bare /match still opens the deck by default, preserving the default discovery view", () => {
     draw("/match");
     expect(screen.getByText("the deck")).toBeInTheDocument();
@@ -36,7 +42,7 @@ describe("Match: Browse and Connected each hold their old second tab as a view, 
     expect(screen.getByRole("tab", { name: "Grid" })).toHaveAttribute("aria-selected", "false");
   });
 
-  it("Browse's Grid segment shows the grid and writes the URL, without leaving the Browse tab", async () => {
+  it("Grid shows the grid and writes the URL, without leaving the Browse tab", async () => {
     draw("/match");
     click("tab", "Grid");
     expect(await screen.findByText("the grid")).toBeInTheDocument();
@@ -45,57 +51,44 @@ describe("Match: Browse and Connected each hold their old second tab as a view, 
     expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=browse&view=grid");
   });
 
-  it("the Connected tab opens on accepted connections, without duplicate navigation", async () => {
+  it("the Connected tab opens on accepted connections", async () => {
     draw("/match");
     click("tab", "Connected");
     expect(await screen.findByText("accepted connections")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "false");
   });
 
-  it("Connected's Interested segment shows who is interested, and writes the URL", async () => {
-    draw("/match");
-    click("tab", "Connected");
-    await screen.findByText("accepted connections");
-    click("tab", "Interested");
-    expect(await screen.findByText("people interested in you")).toBeInTheDocument();
-    expect(screen.queryByText("accepted connections")).toBeNull();
-    expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=connected&view=interested");
-  });
-
-  it("switching to Directory and back to Browse resets Browse to its default (Deck), not a stale Grid", async () => {
-    draw("/match?tab=browse&view=grid");
+  it("moving between sections ends a search term that arrived with a link, and back to Browse resets it to the deck", async () => {
+    draw("/match?tab=browse&view=grid&q=motion");
     expect(await screen.findByText("the grid")).toBeInTheDocument();
-    click("tab", "Directory");
-    expect(await screen.findByText("directory")).toBeInTheDocument();
+    click("tab", "Connected");
+    expect(await screen.findByText("accepted connections")).toBeInTheDocument();
+    expect(screen.getByTestId("location")).not.toHaveTextContent("q=");
     click("tab", "Browse");
     expect(await screen.findByText("the deck")).toBeInTheDocument();
   });
+});
 
+describe("Match: old links to the removed sections still land somewhere useful", () => {
   it("an old link to the Discover tab opens Browse on the deck", () => {
     draw("/match?tab=discover");
     expect(screen.getByText("the deck")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Browse" })).toHaveAttribute("aria-selected", "true");
   });
 
-  it("an old link to the Interested tab opens Connected on that same view", async () => {
-    draw("/match?tab=interested");
-    expect(await screen.findByText("people interested in you")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "true");
+  it("an old link to the Directory opens the Grid, keeping the search term", async () => {
+    draw("/match?tab=directory&q=designer");
+    expect(await screen.findByText("the grid")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Grid" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("location")).toHaveTextContent("q=designer");
   });
 
-  it("Directory keeps its own clean URL, with no leftover view param", async () => {
-    draw("/match?tab=browse&view=grid");
-    click("tab", "Directory");
-    expect(await screen.findByText("directory")).toBeInTheDocument();
-    expect(screen.getByTestId("location")).toHaveTextContent("/match?tab=directory");
-    expect(screen.getByTestId("location")).not.toHaveTextContent("view=");
-  });
-  it("sent interests remain distinct from accepted connections and incoming interests", async () => {
-    draw("/match?tab=connected&view=sent");
-    expect(screen.getByRole("tab", { name: "Sent interests" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "false");
-    expect(screen.getByRole("tab", { name: "Interested" })).toHaveAttribute("aria-selected", "false");
+  it("old links to Interested and Sent interests open Connected", async () => {
+    for (const path of ["/match?tab=interested", "/match?tab=connected&view=interested", "/match?tab=connected&view=sent"]) {
+      const { unmount } = draw(path);
+      expect(await screen.findByText("accepted connections")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Connected" })).toHaveAttribute("aria-selected", "true");
+      unmount();
+    }
   });
 });

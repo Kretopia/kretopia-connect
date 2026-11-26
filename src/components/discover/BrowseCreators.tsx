@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -72,8 +72,11 @@ export function BrowseCreators() {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  // A search term can arrive with the link (?q=, the hero's Skills search): it is typed into this search bar and searched on arrival.
+  const [searchParams] = useSearchParams();
+  const linkedQuery = searchParams.get("q")?.trim() ?? "";
 
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(linkedQuery);
   const [aiMode, setAiMode] = useState(false);
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [sort, setSort] = useState<SortKey>("recommended");
@@ -317,6 +320,16 @@ export function BrowseCreators() {
     runFilterSearch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort, prioritizeSector, refreshToken, user?.id]);
+
+  // The same grid opened again with a different term (a new link while this one is mounted): fill the bar and search.
+  const seenLinkedQuery = useRef(linkedQuery);
+  useEffect(() => {
+    if (seenLinkedQuery.current === linkedQuery) return;
+    seenLinkedQuery.current = linkedQuery;
+    setQuery(linkedQuery);
+    setAiMode(false);
+    setRefreshToken((t) => t + 1);
+  }, [linkedQuery]);
 
   const saveCurrentSearch = async () => {
     if (!user || !saveName.trim()) return;

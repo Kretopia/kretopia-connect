@@ -369,7 +369,7 @@ const AppContent = () => {
             <Route path="/comp/:userId" element={<CompCard />} />
             {/* Passport Directory + vanity routes — public, SEO-indexed.
                 Static "/passport/comp-card" must come BEFORE "/passport/:passportId". */}
-            <Route path="/passport" element={<RedirectKeepingSearch to="/match?tab=directory" />} />
+            <Route path="/passport" element={<RedirectKeepingSearch to="/match?tab=browse&view=grid" />} />
             <Route path="/start" element={<StartMyPassport />} />
             <Route path="/passport/comp-card" element={<ProtectedRoute><CompCardBuilder /></ProtectedRoute>} />
             <Route path="/passport/:passportId" element={<HandleResolver mode="passportId" />} />

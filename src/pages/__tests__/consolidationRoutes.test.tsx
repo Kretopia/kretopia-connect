@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { describe, expect, it } from "vitest";
@@ -20,10 +21,12 @@ describe("merged discovery destinations", () => {
     </MemoryRouter>);
     expect(screen.getByTestId("where").textContent).toBe("/scout?tab=all&q=film+score#results");
   });
-  it("opens the former Passport directory in Match, preserving search and anchor", () => {
-    expect(redirectTarget("/match?tab=directory", "?q=designer", "#people")).toEqual({
-      pathname: "/match", search: "?q=designer&tab=directory", hash: "#people",
+  it("opens the former Passport directory on Match's Grid, preserving search and anchor", () => {
+    expect(redirectTarget("/match?tab=browse&view=grid", "?q=designer", "#people")).toEqual({
+      pathname: "/match", search: "?q=designer&tab=browse&view=grid", hash: "#people",
     });
+    // and that is where the app sends /passport
+    expect(readFileSync("src/App.tsx", "utf8")).toContain('<Route path="/passport" element={<RedirectKeepingSearch to="/match?tab=browse&view=grid" />} />');
   });
   it("keeps marketplace offers inside Scout", () => {
     expect(scoutFeedTarget("view=marketplace&q=film")).toBe("/scout?q=film&tab=marketplace");
