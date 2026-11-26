@@ -2,7 +2,6 @@ import { memo, useMemo } from "react";
 import { motion, useTransform, type MotionValue } from "framer-motion";
 
 import cloudsUrl from "@/assets/brand/universe/planet-clouds.webp";
-import type { JourneyId } from "@/lib/heroJourneys";
 
 /**
  * The hero's planet at dusk. A huge dark sphere rises along the bottom of the hero and only its top limb shows. Above the limb the
@@ -16,8 +15,8 @@ import type { JourneyId } from "@/lib/heroJourneys";
  * everything that moves is a transform or an opacity change on the compositor; the one image is a ~75 KB tileable cloud
  * texture. Motion is a short entrance (sky, planet, atmosphere, sun, lights in that order), then slow idle loops (sun drift,
  * breathing, clouds, lights, a rare shooting star), then response: a fine pointer parallaxes three depths, scrolling sinks the
- * planet slower than the page, using the search lifts the glow, and hovering one of the dock's journeys tints the horizon in
- * that journey's colour. Under prefers-reduced-motion the scene is drawn once and nothing moves.
+ * planet slower than the page, using the search lifts the glow, and narrowing the search to People, Match or Scout tints the horizon
+ * in that area's colour. Under prefers-reduced-motion the scene is drawn once and nothing moves.
  */
 
 const STAR_FIELD = { w: 1200, h: 700 } as const;
@@ -107,7 +106,7 @@ const CSS = `
 .k-universe[data-energized] .k-atm { opacity: 1; }
 .k-universe[data-motion] .k-atm { animation: k-ignite 2.8s cubic-bezier(0.2, 0.65, 0.3, 0.95) 0.5s backwards, k-sway var(--s, 70s) ease-in-out infinite alternate; }
 
-/* The horizon takes the colour of the journey under the pointer. */
+/* The horizon takes the colour of the area the search is narrowed to. */
 .k-universe .k-tint { position: absolute; left: 0; right: 0; bottom: 0; height: calc(var(--rise) * 2.4); opacity: 0; transition: opacity 0.6s ease; mix-blend-mode: screen;
   background: radial-gradient(60% 100% at 50% 100%, color-mix(in srgb, var(--tint) 55%, transparent), transparent 72%); }
 .k-universe[data-tint] .k-tint { opacity: 0.85; }
@@ -188,6 +187,9 @@ const CSS = `
 }
 `;
 
+/** The horizon can take one of the logo's warm colours: violet, magenta or orange. */
+export type HeroTint = "people" | "skills" | "opportunities";
+
 interface HeroUniverseProps {
   reducedMotion: boolean;
   /** The hero's smoothed pointer position, 0..1 across the section. */
@@ -199,8 +201,8 @@ interface HeroUniverseProps {
   parallax: boolean;
   /** The search is in use: the glow along the limb rises a little. */
   energized?: boolean;
-  /** The journey under the pointer or focus, if any: the horizon takes its colour. */
-  tint?: JourneyId | null;
+  /** The area the search is narrowed to, if it has a colour: the horizon takes it. */
+  tint?: HeroTint | null;
 }
 
 /** The sun and the lit side of the limb turn together, so they share one set of variables. */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -60,7 +60,9 @@ const Meetup = () => {
   const navigate = useNavigate();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  // The landing search opens Events with its words in ?q=; they fill this page's own search.
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => (searchParams.get("q") ?? "").slice(0, 120));
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchResults, setSearchResults] = useState<EventRow[] | null>(null);
   const [searching, setSearching] = useState(false);

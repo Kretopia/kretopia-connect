@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock } from "lucide-react";
+import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock, CalendarDays, ChevronDown, Globe, Radio, Telescope, type LucideIcon } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { searchCatalog, CATALOG_KIND_LABEL, type CatalogEntry, type CatalogKind } from "@/lib/searchCatalog";
@@ -14,6 +14,9 @@ import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { PublicWebSearchResults } from "./PublicWebSearchResults";
 import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { analytics } from "@/lib/analytics";
+import { SEARCH_SCOPES, DEFAULT_SEARCH_SCOPE, isSearchScope, scopeSearchTarget, scopeSources, searchScopeMeta, type SearchScope } from "@/lib/heroSearchScope";
 import { searchScoutPeople, scoutSearchTarget, SCOUT_PEOPLE_PAGE_SIZE } from "@/lib/scoutPeopleSearch";
 import { HeroIntentPanel, type IntentResult } from "@/components/search/HeroIntentPanel";
 import {
@@ -27,7 +30,7 @@ import {
 } from "@/lib/searchIntent";
 
 interface SearchResult {
-  type: "creator" | "credit" | "gig";
+  type: "creator" | "credit" | "gig" | "event";
   id: string;
   title: string;
   subtitle?: string;
@@ -47,7 +50,7 @@ interface UnifiedSearchDropdownProps {
   onOpenChange?: (open: boolean) => void;
   className?: string;
   onSelect?: (result: SearchResult) => void;
-  onQuerySubmit?: (query: string) => void;
+  onQuerySubmit?: (query: string, scope?: SearchScope) => void;
   /** Whether to show this dropdown's own "No results found" panel when a
    *  query matches nothing. Defaults to true (the dropdown IS the whole
    *  results experience for the navbar/landing-hero usages). Pass false
@@ -67,6 +70,14 @@ interface UnifiedSearchDropdownProps {
    * "Explore by". Only meaningful with variant="hero"; the navbar and the share dialog leave it off and keep their own behaviour.
    */
   intentSearch?: boolean;
+  /**
+   * The hero's scoped search (needs `intentSearch`): a dropdown at the start of the field narrows where the words are looked for
+   * (All, People, Scout, Match, Events, SoundStages); the scope travels with the query, picks the sources asked while typing and the
+   * page Enter opens. The microphone and the clear button are both kept, and the submit button stays at the end.
+   */
+  scopeSearch?: boolean;
+  scope?: SearchScope;
+  onScopeChange?: (scope: SearchScope) => void;
   /** Caps the results list to this height (any CSS length), for a host that knows how much room is left under the field. */
   resultsMaxHeight?: string;
 }
@@ -78,7 +89,17 @@ const CATALOG_ICON: Record<CatalogKind, typeof User> = {
   work: Briefcase,
 };
 
+const SCOPE_ICON: Record<SearchScope, LucideIcon> = {
+  all: Globe,
+  people: User,
+  scout: Telescope,
+  match: Wand2,
+  events: CalendarDays,
+  soundstages: Radio,
+};
+
 const TYPE_META = {
+  event: { label: "Event", icon: CalendarDays, color: "text-primary" },
   creator: { label: "Creator", icon: User, color: "text-primary" },
   credit: { label: "Credit", icon: Database, color: "text-accent" },
   gig: { label: "Gig", icon: Briefcase, color: "text-emerald-500" },
@@ -89,6 +110,7 @@ const TYPE_META = {
 // database records are ever shown here — no AI-guessed or web-sourced
 // suggestions when a name doesn't match anything real.
 const RESULT_GROUP_LABEL: Record<SearchResult["type"], string> = {
+  event: "Events",
   creator: "Users",
   credit: "Projects",
   gig: "Opportunities",
@@ -109,12 +131,25 @@ export function UnifiedSearchDropdown({
   usersOnly = false,
   disabled = false,
   intentSearch = false,
+  scopeSearch = false,
+  scope: scopeProp,
+  onScopeChange,
   resultsMaxHeight,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const intentMode = intentSearch && variant === "hero" && !usersOnly;
   const [exploreCategory, setExploreCategory] = useState<ExploreByCategoryId | null>(null);
+  const [scopeState, setScopeState] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
+  /** The scope in force: only the hero's scoped search has one. */
+  const scope: SearchScope | undefined = scopeSearch && intentMode ? scopeProp ?? scopeState : undefined;
+  const changeScope = (next: string) => {
+    if (!isSearchScope(next)) return;
+    setScopeState(next);
+    onScopeChange?.(next);
+    setExploreCategory(null);
+    inputRef.current?.focus();
+  };
   // The old catalog ("Roles") is what "Explore by" replaces, so the intent search never shows it.
   const catalogEnabled = !usersOnly && !intentMode && (showCatalog ?? variant === "hero");
   const minChars = intentMode ? 2 : usersOnly || catalogEnabled ? 1 : 2;
@@ -187,7 +222,7 @@ export function UnifiedSearchDropdown({
     }
     const timer = setTimeout(() => doSearch(trimmedQuery), usersOnly || variant === "hero" ? 150 : 350);
     return () => { clearTimeout(timer); abortRef.current?.abort(); };
-  }, [query, usersOnly, user?.id, variant, intentMode]);
+  }, [query, usersOnly, user?.id, variant, intentMode, scope]);
 
   const doSearch = useCallback(async (q: string, appendUsers = false) => {
     abortRef.current?.abort();
@@ -200,19 +235,43 @@ export function UnifiedSearchDropdown({
 
     try {
       if (intentMode) {
-        // People and open opportunities together, both public-safe for a guest; Skills are answered from the vocabulary.
-        const [people, gigs] = await Promise.allSettled([
-          searchScoutPeople(q, 0),
-          supabase.from("opportunities").select("id, title, type, compensation, location").eq("status", "active").ilike("title", `%${q}%`).limit(3),
+        // Only the sources of the scope are asked: all of them under All, one under a chosen scope. Everything here is public-safe for a guest;
+        // Skills are answered from the vocabulary and SoundStages opens its own page, so neither fetches anything.
+        const want = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, stages: false };
+        const nothing = Promise.resolve(null);
+        const [people, gigs, jams] = await Promise.allSettled([
+          want.people ? searchScoutPeople(q, 0) : nothing,
+          want.opportunities ? supabase.from("opportunities").select("id, title, type, compensation, location").eq("status", "active").ilike("title", `%${q}%`).limit(3) : nothing,
+          want.events
+            ? supabase
+                .from("creative_jams")
+                .select("id, title, start_time, venue_name")
+                .eq("is_public", true)
+                .gte("start_time", new Date().toISOString())
+                .or(`title.ilike.${escapePostgrestValue(`%${q}%`)},venue_name.ilike.${escapePostgrestValue(`%${q}%`)}`)
+                .order("start_time", { ascending: true })
+                .limit(3)
+            : nothing,
         ]);
         if (controller.signal.aborted) return;
-        const gigRows = gigs.status === "fulfilled" && !gigs.value.error ? gigs.value.data ?? [] : null;
-        if (people.status === "rejected" && gigRows === null) throw people.reason;
-        const peopleRows: SearchResult[] = people.status === "fulfilled"
+        const gigRows = gigs.status === "fulfilled" ? (gigs.value === null ? [] : gigs.value.error ? null : gigs.value.data ?? []) : null;
+        const jamRows = jams.status === "fulfilled" ? (jams.value === null ? [] : jams.value.error ? null : jams.value.data ?? []) : null;
+        const peopleOk = people.status === "fulfilled";
+        // It fails only when every source that was asked failed.
+        const failed = [want.people && !peopleOk, want.opportunities && gigRows === null, want.events && jamRows === null].filter(Boolean).length;
+        const asked = [want.people, want.opportunities, want.events].filter(Boolean).length;
+        if (asked > 0 && failed === asked) throw people.status === "rejected" ? people.reason : new Error("search failed");
+        const peopleRows: SearchResult[] = people.status === "fulfilled" && people.value
           ? people.value.users.slice(0, 3).map(p => ({ type: "creator", id: p.user_id, title: p.full_name || "Kretopia user", subtitle: [p.role, p.location].filter(Boolean).join(" · "), avatar: p.avatar_url }))
           : [];
         const gigResults: SearchResult[] = (gigRows ?? []).map(o => ({ type: "gig", id: o.id, title: o.title, subtitle: [o.type, o.compensation, o.location].filter(Boolean).join(" · ") }));
-        setResults([...peopleRows, ...gigResults]);
+        const eventResults: SearchResult[] = (jamRows ?? []).map(j => ({
+          type: "event",
+          id: j.id,
+          title: j.title,
+          subtitle: [j.start_time ? new Date(j.start_time).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null, j.venue_name].filter(Boolean).join(" · "),
+        }));
+        setResults([...peopleRows, ...gigResults, ...eventResults]);
         setLoading(false);
         return;
       }
@@ -383,7 +442,7 @@ export function UnifiedSearchDropdown({
         setLoading(false);
       }
     }
-  }, [user?.id, usersOnly, variant, intentMode]);
+  }, [user?.id, usersOnly, variant, intentMode, scope]);
 
   const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
 
@@ -410,7 +469,7 @@ export function UnifiedSearchDropdown({
   const handleSelect = (r: SearchResult) => {
     if (disabled) return;
     if (catalogEnabled && variant !== "hero" && !onSelect) {
-      const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
+      const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : r.type === "event" ? `/event/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
       if (requireAuthFor(target)) return;
     }
     setOpen(false);
@@ -426,6 +485,7 @@ export function UnifiedSearchDropdown({
 
     if (r.type === "creator") navigate(`/profile/${r.id}`);
     else if (r.type === "gig") navigate(`/opportunity/${r.id}`);
+    else if (r.type === "event") navigate(`/event/${r.id}`);
     else navigate(`/production?name=${encodeURIComponent(r.title)}`);
   };
 
@@ -440,12 +500,25 @@ export function UnifiedSearchDropdown({
     setOpen(false);
     onOpenChange?.(false);
 
+    if (scope) analytics.featureUsed("landing_hero_search", { scope });
+
     if (onQuerySubmit) {
-      onQuerySubmit(trimmedQuery);
+      if (scope) onQuerySubmit(trimmedQuery, scope);
+      else onQuerySubmit(trimmedQuery);
       return;
     }
 
     setQuery("");
+    if (intentMode && scope) {
+      // The scope travels with the words: a chosen scope opens its own area, All opens the first area with an answer.
+      navigate(scopeSearchTarget(scope, trimmedQuery, {
+        people: results.filter(r => r.type === "creator").length,
+        skills: searchExploreBy(trimmedQuery, 1).length,
+        opportunities: results.filter(r => r.type === "gig").length,
+        events: results.filter(r => r.type === "event").length,
+      }));
+      return;
+    }
     if (intentMode) {
       // Enter with nothing picked: the Grid, unless the only answer is an open opportunity.
       navigate(searchEnterTarget(trimmedQuery, {
@@ -456,7 +529,7 @@ export function UnifiedSearchDropdown({
       return;
     }
     navigate(scoutSearchTarget(rawQuery));
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results]);
+  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results, scope]);
 
   // Skills → Explore by → an item: the matching professionals, in Match.
   const handleExplore = (entry: ExploreByItem) => {
@@ -475,6 +548,16 @@ export function UnifiedSearchDropdown({
     onOpenChange?.(false);
     setQuery("");
     navigate(searchIntentTarget(target, words));
+  };
+
+  // Events and SoundStages have no intent of their own: their "see all" opens the scope's page with the words in it.
+  const handleSeeAllScope = (target: SearchScope) => {
+    const words = query.trim();
+    if (!words) return;
+    setOpen(false);
+    onOpenChange?.(false);
+    setQuery("");
+    navigate(scopeSearchTarget(target, words));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -558,12 +641,51 @@ export function UnifiedSearchDropdown({
     <div ref={wrapperRef} className={cn("relative", className)}>
       <form onSubmit={handleSubmit}>
         <div className={cn("group relative", isHero && "k-search-hero")}>
-          <Search
-            className={cn(
-              "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
-              isHero ? "left-5 h-5 w-5 transition-colors group-focus-within:text-foreground" : "left-3 h-4 w-4"
-            )}
-          />
+          {scope ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  disabled={disabled}
+                  aria-label={`Search scope: ${searchScopeMeta(scope).label}. Change scope`}
+                  data-scope-trigger
+                  className="absolute left-2 top-1/2 z-[2] flex h-10 -translate-y-1/2 items-center gap-1.5 rounded-[8px] bg-foreground/[0.06] px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 data-[state=open]:bg-foreground/[0.12] sm:h-11 sm:w-[8.5rem] sm:justify-between sm:px-3"
+                >
+                  {(() => {
+                    const ScopeIcon = SCOPE_ICON[scope];
+                    return <ScopeIcon className="h-4 w-4 shrink-0 text-muted-foreground sm:hidden" aria-hidden />;
+                  })()}
+                  <span className="hidden truncate sm:inline">{searchScopeMeta(scope).label}</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" sideOffset={8} className="z-[120] w-[min(18rem,calc(100vw-2.5rem))] rounded-xl p-1.5">
+                <DropdownMenuRadioGroup value={scope} onValueChange={changeScope}>
+                  {SEARCH_SCOPES.map((meta) => {
+                    const ScopeIcon = SCOPE_ICON[meta.id];
+                    return (
+                      <DropdownMenuRadioItem key={meta.id} value={meta.id} className="gap-3 rounded-lg py-2 pl-3 pr-8 [&>span:first-child]:left-auto [&>span:first-child]:right-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground/80">
+                          <ScopeIcon className="h-3.5 w-3.5" aria-hidden />
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block text-sm font-medium text-foreground">{meta.label}</span>
+                          <span className="block truncate text-[11px] text-muted-foreground">{meta.description}</span>
+                        </span>
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Search
+              className={cn(
+                "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
+                isHero ? "left-5 h-5 w-5 transition-colors group-focus-within:text-foreground" : "left-3 h-4 w-4"
+              )}
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
@@ -590,7 +712,7 @@ export function UnifiedSearchDropdown({
             disabled={disabled}
             enterKeyHint="search"
             role="combobox"
-            aria-label={usersOnly ? "Search Kretopia users" : intentMode ? "Search people, skills or opportunities" : "Search a name, project or opportunity"}
+            aria-label={usersOnly ? "Search Kretopia users" : scope ? `Search ${scope === "all" ? "Kretopia" : searchScopeMeta(scope).label}` : intentMode ? "Search people, skills or opportunities" : "Search a name, project or opportunity"}
             aria-expanded={open}
             aria-controls={listboxId}
             className={cn(
@@ -598,7 +720,10 @@ export function UnifiedSearchDropdown({
               isHero
                 // The gradient hairline and glow come from .k-search-hero (index.css), so the
                 // field's own border stays invisible and its box never changes on focus.
-                ? "h-14 sm:h-16 rounded-[var(--k-hero-radius)] border-transparent bg-card/90 backdrop-blur-sm pl-12 pr-[5.75rem] sm:pl-14 sm:pr-24 text-base shadow-lg placeholder:text-[13px] sm:placeholder:text-base placeholder:text-muted-foreground/70 focus:border-transparent"
+                ? cn(
+                    "h-14 sm:h-16 rounded-[var(--k-hero-radius)] border-transparent bg-card/90 backdrop-blur-sm text-base shadow-lg placeholder:text-[13px] sm:placeholder:text-base placeholder:text-muted-foreground/70 focus:border-transparent",
+                    scope ? "pl-[4.75rem] pr-[7.5rem] sm:pl-[10.25rem] sm:pr-[8.5rem]" : "pl-12 pr-[5.75rem] sm:pl-14 sm:pr-24",
+                  )
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
                 : "h-10 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
@@ -649,12 +774,13 @@ export function UnifiedSearchDropdown({
                   aria-label="Clear search"
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? "right-[3.75rem] sm:right-[4.25rem]" : "right-8"
+                    isHero ? (scope ? "right-[6.25rem] sm:right-[6.9rem]" : "right-[3.75rem] sm:right-[4.25rem]") : "right-8"
                   )}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
-              ) : !usersOnly && voice.supported ? (
+              ) : null}
+              {(!query || scope) && !usersOnly && voice.supported ? (
                 <button
                   type="button"
                   onClick={voice.start}
@@ -733,6 +859,9 @@ export function UnifiedSearchDropdown({
                 query={query}
                 people={results.filter((r) => r.type === "creator") as IntentResult[]}
                 opportunities={results.filter((r) => r.type === "gig") as IntentResult[]}
+                events={results.filter((r) => r.type === "event") as IntentResult[]}
+                scope={scope}
+                onSeeAllScope={handleSeeAllScope}
                 loading={loading}
                 error={error}
                 category={exploreCategory}

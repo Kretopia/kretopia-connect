@@ -1,9 +1,8 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { KretopiaHero } from "../KretopiaHero";
-import { SCOUT_PATH } from "@/lib/opportunityRoutes";
-import { HERO_JOURNEYS, HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS } from "@/lib/heroJourneys";
+import { HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS } from "@/lib/heroJourneys";
 
 /**
  * The "Kreto Universe" hero. jsdom performs no layout or painting, so this suite cannot judge the sky itself; that was checked in a
@@ -37,13 +36,23 @@ vi.mock("@/hooks/useReducedMotion", () => ({
   useReducedMotion: () => reducedMotion,
 }));
 
+function Where() {
+  const l = useLocation();
+  return <output data-testid="where">{l.pathname}{l.search}</output>;
+}
+
 function renderHero() {
   return render(
     <MemoryRouter>
       <KretopiaHero />
+      <Where />
     </MemoryRouter>,
   );
 }
+
+const scopeTrigger = () => document.querySelector("[data-scope-trigger]") as HTMLElement;
+/** Radix opens its menu from the keyboard in jsdom (a pointer event has no button there). */
+const openScopes = () => fireEvent.keyDown(scopeTrigger(), { key: "Enter" });
 
 describe("KretopiaHero — Kreto Universe", () => {
   beforeEach(() => {
@@ -66,78 +75,76 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(h1[0].compareDocumentPosition(sub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("keeps the app's own search as the one thing to do, with the requested placeholder", () => {
+  it("keeps the app's own search as the one thing to do, with All as its default scope", () => {
     renderHero();
     const field = screen.getByRole("combobox");
-    expect(field).toHaveAttribute("placeholder", "Search people, skills and opportunities");
+    expect(field).toHaveAttribute("placeholder", "Search people, skills, opportunities and events");
     expect(field.className).toContain("rounded-[var(--k-hero-radius)]");
     expect(field.closest(".k-search-hero")).not.toBeNull();
     expect(screen.queryByRole("tab")).toBeNull();
+    // The scope sits at the start of the field and says All.
+    const trigger = scopeTrigger();
+    expect(trigger).toHaveTextContent("All");
+    expect(field.closest(".k-search-hero")?.contains(trigger)).toBe(true);
   });
 
-  it("offers People, Skills and Opportunities as links to existing routes", () => {
-    renderHero();
-    const nav = screen.getByRole("navigation", { name: "Start with" });
-    const links = Array.from(nav.querySelectorAll("a"));
-    expect(links.map((a) => a.getAttribute("href"))).toEqual(["/match?tab=browse&view=grid", "/match", SCOUT_PATH]);
-    // Each card names the journey, the feature it opens and one line about it.
-    HERO_JOURNEYS.forEach((journey, i) => {
-      const text = links[i].textContent ?? "";
-      expect(text).toContain(journey.label);
-      expect(text).toContain(journey.feature);
-      expect(text).toContain(journey.description);
-      expect(links[i].getAttribute("style")).toContain(journey.accent);
-    });
-  });
-
-  it("clicking a journey fires exactly one analytics event naming it", () => {
-    renderHero();
-    fireEvent.click(screen.getByRole("link", { name: /^Skills/ }));
-    expect(trackLandingCta).toHaveBeenCalledTimes(1);
-    expect(trackLandingCta).toHaveBeenCalledWith("hero_journey_skills", "hero", { label: "Skills", destination: "Match" });
-  });
-
-  it("merges the journeys and the three actions into one panel: one corner, the same columns, one filled primary", () => {
+  it("has nothing under the search but one guidance line and the example: no journey cards, no action buttons", () => {
     const { container } = renderHero();
-    const dock = container.querySelector("[data-hero-dock]") as HTMLElement;
-    expect(dock).not.toBeNull();
-    expect(dock.className).toContain("rounded-[var(--k-hero-radius)]");
-    // Every journey and every action lives inside the one panel.
-    const inDock = dock.querySelectorAll("a");
-    expect(inDock).toHaveLength(HERO_JOURNEYS.length + 3);
-    const labels = ["Explore Kretopia", "For Creatives", "For Companies"];
-    const hrefs = ["/discover", "/passport", "/post-opportunity"];
-    labels.forEach((label, i) => {
-      const link = screen.getByRole("link", { name: label });
-      expect(dock.contains(link)).toBe(true);
-      expect(link).toHaveAttribute("href", hrefs[i]);
-      expect(link).toHaveAttribute("data-cta", i === 0 ? "primary" : "secondary");
-    });
-    // The actions sit in three equal columns (two on a phone, where the primary takes the full row).
-    const row = screen.getByRole("link", { name: "For Creatives" }).parentElement as HTMLElement;
-    expect(row.className).toMatch(/\bgrid\b/);
-    expect(row.className).toContain("sm:grid-cols-3");
-    expect(document.querySelectorAll('[data-cta="primary"]')).toHaveLength(1);
-    // The primary is white on the logo gradient in both themes, so it is set inline.
-    expect(screen.getByRole("link", { name: "Explore Kretopia" })).toHaveStyle({ color: "#fff" });
+    expect(screen.getByText("Search all of Kretopia, or narrow it to one area.")).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Start with" })).toBeNull();
+    expect(container.querySelector("[data-hero-dock], [data-cta]")).toBeNull();
+    const hero = container.querySelector("#kretopia-hero") as HTMLElement;
+    for (const name of ["Explore Kretopia", "For Creatives", "For Companies"]) {
+      expect(Array.from(hero.querySelectorAll("a")).some((a) => a.textContent?.trim() === name)).toBe(false);
+    }
   });
 
-  it("tells the sky which journey is under the pointer, and clears it on leave", () => {
+  it("offers All, People, Scout, Match, Events and SoundStages, and the scope changes the placeholder", async () => {
+    renderHero();
+    openScopes();
+    const items = await screen.findAllByRole("menuitemradio");
+    expect(items.map((i) => i.textContent)).toEqual([
+      expect.stringContaining("All"),
+      expect.stringContaining("People"),
+      expect.stringContaining("Scout"),
+      expect.stringContaining("Match"),
+      expect.stringContaining("Events"),
+      expect.stringContaining("SoundStages"),
+    ]);
+    fireEvent.click(screen.getByRole("menuitemradio", { name: /SoundStages/ }));
+    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search SoundStages and live sessions");
+    expect(scopeTrigger()).toHaveTextContent("SoundStages");
+  });
+
+  it("sends the query with its scope: submitting opens the scope's own page with the words", async () => {
+    renderHero();
+    openScopes();
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: /SoundStages/ }));
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "electronic music" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(screen.getByTestId("where").textContent).toBe("/soundstages?q=electronic%20music");
+  });
+
+  it("keeps the microphone, the clear button and the submit button; clear empties the field", () => {
+    renderHero();
+    const field = screen.getByRole("combobox");
+    fireEvent.change(field, { target: { value: "photographer" } });
+    expect(screen.getByRole("button", { name: "Clear search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(field).toHaveValue("");
+  });
+
+  it("tints the sky when the search is narrowed to People, Match or Scout, and clears it for All", async () => {
     const { container } = renderHero();
     const sky = container.querySelector("[data-universe]") as HTMLElement;
     expect(sky).not.toHaveAttribute("data-tint");
-    const skills = screen.getByRole("link", { name: /^Skills/ }).closest("li") as HTMLElement;
-    fireEvent.mouseEnter(skills);
-    expect(sky).toHaveAttribute("data-tint", "skills");
-    fireEvent.mouseLeave(skills);
+    openScopes();
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: /Scout/ }));
+    expect(sky).toHaveAttribute("data-tint", "opportunities");
+    openScopes();
+    fireEvent.click(await screen.findByRole("menuitemradio", { name: /^All/ }));
     expect(sky).not.toHaveAttribute("data-tint");
-  });
-
-  it("clicking a secondary action fires exactly one analytics event", () => {
-    renderHero();
-    fireEvent.click(screen.getByRole("link", { name: "For Companies" }));
-    expect(trackLandingCta).toHaveBeenCalledTimes(1);
-    expect(trackLandingCta).toHaveBeenCalledWith("hero_for_companies", "hero", { label: "For Companies", variant: "kreto_universe" });
   });
 
   it("shows one example search under the field, and picking it puts its words in the search", () => {
@@ -196,7 +203,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(container.querySelector("[data-universe] [style*='animation']")).toBeNull();
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Explore Kretopia" })).toBeInTheDocument();
+    expect(screen.getByText("Search all of Kretopia, or narrow it to one area.")).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
     const section = screen.getByRole("heading", { level: 1 }).closest("section");
     if (!section) throw new Error("Hero section missing");

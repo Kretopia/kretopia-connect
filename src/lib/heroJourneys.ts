@@ -1,47 +1,8 @@
 /**
- * What the landing hero offers besides the search field: the three journeys, the secondary calls to action, and the example
- * searches that rotate under the field. Pure data, so the routes are checked in one place and tested without mounting the hero.
- * Every destination is an existing route: nothing here creates one.
+ * The example searches that rotate under the landing hero's search field. Pure data, tested without mounting the hero.
+ * (The hero's journeys and secondary actions that once sat under the field were removed: the search scope now says where to look,
+ * see heroSearchScope.ts.)
  */
-import { SCOUT_PATH } from "@/lib/opportunityRoutes";
-
-export type JourneyId = "people" | "skills" | "opportunities";
-
-export interface HeroJourney {
-  id: JourneyId;
-  label: string;
-  /** The feature the journey opens, shown small next to the label. */
-  feature: "Passport" | "Match" | "Scout";
-  /** One line under the title on a card. */
-  description: string;
-  /** The logo-gradient stop this journey wears (violet, magenta, orange), as a CSS variable name. */
-  accent: "--k-g-2" | "--k-g-3" | "--k-g-4";
-  to: string;
-  analyticsId: string;
-}
-
-/**
- * People opens Match's Grid, where people are searched (the old Passport directory lives there now); Skills opens Match on its deck,
- * people matched to what you do; Opportunities opens Scout.
- */
-export const HERO_JOURNEYS: readonly HeroJourney[] = [
-  { id: "people", label: "People", feature: "Passport", description: "Meet the creatives behind the work.", accent: "--k-g-2", to: "/match?tab=browse&view=grid", analyticsId: "hero_journey_people" },
-  { id: "skills", label: "Skills", feature: "Match", description: "Find the right people by craft and expertise.", accent: "--k-g-3", to: "/match", analyticsId: "hero_journey_skills" },
-  { id: "opportunities", label: "Opportunities", feature: "Scout", description: "Jobs, projects and collaborations, open now.", accent: "--k-g-4", to: SCOUT_PATH, analyticsId: "hero_journey_opportunities" },
-];
-
-export interface HeroSecondaryCta {
-  label: string;
-  to: string;
-  analyticsId: string;
-}
-
-/** The same destinations as the navbar's "Discover", "For Creatives" and "For Companies". */
-export const HERO_SECONDARY_CTAS: readonly HeroSecondaryCta[] = [
-  { label: "Explore Kretopia", to: "/discover", analyticsId: "hero_explore_kretopia" },
-  { label: "For Creatives", to: "/passport", analyticsId: "hero_for_creatives" },
-  { label: "For Companies", to: "/post-opportunity", analyticsId: "hero_for_companies" },
-];
 
 export interface HeroPrompt {
   /** What is shown. */
